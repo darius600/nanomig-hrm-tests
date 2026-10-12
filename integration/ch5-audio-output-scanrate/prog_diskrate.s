@@ -1,6 +1,8 @@
 ; prog_diskrate.s -- P6 (SPECIFICATION.md section 3), and F1/F3 (2.4):
-; disk write DMA takes a word per 16 bit cells of about 2 us with FAST=1
-; and about 4 us with FAST=0. Two runs in sequence, F (FAST=1, buffer A)
+; measures the rate at which disk write DMA reads Chip memory, with
+; FAST=1 and with FAST=0. The program only measures that rate; G1-G3 are
+; RECORDED declines of the comparison with the bit-cell time. Two runs in
+; sequence, F (FAST=1, buffer A)
 ; then S (FAST=0, buffer B), each following the manual's own DSKLEN
 ; sequence (p.247 steps 1-5). No drive is selected and the program makes
 ; no CIA-B write, so no floppy select/motor line is ever driven (2.9);

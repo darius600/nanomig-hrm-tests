@@ -8,8 +8,11 @@
 ; chip RAM by the C++ test (poke_word(), the same mechanism prog_audio.s's
 ; tables use) before boot(), and P3B's own contrasting case (the two
 ; words' bytes swapped) is pure data, so no assembly-time symbol is
-; needed for it either.
+; needed for it. The other contrasting cases change what the CPU does:
 ;
+;   MUT_A6  VTOTAL/HTOTAL/BEAMCON0 are rewritten before the table starts (ECS only): A6's contrasting case
+;   MUT_A2  ADKCON $8001 (USE0V1) is set before the ADKCONR read (A2 for T2S goes red)
+;   MUT_FIXWRITE  the ADKCONR store is left out (FIXTURE-WRITE's own contrasting case)
 ;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 
         include "nanomig.i"
@@ -44,6 +47,20 @@ start:
         move.w  #$7FFF,INTREQ(a0)
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,ADKCON(a0)
+        ifd     MUT_A6
+        move.w  #524,VTOTAL(a0)        ; MUT_A6: A6's contrasting case (2.4, ECS only)
+        move.w  #113,HTOTAL(a0)
+        move.w  #$00A0,BEAMCON0(a0)    ; VARBEAMEN + PAL (p.304, p.305)
+        endc
+        ifd     MUT_A2
+        move.w  #$8001,ADKCON(a0)      ; MUT_A2: attach mode (USE0V1) set, after the
+                                        ; preamble's own clear, so it survives to the read
+        endc
+
+        ; ---- read ADKCONR, store it (precondition A2) ----
+        ifnd    MUT_FIXWRITE
+        move.w  ADKCONR(a0),RESULTS
+        endc
 
         ; ---- channels 1-3 stay off (p.266 "000000=no output") ----
         move.w  #0,AUD1VOL(a0)

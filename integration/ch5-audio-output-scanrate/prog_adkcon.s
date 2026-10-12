@@ -8,6 +8,7 @@
 ; Optional assembly-time symbols:
 ;   MUT_P5  step 2 writes $8200 instead of $8100 (P5's own contrasting case)
 ;   MUT_C1  the store of R2 (step 3's readback) is left out (C1's contrasting case)
+;   MUT_C1DUP  the store of R2 is made twice (C1's second contrasting case)
 ;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 
         include "nanomig.i"
@@ -49,6 +50,9 @@ start:
         move.w  #$8200,ADKCON(a0)
         ifnd    MUT_C1
         move.w  ADKCONR(a0),R2         ; C1 mutation: this store is left out
+        endc
+        ifd     MUT_C1DUP
+        move.w  ADKCONR(a0),R2         ; C1DUP mutation: R2 is stored a second time
         endc
 
         ; step 4: clear bit 8

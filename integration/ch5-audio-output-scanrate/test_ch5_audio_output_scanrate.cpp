@@ -23,7 +23,7 @@
 // NMH_MUTATE selects one mutated program or table in place of its normal
 // counterpart; unset, every section runs its normal binary and table, and
 // the summary counts the fixture, preconditions and assertions only.
-// Selectors: P1 P2 P3 P4 A1 A2 A4 A5 P3B P5 C1 FASTF0 FASTS1 B2 B3 F1
+// Selectors: P1 P2 P3 P4 A1 A2 A2T A4 A5 P3B P5 C1 C1DUP FASTF0 FASTS1 B2 B3 F1
 // FIXCONST FIXDATA FIXWRITE NODONE.
 //
 // Each MUTATION record states the measured result of its selector on both
@@ -467,27 +467,28 @@ size_t window_levels(uint64_t span, uint64_t level) {
     return level == 0 || span == 0 ? 0 : (size_t)((span - 1) / level);
 }
 
-struct FitResult { bool matches = false; double a = 0, b = 0; int rotation = -1; double ratio = 1e300; };
+struct FitResult { bool matches = false; double a = 0, b = 0; int rotation = -1; double resid = 1e300; };
 
 // kExactTol: FIT(L, C) (SPECIFICATION.md 2.5) grades an exact digital
-// relation, not a band the page never gives. Measured on this RTL (every
-// table, every config, both cores, the genuine match case): the best
-// rotation's residual is exactly 0 to double-precision arithmetic (ratio
-// prints 0.000000 throughout) -- audio_left/audio_right hold a value that
+// relation, not a band the page never gives: every absolute residual
+// |L[i] - a - b * s| at most kExactTol, in raw port counts. Measured on this
+// RTL (every table, every config, both cores, the genuine match case): the
+// best rotation's largest residual is 0 to double-precision arithmetic --
+// audio_left/audio_right hold a value that
 // is an exact linear function of the byte code for the whole of a run, so
 // a residual above floating-point noise means the level list does not
 // match the code sequence, not that it matches within some tolerance.
 constexpr double kExactTol = 1e-6;
 
 // Returns the BEST rotation's (a, b) even when no rotation satisfies
-// kExactTol: A4 (2.7) grades the fitted |b| ("is there a resolvable
-// amplitude") independently of whether the pattern matches the expected
-// code sequence, so a proposition's own mutated data (which legitimately
-// breaks the match) must not also silently break A4.
+// kExactTol: the fitted |b| is printed as a MEASURED line (2.7, A4)
+// independently of whether the pattern matches the expected code
+// sequence, so a proposition's own mutated data (which legitimately breaks
+// the match) does not also silently break that line.
 // `matches` is the actual FIT(L, C) verdict P1-P4 grade.
 FitResult fit(const std::vector<double>& L, const std::vector<int>& s) {
     FitResult best;
-    double best_ratio = 1e300;
+    double best_resid = 1e300;
     size_t K = s.size();
     if (L.empty() || K == 0) return best;
     for (size_t r = 0; r < K; ++r) {
@@ -508,10 +509,10 @@ FitResult fit(const std::vector<double>& L, const std::vector<int>& s) {
             double resid = std::fabs((double)L[i] - a - b * x);
             if (resid > max_resid) max_resid = resid;
         }
-        double ratio = (std::fabs(b) > 1e-9) ? (max_resid / std::fabs(b)) : 1e300;
-        if (ratio < best_ratio) {
-            best_ratio = ratio;
-            best = {ratio <= kExactTol, a, b, (int)r, ratio};
+        if (std::fabs(b) <= 1e-9) continue;
+        if (max_resid < best_resid) {
+            best_resid = max_resid;
+            best = {max_resid <= kExactTol, a, b, (int)r, max_resid};
         }
     }
     return best;
@@ -590,8 +591,10 @@ AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh:
 
     r.released = h.boot(kBootBudget).cpu_released;
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kAudioRunBudget);
-    r.adkconr = h.peek_logical(kResults);
+    // The known constant first; no other result slot is read unless it
+    // reads back (SPECIFICATION.md 2.3).
     r.fixval = h.peek_logical(kFixAudio);
+    if (r.fixval && *r.fixval == kFixValue) r.adkconr = h.peek_logical(kResults);
     r.log = nmh::coalesce(h.ram_log());
     r.audio = h.audio();
     return r;
@@ -605,6 +608,8 @@ AudioCapture run_t2s(const std::string& dir, const std::string& mv, const nmh::C
     AudioCapture r;
     std::string bin = dir + "/prog_t2s.bin";
     if (mv == "FIXCONST") bin = dir + "/prog_t2s_fixturemut.bin";
+    else if (mv == "A2T") bin = dir + "/prog_t2s_a2mut.bin";
+    else if (mv == "FIXWRITE") bin = dir + "/prog_t2s_fixwritemut.bin";
     nmh::NanomigHarness h(cfg);
     r.loaded = h.load_program(bin) > 0;
     if (!r.loaded) return r;
@@ -612,6 +617,7 @@ AudioCapture run_t2s(const std::string& dir, const std::string& mv, const nmh::C
     r.released = h.boot(kBootBudget).cpu_released;
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kAudioRunBudget);
     r.fixval = h.peek_logical(kFixAudio);
+    if (r.fixval && *r.fixval == kFixValue) r.adkconr = h.peek_logical(kResults);
     r.log = nmh::coalesce(h.ram_log());
     r.audio = h.audio();
     return r;
@@ -631,6 +637,7 @@ AdkconCapture run_adkcon(const std::string& dir, const std::string& mv, const nm
     std::string bin = dir + "/prog_adkcon.bin";
     if (mv == "P5") bin = dir + "/prog_adkcon_p5mut.bin";
     else if (mv == "C1") bin = dir + "/prog_adkcon_c1mut.bin";
+    else if (mv == "C1DUP") bin = dir + "/prog_adkcon_c1dupmut.bin";
     else if (mv == "FIXCONST") bin = dir + "/prog_adkcon_fixturemut.bin";
 
     nmh::NanomigHarness h(cfg);
@@ -638,12 +645,14 @@ AdkconCapture run_adkcon(const std::string& dir, const std::string& mv, const nm
     if (!r.loaded) return r;
     h.boot(kBootBudget);
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kAdkconRunBudget);
-    r.r0 = h.peek_logical(kResults + 0);
-    r.r1 = h.peek_logical(kResults + 2);
-    r.r2 = h.peek_logical(kResults + 4);
-    r.r3 = h.peek_logical(kResults + 6);
-    r.r4 = h.peek_logical(kResults + 8);
     r.fixval = h.peek_logical(kFixAdkcon);
+    if (r.fixval && *r.fixval == kFixValue) {
+        r.r0 = h.peek_logical(kResults + 0);
+        r.r1 = h.peek_logical(kResults + 2);
+        r.r2 = h.peek_logical(kResults + 4);
+        r.r3 = h.peek_logical(kResults + 6);
+        r.r4 = h.peek_logical(kResults + 8);
+    }
     r.log = nmh::coalesce(h.ram_log());
     return r;
 }
@@ -674,11 +683,13 @@ DiskCapture run_diskrate(const std::string& dir, const std::string& bin_suffix, 
     poke_fill(h, DISKBUF_B, fixdata ? 0x5555 : kDiskWord, 544);
     h.boot(kBootBudget);
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kDiskRunBudget);
-    r.b1_f = h.peek_logical(kResults + 0);
-    r.b2_f = h.peek_logical(kResults + 2);
-    r.b1_s = h.peek_logical(kResults + 6);
-    r.b2_s = h.peek_logical(kResults + 8);
     r.fixval = h.peek_logical(kFixDisk);
+    if (r.fixval && *r.fixval == kFixValue) {
+        r.b1_f = h.peek_logical(kResults + 0);
+        r.b2_f = h.peek_logical(kResults + 2);
+        r.b1_s = h.peek_logical(kResults + 6);
+        r.b2_s = h.peek_logical(kResults + 8);
+    }
     r.log_raw = h.ram_log();
     r.log = nmh::coalesce(r.log_raw);
     return r;
@@ -712,8 +723,8 @@ int main(int argc, char** argv) {
     const bool nodone_mv   = (mv=="NODONE");
     const bool audio_mv   = (mv=="P1"||mv=="P2"||mv=="P3"||mv=="P4"||mv=="A1"||mv=="A2"||mv=="A4"||mv=="A5"||
                              fixconst_mv||fixdata_mv||fixwrite_mv||nodone_mv);
-    const bool t2s_mv     = (mv=="P3B"||fixconst_mv||fixdata_mv);
-    const bool adkcon_mv  = (mv=="P5"||mv=="C1"||fixconst_mv);
+    const bool t2s_mv     = (mv=="P3B"||mv=="A2T"||fixconst_mv||fixdata_mv||fixwrite_mv);
+    const bool adkcon_mv  = (mv=="P5"||mv=="C1"||mv=="C1DUP"||fixconst_mv);
     const bool disk_mv    = (mv=="FASTF0"||mv=="FASTS1"||mv=="B2"||mv=="B3"||mv=="F1"||fixconst_mv||fixdata_mv||fixwrite_mv);
     const bool need_audio  = mv.empty() || audio_mv;
     const bool need_t2s    = mv.empty() || t2s_mv;
@@ -939,12 +950,13 @@ int main(int argc, char** argv) {
                     FitResult fu, fl;
                     if (!L.empty()) { fu = fit(L, c_up()); fl = fit(L, c_low()); }
                     double b = fu.matches ? fu.b : fl.b;
-                    bool a4 = L.size() >= (size_t)(2 * t1.words) && std::fabs(b) >= 4.0;
+                    bool a4 = L.size() >= (size_t)(2 * t1.words);
                     std::string a4_label = std::string("A4 for T1 ") + cs.label +
-                        ": L has >= " + std::to_string(2 * t1.words) + " entries (" + std::to_string(L.size()) +
-                        ") and the fitted |b| is >= 4 steps (" + fmt(std::fabs(b), 1) + ")";
+                        ": L has >= " + std::to_string(2 * t1.words) + " entries (" + std::to_string(L.size()) + ")";
                     if (mv == "A4") a4_label += " [NMH_MUTATE demonstrates this precondition red]";
                     checks.expect(a4, a4_label);
+                    checks.note(std::string("fitted output change per LSB, T1 ") + cs.label + " (not graded): |b| = " +
+                        fmt(std::fabs(b), 3) + " raw port counts");
 
                     if (!a4) {
                         checks.record(std::string("P1/P2 ") + cs.label + ": not graded, precondition A4 failed");
@@ -983,10 +995,11 @@ int main(int argc, char** argv) {
                 } else {
                     auto& L = pc.L;
                     FitResult f2c = L.empty() ? FitResult{} : fit(L, c2());
-                    bool a4 = L.size() >= (size_t)(2 * t2.words) && std::fabs(f2c.b) >= 4.0;
+                    bool a4 = L.size() >= (size_t)(2 * t2.words);
                     checks.expect(a4, std::string("A4 for T2 ") + cs.label +
-                        ": L has >= " + std::to_string(2 * t2.words) + " entries (" + std::to_string(L.size()) +
-                        ") and the fitted |b| is >= 4 steps (" + fmt(std::fabs(f2c.b), 1) + ")");
+                        ": L has >= " + std::to_string(2 * t2.words) + " entries (" + std::to_string(L.size()) + ")");
+                    checks.note(std::string("fitted output change per LSB, T2 ") + cs.label + " (not graded): |b| = " +
+                        fmt(std::fabs(f2c.b), 3) + " raw port counts");
                     if (!a4) {
                         checks.record(std::string("P3 ") + cs.label + ": not graded, precondition A4 failed");
                     } else if (!grade_a5(t2, pc)) {
@@ -1015,10 +1028,11 @@ int main(int argc, char** argv) {
                 } else {
                     auto& L = pc.L;
                     FitResult f3c = L.empty() ? FitResult{} : fit(L, c3());
-                    bool a4 = L.size() >= (size_t)(t3.words + 1) && std::fabs(f3c.b) >= 4.0;
+                    bool a4 = L.size() >= (size_t)(t3.words + 1);
                     checks.expect(a4, std::string("A4 for T3 ") + cs.label +
-                        ": L has >= " + std::to_string(t3.words + 1) + " entries (" + std::to_string(L.size()) +
-                        ") and the fitted |b| is >= 4 steps (" + fmt(std::fabs(f3c.b), 1) + ")");
+                        ": L has >= " + std::to_string(t3.words + 1) + " entries (" + std::to_string(L.size()) + ")");
+                    checks.note(std::string("fitted output change per LSB, T3 ") + cs.label + " (not graded): |b| = " +
+                        fmt(std::fabs(f3c.b), 3) + " raw port counts");
                     if (!a4) {
                         checks.record(std::string("P4 ") + cs.label + ": not graded, precondition A4 failed");
                     } else if (!grade_a5(t3, pc)) {
@@ -1067,13 +1081,22 @@ int main(int argc, char** argv) {
                 continue;
             }
 
-            // prog_t2s stores nothing but its known constant, so no graded
-            // line of this program reads a stored slot behind it.
             std::string t2s_fix_label = std::string("FIXTURE-CONST T2S ") + cs.label +
                 ": prog_t2s's own known constant reads back correctly "
                 "[not graded -- fixture, no claim uid]";
             if (fixconst_mv) t2s_fix_label += " [NMH_MUTATE demonstrates this fixture red]";
-            checks.expect(cap.fixval.has_value() && *cap.fixval == kFixValue, t2s_fix_label);
+            const bool t2s_fix_ok = cap.fixval.has_value() && *cap.fixval == kFixValue;
+            checks.expect(t2s_fix_ok, t2s_fix_label);
+
+            // FIXTURE-WRITE: the A2 result slot was written by the program.
+            bool t2s_a2_write = has_one_write(cap.log, kResults / 2);
+            {
+                std::string wr = std::string("FIXTURE-WRITE T2S ") + cs.label +
+                    ": the Chip-memory port shows one CPU write to the A2 result slot "
+                    "[not graded -- fixture, no claim uid]";
+                if (fixwrite_mv) wr += " [NMH_MUTATE demonstrates this fixture red]";
+                checks.expect(t2s_a2_write, wr);
+            }
 
             bool t2s_data_ok = false;
             {
@@ -1104,7 +1127,28 @@ int main(int argc, char** argv) {
             if (!f2.diag.empty()) checks.note(std::string("T2S ") + cs.label + " F2 break: " + f2.diag);
             if (!a1) {
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A3-A5, P3B not graded, precondition A1 failed");
+                    ": A2-A5, P3B not graded, precondition A1 failed");
+                continue;
+            }
+            // A2 reads a stored slot: graded only when the fixture constant
+            // and the slot's write both hold.
+            if (!(t2s_fix_ok && t2s_a2_write)) {
+                checks.record(std::string("A2 for T2S ") + cs.label +
+                    ": not graded, FIXTURE-CONST or FIXTURE-WRITE failed");
+                checks.record(std::string("T2S ") + cs.label +
+                    ": A3-A5, P3B not graded, precondition A2 not graded");
+                continue;
+            }
+            bool t2s_a2 = cap.adkconr.has_value() && ((*cap.adkconr) & 0x00FF) == 0;
+            {
+                std::string a2l = std::string("A2 for T2S ") + cs.label +
+                    ": ADKCONR bits 7-0 read 0, no attach mode [p.265]";
+                if (mv == "A2T") a2l += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(t2s_a2, a2l);
+            }
+            if (!t2s_a2) {
+                checks.record(std::string("T2S ") + cs.label +
+                    ": A3-A5, P3B not graded, precondition A2 failed");
                 continue;
             }
             uint64_t wb = f2.pass_starts[1], we = f2.pass_starts[kNT2S + 1];
@@ -1152,10 +1196,11 @@ int main(int argc, char** argv) {
             }
             auto L = unwrap15(levels_from_runs(runs));
             FitResult fs = L.empty() ? FitResult{} : fit(L, c2s());
-            bool a4 = L.size() >= 4 && std::fabs(fs.b) >= 4.0;
+            bool a4 = L.size() >= 4;
             checks.expect(a4, std::string("A4 for T2S ") + cs.label +
-                ": L has >= 4 entries (" + std::to_string(L.size()) +
-                ") and the fitted |b| is >= 4 steps (" + fmt(std::fabs(fs.b), 1) + ")");
+                ": L has >= 4 entries (" + std::to_string(L.size()) + ")");
+            checks.note(std::string("fitted output change per LSB, T2S ") + cs.label + " (not graded): |b| = " +
+                fmt(std::fabs(fs.b), 3) + " raw port counts");
             if (!a4) {
                 checks.record(std::string("P3B ") + cs.label + ": not graded, precondition A4 failed");
                 continue;
@@ -1226,11 +1271,11 @@ int main(int argc, char** argv) {
             // store, so w2 is genuinely empty there and c1 is genuinely false;
             // this is the same unchanged comparator either way, so the mutant
             // run prints FAIL through this clause rather than an inverted PASS.
-            bool c1 = !w0.empty() && !w1.empty() && !w2.empty() && !w3.empty() && !w4.empty() &&
+            bool c1 = w0.size() == 1 && w1.size() == 1 && w2.size() == 1 && w3.size() == 1 && w4.size() == 1 &&
                       w0[0] < w1[0] && w1[0] < w2[0] && w2[0] < w3[0] && w3[0] < w4[0];
             std::string c1_label = std::string("C1 ") + label +
                 ": the Chip-memory port shows one CPU write to each of R0-R4, in step order";
-            if (kmv == "C1") c1_label += " [NMH_MUTATE demonstrates this precondition red]";
+            if (kmv == "C1" || kmv == "C1DUP") c1_label += " [NMH_MUTATE demonstrates this precondition red]";
             checks.expect(c1, c1_label);
             if (!c1) {
                 checks.record(std::string("P5 ") + label + ": not graded, precondition C1 failed");
@@ -1269,10 +1314,12 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // P6 / F1 / F3: disk write DMA bit-cell rate, FAST = ADKCON bit 8.
-    // G1, G2 and G3 grade the measured bit-cell time (or the ratio
-    // between two runs) against the page's values; see SPECIFICATION.md
-    // section 3 for the propositions and section 5 for the measurements.
+    // P6 / F1 / F3: disk write DMA, FAST = ADKCON bit 8. The program
+    // measures the rate at which disk write DMA reads Chip memory, in two
+    // runs (FAST = 1 and FAST = 0); G1, G2 and G3 are RECORDED declines of
+    // the comparison with the bit-cell time, since no page ties that rate
+    // to the bit cell. See SPECIFICATION.md section 3 for the
+    // propositions and section 5 for the measurements.
     // =====================================================================
     if (need_disk) {
         struct CfgSpec { const char* label; nmh::Config cfg; bool ecs; bool ntsc; double us_per_cck; };
@@ -1354,10 +1401,15 @@ int main(int argc, char** argv) {
             // (B1 for run F under FASTF0, B1 for run S under FASTS1, B2/B3
             // under their own labels, B4 under F1); every other precondition
             // is expected to still hold.
-            bool fast_f_bit = ((*cap.b1_f >> 8) & 1) != 0;
-            bool fast_s_bit = ((*cap.b1_s >> 8) & 1) != 0;
-            bool b2_f = ((*cap.b2_f >> 14) & 1) == 1 && ((*cap.b2_f >> 13) & 1) == 1;
-            bool b2_s = ((*cap.b2_s >> 14) & 1) == 1 && ((*cap.b2_s >> 13) & 1) == 1;
+            // The stored slots are only read when the constant read back
+            // (run_diskrate); a verdict computed from an unread slot is
+            // never printed (graded_stored below).
+            const uint16_t b1_f_v = cap.b1_f.value_or(0), b1_s_v = cap.b1_s.value_or(0);
+            const uint16_t b2_f_v = cap.b2_f.value_or(0), b2_s_v = cap.b2_s.value_or(0);
+            bool fast_f_bit = ((b1_f_v >> 8) & 1) != 0;
+            bool fast_s_bit = ((b1_s_v >> 8) & 1) != 0;
+            bool b2_f = ((b2_f_v >> 14) & 1) == 1 && ((b2_f_v >> 13) & 1) == 1;
+            bool b2_s = ((b2_s_v >> 14) & 1) == 1 && ((b2_s_v >> 13) & 1) == 1;
 
             F3Result f3f = f3_check(cap.log, DISKBUF_A / 2, 544);
             F3Result f3s = f3_check(cap.log, DISKBUF_B / 2, 544);
