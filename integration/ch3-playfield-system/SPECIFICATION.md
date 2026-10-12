@@ -114,6 +114,12 @@ writes BPLCON0 at $DFF100.
   writes clear every DMA enable, every interrupt enable and every pending request.
   The 68000's interrupt mask stays at level 7 for the whole program, so no
   interrupt is taken; interrupt requests are only polled.
+- **Start word.** Directly after the start-up writes every program stores one word
+  to Chip memory address $0C0FF0, above the region where the overlay would lose a
+  CPU write, so the store reaches the Chip-memory port: $5A01 in the programs of P1
+  and P2, $5A03 in those of P3 and P4, $5A05 in those of P5. The start word is the
+  known value the fixture line of a run certifies: the fixture requires the store to
+  be seen with exactly that value.
 - **Copper start**, where a Copper list is used, follows p.30: "you must initialize
   one of the Copper location registers (COP1LC or COP2LC) and write to its strobe
   address before Copper DMA is turned on." The order is COP1LC (one long-word
@@ -345,12 +351,16 @@ failure, never a pass.
   program finishes and P1-a, P1-c (for C/B, and E's fetches) and P1-e still hold.
 - **P1-a:** select PAL for one run and NTSC for the other; the sync samples differ.
 - **P1-b:** apply the run-"1" check to the run-"0" fetch trace; it fails.
-- **P1-c:** DMACON = $8280 (BPLEN not set); no bitplane reads occur.
+- **P1-c:** in B, C and E, DDFSTOP is 8 colour clocks lower than the value of step 6
+  with bitplane DMA still on (p.60: DDFSTOP names the last fetch); the bitplane reads
+  of a DMA field are fewer than N, and still a nonempty set. In A the Copper list
+  carries a one-plane BPLCON0 ($1000, p.89), so reads occur where none are expected.
 - **P1-d:** in B, fill the bitplane with $0000; no sample shows C1.
-- **P1-e:** check the field length against the other standard's values; it fails.
-  Stimulus route: in configuration B at S1 the program writes BEAMCON0 with bit 5
-  opposite to the configured standard (p.304: "NTSC (525 lines ...) PAL (625 lines
-  ...)"), and the field length is the other standard's.
+- **P1-e:** in configuration B at S1 the program writes BEAMCON0 with bit 5 opposite
+  to the configured standard (p.304: "NTSC (525 lines ...) PAL (625 lines ...)"), and
+  the field length is the other standard's.
+- **Fixture:** in run "1" of every configuration at S1 the program stores a start word
+  other than $5A01; the run completes and the fixture line reports it.
 
 ### 7. Reference frame
 
@@ -439,6 +449,8 @@ two border samples in item 3.
   NTSC); p.59 predicts H-1 data lines per field, and item 1 fails. The buffer is then
   read for H-1 lines only, so P2-b fails too and item 2 is not graded; item 3 holds
   for the lines shown.
+- **Fixture:** in run "1" of configuration B at S1 the program stores a start word other
+  than $5A01; the run completes and the fixture line reports it.
 
 ### 7. Reference frame
 
@@ -500,8 +512,8 @@ Run "L1" (LPEN = 1) and run "L0" (LPEN = 0), identical except for one data word:
    - poll INTREQR until bit 5 (VERTB) is 1. p.219: "Bit 5, VERTB, causes an
      interrupt at line 0 (start of vertical blank) of the video display frame."
    - write INTREQ = $0020 (clear VERTB);
-   - store a marker word (the iteration number) into Chip memory; the time of this
-     store is t_f;
+   - store a marker word (the iteration number 0..4) into Chip memory; the time of
+     this store is t_f;
    - execute 600 times `MOVE.L $DFF004,(A0)+`.
 6. Idle loop without custom-register access.
 
@@ -567,6 +579,12 @@ Not graded, because the pages leave it open:
   within 30 cc before its end.
 - **P3-b (the anchor):** in L0, every counted read has V (V8..V0) between 1 and 19
   inclusive. In both L0 and L1, consecutive t_f satisfy the field-length check.
+- **P3-M (the blocks are the program's own):** in both runs the stores to the
+  measurement buffer from $0C1000 up are exactly five blocks; block k (k = 0..4) is the
+  marker word k followed by 600 long words (20 in the P3-a contrast), each stored high
+  half then low half at consecutive word addresses. Every word the grading takes for a
+  marker or for a read is then one the program stored as such. P3-a, P3-b, P3-c, P3-LIVE
+  and P3-MAIN wait for it.
 - **P3-L (the detecting loop is measured):** the `INTREQR` polling loop is seen
   spinning in the instruction fetches of both runs, at least 100 iterations each;
   its period is what the field-length check adds to its tolerance. P3-b and P3-c
@@ -612,9 +630,12 @@ and fail on a counter that is frozen (criterion 1).
   bit 3 latches; the L0 windows then hold one frozen value and criterion 1 fails.
 - **P3-a:** reduce the burst to 20 reads; fewer than 100 reads fall into the window.
 - **P3-b:** delay the marker store by about 26 lines after the VERTB detection in
-  L0; the reads then have V above 19. Evaluating the anchor with the window end moved
-  to t_f + 30 * 227 cc makes the same comparator see V above 19 on a chipset that
-  follows the pages; it changes the interval of the comparator, not the stimulus.
+  L0; the reads then have V above 19.
+- **P3-M:** the L1 program stores every marker with bit 8 set ($0100 + k); the block
+  shape is not the program's own marker sequence, the line reports it and the lines
+  that wait for it are not graded.
+- **P3 fixture:** the L1 program stores a start word other than $5A03; both runs
+  complete and the fixture line reports it.
 - **P3-L:** replace the polling loop by a fixed delay; no loop is seen in the
   instruction fetches.
 - **P3-c (ECS):** BEAMCON0 = $2020 (PAL) / $2000 (NTSC), LPENDIS = 1. p.305 predicts
@@ -679,6 +700,8 @@ in four system configurations and with both cores.
 
 - **P4-a:** the P3-a check on the one program: each window holds at least 100 counted
   reads, spread over it.
+- **P4-M:** as P3-M, for the one program: five blocks of marker k and 600 long words
+  (20 in the P4-a contrast). P4-a, P4-c and P4-MAIN wait for it.
 - **P4-L:** as P3-L, for the one program. P4-c waits for it.
 - **P4-b:** the program contains no write to $DFF100; no Copper instruction
   fetched from the Copper list's address ($020000) at the Chip-memory port is a MOVE
@@ -699,6 +722,9 @@ Every precondition waits for the fixture and prints `NOT GRADED` when it fails.
   which LPEN is 1 after reset (build notes). On it `P3-MAIN` passes, the windows hold
   one frozen value and criterion 1 fails.
 - **P4-a, P4-L, P4-c:** as in P3.
+- **P4-M:** as in P3: the program stores every marker with bit 8 set.
+- **P4 fixture:** the program stores a start word other than $5A03; the run completes
+  and the fixture line reports it.
 - **P4-b:** (program part) add the BPLCON0 write of the main contrast; the
   program check reports it. (Copper part) before step 5, start a Copper list
   `MOVE BPLCON0,$0008 / WAIT $FFFF,$FFFE` as in Common definitions (DMACON =
@@ -817,8 +843,17 @@ above $100 are not tested, because the bit layout is not stated.
   whose store precedes t_c2 and the first whose store follows it both have
   V = N-1. Likewise for the MOVE after WAIT(N+1,$30): V = N+1. (The Copper
   instruction fetches and the VPOSR stores are both seen at the Chip-memory port.)
+- **P5-M (the blocks are the program's own):** the stores to the measurement buffer
+  from $0C1000 up are exactly four blocks; block k (k = 0..3) is the marker word k
+  followed by 200 long words, each stored high half then low half at consecutive word
+  addresses. P5-b, P5-c and P5-MAIN wait for it.
 - **P5-c (video standard):** the field-length check on consecutive VERTB detections
-  gives the configured standard (the BEAMCON0 write kept bit 5 right).
+  gives the configured standard (the BEAMCON0 write kept bit 5 right). It is applied to
+  the times of the consecutive detection markers, each of which follows a VERTB
+  detection and the VHPOSR poll, with the tolerance of one line plus the period of the
+  longer of the program's two polling loops (the `INTREQR` loop and the `VHPOSR` loop),
+  measured from their instruction fetches; and to the consecutive vsync assertions
+  with the tolerance of one line.
 - **P5-d (configuration):** the harness is configured ECS. p.298 lists VBSTRT and
   BEAMCON0 as "new" registers of the Enhanced Chip Set. This is a setting of the host
   that the test itself chooses, not a measurement of the design: it is printed as a
@@ -837,6 +872,10 @@ above $100 are not tested, because the bit layout is not stated.
   V = N-2.
 - **P5-c:** BEAMCON0 with bit 5 opposite to the configured standard; the field
   length is the other standard's.
+- **P5-M:** the program stores every marker with bit 8 set ($0100 + k); the line
+  reports it and the lines that wait for it are not graded.
+- **P5 fixture:** the program stores a start word other than $5A05; the run completes
+  and the fixture line reports it.
 
 ### 7. Reference frame
 
