@@ -212,7 +212,10 @@ B (pp. 289-293) and Appendix A:
   that program stores. Stored right before the done marker, not first,
   so it cannot disturb the timing any earlier, DMA-dependent measurement
   in the same program depends on. Printed as FIXTURE-CONST; the lines that
-  read a stored result slot (A2, C1, P5, B1, B2) are graded behind it.
+  read a stored result slot (A2, C1, P5, B1, B2) are graded behind it. The
+  test reads that constant's slot and compares it before it reads any other
+  result slot of the program; a program whose constant does not read back
+  has none of its other slots read.
 - **Table content on the port.** Every poked table and buffer is checked on
   the Chip-memory port before a line relies on it (FIXTURE-DATA): every read
   of a table's words returns the content poked there and every word of it is
@@ -412,9 +415,9 @@ A failing precondition means "not graded", never green.
 | Id | Precondition | How the test checks it | Contrasting case (precondition goes red; the program still finishes) |
 |---|---|---|---|
 | A1 | Audio DMA for the table ran, pass after pass, from its first restart on | F2's anchor check holds from t_2 on, with at least N + 2 reads of the table's first word (t_1 ... t_(N+2)). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
-| A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0) | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
+| A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0). Graded once per program that reads the output: the audio program (T1, T2, T3) and T2S's own program | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
-| A4 | The window holds enough levels, and one LSB is resolved | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3; the fitted \|b\| is at least 4 steps of the harness's own sample resolution | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
+| A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
 | A5 | The window's held levels are the complete population its length holds, with nothing unexplained dropped or added | L's length equals the number of complete held levels a window of its measured length holds: with e - s the window's length and r the median held level in it, both in samples, (e - s - 1) div r | A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short of that number, by one per pass |
 
 Why A5 counts from the window's length and not from N x K. The window's end is
@@ -447,8 +450,8 @@ N x K - 1 compare when the whole window is shifted across one held level.
    neither of which `nanomig.v`'s ports show; the id is withdrawn (1.2) and
    this proposition grades only its narrower, page-derived part.
 2. **Stimulus.** The audio program (2.6) with table T1.
-3. **Observation.** The right-side audio output inside W_T1 (F2), read as
-   L = LEVELS(W_T1).
+3. **Observation.** The audio output that carries channel 0 (2.5) inside W_T1
+   (F2), read as L = LEVELS(W_T1).
 4. **Expected relation.** p. 265: "It contains 2 bytes of data that are each
    2's complement and are outputted sequentially (with digital-to-analog
    conversion) to the audio output pins."
@@ -534,7 +537,8 @@ N x K - 1 compare when the whole window is shifted across one held level.
    same reason as P3.
 2. **Stimulus.** Table T2S (2.6): two words, $8001 and $7F00, each with
    distinct upper and lower bytes, run by its own program (`prog_t2s.s`)
-   independent of `prog_audio.s` and its own mutations.
+   independent of `prog_audio.s` and its own mutations. That program
+   also reads ADKCONR and stores it before it starts the DMA (2.6, step 2).
 3. **Observation.** L = LEVELS(W_T2S).
 4. **Expected relation.**
    - p. 265: "It contains 2 bytes of data that are each 2's complement".
@@ -544,12 +548,19 @@ N x K - 1 compare when the whole window is shifted across one held level.
      unlike T2 (P3), dropping or swapping a byte position here changes which
      code is read from which position, so a match establishes the relation
      holds at both positions, not only when they happen to agree.
-5. **Preconditions.** A1, A3, A4, A5 for T2S (2.7's own definitions, applied
-   to T2S; A2 does not apply, T2S's own program does not read ADKCONR).
-6. **Contrasting case.** Swap the bytes of both words: $0180, $007F. The
-   page predicts 01 80 00 7F (s = 1, -128, 0, 127); FIT(L, C_sign) fails
-   (no rotation of 80 01 7F 00 matches), so P3B goes red. A1, A3, A4, A5
-   still hold.
+5. **Preconditions.** A1-A5 for T2S (2.7's own definitions, applied to
+   T2S). A2 applies to T2S's own program: it reads ADKCONR and stores it
+   (2.6, step 2), because p. 165 says that with an attach bit set channel
+   0's data goes to the volume latch of the next channel "instead of to
+   D->A converter", so the output this proposition reads would not carry
+   T2S's bytes.
+6. **Contrasting cases.**
+   - Proposition: swap the bytes of both words: $0180, $007F. The
+     page predicts 01 80 00 7F (s = 1, -128, 0, 127); FIT(L, C_sign) fails
+     (no rotation of 80 01 7F 00 matches), so P3B goes red. A1-A5 still
+     hold.
+   - A2: add ADKCON = $8001 (USE0V1) between the preamble and the ADKCONR
+     read, as in 2.7. A2 goes red for T2S and P3B is not graded.
 7. **Reference frame.** F2, checked on T2S's own window.
 
 ### P4: Every one-LSB step moves the output by the same amount
@@ -628,6 +639,8 @@ N x K - 1 compare when the whole window is shifted across one held level.
      R1 = (1,0), so P5 goes red. C1 still holds.
    - C1: leave out the store of R2. The port shows no write to R2, so C1
      goes red. The program still finishes.
+   - C1: store R2 twice. The port shows two writes to R2, so C1 goes red.
+     The program still finishes.
 7. **Reference frame.** None beyond the step order.
 
 ### P6: Disk write DMA takes a word per 16 bit cells of about 2 us with FAST = 1 and about 4 us with FAST = 0
