@@ -187,7 +187,8 @@ B (pp. 289-293) and Appendix A:
 | AUD0PER | 0A6 | W | period in color clocks (p. 266) |
 | AUD0VOL | 0A8 | W | volume, 64 = maximum (p. 140, p. 266) |
 | AUD1VOL, AUD2VOL, AUD3VOL | 0B8, 0C8, 0D8 | W | 0 = "no output" (p. 266) |
-| HTOTAL, VTOTAL, BEAMCON0 | 1C0, 1C8, 1DC | W | ECS only; one contrasting case (F1) |
+| VHPOSR | 006 | R | bits 15-8: vertical beam position, low byte; read only by the last-level contrast of P1 (Appendix B) |
+| HTOTAL, VTOTAL, BEAMCON0 | 1C0, 1C8, 1DC | W | ECS only; contrasting cases of F1 and A6 |
 
 ### 2.3 Program conventions
 
@@ -218,8 +219,10 @@ B (pp. 289-293) and Appendix A:
   has none of its other slots read.
 - **Table content on the port.** Every poked table and buffer is checked on
   the Chip-memory port before a line relies on it (FIXTURE-DATA): every read
-  of a table's words returns the content poked there and every word of it is
-  read; for a disk buffer, whose length one case shortens, every read
+  of a table's words returns the content poked there, as changed by the CPU
+  writes to the table that the port shows before that read (none, except in
+  the last-level contrast of P1, where exactly one), and the number of such
+  writes is the stimulus's own; every word of the table is read; for a disk buffer, whose length one case shortens, every read
   returns the poked content and at least one read happens. A table's A4, A5
   and propositions are graded behind its own FIXTURE-DATA line. No graded
   line of the disk program reads buffer content, so none is graded behind
@@ -233,7 +236,7 @@ B (pp. 289-293) and Appendix A:
 
 ### 2.4 Reference frames
 
-**F1: time base, used by P6 only.**
+**F1: time base, used by P6 and by A6 (2.7).**
 p. 194: "During a horizontal scan line (about 63 microseconds), there are
 227.5 "color clocks", or memory access cycles", and the per-line allocation
 includes "4 cycles for memory refresh".
@@ -283,8 +286,9 @@ start of the data."
   sampling periods) it may stay on and thus continue from where it left
   off." Which of the two a table switch does depends on how long the CPU
   keeps the channel disabled.
-- **Analysis window.** W_T = [t_2, t_(2+N)), N passes long, entirely after
-  the first restart. p. 139: "Each time the system retrieves the last audio
+- **Analysis window.** W_T = [s, e), N passes of the table long, entirely
+  after the first restart, built from the programmed period and not from the
+  DMA reads (2.5, step 1). p. 139: "Each time the system retrieves the last audio
   word from the data area, it uses the contents of these location registers
   to again find the start of the data." The anchor check holds that sentence
   on every restart inside the window.
@@ -318,20 +322,33 @@ unwrapping (below), using only the domain size the harness contract
 states, never a chosen sign bit.
 
 **LEVELS(W): the list of held levels in window W.**
-1. Start the window on an output transition: its first sample is the first
-   sample at or after t_2 whose raw value differs from the sample before it.
-   Its end is F2's window end, t_(2+N). Take the output samples whose time
-   lies in that window, as the port's raw 15-bit magnitude. If the output
-   does not change inside F2's window (a flat output), the window is F2's
-   window itself.
+1. Start the window on an output transition: its first sample, s, is the
+   first sample at or after t_2 whose raw value differs from the sample
+   before it. If the output does not change within four held levels of t_2
+   (a flat output), s is t_2.
+   - **The held level.** One output byte lasts one sampling period (p. 140:
+     the period is the time per sample; p. 266: AUD0PER is "period in color
+     clocks"), and consecutive bytes with one code form one level. A level of
+     table T lasts r_T = u_T x P x c samples of the harness's audio capture,
+     which takes one sample per `clk_sys` cycle: P the programmed period
+     (128, 2.6), u_T the number of consecutive output bytes that carry one
+     code in T's code sequence (the table in 2.6), and c the number of
+     `clk_sys` cycles per color clock, 8. A6 (2.7) checks c in the run.
+   - **The end.** e = s + (2 N K - 1) x r_T / 2, in the middle of level
+     number N x K: N passes of K held levels (p. 139 and p. 145: after
+     AUDxLEN words the data is fetched again from AUDxLC), the last level cut
+     by e. The pages fix no phase between an audio DMA read and the output it
+     feeds (p. 141 gives each channel one DMA slot per line), so the window
+     does not end on a read; and it ends in the middle of a level so that
+     neither that phase nor the small tolerance of c moves it across an
+     output transition.
+   - Take the output samples in [s, e) as the port's raw 15-bit magnitude.
 2. Split them into runs of identical consecutive values, and note each
    run's value and duration. Consecutive runs never share a value, by this
    construction.
-3. Drop the chronological last run, unconditionally: F2's window end (2.4)
-   is the cycle of a DMA *read*, not of an audio-output *transition*, so the
-   run in progress there is only ever partly inside the window. The first run
-   starts on a transition and is complete. A5 (2.7) grades that exactly the
-   expected population of complete held levels remains.
+3. Keep every run, the last one included. It is cut by e, but the value it
+   holds is the value of its level and is graded like the others. A5 (2.7)
+   grades that the number of runs is the programmed N x K.
 4. Unwrap the remaining runs' raw values into a continuous sequence: for
    each step from one run's value to the next, add or subtract whole
    multiples of 32768 (the raw magnitude's own domain) so that the step
@@ -391,12 +408,12 @@ in the buffer register will be repeated").
 
 **Tables.** The code sequence C is written as byte codes in output order.
 
-| Table | Words | Code sequence C | K | N |
-|---|---|---|---|---|
-| T1 | $0010, $2030, $4050, $6070 | C_up = 00 10 20 30 40 50 60 70 (upper byte first) | 8 | 8 |
-| T2 | $0000, $0101, $7F7F, $8080 | C2 = 00 01 7F 80 (equal bytes merge; s = 0, 1, 127, -128) | 4 | 8 |
-| T3 | 256 words; word k = b_k * $0101 with b_k = (k + $80) mod $100, i.e. $8080, $8181, ..., $FFFF, $0000, ..., $7F7F | C3 = 80 81 ... FF 00 ... 7F (s = -128 ... 127) | 256 | 2 |
-| T2S | $8001, $7F00 (distinct bytes: word 1 upper=$80 lower=$01, word 2 upper=$7F lower=$00) | C_sign = 80 01 7F 00 (upper byte first; s = -128, 1, 127, 0) | 4 | 8 |
+| Table | Words | Code sequence C | K | N | u (bytes per level) |
+|---|---|---|---|---|---|
+| T1 | $0010, $2030, $4050, $6070 | C_up = 00 10 20 30 40 50 60 70 (upper byte first) | 8 | 8 | 1 |
+| T2 | $0000, $0101, $7F7F, $8080 | C2 = 00 01 7F 80 (equal bytes merge; s = 0, 1, 127, -128) | 4 | 8 | 2 |
+| T3 | 256 words; word k = b_k * $0101 with b_k = (k + $80) mod $100, i.e. $8080, $8181, ..., $FFFF, $0000, ..., $7F7F | C3 = 80 81 ... FF 00 ... 7F (s = -128 ... 127) | 256 | 2 | 2 |
+| T2S | $8001, $7F00 (distinct bytes: word 1 upper=$80 lower=$01, word 2 upper=$7F lower=$00) | C_sign = 80 01 7F 00 (upper byte first; s = -128, 1, 127, 0) | 4 | 8 | 1 |
 
 For T1 the lower-first order is C_low = 10 00 30 20 50 40 70 60.
 
@@ -414,28 +431,24 @@ A failing precondition means "not graded", never green.
 
 | Id | Precondition | How the test checks it | Contrasting case (precondition goes red; the program still finishes) |
 |---|---|---|---|
-| A1 | Audio DMA for the table ran, pass after pass, from its first restart on | F2's anchor check holds from t_2 on, with at least N + 2 reads of the table's first word (t_1 ... t_(N+2)). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
+| A1 | Audio DMA for the table ran, pass after pass, from its first restart on, long enough to cover the window | F2's anchor check holds from t_2 on, with at least N + 3 reads of the table's first word (t_1 ... t_(N+3)), and the last of them lies at or after the window's end e (2.5). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0). Graded once per program that reads the output: the audio program (T1, T2, T3) and T2S's own program | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
 | A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
-| A5 | The window's held levels are the complete population its length holds, with nothing unexplained dropped or added | L's length equals the number of complete held levels a window of its measured length holds: with e - s the window's length and r the median held level in it, both in samples, (e - s - 1) div r | A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short of that number, by one per pass |
+| A5 | The window holds the programmed population of held levels, nothing dropped or added | L has exactly N x K entries: N passes of K held levels, the last level kept (p. 139 and p. 145: the table repeats after the programmed word count; p. 140: one period per sample). N and K come from the table (2.6), not from the output | (1) A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short by one per pass. (2) A systematic merge (T1 with every pair of adjacent codes equal: $0000, $2020, $4040, $6060): every level lasts twice as long and there are half as many; L has half of N x K entries, although the median held level doubles with it |
+| A6 | The color-clock time unit holds in the run | F1's anchor (2.4) holds in the run itself: over the interval from the program's first to its last read of an audio table, the refresh groups recur 227-228 color clocks apart, using 8 `clk_sys` cycles per color clock. The window of 2.5 is built with that unit | ECS only: before the table is started, VTOTAL = 524, HTOTAL = 113 and BEAMCON0 = $00A0, F1's contrasting case (2.4). Lines then last 114 color clocks and A6 goes red. The OCS configuration has no such registers, and A6 stays green there |
 
-Why A5 counts from the window's length and not from N x K. The window's end is
-the cycle of a DMA read (2.4), and the pages fix no phase between a read and
-the output transition it feeds: p. 141 gives each audio channel one DMA slot
-per horizontal scan line, so a read may wait up to a line for its slot, and
-t_(2+N) - t_2 differs from N x K x r by a skew the pages leave open. The
-window starts on a transition at s, every held level lasts the same time r
-(one sample period, or two for a table whose words repeat a code, p. 143), so
-the transitions fall at s + j x r and a window ending at e holds
-ceil((e - s) / r) runs, the last cut by e or ending on it. LEVELS step 3
-drops that last run either way, which leaves (e - s - 1) div r complete
-levels. That is N x K - 2, N x K - 1 or N x K as the skew falls, so A5 grades
-the number the window's own length gives, which does not depend on the skew.
-It still fails where a level is missing, merged or added: a held level of
-another length changes the number of runs against the length of the window.
-The test also prints, as a MEASURED line and not graded, how that count and
-N x K - 1 compare when the whole window is shifted across one held level.
+Why A5 counts N x K and builds its window from the programmed period. The
+count a window holds follows from its length and the length of a held level.
+Taking both from the observed output (the span of the DMA reads and the
+median run) leaves the count unable to see anything that changes the output
+uniformly: a systematic merge doubles the observed level and halves both the
+population found and the population expected. Here the level comes from the
+programmed period (2.5, step 1), the window from that level, and the expected
+population from the table's N and K, so the output is compared with the
+programming and not with itself. The window's end is not a DMA read (2.5), so
+the unspecified phase between a read and the output transition it feeds does
+not enter the count, and the last level is graded like the rest.
 
 ---
 
@@ -462,9 +475,20 @@ N x K - 1 compare when the whole window is shifted across one held level.
      loads, and fails if either byte is missing. Outputting only the upper
      bytes, for example, gives 00 20 40 60, which matches neither sequence.
 5. **Preconditions.** A1-A5 for T1.
-6. **Contrasting case.** Replace T1's last word $6070 by $7060. The page
-   predicts output 00 10 20 30 40 50 70 60, which matches neither C_up nor
-   C_low. P1 goes red. A1-A5 still hold.
+6. **Contrasting cases.**
+   - Replace T1's last word $6070 by $7060. The page predicts output 00 10 20
+     30 40 50 70 60, which matches neither C_up nor C_low. P1 goes red.
+     A1-A6 still hold.
+   - A wrong value in the last level of the window only. The program waits a
+     whole number of lines after it starts the DMA, then writes one byte of
+     T1 in memory with the CPU: the byte that the window's last level comes
+     from, at an instant between the DMA's read of that word in the
+     second-to-last pass and its read in the last pass before e. The test
+     measures that byte and instant on a first run of the same program that
+     writes the byte's own value. The page predicts that the last level
+     follows the changed byte, so L differs from C_up and C_low in its last
+     entry alone, and P1 goes red. Every other entry of L, and A1-A6, are
+     unchanged.
 7. **Reference frame.** F2 (pass boundaries at the reads of the table's first
    word, checked as stated there).
 
@@ -584,7 +608,7 @@ N x K - 1 compare when the whole window is shifted across one held level.
      adjacent codes must equal b, exactly (an exact digital relation, 2.5).
    - Quantifier: every one of the 256 codes and every one of the 255 adjacent
      steps, in both passes; A5 (2.7) grades that L holds the complete
-     population (2 x 256 - 1 = 511 entries), nothing dropped.
+     population (2 x 256 = 512 entries), nothing dropped.
    - Note: an unsigned reading of the bytes also matches this fit (rotated by
      128). P4 grades the step size only; the sign reading is P3/P3B.
 5. **Preconditions.** A1-A5 for T3.
