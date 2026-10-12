@@ -53,6 +53,7 @@ MEASURE_BASE    equ     $0C1000
 ; Copper list or bitplane data with NanomigHarness::poke_word/poke_long
 ; before boot(). Each program that expects such a preload only points a
 ; register at the fixed address; it never writes the bytes there itself.
+START_ADDR      equ     $0C0FF0         ; the start word every program stores first (SPECIFICATION.md)
 COP_LIST_ADDR   equ     $020000
 BPL_PLANE1_ADDR equ     $028000
 BPL_PLANE2_ADDR equ     $02D000

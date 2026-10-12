@@ -21,6 +21,8 @@
 ;                       preloaded by the test) and start the Copper
 ;   MUT_NOPOLL         P3-L/P4-L contrast: the INTREQR polling loop is replaced
 ;                       by a fixed delay
+;   MUT_BAD_START      P3/P4 fixture contrast: the start word is $5AFF, not $5A03
+;   MUT_BAD_MARKER     P3-M/P4-M contrast: every marker is stored with bit 8 set
 ;   MUT_LATE_MARKER    P3-b contrast: a delay of about 26 lines (1200 DBRA
 ;                       iterations of 10 processor cycles) between the VERTB
 ;                       detection and the marker store, so the read window lies
@@ -46,6 +48,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
+        ifd     MUT_BAD_START
+        move.w  #$5AFF,START_ADDR      ; start word (contrast: another value)
+        else
+        move.w  #$5A03,START_ADDR      ; start word
+        endc
 
         ifd     MUT_COPPER_BPLCON0
         move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
@@ -110,7 +117,13 @@ start:
 .late:  dbra    d1,.late
         endc
 
+        ifd     MUT_BAD_MARKER
+        move.w  d6,d1
+        or.w    #$0100,d1
+        move.w  d1,(a1)+               ; marker with bit 8 set (contrast)
+        else
         move.w  d6,(a1)+               ; marker: the iteration index
+        endc
         move.w  #BURSTLEN-1,d5
 .burst: move.l  VPOSR(a0),(a1)+        ; long read of VPOSR,VHPOSR (p.216)
         dbra    d5,.burst

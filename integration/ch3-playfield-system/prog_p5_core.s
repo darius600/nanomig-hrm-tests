@@ -4,7 +4,8 @@
 ; by the test at BPL_PLANE1_ADDR / COP_LIST_ADDR -- the overlay blocks a
 ; CPU write below $80000 (nanomig_harness.h's address-space notes).
 ;
-; Flags: NTSC_MODE (BEAMCON0 carries the NTSC value); N_V2 (VBSTRT/VBSTOP
+; Flags: MUT_BAD_START (fixture contrast: another start word), MUT_BAD_MARKER (every marker
+; stored with bit 8 set); NTSC_MODE (BEAMCON0 carries the NTSC value); N_V2 (VBSTRT/VBSTOP
 ; use N=$B0 instead of $A0, and the poll threshold below follows). No page gives
 ; the bit layout of VBSTRT and VBSTOP, so the line is written in the low bits and
 ; in the high byte alike: VBSTRT = N*$101, VBSTOP = (N+8)*$101.
@@ -33,6 +34,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
+        ifd     MUT_BAD_START
+        move.w  #$5AFF,START_ADDR      ; start word (contrast: another value)
+        else
+        move.w  #$5A05,START_ADDR      ; start word
+        endc
 
         move.w  #$0359,COLOR00(a0)
         move.w  #$0EA2,COLOR01(a0)
@@ -91,7 +97,13 @@ start:
         cmp.w   #N_VAL-3,d1
         blt.s   .pollh
 
+        ifd     MUT_BAD_MARKER
+        move.w  d6,d1
+        or.w    #$0100,d1
+        move.w  d1,(a1)+               ; marker with bit 8 set (contrast)
+        else
         move.w  d6,(a1)+               ; marker: the iteration index
+        endc
         move.w  #200-1,d5
 .burst: move.l  VPOSR(a0),(a1)+        ; long read of VPOSR,VHPOSR (p.216)
         dbra    d5,.burst

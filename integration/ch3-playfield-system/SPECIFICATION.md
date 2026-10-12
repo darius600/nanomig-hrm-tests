@@ -951,7 +951,10 @@ every expected component was graded and passed (P1: 16, P2: 4, P3: 8, the L0 lin
 `P3-LIVE` and `P3-MAIN` in each of the four system configurations, P4: 4, P5: 4), and is
 otherwise not graded; a not graded aggregate prints a RECORDED line that names its ids.
 A line whose precondition failed prints `RECORDED ... NOT GRADED`, never PASS or FAIL.
-The fixture gates every line that reads its run: when it fails, every precondition and
+The fixture of a run requires the program loaded, reset released and the start word
+stored with its value; the fixtures of P3, P4 and P5 also require the DONE write (P1 and
+P2 programs end in an idle loop and write none). The fixture gates every line that reads
+its run: when it fails, every precondition and
 component line of that run prints NOT GRADED, including the lines that read the
 program image or the Copper-fetch log (an empty image or an empty log never passes).
 The preconditions each line waits for:
@@ -961,14 +964,17 @@ The preconditions each line waits for:
 | `P1-MAIN` | `P1-a`, `P1-b`, `P1-c`, `P1-d`, `P1-e` |
 | `P2-I1`, `P2-I3` | `CAL-VIDEO`, `P2-a` |
 | `P2-I2` | `CAL-VIDEO`, `P2-a`, `P2-b` |
-| `P3-a`, `P3-L`, `P3-d` | the fixture |
-| `P3-b`, `P3-c` | the fixture, `P3-L` |
-| `P3-LIVE` | the fixture, `P3-a` |
-| `P3-MAIN` | the fixture, `P3-a`, `P3-L`, `P3-b`, `P3-c`, `P3-d` |
-| `P4-a`, `P4-L`, `P4-B-PROGRAM`, `P4-B-COPPER` | the fixture |
-| `P4-c` | the fixture, `P4-L` |
-| `P4-MAIN` | the fixture, `P4-a`, `P4-L`, `P4-c`, `P4-B-PROGRAM`, `P4-B-COPPER`, and `P3-MAIN` passed in the same system configuration |
-| `P5-MAIN` | `CAL-VIDEO`, `P5-a`, `P5-b`, `P5-c` |
+| `P3-M`, `P3-L`, `P3-d` | the fixture |
+| `P3-a` | the fixture, `P3-M` |
+| `P3-b`, `P3-c` | the fixture, `P3-M`, `P3-L` |
+| `P3-LIVE` | the fixture, `P3-M`, `P3-a` |
+| `P3-MAIN` | the fixture, `P3-M`, `P3-a`, `P3-L`, `P3-b`, `P3-c`, `P3-d` |
+| `P4-M`, `P4-L`, `P4-B-PROGRAM`, `P4-B-COPPER` | the fixture |
+| `P4-a` | the fixture, `P4-M` |
+| `P4-c` | the fixture, `P4-M`, `P4-L` |
+| `P4-MAIN` | the fixture, `P4-M`, `P4-a`, `P4-L`, `P4-c`, `P4-B-PROGRAM`, `P4-B-COPPER`, and `P3-MAIN` passed in the same system configuration |
+| `P5-b`, `P5-c` | the fixture, `P5-M` |
+| `P5-MAIN` | `P5-M`, `CAL-VIDEO`, `P5-a`, `P5-b`, `P5-c` |
 
 `P2-I1` is `P2`'s item 1 (at least three complete blocks, every one of exactly H beam
 lines), `P2-I2` its item 2 (every pixel of every data line), `P2-I3` its item 3 (the two
@@ -1004,7 +1010,11 @@ Two claims are declined and printed as RECORDED lines that name their ids:
   register does not reach the port, the loop's own fetches do) and require at least
   100 iterations in each run; `P3-b`, `P3-c` and `P4-c` wait for them. The periods they
   measure are 136 clk_sys cycles on fx68k and 120 on TG68K. A
-  detection of vsync (P1-e, P2-a, P5-c) has no loop and uses the tolerance of one line.
+  detection of vsync (P1-e, P2-a, and the vsync part of P5-c) has no loop and uses the
+  tolerance of one line. The marker part of P5-c uses one line plus the longer of the
+  periods of the program's two polling loops, the `INTREQR` loop and the `VHPOSR` loop,
+  measured from their instruction fetches (the `VHPOSR` loop: 224 clk_sys cycles on fx68k and
+  176 on TG68K).
   The package holds no tuned margin.
 - A read lies inside a window when the two stores that bound it, the one before it and
   the one after it, both lie inside it (Common definitions). A read is placed by the
@@ -1038,9 +1048,10 @@ frozen latch.
 ### Contrasts that differ from the text of section 6
 
 Every mutation record in the test header names its kind: `stimulus` changes what the
-design is asked (a program, a Copper list, memory contents), `oracle` changes an interval
-or a value the comparator is fed, `implementation` runs a private copy of the chipset,
-`none` is an assertion no stimulus can break. A selector that moves more than its own
+design is asked (a program, a Copper list, memory contents), `implementation` runs a
+private copy of the chipset, `none` is an assertion no hardware input can break. The
+code that an `NMH_MUTATE` selector reaches chooses a program, a Copper list or memory
+contents; none of it touches a comparator, an expected value or an interval. A selector that moves more than its own
 line says so in its record; where a line waits for the one a selector breaks, it prints
 NOT GRADED.
 
@@ -1050,24 +1061,28 @@ NOT GRADED.
   half still shows the original colours, so `P1-d` holds, the BPLCON0 words are
   unchanged, so `P1-b` holds, and `P1-MAIN` is graded and prints FAIL. Replacing the
   change of bit 9 would have made `P1-b` fail and left `P1-MAIN` not graded.
-- **P1-a, P1-e.** The dedicated contrasts `P1A` (a genuine PAL run's sync samples
-  against a genuine NTSC run's) and `P1E` (a genuine PAL run's field length graded
-  against NTSC's values, in both runs) print their own fixture line first and grade only
-  when it passes. `P1E` changes the values the comparator is fed, so its record is an
-  `oracle` record. The stimulus route for P1-e is `P1ESTD`: the program of configuration
+- **P1-a, P1-e.** The dedicated contrast `P1A` (a genuine PAL run's sync samples
+  against a genuine NTSC run's) prints its own fixture line first and grades only
+  when it passes. The contrast for P1-e is `P1ESTD`: the program of configuration
   B at S1 writes BEAMCON0 with bit 5 opposite the configured standard, so the field length
   is the other standard's; P1-c B prints FAIL too.
-- **P1-c.** `P1C` turns bitplane DMA off in B, C and E and gives A a one-plane Copper
-  list; the one-plane list carries other BPLCON0 words, so P1-b A prints FAIL too, and
-  without bitplane data P1-d prints FAIL in B, C and E.
+- **P1-c.** `P1C` lowers DDFSTOP by 8 colour clocks in B, C and E with bitplane DMA on,
+  so each DMA field still reads part of the buffers (4864 of 5120 words in B and E,
+  38912 of 40960 in C), and gives A a one-plane Copper list; the one-plane list carries
+  other BPLCON0 words, so P1-b A prints FAIL too. P1-d holds in B, C and E.
 - **P2 contrasts.** `P2B` (BPL1MOD = $0002) turns P2-b and P2-I1 red and leaves P2-I2 not
   graded; `P2ITEM1` (VSTOP one line lower) turns P2-I1 and P2-b red (the buffer is read
   for H-1 lines) and leaves P2-I2 not graded, P2-I3 holds; `P2EDGE` (window 32 pixels
   wider) turns P2-I3 and P2-b red and leaves P2-I2 not graded; `P2A` turns P2-a red and
   leaves P2-I1, P2-I2 and P2-I3 not graded.
-- **P3-b.** `P3B` moves the window end of the comparator and is an `oracle` record;
-  `P3BLATE`, the L0 program storing its marker about 26 lines after the VERTB detection,
-  is its stimulus route to reads with V above 19.
+- **P3-b.** `P3BLATE`, the L0 program storing its marker about 26 lines after the VERTB
+  detection, is the contrast that gives reads with V above 19.
+- **Fixtures and block shapes.** `P1FIX`, `P2FIX`, `P3FIX`, `P4FIX` and `P5FIX` run a
+  program that stores another start word and is otherwise the program of the line: the
+  run completes, every population is as in the plain run, the fixture line prints FAIL
+  and the lines that read the run print NOT GRADED. `P3MARK`, `P4MARK` and `P5MARK` run a
+  program that stores every marker with bit 8 set: the fixture holds, the block-shape line
+  prints FAIL and the lines that read the blocks print NOT GRADED.
 - **P3-LIVE.** The contrast `P3LIVE` runs on the private chipset: the L1 program stands in
   for the L0 program, the L0 windows hold one frozen value and criterion (i) fails; the
   frozen value has V above 19, so P3-b prints FAIL too and P3-MAIN is not graded.
@@ -1079,13 +1094,11 @@ NOT GRADED.
 - **P2 item 3.** Section 6 has no contrast for the border samples; the contrast widens
   the display window by 32 pixels and fetches one more word per line, so the sample
   after the 320th pixel shows data.
-- **CAL-VIDEO.** `CALVID` grades the S1 run's line counts against NTSC's and is an
-  `oracle` record; its stimulus route is `P5C`, the P5 program that writes BEAMCON0 with
-  bit 5 opposite the configured standard (CAL-VIDEO V1 S1 and P5-c V1 S1 print FAIL).
-- **CAL-CC.** No stimulus in the design's input space makes the 7 MHz clock enable
-  irregular: the line is unfalsifiable at this boundary. `CALCC` reads the port on an
-  irregular subset of the cycles, which shows the comparator is live and asks the design
-  nothing different.
+- **CAL-VIDEO.** Its contrast is `P5C`, the P5 program that writes BEAMCON0 with bit 5
+  opposite the configured standard (CAL-VIDEO V1 S1 and P5-c V1 S1 print FAIL).
+- **CAL-CC.** The 7 MHz clock enable at the port comes from the clock generator, and no
+  register write or program changes its period; the line measures that period before any
+  program runs, so it has no mutation (a `none` record).
 
 ### Controls on a chipset that follows the pages
 
@@ -1099,11 +1112,11 @@ the latch holds until the start of line 20, and BEAMCON0 bit 13 makes a read ign
 position wraps. (3) With BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical
 blanking (pp.293, 304, 305); the register holds the low 11 bits of the value written, so
 $A0A0 and $B0B0 name the lines $A0 and $B0 there. A run of P3, P4 and P5 on that copy
-(`NMH_ONLY=P3P4P5`) prints 84 passed, 0 failed on both cores: every line of the three propositions
+(`NMH_ONLY=P3P4P5`) prints 96 passed, 0 failed on both cores: every line of the three propositions
 passes, and the stimulus contrasts `P3MAIN` (the L0 program stands in for L1), `P3LIVE`,
-`P3B`, `P3BLATE` and `P5MAIN` (no VARVBEN) print FAIL through the unchanged comparators.
+`P3BLATE` and `P5MAIN` (no VARVBEN) print FAIL through the unchanged comparators.
 A second private copy, in which the latch is enabled after reset, runs P3 and P4
-(`NMH_ONLY=P3P4`) and prints 54 passed, 5 failed on both cores: every fixture and precondition
+(`NMH_ONLY=P3P4`) and prints 62 passed, 5 failed on both cores: every fixture and precondition
 passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print FAIL.
 
 ### Measured, per core
@@ -1113,6 +1126,7 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | CAL-CC | p24 | PASS (1/1) | PASS (1/1) |
 | CAL-VIDEO (P2 and P5 runs) | p23, p24, p239 | PASS (8/8) | PASS (8/8) |
 | P3 fixture | (spec) | PASS (4/4) | PASS (4/4) |
+| P3-M (the blocks are the program's own) | (spec) | PASS (4/4) | PASS (4/4) |
 | P3-a (>=100 reads/window, spread) | (spec) | PASS (4/4) | PASS (4/4) |
 | P3-L (polling loop measured) | (spec) | PASS (4/4) | PASS (4/4) |
 | P3-b (L0: V in 1-19; field length) | p23, p24, p239 | PASS (4/4) | PASS (4/4) |
@@ -1122,6 +1136,7 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | P3-MAIN (LPEN=1: every counted read in a window is the same 17-bit value) | p271, p89, p229, p239 | FAIL (4/4) | FAIL (4/4) |
 | P3 aggregate (8 components) | p271, p89, p229, p239 | FAIL (1/1) | FAIL (1/1) |
 | P4 fixture | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-M (the blocks are the program's own) | (spec) | PASS (4/4) | PASS (4/4) |
 | P4-a (>=100 reads/window, spread) | (spec) | PASS (4/4) | PASS (4/4) |
 | P4-L (polling loop measured) | (spec) | PASS (4/4) | PASS (4/4) |
 | P4-c (field length), S1, S2 | (spec) | PASS (2/2) | PASS (2/2) |
@@ -1145,14 +1160,15 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | P2-I3 (border samples show C0) | p46, p55 | PASS (4/4) | PASS (4/4) |
 | P2 aggregate | p63 | PASS (1/1) | PASS (1/1) |
 | P5 fixture, V1 V2 x S1 S2 | (spec) | PASS (4/4) | PASS (4/4) |
+| P5-M (the blocks are the program's own) | (spec) | PASS (4/4) | PASS (4/4) |
 | P5-a (data in lines N-10 to N-2) | p79 | PASS (4/4) | PASS (4/4) |
 | P5-b (anchor: V = N-1 / N+1) | p22 | PASS (4/4) | PASS (4/4) |
-| P5-c (field length) | p24 | PASS (4/4) | PASS (4/4) |
+| P5-c (field length of the detection markers and of the vsync assertions) | p24 | PASS (4/4) | PASS (4/4) |
 | P5-d (harness configured ECS; a host setting) | p298 | RECORDED (4/4) | RECORDED (4/4) |
 | P5-MAIN (VBSTRT sets the blanking line) | p293, p304, p305, p79 | FAIL (4/4) | FAIL (4/4) |
 | P5 aggregate | p293, p304, p305, p79 | FAIL (1/1) | FAIL (1/1) |
 
-fx68k: 211 passed, 10 failed. TG68K: 211 passed, 10 failed.
+fx68k: 223 passed, 10 failed. TG68K: 223 passed, 10 failed.
 
 `P4-MAIN` and the P4 aggregate are NOT GRADED on the repository's chipset because `P3-MAIN`
 does not pass there; they are graded on the private chipsets (below). The RECORDED lines
@@ -1167,18 +1183,15 @@ verified to print FAIL through the clause it targets, on both cores; where a rec
 test header names further lines that move with it (a line that waits for the targeted one
 prints NOT GRADED, a line the stimulus also changes prints FAIL), the run showed them on
 both cores too. Selectors marked `private` run on the private chipset of the previous
-section, where the lines they target are live; `P3B` and `P3BLATE` are run on both chipsets.
+section, where the lines they target are live; `P3BLATE` is run on both chipsets.
 
 | `NMH_MUTATE` | Chipset | Targets | fx68k | TG68K |
 |---|---|---|---|---|
-| `CALCC` | repository | CAL-CC | FAIL | FAIL |
-| `CALVID` | repository | CAL-VIDEO | FAIL | FAIL |
 | `P1FIX` | repository | P1 | FAIL | FAIL |
 | `P1A` | repository | P1-a | FAIL | FAIL |
 | `P1B` | repository | P1-b | FAIL | FAIL |
 | `P1C` | repository | P1-c | FAIL | FAIL |
 | `P1D` | repository | P1-d | FAIL | FAIL |
-| `P1E` | repository | P1-e | FAIL | FAIL |
 | `P1ESTD` | repository | P1-e | FAIL | FAIL |
 | `P1MAIN` | repository | P1-MAIN, opus:3-a1000.c04 | FAIL | FAIL |
 | `P2FIX` | repository | P2 | FAIL | FAIL |
@@ -1188,27 +1201,28 @@ section, where the lines they target are live; `P3B` and `P3BLATE` are run on bo
 | `P2FLIP` | repository | P2-I2, opus:3-a1000.c05 | FAIL | FAIL |
 | `P2EDGE` | repository | P2-I3 | FAIL | FAIL |
 | `P3FIX` | repository | P3 | FAIL | FAIL |
+| `P3MARK` | repository | P3-M | FAIL | FAIL |
 | `P3A` | repository | P3-a | FAIL | FAIL |
 | `P3L` | repository | P3-L | FAIL | FAIL |
-| `P3B` | repository | P3-b | FAIL | FAIL |
 | `P3BLATE` | repository | P3-b | FAIL | FAIL |
 | `P3C_LPENDIS` | repository | P3-c | FAIL | FAIL |
 | `P3C_WRONGSTD` | repository | P3-c | FAIL | FAIL |
 | `P3D` | repository | P3-d | FAIL | FAIL |
 | `P3MAIN` | private | P3-MAIN, opus:A-bpc.b03.c0 | FAIL | FAIL |
 | `P3LIVE` | private | P3-LIVE, opus:A-bpc.b03.c0 | FAIL | FAIL |
-| `P3B` | private | P3-b | FAIL | FAIL |
 | `P3BLATE` | private | P3-b | FAIL | FAIL |
 | `P4FIX` | repository | P4 | FAIL | FAIL |
+| `P4MARK` | repository | P4-M | FAIL | FAIL |
 | `P4A` | repository | P4-a | FAIL | FAIL |
 | `P4L` | repository | P4-L | FAIL | FAIL |
 | `P4C` | repository | P4-c | FAIL | FAIL |
 | `P4B_PROG` | repository | P4-B-PROGRAM | FAIL | FAIL |
 | `P4B_COP` | repository | P4-B-COPPER | FAIL | FAIL |
 | `P5FIX` | repository | P5 | FAIL | FAIL |
+| `P5MARK` | repository | P5-M | FAIL | FAIL |
 | `P5A` | repository | P5-a | FAIL | FAIL |
 | `P5B` | repository | P5-b | FAIL | FAIL |
 | `P5C` | repository | P5-c | FAIL | FAIL |
 | `P5MAIN` | private | P5-MAIN, opus:B-vbstrt.addr | FAIL | FAIL |
-| private chipset, plain run (`NMH_ONLY=P3P4P5`) | private | every line of P3, P4, P5 | 84 passed, 0 failed | 84 passed, 0 failed |
-| second private chipset, LPEN 1 after reset (plain run, `NMH_ONLY=P3P4`) | private | P4-MAIN, opus:A-leg.lpen2 | FAIL, every precondition holds (54 passed, 5 failed) | FAIL, every precondition holds (54 passed, 5 failed) |
+| private chipset, plain run (`NMH_ONLY=P3P4P5`) | private | every line of P3, P4, P5 | 96 passed, 0 failed | 96 passed, 0 failed |
+| second private chipset, LPEN 1 after reset (plain run, `NMH_ONLY=P3P4`) | private | P4-MAIN, opus:A-leg.lpen2 | FAIL, every precondition holds (62 passed, 5 failed) | FAIL, every precondition holds (62 passed, 5 failed) |

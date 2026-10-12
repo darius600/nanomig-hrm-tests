@@ -14,7 +14,8 @@
 ;   PALETTE16    COLOR00..COLOR15 = the 16-colour palette (config C);
 ;                otherwise only COLOR00=C0, COLOR01=C1 (configs A, B, E)
 ;   MUT_MOD2     P2-b contrast: BPL1MOD = $0002 instead of $0000
-;   MUT_NOBPLEN  P1-c contrast: DMACON without BPLEN
+;   MUT_NARROW_DDF P1-c contrast: DDFSTOP 8 colour clocks lower, bitplane DMA on
+;   MUT_BAD_START P1/P2 fixture contrast: the start word is $5AFF, not $5A01
 ;   MUT_WRONGSTD P1-e contrast: BEAMCON0 bit 5 opposite the configured standard
 ;   MUT_VSTOPLOW P2 item-1 contrast: DIWSTOP's VSTOP one line lower
 ;   MUT_RIGHTEDGE P2 item-3 contrast: window 32 pixels wider, 21 words per
@@ -33,6 +34,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
+        ifd     MUT_BAD_START
+        move.w  #$5AFF,START_ADDR      ; start word (contrast: another value)
+        else
+        move.w  #$5A01,START_ADDR      ; start word
+        endc
 
         move.w  #$0359,COLOR00(a0)
         move.w  #$0EA2,COLOR01(a0)
@@ -80,13 +86,21 @@ start:
 
         ifd     HIRES_MODE
         move.w  #$003C,DDFSTRT(a0)
+        ifd     MUT_NARROW_DDF
+        move.w  #$00CC,DDFSTOP(a0)     ; P1-c contrast: 8 colour clocks lower
+        else
         move.w  #$00D4,DDFSTOP(a0)
+        endc
         else
         move.w  #$0038,DDFSTRT(a0)
         ifd     MUT_RIGHTEDGE
         move.w  #$00D8,DDFSTOP(a0)
         else
+        ifd     MUT_NARROW_DDF
+        move.w  #$00C8,DDFSTOP(a0)     ; P1-c contrast: 8 colour clocks lower
+        else
         move.w  #$00D0,DDFSTOP(a0)
+        endc
         endc
         endc
 
@@ -111,10 +125,6 @@ start:
 
         move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
-        ifd     MUT_NOBPLEN
-        move.w  #$8280,DMACON(a0)      ; P1-c contrast: BPLEN not set
-        else
         move.w  #$8380,DMACON(a0)      ; SET/CLR, DMAEN, BPLEN, COPEN (p.278)
-        endc
 
 .idle:  bra.s   .idle
