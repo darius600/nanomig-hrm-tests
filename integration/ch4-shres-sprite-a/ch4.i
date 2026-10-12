@@ -56,8 +56,13 @@ NULL4_DATA      equ     $002808         ; sprite 4's own
 NULL5_DATA      equ     $00280C         ; sprite 5's own
 NULL6_DATA      equ     $002810         ; sprite 6's own
 NULL7_DATA      equ     $002814         ; sprite 7's own
+SPR2_DATA       equ     $002C00         ; C3 only: a non-null structure for sprite 2, laid out as sprite 0's
 BPL_BUF         equ     $010000         ; 32768 words, each $FF00 (64 KB)
 COP_LIST        equ     $020000         ; the Copper list of section 3.4
+
+; C17's mark word, stored by the program before the test changes the sprite data:
+MARK_ADDR       equ     $0C0FFC
+MARK_VALUE      equ     $17C1
 
 ; the two-word result area of section 3.2 ("Result area: two words"):
 ; RESULTS+0 holds the DENISEID readback (recorded, not graded, step 9);

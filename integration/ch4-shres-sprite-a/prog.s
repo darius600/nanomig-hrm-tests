@@ -10,14 +10,17 @@
 ;   (no symbol) -- the normal run
 ;   MUT_C1      -- P1's precondition contrast: BPLCON0 = $9000 (HIRES,
 ;                  SHRES=0) instead of $1040
-;   MUT_C3      -- PC3's contrast: SPR2PTH points at NULL3_DATA, sprite 3's own
-;                  null structure, instead of NULL2_DATA (Copper list
+;   MUT_C3      -- PC3's contrast: SPR2PTH points at SPR2_DATA, a non-null
+;                  structure for sprite 2, instead of NULL2_DATA (Copper list
 ;                  likewise, when NMH_MUTATE=C3)
 ;   MUT_C6      -- PC6's contrast: three frame waits after step 7 instead
 ;                  of four, so fewer than two graded frames occur while the
 ;                  measured frame population stays nonempty
 ;   MUT_C12     -- the fixture check's own contrast: $DEAD stored instead
 ;                  of $BEEF
+;   MUT_C17     -- R5's cross-frame contrast: after the second frame wait the
+;                  program stores a mark word (MARK_ADDR); the test then changes
+;                  the sprite data words
 ;   MUT_NODONE  -- the DONE line's own contrast: the program stops in an
 ;                  endless loop right before its DONE store
 ;
@@ -61,7 +64,7 @@ start:
         move.l  #SPR0_DATA,SPR0PTH(a0)
         move.l  #SPR1_DATA,SPR1PTH(a0)
         ifd     MUT_C3
-        move.l  #NULL3_DATA,SPR2PTH(a0) ; PC3 contrast: sprite 2 -> sprite 3's own null structure
+        move.l  #SPR2_DATA,SPR2PTH(a0)  ; PC3 contrast: sprite 2 -> a real, non-null structure
         else
         move.l  #NULL2_DATA,SPR2PTH(a0)
         endif
@@ -91,6 +94,12 @@ start:
 .frames:
         bsr     wait_v_ge_100
         bsr     wait_v_lt_020
+        ifd     MUT_C17
+        cmp.w   #2,d7
+        bne.s   .nomark
+        move.w  #MARK_VALUE,MARK_ADDR
+.nomark:
+        endif
         dbra    d7,.frames
 
 finish:

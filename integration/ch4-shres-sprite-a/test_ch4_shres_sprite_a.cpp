@@ -14,7 +14,7 @@
 //
 // MUTATION PC1 stimulus red NMH_MUTATE=C1: BPLCON0=$9000 (HIRES, SHRES=0) instead of $1040 -- the pattern spacing becomes 16 visible pixels instead of 8 -> FAIL PC1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC2 stimulus red NMH_MUTATE=C2: sprite 1's own terminator word (p.108: both terminator words should be $0000) is poked to $BAD1 instead -- the terminator lies beyond CTL's VSTOP, so it is never displayed, and sprite 1's population (294 logical reads per graded frame) stays fully fetched -> FAIL PC2; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
-// MUTATION PC3 stimulus red NMH_MUTATE=C3: SPR2PTH (step 5 and the Copper list) points at sprite 3's own null structure ($2804) instead of sprite 2's -- per graded frame null2 is read 0 times of 2 and null3 4 times, while sprite 0's and sprite 1's structures stay at 294 reads (PC2 stays green) -> FAIL PC3; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC3 stimulus red NMH_MUTATE=C3: SPR2PTH (step 5 and the Copper list) points at a separately addressed, non-null structure for sprite 2 ($2C00, sprite 0's own POS, CTL and pairs) instead of sprite 2's null structure -- sprite 2 is no longer idle and the structure is hidden under sprite 0: null2 is read 0 times of 2, the new structure 294 times, sprite 0's and sprite 1's structures stay at 294 reads (PC2 stays green), R5 and PC4 stay green -> FAIL PC3; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC4 stimulus red NMH_MUTATE=C4: band 2's WAIT changed from $8B41 to $9141 (the fifth colour-17 line of band 2) -> FAIL PC4; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC5 stimulus red NMH_MUTATE=C5: the COLOR00-COLOR15 <- B4 MOVEs after WAIT $C541 are left out -> FAIL PC5; NOT GRADED P1; fx68k 15 passed, 1 failed, 1 lines not graded; TG68K 15 passed, 1 failed, 1 lines not graded
 // MUTATION PC6 stimulus red NMH_MUTATE=C6: three frame waits after step 7 instead of four -- 4 Copper restarts, 1 graded frame, and the lines that grade each frame still read PASS on it -> FAIL PC6; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
@@ -22,9 +22,10 @@
 // MUTATION R1 stimulus red NMH_MUTATE=R1: band 1's COLOR16-COLOR31 swap G and H in the anchor capture's Copper list only (C9's data) -- group 3 of the anchor capture stops matching the section 3.5 U values; the run's own capture is untouched -> FAIL R1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R1 stimulus red NMH_MUTATE=R1S: the anchor capture runs prog.bin (SuperHires) instead of prog_c1.bin -- its pattern-line spacing measures 8 instead of 16; the run's own capture is untouched -> FAIL R1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C7: the colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's runs narrow to 8 visible pixels while every other group's stay equal, so the equal-length clause goes red; p.101 permits the shape change, so this is not a P2 contrast -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
-// MUTATION R5 stimulus red NMH_MUTATE=C14: POS and CTL of both sprites are $0000 -- neither sprite starts and no group appears (the group-count clause), PC2 and PC4 lose their fetches too -> FAIL PC2 PC4 R5; NOT GRADED PC5 P1 P2 P3 P4; fx68k 9 passed, 3 failed, 5 lines not graded; TG68K 9 passed, 3 failed, 5 lines not graded
-// MUTATION R5 stimulus red NMH_MUTATE=C15: POS and CTL of sprite 1 only are $0000 -- one run per group line (the run-count clause), and PC2 loses sprite 1's fetches -> FAIL PC2 R5; NOT GRADED P1 P2 P3 P4; fx68k 11 passed, 2 failed, 4 lines not graded; TG68K 11 passed, 2 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C14: the colour-18 lines of band 0 ($5C-$63) of both sprites get both data words $0000 -- one group disappears (14 groups), both 294-word structures stay fully fetched and every Copper marker line is untouched -> FAIL R5; NOT GRADED PC5 P1 P2 P3 P4; fx68k 11 passed, 1 failed, 5 lines not graded; TG68K 11 passed, 1 failed, 5 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C15: every data word of sprite 1 is $0000 (POS and CTL stay) -- sprite 1's 294-word structure stays fully fetched and shows nothing, so every group line has one run (the run-count clause) -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C16: every sprite data word keeps only its bit 0 -- every run is one sample wide, all runs stay equal and every line has two, so only the interior-pixel clause goes red -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C17: after the second frame wait the program stores a mark word and the test changes every data word of both sprites to its upper byte -- the first graded frame has 16-sample runs, the second 8-sample runs, each frame uniform, so only the cross-frame equal-length clause goes red; PC2, PC3 and PC4 take the data prepared for the frame they grade -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION P1 stimulus red NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 and R5 stay green: neither depends on COLOR16-COLOR31 or on colour content) -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
 // MUTATION P2 stimulus red NMH_MUTATE=C8: group 12 (band 4, colour 17) belongs to P2's own group set (0,3,6,9,12), so C8 prints red here too -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
 // MUTATION P3 stimulus red NMH_MUTATE=C8: group 13 (band 4, colour 18) belongs to P3's own group set (1,4,7,10,13), so C8 prints red here too -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
@@ -108,6 +109,11 @@ constexpr uint16_t kDoneValue = 0x600D;
 
 constexpr uint32_t kSpr0Data = 0x002000;
 constexpr uint32_t kSpr1Data = 0x002400;
+// C3 only: a non-null structure for sprite 2 (SPECIFICATION.md 3.2)
+constexpr uint32_t kSpr2Data = 0x002C00;
+// C17 only: the program's mark word before the test changes the sprite data
+constexpr uint32_t kMarkAddr  = 0x0C0FFC;
+constexpr uint16_t kMarkValue = 0x17C1;
 // sprites 2-7's own safe null structures (ch4.i, restated): each
 // independently identifiable, so PC3 can require every one of the six to
 // be read on its own address (p.114).
@@ -188,36 +194,47 @@ std::pair<uint16_t,uint16_t> line_pattern(int off) {
     /* 21..28 */                  return {0xFFFF,0xFFFF}; // colour 19
 }
 
+using Pairs = std::vector<std::pair<uint16_t,uint16_t>>;
+
 // C7: band 0's colour-17 lines (global pair index 3..10) get low=$FF00 /
 // high=$0000 instead of $FFFF/$0000 (SPECIFICATION.md 3.8, C7).
+// C14: band 0's colour-18 lines (global pair index 12..19) are transparent.
 // C16: every data word keeps only its bit 0, so every run is one sample wide.
-std::vector<std::pair<uint16_t,uint16_t>> expected_pairs(int mut_c7_c16) {
-    std::vector<std::pair<uint16_t,uint16_t>> pairs;
+Pairs expected_pairs(int mode) {
+    Pairs pairs;
     pairs.reserve(145);
     for (int b = 0; b < 5; ++b)
         for (int off = 0; off < 29; ++off) {
             int idx = b*29+off;
-            if (mut_c7_c16 == 7 && idx >= 3 && idx <= 10) pairs.push_back({0xFF00,0x0000});
+            if (mode == 7 && idx >= 3 && idx <= 10) pairs.push_back({0xFF00,0x0000});
+            else if (mode == 14 && idx >= 12 && idx <= 19) pairs.push_back({0x0000,0x0000});
             else {
                 auto p = line_pattern(off);
-                if (mut_c7_c16 == 16) { p.first &= 0x0001; p.second &= 0x0001; }
+                if (mode == 16) { p.first &= 0x0001; p.second &= 0x0001; }
                 pairs.push_back(p);
             }
         }
     return pairs;
 }
 
+// C17's later data: every data word keeps only its upper byte.
+Pairs upper_byte_pairs(const Pairs& in) {
+    Pairs out;
+    for (auto& p : in) out.push_back({(uint16_t)(p.first & 0xFF00), (uint16_t)(p.second & 0xFF00)});
+    return out;
+}
+
 // ---- mutation ids ----------------------------------------------------------
 
 // C1-C16 and R1/R1S are the stimulus selectors of the header records; NODONE
 // and NOPROG are the program-level ones.
-enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16, R1,R1S, NODONE, NOPROG };
+enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17, R1,R1S, NODONE, NOPROG };
 
 std::optional<Mut> parse_mut(const std::string& s) {
     static const std::map<std::string,Mut> m = {
         {"",Mut::NONE},{"C1",Mut::C1},{"C2",Mut::C2},{"C3",Mut::C3},{"C4",Mut::C4},{"C5",Mut::C5},
         {"C6",Mut::C6},{"C7",Mut::C7},{"C8",Mut::C8},{"C9",Mut::C9},{"C10",Mut::C10},{"C11",Mut::C11},
-        {"C12",Mut::C12},{"C13",Mut::C13},{"C14",Mut::C14},{"C15",Mut::C15},{"C16",Mut::C16},
+        {"C12",Mut::C12},{"C13",Mut::C13},{"C14",Mut::C14},{"C15",Mut::C15},{"C16",Mut::C16},{"C17",Mut::C17},
         {"R1",Mut::R1},{"R1S",Mut::R1S},{"NODONE",Mut::NODONE},{"NOPROG",Mut::NOPROG},
     };
     auto it = m.find(s);
@@ -231,6 +248,7 @@ std::string prog_name_for(Mut m) {
         case Mut::C3:     return "prog_c3";
         case Mut::C6:     return "prog_c6";
         case Mut::C12:    return "prog_c12";
+        case Mut::C17:    return "prog_c17";
         case Mut::NODONE: return "prog_nodone";
         case Mut::NOPROG: return "prog_missing"; // no such image exists
         default:          return "prog"; // data-only contrasts and the anchor selectors
@@ -256,7 +274,7 @@ CopperBuild build_copper(Mut mut) {
     pushl(0x0E0, kBplBuf);                                   // BPL1PTH/L
     pushl(0x120, kSpr0Data);                                 // SPR0PTH/L
     pushl(0x124, kSpr1Data);                                  // SPR1PTH/L
-    pushl(0x128, (mut==Mut::C3) ? kNull3 : kNull2);           // SPR2PTH/L (C3: sprite 3's own null)
+    pushl(0x128, (mut==Mut::C3) ? kSpr2Data : kNull2);        // SPR2PTH/L (C3: a non-null structure)
     pushl(0x12C, kNull3);                                     // SPR3PTH/L
     pushl(0x130, kNull4);                                     // SPR4PTH/L
     pushl(0x134, kNull5);                                     // SPR5PTH/L
@@ -341,8 +359,18 @@ struct Capture {
     std::vector<nmh::VideoSample> video;
     std::optional<uint16_t> deniseid, fixture;
     std::vector<uint16_t> cop_words;
-    std::vector<std::pair<uint16_t,uint16_t>> pairs;
+    // the data words prepared in sprite 0 and sprite 1 (pairs0/pairs1), and, in a
+    // run that changes them part-way (C17), the data words after the change
+    // (pairs0_late/pairs1_late) with the cycle of the program's mark word
+    Pairs pairs0, pairs1, pairs0_late, pairs1_late;
+    std::optional<uint64_t> cutover;
     std::map<std::string,size_t> mark;
+    // The data a graded frame or Copper pass [begin,end) fetches: the change is
+    // made at the top of a frame, before that frame's sprite lines, so a span
+    // whose midpoint lies after the mark word reads the later data.
+    bool late(nmh::Span f) const { return cutover && *cutover < (f.begin + f.end) / 2; }
+    const Pairs& p0(nmh::Span f) const { return late(f) ? pairs0_late : pairs0; }
+    const Pairs& p1(nmh::Span f) const { return late(f) ? pairs1_late : pairs1; }
 };
 
 // `copper_mut` selects the Copper list independently of `mut` and `prog` the
@@ -354,10 +382,18 @@ Capture run_case(const std::string& dir, Mut mut, std::optional<Mut> copper_mut 
     nmh::NanomigHarness h(cfg);
 
     poke_bitplane_buffer(h, kBplBuf, kBplWords);
-    c.pairs = expected_pairs(mut==Mut::C7 ? 7 : mut==Mut::C16 ? 16 : 0);
-    poke_sprite_structure(h, kSpr0Data, 0x5050, 0xE100, c.pairs);
-    poke_sprite_structure(h, kSpr1Data, 0x5060, 0xE100, c.pairs);
+    int mode = mut==Mut::C7 ? 7 : mut==Mut::C14 ? 14 : mut==Mut::C16 ? 16 : 0;
+    c.pairs0 = expected_pairs(mode);
+    c.pairs1 = (mut==Mut::C15) ? Pairs(c.pairs0.size(), {0x0000,0x0000}) : c.pairs0; // C15: sprite 1 transparent
+    c.pairs0_late = c.pairs0; c.pairs1_late = c.pairs1;
+    if (mut == Mut::C17) { c.pairs0_late = upper_byte_pairs(c.pairs0); c.pairs1_late = upper_byte_pairs(c.pairs1); }
+    poke_sprite_structure(h, kSpr0Data, 0x5050, 0xE100, c.pairs0);
+    poke_sprite_structure(h, kSpr1Data, 0x5060, 0xE100, c.pairs1);
     for (uint32_t na : kNullAddrs) poke_null_structure(h, na);
+    // C3: sprite 2 gets a real structure of its own, the same position and
+    // pixels as sprite 0 (SPECIFICATION.md 3.2), so it is fetched in full and
+    // hidden under sprite 0.
+    if (mut == Mut::C3) poke_sprite_structure(h, kSpr2Data, 0x5050, 0xE100, c.pairs0);
 
     // C2 (PC2's own contrast, SPECIFICATION.md 3.8): sprite 1's structure
     // stays fully fetched -- only its own terminator word (p.108: "the
@@ -368,14 +404,9 @@ Capture run_case(const std::string& dir, Mut mut, std::optional<Mut> copper_mut 
     // sees the mismatch, and sprite 1's measured population (all 294
     // words) stays fully populated.
     if (mut == Mut::C2) {
-        uint32_t term_word = word_addr(kSpr1Data) + 2 + (uint32_t)(2*c.pairs.size()) + 1;
+        uint32_t term_word = word_addr(kSpr1Data) + 2 + (uint32_t)(2*c.pairs1.size()) + 1;
         h.poke_word(term_word, 0xBAD1);
     }
-    // C14 / C15: POS and CTL of both sprites (C14) or of sprite 1 alone (C15)
-    // are zero, so the sprite never starts (p.107: VSTART and VSTOP are in
-    // these words).
-    if (mut == Mut::C14) { h.poke_word(word_addr(kSpr0Data), 0); h.poke_word(word_addr(kSpr0Data)+1, 0); }
-    if (mut == Mut::C14 || mut == Mut::C15) { h.poke_word(word_addr(kSpr1Data), 0); h.poke_word(word_addr(kSpr1Data)+1, 0); }
 
     auto cb = build_copper(copper_mut.value_or(mut));
     c.cop_words = cb.words;
@@ -385,6 +416,19 @@ Capture run_case(const std::string& dir, Mut mut, std::optional<Mut> copper_mut 
     c.loaded = h.load_program(dir + "/" + (prog.empty() ? prog_name_for(mut) : prog) + ".bin") > 0;
     if (!c.loaded) return c;
     c.released = h.boot(kBootBudget).cpu_released;
+    if (mut == Mut::C17) {
+        // C17: the program stores its mark word after the second frame wait;
+        // the sprite data words of both sprites then change to their later
+        // value, before the next frame's sprite lines are fetched.
+        c.cutover = h.run_until_write(kMarkAddr, kMarkValue, kBootBudget + kRunBudget);
+        if (c.cutover) {
+            for (uint32_t base : {kSpr0Data, kSpr1Data}) {
+                const Pairs& pl = (base == kSpr0Data) ? c.pairs0_late : c.pairs1_late;
+                uint32_t w = word_addr(base) + 2;
+                for (auto& p : pl) { h.poke_word(w++, p.first); h.poke_word(w++, p.second); }
+            }
+        }
+    }
     c.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
     c.log = h.ram_log();
     // The smallest spacing between consecutive RAM-port samples is one bus
@@ -740,20 +784,25 @@ bool exact_ordered_fetch(const Capture& c, uint32_t base_word,
 
 struct Range { uint64_t lo=kNoCycle, hi=0; bool any=false; bool all=false; };
 
-// PC4 check 1 (SPECIFICATION.md 3.8): every marked Copper word in
-// [off_lo,off_hi) must be fetched (r.all); one fetched word does not stand
-// in for an entire reload (r.any only says that some word was).
-Range chunk_range(const std::vector<nmh::RamAccess>& log, uint32_t base_word,
+// PC4 check 1 (SPECIFICATION.md 3.8): the logical reads of the chunk's own
+// address range in [fbegin,fend) are exactly the chunk's marked words, each
+// once, in list order, with the prepared values (r.all): a missing, a
+// duplicate, an extra or an out-of-order read makes r.all false. lo and hi
+// bound every one of those reads, not the first match of each word.
+Range chunk_range(const Capture& c, uint32_t base_word,
                    const std::vector<uint16_t>& expected, size_t off_lo, size_t off_hi,
                    uint64_t fbegin, uint64_t fend) {
     Range r;
-    bool complete = off_hi > off_lo;
-    for (size_t off=off_lo; off<off_hi; ++off) {
-        auto c = first_read_cycle(log, base_word+(uint32_t)off, expected[off], fbegin, fend);
-        if (!c) { complete = false; continue; }
+    if (off_hi <= off_lo) return r;
+    const size_t n = off_hi - off_lo;
+    auto reads = logical_reads(c, base_word+(uint32_t)off_lo, n, fbegin, fend);
+    bool complete = reads.size() == n;
+    for (size_t i=0; i<reads.size(); ++i) {
+        if (i >= n || reads[i].word_addr != base_word+(uint32_t)(off_lo+i) || reads[i].data != expected[off_lo+i])
+            complete = false;
         r.any = true;
-        r.lo = std::min(r.lo, *c);
-        r.hi = std::max(r.hi, *c);
+        r.lo = std::min(r.lo, reads[i].cycle);
+        r.hi = std::max(r.hi, reads[i].cycle);
     }
     r.all = complete;
     return r;
@@ -815,12 +864,12 @@ GradedRun find_graded(const Capture& c) {
 bool pc4_frame_ok(const Capture& c, nmh::Span f) {
     uint32_t cop0 = word_addr(kCopList);
 
-    auto top = chunk_range(c.log, cop0, c.cop_words, 0, c.mark.at("top_end"), f.begin, f.end);
+    auto top = chunk_range(c, cop0, c.cop_words, 0, c.mark.at("top_end"), f.begin, f.end);
     auto bpl = first_bitplane_cycle(c.log, f.begin, f.end);
     bool a_ok = top.all && bpl && top.hi < *bpl;
 
-    auto b0 = chunk_range(c.log, cop0, c.cop_words, c.mark.at("b0_start"), c.mark.at("b0_end"), f.begin, f.end);
-    auto line50 = sprite_line_low_cycle(c.log, kSpr0Data, c.pairs, 0x50, f.begin, f.end);
+    auto b0 = chunk_range(c, cop0, c.cop_words, c.mark.at("b0_start"), c.mark.at("b0_end"), f.begin, f.end);
+    auto line50 = sprite_line_low_cycle(c.log, kSpr0Data, c.p0(f), 0x50, f.begin, f.end);
     bool b_ok = b0.all && line50 && b0.hi < *line50;
 
     bool c_ok = true;
@@ -830,10 +879,10 @@ bool pc4_frame_ok(const Capture& c, nmh::Span f) {
     static const char* starts[5] = {nullptr,"band1_start","band2_start","band3_start","b4_start"};
     static const char* ends[5]   = {nullptr,"band1_end","band2_end","band3_end","band4_end"};
     for (int b=1;b<=4;++b) {
-        auto chunk = chunk_range(c.log, cop0, c.cop_words, c.mark.at(starts[b]), c.mark.at(ends[b]), f.begin, f.end);
+        auto chunk = chunk_range(c, cop0, c.cop_words, c.mark.at(starts[b]), c.mark.at(ends[b]), f.begin, f.end);
         uint32_t s_b = 0x50 + 29*b;
-        auto lo = sprite_line_low_cycle(c.log, kSpr0Data, c.pairs, s_b,   f.begin, f.end);
-        auto hi = sprite_line_low_cycle(c.log, kSpr0Data, c.pairs, s_b+2, f.begin, f.end);
+        auto lo = sprite_line_low_cycle(c.log, kSpr0Data, c.p0(f), s_b,   f.begin, f.end);
+        auto hi = sprite_line_low_cycle(c.log, kSpr0Data, c.p0(f), s_b+2, f.begin, f.end);
         if (!(chunk.all && lo && hi && *lo < chunk.lo && chunk.hi < *hi)) c_ok = false;
     }
     return a_ok && b_ok && c_ok;
@@ -942,6 +991,7 @@ struct Verdict {
     size_t lo=0, hi=0, lit_lo=0, lit_hi=0, line_len=0;   // the measured extent, first graded frame
     bool pc5_populated = true, pc5_ok = true;
     int run_len_lo=-1, run_len_hi=-1;        // R2's own SuperHires run-width measurement (ungraded)
+    std::vector<std::pair<int,int>> frame_runs; // per graded frame: smallest and largest run length
     std::array<int,15> r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
     Verdict() {
         colour_ok.fill(true);
@@ -957,6 +1007,7 @@ Verdict evaluate(const Capture& c, const GradedRun& g) {
         if (!fa.ok) { v.structure_ok = false; v.bounds_ok = false; v.pc5_populated = false; continue; }
         ColourCheck cc = colour_check(c.video, fa);
         if (!cc.structural_ok()) v.structure_ok = false;
+        v.frame_runs.push_back({cc.run_len_min, cc.run_len_max});
         if (cc.run_len_min>=0) {
             v.run_len_lo = (v.run_len_lo<0) ? cc.run_len_min : std::min(v.run_len_lo, cc.run_len_min);
             v.run_len_hi = std::max(v.run_len_hi, cc.run_len_max);
@@ -983,6 +1034,8 @@ Verdict evaluate(const Capture& c, const GradedRun& g) {
         } else v.pc5_populated = false;
     }
     if (!v.bounds_set) v.bounds_ok = false;
+    // R5's equal-length clause holds across all graded frames together, not per frame only
+    if (v.run_len_lo >= 0 && v.run_len_lo != v.run_len_hi) v.structure_ok = false;
     return v;
 }
 
@@ -1087,32 +1140,35 @@ void run_all(const std::string& dir, Mut mut, Checks& checks) {
     St s_pc1 = grade(checks, kPc1Label, no_frames, pc1);
 
     // PC2: sprites 0 and 1 fetch exactly the prepared data, every frame.
-    std::vector<uint16_t> spr0_expected, spr1_expected;
-    auto push_struct = [](std::vector<uint16_t>& v, uint16_t pos, uint16_t ctl,
-                           const std::vector<std::pair<uint16_t,uint16_t>>& pairs) {
+    auto push_struct = [](uint16_t pos, uint16_t ctl, const Pairs& pairs) {
+        std::vector<uint16_t> v;
         v.push_back(pos); v.push_back(ctl);
         for (auto& p : pairs) { v.push_back(p.first); v.push_back(p.second); }
         v.push_back(0); v.push_back(0);
+        return v;
     };
-    push_struct(spr0_expected, 0x5050, 0xE100, c.pairs);
-    push_struct(spr1_expected, 0x5060, 0xE100, c.pairs);
+    // The data each graded frame fetches is the data prepared for it (C17 changes it between frames).
+    auto spr0_exp = [&](nmh::Span f) { return push_struct(0x5050, 0xE100, c.p0(f)); };
+    auto spr1_exp = [&](nmh::Span f) { return push_struct(0x5060, 0xE100, c.p1(f)); };
     bool pc2_s0 = true, pc2_s1 = true;
     for (auto& f : g.frames) {
-        if (!exact_ordered_fetch(c, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc2_s0=false;
-        if (!exact_ordered_fetch(c, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2_s1=false;
+        if (!exact_ordered_fetch(c, word_addr(kSpr0Data), spr0_exp(f), f.begin, f.end)) pc2_s0=false;
+        if (!exact_ordered_fetch(c, word_addr(kSpr1Data), spr1_exp(f), f.begin, f.end)) pc2_s1=false;
     }
     St s_pc2 = grade(checks, kPc2Label, no_frames, pc2_s0 && pc2_s1);
     if (no_frames.empty()) {
         std::string s = std::string("PC2 detail (ungraded): sprite 0 ") + (pc2_s0 ? "PASS" : "FAIL") +
                         ", sprite 1 " + (pc2_s1 ? "PASS" : "FAIL") + "; logical reads per graded frame";
         for (size_t fi=0; fi<g.frames.size(); ++fi) {
+            const auto& f = g.frames[fi];
             s += "; frame " + std::to_string(fi) + ": sprite 0 " +
-                 std::to_string(reads_in(c, kSpr0Data, spr0_expected.size(), g.frames[fi])) + "/" +
-                 std::to_string(spr0_expected.size()) + ", sprite 1 " +
-                 std::to_string(reads_in(c, kSpr1Data, spr1_expected.size(), g.frames[fi])) + "/" +
-                 std::to_string(spr1_expected.size());
+                 std::to_string(reads_in(c, kSpr0Data, spr0_exp(f).size(), f)) + "/" +
+                 std::to_string(spr0_exp(f).size()) + ", sprite 1 " +
+                 std::to_string(reads_in(c, kSpr1Data, spr1_exp(f).size(), f)) + "/" +
+                 std::to_string(spr1_exp(f).size());
             for (int i=0; i<6; ++i)
-                s += ", null" + std::to_string(i+2) + " " + std::to_string(reads_in(c, kNullAddrs[i], 2, g.frames[fi])) + "/2";
+                s += ", null" + std::to_string(i+2) + " " + std::to_string(reads_in(c, kNullAddrs[i], 2, f)) + "/2";
+            s += ", sprite-2 structure " + std::to_string(reads_in(c, kSpr2Data, 294, f)) + "/294";
         }
         checks.note(s);
     }
@@ -1125,8 +1181,8 @@ void run_all(const std::string& dir, Mut mut, Checks& checks) {
     for (auto& f : g.frames) {
         for (uint32_t na : kNullAddrs)
             if (!exact_ordered_fetch(c, word_addr(na), {0,0}, f.begin, f.end)) pc3=false;
-        if (!read_at_most_once(c, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc3=false;
-        if (!read_at_most_once(c, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc3=false;
+        if (!read_at_most_once(c, word_addr(kSpr0Data), spr0_exp(f), f.begin, f.end)) pc3=false;
+        if (!read_at_most_once(c, word_addr(kSpr1Data), spr1_exp(f), f.begin, f.end)) pc3=false;
     }
     St s_pc3 = grade(checks, kPc3Label, no_frames, pc3);
 
@@ -1160,6 +1216,13 @@ void run_all(const std::string& dir, Mut mut, Checks& checks) {
     St s_pc5 = grade(checks, kPc5Label, pc5_ng, v.pc5_ok);
 
     St s_r5 = grade(checks, kR5Label, no_frames, v.structure_ok);
+    if (no_frames.empty()) {
+        std::string s = "R5 detail (ungraded): run length in samples per graded frame (smallest-largest)";
+        for (size_t fi=0; fi<v.frame_runs.size(); ++fi)
+            s += "; frame " + std::to_string(fi) + ": " + std::to_string(v.frame_runs[fi].first) + "-" +
+                 std::to_string(v.frame_runs[fi].second);
+        checks.note(s);
+    }
 
     // P1-P4 grade their own colour clauses only when every precondition of
     // SPECIFICATION.md 4 item 5 holds, and only on their whole group sets.
