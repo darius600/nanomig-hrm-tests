@@ -21,7 +21,7 @@
 // MUTATION P3 stimulus red NMH_MUTATE=P3-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 2 (prog_mouse_sw2.bin), the action record and the other preconditions staying true, so the register that P3 reads holds the other port's count; TG68K FAIL (P3; 14 passed, 1 failed), fx68k FAIL (P3; 14 passed, 1 failed).
 // MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 3 (prog_mouse_sw3.bin), the action record and the other preconditions staying true, so the register that P4 reads holds the other port's count; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
-// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 4 lines, so the window holds one or two real stored samples, fewer than 3; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so in every frame the stored line 256 follows line 254: VHPOSR bits 15-8 go from $FE to $00 with V8 going from 0 to 1, not at a frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAMEEND: the sampling loop learns the frame's last line from one frame wrap and leaves it out (prog_mouse_pj2e.bin), so the stored line before line 0 is the line before the last one; the return to $00 still shows V8 going from 1 to 0 and the continuity clause holds, but the store-time gap there is twice the run's median; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: the program writes JOYTEST after sample 8, the complement of the JOY0DAT value it has just read, inside phase 0's baseline window (prog_mouse_pj3.bin), so the baseline samples of JOY0DAT and JOY1DAT differ while the action record stays true; TG68K FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed).
@@ -33,7 +33,7 @@
 // MUTATION P8 stimulus red NMH_MUTATE=P8-WRONGREG: for the samples of P8's pin the program stores POTGOR with bit 14 replaced by bit 12, the DAT bit of P7's pin (prog_pot_p8.bin), the action record and the other preconditions staying true, so the stored bit reads 1 in every step and the proposition fails at C2, C4, C5 and C6; TG68K FAIL (P8; 14 passed, 1 failed), fx68k FAIL (P8; 14 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=PP1: the C2 button press is omitted, so PP1 reports it missing instead of grading C2; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP2 stimulus red NMH_MUTATE=PP2: pin 5's C1 write sets POTGO bit 0 = 1 (prog_pot_pp2.bin), so the stored marker $FF01 differs from the unchanged planned $FF00 and has bit 0 set; TG68K FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed).
-// MUTATION PP3 stimulus red NMH_MUTATE=PP3: pin 5's C1 step is shortened to 6 lines (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its window; TG68K FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP3 stimulus red NMH_MUTATE=PP3: pin 5's C1 step is shortened to 8 lines (prog_pot_pp3.bin), leaving one or two real stored samples in its window, fewer than 3; TG68K FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION FIXTURE none impossible: the section 4 known-value check only verifies that chip-memory writes and reads work at all, a plumbing precondition every other assertion of the package depends on and would fail through; not exercised, by a scope decision.
 // MUTATION FIXTURE none impossible: the section 5 known-value check only verifies that chip-memory writes and reads work at all, as above; not exercised, by a scope decision.
 // MUTATION FIXTURE none impossible: the section 6 known-value check only verifies that chip-memory writes and reads work at all, as above; not exercised, by a scope decision.
@@ -201,7 +201,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     auto steps = build_mouse_schedule();
     std::vector<int> lines(steps.size());
     for (size_t i = 0; i < steps.size(); ++i) lines[i] = steps[i].hold_lines;
-    if (mutate == "PJ2") lines[5] = 2; // phase 0 only, applied below
+    if (mutate == "PJ2") lines[5] = 4; // phase 0 only, applied below
 
     struct Ev { size_t g; int phase; size_t step; };
     std::vector<Ev> events;
@@ -354,7 +354,7 @@ PotRun run_pot(const std::string& dir, const std::string& mutate) {
     if (mutate == "P6-WRONGPIN") { pins[1].src = Src::kMouseButtons; pins[1].bit = 2; } // P5's own input
     if (mutate == "P8-WRONGPIN") { pins[3].src = Src::kJoystick1;    pins[3].bit = 5; } // wrong port
 
-    int c1_lines = (mutate == "PP3") ? 6 : 24;
+    int c1_lines = (mutate == "PP3") ? 8 : 24;
 
     struct Ev { size_t g; int pin; size_t step; };
     std::vector<Ev> events;

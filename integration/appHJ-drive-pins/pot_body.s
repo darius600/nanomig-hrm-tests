@@ -26,7 +26,7 @@ P5_C6           equ     $FC00
 P5_C8           equ     BASE
 
         ifd     PP3MUT
-P5_C1_LINES     equ     5               ; PP3: step shortened to 6 lines (dbra count = N-1)
+P5_C1_LINES     equ     7               ; PP3: step shortened to 8 lines (dbra count = N-1)
         else
 P5_C1_LINES     equ     23              ; 24 lines (SPECIFICATION.md 5.2)
         endif
