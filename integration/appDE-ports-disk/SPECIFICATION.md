@@ -272,10 +272,13 @@ reads.
   its own (p.23), in every configuration.
 - **A3.** L_f ∈ {262, 263} for NTSC or {312, 313} for PAL, the same for every
   reference field.
-- **A4.** In every measurement field, every read in that field's live window
-  (section 2.7) equals the model value inside its bracket. This checks the
-  anchor again in every field, from reads taken in the same field as that
-  field's pulse.
+- **A4.** The live reads that no proposition grades against the model equal
+  the model value inside their bracket: in F2 every read before the pulse, in
+  F10 every read before line 100, and in each of F3 to F7 at least two reads
+  before the pulse. The live reads of F3 to F8 are graded against the model by
+  P3(c), those of F9 by P3(d) and those of F1 by P4 (consecutive reads differ).
+  A4 checks the anchor again in later fields, from reads taken in the same
+  field as that field's pulse.
 
 For the absolute H check of P2 (4b), u ≤ 2 is required.
 
@@ -303,7 +306,7 @@ of the field.
 | C0 | **Connector identity.** In S2 the harness drives pin 4 (RIGHT*) of harness connector A low during the first of the two fields and high in the second. Bit 1 of exactly one of JOY0DAT and JOY1DAT follows pin 4 (p.329: "Right: bit#1"; p.281: "0=left controller pair, 1=right controller pair"). If it is JOY0DAT, A is J12 (p.327). | The harness drives pin 3 (LEFT*) instead. p.329 gives Left as "bit#9", so bit 1 does not follow and C0 fails. |
 | C1 | The program finished: the done marker is present and the sample count is N_ref + N_meas (plus the S2 samples). | Remove S8. C1 fails. |
 | C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. For BEAMCON0 this half shows that the read happened, in order; its bit 13 is graded by C6. | Declare $0008 and store $0000 in cfg_BPLCON0. C2 reports the mismatch. |
-| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse. |
+| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse; a VPOSW write that sets V8 and V9 for every read of F4 before its pulse leaves fewer than two current reads there; one that sets V8 and V9 for 100 reads of F10 before line 100 leaves reads there that are not current. |
 | A2 | Graded line (section 2.6), not a precondition. | After S3 the program writes HTOTAL = $E3 and BEAMCON0 = $00A0 (VARBEAMEN, PAL; p.305). HTOTAL is the "Highest number count, horiz. line (VARBEAMEN=1)" (p.280) and p.23 counts a line 0-$E3 as 228 colour clocks, so A2's line-length clause (all 227 in PAL) fails. VTOTAL (p.285, VARBEAMEN=1) is not written and no page gives its reset value; that A3 still holds is measured on this chipset, not predicted. |
 | C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Pause for more than 32 colour clocks after every 500 reads of the measurement loop. C4 fails. |
 | C5 | The pulses are as scheduled: the harness log shows each pulse on pin 6 of the connector under test, 4 color clocks wide, at its scheduled time, and no other controller pin changes during S5–S8. | Log a pulse on pin 5 instead of pin 6. C5 fails. |
@@ -386,7 +389,8 @@ is not left over from earlier.
   the same reason.
 
 **7. Reference frame.** Sections 2.6 and 2.7. The line numbers of every
-window come from the model, and A4 checks the model in every field.
+window come from the model, and A4 checks the model on the live reads of F2,
+F10 and, in F3 to F7, on at least two reads before the pulse.
 
 ---
 
@@ -757,16 +761,20 @@ What is not graded, and why:
   opus:E-gameport.c6 and sol:E-gameport.c5 sit on the RECORDED line of P5's
   second connector only (below): the graded P5 lines examine one connector.
 - **A4 population.** A4 is asserted on the reads that no proposition grades
-  by itself: F2 before its pulse, and the count of at least two current reads
-  before the pulse in each triggered field. The live windows of F1, F3 to F8
-  and F9 are graded by P4, P3(c) and P3(d); an anchor that depended on the
-  clause it anchors could not turn that clause red.
+  against the model: F2 before its pulse, F10 before line 100, and the count
+  of at least two current reads before the pulse in each of F3 to F7. The live
+  windows of F1, F3 to F8 and F9 are graded by P4, P3(c) and P3(d); an anchor
+  that depended on the clause it anchors could not turn that clause red.
 - **A4 on the repository's chipset.** There the registers read the moving
   beam before every pulse, so a change of the pulse schedule cannot make A4
   red (measured: the F2 pulse at line 40 leaves A4 green on both cores). A4's
   contrasts are therefore a VPOSW write in F2 before the pulse, which sets V8
-  of the vertical counter for 100 reads and clears it again (repository
-  chipset), and the pulse moved to line 40 (private chipset of 4.6).
+  of the vertical counter for 100 reads and clears it again, a VPOSW write
+  that sets V8 and V9 for every read of F4 before its pulse, and one that sets
+  V8 and V9 for 100 reads of F10 before line 100 (repository chipset), and
+  the pulse moved to line 40 (private chipset of 4.6). The F4 and F10 writes
+  set V9 as well because V8 alone leaves the raised count below the last line
+  of the field before line 57 in PAL.
 - **A2 and NTSC.** A2 (p.23: "Every other line is a long line (228 color
   clocks, 0-$E3), with the others being 227 color clocks long") fails in every
   NTSC configuration: the field length of the reference phase (4.5) divides
@@ -928,11 +936,15 @@ TG68K; the repository rows are on the repository's chipset.
 | LP-C3-A3-FIELD-LENGTH | LP-A3 | repository | NTSC selected, PAL declared | red, only this line |
 | LP-A2-LINE-LENGTHS | LP-A2 | repository | HTOTAL $E3 and BEAMCON0 $00A0 (VARBEAMEN) written after S3: lines of 228 colour clocks | red through the line-length clause; every precondition line holds |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4W | repository | V8 of the vertical counter set for 100 reads of F2 before its pulse | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | repository | V8 and V9 of the vertical counter set for every read of F4 before its pulse | red, only this line; the proposition lines are NOT GRADED |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F10 | repository | V8 and V9 of the vertical counter set for 100 reads of F10 before line 100 | red, only this line; the proposition lines are NOT GRADED |
 | LP-C4-DENSITY | LP-C4 | repository | pause of about 70 colour clocks after every 500 measurement reads | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C5-PULSES | LP-C5 | repository | pulses on pin 9 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C6-LPENDIS-CLEAR | LP-C6 | repository | BEAMCON0 $2020 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | repository | F2 pulse at line 40 | green: the reads before the pulse are current, A4 does not move (4.1) |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | private | V8 and V9 of the vertical counter set for every read of F4 before its pulse | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F10 | private | V8 and V9 of the vertical counter set for 100 reads of F10 before line 100 | red, only this line |
 | LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-BASE | second private (latch ignores bit 3) | the unchanged run | red, these three lines |
 | LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD, LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P2A | private | F2 pulse not driven | red, these lines and P4; P3(c) NOT GRADED; every precondition line holds |
 | LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
