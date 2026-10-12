@@ -8,9 +8,10 @@ printed page differ, the printed page (rendered image) was read and is what is
 quoted.
 
 The package has 22 claims. They give four propositions; 2 claims give none.
-12 of the 22 are asserted (P1 to P3); the 10 of P4 are declined, because they
-state which controller button is wired to which connector pin, which no port of
-the design shows. P4 keeps its p.281 pin-decode assertions without those ids.
+10 of the 22 are asserted (2 in P1, 4 in P2, 4 in P3). 12 are declined: the 2
+Denise-sampling claims, and the 10 of P4, which state which controller button is
+wired to which connector pin, which no port of the design shows. P4 keeps its
+p.281 pin-decode assertions without those ids.
 
 | proposition | claims | page |
 |---|---|---|
@@ -323,8 +324,9 @@ If one fails, the result is "not established", never "pass".
 - **K5 (PC3).** The harness grounds every pot line it can reach at these ports
   (LX, LY, RY; RX has no port at this boundary) from each configuration's Fb W
   step through the end of its Fc R step.
-  - Rb and Rpre read $1000 (only bit 12, RX, stays 1: it cannot be reached), and
-    PC3 must fail.
+  - Rb and Rpre read $1000 (only bit 12, RX, stays 1: it cannot be reached), the
+    drive log shows the grounded ports at level 0, and PC3 must fail through both
+    clauses.
   - The result must be "not established" for every configuration, even though
     three of the four input lines of Rpost already read 0.
 - **K6.** The R step of every Fc moves to line 5.
@@ -337,15 +339,15 @@ If one fails, the result is "not established", never "pass".
   - PC1 to PC3 hold, since PC1 reads the V words and not the timestamps. The
     time from M1 to M2 is shorter than a line, so PC4 must fail, and the
     result must be "not established".
-- **VGREEN (C0-Fc to C4-Fc, proven-live green).** These five are confirmed reds,
-  not stimulus defects, so no mutation turns them green through an invalid
-  setup. Instead: the harness grounds each
-  configuration's reachable input lines (excluding that configuration's own
-  output line) from Fc's M1 marker to the end of its R step, after START. C3's
-  three input lines (LX, LY, RY) are all reachable this way, and C3-Fc goes
-  green through the same comparator, with PC1-PC4 unaffected. C0, C1, C2 and C4
-  keep bit 12 (RX) among their input lines; no port at this boundary reaches it,
-  so they cannot be shown green here.
+- **Green control for C0-Fc to C4-Fc and P1-START.** These are confirmed reds,
+  not stimulus defects, and no stimulus at the ports turns them green with
+  PC1 to PC4 holding (grounding a line after START is a different cause of a 0,
+  and breaks PC3's drive-log clause). The green evidence is a run of the
+  unchanged package against a private copy of the RTL outside the repository, in
+  which the pot lines that are inputs read 0 in POTGOR for eight lines after a
+  POTGO write with START (section "The private copy of the RTL"). There all 24
+  lines print `PASS` with PC1 to PC4 green; K1 (START withheld) turns them red
+  again in that copy.
 - **OUTLOW (the "1" column, C1-Fc-OUT to C4-Fc-OUT).** In C1 to C4, Fc's write
   sets the output-enable bit but drives its data bit to 0 instead of 1 ($0201,
   $0801, $2001, $8001), with START unchanged.
@@ -474,8 +476,9 @@ Contrasting cases for these preconditions. Each keeps the program running.
 - **Q1 (hold):** the harness changes one level of connector B after it sees
   T_k of one step and before U_k. The trace then shows a change inside
   (t_apply(k), t(U_k)], and Q1 must fail through its hold clause alone.
-- **Q2:** the harness holds pin 9 of A at 0 during Y-up(A). POTGOR bit 10 or 14
-  then reads 0, and Q2 must fail for those records.
+- **Q2:** the harness holds pin 9 of A at 0 during Y-up(A). POTGOR bit 10 (pin 9
+  of the left connector is DATLY) then reads 0 in those records, and Q2 must fail
+  for them.
 - **Q2 (transient input):** the harness holds a mouse button for 64 cycles
   inside one step's wait and releases it again, and in a second case holds a
   keyboard-mouse data byte for 64 cycles and releases it. Both are back at 0
@@ -560,7 +563,8 @@ Q1 to Q4, and the anchor of section 7.
 - **Variant:** the harness applies block A's steps to connector B and block B's
   to connector A, keeping the F steps where they are. The block-A expectation
   "JOY0DAT moves, JOY1DAT does not" must then go red. Q1 to Q4 and the anchor
-  still hold.
+  still hold. The swap is clean, so P3 and P4 read the swapped registers and stay
+  green; the swap is reported under P2 only.
 
 ### 7. Reference frame: which connector is left
 
@@ -792,6 +796,10 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
 - **Variant:** in Buttons(A), the harness grounds pin 2 wherever the table says
   pin 1. The pin-1 reading (bit 9 xor bit 8) then stays 0 while it is expected
   to be 1, and must go red.
+- **Variants for pins 3 and 4:** in Buttons(A), the harness grounds pin 2
+  wherever the table says pin 3 (pin 3 stays released), and in a second case
+  wherever the table says pin 4. The pin-3 reading (bit 9) and the pin-4 reading
+  (bit 1) then stay 0 while they are expected to be 1, and must go red.
 
 ### 7. Reference frame
 
@@ -843,8 +851,8 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
     cannot see either way.
   - What P4 grades for pin 4 (a closed switch reads at X1) is stated alike on
     p.281, in p.232 Table 8-3 and in Figure 8-3.
-  - The claims `opus:8-tbl8-1.c12` and `sol:8-pin.c13` are graded only in that
-    agreed form.
+  - The claims `opus:8-tbl8-1.c12` and `sol:8-pin.c13` are declined (P4, section
+    1).
 - **Port numbering (P2).**
   - p.230, p.232, p.236 and p.240 number the ports 1 and 2 (JOY0DAT, POT0DAT,
     CIAAPRA bit 6 and DATLX/DATLY belong to port 1). Appendix A (p.281, p.282)
@@ -878,8 +886,10 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
   assembly-time symbol set (K1/K3/K4/K6/K7/OUTLOW), for the contrasting cases
   of section 6. K2 needs no separate program: it is already inside the
   sequence (each configuration's own output-driven line, graded by the same
-  assertion's "1" column). K5 and VGREEN are harness-side stimulus variants of
+  assertion's "1" column). K5 is a harness-side stimulus variant of
   the unmutated `prog_p1.s` (see the K5 record below).
+- `start_model.patch` and the `sm-*` targets of the Makefile: the private copy
+  of the RTL of the green evidence (section "The private copy of the RTL").
 - `prog_joy.s`: the joystick program (54 steps: N0, N1, Block A and Block B
   of 26 steps each), shared by P2, P3 and P4 exactly as specified. One
   binary serves the baseline run and every one of P2/P3/P4's contrasting
@@ -891,8 +901,10 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
   that does not exist (`prog_p1_absent.bin`, `prog_joy_absent.bin`); the
   repository holds no such file.
 - A selector runs only the part of the package whose lines it changes (the POTGO
-  program, or the joystick program), and every P1 selector runs all four
-  PAL/NTSC x ECS/OCS configurations. The clean run, with no selector, runs both
+  program, or the joystick program), and every selector runs all four
+  PAL/NTSC x ECS/OCS configurations (the joystick program in each, graded in
+  each on its own: Q1 to Q4, the anchors, P2, P3 and P4, with the configuration
+  in the label). The clean run, with no selector, runs both
   parts.
 
 ### Connector assignment (measured, not assumed)
@@ -924,10 +936,10 @@ own: PC1 through PC4 all print `PASS`. Every "0" column (`C0-Fc` through
 START, and `P1-START`, which carries the two claim ids, prints `FAIL` with
 them. Every "1" column (`C1-Fc-OUT` through `C4-Fc-OUT`) prints `PASS`:
 the output-driven line still reads 1, as p.240's output-enable sentence
-predicts. `P1-CONFIGS` prints `PASS` on both cores (all four
-configurations load, release and reach `DONE`). The qualifying-record
-counts (PC1, PC4) differ by configuration and by core; each is printed
-against its own configuration's labels.
+predicts. `P1-FIXTURE` and `P1-CONFIGS` print `PASS` on both cores (PAL+ECS,
+and NTSC+ECS, PAL+OCS and NTSC+OCS, load, release and reach `DONE`). The
+qualifying-record counts (PC1, PC4) differ by configuration and by core; each is
+printed against its own configuration's labels.
 
 Measured at `nanomig.v`'s ports (K5, below, with LX, LY and RY grounded):
 bits 8, 10 and 14 read 0; bit 12 reads 1. K5 is scoped to the ports that
@@ -935,9 +947,29 @@ reach bits 8, 10 and 14 (mouse_buttons bit 2 for bit 8; mouse_buttons bit 1
 and joystick1 bit 5 for bit 10; joystick0 bit 5 for bit 14); no port at this
 boundary reaches bit 12.
 
-Final run of the clean package, every core: 55 passed, 24 failed (79 graded
+Final run of the clean package, every core: 109 passed, 24 failed (133 graded
 lines: the 20 confirmed reds `C0-Fc` to `C4-Fc` in the four configurations, the
-four `P1-START` reds, and 55 passes).
+four `P1-START` reds, and 109 passes). The joystick part grades each of the four
+configurations on its own: 18 lines each (Q1 to Q4, `P2-ANCHOR`, the six P2
+lines, `P3-ANCHOR`, `P3-Y`, `P3-X`, and the four `P4-PIN*`), plus `JOY-FIXTURE`
+and `JOY-CONFIGS`, 74 lines in all; every one prints `PASS`.
+
+The same package against the private copy of the RTL (section "The private copy
+of the RTL"): 133 passed, 0 failed on both cores; the 24 lines above print
+`PASS`, with PC1 to PC4 green.
+
+### The private copy of the RTL
+
+`start_model.patch` is a patch to a copy of the chip-set RTL, made under
+`obj_dir_sm/` by `make sm-rtl` (the pinned submodule is never modified). In the
+copy, POTGOR reads 0 on every pot line that is an input (its output-enable bit
+is 0), for eight lines after a POTGO write with START (Figure 8-5: charging
+starts eight lines after POTGO is written); a line that is an output reads as
+before. `make sm-test-fx68k` and `make sm-test-tg68k` build and run the
+unchanged package against it. The graded read is at L0+6, inside the interval
+under either reading of p.235. This copy is the green evidence for `C0-Fc` to
+`C4-Fc` and `P1-START`; it is not the repository's RTL, and the repository's RTL
+stays red on these lines.
 
 ### Mutations: what went red, and through which clause
 
@@ -946,49 +978,49 @@ directory (`./Vnanomig ..`). Every result below is the pass/fail count and
 the clause that actually printed; fx68k and TG68K printed the identical
 pattern for every mutation below, line for line. A selector runs only its own
 part (see Programs), so the counts are of that part: the POTGO part is 59
-lines, the joystick part 20.
+lines, the joystick part 74. A line whose preconditions are not met prints
+`NOT GRADED` (a `RECORDED` line naming the unmet preconditions), neither `PASS`
+nor `FAIL`, and is not counted.
 
 POTGO part (all four configurations each; "the sixteen output lines" are
 `C1-Fc-OUT` to `C4-Fc-OUT` in the four configurations, "the twenty reds" are
 `C0-Fc` to `C4-Fc` in the four configurations):
 
 - **FIXTURE** (apparatus check; no other part runs): 0 passed, 1 failed on
-  both cores -- the stored constant read back does not match, and `FIXTURE`
-  alone flips from `PASS` to `FAIL`.
+  both cores -- the program stores $FACE where the comparator expects $FEED (the
+  read-back itself is faithful), and `FIXTURE` alone flips from `PASS` to
+  `FAIL`.
 - **K1** (`C1-Fc-OUT` through `C4-Fc-OUT`): 35 passed, 24 failed -- no line
   moves: the same 24 reds print (the twenty `C*-Fc` and the four `P1-START`),
-  and the sixteen output lines print `PASS`, unchanged.
-- **K3** (`PC1`): 15 passed, 44 failed -- `PC1` prints `FAIL` in each of the
+  and the sixteen output lines print `PASS`, unchanged. Against the private copy
+  the same selector gives 35 passed, 24 failed: the 24 lines that print `PASS`
+  there are red again when START is withheld.
+- **K3** (`PC1`): 15 passed, 4 failed -- `PC1` prints `FAIL` in each of the
   four configurations ("every R step has at least one record with
-  Vr0=Vr1=10"), and because `PC1` gates "established", the sixteen output
-  lines also print `FAIL` ("preconditions not established: not graded as
-  pass"); `PC2`, `PC3` and `PC4` stay `PASS`.
-- **K4** (`PC2`): 15 passed, 44 failed -- `PC2` prints `FAIL` in each
-  configuration, and, gated by it, the sixteen output lines print `FAIL`;
-  `PC1`, `PC3` and `PC4` stay `PASS`.
-- **K5** (`PC3`): 15 passed, 44 failed -- `PC3` prints `FAIL` in each
-  configuration (`PC2` prints `PASS`: Phase P is outside this mutation's Fb/Fc
-  windows), and the sixteen output lines print `FAIL` ("not established").
-  Measured (RECORDED, in each configuration): Rb=Rpre=$1000 with LX, LY and RY
-  grounded -- bit 12 (RX) is outside this mutation's reach and stays 1, the
-  three others read 0.
-- **K6** (`PC1`, not `PC4`): 15 passed, 44 failed -- moving the R step to line 5
+  Vr0=Vr1=10"); because `PC1` gates "established", the twenty `C*-Fc`, the
+  sixteen output lines and the four `P1-START` lines are `NOT GRADED`; `PC2`,
+  `PC3` and `PC4` stay `PASS`.
+- **K4** (`PC2`): 15 passed, 4 failed -- `PC2` prints `FAIL` in each
+  configuration and the same 40 lines are `NOT GRADED`; `PC1`, `PC3` and `PC4`
+  stay `PASS`.
+- **K5** (`PC3`): 15 passed, 4 failed -- `PC3` prints `FAIL` in each
+  configuration through both of its clauses (Rb and Rpre read $1000, and the
+  drive log shows the pot ports at level 0; `PC2` prints `PASS`: Phase P is
+  outside this mutation's Fb/Fc windows), and the same 40 lines are `NOT
+  GRADED`. Measured (RECORDED, in each configuration): Rb=Rpre=$1000 with LX, LY
+  and RY grounded -- bit 12 (RX) is outside this mutation's reach and stays 1,
+  the three others read 0.
+- **K6** (`PC1`, not `PC4`): 15 passed, 4 failed -- moving the R step to line 5
   leaves no record with Vr0=Vr1=10, so `PC1` prints `FAIL` in each
   configuration and `PC4` prints `PASS` (nothing there for it to check); the
-  sixteen output lines print `FAIL` ("not established").
-- **K7** (`PC4`): 15 passed, 44 failed -- `PC4` prints `FAIL` in each
-  configuration, `PC1`, `PC2` and `PC3` stay `PASS`, and the sixteen output
-  lines print `FAIL` ("not established").
+  same 40 lines are `NOT GRADED`.
+- **K7** (`PC4`): 15 passed, 4 failed -- `PC4` prints `FAIL` in each
+  configuration, `PC1`, `PC2` and `PC3` stay `PASS`, and the same 40 lines are
+  `NOT GRADED`.
 - **OUTLOW** (`C1-Fc-OUT` through `C4-Fc-OUT`): 19 passed, 40 failed --
   `PC1` through `PC4` stay `PASS`; the sixteen output lines all print `FAIL`
   (the output-driven line reads 0 with its data bit held low), and the twenty
   `C*-Fc` reds and the four `P1-START` reds are unaffected.
-- **VGREEN** (`C3-Fc`, proven-live green): 39 passed, 20 failed --
-  `PC1` through `PC4` stay `PASS`; `C3-Fc` prints `PASS` in each configuration
-  (its three input lines, LX/LY/RY, are all grounded and all reachable), with
-  the output lines unaffected (still `PASS`, since each configuration's own
-  output line is excluded from the ground); `C0-Fc`, `C1-Fc`, `C2-Fc`,
-  `C4-Fc` and `P1-START` stay red on bit 12 alone (`RECORDED`, above).
 - **P1LOAD** (`P1-FIXTURE`): 26 passed, 19 failed -- the PAL+ECS run loads a
   file that does not exist, `P1-FIXTURE` prints `FAIL`, the 14 default-label
   lines of that configuration are not graded (a `RECORDED: NOT GRADED` line
@@ -998,60 +1030,63 @@ POTGO part (all four configurations each; "the sixteen output lines" are
   configuration's 14 lines are not graded; the other three configurations and
   `P1-FIXTURE` print as in the clean run.
 
-Joystick part:
+Joystick part (each selector runs all four configurations):
 
 - **JOYLOAD** (`JOY-FIXTURE`): 1 passed, 1 failed -- the program is not
   loaded, `JOY-FIXTURE` prints `FAIL` and nothing else is graded (a
   `RECORDED: NOT GRADED` line says so).
-- **JOYCFG** (`JOY-CONFIGS`): 20 passed, 1 failed -- the NTSC+ECS run takes
-  Q3's stimulus, `JOY-CONFIGS` prints `FAIL` ("disagreed: NTSC+ECS") and
-  nothing else moves.
-- **Q1** (timing clause): 7 passed, 13 failed -- `Q1` prints `FAIL`
-  (t_apply(k) < t(T_k), graded over all 54 steps; the note prints "timing
-  clause fails, hold clause holds"), and, gated by it, all twelve P2/P3/P4
-  lines print `FAIL` ("not established"); `P3-ANCHOR` is unaffected (`PASS`:
-  N0 itself is untouched by this mutation).
-- **Q1HOLD** (hold clause): 7 passed, 13 failed -- `Q1` prints `FAIL`
-  with the note "timing clause holds, hold clause fails": the trace shows a
-  change of joystick0 inside (t_apply(k), t(U_k)] of step 5; the twelve P2/P3/P4
-  lines print `FAIL` as gated.
-- **Q2**: 7 passed, 13 failed -- `Q2` prints `FAIL` (the additional ground on
-  connector A pin 9 during Yup(A) breaks its POTGOR clause), and the same
-  twelve P2/P3/P4 lines print `FAIL` ("not established"); `Q1`, `Q3`, `Q4`
-  and `P2-ANCHOR` print `PASS`.
-- **Q2MOUSE**, **Q2KEY**: 7 passed, 13 failed each -- the transient is back at
+- **JOYCFG** (`JOY-CONFIGS`): 74 passed, 1 failed -- a further NTSC+ECS run
+  takes Q3's stimulus and its records are compared with the PAL+ECS run's;
+  `JOY-CONFIGS` prints `FAIL` ("disagreed: NTSC+ECS") and nothing else moves.
+- **Q1** (timing clause): 23 passed, 4 failed -- `Q1` prints `FAIL` in each
+  configuration (t_apply(k) < t(T_k), graded over all 54 steps; the note prints
+  "timing clause fails, hold clause holds"), and, gated by it, the 24 P2/P3/P4
+  lines are `NOT GRADED`; `P3-ANCHOR` is unaffected (`PASS`).
+- **Q1HOLD** (hold clause): 23 passed, 4 failed -- `Q1` prints `FAIL` with the
+  note "timing clause holds, hold clause fails": the trace shows a change of
+  joystick0 inside (t_apply(k), t(U_k)] of step 5; the same lines are `NOT
+  GRADED`.
+- **Q2**: 23 passed, 4 failed -- `Q2` prints `FAIL` (the additional ground on
+  connector A pin 9 during Yup(A) breaks its POTGOR clause: POTGOR&$5500 =
+  $5100, bit 10 reads 0, in the four Yup(A) records, steps 4-7), and the same
+  P2/P3/P4 lines are `NOT GRADED`; `Q1`, `Q3`, `Q4` and `P2-ANCHOR` print `PASS`.
+- **Q2MOUSE**, **Q2KEY**: 23 passed, 4 failed each -- the transient is back at
   0 before the step's reads, no record changes, and `Q2` prints `FAIL` through
-  its drive-trace clause alone; the same twelve lines print `FAIL` as gated.
-- **Q3**: 7 passed, 13 failed -- `Q3` prints `FAIL` ("JOY0DAT and JOY1DAT are
-  equal in N0 and N1"), and the same twelve P2/P3/P4 lines print `FAIL`
-  ("not established"); `Q1`, `Q2` and `Q4` print `PASS`.
-- **Q4**: 7 passed, 13 failed -- `Q4` prints `FAIL` (F0(A) held low instead of
-  released), and, gated by it, the same twelve P2/P3/P4 lines print `FAIL`;
-  `Q2` and `P2-ANCHOR` stay `PASS` (Q2 reads no own-connector bit of an F0
-  record, and the anchor reads only the F1 records).
-- **P2VAR**: 8 passed, 12 failed -- `P2-BLOCKA-JOY1`, `P2-BLOCKA-JOY0`,
-  `P2-BLOCKB-JOY0`, `P2-BLOCKB-JOY1`, `P2-FOUR-COUNTERS` and `P2-JOYDAT` all
-  print `FAIL` through their own clause (swapping which connector receives
-  each block's steps reverses what each register is supposed to do), and
-  `P3-Y`, `P3-X`, `P4-PIN3`, `P4-PIN4`, `P4-PIN1` and `P4-PIN2` print `FAIL`
-  alongside them (all read the same swapped records); `Q1` to `Q4` and
-  `P2-ANCHOR` are unaffected (`PASS`: the F1/F0 steps stay on their own
-  connector).
-- **P2ANCHOR**: 7 passed, 13 failed -- `P2-ANCHOR` prints `FAIL` through its
+  its drive-trace clause alone; the same lines are `NOT GRADED`.
+- **Q3**: 23 passed, 4 failed -- `Q3` prints `FAIL` ("JOY0DAT and JOY1DAT are
+  equal in N0 and N1"), and the same lines are `NOT GRADED`; `Q1`, `Q2` and
+  `Q4` print `PASS`.
+- **Q4**: 23 passed, 4 failed -- `Q4` prints `FAIL` (F0(A) held low instead of
+  released), and the same lines are `NOT GRADED`; `Q2` and `P2-ANCHOR` stay
+  `PASS`.
+- **P2VAR**: 51 passed, 24 failed -- the six P2 lines (`P2-BLOCKA-JOY1`,
+  `P2-BLOCKA-JOY0`, `P2-BLOCKB-JOY0`, `P2-BLOCKB-JOY1`, `P2-FOUR-COUNTERS`,
+  `P2-JOYDAT`) print `FAIL` in each configuration through their own clause
+  (swapping which connector receives each block's steps reverses what each
+  register is supposed to do). The swap is clean, a `MEASURED` line reports it
+  under P2, and `P3-Y`, `P3-X` and the four `P4-PIN*` lines read the swapped
+  registers and print `PASS`; `Q1` to `Q4` and `P2-ANCHOR` are unaffected
+  (`PASS`: the F1/F0 steps stay on their own connector).
+- **P2ANCHOR**: 23 passed, 4 failed -- `P2-ANCHOR` prints `FAIL` through its
   own clause (F1(A) additionally grounds pin 6 of B); `Q2` and `Q4` stay
-  `PASS`, and, gated by the anchor, the twelve P2/P3/P4 lines print `FAIL`
-  ("not established").
-- **P3ANCHOR**: 13 passed, 7 failed -- `P3-ANCHOR` prints `FAIL` through its
+  `PASS`, and the 24 P2/P3/P4 lines are `NOT GRADED`.
+- **P3ANCHOR**: 47 passed, 4 failed -- `P3-ANCHOR` prints `FAIL` through its
   own clause (N0 and N1 carry Yup(A) sub-step 0's pattern instead of staying
-  released), `Q3` stays `PASS` (N0 still equals N1), and, gated by the anchor,
-  `P3-Y`, `P3-X` and the four `P4-PIN*` lines print `FAIL` ("not
-  established"); `P2-JOYDAT` and the five P2 component lines stay `PASS`.
-- **P3VAR**: 14 passed, 6 failed -- `P2-FOUR-COUNTERS`, `P2-JOYDAT`, `P3-Y`,
+  released), `Q3` stays `PASS` (N0 still equals N1), and `P3-Y`, `P3-X` and the
+  four `P4-PIN*` lines are `NOT GRADED`; `P2-JOYDAT` and the five P2 component
+  lines stay `PASS`.
+- **P3VAR**: 51 passed, 24 failed -- `P2-FOUR-COUNTERS`, `P2-JOYDAT`, `P3-Y`,
   `P3-X`, `P4-PIN1` and `P4-PIN2` print `FAIL` (in Yup(A) the pattern of pin 1
   is driven on pin 2, so the Y byte does not follow pin 1 and the X byte moves
   during the Y-up steps); `P4-PIN3`, `P4-PIN4` and the four block lines are
   unaffected (`PASS`).
-- **P4VAR**: 16 passed, 4 failed -- `P3-Y`, `P3-X`, `P4-PIN1` and `P4-PIN2` print
+- **P4VAR**: 59 passed, 16 failed -- `P3-Y`, `P3-X`, `P4-PIN1` and `P4-PIN2` print
   `FAIL` (grounding pin 2 wherever Buttons(A) grounds pin 1 corrupts both axes'
   records the same way); `P2-FOUR-COUNTERS`, `P2-JOYDAT`, `P4-PIN3` and
   `P4-PIN4` are unaffected (`PASS`).
+- **P4VAR3**: 59 passed, 16 failed -- pin 2 is grounded wherever Buttons(A)
+  grounds pin 3: `P3-Y`, `P3-X`, `P4-PIN2` and `P4-PIN3` print `FAIL`;
+  `P4-PIN1`, `P4-PIN4` and the P2 lines are unaffected (`PASS`).
+- **P4VAR4**: 63 passed, 12 failed -- pin 2 is grounded wherever Buttons(A)
+  grounds pin 4: `P3-X`, `P4-PIN2` and `P4-PIN4` print `FAIL`; `P3-Y`,
+  `P4-PIN1`, `P4-PIN3` and the P2 lines are unaffected (`PASS`).
