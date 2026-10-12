@@ -102,13 +102,13 @@ instead of $BEEF; the unchanged check must go red.
 
 ## Slot unit (no claim id)
 
-### SLOT-UNIT [Figure 6-9, p194] four refresh slots on every other memory cycle
+### SLOT-UNIT [Figure 6-9, p194,p195] four refresh slots on every other memory cycle
 
 No claim id (an apparatus check: every slot-dependent line below counts in
 this unit).
 
 Proposition: p.194 lists "4 cycles for memory refresh" per horizontal line
-and Figure 6-9 draws them on every other memory cycle (slots 0, 2, 4 and 6
+and Figure 6-9 (p.195) draws them on every other memory cycle (slots 0, 2, 4 and 6
 of the line's own refresh block). Two refresh accesses of one line are
 therefore two slots apart, and the smallest positive gap between two
 refresh accesses of a run is two slots.
@@ -139,8 +139,8 @@ unit stays the baseline's. The unchanged "every group is four accesses at
 0, 2, 4 and 6 units" check must go red.
 
 If the unit cannot be derived or the pattern fails, every slot-dependent
-line (A8, A9, A10, A11, A6, OPEN50, PARITY-REF, PARITY) prints
-`NOT GRADED` naming SLOT-UNIT, and SYSDMA-C29's measurements are not printed.
+line (A8, SYSDMA-C29 on fx68k, A9, A10, A11, A6, OPEN50, PARITY-REF, PARITY) prints
+`NOT GRADED` naming SLOT-UNIT, and the SYSDMA-C29 measurements of TG68K are not printed.
 
 ## Assertions
 
@@ -564,10 +564,9 @@ Mutation (`NMH_MUTATE=PARITY-REF`): the capture is `prog_sharing.bin` (no
 bitplane DMA enabled at all); the unchanged "found, and all odd" check
 must go red (zero BPL1 reads at all).
 
-### A8 [p194,p196] no free even-numbered slot is left unused after a missed cycle
+### A8 [p194,p196] a missed cycle waits for the next available slot
 
-No claim id (the claim ids `6-system-dma.c54`, `6-system-dma.c55`,
-`ch6-sysdma.c30` are recorded by `A8-BOUNDARY` below).
+Claims: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`.
 
 Proposition: p.196: "If cycles are missed, the 68000 must wait until its
 next available memory slot before continuing." p.196 also says "The 68000 uses
@@ -575,12 +574,12 @@ only the even-numbered memory access cycles" (graded as PARITY), so the next
 available slot is the first free even-numbered slot. A missed even-numbered
 cycle (the slot the 68000 was ready for, which Figure 6-10 assigns to it, was
 taken by a DMA access) is therefore followed by an access at the first free
-even-numbered slot. The graded line is the half of that which needs no
-readiness of the 68000: the access must come no later than the first free
-even-numbered slot, that is, no free even-numbered slot may lie unused
-between the missed slot and the access. A wait that skips an available slot
-would not be a wait "until its next available memory slot". The other half
-(the access comes no sooner than that slot) is not graded, see below.
+even-numbered slot: not later (no free even-numbered slot lies unused between
+the missed slot and the access) and not sooner (no access on an earlier,
+odd-numbered slot). The slot the 68000 was ready for is found by the
+procedure of "Missed cycles of the 68000", from two accesses of its own
+identified by address; the precondition A8PRE shows that the procedure finds
+such slots in the run.
 
 Program: `prog_sharing_share.s` (`SHARE` build): the counting loop with a
 share-mode blit running, so the blitter takes slots from the 68000
@@ -588,80 +587,74 @@ throughout the blit's active window. The loop sits at the same address in
 every build of `prog_sharing.s` and `prog_bitplane.s`.
 
 Observed (precondition, "A8PRE", no claim id): the number of missed
-even-numbered cycles found by the procedure above (see "Missed cycles of the
-68000"), and the address pair of the first (printed).
+even-numbered cycles found by the procedure, and the address pair of the
+first (printed).
 
 Expected value (precondition): at least one.
 
-Observed (proposition): among those missed even cycles, the number with a free
-even-numbered slot between the missed slot and the access. The number granted
+Observed (proposition): among those missed even cycles, the number granted
 before the first free even-numbered slot (on an odd-numbered slot) and the
-number granted exactly on it are printed as measurements.
+number with a free even-numbered slot left unused between the missed slot and
+the access; the number granted exactly on the first free even-numbered slot is
+printed as a measurement.
 
-Expected value: zero.
+Expected value: zero granted before it and zero after it.
 
 Mutation (precondition, `NMH_MUTATE=A8PRE`): the no-DMA run (`prog_sharing.s`)
 replaces the share-mode run; no DMA access takes a slot the 68000 was ready
 for, so no even cycle is missed, the precondition goes red and A8 prints
 `NOT GRADED`.
 
-Mutation (`implementation`, run with `NMH_MUTATE=A8`): a private copy of
-`minimig_m68k_bridge.v`, outside the repository, in which the 68000 is not
-acknowledged in the first two free colour clocks after a colour clock the
-chipset took from it; the package is built against that copy and the
-unchanged comparator finds a free even-numbered slot left unused after every
-missed even cycle (two consecutive slots are left unused, so that one of
-them is even-numbered whatever the parity of the first). No stimulus can
-make this comparator red: the 68000 is always either pending or not, and the
-stimulus cannot make the design leave a slot free that a pending 68000 could
-have used. A stimulus that idles the 68000 (a long instruction) is calibrated
-away by the unimpeded gap.
+Mutation (`stimulus green`, `NMH_MUTATE=A8`): the share-mode run is replaced by
+the six-low-resolution-plane display against the whole-slot-aligned counting
+loop with every bitplane pointer set to Chip memory above the low addresses
+(`prog_bitplane_planes6_aligned_ptrs.s`): the display takes even-numbered slots
+from a 68000 that is ready only on even-numbered slots. The unchanged
+comparator reads green on this input and red on the unmutated one.
 
-### A8-BOUNDARY [p194,p196] a missed cycle waits for the next available slot -- not graded
+### SYSDMA-C29 [p196] some 68000 instructions miss the even-cycle allocation
 
-Claims: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`.
-**Not graded** (`checks.record()`, not `expect()`; no mutation).
-
-"The 68000 must wait until its next available memory slot" is graded only if
-the access after a missed cycle is neither earlier nor later than the first
-free even-numbered slot. The RAM port shows grants, not the 68000's readiness,
-so a missed cycle and its next grant cannot be separated from the
-odd-numbered-slot grants that PARITY already grades: an access that follows a
-missed even cycle and comes before the first free even-numbered slot is on an
-odd-numbered slot, which is PARITY's finding, not a second one. On an
-implementation that keeps the 68000 on even-numbered slots an instruction-
-caused miss looks like an aligned instruction one slot longer. The A8 line
-above grades the later-than half only and carries no claim id; the counts of
-both halves are printed as measurements.
-
-### SYSDMA-C29 [p196] some 68000 instructions miss the even-cycle allocation -- not graded
-
-Claim: `ch6-sysdma.c29`. **Not graded** (`checks.record()`, not `expect()`; no
-mutation); the counts are printed as measurements.
+Claim: `ch6-sysdma.c29`. Graded on fx68k; on TG68K it is recorded by
+`SYSDMA-C29-SCOPE-TG68K`.
 
 Proposition: "Some 68000 instructions do not match perfectly with the
 allocation of even cycles and cause cycles to be missed." A cycle missed by an
 instruction is one for which the 68000 is ready off its even-numbered
 allocation, on an odd-numbered slot, which Figure 6-10 assigns to other
 devices; in the four-low-resolution-bitplane display the display takes
-those slots (Figure 6-9, Figure 6-11).
-
-Why not graded: the RAM port shows grants, not readiness. The procedure of
-"Missed cycles of the 68000" finds the slot the 68000 was ready for from the
-unimpeded gap of an address pair, and that gap is odd only if the 68000
-itself was granted an odd-numbered slot (the preceding access or the gap),
-which PARITY grades. On a core that keeps to even-numbered slots by itself
-no missed cycle can be found, whatever the instruction, and the count of
-zero comes from the CPU core, not from the chip set; on a core that uses
-odd-numbered slots the misses found rest on those grants.
+those slots (Figure 6-9, Figure 6-11). The fixture is one instruction identified
+by its address: the counting loop ends in `BRA.S` (10 clocks, not a whole
+number of slots), and the same loop ended by `JMP (An)` (8 clocks, a whole
+number of slots) is the control. The loop sits at the same addresses in both
+builds, and the procedure of "Missed cycles of the 68000" names a missed
+cycle by the address pair that brackets it, printed with the first one.
 
 Program: `prog_bitplane.s`, four low-resolution planes (`ADDQ.W #1,D0` /
 `MOVE.W D0,(A1)` / `BRA.S .loop`), and the same with `ALIGNED` set (`JMP
 (An)` in place of `BRA.S`).
 
-Observed: among the pairs of consecutive CPU accesses, the number of missed
-even-numbered and odd-numbered cycles found by the procedure, for each of the
-two loops, printed as `SYSDMA-C29` measurements.
+Observed (precondition, "SYSDMA-C29PRE", no claim id): both runs show the
+display's fetch windows with 68000 accesses inside them.
+
+Expected value (precondition): both runs are live.
+
+Observed (proposition): the number of missed odd-numbered cycles found with
+the `BRA.S` loop and with the aligned loop (all counts of both are printed as
+`SYSDMA-C29` measurements).
+
+Expected value: at least one with `BRA.S`, none with the aligned loop.
+
+Mutation (`stimulus red`, `NMH_MUTATE=SYSDMA-C29`): the `BRA.S` run is replaced
+by the aligned run; no cycle is missed, the unchanged comparator goes red.
+
+Mutation (precondition, `NMH_MUTATE=SYSDMA-C29PRE`): the aligned control is
+replaced by the no-bitplane-DMA run; it has no display windows, the
+precondition goes red and SYSDMA-C29 prints `NOT GRADED`.
+
+Scope (TG68K, `SYSDMA-C29-SCOPE-TG68K`, a record and not a measurement): the
+TG68K core keeps to even-numbered slots by itself, whatever the instruction, so
+that no instruction of it misses an odd-numbered allocation; the counts of
+both loops are printed as measurements and nothing is graded.
 
 ### A9 [p196] four or fewer low-resolution bitplanes grant the CPU alternate cycles
 
@@ -891,9 +884,6 @@ OPEN50 prints `NOT GRADED`.
 ### PARITY [p196] the 68000 uses only the even-numbered memory-access cycles
 
 Claims: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`.
-
-(`ch6-sysdma.c29` -- "some instructions... cause cycles to be missed" --
-is not graded either, see SYSDMA-C29-BOUNDARY above.)
 
 Proposition: p.196: "The 68000 uses only the even-numbered memory access
 cycles" (`c50`/`c25`); Figure 6-10 labels the memory-access half as "an
@@ -1348,24 +1338,24 @@ line of the run.
 | `ch6-sysdma.c35` | 196 | "The 68000 is granted the cycle only if it is ready to ask for it and is the highest priority item at the time": the "only if" direction -- never granted when it has not asked or is outranked -- needs the 68000's request visible, which the RAM port does not show (see A5-WITHDRAWN). A9 grades the "if" direction: a continuously ready, otherwise unopposed 68000 is granted alternate cycles. |
 | `6-system-dma.c51`, `6-system-dma.c52`, `ch6-sysdma.c26`, `ch6-sysdma.c27` | 196 | "About half" of instruction time is an average over the 68000's own full instruction mix, with no numeric tolerance given on the page. An instruction-timing histogram compiled per core would settle it. |
 | `ch6-sysdma.c32` | 196 | "The 68000 test-and-set instruction (TAS) should never be used in the Amiga" is prescriptive advice to a programmer, not an RTL-observable claim; holds as written. |
-| `ch6-sysdma.c31` | 196 | "Most instructions do not cause cycles to be missed" is a statistic over the instruction set with no numeric tolerance; holds as written (SYSDMA-C29-BOUNDARY above records `c29`, the existence of misses, as not graded). |
+| `ch6-sysdma.c31` | 196 | "Most instructions do not cause cycles to be missed" is a statistic over the instruction set with no numeric tolerance; holds as written (SYSDMA-C29 above grades `c29`, the existence of misses, on fx68k). |
 
-Total: 14 graded assertions carry claim ids (A1, A2, A3, DESC-OFFBY1, A9,
-A10, A11, A6, OPEN50, PARITY, TAS-SPAN, BBUSY-LOCKOUT, FASTRUN,
-FASTRUN-LOCKOUT), 34 claim ids in full. Graded lines without a claim id: A1-A,
-A1-B, A1-C, A1-D, A4, A4-SHARE, A8, ORDER, BBUSY-PREDICTS. Apparatus and
+Total: 16 graded assertions carry claim ids (A1, A2, A3, DESC-OFFBY1, A9,
+A8, SYSDMA-C29, A10, A11, A6, OPEN50, PARITY, TAS-SPAN, BBUSY-LOCKOUT, FASTRUN,
+FASTRUN-LOCKOUT), 38 claim ids in full. Graded lines without a claim id: A1-A,
+A1-B, A1-C, A1-D, A4, A4-SHARE, ORDER, BBUSY-PREDICTS. Apparatus and
 precondition checks without a claim id: FIXTURE, SLOT-UNIT, DESC-BASE, A3PRE,
-A4PRE, A4-SHARE-PRE, A8PRE, A9PRE, A10PRE, A11PRE, OPEN50PRE, PARITY-REF,
-TAS-SPAN-PRE, FASTRUN-LOCKOUT-PRE, BBUSY-LOCKOUT-PRE. 13 claim ids are
+A4PRE, A4-SHARE-PRE, A8PRE, SYSDMA-C29PRE, A9PRE, A10PRE, A11PRE, OPEN50PRE, PARITY-REF,
+TAS-SPAN-PRE, FASTRUN-LOCKOUT-PRE, BBUSY-LOCKOUT-PRE. 9 claim ids are
 withdrawn or not graded by `checks.record()`: 2 as A5-WITHDRAWN, 1 as
 SLOTSPAN-WITHDRAWN, 1 as TAS-WITHDRAWN, 1 as `ch6-multi.c4`, 4 as
-A4-SHARE-WITHDRAWN, 3 as A8-BOUNDARY, 1 as SYSDMA-C29-BOUNDARY. 14 claim ids
-are printed by the seven records of the table above. 34 + 13 + 14 = 61 claim
+A4-SHARE-WITHDRAWN. 14 claim ids
+are printed by the seven records of the table above. 38 + 9 + 14 = 61 claim
 ids checked in total.
 
 ## RECORDED
 
-The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 36 passed, 2 failed; tg68k 36 passed, 2 failed.
+The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 37 passed, 3 failed; tg68k 35 passed, 3 failed.
 
 | line | fx68k | tg68k |
 |---|---|---|
@@ -1389,9 +1379,10 @@ The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines
 | `A4-SHARE-WITHDRAWN` | RECORDED | RECORDED |
 | `A5-WITHDRAWN` | RECORDED | RECORDED |
 | `A8PRE` | PASS | PASS |
-| `A8` | PASS | PASS |
-| `A8-BOUNDARY` | RECORDED | RECORDED |
-| `SYSDMA-C29-BOUNDARY` | RECORDED | RECORDED |
+| `A8` | FAIL | FAIL |
+| `SYSDMA-C29PRE` | PASS | - |
+| `SYSDMA-C29` | PASS | - |
+| `SYSDMA-C29-SCOPE-TG68K` | - | RECORDED |
 | `A9PRE` | PASS | PASS |
 | `A9` | PASS | PASS |
 | `A10PRE` | PASS | PASS |
@@ -1467,8 +1458,8 @@ A4: window 2274337..2282449, 1 CPU Chip-memory access(es) inside it: fetch $8044
 A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
 A8: 44815 access pairs, 125 missed even cycle(s), 116 missed odd cycle(s), 0 with an even free slot left unused (120 granted before the first free even slot, 5 exactly on it), 0 delayed with a free ready slot, 399 spanning a line start, 7 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
-SYSDMA-C29: four lores planes, BRA.S loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
-SYSDMA-C29: four lores planes, aligned loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
+SYSDMA-C29: four lores planes, BRA.S loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap
+SYSDMA-C29: four lores planes, aligned loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap
 A10: 768 fetch window(s); maximum CPU accesses in any one window = 0
 A11: 768 four-plane window(s), 768 found at the same cycle with five and six planes; CPU accesses outside the windows: 45984 / 45984 / 45984
 A6: no-DMA period of the aligned loop = 80 clk_sys (8399 unimpeded intervals); 11520 scratch-write interval(s) inside the display windows, 0 not equal to it
