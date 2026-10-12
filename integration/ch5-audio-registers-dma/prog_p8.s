@@ -8,9 +8,7 @@
 ; This file alone is the MAIN build. prog_p8_c1.s (C1 set) is the
 ; contrasting case: the BLTSIZE write is replaced by the same MOVE.W to
 ; COLOR00, so no blit starts; it is also the mutation of P8-G3 ("the blit
-; ran"). prog_p8_zpoll.s (ZPOLL) is P8's own mutation: the blit runs, the
-; fourth poll read comes from a zero word instead of DMACONR, and a delay
-; at the end lets the blit finish before the program does.
+; ran").
 ; prog_p8_g1.s (G1_BREAK), prog_p8_gbltpri.s (G_BLTPRI, sets BLTPRI in
 ; step 2) and prog_p8_g4.s (G4_LATE, a delay between BLTSIZE and the first
 ; poll read) are the precondition mutations.
@@ -69,15 +67,8 @@ start:
         moveq   #0,d2                    ; running read index
         move.l  #8192,d3
 .poll:
-        ifd     ZPOLL
-        cmp.l   #3,d2
-        bne.s   .real
-        move.w  ZB,d0                    ; mutation: the fourth poll read comes from a zero word, not DMACONR
-        bra.s   .have
-.real:
-        endif
         move.w  DMACONR(a0),d0
-.have:  move.w  d0,(a4)+
+        move.w  d0,(a4)+
         addq.l  #1,d2
         cmp.l   #1,d2
         beq.s   .cont                    ; index 1 is never graded
@@ -90,11 +81,6 @@ start:
 .extra: move.w  DMACONR(a0),d0
         move.w  d0,(a4)+
         dbra    d1,.extra
-        ifd     ZPOLL
-        move.l  #6000,d0                 ; mutation: the blit ends before the program does, so its last write is logged
-.settle: subq.l #1,d0
-        bne.s   .settle
-        endif
 
         move.w  #CM,(a5)
 

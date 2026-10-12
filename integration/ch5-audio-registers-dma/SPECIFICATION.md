@@ -1201,7 +1201,7 @@ section 2.3, and the mechanism items below.
 
 ## RECORDED
 
-The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim, or a half that is not graded). Counts: fx68k 86 passed, 0 failed; tg68k 86 passed, 0 failed.
+The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim, or a half that is not graded). Counts: fx68k 87 passed, 2 failed; tg68k 87 passed, 2 failed. The two failed lines are `P7-ON` and `P7` (the D-only blit with BLTPRI set), on both cores.
 
 | line | fx68k | tg68k |
 |---|---|---|
@@ -1260,10 +1260,11 @@ The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` 
 | `P7-G2` | PASS | PASS |
 | `P7-G3` | PASS | PASS |
 | `P7-G(CPU-still-wanted-the-bus)` | PASS | PASS |
-| `P7-ON` | PASS | PASS |
+| `P7-ON` | FAIL | FAIL |
 | `P7-OFF` | PASS | PASS |
-| `P7` | PASS | PASS |
-| `P7 (record 1)` | RECORDED | RECORDED |
+| `P7` | FAIL | FAIL |
+| `P7-ON-E` | PASS | PASS |
+| `P7-OFF-E` | PASS | PASS |
 | `P8-G1` | PASS | PASS |
 | `P8-G2` | PASS | PASS |
 | `P8-G3` | PASS | PASS |
@@ -1280,6 +1281,7 @@ The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` 
 | `P9-SWAP` | PASS | PASS |
 | `P9` | PASS | PASS |
 | `P9 (record 1)` | RECORDED | RECORDED |
+| `DMACONR` | PASS | PASS |
 | `P10-G1` | PASS | PASS |
 | `P10-G2` | PASS | PASS |
 | `P10-G4` | PASS | PASS |
