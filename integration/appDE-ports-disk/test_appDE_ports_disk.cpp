@@ -48,6 +48,8 @@
 // MUTATION LP-A2-LINE-LENGTHS implementation green: A2 passes in the four PAL runs on the repository's chipset and on the private chipset (the all-227 branch of the comparator; the alternating-line branch has no green control, SPECIFICATION.md 4.1)
 // MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-A3: the run is NTSC (chipset_config bit 1) and PAL is declared; 263 lines are not 312 or 313 and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8_fx.bin (fx68k) or prog_lpen_m8_tg.bin (TG68K) sets V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and clears it again; those reads do not equal the model and the line prints FAIL, no other precondition line moves
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4F10: prog_lpen_m10_fx.bin (fx68k) or prog_lpen_m10_tg.bin (TG68K) sets V8 and V9 of the vertical counter (VPOSW) for 100 reads of F10 before its line 100 and clears them again; those reads do not equal the model, the line prints FAIL and no other precondition line moves
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4F4: prog_lpen_m4_fx.bin (fx68k) or prog_lpen_m4_tg.bin (TG68K) sets V8 and V9 of the vertical counter (VPOSW) for every read of F4 before its pulse, from line 22 to line 101, and clears them again; fewer than two reads of F4 equal the model, the line prints FAIL, no other precondition line moves and the proposition lines print NOT GRADED
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset: the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
 // MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_pause.bin pauses for about 70 colour clocks after each 500 of the 46000 measurement reads; the read counts are unchanged and the largest gap between reads is 103 colour clocks on fx68k and 109 on TG68K (at most 32 allowed), so the line prints FAIL (on fx68k one pulse is also followed by only 1 read); every other precondition line holds
 // MUTATION LP-C5-PULSES stimulus red NMH_MUTATE=LP-C5: the pulses are driven on pin 9 instead of pin 6; the line prints FAIL
@@ -942,11 +944,13 @@ LpAn analyze_run(const LpRun& r) {
     auto all_eq = [&](const std::vector<size_t>& ix) { for (size_t i : ix) if (S[i].P != S[ix[0]].P) return false; return !ix.empty(); };
     auto max_gap = [&](const std::vector<size_t>& ix) { int64_t g = 0; for (size_t i = 1; i < ix.size(); ++i) g = std::max(g, S[ix[i]].a - S[ix[i - 1]].a); return g; };
 
-    // A4: the reads of F2 before its pulse equal the model, and every triggered field has at least
-    // two such reads before its pulse
+    // A4: the reads of F2 before its pulse equal the model, the reads of F10 before line 100 equal
+    // the model, and every triggered field has at least two such reads before its pulse
     {
         auto ix = idx_of(w_live(2));
         bool all = !ix.empty() && all_cur(ix);
+        auto ix10 = idx_of(w_live(kLastField));
+        bool all10 = !ix10.empty() && all_cur(ix10);
         bool two = true;
         std::string det;
         for (int f = 2; f <= 7; ++f) {
@@ -954,8 +958,9 @@ LpAn analyze_run(const LpRun& r) {
             if (c < 2) two = false;
             det += " F" + num(f) + "=" + num(static_cast<long long>(c));
         }
-        A.a4 = all && ix.size() >= 2 && two;
+        A.a4 = all && ix.size() >= 2 && all10 && ix10.size() >= 2 && two;
         A.a4_detail = "F2 reads before its pulse: " + num(static_cast<long long>(ix.size())) + ", all current=" + (all ? "yes" : "no") +
+                      "; F10 reads before line 100: " + num(static_cast<long long>(ix10.size())) + ", all current=" + (all10 ? "yes" : "no") +
                       "; current reads before the pulse per triggered field:" + det;
     }
     // C4: density
@@ -1194,7 +1199,7 @@ void grade_pre(Checks& c, const LpRun& r, const LpAn& A, bool show_a2) {
         if (show_a2) c.expect(A.a2, "LP-A2-LINE-LENGTHS " + t + ": line lengths are 227 and 228 alternating (NTSC) or all 227 (PAL), and H never exceeds $E3 (NTSC) or $E2 (PAL) (" + d_a2 + ") [p.23]");
         std::string d_a3 = num(A.nlines) + " lines per field in each of " + num(static_cast<long long>(r.frame_len.size()) - 1) + " reference fields";
         c.expect(A.a3, "LP-C3-A3-FIELD-LENGTH " + t + ": the field has 262 or 263 lines (NTSC) or 312 or 313 lines (PAL), the same in every reference field (" + d_a3 + ") [p.24]");
-        c.expect(A.a4, "LP-C3-A4-FIELD-ANCHOR " + t + ": in F2 every read before the pulse, and in every triggered field at least two, equals the model value inside its bracket (" + A.a4_detail + ") [p.216]");
+        c.expect(A.a4, "LP-C3-A4-FIELD-ANCHOR " + t + ": in F2 every read before the pulse, in F10 every read before line 100, and in every triggered field at least two, equals the model value inside its bracket (" + A.a4_detail + ") [p.216]");
         c.expect(A.c4, "LP-C4-DENSITY " + t + ": the reads are dense enough in every graded window and reach line 100 of F10 (" + A.c4_detail + ")");
         c.expect(A.c5, "LP-C5-PULSES " + t + ": every pulse is on pin 6 of the connector under test, 4 colour clocks wide, at its scheduled cycle, and no other controller pin changes (" + A.c5_detail + ") [p.333]");
     }
@@ -1361,6 +1366,8 @@ bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     else if (mv == "LP-A3") { o.ntsc = true; o.beamcon0 = 0x0000; }
     else if (mv == "LP-A2") o.prog = "prog_lpen_vb.bin";
     else if (mv == "LP-A4") move_to(2, 100, 40, 0x40);
+    else if (mv == "LP-A4F10") o.prog = (std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k") ? "prog_lpen_m10_tg.bin" : "prog_lpen_m10_fx.bin";
+    else if (mv == "LP-A4F4") o.prog = (std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k") ? "prog_lpen_m4_tg.bin" : "prog_lpen_m4_fx.bin";
     else if (mv == "LP-A4W") o.prog = (std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k") ? "prog_lpen_m8_tg.bin" : "prog_lpen_m8_fx.bin";
     else if (mv == "LP-C4") o.prog = "prog_lpen_pause.bin";
     else if (mv == "LP-C5") o.pulse_pin = kPin9;

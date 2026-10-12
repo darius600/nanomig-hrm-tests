@@ -3,10 +3,10 @@
 # carry no proposition and no program.
 
 TEST_CPP := test_appDE_ports_disk.cpp
-PROGS    := prog_pot prog_pot_nodone prog_pot_fix prog_lpen prog_lpen_ocs prog_lpen_nodone prog_lpen_pause prog_lpen_fix prog_lpen_v8 prog_lpen_vb prog_lpen_m8_fx prog_lpen_m8_tg
+PROGS    := prog_pot prog_pot_nodone prog_pot_fix prog_lpen prog_lpen_ocs prog_lpen_nodone prog_lpen_pause prog_lpen_fix prog_lpen_v8 prog_lpen_vb prog_lpen_m8_fx prog_lpen_m8_tg prog_lpen_m4_fx prog_lpen_m4_tg prog_lpen_m10_fx prog_lpen_m10_tg
 
 include ../harness/nanomig.mk
 
 # The variants include their main program and the register file.
 prog_pot_nodone.bin prog_pot_fix.bin: prog_pot.s appDE_regs.i
-prog_lpen.bin prog_lpen_ocs.bin prog_lpen_nodone.bin prog_lpen_pause.bin prog_lpen_fix.bin prog_lpen_v8.bin prog_lpen_vb.bin prog_lpen_m8_fx.bin prog_lpen_m8_tg.bin: prog_lpen.s appDE_regs.i
+prog_lpen.bin prog_lpen_ocs.bin prog_lpen_nodone.bin prog_lpen_pause.bin prog_lpen_fix.bin prog_lpen_v8.bin prog_lpen_vb.bin prog_lpen_m8_fx.bin prog_lpen_m8_tg.bin prog_lpen_m4_fx.bin prog_lpen_m4_tg.bin prog_lpen_m10_fx.bin prog_lpen_m10_tg.bin: prog_lpen.s appDE_regs.i

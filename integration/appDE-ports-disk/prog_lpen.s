@@ -21,7 +21,9 @@
 ;          between lines 57 and 255 there: V8 is clear, and with it set the
 ;          counter is above the field's last line.
 ; M_AT, M_LEN (define before including): the same V8 set and clear inside the
-;          measurement loop, after M_AT of its reads, for M_LEN reads.
+;          measurement loop, after M_AT of its reads, for M_LEN reads. M_ON
+;          (define before including) replaces the VPOSW word that sets V8; the
+;          default is $8001.
 
         include "nanomig.i"
         include "appDE_regs.i"
@@ -47,7 +49,11 @@ start:
         move.w  #$8000,d4               ; VPOSW word with V8 clear
         endif
         ifd     M_AT
+        ifd     M_ON
+        move.w  #M_ON,d3
+        else
         move.w  #$8001,d3
+        endif
         move.w  #$8000,d4
         endif
 
