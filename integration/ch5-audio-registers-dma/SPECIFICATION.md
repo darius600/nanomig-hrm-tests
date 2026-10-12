@@ -276,9 +276,10 @@ of this proposition, is P1a and P1b together. P1a and P1b carry no claim id.
 ### P2: DMACONR at $DFF002 reads back the DMA control bits held by DMACON
 
 **Claims:**
-- p.278: `5-appA-p278.c5`, `.c6`, `.c8`, `A-dmaconr.acc`,
-  `A-dmaconr.addr`
-- p.289: `5-appB-p289.c1`, `.c2`, `.c4`
+- p.278: `5-appA-p278.c5`, `.c6`, `A-dmaconr.acc`, `A-dmaconr.addr`
+- p.289: `5-appB-p289.c1`, `.c2`
+- the status part of the register, `5-appA-p278.c8`, `5-appA-p278.c10` and
+  `5-appB-p289.c4`, is graded by the aggregate line DMACONR (after P9)
 - p.263: `5-appA-p263.c1`, `A-pre.c1`
 
 **Proposition.** A word read at `$DFF002` returns, in bits 10 and 8-0, the
@@ -339,10 +340,10 @@ of p.278. Step 5 grades "Bits written with a zero are unchanged".
   reading from a read only register".
 - Bits 14 and 13: see P8 and P9. Before any blit, bit 13 has no stated value
   (p.187: "The Zero flag is only valid after the blitter has completed its
-  operation"). `5-appA-p278.c8` and `5-appB-p289.c4`, "DMA-control and
-  blitter-status read register", are therefore half graded here: P2 grades
-  the DMA-control bits and masks the status bits off, P8 and P9 grade the
-  status bits.
+  operation"). "DMA-control and blitter-status read register" is therefore
+  graded in parts: P2 grades the DMA-control bits and masks the status bits
+  off, P8 and P9 grade the status bits, and the aggregate line DMACONR joins
+  the three.
 - The "only" of "read-only": p.263, "Do not attempt to write to a read-only
   register, as this will cause unpredictable results". No program writes
   `$DFF002`.
@@ -592,47 +593,30 @@ Chip-memory access. With BLTPRI clear, it makes some.
 - The printed p.198 gives no bit number. DMAF_BLITHOG, "the "blitter-nasty"
   bit", is tied to bit 10 by the name on p.278 and p.222.
 - p.188, Table 6-2 ("Typical Blitter Cycle Sequence"), gives the cycle
-  sequence of each USE code. USE code E (channels A, B and C, no D) is
-  `A0 B0 C0 A1 B1 C1 A2 B2 C2`: every cycle of it is a blitter access. USE
-  code 1 (D only) is `D0 - D1 - D2`: a cycle without a blitter access lies
-  between every two destination writes. p.189: "This Table is only meant to be
-  an illustration of the typical order of blitter cycles on the bus."
-- p.194, on who is served first: "The lowest priorities are assigned to the
-  blitter and the 68000, in that order."
+  sequence of each USE code. USE code 1 (D only) is `D0 - D1 - D2`: a cycle
+  without a blitter access lies between every two destination writes. USE
+  code E (channels A, B and C, no D) is `A0 B0 C0 A1 B1 C1 A2 B2 C2`: every
+  cycle of it is a blitter access. p.189: "This Table is only meant to be an
+  illustration of the typical order of blitter cycles on the bus."
 
-**The blit used.** P7 uses USE code E, so that no cycle between its first and
-last source read is one the blitter does not use. A blit whose sequence has a
-cycle without a blitter access (D only, for example) is not graded, because
-the pages read two ways on it:
-- Literally, p.278 ("preventing micro from stealing any bus cycles while
-  blitter DMA is running") gives the 68000 no cycle while the blit runs,
-  including a cycle the blitter does not use.
-- As a priority, p.278 ("Blitter DMA priority (over CPU micro)", "disables
-  /BLS pin"), p.222 ("the blitter has full (instead of partial) priority over
-  the 680x0") and p.194 (the blitter ranks above the 68000) describe an
-  arbitration between two requesters, and a cycle the blitter does not request
-  goes to the 68000. p.198 ("the blitter will keep the bus for every available
-  Chip memory cycle") fits both.
-
-The D-only blit (USE code 1, BLTCON0 `$01FF`, BLTSIZE `$2020`, destination Q)
-is run with BLTPRI set and with BLTPRI clear, and the CPU accesses between the
-first and the last destination write are printed as MEASURED lines. Nothing
-about them is graded.
+**The blit used.** The proposition is graded on the D-only blit (USE code 1,
+BLTCON0 `$01FF`, BLTSIZE `$2020`, destination Q), whose sequence has a cycle
+without a blitter access. p.278 says "any bus cycles while blitter DMA is
+running", which includes a cycle the blitter does not use; p.198, "every
+available Chip memory cycle", says the same of the bus. The blit of USE code E
+is run as well, and graded as a further case: no cycle of it is free of a
+blitter access, so it grades the same sentence on a blit with no idle cycle.
 
 **Stimulus.** Default configuration.
 
 1. `DMACON = $07FF`. Set up the blitter:
-   - `BLTCON0 ($040) = $0EFF`: USEA, USEB and USEC set and USED clear (bits
-     11-8, p.267), LF = `$FF`;
+   - `BLTCON0 ($040) = $01FF`: USED only (bit 8, p.267); LF = `$FF`;
    - `BLTCON1 ($042) = 0`: area mode;
    - `BLTAFWM ($044) = BLTALWM ($046) = $FFFF`;
-   - `BLTAMOD ($064)`, `BLTBMOD ($062)`, `BLTCMOD ($060)` and
-     `BLTDMOD ($066)` = 0;
-   - `MOVE.L #SA,$DFF050`, `MOVE.L #SB,$DFF04C` and `MOVE.L #SC,$DFF048`:
-     three blocks of 4096 words, zero-filled (section 2.3).
+   - `BLTDMOD ($066) = 0`;
+   - `MOVE.L #Q,$DFF054` (BLTDPTH).
 2. `DMACON = $8640` (SET, BLTPRI, DMAEN, BLTEN). Read DMACONR into R.
-3. Write marker `O`. `BLTSIZE = $2020`: height 128, width 32, 4096 words per
-   channel.
+3. Write marker `O`. `BLTSIZE = $2020`: height 128, width 32, 4096 words.
 4. Straight after, the CPU runs this loop from Chip memory, with D2 = 2047
    and A4 = G:
 
@@ -645,20 +629,33 @@ about them is graded.
 5. Write marker `C`. Write `END`. After `END` the program loops with
    `BRA.S *` and never executes `STOP`.
 
+The further case (USE code E) differs in step 1 and in the interval it is
+read on:
+- `BLTCON0 ($040) = $0EFF`: USEA, USEB and USEC set and USED clear (bits
+  11-8, p.267), LF = `$FF`;
+- `BLTAMOD ($064)`, `BLTBMOD ($062)`, `BLTCMOD ($060)` and `BLTDMOD ($066)` =
+  0;
+- `MOVE.L #SA,$DFF050`, `MOVE.L #SB,$DFF04C` and `MOVE.L #SC,$DFF048`: three
+  blocks of 4096 words, zero-filled (section 2.3).
+
 **Observation.**
-- T_first and T_last are the times of the first and last port read in
-  [SA, SC + `$2000`), the blitter's A, B and C fetches (the 68000 never reads
-  there). The interval (T_first, T_last) is "while blitter DMA is running".
+- For the D-only blit, T_first and T_last are the times of the first and last
+  port write in [Q, Q + `$2000`). For the blit of USE code E they are the
+  times of the first and last port read in [SA, SC + `$2000`), the blitter's
+  A, B and C fetches (the 68000 never reads there). The interval
+  (T_first, T_last) is "while blitter DMA is running".
 - The test counts the CPU accesses (section 2.4) whose time lies inside that
   interval.
 
 **Expected.** Zero CPU accesses in (T_first, T_last). "Any" is graded over
-every cycle of the interval. This is graded as P7-ON.
+every cycle of the interval. This is graded as P7-ON for the D-only blit and
+as P7-ON-E for the blit of USE code E.
 
 **Preconditions.**
 - G1.
 - The stored value shows bits 10, 9 and 6 set and no other bit among 8-0.
-- The blit ran: at least 2 source reads, so T_first < T_last.
+- The blit ran: at least 2 writes in the Q range (2 reads in the source
+  range, for the blit of USE code E), so T_first < T_last.
 - The CPU still wanted the bus when the blit ended: at least one CPU write
   into G falls after T_last, with a loop count below 2048.
 
@@ -666,12 +663,13 @@ every cycle of the interval. This is graded as P7-ON.
 - `DMACON = $8240` in step 2, so BLTPRI is clear. Expected: at least one CPU
   access in (T_first, T_last), by p.198. All preconditions still hold, with
   bit 10 clear in the stored value. This run is graded in the normal run as
-  P7-OFF.
+  P7-OFF (P7-OFF-E for the blit of USE code E).
 - For the comparators of P7-ON and P7-OFF: the BLTPRI-clear program put
   through the zero-access comparator of P7-ON (it makes CPU accesses, so the
-  line goes red), and the main program put through the at-least-one comparator
-  of P7-OFF (it makes none, so the line goes red). The same two inputs are
-  the contrasts of the aggregate line P7.
+  line goes red), and the main program put through the at-least-one
+  comparator of P7-OFF (it makes none, so the line goes red). The blit of USE
+  code E has the same pair for P7-ON-E and P7-OFF-E. The same two inputs of
+  the D-only blit are the contrasts of the aggregate line P7.
 - For the "blit ran" precondition: replace the BLTSIZE write by a write to
   COLOR00 (`$180`). No blit starts and the precondition goes red.
 - For the "CPU still wanted the bus" precondition: the CPU's logging loop runs
@@ -679,8 +677,8 @@ every cycle of the interval. This is graded as P7-ON.
   finishes, and the precondition goes red.
 
 **Reference frame.** The blit interval is anchored on the first and last
-source read at the port. The test checks the anchor by requiring at least two
-such reads.
+destination write at the port (source read, for the blit of USE code E). The
+test checks the anchor by requiring at least two such accesses.
 
 **Not graded.**
 - The /BLS pin: it is inside the chips.
@@ -688,15 +686,13 @@ such reads.
 - How many cycles the CPU gets with BLTPRI clear. p.198 gives the release
   rule but not the 68000's request pattern, so the contrasting case grades
   only "at least one".
-- A blit whose Table 6-2 sequence leaves a cycle without a blitter access (see
-  "The blit used").
 
 ### P8: BBUSY (bit 14) reads 1 while a blit is in progress and 0 when no blit is in progress
 
 **Claims:**
 - p.278: `5-appA-p278.c13`, `A-dmacon.b14`
 - status part: `5-appA-p278.c10`, `5-appA-p278.c8` (p.278) and
-  `5-appB-p289.c4` (p.289)
+  `5-appB-p289.c4` (p.289), graded by the aggregate line DMACONR (after P9)
 
 **Proposition.** Every DMACONR read that the program makes while a blit is in
 progress (other than the first read after BLTSIZE) shows bit 14 = 1. Reads
@@ -768,11 +764,12 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
   finishes, because the poll stops at read 2, and G1 and the DMACONR
   precondition still hold. The main run's own G3 and G4 are preconditions of
   P8-NOBLIT, since the indices come from it.
-- For (b): the blit still runs, and the fourth poll read comes from a zero word
-  instead of DMACONR. That read is made while the blit is in progress and shows
-  bit 14 = 0, so (b) goes red; the blit ran, at least 2 graded reads precede
-  T_last, and every other precondition still holds. The main program put
-  through the comparator of P8-NOBLIT is the mutation of that line.
+- For (b): no program that still makes the DMACONR read of the graded index,
+  with the blit running and every precondition live, can show bit 14 = 0 on
+  a system that follows the pages: p.186 sets the flag whenever a blit is in
+  progress. (b) is therefore contrasted by P8-NOBLIT, which runs the same
+  comparator on reads where no blit runs, and (b) goes red on a system whose
+  DMACONR reads bit 14 as 0 while a blit runs.
 - For the "the blit ran" precondition: the program without a blit, as above.
 - For the "at least 2 reads inside the blit" precondition: delay the first poll
   read until the blit has ended, with a delay loop between the BLTSIZE write
@@ -797,7 +794,7 @@ write here keeps bit 14 clear.
 **Claims:**
 - p.278: `5-appA-p278.c14`, `A-dmacon.b13`
 - status part: `5-appA-p278.c10`, `5-appA-p278.c8` (p.278) and
-  `5-appB-p289.c4` (p.289)
+  `5-appB-p289.c4` (p.289), graded by the aggregate line DMACONR (after P9)
 
 **Proposition.** After a blit has completed, DMACONR bit 13 is 1 if every word
 of the blit's logic output was zero, and 0 otherwise, also when the
@@ -880,6 +877,26 @@ destination bits are not written" of p.187.
 The name DMAF_BLTNZERO on p.187 reads like "not zero". The sense of the bit
 is taken from p.222 ("Remains 1 if ... always zero"), which agrees with
 p.187's "If the images do not overlap, the zero flag will stay true."
+
+### DMACONR: the register reads the DMA-control bits and the blitter status (aggregate of P2, P8 and P9)
+
+**Claims:**
+- p.278: `5-appA-p278.c8`, `5-appA-p278.c10`
+- p.289: `5-appB-p289.c4`
+
+**Proposition.** A read at `$DFF002` returns the DMA-control bits held by
+DMACON (P2), the blitter-busy bit (P8) and the blitter-zero bit (P9). p.278:
+"DMACONR 002 R A P DMA control (and blitter status) read" and "This register
+controls all of the DMA channels and contains blitter DMA status bits."
+p.289: "DMACONR *002 R A P DMA control (and blitter status) read".
+
+**Expected.** The graded lines P2, P8 and P9 all hold. The aggregate line
+prints a verdict only when every precondition of those three lines holds on
+its inputs; otherwise it is `NOT GRADED` and names the unmet precondition.
+
+**Contrasting cases.** Each component has its own: the program without one
+SET write through the table of P2, and the exchanged program through the
+table of P9, turn the aggregate red through their component.
 
 ### P10: The Copper writes AUDxLCH and AUDxLCL whatever the danger bit, under OCS and ECS
 
@@ -1107,14 +1124,15 @@ the real list and with both lists of the contrasting cases.
 | Proposition | Claims |
 |---|---|
 | P1 | `5-appA-p266.c2`, `5-appA-p266.c8`, `A-audxlch.acc`, `A-audxlcl.acc`, `5-appB-p290.c20`, `5-appB-p290.c27`, `5-appB-p290.c55`, `5-appB-p290.c62`, `5-appB-p290.c90`, `5-appB-p290.c97`, `5-appB-p290.c125`, `5-appB-p290.c132`, `B-aud0lch.acc`, `B-aud0lcl.acc`, `B-aud1lch.acc`, `B-aud1lcl.acc`, `B-aud2lch.acc`, `B-aud2lcl.acc`, `B-aud3lch.acc`, `B-aud3lcl.acc`, `5-appC-p298.c4`, `C-map.lch.acc`, `5-appC-p309.c4`, `5-appA-p263.c1`, `A-pre.c1` |
-| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `5-appA-p278.c8`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2`, `5-appB-p289.c4`, `5-appA-p263.c1`, `A-pre.c1` |
+| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2`, `5-appA-p263.c1`, `A-pre.c1` |
 | P3 | `5-appA-p278.c17`, `A-dmacon.b08` |
 | P4 | `5-appA-p278.c18`, `A-dmacon.b07` |
 | P5 | `5-appA-p278.c19`, `A-dmacon.b06` |
 | P6 | `5-appA-p278.c20`, `A-dmacon.b05` |
 | P7 | `5-appA-p278.c15`, `A-dmacon.b10` |
-| P8 | `5-appA-p278.c13`, `A-dmacon.b14`, `5-appA-p278.c10`, `5-appA-p278.c8`, `5-appB-p289.c4` |
-| P9 | `5-appA-p278.c14`, `A-dmacon.b13`, `5-appA-p278.c10`, `5-appA-p278.c8`, `5-appB-p289.c4` |
+| P8 | `5-appA-p278.c13`, `A-dmacon.b14` |
+| P9 | `5-appA-p278.c14`, `A-dmacon.b13` |
+| DMACONR (P2, P8, P9) | `5-appA-p278.c8`, `5-appA-p278.c10`, `5-appB-p289.c4` |
 | P10 | none (section 1) |
 | P11 | none (section 1) |
 | none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3`, `C-interp.copcon`, `C-interp.copcon.ecs` |
@@ -1143,11 +1161,13 @@ section 2.3, and the mechanism items below.
   by peeking memory and the second from the RAM-port record, which is how
   every proposition reads its results.
 - **DMA-block content.** Every DMA block a proposition reads from (audio
-  data, sprite structures, the Copper list, blit source patterns) is
-  poked into chip RAM directly before `boot()`, the same mechanism
-  `load_program()` itself uses; no program instruction writes it. Content
-  is immaterial where section 2.3 says so ("any values"; the sprite
-  and Copper-list content follow the pages P1/P6/P10/P11 cite).
+  data, sprite structures, the Copper list, the all-ones block F) is poked
+  into chip RAM directly before `boot()`, the same mechanism
+  `load_program()` itself uses; no program instruction writes it. Zb, P and
+  the blitter source blocks SA, SB and SC are not poked: they are zero from
+  reset, as section 2.3 requires. Content is immaterial where section 2.3
+  says so ("any values"; the sprite and Copper-list content follow the
+  pages P1/P6/P10/P11 cite).
 - **R's stored values are read from the RAM port's own log** of the CPU's
   store instructions (the write's data field), not peeked from memory
   content: a value the program never actually stored is then absent, not
