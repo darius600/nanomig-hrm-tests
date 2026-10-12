@@ -1,0 +1,36 @@
+--- a/userio.v
++++ b/userio.v
+@@ -150,6 +150,18 @@
+   end
+ end
+ 
++// Reset interval after a POTGO write with START: for eight lines the pot
++// lines that are inputs read 0 in POTGOR.
++reg [3:0] potrst;
++always @ (posedge clk) begin
++  if (clk7_en) begin
++    if (reset) potrst <= 4'd0;
++    else if (potreg[0]) potrst <= 4'd8;
++    else if (pot_cnt_en && potrst != 4'd0) potrst <= potrst - 4'd1;
++  end
++end
++wire [3:0] potdump = (potrst != 4'd0) ? ~{potreg[15], potreg[13], potreg[11], potreg[9]} : 4'b0000;
++
+ wire joy2_pin5 = ~(potreg[13] & ~potreg[12]);
+ wire joy1_pin5 = ~(potreg[9]  & ~potreg[8]);
+ 
+@@ -298,10 +310,10 @@
+ 	else if (reg_address_in[8:1]==POT1DAT[8:1])
+ 		data_out[15:0] = { pot1y, pot1x };
+ 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
+-		data_out[15:0] = {1'b0, potcap[3],
+-								1'b0, potcap[2],
+-								1'b0, potcap[1],
+-								1'b0, potcap[0],
++		data_out[15:0] = {1'b0, potcap[3] & ~potdump[3],
++								1'b0, potcap[2] & ~potdump[2],
++								1'b0, potcap[1] & ~potdump[1],
++								1'b0, potcap[0] & ~potdump[0],
+ 								8'h00};
+ 	else if (reg_address_in[8:1]==SCRDAT[8:1])//read mouse scroll wheel
+ 		data_out[15:0] = {8'h00,mouse0scr};

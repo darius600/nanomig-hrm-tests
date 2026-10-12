@@ -12,7 +12,7 @@
 ; the CPU instruction stream itself writes or a wait target baked into the
 ; code -- not something the harness can vary at its ports. K2 is already
 ; inside the sequence below (every Phase-D config's own output-driven
-; line). K5 and VGREEN are harness-side stimulus variants of this same
+; line). K5 is a harness-side stimulus variant of this same
 ; binary (see the test).
 
         include "nanomig.i"
