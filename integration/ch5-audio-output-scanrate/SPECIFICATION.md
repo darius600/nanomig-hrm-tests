@@ -239,13 +239,16 @@ B (pp. 289-293) and Appendix A:
 **F1: time base, used by P6 and by A6 (2.7).**
 p. 194: "During a horizontal scan line (about 63 microseconds), there are
 227.5 "color clocks", or memory access cycles", and the per-line allocation
-includes "4 cycles for memory refresh".
+includes "4 cycles for memory refresh". p. 304 gives the PAL figure again:
+"PAL (625 lines, 227.5 colorclocks per scan line)".
 
 - **Anchor.** Memory-refresh accesses at the Chip-memory port come in one
   group per line. Take the first refresh access of each group over 100
-  consecutive lines. Convert the mean spacing to color clocks using the
-  harness's declared system-clock-cycles-per-color-clock ratio. It must lie
-  between 227 and 228 color clocks (the page's 227.5, to half a color clock).
+  consecutive lines (A6, 2.7, takes every group of its interval). Convert the
+  mean spacing to color clocks using 8 `clk_sys` cycles per color clock,
+  taken from the design (`nanomig_harness.h` declares no such ratio; section
+  5). It must lie between 227 and 228 color clocks (the page's 227.5, to half
+  a color clock).
 - **Conversion to microseconds.** Microseconds = color clocks x the clock
   interval on p. 141: 0.281937 us for PAL, 0.279365 us for NTSC.
 - **Contrasting case** (ECS only). Before the measured runs, write VTOTAL =
@@ -340,8 +343,11 @@ states, never a chosen sign bit.
      by e. The pages fix no phase between an audio DMA read and the output it
      feeds (p. 141 gives each channel one DMA slot per line), so the window
      does not end on a read; and it ends in the middle of a level so that
-     neither that phase nor the small tolerance of c moves it across an
-     output transition.
+     that phase does not move it across an output transition. Half a level
+     is 1/(2 N K) of the window: about 0.8 % for T1 and 1.6 % for T2 and
+     T2S, more than the 0.2 % A6's band leaves c, but 0.1 % for T3; T3's
+     window holds because its levels measure exactly 2048 samples (section
+     5), not because of A6.
    - Take the output samples in [s, e) as the port's raw 15-bit magnitude.
 2. Split them into runs of identical consecutive values, and note each
    run's value and duration. Consecutive runs never share a value, by this
@@ -433,10 +439,10 @@ A failing precondition means "not graded", never green.
 |---|---|---|---|
 | A1 | Audio DMA for the table ran, pass after pass, from its first restart on, long enough to cover the window | F2's anchor check holds from t_2 on, with at least N + 3 reads of the table's first word (t_1 ... t_(N+3)), and the last of them lies at or after the window's end e (2.5). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0). Graded once per program that reads the output: the audio program (T1, T2, T3) and T2S's own program | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
-| A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
+| A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples and equals the programmed held level r_T (2.5) | AUD0PER = 129 for T1 only (the other tables keep 128): T1's held levels last 1032 samples against the programmed 1024, so the median run is not r_T and A3 goes red for T1. A4, A5 and the propositions of T1 are then not graded |
 | A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
 | A5 | The window holds the programmed population of held levels, nothing dropped or added | L has exactly N x K entries: N passes of K held levels, the last level kept (p. 139 and p. 145: the table repeats after the programmed word count; p. 140: one period per sample). N and K come from the table (2.6), not from the output | (1) A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short by one per pass. (2) A systematic merge (T1 with every pair of adjacent codes equal: $0000, $2020, $4040, $6060): every level lasts twice as long and there are half as many; L has half of N x K entries, although the median held level doubles with it |
-| A6 | The color-clock time unit holds in the run | F1's anchor (2.4) holds in the run itself: over the interval from the program's first to its last read of an audio table, the refresh groups recur 227-228 color clocks apart, using 8 `clk_sys` cycles per color clock. The window of 2.5 is built with that unit | ECS only: before the table is started, VTOTAL = 524, HTOTAL = 113 and BEAMCON0 = $00A0, F1's contrasting case (2.4). Lines then last 114 color clocks and A6 goes red. The OCS configuration has no such registers, and A6 stays green there |
+| A6 | The color-clock time unit holds in the run | F1's anchor (2.4) holds in the run itself: over the interval from the program's first to its last read of an audio table, the mean spacing of all refresh groups in it is 227-228 color clocks, using 8 `clk_sys` cycles per color clock. The window of 2.5 is built with that unit, so A1 (its last read against the window's end), A3-A5 and the propositions are graded behind A6 | ECS only: before the table is started, VTOTAL = 524, HTOTAL = 113 and BEAMCON0 = $00A0, F1's contrasting case (2.4). Lines then last 114 color clocks and A6 goes red. The OCS configuration has no such registers, and A6 stays green there |
 
 Why A5 counts N x K and builds its window from the programmed period. The
 count a window holds follows from its length and the length of a held level.
@@ -474,7 +480,7 @@ not enter the count, and the last level is graded like the rest.
      every word. The fit covers all 4 words in each of the 8 passes, 32 word
      loads, and fails if either byte is missing. Outputting only the upper
      bytes, for example, gives 00 20 40 60, which matches neither sequence.
-5. **Preconditions.** A1-A5 for T1.
+5. **Preconditions.** A1-A6 for T1.
 6. **Contrasting cases.**
    - Replace T1's last word $6070 by $7060. The page predicts output 00 10 20
      30 40 50 70 60, which matches neither C_up nor C_low. P1 goes red.
@@ -514,11 +520,11 @@ not enter the count, and the last level is graded like the rest.
      next byte address".
    - Graded: FIT(L, C_up) matches. Quantifier: every word of every pass in
      W_T1.
-5. **Preconditions.** A1-A5 for T1, and P1 green. If P1 is red, P2 is not
+5. **Preconditions.** A1-A6 for T1, and P1 green. If P1 is red, P2 is not
    graded.
 6. **Contrasting case.** Swap the bytes of every word: $1000, $3020, $5040,
    $7060. The page predicts 10 00 30 20 50 40 70 60. C_up does not match,
-   so P2 goes red, while P1 stays green (C_low matches). A1-A5 still hold.
+   so P2 goes red, while P1 stays green (C_low matches). A1-A6 still hold.
 7. **Reference frame.** F2, as for P1.
 
 ### P3: Each byte is output as a two's-complement value
@@ -546,11 +552,11 @@ not enter the count, and the last level is graded like the rest.
      hold the same code in both byte positions (2.6), so this alone cannot
      tell a genuine two's-complement reading from one where a byte position
      was dropped or swapped; P3B (below) grades that.
-5. **Preconditions.** A1-A5 for T2.
+5. **Preconditions.** A1-A6 for T2.
 6. **Contrasting case.** Flip bit 7 of every byte: $8080, $8181, $FFFF,
    $0000. The page predicts s = -128, -127, -1, 0, with steps proportional to
    (+1, +126, +1, -128). That is exactly the output an unsigned reading of T2
-   would give, and FIT(L, C2) fails, so P3 goes red. A1-A5 still hold.
+   would give, and FIT(L, C2) fails, so P3 goes red. A1-A6 still hold.
 7. **Reference frame.** F2.
 
 ### P3B: Each byte is output as a two's-complement value, independent of byte position
@@ -572,7 +578,7 @@ not enter the count, and the last level is graded like the rest.
      unlike T2 (P3), dropping or swapping a byte position here changes which
      code is read from which position, so a match establishes the relation
      holds at both positions, not only when they happen to agree.
-5. **Preconditions.** A1-A5 for T2S (2.7's own definitions, applied to
+5. **Preconditions.** A1-A6 for T2S (2.7's own definitions, applied to
    T2S). A2 applies to T2S's own program: it reads ADKCONR and stores it
    (2.6, step 2), because p. 165 says that with an attach bit set channel
    0's data goes to the volume latch of the next channel "instead of to
@@ -581,7 +587,7 @@ not enter the count, and the last level is graded like the rest.
 6. **Contrasting cases.**
    - Proposition: swap the bytes of both words: $0180, $007F. The
      page predicts 01 80 00 7F (s = 1, -128, 0, 127); FIT(L, C_sign) fails
-     (no rotation of 80 01 7F 00 matches), so P3B goes red. A1-A5 still
+     (no rotation of 80 01 7F 00 matches), so P3B goes red. A1-A6 still
      hold.
    - A2: add ADKCON = $8001 (USE0V1) between the preamble and the ADKCONR
      read, as in 2.7. A2 goes red for T2S and P3B is not graded.
@@ -611,10 +617,10 @@ not enter the count, and the last level is graded like the rest.
      population (2 x 256 = 512 entries), nothing dropped.
    - Note: an unsigned reading of the bytes also matches this fit (rotated by
      128). P4 grades the step size only; the sign reading is P3/P3B.
-5. **Preconditions.** A1-A5 for T3.
+5. **Preconditions.** A1-A6 for T3.
 6. **Contrasting case.** Replace the word for code +5 ($0505, k = 133) by
    $0707. The page predicts the codes ... 04 07 06 07 08 ..., steps of +3 and
-   -1 where +1 is required, and FIT(L, C3) fails, so P4 goes red. A1-A5 still
+   -1 where +1 is required, and FIT(L, C3) fails, so P4 goes red. A1-A6 still
    hold.
 7. **Reference frame.** F2.
 
@@ -931,8 +937,10 @@ otherwise.
   replaces `prog_audio` by a program that never writes the done marker:
   FIXTURE red in ECS/PAL and OCS/PAL on both cores. FIXCONST makes every
   program store a different constant: the nine FIXTURE-CONST lines red;
-  A2 (prog_audio and T2S), and through it A3-A6 and P1-P4 of every table
-  and P3B, C1, P5, and B1 and B2 of both disk runs, not graded. FIXDATA pokes one word of each table and
+  A2 (prog_audio and T2S), and through it A3-A5 and P1-P4 of T1, T2 and T3,
+  A3-A5 and P3B of T2S, C1, P5, and B1 and B2 of both disk runs, not graded;
+  A6 of both programs, which reads no result slot, stays graded and green.
+  FIXDATA pokes one word of each table and
   both buffers other than the expected content: 14 FIXTURE-DATA lines red
   (T1, T2, T3, T2S, both buffers); A4, A5 and the propositions of the four
   tables not graded, A1, A2, A3 and A6 still graded and green. FIXWRITE leaves out
