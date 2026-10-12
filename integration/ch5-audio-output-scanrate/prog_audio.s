@@ -31,6 +31,12 @@
 ;   MUT_A4  T1's own AUD0VOL is 0 instead of 64 (A4 for T1 goes red)
 ;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 ;   MUT_FIXWRITE  the ADKCONR store is left out (FIXTURE-WRITE's own contrasting case)
+;   MUT_A6  VTOTAL/HTOTAL/BEAMCON0 are rewritten before the tables start (ECS only):
+;           A6's own contrasting case, lines of 114 colour clocks
+;   MUT_P1LAST  after T1's DMA is started, wait a whole number of lines, then write one byte
+;           of T1 with the CPU (P1's last-level contrasting case); the number of lines,
+;           the byte's address and its value are three parameter words that the test
+;           pokes into the result block before boot()
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -40,6 +46,10 @@
 T1_ADDR equ     $002000         ; 4 words, below $080000 (2.1)
 T2_ADDR equ     $002100         ; 4 words
 T3_ADDR equ     $002200         ; 256 words
+PL_LINES equ    RESULTS+$30     ; MUT_P1LAST parameters, poked by the test: lines to wait,
+PL_ADDR  equ    RESULTS+$32     ; the address (long) of the byte to write,
+PL_VAL   equ    RESULTS+$36     ; and its value (low byte)
+PL_MARK  equ    RESULTS+$40     ; MUT_P1LAST: a store whose port cycle marks the instant the wait starts
 KFIX    equ     RESULTS+$20     ; FIXTURE: a program-stored known value, checked by
                                  ; the test before it relies on anything else this
                                  ; program stores (BRIEF.md). Stored last, right
@@ -78,6 +88,12 @@ start:
                                         ; preamble's own clear, so it survives to the read
         endc
 
+        ifd     MUT_A6
+        move.w  #524,VTOTAL(a0)        ; MUT_A6: A6's contrasting case (2.4, ECS only)
+        move.w  #113,HTOTAL(a0)
+        move.w  #$00A0,BEAMCON0(a0)    ; VARBEAMEN + PAL (p.304, p.305)
+        endc
+
         ; ---- step 2: read ADKCONR, store it (precondition A2) ----
         ifnd    MUT_FIXWRITE
         move.w  ADKCONR(a0),RESULTS
@@ -101,6 +117,22 @@ start:
         move.w  #$8200,DMACON(a0)      ; MUT_A1: AUD0EN not set -- no audio reads
         else
         move.w  #$8201,DMACON(a0)      ; SET, DMAEN, AUD0EN (p.144)
+        endc
+        ifd     MUT_P1LAST
+        move.w  #1,PL_MARK             ; the reference instant, visible at the port
+        move.w  PL_LINES,d3
+        move.w  VHPOSR(a0),d4
+        lsr.w   #8,d4                  ; d4 = the beam's line (low byte)
+.pl1    move.w  VHPOSR(a0),d5
+        lsr.w   #8,d5
+        cmp.b   d4,d5
+        beq.s   .pl1                   ; wait for the line to change ...
+        move.b  d5,d4
+        subq.w  #1,d3
+        bne.s   .pl1                   ; ... PL_LINES times
+        move.l  PL_ADDR,a1
+        move.w  PL_VAL,d6
+        move.b  d6,(a1)                ; MUT_P1LAST: one byte of T1, written by the CPU
         endc
         WAITVBL
         move.w  #$0001,DMACON(a0)      ; clears AUD0EN only (p.144)

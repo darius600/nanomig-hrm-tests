@@ -15,15 +15,17 @@
 // 0 and does not grade which named jack that is; this test picks that
 // side at runtime (audio_side_is_right()), not by a fixed choice.
 //
-// Every table's analysis window starts after the table's first restart
-// (t_2, SPECIFICATION.md 2.4). The first pass, the reads before t_2, is
+// Every table's analysis window starts on the first output transition after
+// the table's first restart (t_2, SPECIFICATION.md 2.4) and ends in the middle
+// of level number N x K, with the level taken from the programmed period
+// (SPECIFICATION.md 2.5). The first pass, the reads before t_2, is
 // printed per table as a MEASURED line that names NM-HRM-084 and is not
 // graded.
 //
 // NMH_MUTATE selects one mutated program or table in place of its normal
 // counterpart; unset, every section runs its normal binary and table, and
 // the summary counts the fixture, preconditions and assertions only.
-// Selectors: P1 P2 P3 P4 A1 A2 A2T A4 A5 P3B P5 C1 C1DUP FASTF0 FASTS1 B2 B3 F1
+// Selectors: P1 P1LAST P2 P3 P4 A1 A2 A2T A4 A5 A5SYS A6 P3B P5 C1 C1DUP FASTF0 FASTS1 B2 B3 F1
 // FIXCONST FIXDATA FIXWRITE NODONE.
 //
 // Each MUTATION record states the measured result of its selector on both
@@ -40,68 +42,96 @@
 //
 // MUTATION P1 stimulus red NMH_MUTATE=P1: T1's last word $6070 -> $7060
 //   measured: fx68k and TG68K: P1 red (ECS/PAL, OCS/PAL); P2 not graded (RECORDED, "P1 is red"); no other line changes
-//   fx68k 42 passed, 2 failed; TG68K 42 passed, 2 failed
+//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
+// MUTATION P1 stimulus red NMH_MUTATE=P1LAST: T1 as normal; after the DMA starts the program waits a measured number of
+//   lines and writes one byte of T1 with the CPU, the byte the window's last level comes from, between the DMA's last two
+//   reads of that word (a first run of the same program writes the byte's own value and measures the byte and the
+//   instant; the changed byte is $7F)
+//   measured: fx68k and TG68K: P1 red (ECS/PAL, OCS/PAL); P2 not graded (RECORDED, "P1 is red"); FIXTURE-DATA T1 green
+//   (the one CPU write is the fixture's own expected write count); the MEASURED line names the one entry of L that
+//   differs from the level one pass earlier, the last (index 63); no other line changes
+//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
 // MUTATION P2 stimulus red NMH_MUTATE=P2: the bytes of every word of T1 swapped ($1000, $3020, $5040, $7060)
 //   measured: fx68k and TG68K: P2 red (ECS/PAL, OCS/PAL), P1 green; no other line changes
-//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
+//   fx68k 46 passed, 2 failed; TG68K 46 passed, 2 failed
 // MUTATION P3 stimulus red NMH_MUTATE=P3: every byte of T2 with bit 7 flipped
 //   measured: fx68k and TG68K: P3 red (ECS/PAL, OCS/PAL); no other line changes
-//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
+//   fx68k 46 passed, 2 failed; TG68K 46 passed, 2 failed
 // MUTATION P4 stimulus red NMH_MUTATE=P4: T3's word for code +5 (k=133) $0505 -> $0707
 //   measured: fx68k and TG68K: P4 red (ECS/PAL, OCS/PAL); no other line changes
-//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
+//   fx68k 46 passed, 2 failed; TG68K 46 passed, 2 failed
 // MUTATION A1 stimulus red NMH_MUTATE=A1: for T1, DMACON $8200 instead of $8201 (AUD0EN not set)
 //   measured: fx68k and TG68K: A1 for T1 red (ECS/PAL, OCS/PAL); FIXTURE-DATA T1 also red, no read of T1 at all;
 //   T1's A3, A4, A5, P1 and P2 not graded (RECORDED); A1 for T2 and T3 and every other line unchanged
-//   fx68k 32 passed, 4 failed; TG68K 32 passed, 4 failed
-// MUTATION A2 stimulus red NMH_MUTATE=A2: ADKCON $8001 (USE0V1) set before the ADKCONR read
+//   fx68k 34 passed, 4 failed; TG68K 34 passed, 4 failed
+// MUTATION A2 stimulus red NMH_MUTATE=A2: ADKCON $8001 (USE0V1) set before the ADKCONR read of prog_audio
 //   measured: fx68k and TG68K: A2 red (ECS/PAL, OCS/PAL); A3, A4, A5 and the propositions of every table not
 //   graded (RECORDED, "precondition A2 failed or not graded"); A1 of every table unchanged
-//   fx68k 18 passed, 2 failed; TG68K 18 passed, 2 failed
+//   fx68k 20 passed, 2 failed; TG68K 20 passed, 2 failed
+// MUTATION A2 stimulus red NMH_MUTATE=A2T: ADKCON $8001 (USE0V1) set before the ADKCONR read of prog_t2s
+//   measured: fx68k and TG68K: A2 for T2S red (ECS/PAL, OCS/PAL); T2S's A3-A6 and P3B not graded (RECORDED,
+//   "precondition A2 failed"); A1 for T2S and every other line unchanged
+//   fx68k 10 passed, 2 failed; TG68K 10 passed, 2 failed
 // MUTATION A3 none impossible unfalsifiable at this boundary: this harness's audio() capture is one sample per
 //   clk_sys cycle, far above the sample-rate threshold at which P=124 would fail A3 (SPECIFICATION.md 2.7); no
 //   legal period fails A3 on this harness, so no stimulus makes it red and no NMH_MUTATE run stands behind this record
 // MUTATION A4 stimulus red NMH_MUTATE=A4: T1's AUD0VOL = 0 instead of 64
-//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 0 entries, |b| 0.0); T1's A5, P1 and P2 not
-//   graded (RECORDED, "precondition A4 failed"); A1 and A3 for T1 green, T2 and T3 unchanged
-//   fx68k 38 passed, 2 failed; TG68K 38 passed, 2 failed
+//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 1 entry); T1's A5, P1 and P2 not graded
+//   (RECORDED, "precondition A4 failed"); A1 and A3 for T1 green, T2 and T3 unchanged
+//   fx68k 40 passed, 2 failed; TG68K 40 passed, 2 failed
 // MUTATION A5 stimulus red NMH_MUTATE=A5: T2's word 2 changed from $0101 to $0000 (repeats word 1's code, adjacent
 //   within a pass)
-//   measured: fx68k and TG68K: A5 for T2 red (ECS/PAL, OCS/PAL; 23 found where 31 is exact: one level lost per
-//   pass, 8 passes); P3 not graded (RECORDED, "precondition A5 failed"); no other line changes
+//   measured: fx68k and TG68K: A5 for T2 red (ECS/PAL, OCS/PAL; 24 found where 32 is the programmed population: one
+//   level lost per pass, 8 passes); P3 not graded (RECORDED, "precondition A5 failed"); no other line changes
+//   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
+// MUTATION A5 stimulus red NMH_MUTATE=A5SYS: T1's words $0000, $2020, $4040, $6060 (every pair of adjacent codes equal:
+//   levels twice as long, half as many)
+//   measured: fx68k and TG68K: A5 for T1 red (ECS/PAL, OCS/PAL; 32 found where 64 is the programmed population);
+//   A3 for T1 green (median run 2048); P1 and P2 not graded (RECORDED, "precondition A5 failed"); no other line changes
 //   fx68k 42 passed, 2 failed; TG68K 42 passed, 2 failed
+// MUTATION A6 stimulus red NMH_MUTATE=A6: before the tables start, VTOTAL=524/HTOTAL=113/BEAMCON0=$00A0 in prog_audio and in
+//   prog_t2s (ECS only, 2.4)
+//   measured: fx68k and TG68K: A6 red for prog_audio and for T2S (ECS/PAL only; OCS/PAL has no such registers and stays
+//   green); behind them not graded (RECORDED, "precondition A6 failed"): A3-A5 and P1-P4 of T1, T2, T3 and A3-A5 and
+//   P3B of T2S in ECS/PAL; every other line unchanged
+//   fx68k 51 passed, 2 failed; TG68K 51 passed, 2 failed
 // MUTATION P3B stimulus red NMH_MUTATE=P3B: T2S's two words byte-swapped ($8001,$7F00 -> $0180,$007F)
 //   measured: fx68k and TG68K: P3B red (ECS/PAL, OCS/PAL); no other line changes (T2S's own program is
 //   independent of prog_audio.s)
-//   fx68k 14 passed, 2 failed; TG68K 14 passed, 2 failed
+//   fx68k 20 passed, 2 failed; TG68K 20 passed, 2 failed
 // MUTATION FIXTURE stimulus red NMH_MUTATE=NODONE: prog_audio is replaced by prog_nodone, which never writes the
 //   done marker (the T2S, adkcon and disk sections are not run under this selector)
 //   measured: fx68k and TG68K: FIXTURE red for prog_audio (ECS/PAL, OCS/PAL), the audio lines not graded (RECORDED,
 //   "audio fixture did not complete"); 0 passed, 2 failed on both cores
 // MUTATION FIXTURE-CONST stimulus red NMH_MUTATE=FIXCONST: each of the four programs' own KFIX store becomes $DEAD instead of $BEEF
 //   measured: fx68k and TG68K: all nine FIXTURE-CONST lines red (prog_audio x2, prog_t2s x2, prog_adkcon x2,
-//   prog_diskrate x3); behind them not graded (RECORDED): A2, then A3, A4, A5 and P1-P4 of every table (ECS/PAL,
-//   OCS/PAL), C1 and P5 (x2), B1 and B2 of both runs (x3); every other line unchanged
-//   fx68k 65 passed, 9 failed; TG68K 65 passed, 9 failed
+//   prog_diskrate x3); behind them not graded (RECORDED): A2 and A2 for T2S, then A3, A4, A5 and P1-P4 of every table
+//   (ECS/PAL, OCS/PAL), C1 and P5 (x2), B1 and B2 of both disk runs (x3); every other line unchanged
+//   fx68k 61 passed, 9 failed; TG68K 61 passed, 9 failed
 // MUTATION FIXTURE-DATA stimulus red NMH_MUTATE=FIXDATA: one word of every poked table other than the content the
 //   check expects (T1 word 2 $2031, T2 word 2 $0100, T3 word 11 flipped in bit 0, T2S word 2 $7F01) and both disk
 //   buffers poked with $5555 instead of $AAAA
 //   measured: fx68k and TG68K: FIXTURE-DATA red for T1, T2, T3 (x2 configs), T2S (x2) and both buffers (x3), 14
-//   lines; behind the table lines not graded (RECORDED): A4, A5 and the propositions of T1, T2, T3 and T2S; A1 and
-//   A3 stay graded and green; the buffer lines gate nothing; every other line unchanged
-//   fx68k 70 passed, 14 failed; TG68K 70 passed, 14 failed
-// MUTATION FIXTURE-WRITE stimulus red NMH_MUTATE=FIXWRITE: the ADKCONR store into the A2 slot (prog_audio) and run
-//   F's store of its ADKCONR read into the B1 slot (prog_diskrate) are left out
-//   measured: fx68k and TG68K: FIXTURE-WRITE red for the A2 slot (ECS/PAL, OCS/PAL) and the B1-for-run-F slot
-//   (ECS/PAL, OCS/PAL, ECS/NTSC); behind them not graded (RECORDED): A2 and, through it, A3-A5 and the propositions
-//   of every table (x2), B1 for run F (x3); every other line unchanged
-//   fx68k 58 passed, 5 failed; TG68K 58 passed, 5 failed
+//   lines; behind the table lines not graded (RECORDED): A4, A5 and the propositions of T1, T2, T3 and T2S; A1, A2, A3
+//   and A6 stay graded and green; the buffer lines gate nothing; every other line unchanged
+//   fx68k 78 passed, 14 failed; TG68K 78 passed, 14 failed
+// MUTATION FIXTURE-WRITE stimulus red NMH_MUTATE=FIXWRITE: the ADKCONR store into the A2 slot (prog_audio and prog_t2s) and
+//   run F's store of its ADKCONR read into the B1 slot (prog_diskrate) are left out
+//   measured: fx68k and TG68K: FIXTURE-WRITE red for the A2 slot of prog_audio (ECS/PAL, OCS/PAL), of prog_t2s
+//   (ECS/PAL, OCS/PAL) and the B1-for-run-F slot (ECS/PAL, OCS/PAL, ECS/NTSC); behind them not graded (RECORDED): A2
+//   (prog_audio and T2S) and, through it, A3-A5 and the propositions of every table (x2), B1 for run F (x3); every
+//   other line unchanged
+//   fx68k 68 passed, 7 failed; TG68K 68 passed, 7 failed
 // MUTATION P5 stimulus red NMH_MUTATE=P5: step 2 writes $8200 instead of $8100
 //   measured: fx68k and TG68K: P5 red (ECS/PAL, OCS/PAL); no other line changes
 //   fx68k 6 passed, 2 failed; TG68K 6 passed, 2 failed
 // MUTATION C1 stimulus red NMH_MUTATE=C1: the store of R2 (step 3's readback) left out
 //   measured: fx68k and TG68K: C1 red (ECS/PAL, OCS/PAL); P5 not graded (RECORDED, "precondition C1 failed"); the
 //   fixture lines, which no longer depend on the slots, stay green
+//   fx68k 4 passed, 2 failed; TG68K 4 passed, 2 failed
+// MUTATION C1 stimulus red NMH_MUTATE=C1DUP: the store of R2 made twice
+//   measured: fx68k and TG68K: C1 red (ECS/PAL, OCS/PAL; two writes to R2); P5 not graded (RECORDED, "precondition C1
+//   failed"); the fixture lines stay green
 //   fx68k 4 passed, 2 failed; TG68K 4 passed, 2 failed
 // MUTATION B1 stimulus red NMH_MUTATE=FASTF0: run F's ADKCON write becomes $0100 instead of $8100
 //   measured: fx68k and TG68K: B1 for run F red (ECS/PAL, OCS/PAL, ECS/NTSC); no other line changes
@@ -196,6 +226,19 @@ constexpr uint32_t DISKBUF_A = 0x003000;
 constexpr uint32_t DISKBUF_B = 0x004000;
 
 constexpr int kNT1 = 8, kNT2 = 8, kNT3 = 2, kNT2S = 8;   // N (2.6 table)
+// AUD0PER of prog_audio.s and prog_t2s.s, in color clocks (SPECIFICATION.md
+// 2.6, "Period P"); restated here the way nanomig.i is.
+constexpr uint32_t kAudPer = 128;
+// prog_audio.s under MUT_P1LAST: three parameter words that the test pokes
+// before boot(), and the store whose port cycle marks the start of the wait.
+constexpr uint32_t kPlLines = kResults + 0x30;
+constexpr uint32_t kPlAddr  = kResults + 0x32;
+constexpr uint32_t kPlVal   = kResults + 0x36;
+constexpr uint32_t kPlMark  = kResults + 0x40;
+
+// A table under test: N passes of K held levels, each level u bytes long
+// (SPECIFICATION.md 2.6 table).
+struct TableSpec { const char* name; uint32_t addr; int words, N, K, unit; };
 constexpr uint32_t T2S_ADDR = 0x002000;   // P3B (prog_t2s.s, its own program): 2 words
 
 // ---- table content (P1-P4's own data mutations live here; see
@@ -205,6 +248,9 @@ constexpr uint32_t T2S_ADDR = 0x002000;   // P3B (prog_t2s.s, its own program): 
 // check expects (the expected content is always table(mv == FIXDATA ? "" : mv)).
 std::vector<uint16_t> t1_table(const std::string& mv) {
     if (mv == "P1") return {0x0010, 0x2030, 0x4050, 0x7060};
+    // A5's systematic contrast: every pair of adjacent codes equal, so every
+    // level lasts two periods and there are half as many.
+    if (mv == "A5SYS") return {0x0000, 0x2020, 0x4040, 0x6060};
     if (mv == "P2") return {0x1000, 0x3020, 0x5040, 0x7060};
     if (mv == "FIXDATA") return {0x0010, 0x2031, 0x4050, 0x6070};
     return {0x0010, 0x2030, 0x4050, 0x6070};
@@ -403,19 +449,26 @@ bool has_one_write(const std::vector<nmh::RamAccess>& log, uint32_t word_addr) {
 
 // FIXTURE-DATA: the directly poked audio/disk tables asserted on the RAM
 // port before use, not merely trusted from poke_word(). True when every
-// read of any word of the table carries exactly the data expected at that
-// address and the port shows at least one read of every word (every_word)
-// or at least one read (not every_word, for a buffer whose length a
-// selector shortens).
+// read of any word of the table carries exactly the data the word holds at
+// that moment -- the poked content, as changed by the CPU writes to the
+// table that the port shows before the read -- the number of such writes is
+// `expected_writes` (the stimulus's own), and the port shows at least one
+// read of every word (every_word) or at least one read (not every_word, for
+// a buffer whose length a selector shortens).
 bool all_reads_match(const std::vector<nmh::RamAccess>& log, uint32_t base_word,
-                     const std::vector<uint16_t>& expected, bool every_word = true) {
+                     const std::vector<uint16_t>& expected, bool every_word = true,
+                     size_t expected_writes = 0) {
+    std::vector<uint16_t> cur = expected;
     std::vector<bool> seen(expected.size(), false);
+    size_t writes = 0;
     for (auto& a : log) {
-        if (a.is_write || a.word_addr < base_word || a.word_addr >= base_word + expected.size()) continue;
+        if (a.word_addr < base_word || a.word_addr >= base_word + expected.size()) continue;
         size_t i = a.word_addr - base_word;
-        if (a.data != expected[i]) return false;
+        if (a.is_write) { cur[i] = a.data; ++writes; continue; }
+        if (a.data != cur[i]) return false;
         seen[i] = true;
     }
+    if (writes != expected_writes) return false;
     if (every_word) return std::find(seen.begin(), seen.end(), false) == seen.end();
     return std::find(seen.begin(), seen.end(), true) != seen.end();
 }
@@ -442,29 +495,39 @@ std::optional<uint64_t> first_transition(const std::vector<nmh::AudioSample>& au
     return std::nullopt;
 }
 
-// LEVELS(W) (SPECIFICATION.md 2.5): raw_runs() only starts a new run when
-// the sample value changes, so it never yields two adjacent runs of equal
-// value. The window starts on an output transition (first_transition()),
-// so its first run is complete; its end is the cycle of a DMA read, not of
-// an output transition, so the run in progress there is only partly inside
-// the window. That last run is dropped unconditionally, by position, not
-// by a length threshold. A5 (2.7) then grades that the exact expected
-// population of complete held levels remains.
-std::vector<int32_t> levels_from_runs(const std::vector<RawRun>& runs) {
-    if (runs.size() <= 1) return {};
-    std::vector<int32_t> out;
-    out.reserve(runs.size() - 1);
-    for (size_t i = 0; i + 1 < runs.size(); ++i) out.push_back(runs[i].value);
-    return out;
+// The analysis window of a table (SPECIFICATION.md 2.5, step 1): it starts
+// on the first output transition at or after t_2 and ends in the middle of
+// level number N x K, with the level taken from the programmed period (u x P
+// x kCck samples), not from the output. Every run in it is kept, the last
+// one (cut by e) included.
+struct Window {
+    bool have = false;
+    uint64_t s = 0, e = 0, level = 0;
+    std::vector<RawRun> runs;
+};
+
+Window make_window(const std::vector<nmh::AudioSample>& audio, const F2Result& f2, const TableSpec& ts,
+                   bool use_right) {
+    Window w;
+    if (f2.pass_starts.size() < 2) return w;
+    const uint64_t t2 = f2.pass_starts[1];
+    w.level = (uint64_t)ts.unit * kAudPer * kCck;
+    const uint64_t span = ((2ull * (uint64_t)ts.N * (uint64_t)ts.K - 1ull) * w.level) / 2ull;
+    auto tr = first_transition(audio, t2, std::min<uint64_t>(audio.size(), t2 + 4 * w.level), use_right);
+    w.s = tr ? *tr : t2;
+    w.e = w.s + span;
+    if (w.e > audio.size()) return w;
+    w.runs = raw_runs(audio, w.s, w.e, use_right);
+    w.have = true;
+    return w;
 }
 
-// A5's expected population (SPECIFICATION.md 2.7): a window of `span`
-// samples that starts on an output transition holds, when every held level
-// lasts `level` samples, ceil(span / level) runs of which the last is
-// dropped (LEVELS step 3): (span - 1) / level complete levels, whatever the
-// phase between the window's end (a DMA read) and the output transitions.
-size_t window_levels(uint64_t span, uint64_t level) {
-    return level == 0 || span == 0 ? 0 : (size_t)((span - 1) / level);
+// LEVELS(W) (SPECIFICATION.md 2.5): the value of every run, in time order.
+std::vector<int32_t> run_values(const std::vector<RawRun>& runs) {
+    std::vector<int32_t> out;
+    out.reserve(runs.size());
+    for (auto& r : runs) out.push_back(r.value);
+    return out;
 }
 
 struct FitResult { bool matches = false; double a = 0, b = 0; int rotation = -1; double resid = 1e300; };
@@ -567,11 +630,31 @@ struct AudioCapture {
     std::optional<uint64_t> done;
     std::optional<uint16_t> adkconr;
     std::optional<uint16_t> fixval;   // FIXTURE's own known-constant slot (KFIX)
-    std::vector<nmh::RamAccess> log;
+    std::vector<nmh::RamAccess> log;       // coalesced: for F2
+    std::vector<nmh::RamAccess> log_raw;   // NOT coalesced: for F1 (A6)
     std::vector<nmh::AudioSample> audio;
 };
 
-AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh::Config& cfg) {
+// A6 (SPECIFICATION.md 2.7): F1's anchor in the audio run itself, over the
+// interval from the first to the last read of the audio tables.
+struct CalResult { bool graded = false, ok = false; double cck = 0; size_t groups = 0; uint64_t lo = 0, hi = 0; };
+
+CalResult calibrate(const AudioCapture& cap, uint32_t lo_word, uint32_t hi_word) {
+    CalResult r;
+    bool any = false;
+    for (const auto& a : cap.log) {
+        if (a.is_write || a.word_addr < lo_word || a.word_addr > hi_word) continue;
+        if (!any) { r.lo = a.cycle; any = true; }
+        r.hi = a.cycle;
+    }
+    if (!any) return r;
+    F1Result f = f1_check(cap.log_raw, r.lo, r.hi);
+    r.graded = true; r.ok = f.anchor_ok; r.cck = f.color_clocks; r.groups = f.groups;
+    return r;
+}
+
+AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh::Config& cfg,
+                       const std::vector<std::pair<uint32_t, uint16_t>>& pokes = {}) {
     AudioCapture r;
     std::string bin = dir + "/prog_audio.bin";
     if (mv == "A1") bin = dir + "/prog_audio_a1mut.bin";
@@ -579,6 +662,8 @@ AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh:
     else if (mv == "A4") bin = dir + "/prog_audio_a4mut.bin";
     else if (mv == "FIXCONST") bin = dir + "/prog_audio_fixturemut.bin";
     else if (mv == "FIXWRITE") bin = dir + "/prog_audio_fixwritemut.bin";
+    else if (mv == "A6") bin = dir + "/prog_audio_a6mut.bin";
+    else if (mv == "P1LAST") bin = dir + "/prog_audio_p1lastmut.bin";
     else if (mv == "NODONE") bin = dir + "/prog_nodone.bin";
 
     nmh::NanomigHarness h(cfg);
@@ -588,6 +673,7 @@ AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh:
     poke_table(h, T1_ADDR, t1_table(mv));
     poke_table(h, T2_ADDR, t2_table(mv));
     poke_table(h, T3_ADDR, t3_table(mv));
+    for (const auto& pk : pokes) h.poke_word(pk.first / 2, pk.second);
 
     r.released = h.boot(kBootBudget).cpu_released;
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kAudioRunBudget);
@@ -595,9 +681,58 @@ AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh:
     // reads back (SPECIFICATION.md 2.3).
     r.fixval = h.peek_logical(kFixAudio);
     if (r.fixval && *r.fixval == kFixValue) r.adkconr = h.peek_logical(kResults);
-    r.log = nmh::coalesce(h.ram_log());
+    r.log_raw = h.ram_log();
+    r.log = nmh::coalesce(r.log_raw);
     r.audio = h.audio();
     return r;
+}
+
+// P1's last-level contrast (SPECIFICATION.md 3, P1): a first run of the same
+// program writes the byte's own value; from its capture the test takes the
+// code that the window's last level comes from, the instant between the
+// DMA's last two reads of that word, and the number of lines the program
+// has to wait. The returned capture is the second run, which writes a
+// different value there. `note` receives the measured set-up.
+AudioCapture run_audio_p1last(const std::string& dir, const nmh::Config& cfg, std::string& note) {
+    const TableSpec t1{"T1", T1_ADDR, 4, kNT1, 8, 1};
+    auto params = [&](uint16_t lines, uint32_t addr, uint16_t val) {
+        return std::vector<std::pair<uint32_t, uint16_t>>{
+            {kPlLines, lines}, {kPlAddr, (uint16_t)(addr >> 16)}, {kPlAddr + 2, (uint16_t)(addr & 0xFFFF)},
+            {kPlVal, val}};
+    };
+    AudioCapture probe = run_audio(dir, "P1LAST", cfg, params(4, T1_ADDR, 0x00));
+    if (!probe.loaded || !probe.done) { note = "P1 last-level set-up: the first run did not complete"; return probe; }
+    const bool use_right = audio_side_is_right(probe.audio);
+    F2Result f2 = f2_check(probe.log, T1_ADDR / 2, T1_ADDR / 2 + 3);
+    Window w = make_window(probe.audio, f2, t1, use_right);
+    CalResult cal = calibrate(probe, T1_ADDR / 2, T1_ADDR / 2 + 3);
+    if (!f2.anchor_ok || !w.have || !cal.graded) { note = "P1 last-level set-up: no window in the first run"; return probe; }
+    FitResult fu = fit(unwrap15(run_values(w.runs)), c_up());
+    if (!fu.matches) { note = "P1 last-level set-up: the first run's levels do not match C_up"; return probe; }
+    const uint32_t code = (uint32_t)((t1.N * t1.K - 1 + fu.rotation) % t1.K);   // code of the window's last level
+    const uint32_t word = T1_ADDR / 2 + code / 2;
+    std::vector<uint64_t> reads;
+    for (const auto& a : probe.log) if (!a.is_write && a.word_addr == word && a.cycle < w.e) reads.push_back(a.cycle);
+    uint64_t mark = 0;
+    for (const auto& a : probe.log) if (a.is_write && a.word_addr == kPlMark / 2) { mark = a.cycle; break; }
+    if (reads.size() < 2 || mark == 0) { note = "P1 last-level set-up: reads of the word or the marker not found"; return probe; }
+    const uint64_t r_prev = reads[reads.size() - 2], r_last = reads.back();
+    const double line_cycles = cal.cck * (double)kCck;
+    const double target = 0.5 * (double)(r_prev + r_last);
+    long lines = std::lround((target - (double)mark) / line_cycles + 0.5);
+    if (lines < 1) lines = 1;
+    AudioCapture mut = run_audio(dir, "P1LAST", cfg, params((uint16_t)lines, T1_ADDR + code, 0x7F));
+    uint64_t wr = 0;
+    for (const auto& a : mut.log) if (a.is_write && a.word_addr == word) { wr = a.cycle; break; }
+    char buf[400];
+    std::snprintf(buf, sizeof buf,
+        "P1 last-level set-up (not graded): the window's last level is code %u of C_up, byte %s of T1's word %u; "
+        "the DMA read that word at cycles %llu and %llu; the program waited %ld lines and its CPU write came at "
+        "cycle %llu (%s)",
+        code, (code % 2) ? "lower" : "upper", code / 2, (unsigned long long)r_prev, (unsigned long long)r_last, lines,
+        (unsigned long long)wr, (wr > r_prev && wr < r_last) ? "between the two reads" : "NOT between the two reads");
+    note = buf;
+    return mut;
 }
 
 // ---- T2S (P3B) program run: independent of prog_audio.s and its own
@@ -610,6 +745,7 @@ AudioCapture run_t2s(const std::string& dir, const std::string& mv, const nmh::C
     if (mv == "FIXCONST") bin = dir + "/prog_t2s_fixturemut.bin";
     else if (mv == "A2T") bin = dir + "/prog_t2s_a2mut.bin";
     else if (mv == "FIXWRITE") bin = dir + "/prog_t2s_fixwritemut.bin";
+    else if (mv == "A6") bin = dir + "/prog_t2s_a6mut.bin";
     nmh::NanomigHarness h(cfg);
     r.loaded = h.load_program(bin) > 0;
     if (!r.loaded) return r;
@@ -618,7 +754,8 @@ AudioCapture run_t2s(const std::string& dir, const std::string& mv, const nmh::C
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kAudioRunBudget);
     r.fixval = h.peek_logical(kFixAudio);
     if (r.fixval && *r.fixval == kFixValue) r.adkconr = h.peek_logical(kResults);
-    r.log = nmh::coalesce(h.ram_log());
+    r.log_raw = h.ram_log();
+    r.log = nmh::coalesce(r.log_raw);
     r.audio = h.audio();
     return r;
 }
@@ -722,8 +859,9 @@ int main(int argc, char** argv) {
     const bool fixwrite_mv = (mv=="FIXWRITE");
     const bool nodone_mv   = (mv=="NODONE");
     const bool audio_mv   = (mv=="P1"||mv=="P2"||mv=="P3"||mv=="P4"||mv=="A1"||mv=="A2"||mv=="A4"||mv=="A5"||
+                             mv=="A5SYS"||mv=="A6"||mv=="P1LAST"||
                              fixconst_mv||fixdata_mv||fixwrite_mv||nodone_mv);
-    const bool t2s_mv     = (mv=="P3B"||mv=="A2T"||fixconst_mv||fixdata_mv||fixwrite_mv);
+    const bool t2s_mv     = (mv=="P3B"||mv=="A2T"||mv=="A6"||fixconst_mv||fixdata_mv||fixwrite_mv);
     const bool adkcon_mv  = (mv=="P5"||mv=="C1"||mv=="C1DUP"||fixconst_mv);
     const bool disk_mv    = (mv=="FASTF0"||mv=="FASTS1"||mv=="B2"||mv=="B3"||mv=="F1"||fixconst_mv||fixdata_mv||fixwrite_mv);
     const bool need_audio  = mv.empty() || audio_mv;
@@ -744,7 +882,9 @@ int main(int argc, char** argv) {
         std::vector<CfgSpec> configs = { {"ECS/PAL", cfg_ecs_pal()}, {"OCS/PAL", cfg_ocs_pal()} };
 
         for (auto& cs : configs) {
-            AudioCapture cap = run_audio(dir, amv, cs.cfg);
+            std::string p1last_note;
+            AudioCapture cap = (mv == "P1LAST") ? run_audio_p1last(dir, cs.cfg, p1last_note)
+                                                : run_audio(dir, amv, cs.cfg);
             bool base_ok = cap.loaded && cap.done.has_value();
             std::string done_label = std::string("FIXTURE ") + cs.label +
                 ": prog_audio reached DONE [not graded -- fixture, no claim uid]";
@@ -776,7 +916,7 @@ int main(int argc, char** argv) {
             // not merely trusted from poke_word(). The table's A4, A5 and
             // propositions are graded only behind its own line.
             auto t1w = t1_table(emv); auto t2w = t2_table(emv); auto t3w = t3_table(emv);
-            bool t1_data_ok = all_reads_match(cap.log, T1_ADDR / 2, t1w);
+            bool t1_data_ok = all_reads_match(cap.log, T1_ADDR / 2, t1w, true, mv == "P1LAST" ? 1 : 0);
             bool t2_data_ok = all_reads_match(cap.log, T2_ADDR / 2, t2w);
             bool t3_data_ok = all_reads_match(cap.log, T3_ADDR / 2, t3w);
             {
@@ -800,6 +940,7 @@ int main(int argc, char** argv) {
             }
 
             bool use_right = audio_side_is_right(cap.audio);
+            if (!p1last_note.empty()) checks.note(p1last_note + " [" + cs.label + "]");
             checks.note(std::string("audio output side carrying channel 0, ") + cs.label + ": " +
                 (use_right ? "audio_right" : "audio_left") +
                 " (p.137: right-side jack; Appendix E's pin list, p.326: left-side jack -- a "
@@ -829,16 +970,35 @@ int main(int argc, char** argv) {
                     ": not graded, FIXTURE-CONST or FIXTURE-WRITE failed");
             }
 
-            struct TableSpec { const char* name; uint32_t addr; int words, N, K; };
-            TableSpec t1{"T1", T1_ADDR, 4, kNT1, 8}, t2{"T2", T2_ADDR, 4, kNT2, 4},
-                      t3{"T3", T3_ADDR, 256, kNT3, 256};
+            // A6: the color-clock unit of the window (2.5, 2.7) holds in this
+            // run, F1's anchor over the interval of its audio reads.
+            bool a6_ok = false;
+            {
+                CalResult cal = calibrate(cap, T1_ADDR / 2, T3_ADDR / 2 + 255);
+                if (cal.graded) {
+                    checks.note(std::string("F1 anchor in prog_audio's own run ") + cs.label + ": mean refresh-group "
+                        "spacing " + fmt(cal.cck, 2) + " color clocks over " + std::to_string(cal.groups) +
+                        " groups found");
+                    a6_ok = cal.ok;
+                    std::string a6l = std::string("A6 ") + cs.label +
+                        ": refresh groups recur 227-228 color clocks apart over prog_audio's own audio DMA "
+                        "interval, so the window's level is 8 clk_sys cycles per color clock of the programmed period";
+                    if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
+                    checks.expect(a6_ok, a6l);
+                } else {
+                    checks.record(std::string("A6 ") + cs.label + ": not graded, no audio read of any table");
+                }
+            }
 
-            // A1 (F2's anchor from the first restart on) and A3 (median
+            TableSpec t1{"T1", T1_ADDR, 4, kNT1, 8, 1}, t2{"T2", T2_ADDR, 4, kNT2, 4, 2},
+                      t3{"T3", T3_ADDR, 256, kNT3, 256, 2};
+
+            // A1 (F2's anchor from the first restart on), A6 and A3 (median
             // run length): shared by every proposition on this table. `ok`
-            // is false only when A1 or A2 or A3 already failed (and that
-            // failure has already been printed or recorded); it stays true
-            // into A4's own territory even when LEVELS(W_T) collapses to
-            // no entry, so a flat signal (A4's own contrasting case) is
+            // is false only when A1 or A2 or A6 or A3 already failed (and
+            // that failure has already been printed or recorded); it stays
+            // true into A4's own territory even when LEVELS(W_T) collapses
+            // to no entry, so a flat signal (A4's own contrasting case) is
             // graded as A4 red, not swallowed as "a precondition failed"
             // further upstream.
             //
@@ -847,15 +1007,17 @@ int main(int argc, char** argv) {
             // print, but the printed verdict (PASS/FAIL) always reports what
             // the comparator actually found, never an inverted "the defect
             // was reproduced, so print PASS" reading.
-            struct PrecondResult { bool ok; std::vector<double> L; uint64_t span; uint64_t level; };
-            auto grade_precond = [&](TableSpec ts, bool a1_mut) -> PrecondResult {
+            struct PrecondResult { bool ok; std::vector<double> L; uint64_t level; };
+            auto grade_precond = [&](const TableSpec& ts, bool a1_mut) -> PrecondResult {
                 uint32_t lo = ts.addr / 2, hi = lo + ts.words - 1;
                 F2Result f2 = f2_check(cap.log, lo, hi);
                 checks.note(first_pass_text(ts.name, cs.label, f2, ts.words));
-                bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= ts.N + 2;
+                Window win = make_window(cap.audio, f2, ts, use_right);
+                bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= ts.N + 3 && win.have &&
+                          win.e <= f2.pass_starts.back();
                 std::string a1_label = std::string("A1 for ") + ts.name + " " + cs.label +
-                    ": audio DMA ran pass after pass from t_2 on, F2 holds with >= " + std::to_string(ts.N + 2) +
-                    " reads of " + ts.name + "'s first word";
+                    ": audio DMA ran pass after pass from t_2 on, F2 holds with >= " + std::to_string(ts.N + 3) +
+                    " reads of " + ts.name + "'s first word, the last of them at or after the end of W_" + ts.name;
                 if (a1_mut) a1_label += " [NMH_MUTATE demonstrates this precondition red]";
                 checks.expect(a1, a1_label);
                 if (!f2.diag.empty()) checks.note(std::string(ts.name) + " " + cs.label + " F2 break: " + f2.diag);
@@ -863,76 +1025,52 @@ int main(int argc, char** argv) {
                 if (!a1) {
                     checks.record(std::string(ts.name) + " " + cs.label +
                         ": A3, A4, A5 and its proposition(s) not graded, precondition A1 failed");
-                    return {false, {}, 0, 0};
+                    return {false, {}, 0};
                 }
                 if (!a2_ok) {
                     checks.record(std::string(ts.name) + " " + cs.label +
                         ": A3, A4, A5 and its proposition(s) not graded, precondition A2 failed or not graded");
-                    return {false, {}, 0, 0};
+                    return {false, {}, 0};
                 }
-                uint64_t wb = f2.pass_starts[1], we = f2.pass_starts[ts.N + 1];
-                auto tr = first_transition(cap.audio, wb, we, use_right);
-                uint64_t ws = tr ? *tr : wb;
-                auto runs = raw_runs(cap.audio, ws, we, use_right);
-                double median = median_run_len(runs);
+                if (!a6_ok) {
+                    checks.record(std::string(ts.name) + " " + cs.label +
+                        ": A3, A4, A5 and its proposition(s) not graded, precondition A6 failed or not graded");
+                    return {false, {}, 0};
+                }
+                double median = median_run_len(win.runs);
                 bool a3 = median >= 4.0;
                 checks.expect(a3, std::string("A3 for ") + ts.name + " " + cs.label +
                     ": the median run in W_" + ts.name + " spans >= 4 output samples (" + fmt(median, 1) + ")");
+                uint64_t shortest = ~0ull, longest = 0;
+                for (auto& r : win.runs) { shortest = std::min(shortest, r.len); longest = std::max(longest, r.len); }
+                checks.note(std::string("window W_") + ts.name + " " + cs.label + " (not graded): " +
+                    std::to_string(win.e - win.s) + " samples from the first output transition after t_2, " +
+                    std::to_string(ts.N) + " passes x " + std::to_string(ts.K) + " levels of " +
+                    std::to_string(win.level) + " samples programmed (the last one cut); " +
+                    std::to_string(win.runs.size()) + " runs found, median " + fmt(median, 1) + ", shortest " +
+                    std::to_string(win.runs.empty() ? 0 : shortest) + ", longest " + std::to_string(longest));
                 if (!a3) {
                     checks.record(std::string(ts.name) + " " + cs.label +
                         ": A4, A5 and its proposition(s) not graded, precondition A3 failed");
-                    return {false, {}, 0, 0};
+                    return {false, {}, 0};
                 }
-                // MEASURED, not graded: the window shifted by 16 offsets across
-                // one held level (both edges: another phase between the DMA
-                // reads and the output transitions). A5's count follows the
-                // window's geometry at every offset; N x K - 1 does not.
-                {
-                    size_t nk1 = (size_t)ts.N * (size_t)ts.K - 1;
-                    uint64_t r = (uint64_t)median;
-                    int total = 0, geom = 0, kept = 0;
-                    size_t lo_n = (size_t)-1, hi_n = 0;
-                    for (int j = 0; j < 16; ++j) {
-                        uint64_t d = (r * (uint64_t)j) / 16;
-                        uint64_t b2 = wb + d, e2 = we + d;
-                        if (e2 >= cap.audio.size()) continue;
-                        auto t2tr = first_transition(cap.audio, b2, e2, use_right);
-                        uint64_t s2 = t2tr ? *t2tr : b2;
-                        auto rr = raw_runs(cap.audio, s2, e2, use_right);
-                        size_t n = levels_from_runs(rr).size();
-                        ++total;
-                        if (n == window_levels(e2 - s2, (uint64_t)median_run_len(rr))) ++geom;
-                        if (n == nk1) ++kept;
-                        lo_n = std::min(lo_n, n); hi_n = std::max(hi_n, n);
-                    }
-                    checks.note(std::string("window offsets, ") + ts.name + " " + cs.label + " (not graded): t_(2+N) - t_2 = " +
-                        std::to_string(we - wb) + " samples against N x K x (held level) = " +
-                        std::to_string((uint64_t)ts.N * (uint64_t)ts.K * r) + "; at " + std::to_string(total) +
-                        " offsets across one held level (" + std::to_string(r) + " samples) the window holds the "
-                        "count its length gives at " + std::to_string(geom) + ", N x K - 1 = " + std::to_string(nk1) +
-                        " at " + std::to_string(kept) + ", between " + std::to_string(lo_n) + " and " + std::to_string(hi_n));
-                }
-                return {true, unwrap15(levels_from_runs(runs)), we - ws, (uint64_t)median};
+                return {true, unwrap15(run_values(win.runs)), win.level};
             };
 
-            // A5: the window's held levels account for the complete
-            // population its length holds: floor((span - 1) / level) -- the
-            // window starts on an output transition, every held level lasts
-            // the same time, and the last run (cut by the window's end, a
-            // DMA read cycle) is dropped -- with nothing else silently
-            // dropped or added. SPECIFICATION.md 2.7. Where A4 already
-            // failed, A5 is not reached (same "not graded" chain).
-            auto grade_a5 = [&](TableSpec ts, const PrecondResult& pc) -> bool {
-                size_t expected = window_levels(pc.span, pc.level);
+            // A5: the window holds the programmed population, N x K held
+            // levels, the last one kept (SPECIFICATION.md 2.7). Where A4
+            // already failed, A5 is not reached (same "not graded" chain).
+            auto grade_a5 = [&](const TableSpec& ts, const PrecondResult& pc) -> bool {
+                size_t expected = (size_t)ts.N * (size_t)ts.K;
                 size_t found = pc.L.size();
                 bool a5 = found == expected;
                 std::string a5_label = std::string("A5 for ") + ts.name + " " + cs.label +
-                    ": the window's held levels account for the complete population its length holds -- "
-                    "exactly " + std::to_string(expected) + " (a window of " + std::to_string(pc.span) +
-                    " samples, held level " + std::to_string(pc.level) + " samples, last run dropped; " +
-                    std::to_string(found) + " found; " + std::to_string(ts.N) + " passes x " +
-                    std::to_string(ts.K) + " codes = " + std::to_string((size_t)ts.N * (size_t)ts.K) + ")";
+                    ": the window holds the programmed population of exactly " + std::to_string(expected) +
+                    " held levels, the last one kept (" + std::to_string(ts.N) + " passes x " +
+                    std::to_string(ts.K) + " codes, " + std::to_string(pc.level) +
+                    " samples per level programmed; " + std::to_string(found) + " found)";
                 if (mv == "A5" && std::string(ts.name) == "T2") a5_label += " [NMH_MUTATE demonstrates this precondition red]";
+                if (mv == "A5SYS" && std::string(ts.name) == "T1") a5_label += " [NMH_MUTATE demonstrates this precondition red]";
                 checks.expect(a5, a5_label);
                 return a5;
             };
@@ -970,6 +1108,20 @@ int main(int argc, char** argv) {
                             "every pass in W_T1)";
                         if (mv == "P1") p1_label += " [NMH_MUTATE demonstrates this proposition red]";
                         checks.expect(p1, p1_label);
+                        if (mv == "P1LAST") {
+                            // MEASURED: which entries of L differ from the level K entries
+                            // earlier (the same code, one pass before).
+                            std::string idx;
+                            size_t n_off = 0;
+                            for (size_t i = (size_t)t1.K; i < L.size(); ++i)
+                                if (std::fabs(L[i] - L[i - (size_t)t1.K]) > kExactTol) {
+                                    ++n_off; idx += (idx.empty() ? "" : ",") + std::to_string(i);
+                                }
+                            checks.note(std::string("P1 last-level contrast, T1 ") + cs.label + " (not graded): " +
+                                std::to_string(n_off) + " of " + std::to_string(L.size() - (size_t)t1.K) +
+                                " entries of L differ from the level one pass earlier, at index " + idx +
+                                " (the last entry is " + std::to_string(L.size() - 1) + ")");
+                        }
 
                         if (p1) {
                             bool p2 = fu.matches;
@@ -1116,18 +1268,21 @@ int main(int argc, char** argv) {
                 "measured page disagreement; SPECIFICATION.md 2.5 does not grade which named "
                 "jack this is)");
 
+            const TableSpec ts2s{"T2S", T2S_ADDR, 2, kNT2S, 4, 1};
             uint32_t lo = T2S_ADDR / 2, hi = lo + 1;   // 2 words
             F2Result f2 = f2_check(cap.log, lo, hi);
             checks.note(first_pass_text("T2S", cs.label, f2, 2));
-            bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= kNT2S + 2;
+            Window win = make_window(cap.audio, f2, ts2s, use_right);
+            bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= kNT2S + 3 && win.have &&
+                      win.e <= f2.pass_starts.back();
             std::string a1_label = std::string("A1 for T2S ") + cs.label +
-                ": audio DMA ran pass after pass from t_2 on, F2 holds with >= " + std::to_string(kNT2S + 2) +
-                " reads of T2S's first word";
+                ": audio DMA ran pass after pass from t_2 on, F2 holds with >= " + std::to_string(kNT2S + 3) +
+                " reads of T2S's first word, the last of them at or after the end of W_T2S";
             checks.expect(a1, a1_label);
             if (!f2.diag.empty()) checks.note(std::string("T2S ") + cs.label + " F2 break: " + f2.diag);
             if (!a1) {
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A2-A5, P3B not graded, precondition A1 failed");
+                    ": A2-A6, P3B not graded, precondition A1 failed");
                 continue;
             }
             // A2 reads a stored slot: graded only when the fixture constant
@@ -1136,7 +1291,7 @@ int main(int argc, char** argv) {
                 checks.record(std::string("A2 for T2S ") + cs.label +
                     ": not graded, FIXTURE-CONST or FIXTURE-WRITE failed");
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A3-A5, P3B not graded, precondition A2 not graded");
+                    ": A3-A6, P3B not graded, precondition A2 not graded");
                 continue;
             }
             bool t2s_a2 = cap.adkconr.has_value() && ((*cap.adkconr) & 0x00FF) == 0;
@@ -1148,53 +1303,51 @@ int main(int argc, char** argv) {
             }
             if (!t2s_a2) {
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A3-A5, P3B not graded, precondition A2 failed");
+                    ": A3-A6, P3B not graded, precondition A2 failed");
                 continue;
             }
-            uint64_t wb = f2.pass_starts[1], we = f2.pass_starts[kNT2S + 1];
-            auto tr = first_transition(cap.audio, wb, we, use_right);
-            uint64_t ws = tr ? *tr : wb;
-            auto runs = raw_runs(cap.audio, ws, we, use_right);
-            double median = median_run_len(runs);
+            // A6: the color-clock unit of the window holds in this run.
+            {
+                CalResult cal = calibrate(cap, lo, hi);
+                checks.note(std::string("F1 anchor in prog_t2s's own run ") + cs.label + ": mean refresh-group "
+                    "spacing " + fmt(cal.cck, 2) + " color clocks over " + std::to_string(cal.groups) +
+                    " groups found");
+                std::string a6l = std::string("A6 for T2S ") + cs.label +
+                    ": refresh groups recur 227-228 color clocks apart over prog_t2s's own audio DMA "
+                    "interval, so the window's level is 8 clk_sys cycles per color clock of the programmed period";
+                if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(cal.ok, a6l);
+                if (!cal.ok) {
+                    checks.record(std::string("T2S ") + cs.label +
+                        ": A3-A5, P3B not graded, precondition A6 failed");
+                    continue;
+                }
+            }
+            double median = median_run_len(win.runs);
             bool a3 = median >= 4.0;
             checks.expect(a3, std::string("A3 for T2S ") + cs.label +
                 ": the median run in W_T2S spans >= 4 output samples (" + fmt(median, 1) + ")");
+            {
+                uint64_t shortest = ~0ull, longest = 0;
+                for (auto& r : win.runs) { shortest = std::min(shortest, r.len); longest = std::max(longest, r.len); }
+                checks.note(std::string("window W_T2S ") + cs.label + " (not graded): " +
+                    std::to_string(win.e - win.s) + " samples from the first output transition after t_2, " +
+                    std::to_string(kNT2S) + " passes x 4 levels of " + std::to_string(win.level) +
+                    " samples programmed (the last one cut); " + std::to_string(win.runs.size()) +
+                    " runs found, median " + fmt(median, 1) + ", shortest " +
+                    std::to_string(win.runs.empty() ? 0 : shortest) + ", longest " + std::to_string(longest));
+            }
             if (!a3) {
                 checks.record(std::string("T2S ") + cs.label +
                     ": A4, A5, P3B not graded, precondition A3 failed");
                 continue;
-            }
-            {
-                size_t nk1 = (size_t)kNT2S * 4 - 1;
-                uint64_t r = (uint64_t)median;
-                int total = 0, geom = 0, kept = 0;
-                size_t lo_n = (size_t)-1, hi_n = 0;
-                for (int j = 0; j < 16; ++j) {
-                    uint64_t d = (r * (uint64_t)j) / 16;
-                    uint64_t b2 = wb + d, e2 = we + d;
-                    if (e2 >= cap.audio.size()) continue;
-                    auto t2tr = first_transition(cap.audio, b2, e2, use_right);
-                    uint64_t s2 = t2tr ? *t2tr : b2;
-                    auto rr = raw_runs(cap.audio, s2, e2, use_right);
-                    size_t n = levels_from_runs(rr).size();
-                    ++total;
-                    if (n == window_levels(e2 - s2, (uint64_t)median_run_len(rr))) ++geom;
-                    if (n == nk1) ++kept;
-                    lo_n = std::min(lo_n, n); hi_n = std::max(hi_n, n);
-                }
-                checks.note(std::string("window offsets, T2S ") + cs.label + " (not graded): t_(2+N) - t_2 = " +
-                    std::to_string(we - wb) + " samples against N x K x (held level) = " +
-                    std::to_string((uint64_t)kNT2S * 4 * r) + "; at " + std::to_string(total) +
-                    " offsets across one held level (" + std::to_string(r) + " samples) the window holds the "
-                    "count its length gives at " + std::to_string(geom) + ", N x K - 1 = " + std::to_string(nk1) +
-                    " at " + std::to_string(kept) + ", between " + std::to_string(lo_n) + " and " + std::to_string(hi_n));
             }
             if (!t2s_data_ok) {
                 checks.record(std::string("T2S ") + cs.label +
                     ": A4, A5, P3B not graded, FIXTURE-DATA for T2S failed");
                 continue;
             }
-            auto L = unwrap15(levels_from_runs(runs));
+            auto L = unwrap15(run_values(win.runs));
             FitResult fs = L.empty() ? FitResult{} : fit(L, c2s());
             bool a4 = L.size() >= 4;
             checks.expect(a4, std::string("A4 for T2S ") + cs.label +
@@ -1205,14 +1358,13 @@ int main(int argc, char** argv) {
                 checks.record(std::string("P3B ") + cs.label + ": not graded, precondition A4 failed");
                 continue;
             }
-            size_t expected = window_levels(we - ws, (uint64_t)median);
+            size_t expected = (size_t)kNT2S * 4;
             bool a5 = L.size() == expected;
             checks.expect(a5, std::string("A5 for T2S ") + cs.label +
-                ": the window's held levels account for the complete population its length holds -- "
-                "exactly " + std::to_string(expected) + " (a window of " + std::to_string(we - ws) +
-                " samples, held level " + std::to_string((uint64_t)median) + " samples, last run dropped; " +
-                std::to_string(L.size()) + " found; " + std::to_string(kNT2S) + " passes x 4 codes = " +
-                std::to_string((size_t)kNT2S * 4) + ")");
+                ": the window holds the programmed population of exactly " + std::to_string(expected) +
+                " held levels, the last one kept (" + std::to_string(kNT2S) + " passes x 4 codes, " +
+                std::to_string(win.level) + " samples per level programmed; " + std::to_string(L.size()) +
+                " found)");
             if (!a5) {
                 checks.record(std::string("P3B ") + cs.label + ": not graded, precondition A5 failed");
                 continue;

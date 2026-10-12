@@ -851,7 +851,10 @@ otherwise.
   227.00 color clocks per line on both cores, every configuration, inside
   the page's 227-228 window. 8 `clk_sys` cycles per color clock (`kCck`) is
   taken from the design, since `nanomig_harness.h` declares no such ratio;
-  B4, measured in that same interval, guards it.
+  B4, measured in that same interval, guards it. In the audio runs A6 does
+  the same over the interval of each program's own audio reads: 227.00 color
+  clocks, ECS/PAL and OCS/PAL, on both cores (prog_audio: 1786 groups on
+  fx68k, 1681 on TG68K; prog_t2s: 254 and 237).
 - **Audio port scale.** `nanomig_harness.h` documents only the width of
   `audio_left`/`audio_right` ("15 bits significant"), not their sign or
   scale. LEVELS(W) (2.5) reads the raw magnitude and recovers a continuous
@@ -878,17 +881,16 @@ otherwise.
   `prog_t2s.s`, run from a clean boot independent of T1/T2/T3): 2 of 2 on
   both. With the anchor taken from t_2, A1 holds for every table on both
   cores, and P1-P4 and P3B are graded on every run.
-- **A5's population and the window's phase, measured per table and per core
-  (2.7).** The printed window offsets compare t_(2+N) - t_2 with N x K x r
-  (r the held level in samples), in samples. T1: 65376 against 65536 on
-  both cores. T2: 67192 against 65536 on fx68k, 65376 against 65536 on
-  TG68K. T3: 1047832 against 1048576 on both. T2S: 32688 against 32768 on
-  both. The difference is the unspecified phase between the DMA reads and the
-  output (2.7). With the whole window shifted by 16 offsets across one held
-  level, the count A5 grades (floor((e - s - 1) / r)) is what the window
-  holds at 16 of 16 offsets for every table, both cores. N x K - 1 is
-  what it holds at 14 of 16 for T1, 3 of 16 for T2 on fx68k and 15 of 16 on
-  TG68K, 10 of 16 for T3 and 15 of 16 for T2S; the others differ by one.
+- **The window and A5's population (2.5, 2.7), measured per table.** The
+  window starts on the first output transition after t_2 and ends in the
+  middle of level number N x K. On both cores, ECS/PAL and OCS/PAL alike:
+  T1: 65024 samples and 64 runs, all 1024 samples long but the last (512);
+  T2: 64512 samples and 32 runs, all 2048 long but the last (1024); T3:
+  1047552 samples and 512 runs, all 2048 long but the last (1024); T2S:
+  32256 samples and 32 runs, all 1024 long but the last (512). Each window
+  holds the programmed N x K levels (64, 32, 512, 32), and the held level
+  of the programmed period (u x 128 x 8: 1024 or 2048 samples) is the
+  median run.
 - **G1/G2/G3 (P6): declined, not a page disagreement.** ADKCON bit 8 (FAST)
   reads back correctly (B1 holds on both runs, every configuration, both
   cores). Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512
@@ -897,6 +899,18 @@ otherwise.
   the FAST bit. This is printed as a MEASURED line, not graded: G1, G2 and
   G3 decline to compare it with the bit-cell time, because no page ties a
   Chip-memory read rate to that time (1.2, 3).
+- **P1's last-level contrast (3, P1).** The first run of prog_audio under
+  that selector writes the byte's own value; from it the test takes the
+  window's last level (code 7 of C_up, the lower byte of T1's word 3), the
+  DMA's last two reads of that word (cycles 2337113 and 2346193 on both cores
+  and both configurations) and the line count to wait (37). The CPU write of
+  the second run comes at cycle 2341125 on fx68k and 2340965 on TG68K, between
+  the two reads. P1 goes red and exactly one entry of L, the last, differs
+  from the level one pass earlier.
+- **A6's contrasting case.** With VTOTAL, HTOTAL and BEAMCON0 rewritten before
+  the tables start (ECS only), the refresh groups recur 114.00 color clocks
+  apart in prog_audio's and prog_t2s's runs on both cores, and A6 goes red in
+  ECS/PAL; OCS/PAL has no such registers and A6 stays green.
 - **Program placement.** The harness's own `PROGRAM_ORG` ($080400) and
   `RESULTS` ($0C0000) sit above $080000, outside the range 2.1 asks the
   DMA-referenced tables and buffers to stay under. Harmless for the stated
@@ -911,20 +925,20 @@ otherwise.
   FIXTURE-DATA (every read of a table or buffer on the Chip-memory port
   returns the poked content) and FIXTURE-WRITE (each stored result slot
   shows one CPU write). Measured, both cores: every one of them passes on
-  the normal run, 118 passed and 0 failed. Each has a selector that makes
+  the normal run, 126 passed and 0 failed. Each has a selector that makes
   exactly its own lines print FAIL through the unchanged comparator and
   moves to RECORDED "not graded" the lines graded behind it. NODONE
   replaces `prog_audio` by a program that never writes the done marker:
   FIXTURE red in ECS/PAL and OCS/PAL on both cores. FIXCONST makes every
   program store a different constant: the nine FIXTURE-CONST lines red;
-  A2, and through it A3-A5 and P1-P4 of every table, C1, P5, and B1 and B2
-  of both disk runs, not graded. FIXDATA pokes one word of each table and
+  A2 (prog_audio and T2S), and through it A3-A6 and P1-P4 of every table
+  and P3B, C1, P5, and B1 and B2 of both disk runs, not graded. FIXDATA pokes one word of each table and
   both buffers other than the expected content: 14 FIXTURE-DATA lines red
   (T1, T2, T3, T2S, both buffers); A4, A5 and the propositions of the four
-  tables not graded, A1 and A3 still graded and green. FIXWRITE leaves out
-  the ADKCONR store into A2's slot and run F's store into B1's slot: the
-  five FIXTURE-WRITE lines of those slots red, A2 and B1 for run F (and
-  what A2 gates) not graded.
+  tables not graded, A1, A2, A3 and A6 still graded and green. FIXWRITE leaves out
+  the ADKCONR store into A2's slot of prog_audio and of prog_t2s and run F's
+  store into B1's slot: the seven FIXTURE-WRITE lines of those slots red,
+  A2 (both programs) and B1 for run F (and what A2 gates) not graded.
 - **F1/B4's own contrasting case, measured inside the P6 interval.**
   Rewriting VTOTAL, HTOTAL and BEAMCON0 (2.4) halves the refresh-group
   spacing measured there to 114.00 color clocks on both cores, both ECS
