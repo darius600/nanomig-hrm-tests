@@ -491,7 +491,7 @@ E1-E3.
 |----|--------|--------|
 | PJ1 | Drop one scheduled change from the harness while the grader keeps its plan. | PJ1 reports the missing change. |
 | PJ1 | Apply one phase's schedule to the corresponding pins of the other port. | PJ1 reports the port actually driven, which is not the proposition's. |
-| PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
+| PJ2 | Shorten one hold to 4 scan lines. | The window keeps one or two graded samples, fewer than 3, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
 | PJ2 | Leave the frame's last line out of the sampling loop (the program learns that line from one frame wrap before it starts sampling). | The return to $00 still shows V8 going from 1 to 0, but the gap before it is about twice the median, so PJ2 is not met. |
 | PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
@@ -662,7 +662,7 @@ As in section 4.5, the harness input that carries each pin is fixed by section
 | PP1 | Omit the press of C2. | PP1 reports the scheduled change as missing instead of grading C2. |
 | PP1 | Apply one pin's press to the other pot pin of the same port, or to the corresponding pin of the other port. | PP1 reports the source and bit actually driven, which are not the pin under test's. |
 | PP2 | Write POTGO with bit 0 = 1 in C1. | PP2 is not met. |
-| PP3 | Shorten one step to 6 lines. | PP3 is not met. |
+| PP3 | Shorten one step to 8 lines. | The window keeps one or two graded samples, fewer than 3, so PP3 is not met. |
 
 ### 5.6 Contrasting cases
 
