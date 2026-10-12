@@ -46,6 +46,13 @@ start:
         move.w  #$0000,BPL1MOD(a0)
         move.w  #$0000,BPL2MOD(a0)
         move.l  #BP_PTR,BPL1PTH(a0)
+        ifd     BP_ALLPTR
+        move.l  #BP_PTR+$10000,BPL1PTH+4(a0)    ; planes 2-6 point at their own Chip memory
+        move.l  #BP_PTR+$14000,BPL1PTH+8(a0)    ; (BPL2PTH.. = $0E4, $0E8, ...), none at the
+        move.l  #BP_PTR+$18000,BPL1PTH+12(a0)   ; low addresses an unset pointer would read
+        move.l  #BP_PTR+$1C000,BPL1PTH+16(a0)
+        move.l  #BP_PTR+$20000,BPL1PTH+20(a0)
+        endif
 
         ifd     BP_HIRES4
         move.w  #$003C,DDFSTRT(a0)

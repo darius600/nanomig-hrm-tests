@@ -8,7 +8,7 @@ PROGS    := prog_fixture prog_fixture_mut \
             prog_sharing_aligned prog_sharing_nasty_tiny prog_sharing_slow \
             prog_earlycheck prog_earlycheck_large prog_earlycheck_reordered \
             prog_bitplane prog_bitplane_hires prog_bitplane_planes6 prog_bitplane_planes5 \
-            prog_bitplane_aligned prog_bitplane_planes6_aligned \
+            prog_bitplane_aligned prog_bitplane_planes6_aligned prog_bitplane_planes6_aligned_ptrs \
             prog_bitplane_aligned_p1 prog_bitplane_aligned_p2 prog_bitplane_aligned_p3 \
             prog_copyloop prog_copyloop_short \
             prog_tas_share prog_tas_span prog_tas_span_mut \
