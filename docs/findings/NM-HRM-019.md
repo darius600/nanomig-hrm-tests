@@ -5,14 +5,14 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should NanoMig's sprite shifter read SPRxCTL bit 4 (SHSH1) so that, in SuperHires, setting it alone moves the sprite's first lit sample two 35 ns samples later (p. 303's "70ns increment", half of SH0's four), where NanoMig moves it by 0? Closes when the RTL change is made and `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` is green, or when a specialist records bit 4 as unused on an ECS Denise, in which case this page is refiled against the printed page. |
+| **What is asked of a reader** | Should NanoMig's sprite shifter read SPRxCTL bit 4 (SHSH1) so that, in SuperHires, setting it alone moves the sprite's first lit sample two 35 ns samples later (p. 303's "70ns increment", half of SH0's four), where NanoMig moves it by 0? Closes when the RTL change is made and `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` and, in `integration/ch4-sprite-registers`, `P1` are green (on both cores for `P1`), or when a specialist records bit 4 as unused on an ECS Denise, in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | ECS Denise (p. 303: "bits 3 and 4 are in the ECS chips only"), SuperHires only; isolated as SHSH1 alone against SH0 alone on sprite 0 in the `denise_sprites` fixture without AGA, sampled every 35 ns. Lores is recorded, not asserted; Hires is promised nothing. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix C, printed p. 303, SPRxCTL bits 4 and 0, the ECS note and the SuperHires Warning (also p. 297, quoted in the assertion's message); quoted below: chapter 4 pp. 107 and 128, Appendix A pp. 264 and 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (14)</summary> claims, all carried by `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`: `sol:C-library.c2`, `opus:C-shr.c05`, p. 297; `sol:C-shres-sprite.c1`, `sol:C-shres-sprite.c2`, `opus:C-spr.c01`, `sol:C-shres-sprite.c14`, `sol:C-shres-sprite.c15`, `opus:C-spr.c09`, `opus:C-spr.c10`, p. 303. Recorded beside it, not asserted: `APPC-pos.c10`, `APPC2-SPRxCTL.conf2`; withdrawn whole: `APPC-pos.c1`, `CH4-appC-position.c1`, `CH4-appC-position.c2`. No other assertion of `hrm/ch3-sprite-registers` is named on this page </details> |
+| **Chapter** | Appendix C, printed p. 303, SPRxCTL bits 4 and 0, the ECS note and the SuperHires Warning (also p. 297, quoted in the assertion's message); quoted below: chapter 4 pp. 107 and 128, Appendix A pp. 264 and 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (17)</summary> claims carried by `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` in `hrm/ch3-sprite-registers`: `sol:C-library.c2`, `opus:C-shr.c05`, p. 297; `sol:C-shres-sprite.c1`, `sol:C-shres-sprite.c2`, `opus:C-spr.c01`, `sol:C-shres-sprite.c14`, `sol:C-shres-sprite.c15`, `opus:C-spr.c09`, `opus:C-spr.c10`, p. 303; carried by `P1` in `integration/ch4-sprite-registers`: `APPC-pos.c2`, `CH4-appC-position.c18`, `CH4-appC-position.c4`, p. 303. Recorded beside it, not asserted: `APPC-pos.c10`, `APPC2-SPRxCTL.conf2`; withdrawn whole: `APPC-pos.c1`, `CH4-appC-position.c1`, `CH4-appC-position.c2`. No other assertion of `hrm/ch3-sprite-registers` is named on this page, and the other assertions of `integration/ch4-sprite-registers` it names (`P1-PRE1` to `P1-PRE3`, `P1-CONTROL`, `P2`, `P3`) carry no claim id </details> |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v); inherited (MiSTer and TC64 have the same absence) |
-| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers): `make -C hrm/ch3-sprite-registers test`; an expected red exits nonzero |
-| **Assertions** | 1 red: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — expected SHSH1 alone to move the first lit sample 2 samples later (half of SH0 alone's 4), observed 0; the package reports `10 passed, 1 failed` |
+| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers): `make -C hrm/ch3-sprite-registers test`; an expected red exits nonzero. [`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers): `make -k -C integration/ch4-sprite-registers test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
+| **Assertions** | 1 red in `hrm/ch3-sprite-registers`: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — expected SHSH1 alone to move the first lit sample 2 samples later (half of SH0 alone's 4), observed 0; the package reports `10 passed, 1 failed`. 1 red on each core in `integration/ch4-sprite-registers`: `P1` — expected the edge of sprite 2 to lie d = 80 + k output pixels from the reference sprite's for each of ten starts 70 ns apart, k = 0 to 9; observed, on the first line of each start, d = 80, 80, 82, 82, 84, 84, 86, 86, 88, 88, so every start with SHSH1 set reads the d of the start before it; the package prints `81 passed, 2 failed` on fx68k and on TG68K, and its other red is `P5-NOPOS`. `P1-CONTROL`, the five starts without SHSH1 through `P1`'s comparator, is green |
 | **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states; outside the emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare — see *What other Commodore documents say*. Hardware: not measured |
 | **Effort** | S — `denise_sprites_shifter.v` and `denise_sprites.v` only: capture bit 4 in the CTL write and apply it to the start in SuperHires |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](withdrawn/NM-HRM-013.md); bit 3 is settled in the RTL's favour by the manual's `(unimplemented)` on the same page |
@@ -88,6 +88,26 @@ MEASURED: SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at spres=0b10 (SuperHires), 2
 
 SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leaves it where it was, where its row predicts 2.
 
+### At the video output, on both CPU cores
+
+[`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers) makes the measurement through the whole system, from a
+68000 program to the video output. On ECS, with BPLCON0 = `$1240` (SHRES), sprite 2 starts ten times, four lines each, at
+P = 400 + k in 70 ns units, k = 0 to 9: P >> 1 goes into SH8–SH0 and P & 1 into SHSH1, so SHSH1 is set for every odd k. Sprite 0,
+at a fixed position, is the reference. d is the distance from its edge to sprite 2's in output pixels, one per 70 ns, and `P1`
+expects d = 80 + k on every line of start k (`test_ch4_sprite_registers.cpp:2480-2483`, with `p1_field` at `:2348-2352`). It is red on fx68k and on TG68K:
+
+```text
+MEASURED: SHR SHR-SWEEP ECS: refresh-group spacing 16 clk_sys cycles, 2 graded fields; field 0: ruler periods 8 8 8, SREF block=1 one-column=1 height=80, 10 groups (height:d of the first line) 4:80 4:80 4:82 4:82 4:84 4:84 4:86 4:86 4:88 4:88; field 1: ruler periods 8 8 8, SREF block=1 one-column=1 height=80, 10 groups (height:d of the first line) 4:80 4:80 4:82 4:82 4:84 4:84 4:86 4:86 4:88 4:88
+FAIL: P1 (APPC-pos.c2 CH4-appC-position.c18 CH4-appC-position.c4): in SuperHires on ECS, SPRxCTL bit 4 moves the sprite start by 70 ns, two SuperHires pixels, and every 70 ns position in between is reachable (p.303) -- ten groups, d = 80 + k on every line of group k
+```
+
+Each step of SH0 moves the edge by 2 output pixels, 140 ns, as SH0's row says, and every odd k reads the d of the k before it:
+SHSH1 moves nothing, as the fixture measurement above found. `P1`'s preconditions `P1-PRE1` to `P1-PRE3` are green (SuperHires
+is on, the reference sprite shows one edge at one column on each of its 80 lines, the first start is four lines high), and so is
+`P1-CONTROL`, which runs `P1`'s comparator on the even k alone, the starts SH8–SH0 reach without SHSH1: d = 80, 82, 84, 86 and 88
+(`test_ch4_sprite_registers.cpp:2477-2479`, with `p2pre2_field` at `:2358-2362`). `P3`, bits 3 and 4 written on OCS, is green, as p. 303's note on bits 3 and 4
+expects.
+
 ## Risks and unknowns
 
 - **Two Commodore-side sources disagree** (*Independent evidence*): the 8373R4 dissection sides with p. 303's row, Commodore's 1988 ECS Denise specification with NanoMig's register.
@@ -96,6 +116,10 @@ SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leav
 - **Conflicting passages.** pp. 107, 128 and 284 give the bit no function and name no chip set; the red rests on p. 303's scoping to ECS.
 - **The assertion reads only where the sprite first lights**, so it cannot tell a moved start compare from a delayed output pixel; both pass it.
 - **Outside SuperHires nothing is asserted**, since p. 303 gives bit 4 no position there and Hires nothing at all. `hrm/ch3-sprite-registers` records that bit 4 alone leaves the Lores trace, sampled once per 140 ns step, identical (`test_denise_sprites.cpp:1034-1047`).
+- **The video output drops every second SuperHires pixel.** `integration/ch4-sprite-registers`' `P1` grades whole 70 ns steps,
+  d = 80 + k, and records where those steps lie on the 35 ns grid as not asserted (`APPC-pos.c3`, `CH4-appC-position.c3`). Its
+  Lores sweep `P2` is recorded not graded while `P1` is red (`RECORDED: P2: NOT GRADED, depends on P1`):
+  an even d in Lores says nothing while bit 4 acts nowhere.
 - **Hardware is not measured.** A measurement on an 8373 Denise would settle what the chip does: a one-line sprite of `$8000` over a SuperHires display, SPR0CTL `$00` and then `$10`, measured in 35 ns pixels. Two pixels later is p. 303's row and the dissection's; no move is the specification's table and NanoMig.
 
 ## Independent evidence
@@ -132,4 +156,4 @@ SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leav
 
 ## Decision
 
-Read bit 4 into the sprite's horizontal position as a 70 ns sub-position, and apply it only in SuperHires: Denise's one-liner plus its `_shres` guard is the smallest complete model; Copperline's named predicate is the tidiest. The 8373R4 makes the same move elsewhere: it leaves the start compare alone and, with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to 3. Either form moves the first lit sample by 2 and turns the red green. It closes as the *What is asked of a reader* row says.
+Read bit 4 into the sprite's horizontal position as a 70 ns sub-position, and apply it only in SuperHires: Denise's one-liner plus its `_shres` guard is the smallest complete model; Copperline's named predicate is the tidiest. The 8373R4 makes the same move elsewhere: it leaves the start compare alone and, with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to 3. Either form moves the first lit sample by 2 and turns the red green. On a private copy of the RTL outside the repository in which bit 4 acts, built with `make NANOMIG=<copy>` and run on both cores, `integration/ch4-sprite-registers` prints d = 80 to 89 for k = 0 to 9, and `P1` passes and `P2` is graded and passes; `make test` does not run that copy, so this is a reading of the change, not a result of the repository's RTL. It closes as the *What is asked of a reader* row says.
