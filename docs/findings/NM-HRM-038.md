@@ -77,7 +77,7 @@ drives low read $0000 at the same line of their frame (`PC2`), and `PC1` to `PC4
 hold.
 
 A private copy of the RTL does read 0 there. `make sm-test-fx68k` and
-`make sm-test-tg68k` build it, in their own object directories, from the
+`make sm-test-tg68k` build it, not run by `make test`, in their own object directories, from the
 package's `start_model.patch`: for eight lines after a POTGO write with START,
 POTGOR reads the input pot lines as 0 (Figure 8-5's reading). On it the same
 unchanged test prints 133 passed, 0 failed on each core, so `C0-Fc` to `C4-Fc`
