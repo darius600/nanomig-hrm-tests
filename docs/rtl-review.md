@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**50 findings ask for a review, in 28 modules.** They are listed by the
+**51 findings ask for a review, in 28 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -41,7 +41,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 6
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 7
 
 | finding | subject | evidence |
 |---|---|---|
@@ -51,6 +51,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a test fails against the page |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
 | [NM-HRM-087](findings/NM-HRM-087.md) | with BPLCON0 bit 3 set, VPOSR and VHPOSR keep counting: neither a light-pen trigger nor the end of a field freezes them, where pp. 238 and 239 do both | a test fails against the page; the implementations split |
+| [NM-HRM-090](findings/NM-HRM-090.md) | with VARVBEN set, VBSTRT starts no vertical blank: the line it names still shows playfield data, where pp. 304 and 305 make it the line at which blanking starts | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 3
 
