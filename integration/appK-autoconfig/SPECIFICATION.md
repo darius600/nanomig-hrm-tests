@@ -52,9 +52,9 @@ No page states what a CPU access to an address that no device answers does. p.38
 - all other results are stored first;
 - in gate G's shut-up run and every P3 run, a distinct pre-access marker is written to Chip memory immediately before the access (the word PRE of the program, one marker value per kind of final access), so the window below is anchored at the access and not at the start of the run; R_G, R6 and R6m carry none, and are graded only when the completion marker appears (G1, P6-CHIPMEM);
 - a completion marker follows the access;
-- if the completion marker never appears, the run records "no answer" for that access. "Never appears" means no completion marker at the Chip-memory port within the second vertical-sync leading edge counted from the pre-access marker (t_N, §3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed. A completion marker that appears earlier ends the run as DONE, and the line grades the stored result; the printed label and a MEASURED line name which of the two ended the run, DONE or expiry of the window.
+- if the completion marker never appears, the run ended at the window and the access is not graded. "Never appears" means no completion marker at the Chip-memory port within the second vertical-sync leading edge counted from the pre-access marker (t_N, §3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed. A completion marker that appears earlier ends the run as DONE, and the line grades the stored result; the printed label and a MEASURED line name which of the two ended the run, DONE or expiry of the window. A run that ends at the window grades PASS on no line, whatever its stored results are: no page states what an access to an address that no device answers does, and no port of nanomig.v shows whether the access was issued, so a stopped instruction stream cannot be told from an unanswered access. The line prints `RECORDED ... not graded: no completion marker within the window; no port of nanomig.v shows whether the access was issued` when every item below holds, and FAIL when one of them does not.
 
-A run is accepted as "no answer" only when all of these hold, each measured in the run and none assumed:
+A run that ended at the window is recorded as not graded, and not as FAIL, only when all of these hold, each measured in the run and none assumed:
 
 - the pre-access marker was written, exactly once;
 - the M0 marker was written exactly once (the program did not restart), and no exception handler ran (no write of V_E to MK_E, no pixel of C_E);
@@ -63,7 +63,7 @@ A run is accepted as "no answer" only when all of these hold, each measured in t
 - where the program has a scratch write between the access and its readback, that write appears after the pre-access marker;
 - the window expired.
 
-Where one of these fails, the "no answer" alternative of the line is false. A run that wrote neither the completion marker nor the pre-access marker, or whose window had not expired, did not run past the access and is not graded.
+Where one of these fails, the line is FAIL: an equal result stored, an access at the board's port, an exception, a restart, a Chip-port write other than the scratch write, a missing scratch write, or an image equal to IMG0. A run that wrote neither the completion marker nor the pre-access marker, or whose window had not expired, did not run past the access and is not graded.
 
 This covers configuration space before gate G has passed, a base address before its board is configured, and an address a board has been moved away from, including configuration space once its board has been configured by the write to register 48 or shut up. Because of this rule, several checks below need a run of their own.
 
@@ -90,7 +90,7 @@ The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 d
 - **t_M1**: the time of the Chip-port write of V1 to MK1. Anchor check: exactly one such write in the run.
 - **Frames**: a frame lies between two consecutive leading edges of vertical sync on the video output.
 - **t_V2**: the second vertical-sync leading edge after t_M1, so (t_M1, t_V2] contains at least one complete frame. The only duration a page gives is "approximately 17 microseconds" (p.370, the DRESB- pulse for a RESET instruction); t_V2 is a harness bound that contains it many times over.
-- **t_N**: the second vertical-sync leading edge after a run's pre-access marker (§2.2), so a window of at least one complete frame follows the final risky access. It bounds "no answer" for gate G's shut-up run and for every P3 run; a run without a pre-access marker has no t_N.
+- **t_N**: the second vertical-sync leading edge after a run's pre-access marker (§2.2), so a window of at least one complete frame follows the final risky access. It bounds the window for gate G's shut-up run and for every P3 run; a run without a pre-access marker has no t_N.
 - **Visible pixel**: a pixel sample whose RGB is not (0,0,0).
 - **Reference frame F_ref**: the last complete frame before t_M1. Anchor check: F_ref contains pixels of value C1, every pixel in it is either C1 or (0,0,0), and no pixel before t_M1 has the value C2. This shows the display shows COLOR00 and nothing else: "The background color shows in any area on the display where there is no other object present and is also displayed outside the defined display window, in the border area" (p.46). For BPLCON0 bits 14-12 = 000: "Shows only a background color; no playfield is visible" (p.48).
 - **t_C2**: the first visible pixel of value C2 after t_M1, or t_V2 if there is none.
@@ -234,21 +234,22 @@ The harness offers one expansion device, Zorro II fast RAM, through the `fastram
 
 #### Gate G: an unconfigured PIC is present
 
-Run R_G is a run of its own, because its first read may be unanswered (§2.2). It reads IMG0, stores it, and writes the completion marker.
+Run R_G is a run of its own, because its reads may be unanswered (§2.2). It reads IMG0, stores it, writes $00 to register 4A and $20 to register 48 (the configuring writes of P3, §4), reads the image again into IMG_B, and writes the completion marker. It carries no pre-access marker and is graded only when the completion marker appears (G1).
 
 G passes when:
 
 - G1: the run completes;
 - G2: type ∈ {10, 11};
 - G3: registers 0C, 34, 38 and 3C read logical 0, that is physical 1111 at both pair addresses. They are "Reserved, must be 0" (pp.434-435); p.432 gives this example for 3C. Registers 30 and 40 are not used: p.435 adds "Unsupported base register reset register under Zorro II." and "Unsupported control state register under Zorro II." with footnotes 6 and 7 (7 reads "IBID"), and footnote 6 says "The original Zorro specifications called for a few registers, like these, that remained active after configuration."
+- G4: IMG_B differs from IMG0. After the writes of $00 to register 4A and $20 to register 48 the unconfigured PIC is configured and leaves $00E8xxxx: "Note that writing to register 48 actually configures the board" (p.436); the configuration registers "generally disappear when a board is configured, and absolutely must move out of the $00E8xxxx space" (p.435 footnote 6). A bus that returns one constant value fails G4, whatever the value is.
 
-G does not separate a PIC from a data bus that floats to all ones, which also satisfies G2 and G3. Presence is established only by P3's second expected value (IMG2 ≠ IMG0).
+G1-G3 do not separate a PIC from a data bus that floats to all ones, which also satisfies G2 and G3. G4 does, because only a device that answers can change its answer on the configuring write. P3's second expected value (IMG2 ≠ IMG0) is the same transition observed in a separate run.
 
-The run prints G as GATE-G-PRESENCE, PASS or FAIL, before GATE-G-PRECOND. A mutation for it reads 32 words that no AUTOCONFIG device answers in place of $00E80000 (`prog_rg_nodev.s`: the program zeroes 32 words of its own results page and reads them), on the unchanged G1-G3 comparator.
+The run prints G as GATE-G-PRESENCE, PASS or FAIL, before GATE-G-PRECOND; its label says that an unconfigured PIC answers and that its image changes on the configuring writes. A mutation for it places the two configuring writes before the first read of $00E80000, the reads unchanged (`prog_rg_pre48.s`). The board is then configured before any read, and the page predicts that no unconfigured PIC is left to read; the reads then return the same image twice, whatever that image is. The comparator is unchanged: it goes red through G4 (and, on this system, G2 and G3).
 
 The PIC must still be unconfigured when the program starts. If the harness's start-up has already configured it, G fails, and the builder records that as the reason.
 
-GATE-G (run R_G'): writes $00 to the shut-up address $00E8004C, then reads IMG as the last action (§2.2), on the same "differs from IMG0, or no answer" comparator P3-IMG2 uses. "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436).
+GATE-G (run R_G'): writes $00 to the shut-up address $00E8004C, then reads IMG as the last action (§2.2), on the same "differs from IMG0" comparator P3-IMG2 uses. "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436).
 
 GATE-G's precondition GATE-G-PRECOND, printed before GATE-G: register 08 bit 6 reads logical 0, "the board can be shut up" (p.433, §4). It is printed as PASS or FAIL only when gate G supplied a register image; where gate G failed it is recorded as unavailable. Where it does not hold, or gate G failed, GATE-G is recorded "not graded" and the shut-up run is not graded.
 
@@ -293,11 +294,11 @@ e. Last action (§2.2):
 **4. Expected.**
 
 - IMG1 = IMG0: the 4A write alone does not configure. Configuration happens on "writing the final bit of base address" (p.431), and "writing to register 48 actually configures the board" (p.436).
-- IMG2 ≠ IMG0, or "no answer": the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
+- IMG2 ≠ IMG0 (a run that ends at the window is not graded, §2.2): the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
 - Memory board: R0 = P0 and R1 = P1, in both runs.
 - Memory board: before the store of R0, no CPU write with data P0 or P1 appears at a Chip-memory address of the Chip-memory port (§2.1). This excludes B1 aliasing Chip memory. A write of P0 or P1 at a Chip-memory-port address of $200000 or above is not in Chip memory; it is recorded with its address, not graded.
 - P3-NOTOTHER-ASSIGNED, memory board, no claim id: in run R3n, R0 = P0 and R1 = P1 at B1, the base written to register 48.
-- P3-NOTOTHER, memory board, carrying sol:K-0837, opus:K-0869 [p391,p433-435]: the aggregate R0 = P0 and R1 = P1 at B1 and (R2 ≠ P2, or "no answer"), in run R3n. "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435), read through the base-address comparator of p.433-434 ("110 2 megabytes" register 00 size field pairs the base with the board's size). The board answers at the base it was given and does not also answer at the base it was not given.
+- P3-NOTOTHER, memory board, carrying sol:K-0837, opus:K-0869 [p391,p433-435]: the aggregate R0 = P0 and R1 = P1 at B1 and (R2 ≠ P2; a run that ends at the window is not graded, §2.2), in run R3n. "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435), read through the base-address comparator of p.433-434 ("110 2 megabytes" register 00 size field pairs the base with the board's size). The board answers at the base it was given and does not also answer at the base it was not given.
 - Quantifier: "the card's address" is a statement about every card. The test covers the PIC or PICs present, with two bases (R3 and R3').
 
 **5. Preconditions.** Each is printed on its own line before the propositions that rest on it (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND, P3-CONTROL-IO-PRECOND, P3-CONTROL-UNCONF-PRECOND); where one prints FAIL, the propositions after it are recorded as not graded.
@@ -313,7 +314,7 @@ e. Last action (§2.2):
 **6. Contrasting cases.**
 
 - P3-BASE (R3' and R3n'), carrying sol:K-0837, opus:K-0869 [p388,p391,p433,p435]: R3 and R3n with B1 and B2 exchanged. B2 = B1 + size (or B1 + $100000 for boards under 1 MB), with the whole board inside the space. The page predicts that the board answers at B2 and not at B1: "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435). Where no such B2 satisfies §4 (an 8 MB board, which can only sit at $00200000; a 4 MB board, whose only multiple of its size inside the space is $00400000), the contrast is unavailable; the board size and the missing second base are recorded, not graded.
-- Green controls for P3-NOTOTHER and P3-BASE, on the same "R2 ≠ P2, or no answer" comparator, with live inputs proven to go green: P3-CONTROL-IO, the board configured at B1, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, above the 8 MB memory space the board can occupy); and P3-CONTROL-UNCONF, the board left unconfigured (steps c and d skipped, as R3u), read with R3n's own write/readback pair at $00400000. Each is shown red by a stimulus mutation (§8.4): the write/readback aimed at the configured base itself, where a configured memory board answers (p.433). Both controls are recorded with their per-core result (§8.4).
+- Green controls for P3-NOTOTHER and P3-BASE, on the same "R2 ≠ P2" comparator, with live inputs proven to go green: P3-CONTROL-IO, the board configured at B1, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, above the 8 MB memory space the board can occupy); and P3-CONTROL-UNCONF, the board left unconfigured (steps c and d skipped, as R3u), read with R3n's own write/readback pair at $00400000. Each is shown red by a stimulus mutation (§8.4): the write/readback aimed at the configured base itself, where a configured memory board answers (p.433). Both controls are recorded with their per-core result (§8.4).
 - For IMG1 = IMG0 (run R3c): step b writes step c's byte to $00E80048 in place of the 4A write, and IMG1 is read as the last action (§2.2). The page predicts IMG1 ≠ IMG0, or "no answer": "writing to register 48 actually configures the board" (p.436).
 - For IMG2 ≠ IMG0 (run R3u): R3 without the write to 48 of step c and without step d. The page predicts IMG2 = IMG0: until register 48 is written the board is not configured (p.436) and stays in configuration space.
 - For G: R_G'.
@@ -366,14 +367,14 @@ c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action
 - G passed.
 - P6-CONFIG: both runs load, no exception handler runs in either, and the configuration took effect before RESET: for a memory board, R0 = P0 in this run; for an I/O board, P3's IMG2 ≠ IMG0 in run R3, whose configuration writes are the same.
 - P6-WITNESS: P1's reset witness, observed in runs R6 and R6m themselves (not R1): at least one LED change in (t_M1, t_V2].
-- P6-CHIPMEM: M2 appears at the Chip-memory port, and the CPU's instruction fetches from A+4 onward appear there; both runs write the completion marker. That is, Chip memory answers at the program's addresses after RESET. The page does not promise this (p.223). The run prints it as a PASS or FAIL line before P6. If it does not happen, P6 is "not checkable on this system", recorded and not graded.
+- P6-CHIPMEM: both runs write the completion marker, on every CPU setting. The completion marker is the only observable the line grades: it is written after M2 and after the program's instruction fetches from A+4 onward, so a run that writes it has had Chip memory answer at the program's addresses after RESET. The page does not promise this (p.223). The run prints it as a PASS or FAIL line before P6. If it does not happen, P6 is "not checkable on this system", recorded and not graded.
 
 **6. Contrasting cases.**
 
 - R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition P6-WITNESS: with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. Both runs complete, and P6-WITNESS prints FAIL on them. P6 itself is unfalsifiable by a live page-predicted stimulus at this boundary and carries no mutation, so it is green with no live mutation: a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers.
 - For P6-WITNESS: R6a and R6am (above), and R1a for the same precondition in P2.
 - For P6-CONFIG: no contrast is driven in the R6 family; a program that leaves out the write to 48 (P3-CONTENT's contrast) would falsify it.
-- For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented. The line itself is falsified by a stimulus that is not a page-predicted contrast: R6 and R6m with the instruction stream stopping at the tail (`prog_r6_hang.s`, `prog_r6m_hang.s`), so neither M2 nor the completion marker is written.
+- For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented. The line has no mutation: it is red exactly when R6 or R6m writes no completion marker after RESET, so every case that turns it red stops before the completion marker, and a mutation that goes red by stopping is excluded; the only page-predicted absence, the overlay ROM copy that "responds starting at memory location $00000000" (p.223), is a case in which the program stops before it writes M2 and the completion marker. The line is recorded `none impossible`.
 
 **7. Reference frame.** As P1 and P3.
 
@@ -449,9 +450,9 @@ clearing it: a page-documented event, not an assumed cycle count.
   C1'=$0C3F, RESET replaced by NOP); `prog_r1_nocal.s` (the power-LED
   calibration contrast, the write that switches to bright keeps bit 1 = 1,
   RESET replaced by NOP).
-- Gate G and its contrasts: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G', which writes the pre-access marker B4B4 before its image read); `prog_rg_nodev.s` (GATE-G-PRESENCE's mutation: the image read from 32 zeroed words of the results page).
+- Gate G and its contrasts: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G', which writes the pre-access marker B4B4 before its image read); `prog_rg_pre48.s` (GATE-G-PRESENCE's mutation: R_G with the writes to 4A and 48 placed before its first read of $00E80000). R_G itself writes $00 to 4A and $20 to 48 after IMG0 and reads IMG_B (G4).
 - Pre-access markers: every final risky access of `prog_r3.s` and its includers is preceded by a write to the word PRE ($0C00CE): $B1B1 before the IMG1 read, $B2B2 before the IMG2 read, $B3B3 before the write/readback at the other base. `prog_rg_shutup.s` writes $B4B4 to the same word before its image read.
-- No-answer contrasts (apparatus, not page-predicted): `prog_rg_shutup_hang.s`, `prog_r3_hang_img2.s`, `prog_r3_io_hang.s`, `prog_r3_io_eqstore.s`, `prog_r3_unconf_hang.s`, `prog_r3_n_hang.s` (§8.4).
+- No-answer apparatus contrasts (not mutations, not page-predicted): `prog_rg_shutup_hang.s`, `prog_r3_hang_img2.s`, `prog_r3_io_hang.s`, `prog_r3_io_eqstore.s`, `prog_r3_unconf_hang.s`, `prog_r3_n_hang.s` (§8.4).
 - P3: `prog_r3.s` (R3, and R3c/R3u/R3' select from it via an assembly
   symbol); `prog_r3_n.s` (R3n); `prog_r3_swap.s` (R3'); `prog_r3_swap_n.s`
   (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u);
@@ -463,8 +464,7 @@ clearing it: a page-documented event, not an assumed cycle count.
   read at $00400000 with R3n's own ending); `prog_r3_unconf_self.s` (its
   mutation: configured at $00400000 and read there).
 - P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
-  `prog_r6a.s` (R6a); `prog_r6am.s` (R6am); `prog_r6_hang.s` and
-  `prog_r6m_hang.s` (P6-CHIPMEM's mutation: the stream stops at the tail).
+  `prog_r6a.s` (R6a); `prog_r6am.s` (R6am).
 
 Every program shares one environment (interrupts and DMA cleared, the ROM
 overlay cleared, the exception vectors installed and the vector-table
@@ -482,7 +482,9 @@ once at the start of every run, including gate G's and P3's.
 - Gate G's own register 00 read: type = Zorro II (bits 7-6 = 11), memory
   flag set, size field = 6 (2 MB, p.433's "Unextended" column); registers
   0C, 34, 38 and 3C read physical 1111 at both pair addresses, as p.432's
-  own example and p.434-435 state for the reserved registers.
+  own example and p.434-435 state for the reserved registers. The image
+  read again after the writes of $00 to 4A and $20 to 48 differs from IMG0
+  (G4), on both cores; a MEASURED line prints G1 to G4 separately.
 - The no-answer window of section 2.2 is two vertical-sync leading edges
   counted on the run's video trace from the pre-access marker the program
   writes immediately before its final risky access; it is not assumed from a
@@ -492,8 +494,10 @@ once at the start of every run, including gate G's and P3's.
   its label and in a MEASURED line. Where the run ended at the window, the
   MEASURED line also gives the provenance of section 2.2: the marker written
   once, no restart, no exception, no Chip-port write after the marker but the
-  scratch write, no access at the board's `fastram_*` port, the window expired. On every graded P3 and gate G run of
-  both cores the run ended at the completion marker.
+  scratch write, no access at the board's `fastram_*` port, the window expired,
+  and the line is recorded as not graded; a run that ends at the window grades
+  PASS on no line. On every graded P3 and gate G run of both cores the run
+  ended at the completion marker.
 - Power-LED calibration: the check counts the power-LED transitions between the dim-phase marker and t_M1 in the port trace and compares the level before with the level after. It carries no tolerance window.
 - Every P3 run's register 00 read: type 11, memory flag set, size field 110
   (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND and
@@ -522,8 +526,7 @@ three red lines of the unmutated run (GATE-G, P3-NOTOTHER, P3-BASE).
 | P3-CONTROL-IO | `P3-CONTROL-IO` | the write/readback aimed at the configured base B1 itself | P3-CONTROL-IO: FAIL (a configured memory board answers at its base, p.433) |
 | P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF` | the board configured at $00400000 and the write/readback aimed there | P3-CONTROL-UNCONF: FAIL (same) |
 | P6-WITNESS | `P6` | RESET replaced by NOP in R6 and R6m (R6a, R6am) | P6-WITNESS: FAIL. P6: not graded (P6-WITNESS) |
-| GATE-G-PRESENCE | `GATE-G-PRESENCE` | the image read from 32 zeroed words of the results page in place of $00E80000 (`prog_rg_nodev`) | GATE-G-PRESENCE: FAIL (the zeroed words fail G2 and G3; the decoded type is not printed); the run completes; GATE-G-PRECOND unavailable; GATE-G, P3 and P6 not checkable |
-| P6-CHIPMEM | `P6-CHIPMEM` | the stream stops at the tail in R6 and R6m (`prog_r6_hang`, `prog_r6m_hang`) | P6-CHIPMEM: FAIL (neither run writes the completion marker); P6: not graded (P6-CHIPMEM) |
+| GATE-G-PRESENCE | `GATE-G-PRESENCE` | R_G with the writes of $00 to 4A and $20 to 48 placed before its first read of $00E80000, the reads unchanged (`prog_rg_pre48`) | GATE-G-PRESENCE: FAIL (the run completes; G2, G3 and G4 are each printed "no": the vacated space returns the same image twice and neither page says which value a read there returns); GATE-G-PRECOND unavailable; GATE-G, P3 and P6 not checkable |
 
 Every run above also reprints GATE-G, P3-NOTOTHER and P3-BASE
 unchanged (FAIL, FAIL, FAIL) except where the selector feeds them
@@ -542,6 +545,7 @@ Lines without a mutation, each with its record in the test source:
 | P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND, P3-CONTROL-IO-PRECOND, P3-CONTROL-UNCONF-PRECOND | not exercised, by a scope decision: run liveness, board type and size, memory flag and scratch-write order are anchors of the offered board and of the program order; no page predicts a contrast |
 | P6-CONFIG | not exercised, by a scope decision: a program that leaves out the write to 48 in the R6 family would falsify it |
 | P6 | unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case, RESET replaced by NOP, removes P6's own reset-witness precondition P6-WITNESS, so P6 against it is not graded rather than red; P6 is green with no live mutation |
+| P6-CHIPMEM | unfalsifiable by a mutation that completes: the line is red exactly when R6 or R6m writes no completion marker after RESET, so every case that turns it red stops before the completion marker; p.223 says only that the overlay ROM copy responds starting at $00000000 and that software must assume memory is not available, so no page predicts a completing run in which Chip memory does not answer |
 
 GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus
 and have no mutation of their own: a stimulus mutation cannot make a red line
@@ -549,18 +553,18 @@ more red. Each has green controls on the same comparator.
 
 | red line | green control, same comparator | measured, both cores |
 |---|---|---|
-| GATE-G ("differs from IMG0, or no answer") | P3-IMG2: after the configuring write to register 48 the image differs from IMG0 (p.435 fn.6, p.431) | PASS |
-| P3-NOTOTHER, P3-BASE ("R2 != P2V, or no answer") | P3-CONTROL-IO: board configured at $00200000, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, outside the 8 MB memory space the board can occupy) | PASS: completion marker written, R2 = $0000, not equal to P2 |
+| GATE-G ("differs from IMG0") | P3-IMG2: after the configuring write to register 48 the image differs from IMG0 (p.435 fn.6, p.431) | PASS |
+| P3-NOTOTHER, P3-BASE ("R2 != P2V") | P3-CONTROL-IO: board configured at $00200000, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, outside the 8 MB memory space the board can occupy) | PASS: completion marker written, R2 = $0000, not equal to P2 |
 | P3-NOTOTHER, P3-BASE | P3-CONTROL-UNCONF: board left unconfigured (steps c and d skipped), read with R3n's own write/readback pair at $00400000 | PASS: completion marker written, R2 = $0000, not equal to P2 |
 
-No-answer contrasts. No unmutated run ends at the window: every unanswered access in this system completes. These runs exercise the no-answer branch of §2.2. They are apparatus contrasts, not page-predicted ones, and each is measured on both cores:
+Apparatus contrasts of the no-answer branch (not mutations, not page-predicted; no MUTATION record in the test source). No unmutated run ends at the window: every unanswered access in this system completes. These runs exercise the branch of §2.2 that a run ending at the window takes, and show that it grades nothing PASS. Each is measured on both cores:
 
 | line | `NMH_MUTATE` | stimulus | measured, both cores |
 |---|---|---|---|
-| GATE-G | `GATE-G-NOANSWER` | the shut-up run stops right after its pre-access marker (`prog_rg_shutup_hang`) | PASS, ended by expiry of the no-answer window, every provenance item holding |
-| P3-IMG2 | `P3-IMG2-NOANSWER` | R3 stops right after its pre-access marker (`prog_r3_hang_img2`) | PASS, ended by expiry of the window |
-| P3-CONTROL-IO | `P3-CONTROL-IO-NOANSWER` | stops after the write and the scratch write, before the readback at $00A00000 (`prog_r3_io_hang`) | PASS, ended by expiry of the window |
-| P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF-NOANSWER` | the same at $00400000, board unconfigured (`prog_r3_unconf_hang`) | PASS, ended by expiry of the window |
+| GATE-G | `GATE-G-NOANSWER` | the shut-up run stops right after its pre-access marker (`prog_rg_shutup_hang`) | RECORDED not graded, ended by expiry of the no-answer window, every provenance item holding |
+| P3-IMG2 | `P3-IMG2-NOANSWER` | R3 stops right after its pre-access marker (`prog_r3_hang_img2`) | RECORDED not graded, ended by expiry of the window |
+| P3-CONTROL-IO | `P3-CONTROL-IO-NOANSWER` | stops after the write and the scratch write, before the readback at $00A00000 (`prog_r3_io_hang`) | RECORDED not graded, ended by expiry of the window |
+| P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF-NOANSWER` | the same at $00400000, board unconfigured (`prog_r3_unconf_hang`) | RECORDED not graded, ended by expiry of the window |
 | P3-CONTROL-IO | `P3-CONTROL-IO-EQSTORE` | P2 stored into the R2 slot, then the stream stops (`prog_r3_io_eqstore`) | FAIL: an equal result was stored and no completion marker followed |
 | P3-NOTOTHER | `P3-NOTOTHER-BOARD` | R3n stops after the write at $00400000 and the scratch write, before the readback (`prog_r3_n_hang`) | FAIL (already red): the board took the write, which the `fastram_*` port shows; no completion marker, no stored result |
 
