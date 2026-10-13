@@ -28,6 +28,7 @@
 // MUTATION PC1 stimulus red the R step of every Fc waits for line 5 instead of line 10, so no record of any Fc counts and PC1's every-R-step clause fails, via NMH_MUTATE=K6 (PAL+ECS run)
 // MUTATION PC2 stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (PAL+ECS run)
 // MUTATION PC3 stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (PAL+ECS run)
+// MUTATION PC3 stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (PAL+ECS run)
 // MUTATION PC4 stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (PAL+ECS run)
 // MUTATION C0-Fc implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+ECS run)
 // MUTATION C0-Fc stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (PAL+ECS run)
@@ -53,6 +54,7 @@
 // MUTATION PC1-NTSC+ECS stimulus red the R step of every Fc waits for line 5 instead of line 10, so no record of any Fc counts and PC1's every-R-step clause fails, via NMH_MUTATE=K6 (NTSC+ECS run)
 // MUTATION PC2-NTSC+ECS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (NTSC+ECS run)
 // MUTATION PC3-NTSC+ECS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (NTSC+ECS run)
+// MUTATION PC3-NTSC+ECS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (NTSC+ECS run)
 // MUTATION PC4-NTSC+ECS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (NTSC+ECS run)
 // MUTATION C0-Fc-NTSC+ECS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+ECS run)
 // MUTATION C0-Fc-NTSC+ECS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (NTSC+ECS run)
@@ -78,6 +80,7 @@
 // MUTATION PC1-PAL+OCS stimulus red the R step of every Fc waits for line 5 instead of line 10, so no record of any Fc counts and PC1's every-R-step clause fails, via NMH_MUTATE=K6 (PAL+OCS run)
 // MUTATION PC2-PAL+OCS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (PAL+OCS run)
 // MUTATION PC3-PAL+OCS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (PAL+OCS run)
+// MUTATION PC3-PAL+OCS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (PAL+OCS run)
 // MUTATION PC4-PAL+OCS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (PAL+OCS run)
 // MUTATION C0-Fc-PAL+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+OCS run)
 // MUTATION C0-Fc-PAL+OCS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (PAL+OCS run)
@@ -103,6 +106,7 @@
 // MUTATION PC1-NTSC+OCS stimulus red the R step of every Fc waits for line 5 instead of line 10, so no record of any Fc counts and PC1's every-R-step clause fails, via NMH_MUTATE=K6 (NTSC+OCS run)
 // MUTATION PC2-NTSC+OCS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (NTSC+OCS run)
 // MUTATION PC3-NTSC+OCS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (NTSC+OCS run)
+// MUTATION PC3-NTSC+OCS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (NTSC+OCS run)
 // MUTATION PC4-NTSC+OCS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (NTSC+OCS run)
 // MUTATION C0-Fc-NTSC+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+OCS run)
 // MUTATION C0-Fc-NTSC+OCS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (NTSC+OCS run)
@@ -129,6 +133,7 @@
 // MUTATION P1-CONFIGS stimulus red the NTSC+ECS run loads prog_p1_absent.bin, a file that does not exist, so that configuration is not loaded, via NMH_MUTATE=CFGMUT
 // MUTATION JOY-FIXTURE stimulus red the joystick run loads prog_joy_absent.bin, a file that does not exist, so the program is not loaded, via NMH_MUTATE=JOYLOAD
 // MUTATION JOY-CONFIGS stimulus red a further NTSC+ECS joystick run applies Q3's stimulus (the first Y-up(A) level at N1), and its records differ from the PAL+ECS run's, via NMH_MUTATE=JOYCFG
+// MUTATION JOY-CONFIGS stimulus red the NTSC+ECS joystick run loads prog_joy_absent.bin, a file that does not exist, so that configuration is not loaded, its lines print NOT GRADED and its records differ from the PAL+ECS run's, via NMH_MUTATE=JOYCFGLOAD
 // MUTATION Q1 stimulus red the harness applies Yup(A)'s levels only after it sees U_k instead of at S_k, so the timing clause t_apply(k) < t(T_k) fails and the hold clause holds, via NMH_MUTATE=Q1 (PAL+ECS run)
 // MUTATION Q1 stimulus red the harness changes one level of connector B (joystick0 bit 7) after it sees T_k of step 5 and before U_k, so the drive trace shows a change inside (t_apply(k), t(U_k)]; the timing clause holds and the hold clause fails, via NMH_MUTATE=Q1HOLD (PAL+ECS run)
 // MUTATION Q2 stimulus red the harness additionally grounds pin 9 of connector A throughout Yup(A), so POTGOR bit 10 reads 0 (POTGOR&$5500 = $5100 in the four Yup(A) records, steps 4-7), via NMH_MUTATE=Q2 (PAL+ECS run)
@@ -673,9 +678,9 @@ int main(int argc, char** argv) {
         for (const char* x : l) if (mv == x) return true;
         return false;
     };
-    const bool p1_selector = in_list({"K1", "K3", "K4", "K5", "K6", "K7", "OUTLOW", "P1LOAD", "CFGMUT"});
+    const bool p1_selector = in_list({"K1", "K3", "K4", "K5", "K6", "K7", "K8", "OUTLOW", "P1LOAD", "CFGMUT"});
     const bool joy_selector = in_list({"Q1", "Q1HOLD", "Q2", "Q2MOUSE", "Q2KEY", "Q3", "Q4", "P2VAR", "P2ANCHOR",
-                                       "P3ANCHOR", "P3VAR", "P4VAR", "P4VAR3", "P4VAR4", "JOYLOAD", "JOYCFG"});
+                                       "P3ANCHOR", "P3VAR", "P4VAR", "P4VAR3", "P4VAR4", "JOYLOAD", "JOYCFG", "JOYCFGLOAD"});
     const bool part_p1 = mv.empty() || p1_selector || (!joy_selector && mv != "FIXTURE");
     const bool part_joy = mv.empty() || joy_selector || (!p1_selector && mv != "FIXTURE");
 
@@ -916,6 +921,31 @@ int main(int argc, char** argv) {
                     "Fc R step", kConfigs[ci].name, rb_val, rpre_val);
                 checks.record(buf);
             }
+        } else if (mv == "K8") {
+            // Grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's
+            // R step and the W step of C0-Fc, i.e. in the gap between two
+            // frames that no R step and no Rpre read covers, and releases it
+            // right after the W step's first write (Vw0), before Rpre is read.
+            auto runs = grade_all([&](nmh::Config c, int) {
+                std::vector<GroundWindow> windows;
+                windows.push_back({frames[4].r.vr1[3], frames[5].w.vw0, PotGround{true, false, false}});
+                return run_p1(bin, c, nwords, windows);
+            });
+            for (int ci = 0; ci < 4; ++ci) {
+                auto& r = runs[ci];
+                if (!(r.loaded && r.done)) continue;
+                auto& fb0 = frames[4]; // C0-Fb
+                auto& fc0 = frames[5]; // C0-Fc
+                uint16_t rb_val = 0xFFFF;
+                for (int i = 0; i < 4; ++i)
+                    if (wv(r, fb0.r.vr0[i]) == fb0.r.target && wv(r, fb0.r.vr1[i]) == fb0.r.target) { rb_val = wv(r, fb0.r.pg[i]) & 0x5500; break; }
+                uint16_t rpre_val = fc0.w.has_rpre ? (wv(r, fc0.w.rpre) & 0x5500) : 0xFFFF;
+                char buf[240];
+                std::snprintf(buf, sizeof buf, "K8 %s: measured Rb=$%04X Rpre=$%04X (configuration C0) with "
+                    "LX grounded only between the end of C0-Fb's R step and the first write of C0-Fc's W step",
+                    kConfigs[ci].name, rb_val, rpre_val);
+                checks.record(buf);
+            }
         } else {
             grade_all([&](nmh::Config c, int ci) {
                 const bool absent = (mv == "P1LOAD" && ci == 0) || (mv == "CFGMUT" && ci == 1);
@@ -943,7 +973,10 @@ int main(int argc, char** argv) {
             "[not graded -- apparatus check, no claim uid]");
 
         if (joy_ok(runs[0])) {
-            for (int ci = 1; ci < 4; ++ci) runs.push_back(run_cfg(mv, cfg_for(kConfigs[ci])));
+            for (int ci = 1; ci < 4; ++ci)
+                runs.push_back(mv == "JOYCFGLOAD" && ci == 1
+                                   ? run_joy(dir + "/prog_joy_absent.bin", mv, cfg_for(kConfigs[ci]))
+                                   : run_cfg(mv, cfg_for(kConfigs[ci])));
 
             // The other three configurations' records are compared word for
             // word with the PAL+ECS run's; each of the four is graded on its own
@@ -1254,10 +1287,14 @@ int main(int argc, char** argv) {
         };
 
         if (joy_ok(runs[0])) {
-            for (int ci = 0; ci < 4; ++ci)
-                grade_joy(runs[ci], ci == 0 ? std::string() : std::string("-") + kConfigs[ci].name);
+            for (int ci = 0; ci < 4; ++ci) {
+                const std::string tag = ci == 0 ? std::string() : std::string("-") + kConfigs[ci].name;
+                if (joy_ok(runs[ci])) grade_joy(runs[ci], tag);
+                else checks.record(std::string("NOT GRADED: Q1-Q4, P2-ANCHOR, P2-*, P3-*, P4-* in ") +
+                    kConfigs[ci].name + " -- the run did not load, complete all 54 steps and reach DONE");
+            }
         } else {
-            checks.record("NOT GRADED: Q1-Q4, P2-ANCHOR, P2-*, P3-*, P4-* in every configuration -- "
+            checks.record("NOT GRADED: JOY-CONFIGS, Q1-Q4, P2-ANCHOR, P2-*, P3-*, P4-* in every configuration -- "
                 "JOY-FIXTURE failed, so the joystick program's records were not collected");
         }
     }

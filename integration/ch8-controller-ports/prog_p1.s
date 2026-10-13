@@ -24,7 +24,7 @@ MARK_M1         equ     $4D31   ; 'M1'
 MARK_M2         equ     $4D32   ; 'M2'
 
 ; ---- Fc's R-step wait target: 10 normally; K3 moves it to 12 (PC1
-; mutation); K6 moves it to 5 (PC4 mutation). Only one of K3/K6 is ever
+; mutation); K6 moves it to 5 (PC1 mutation). Only one of K3/K6 is ever
 ; defined in a given build.
         ifd     K3
 FCTARGET        equ     12
