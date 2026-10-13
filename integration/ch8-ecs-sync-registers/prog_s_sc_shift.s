@@ -1,5 +1,5 @@
-; prog_s_sc_shift.s -- X-SHIFT mutation for SC (BCON=$01A0, s=$0010, e=$0040): from
-; line 128 of PLANE on, the white span starts one data word earlier and keeps
+; prog_s_sc_shift.s -- X-SHIFT mutation for SC (BCON=$01A0, s=$0010, e=$0040): in
+; lines 0 to 127 of PLANE, the white span starts one data word earlier and keeps
 ; its width, so the landmark's distance to the sync edges is no longer the
 ; same in every graded line. Must fail P3/P4(a) [SC] and nothing else.
 BCON            equ     $01A0

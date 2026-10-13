@@ -66,12 +66,12 @@ start:
         ifd     AUD0_ON
         ; Audio channel 0 as p.145 prescribes: location, length (words),
         ; volume, period, then the DMA enable. AUD0PER 124 is the smallest
-        ; period p.140 and p.266 give; AUD0VOL 64 is the maximum volume
+        ; period p.266 gives (p.140: 124 NTSC, 123 PAL); AUD0VOL 64 is the maximum volume
         ; (p.140: "from 64 to 0"); AUD0LEN 8 is a length in words (p.145).
         move.l  #AUDBUF,AUD0LCH(a0)
         move.w  #8,AUD0LEN(a0)
-        move.w  #124,AUD0PER(a0)
         move.w  #64,AUD0VOL(a0)
+        move.w  #124,AUD0PER(a0)
         move.w  #$8201,DMACON(a0)      ; SET,DMAEN,AUD0EN
         endif
 

@@ -18,7 +18,7 @@
 ;                   5 white, 1 black, so each line carries one transition
 ;                   into white and one out of white, with a white span one
 ;                   data word narrower than the normal one.
-;   SHIFT_ROWS   -- X-SHIFT-*: from line 128 of PLANE on, the white span
+;   SHIFT_ROWS   -- X-SHIFT-*: in lines 0 to 127 of PLANE, the white span
 ;                   starts one data word earlier (13 black, 6 white,
 ;                   1 black), so the span keeps its width and moves
 ;                   relative to the sync pulse in half of the lines.
@@ -142,12 +142,12 @@ start:
         ifd     AUD0_AT0
         ; Audio channel 0 as p.145 prescribes (location, length in words,
         ; volume, period, DMA enable): a one-word buffer at Chip address 0,
-        ; the smallest period p.140 and p.266 give, the maximum volume
+        ; the smallest period p.266 gives (p.140: 124 NTSC, 123 PAL), the maximum volume
         ; (p.140: "from 64 to 0").
         move.l  #0,AUD0LCH(a0)
         move.w  #1,AUD0LEN(a0)
-        move.w  #124,AUD0PER(a0)
         move.w  #64,AUD0VOL(a0)
+        move.w  #124,AUD0PER(a0)
         move.w  #$8201,DMACON(a0)      ; SET,DMAEN,AUD0EN
         endif
 
