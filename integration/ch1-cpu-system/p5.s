@@ -16,8 +16,10 @@
 ;            installed there too) instead of TRAP #0 through vector 32:
 ;            the exception is taken and the window is populated, but the
 ;            installed vector of case 1 is not read (P5.a's contrast)
-;   MUT_B    SUBQ.L #4,A7 is inserted before case 1 (P5.b's contrast; used
-;            together with MUT_VBR, "in the 68010 run")
+;   MUT_B    SUBQ.L #4,A7 and a NOP take the place of step 3's MOVEC (P5.b's
+;            contrast; used together with MUT_VBR, "in the 68010 run"): the
+;            image still differs from the 68000-mode image only inside step
+;            3's four bytes, and PRE_SP differs by four
 ;   MUT_C    case 2 gets an extra MOVE.W D0,S_P before its instruction
 ;            (P5.c's contrast)
 ;   MUT_SPAN case 3's MOVE.W #0,CCR becomes MOVE.W #1,CCR: the image
@@ -61,7 +63,12 @@ start:
         moveq   #0,d0
 VBR_STEP:
         ifd     MUT_VBR
+        ifd     MUT_B
+        subq.l  #4,a7                   ; P5.b contrast: PRE_SP differs from the other runs
+        nop
+        else
         movec   d0,vbr
+        endc
         else
         nop
         nop
@@ -71,10 +78,6 @@ VBR_END:
 ; ---- step 4: USP --------------------------------------------------------
         movea.l #USP_INIT,a0
         move.l  a0,usp
-
-        ifd     MUT_B
-        subq.l  #4,a7                   ; P5.b contrast: PRE_SP differs from the other runs
-        endc
 
 ; ---- case 1 (e=1): TRAP #0 ----------------------------------------------
         move.l  a7,PRE_SP

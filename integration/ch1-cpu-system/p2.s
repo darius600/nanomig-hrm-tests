@@ -11,6 +11,10 @@
 ;   MUT_B      the store of D3 (M_D3) is left out (P2.b's contrast)
 ;   MUT_C      a trap-0 handler (RTE only) is installed and TRAP #0 is
 ;              executed between steps 6 and 7 (P2.c's contrast)
+;   MUT_RD     a TST.W of a word outside the program image and outside
+;              SAVE_SP is made between steps 6 and 7: a read inside the
+;              window that is neither a program-image read nor the read of
+;              SAVE_SP (P2.c's read clause contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
@@ -103,6 +107,9 @@ start:
 
         ifd     MUT_C
         trap    #0
+        endc
+        ifd     MUT_RD
+        tst.w   (T_BASE+16).l           ; P2.c contrast: a data read inside the window
         endc
 
 ; ---- step 7: USP --------------------------------------------------------

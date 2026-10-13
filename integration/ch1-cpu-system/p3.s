@@ -22,12 +22,14 @@
 ;   MUT_CREG a LEA W_3(PC),A1 and a TST.W (A1) (register-indirect data
 ;            read of the guard word) are inserted before block 3 (P3.c's
 ;            contrast)
+;   MUT_CIDX a LEA, a MOVEQ and a TST.W 0(A1,D1.W) are inserted before
+;            block 3: an indexed data read whose address the check cannot
+;            resolve (the read itself is harmless in this run: it reads a
+;            word far from every guard) (P3.c's fail-safe contrast)
+;   MUT_COP  an ADDQ.W #1,D2, which the check does not decode, is inserted
+;            before block 3 (P3.c's fail-safe contrast)
 ;   MUT_D    block 1's stop instruction is assembled as BRA.W instead of
 ;            BRA.S (P3.d's contrast)
-;   MUT_WIN  (with MUT_C4B) the four blocks run before S_START is written;
-;            the markers P1,L1,...,P4,L4 and then S_END follow, so every
-;            precondition holds but the run window contains no block
-;            (the main relation's contrast)
 ;   MUT_CAL  a TST.W of the far word Z is inserted before the ending (the
 ;            calibration's contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
@@ -36,18 +38,10 @@
         include "nanomig.i"
         include "ch1.i"
 
-; The window-open and landing markers. With MUT_WIN they are left out of
-; the blocks and written after the last block instead (see the tail).
-PMARK   macro
-        ifnd    MUT_WIN
-        move.w  #\1,S_P
-        endc
-        endm
-LMARK   macro
-        ifnd    MUT_WIN
-        move.w  #\1,S_L
-        endc
-        endm
+; Every guard is six words, never executed: MOVE.W #imm,abs.L is 4 words
+; and BRA.W is 2. The .l suffix is needed: S_X ($400E) fits an
+; absolute-short address too, which vasm otherwise prefers, assembling
+; only 3 words and making the guard 5.
 
         org     PROGRAM_ORG
 
@@ -55,14 +49,14 @@ start:
         SETUP
 
 ; ---- block 1: BRA.S --------------------------------------------------
-        PMARK   1
+        move.w  #1,S_P
         ifd     MUT_ORD
-        PMARK   2
+        move.w  #2,S_P
         endc
         ifd     MUT_B
 X1:     bra.s   W1X
 W1:     nop
-W1X:    move.w  #$DEAD,S_X
+W1X:    move.w  #$DEAD,(S_X).l
         bra.w   L1
         else
 X1:     ifd     MUT_D
@@ -70,22 +64,22 @@ X1:     ifd     MUT_D
         else
         bra.s   L1
         endc
-W1:     move.w  #$DEAD,S_X
+W1:     move.w  #$DEAD,(S_X).l
         bra.w   FAILRUN
         endc
-L1:     LMARK   1
+L1:     move.w  #1,S_L
         lea     X1(pc),a6
         move.l  a6,XTAB3+0
 
 ; ---- block 2: JMP (A0) -------------------------------------------------
         ifnd    MUT_ORD
-        PMARK   2
+        move.w  #2,S_P
         endc
         lea     L2(pc),a0
 X2:     jmp     (a0)
-W2:     move.w  #$DEAD,S_X
+W2:     move.w  #$DEAD,(S_X).l
         bra.w   FAILRUN
-L2:     LMARK   2
+L2:     move.w  #2,S_L
         ifd     MUT_A
         move.w  #2,S_L                 ; P3.a contrast: a second landing marker
         endc
@@ -103,36 +97,33 @@ L2:     LMARK   2
         lea     W3(pc),a1
         tst.w   (a1)                   ; P3.c contrast: register-indirect operand read of a guard word
         endc
-        PMARK   3
+        ifd     MUT_CIDX
+        lea     T_BASE,a1
+        moveq   #0,d1
+        tst.w   0(a1,d1.w)             ; P3.c fail-safe contrast: an indexed access the check cannot resolve
+        endc
+        ifd     MUT_COP
+        addq.w  #1,d2                  ; P3.c fail-safe contrast: an instruction the check does not decode
+        endc
+        move.w  #3,S_P
         pea     L3(pc)
 X3:     rts
-W3:     move.w  #$DEAD,S_X
+W3:     move.w  #$DEAD,(S_X).l
         bra.w   FAILRUN
-L3:     LMARK   3
+L3:     move.w  #3,S_L
         lea     X3(pc),a6
         move.l  a6,XTAB3+8
 
 ; ---- block 4: BEQ.S (Z set by CMP.W D0,D0) ------------------------------
-        PMARK   4
+        move.w  #4,S_P
         cmp.w   d0,d0
 X4:     beq.s   L4
-W4:     move.w  #$DEAD,S_X
+W4:     move.w  #$DEAD,(S_X).l
         bra.w   FAILRUN
-L4:     LMARK   4
+L4:     move.w  #4,S_L
         lea     X4(pc),a6
         move.l  a6,XTAB3+12
 
-        ifd     MUT_WIN
-        move.w  #$0001,S_START          ; the window opens after all four blocks ran
-        move.w  #1,S_P
-        move.w  #1,S_L
-        move.w  #2,S_P
-        move.w  #2,S_L
-        move.w  #3,S_P
-        move.w  #3,S_L
-        move.w  #4,S_P
-        move.w  #4,S_L
-        endc
         ifd     MUT_CAL
         tst.w   (FARZ).l               ; calibration contrast: a CPU read of the far word Z
         endc

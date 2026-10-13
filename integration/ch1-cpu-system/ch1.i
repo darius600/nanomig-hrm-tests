@@ -32,6 +32,7 @@ S_L             equ     $400C           ; landing sentinel (P3, P6)
 S_X             equ     $400E           ; guard (P3, P6; must never be written)
 R_INT           equ     $4010           ; stored INTENAR
 R_DMA           equ     $4012           ; stored DMACONR
+S_KIND          equ     $401C           ; P1: which instruction family the case table names ($C1A0 CLR, $C1A1 MOVE)
 SAVE_SP         equ     $4014           ; long: P2 saved stack pointer
 PRE_SP          equ     $4018           ; long: P5 stack pointer before each exception
 POST_SP1        equ     $4024           ; long: P5 stack pointer on handler entry, e=1
@@ -100,6 +101,9 @@ SETUP           macro
 ; MUT_C3 (contrast, C3): the S_END write is made twice.
 ; MUT_C3F (contrast, C3's S_FAIL clause): a branch to FAIL is inserted just
 ; before the normal S_END write, in the program that uses this macro.
+; MUT_C4E (contrast, C4's S_END ordering clause): the S_END write of this
+; macro is left out; the program that uses it writes S_END once, before its
+; last window closes.
 ; MUT_PEEK (contrast, the S_START peek_word readback): S_START is overwritten
 ; with $0000 after the S_END write; the CPU write of $0001 stays in the log.
 ; MUT_NODONE (contrast, the fixture's DONE): the program stops in place
@@ -112,7 +116,9 @@ ENDING          macro
 FAILRUN:
                 move.w  #$FA11,S_FAIL
 REALEND:
+                ifnd    MUT_C4E
                 move.w  #$E0D0,S_END
+                endc
                 ifd     MUT_C3
                 move.w  #$E0D0,S_END
                 endc

@@ -22,6 +22,8 @@
 ;   MUT_ORD   case 4's S_B store and readback move behind case 5's S_A
 ;             store, so windows 4 and 5 overlap (P1.a's ordering contrast)
 ;   MUT_C4B   S_START is written after case 1's S_A (C4's ordering contrast)
+;   MUT_C4E   S_END is written once, before case 21's S_B (C4's S_END ordering
+;             contrast; the ending's own S_END write is left out)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
@@ -32,6 +34,11 @@
 
 start:
         SETUP
+        ifd     MUT_MOVE
+        move.w  #$C1A1,S_KIND           ; the case table names MOVE.x #0
+        else
+        move.w  #$C1A0,S_KIND           ; the case table names CLR.x
+        endc
         moveq   #0,d1                  ; Xn for every d8(An,Xn) case, always zero
 
 ; ---- case 1: .B (An), A0, target T1+1 --------------------------------
@@ -352,6 +359,9 @@ X21:    ifd     MUT_MOVE
         move.l  #0,(T_BASE+336).l
         else
         clr.l   (T_BASE+336).l
+        endc
+        ifd     MUT_C4E
+        move.w  #$E0D0,S_END            ; C4 contrast: S_END before the last window closes
         endc
         move.w  #$B015,S_B
         move.w  T_BASE+336,R_BASE+84
