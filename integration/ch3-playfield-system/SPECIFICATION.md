@@ -1021,6 +1021,9 @@ Two claims are declined and printed as RECORDED lines that name their ids:
   measured from their instruction fetches (the longer is the `VHPOSR` loop on fx68k, 224
   clk_sys cycles, and the `INTREQR` loop on TG68K, 176; its `VHPOSR` loop takes 144).
   The package holds no tuned margin.
+- Each P5 run prints one MEASURED line `P5 <tag>: lines N-2..N+8 show` that names, for
+  each beam line from N-2 to N+8 (N the line VBSTRT names), which of C1, C2, C3 or none
+  its first graded field shows; it is a measurement only and grades nothing.
 - A read lies inside a window when the two stores that bound it, the one before it and
   the one after it, both lie inside it (Common definitions). A read is placed by the
   system-clock time of the low-half store of its own iteration and by that of the
