@@ -29,11 +29,11 @@
         include "appDE_regs.i"
         org     PROGRAM_ORG
 
-V8_ON           macro                   ; V8 of the vertical counter set (VPOSW); bit 15 keeps LONG
+V8_ON           macro                   ; V8 (V8 and V9 when M_ON is $8003) of the vertical counter set (VPOSW); bit 15 keeps LONG
         move.w  d3,VPOSW(a6)
         endm
 
-V8_OFF          macro                   ; V8 of the vertical counter clear (VPOSW)
+V8_OFF          macro                   ; V8 and V9 of the vertical counter clear (VPOSW)
         move.w  d4,VPOSW(a6)
         endm
 
