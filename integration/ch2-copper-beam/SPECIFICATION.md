@@ -405,8 +405,10 @@ Variants:
   lines of a PAL field end one count later, so they run 0 ... $E3.
 - **A-dup**: the flat run, with one read of the long word at $DFF004 stored
   twice at several places.
-- **A-noe1**: NTSC, the program reads the registers 50000 times, as the normal
-  run does, and stores every sample except those whose H is $E1.
+- **A-noe1**: NTSC; on each of 3000 lines the program compares every read of the
+  registers with $E1 and stores it unless equal until H is below $20, then
+  stores 15 reads without compare, which end before $E1; it stores every
+  sample except those whose H is $E1.
 - **A-few**: PAL, the trace buffer holds 35000 samples, fewer than 6 complete
   fields.
 
@@ -554,7 +556,7 @@ Variants:
   vertical stop keeps the normal value for each standard (p.59: "Normally,
   the VSTOP is set to ($F4) for NTSC, ($2C) for PAL").
 - **E-border-blank**: Run E with BPLCON0 bit 0 and BPLCON3 bit 5 set (p.307:
-  "Enable new BPLCON3 register"; "Border blank").
+  "Enable new BLPCON3 register."; "Border blank").
 
 ## 6. Propositions
 
@@ -704,7 +706,9 @@ is graded over the measured lines only and is not asserted whole (8.4 item 10).
 **Claims.** `COP2-horizontal-beam-position.c13` (p.23).
 
 **Not claimed here.** The line lengths of `COP2-horizontal-beam-position.c12`
-and `COP2-horizontal-beam-position.c15` are graded, and claimed, by P2. The
+and `COP2-horizontal-beam-position.c15` are graded by P2; `c12` is claimed
+there, and `c15` is graded over the measured lines only and declined (8.4 item
+10). The
 PAL range below agrees with p.27's x = 226, whose claims are declined
 (section 1).
 
@@ -1199,7 +1203,10 @@ and apart from that run only of COLOR00 and 0 (blanking) pixels.
 
 The width and the only-background statement are one check, because outside
 the playfield run the only colour other than background that this stimulus
-can produce is the playfield colour itself.
+can produce is the playfield colour itself. The aggregate P9-A, which carries
+the claims, also requires the condition of (b) that COLOR00 is shown on both
+sides of the run of 0, so that a line whose unused portion shows 0 pixels
+only, and no background colour, does not pass "only the background colour".
 
 (b) Going cyclically from the end of the COLOR01 run to its start, the line
 shows at least one COLOR00 pixel, then one run of 0, then at least one
@@ -1226,9 +1233,12 @@ graded (section 1).
   the COLOR01 run becomes 352 · P_lo (p.59: the window spans HSTART to
   HSTOP).
 - (b): E-border-blank. BPLCON0 bit 0 and BPLCON3 bit 5 are set (p.307:
-  "Enable new BPLCON3 register"; "Border blank"): the unused portion shows
+  "Enable new BLPCON3 register."; "Border blank"): the unused portion shows
   pixels of value 0 in place of the background colour, a distinguishable
-  pixel that is not COLOR00.
+  pixel that is not COLOR00. p.307 lists BRDRBLNK as "Border blank" and
+  ENBPLCN3; no page says what a blanked border displays, and the package
+  expects pixels of value 0 there. P9-B fails, and P9-A with it, because the
+  aggregate requires COLOR00 on both sides of the run of 0 (see (a)).
 - "one run of 0": COLOR00 = $000 with the 10th plane word of every line set to
   $0000. The gap in the playfield shows COLOR00 = 0, a second run of 0 on
   each window line.
@@ -1737,7 +1747,7 @@ MEASURED: P9 NTSC E: 1600 window lines, COLOR01 run lengths {640}, P_lo=2
 
 ### 8.6 Mutations
 
-Each value of `NMH_MUTATE` runs the section that owns the mutated line, with every comparator of that section unchanged; the program, or the standard the harness is configured for, is the only difference. A record of kind `implementation` is replayed on a private copy of the chip set, outside the repository, that the package is built against; the copies of `P1-ORIGIN`, `P2-PAL` and `P3-PAL` are made by the Makefile from the patch files `restart_nonzero.patch` and `odd_pal.patch` of this package (`make rn-test-<core>`, `make op-test-<core>`, each in its own object directory); the comparator and the expected value are the package's. The verdict columns give the first line printed under the label on each core. The records are in the header of the test source and each names the other lines its value moves.
+Each value of `NMH_MUTATE` runs the section that owns the mutated line, with every comparator of that section unchanged; the program, or the standard the harness is configured for, is the only difference. A record of kind `implementation` is replayed on a private copy of the chip set, outside the repository, that the package is built against; the copies are made by the Makefile from the patch files `restart_nonzero.patch`, `odd_pal.patch`, `ntsc_long.patch` and `wait_e2.patch` of this package (`make rn-test-<core>`, `make op-test-<core>`, `make lc-test-<core>`, `make cs-test-<core>`, each in its own object directory); the two cores of a private copy share the directory of the copy, which is made again by each build, so they are built one after the other (`make <copy>-test` does) and never at the same time; the comparator and the expected value are the package's. The verdict columns give the first line printed under the label on each core. The records are in the header of the test source and each names the other lines its value moves.
 
 | Label | Record | NMH_MUTATE | fx68k | TG68K | What changes |
 |---|---|---|---|---|---|
@@ -1759,12 +1769,12 @@ Each value of `NMH_MUTATE` runs the section that owns the mutated line, with eve
 | `PRE-P7L256` | stimulus red | `A-P7EARLY-PAL` | FAIL | FAIL | WAIT($00,$60) and its marker precede WAIT($FF,$E0), right after m_$FF, so its second word is fetched on line 255 while m_E0 and the other tail WAITs are as in the normal run |
 | `P1-ORIGIN` | implementation red | normal run on the private copy | FAIL | FAIL | private chip-set copy, outside the repository (`restart_nonzero.patch`; `NMH_ONLY=A make rn-test-fx68k`, `rn-test-tg68k`), whose horizontal count starts each line at 1 in place of 0 and ends it at $E3 in place of $E2 (227 counts, as before), so H = 0 is never read while the program, the sampler and every precondition are those of the normal run: the normal run A through the unchanged comparator prints FAIL (PAL and NTSC) where the repository's RTL prints PASS; `P3-PAL` goes from PASS to FAIL in the same run (p.23: the count has values "$0 to $E2"; $00 is not read and $E3 is) |
 | `P2-PAL` | implementation red | normal run on the private copy | FAIL | FAIL | private chip-set copy, outside the repository (`odd_pal.patch`; `NMH_ONLY=A make op-test-fx68k`, `op-test-tg68k`), whose odd PAL lines end one count later (228 counts, 0 ... $E3; p.23: "In PAL, they are all 227 long"): the normal PAL run A measures L(v) = 228 on every other line and the unchanged comparator prints FAIL where the repository's RTL prints PASS, every precondition holding; `P3-PAL` goes from PASS to FAIL in the same run |
-| `P2-NTSC` | implementation green | normal run on the private copy | PASS | PASS | private chip-set copy, outside the repository, whose NTSC lines alternate between 228 and 227 counts; the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL |
-| `PRE-P3ODDEND` | stimulus red | `A-NOE1-NTSC` | FAIL | FAIL | the program reads $DFF004 50000 times, as the normal run does, and stores every sample except those whose H is $E1, so the odd count $E1 is not read; the contrast is isolated on TG68K, where `P3-NTSC-SET` goes from FAIL to NOT GRADED and no other line moves; on fx68k `PRE-T1E` fails too (573 events hit a step longer than 16 slots: the compare and the conditional store make every step longer) and the lines resting on it are NOT GRADED |
-| `PRE-P3COVER` | implementation green | normal run on the private copy | PASS | PASS | the same private chip-set copy with NTSC lines of 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL |
+| `P2-NTSC` | implementation green | normal run on the private copy | PASS | PASS | private chip-set copy, outside the repository (`ntsc_long.patch`; `NMH_ONLY=A make lc-test-fx68k`, `lc-test-tg68k`), whose NTSC lines alternate between 228 and 227 counts; the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL |
+| `PRE-P3ODDEND` | stimulus red | `A-NOE1-NTSC` | FAIL | FAIL | on each of 3000 lines the program compares every read of $DFF004 with $E1 and stores it unless equal until H is below $20, then stores 15 reads without compare, which end before $E1, so no sample whose H is $E1 is stored; `PRE-T1E` holds on both cores (0 events hit a step longer than 16 slots); `P3-NTSC-SET` goes from FAIL to NOT GRADED on both cores and no other line moves; `PRE-P3COVER` stays FAIL (0 lines of 228 counts) |
+| `PRE-P3COVER` | implementation green | normal run on the private copy | PASS | PASS | the private chip-set copy of `ntsc_long.patch` (`NMH_ONLY=A make lc-test-fx68k`, `lc-test-tg68k`), whose NTSC lines have 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL |
 | `P3-PAL` | implementation red | normal run on the private copy | FAIL | FAIL | private chip-set copy, outside the repository (`odd_pal.patch`; `NMH_ONLY=A make op-test-fx68k`, `op-test-tg68k`), whose odd PAL lines end one count later (228 counts, 0 ... $E3; p.23: "In PAL, they are all 227 long", $E3 belongs to NTSC long lines): the normal PAL run A reads $E3 and the unchanged comparator prints FAIL where the repository's RTL prints PASS, every precondition holding |
-| `P3-NTSC-SET` | implementation green | normal run on the private copy | PASS | PASS | the same private chip-set copy with NTSC lines of 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL |
-| `P3-NTSC-LONGONLY` | none impossible | normal run on the private copy | PASS | PASS | unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private chip-set copy with NTSC lines of 228 and 227 counts (normal NTSC run A) |
+| `P3-NTSC-SET` | implementation green | normal run on the private copy | PASS | PASS | the private chip-set copy of `ntsc_long.patch` (`NMH_ONLY=A make lc-test-fx68k`, `lc-test-tg68k`), whose NTSC lines have 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL |
+| `P3-NTSC-LONGONLY` | none impossible | normal run on the private copy | PASS | PASS | unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private chip-set copy of `ntsc_long.patch` (`NMH_ONLY=A make lc-test-fx68k`, `lc-test-tg68k`), whose NTSC lines have 228 and 227 counts (normal NTSC run A) |
 | `P7` | stimulus red | `A-TAILSHIFT-PAL` | FAIL | FAIL | every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n |
 | `P7-WAITED` | stimulus red | `A-LONGPAD-PAL` | FAIL | FAIL | 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied |
 | `P8-LINES` | stimulus red | `A-TAILSHIFT-NTSC` | FAIL | FAIL | every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n |
@@ -1779,9 +1789,9 @@ Each value of `NMH_MUTATE` runs the section that owns the mutated line, with eve
 | `PRE-B-WAITED` | stimulus red | `B-BWAITED-PAL` | FAIL | FAIL | in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target |
 | `P6-LINE255` | stimulus red | `B-B254-PAL` | FAIL | FAIL | in L_2 the first WAIT is for line $FE and a WAIT($FF,$30) follows it, so a_2 lies on line 254 while the preconditions still hold |
 | `P6-CONTROL` | stimulus red | `B-BFEOFF-PAL` | FAIL | FAIL | L_FE waits for ($FF,$FE), so $B300 is not fetched |
-| `P6-LARGEST` | implementation green | normal run on the private copy | PASS | PASS | private chip-set copy, outside the repository, whose WAIT for ($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here |
+| `P6-LARGEST` | implementation green | normal run on the private copy | PASS | PASS | private chip-set copy, outside the repository (`wait_e2.patch`; `NMH_ONLY=B make cs-test-fx68k`, `cs-test-tg68k`), whose WAIT for ($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here |
 | `P6-NEVER` | stimulus red | `B-BEND-PAL` | FAIL | FAIL | L_14 waits for ($FE,$FE) in place of ($FF,$FE), which ends when line $FF begins, so x_14 is fetched before line 0 of the next field while every precondition holds |
-| `PRE-P5-CALLO` | stimulus red | `D-DFLATLO-PAL` | FAIL | FAIL | every plane word of D-lo is $FFFF, so there are no alternating runs |
+| `PRE-P5-CALLO` | stimulus red | `D-DFLATLO-PAL` | FAIL | FAIL | every plane word of D-lo is $FFFF, so there are no alternating runs; also moves (both cores): P5-LO, P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED |
 | `PRE-P5-CALHI` | stimulus red | `D-DFLATHI-PAL` | FAIL | FAIL | every plane word of D-hi is $FFFF, so there are no alternating runs |
 | `PRE-P5-EDGES` | stimulus red | `D-DDROP-PAL` | FAIL | FAIL | the second MOVE($180,B) of line $50 is left out, so line $50 has no A to B edge |
 | `PRE-P5-WAITED` | stimulus red | `D-DLATE-PAL` | FAIL | FAIL | the second WAIT of line $50 is at $3A, already satisfied when it is fetched |
@@ -1792,7 +1802,7 @@ Each value of `NMH_MUTATE` runs the section that owns the mutated line, with eve
 | `P9-A-E` | stimulus red | `E-EWIDEWIN-PAL` | FAIL | FAIL | DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo |
 | `P9-A-EW` | stimulus red | `E-EWWIDEWIN-PAL` | FAIL | FAIL | the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo |
 | `P9-A` | stimulus red | `E-EWIDEWIN-PAL` | FAIL | FAIL | DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E |
-| `P9-B` | stimulus red | `E-EBRDBLNK-PAL` | FAIL | FAIL | BPLCON0 bit 0 and BPLCON3 bit 5 are set (p.307: "Enable new BPLCON3 register", "Border blank") with COLOR00 = $00F, so the unused portion shows pixels of value 0 in place of COLOR00 on every window line (2048 of 2048 lines differ) |
+| `P9-B` | stimulus red | `E-EBRDBLNK-PAL` | FAIL | FAIL | BPLCON0 bit 0 and BPLCON3 bit 5 are set with COLOR00 = $00F, so the unused portion shows pixels of value 0 in place of COLOR00 on every window line (2048 of 2048 lines differ); p.307 lists BRDRBLNK as "Border blank" and ENBPLCN3 as "Enable new BLPCON3 register." and no page says what a blanked border displays: the package expects pixels of value 0 there; `P9-A` goes from PASS to FAIL in the same run |
 
 
 ### 8.7 Claims
