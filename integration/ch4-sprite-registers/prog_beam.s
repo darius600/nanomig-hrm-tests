@@ -7,9 +7,9 @@
 ;                   off, VPOSR into RESULT+0, 6 VERTB, M1, BEAMCON0 = $0020,
 ;                   8 VERTB, M2
 ;   SWEEP        -- the OCS run: the same up to M1; after M1 sixteen writes to
-;                   BEAMCON0, each followed by one VERTB: each of bits 0-14
-;                   alone ($0001, $0002, ... $4000, the bits p.305 defines),
-;                   then $7FFF; M2
+;                   BEAMCON0, each followed by a marker word (MARK+4+2k = $0100+k)
+;                   and two VERTB: each of bits 0-14 alone ($0001, $0002, ...
+;                   $4000, the bits p.305 defines), then $7FFF; M2
 ;   MUT_B0       -- proposition contrast (ECS): BEAMCON0 = $0000
 ;   MUT_LACE1    -- proposition contrast (OCS): BPLCON0 = $0200 (LACE clear)
 ;                   is written at M1 as well
@@ -68,12 +68,17 @@ start:
 
         ifd     SWEEP
         lea     sweeptbl(pc),a3
+        lea     MARK+4,a4
+        move.w  #$0100,d6
         ifd     MUT_SHORT
         moveq   #2,d7
         else
         moveq   #15,d7
         endif
 .sweep: move.w  (a3)+,BEAMCON0(a0)
+        move.w  d6,(a4)+                        ; this value's marker
+        addq.w  #1,d6
+        bsr     wait_vertb
         bsr     wait_vertb
         dbra    d7,.sweep
         else

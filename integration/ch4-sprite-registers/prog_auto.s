@@ -23,10 +23,25 @@
 ;   MUT_LOWREAD  -- anchor contrast: the VERTB wait loop reads Chip word $0100,
 ;                   a non-refresh access at a low address
 ;   MUT_NODONE   -- the program never writes DONE
+;   MUT_FASTPT   -- the fast-RAM run (P7's necessity clause): Zorro II fast RAM is
+;                   enabled, S1's structure is copied to FAST_S in it, a different
+;                   structure is written at ALIAS_S in Chip RAM, and the Copper's
+;                   SPR0PT MOVEs name FAST_S
+;   MUT_FASTSAME -- with MUT_FASTPT: the structure at ALIAS_S is S1's, word for word
+;   MUT_FASTBAD  -- with MUT_FASTPT: the last word of the copy in fast RAM differs
+;   MUT_NOS4     -- the Copper's SPR4PT MOVEs name the null sprite
 
         include "nanomig.i"
         include "sprreg.i"
 
+FR_REG          equ     $E80048         ; Zorro II board register that enables its RAM
+FAST_S          equ     $2B5000         ; a word address in fast RAM
+ALIAS_S         equ     $0B5000         ; FAST_S with the bits above Agnus's 21 address bits dropped
+
+        ifd     MUT_FASTPT
+SPR0PT_HI       equ     (FAST_S>>16)
+SPR0PT_LO       equ     (FAST_S&$FFFF)
+        else
         ifd     MUT_P7PROP
 SPR0PT_HI       equ     (S2_DATA>>16)
 SPR0PT_LO       equ     (S2_DATA&$FFFF)
@@ -41,6 +56,7 @@ SPR0PT_LO       equ     $5001
         else
 SPR0PT_HI       equ     (S1_DATA>>16)
 SPR0PT_LO       equ     (S1_DATA&$FFFF)
+        endif
         endif
         endif
         endif
@@ -147,6 +163,57 @@ start:
         move.w  #$0000,(a1)+           ; end
         move.w  #$0000,(a1)+
 
+        ifd     MUT_FASTPT
+        ; fast RAM: enable the board, copy S1's structure there, read the copy back
+        move.w  #0,FR_REG.l
+        move.l  #S1_DATA,a2
+        move.l  #FAST_S,a1
+        moveq   #25,d0
+.fcopy: move.w  (a2)+,(a1)+
+        dbra    d0,.fcopy
+        ifd     MUT_FASTBAD
+        move.w  #$0001,FAST_S+50.l
+        endif
+        ; the structure at the Chip-RAM address named by the same pointer bits
+        ifd     MUT_FASTSAME
+        move.l  #S1_DATA,a2
+        move.l  #ALIAS_S,a1
+        moveq   #25,d0
+.acopy: move.w  (a2)+,(a1)+
+        dbra    d0,.acopy
+        else
+        move.l  #ALIAS_S,a1
+        move.w  #$5060,(a1)+
+        move.w  #$5401,(a1)+
+        moveq   #3,d0
+.au1:   move.w  #$0000,(a1)+
+        move.w  #$FFFF,(a1)+
+        dbra    d0,.au1
+        move.w  #$5861,(a1)+
+        move.w  #$5E00,(a1)+
+        moveq   #5,d0
+.au2:   move.w  #$0000,(a1)+
+        move.w  #$FFFF,(a1)+
+        dbra    d0,.au2
+        move.w  #$0000,(a1)+
+        move.w  #$0000,(a1)+
+        endif
+        ; RESULT+4: words of the copy that differ from S1's; RESULT+6: words compared
+        move.l  #S1_DATA,a2
+        move.l  #FAST_S,a1
+        moveq   #25,d0
+        moveq   #0,d2
+        moveq   #0,d4
+.fcmp:  addq.w  #1,d4
+        move.w  (a2)+,d3
+        cmp.w   (a1)+,d3
+        beq.s   .feq
+        addq.w  #1,d2
+.feq:   dbra    d0,.fcmp
+        move.w  d2,RESULTS+4
+        move.w  d4,RESULTS+6
+        endif
+
         ; Copper list L1 (SPECIFICATION.md P6 step 4). The CPU fills it
         ; itself, below $80000 (3.2's anchor check).
         move.l  #COPLIST_L1,a1
@@ -175,9 +242,17 @@ start:
         move.w  #SPR3PTL,(a1)+
         move.w  #(NULL_SPRITE&$FFFF),(a1)+
         move.w  #SPR4PTH,(a1)+
+        ifd     MUT_NOS4
+        move.w  #(NULL_SPRITE>>16),(a1)+
+        else
         move.w  #(S4_DATA>>16),(a1)+
+        endif
         move.w  #SPR4PTL,(a1)+
+        ifd     MUT_NOS4
+        move.w  #(NULL_SPRITE&$FFFF),(a1)+
+        else
         move.w  #(S4_DATA&$FFFF),(a1)+
+        endif
         move.w  #SPR5PTH,(a1)+
         move.w  #(NULL_SPRITE>>16),(a1)+
         move.w  #SPR5PTL,(a1)+

@@ -20,6 +20,19 @@
 ;   MUT_CPUWR     -- the CPU writes $1111 to $30200 inside M1-M2 (P13 precondition 3)
 ;   MUT_FIXTURE   -- the fixture check's own contrast: $DEAD instead of $BEEF
 ;   MUT_NODONE    -- the program never writes DONE
+;   SWEEP         -- the sweep run (P13): after M1 the program steps through the 32 COPCON
+;                    values of sweeptbl, one Copper field each. Late in a field, after the
+;                    Copper's list and its blit are over, it reads one distinct Chip word
+;                    (the round's marker, a read, so the window stays free of CPU writes)
+;                    and then writes the round's value to COPCON.
+;   MUT_BITSET    -- with SWEEP: the round of bit 15 in the CDANG-set group runs with
+;                    COPCON = $8000 instead of $8002
+;   MUT_BITCLR    -- with SWEEP: the round of bit 0 in the CDANG-clear group runs with
+;                    COPCON = $0003 instead of $0001
+;   MUT_CPUDEAD   -- with SWEEP: a CPU store of BLTSIZE after the program's last instruction,
+;                    which never runs (P13 precondition 2 contrast)
+;   MUT_CTRL     -- with SWEEP: the CDANG-clear group's reference runs with COPCON = $0002
+;   MUT_SWEEPSHORT -- with SWEEP: the first 8 values only
 ;
 ; The code between M1 and M2 contains no subroutine call and no instruction
 ; that writes Chip memory other than the contrast writes named above: it
@@ -32,6 +45,8 @@
         ifnd    CV
 CV      equ     $0002
         endif
+
+MARKRD          equ     MARK+$40        ; SWEEP: the 33 marker words, each read once
 
 CM      macro
         dc.w    \1,\2
@@ -130,6 +145,37 @@ start:
         move.w  #$0020,d1
         move.w  #1,MARK+0                      ; M1
 
+        ifd     SWEEP
+        lea     sweeptbl(pc),a3
+        lea     MARKRD,a4
+        ifd     MUT_SWEEPSHORT
+        move.w  #7,d7
+        else
+        move.w  #31,d7
+        endif
+.round: WVB
+.late:  move.w  VHPOSR(a0),d0
+        lsr.w   #8,d0
+        cmp.w   #$00B0,d0
+        blo.s   .late
+        move.w  (a4)+,d3                       ; this round's marker
+        ifd     MUT_CPUWR
+        move.w  #$1111,BLIT_BASE+$200          ; P13 precondition 3 contrast
+        endif
+        move.w  (a3)+,COPCON(a0)
+        dbra    d7,.round
+        WVB
+.late2: move.w  VHPOSR(a0),d0
+        lsr.w   #8,d0
+        cmp.w   #$00B0,d0
+        blo.s   .late2
+        move.w  (a4)+,d3                       ; the marker that closes the last round
+        WVB                                    ; the Copper's next fetch of L1's first word ends that round's field
+.late3: move.w  VHPOSR(a0),d0
+        lsr.w   #8,d0
+        cmp.w   #$0010,d0
+        blo.s   .late3
+        else
         WVB
         ifd     MUT_CPUBLT80
 .v80:   move.w  VHPOSR(a0),d0
@@ -143,6 +189,7 @@ start:
         endif
         WVB
         WVB
+        endif
 
         move.w  #2,MARK+2                      ; M2
 
@@ -152,6 +199,33 @@ start:
         move.w  #$BEEF,RESULTS+0
         endif
         FINISH
+
+sweeptbl:
+        ; CDANG set: the reference, then each other bit alone added to it
+        dc.w    $0002,$0003,$0006,$000A,$0012,$0022,$0042,$0082
+        dc.w    $0102,$0202,$0402,$0802,$1002,$2002,$4002
+        ifd     MUT_BITSET
+        dc.w    $8000
+        else
+        dc.w    $8002
+        endif
+        ; CDANG clear: the reference, then each other bit alone
+        ifd     MUT_CTRL
+        dc.w    $0002
+        else
+        dc.w    $0000
+        endif
+        ifd     MUT_BITCLR
+        dc.w    $0003
+        else
+        dc.w    $0001
+        endif
+        dc.w    $0004,$0008,$0010,$0020,$0040,$0080
+        dc.w    $0100,$0200,$0400,$0800,$1000,$2000,$4000,$8000
+
+        ifd     MUT_CPUDEAD
+        move.w  #$0082,BLTSIZE(a0)
+        endif
 
 srca:   dc.w    $1234,$5678,$9ABC,$DEF0
 srcb:   dc.w    $F0F0,$0FF0,$FF00,$00FF

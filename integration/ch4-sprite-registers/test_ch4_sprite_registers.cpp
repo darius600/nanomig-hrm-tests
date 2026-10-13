@@ -25,6 +25,11 @@
 //   (prog_manual_nodone)                        -> prog_manual_*.bin
 //   P6-PROP, P6-REF, P6-PRE1, P6-PRE2, P7-PROP, FIXTURE-AUTO, R5-ANCHOR-AUTO
 //   (prog_auto_lowrd), RUN-AUTO (prog_auto_nodone) -> the AUTO slot, prog_auto_*.bin
+//   P7-PROP-FAST, P7-PRE1, P7-PRE2, P7-PRE3, FIXTURE-AUTOFAST, RUN-AUTOFAST (the fast-RAM run, prog_autofast*.bin,
+//   with Zorro II fast RAM offered)             -> the FAST slot
+//   P5-NOPOS (the other run's field B writes SPR0POS = $0060), P5-NOPOS-PRE1, P5-NOPOS-PRE2, P5-NOPOS-PRE2-RB,
+//   R5-ANCHOR-NOPOS, FIXTURE-NOPOS, RUN-NOPOS    -> prog_manual_nopos_*.bin, in the slot of the run without
+//                                                   field B's SPR0POS write (prog_manual_p4nopos.bin)
 //   P8-PROP (prog_autoodd_c1), P8-PRE1 (prog_autoodd_pre1), P8-PRE2 (plain
 //   prog_auto.bin, precondition comparator applied to the even-pointer run),
 //   RUN-AUTOODD (prog_autoodd_nodone)           -> the AUTO-ODD slot
@@ -32,6 +37,7 @@
 //   P10-PROP, P10-PRE1, P10-PRE2, P10-PRE3, FIXTURE-JUMP, RUN-JUMP -> prog_jump_*.bin
 //   P11-PROP, P11-PRE1 (the blit is never started), P11-PRE2 (DMACON without BLTEN), P11-PRE3,
 //   FIXTURE-BLIT, RUN-BLIT                      -> prog_blit_*.bin
+//   P13-CONTROL, P13-BITSET, P13-BITCLR, P13-PRE1-SW, P13-PRE1-POP, P13-PRE2-SW, P13-PRE3-SW -> prog_cbsw_*.bin (SWEEP)
 //   P12-PROP, P12-ECSREG, P12-PRE1, P12-PRE2, P12-PRE2-COPEN, P12-PRE3, P12-PRE3-QUIET, P12-PRE3-SIZH,
 //   P13-PAIR1, P13-PAIR2, P13-PRE1, P13-PRE2, P13-PRE2-SIZH, P13-PRE3, FIXTURE-CB,
 //   FIXTURE-CB-NODONE (prog_cb_o2_nodone)       -> prog_cb_<o|e><2|F|0|D>[_*].bin
@@ -60,11 +66,24 @@
 // MUTATION FIXTURE-MANUAL stimulus red NMH_MUTATE=FIXTURE-MANUAL: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL (read back DEAD); P5 and P4 are NOT GRADED
 // MUTATION R5-ANCHOR-MANUAL stimulus red NMH_MUTATE=R5-ANCHOR-MANUAL: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (693 of 1207 refresh groups malformed on fx68k, 729 of 1242 on TG68K); P5 and P4 are NOT GRADED
 // MUTATION RUN-MANUAL stimulus red NMH_MUTATE=RUN-MANUAL: the program never writes DONE (prog_manual_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); the lines that need the run print RECORDED NOT GRADED
+// MUTATION P5-NOPOS stimulus green NMH_MUTATE=P5-NOPOS: live input through the same line: field B writes SPR0POS = $0060, the value the unchanged run keeps (prog_manual_nopos_green) -- fx68k/TG68K: PASS (d=64, 400 sprite-4 output lines, all followed by a sprite-0 run, 200 scan lines); the line is red in the run without the write
+// MUTATION RUN-NOPOS stimulus red NMH_MUTATE=RUN-NOPOS: the run without field B's SPR0POS write never writes DONE (prog_manual_nopos_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); P5-NOPOS is NOT GRADED
+// MUTATION FIXTURE-NOPOS stimulus red NMH_MUTATE=FIXTURE-NOPOS: $DEAD stored instead of $BEEF in that run (prog_manual_nopos_fix) -- fx68k/TG68K: FAIL (read back DEAD); P5-NOPOS is NOT GRADED
+// MUTATION P5-NOPOS-PRE1 stimulus red NMH_MUTATE=P5-NOPOS-PRE1: DMACON=$83A0 (SPREN set) with all eight sprite pointers at the null sprite, in that run (prog_manual_nopos_pre1) -- fx68k/TG68K: FAIL (DMACONR=03A0); P5-NOPOS is NOT GRADED
+// MUTATION P5-NOPOS-PRE2 stimulus red NMH_MUTATE=P5-NOPOS-PRE2: field B's writes delayed until V7-0>=$0080 in that run (prog_manual_nopos_pre2) -- fx68k/TG68K: FAIL (measured V(MB)=0080 V(RB)=00F8); P5-NOPOS is NOT GRADED
+// MUTATION P5-NOPOS-PRE2 stimulus red NMH_MUTATE=P5-NOPOS-PRE2-RB: the reads at V7-0=$0080 instead of $00F8 in that run (prog_manual_nopos_pre3) -- fx68k/TG68K: FAIL (measured V(MB)=0000 V(RB)=0080); P5-NOPOS is NOT GRADED
+// MUTATION R5-ANCHOR-NOPOS stimulus red NMH_MUTATE=R5-ANCHOR-NOPOS: the VERTB wait loop of that run reads Chip word $0100 on every pass (prog_manual_nopos_lowrd) -- fx68k: FAIL (693 of 1207 refresh groups malformed), TG68K: FAIL (729 of 1242); P5-NOPOS is NOT GRADED
 // MUTATION P6 stimulus red NMH_MUTATE=P6-PROP: S1 usage 2's CTL=$5E01 -- fx68k/TG68K: FAIL (measured d2=70, expected 68); every precondition holds
 // MUTATION P6 stimulus red NMH_MUTATE=P6-REF: S4's CTL=$6700 (VSTOP $67), 31 pairs -- fx68k/TG68K: FAIL (measured h4=31, expected 32); every precondition holds
 // MUTATION P6-PRE1 stimulus red NMH_MUTATE=P6-PRE1: DMACON=$8380 (SPREN clear) -- fx68k/TG68K: FAIL (DMACONR=0380); P6 and P7 are NOT GRADED, P8 (the AUTO-ODD run) is graded
 // MUTATION P6-PRE2 stimulus red NMH_MUTATE=P6-PRE2: a WAIT for line $60 inserted before the SPR0PT MOVEs (prog_auto_p6pre2), which moves the SPR0PTL MOVE's data word away from the list position the plain program has it at -- fx68k/TG68K: FAIL; P6 and P7 are NOT GRADED and every other line is as in the plain run
 // MUTATION P7 stimulus red NMH_MUTATE=P7-PROP: the Copper's SPR0PT MOVEs target S2_DATA instead of S1_DATA -- fx68k/TG68K: FAIL (no reads at $25000-$25032); every precondition holds and P6, which sees the same structure at S2, stays green
+// MUTATION P7 stimulus red NMH_MUTATE=P7-PROP-FAST: the structure at the Chip address $0B5000 is S1's word for word (prog_autofast_same) -- fx68k/TG68K: FAIL (S1-coloured lines 40 of 40, the sprite shows S1's colours from the Chip structure); every precondition holds
+// MUTATION RUN-AUTOFAST stimulus red NMH_MUTATE=RUN-AUTOFAST: the fast-RAM program never writes DONE (prog_autofast_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); FIXTURE-AUTOFAST, P7-PRE1, P7-PRE2, P7-PRE3 and P7 print NOT GRADED, depends on RUN-AUTOFAST
+// MUTATION FIXTURE-AUTOFAST stimulus red NMH_MUTATE=FIXTURE-AUTOFAST: $DEAD stored instead of $BEEF in the fast-RAM run -- fx68k/TG68K: FAIL (read back DEAD); P7 is NOT GRADED, P6 and P8 are graded
+// MUTATION P7-PRE1 stimulus red NMH_MUTATE=P7-PRE1: DMACON=$8380 (SPREN clear) in the fast-RAM run (prog_autofast_pre1) -- fx68k/TG68K: FAIL (DMACONR=0380); P7-PRE3 prints NOT GRADED, depends on P7-PRE1, and P7 is NOT GRADED
+// MUTATION P7-PRE2 stimulus red NMH_MUTATE=P7-PRE2: the last word of the copy in fast RAM is $0001 instead of S1's (prog_autofast_bad) -- fx68k/TG68K: FAIL (differing 1 of 26 compared); P7 is NOT GRADED
+// MUTATION P7-PRE3 stimulus red NMH_MUTATE=P7-PRE3: SPR4PT names the null sprite in the fast-RAM run (prog_autofast_nos4) -- fx68k/TG68K: FAIL (no sprite-4 run in 2 graded fields); P7 is NOT GRADED
 // MUTATION FIXTURE-AUTO stimulus red NMH_MUTATE=FIXTURE-AUTO: $DEAD stored instead of $BEEF in the AUTO run -- fx68k/TG68K: FAIL (read back AUTO=DEAD AUTO-ODD=BEEF); P6, P7 and P8 are NOT GRADED
 // MUTATION P8 stimulus red NMH_MUTATE=P8-PROP: the AUTO-ODD run's SPR0PTL MOVE carries $5003 instead of $5001 -- fx68k/TG68K: FAIL (the 26 reads do not start at $25000 and the display is gone, measured h4=-1); P8-PRE1 and P8-PRE2 hold, the value is odd
 // MUTATION P8-PRE1 stimulus red NMH_MUTATE=P8-PRE1: DMACON=$8380 (SPREN clear) in the AUTO-ODD run (prog_autoodd_pre1) -- fx68k/TG68K: FAIL (DMACONR=0380); P8 is NOT GRADED, P6 and P7 are graded
@@ -100,38 +119,45 @@
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3-SIZH: the ECS run's CPU writes BLTSIZH = $0001 before M1 (one MOVE.W #imm,BLTSIZH($05E) in the binary) -- fx68k/TG68K: FAIL (BLTSIZH stores OCS=0 ECS=1; the quiet-window clause moves with it, 4 unexplained writes in M1-M2 on ECS); P12 is NOT GRADED
 // MUTATION P12 stimulus red NMH_MUTATE=P12-PROP:the first BLTSIZE MOVE carries $0081 in both $0002 runs -- fx68k/TG68K: FAIL (DST1 gets two words instead of four); every precondition holds
 // MUTATION P12 stimulus red NMH_MUTATE=P12-ECSREG: the ECS BLTSIZH MOVE carries $0003 -- fx68k/TG68K: FAIL (DST3 gets three words instead of four); every precondition holds
-// MUTATION P13-PRE1 stimulus red NMH_MUTATE=P13-PRE1: DMACON without COPEN in the OCS and ECS $0002 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
-// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 in the $0000 runs, where none is declared -- fx68k/TG68K: FAIL; P13 is NOT GRADED
-// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SIZH: the ECS $0000 run's CPU writes BLTSIZH = $0001 before M1 (one BLTSIZH store in the binary, none declared) -- fx68k/TG68K: FAIL (BLTSIZH stores ECS=1; no other precondition moves); P13 is NOT GRADED
-// MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3: the CPU writes $1111 to $30200 inside M1-M2 of the $0000 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
+// MUTATION P13-PRE1 stimulus red NMH_MUTATE=P13-PRE1: DMACON without COPEN in the OCS and ECS $0002 runs -- fx68k/TG68K: FAIL; P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 in the $0000 runs, where none is declared -- fx68k/TG68K: FAIL; P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SIZH: the ECS $0000 run's CPU writes BLTSIZH = $0001 before M1 (one BLTSIZH store in the binary, none declared) -- fx68k/TG68K: FAIL (BLTSIZH stores ECS=1; no other precondition moves); P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3: the CPU writes $1111 to $30200 inside M1-M2 of the $0000 runs -- fx68k/TG68K: FAIL; P13-CONTROL and P13 are NOT GRADED
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR1: the $FFFF runs are run with COPCON=$FFFD, bit 1 clear, so the Copper does not write the blitter registers (prog_cb_oF_b0, prog_cb_eF_b0) -- fx68k/TG68K: FAIL (the $0002 and $FFFF outcomes differ on both chip sets); every precondition holds
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR2: the $FFFD runs are run with COPCON=$FFFF, bit 1 set, so the Copper writes the blitter registers (prog_cb_oD_b1, prog_cb_eD_b1) -- fx68k/TG68K: FAIL (the $0000 and $FFFD outcomes differ on both chip sets); every precondition holds
+// MUTATION P13 stimulus red NMH_MUTATE=P13-BITSET: in both SWEEP runs the round of bit 15 in the CDANG-set group writes COPCON = $8000 instead of $8002 (prog_cbsw_o_bitset, prog_cbsw_e_bitset) -- fx68k/TG68K: FAIL (single bits equal to their reference: OCS 29 of 30, ECS 29 of 30); every precondition holds and P13-CONTROL passes
+// MUTATION P13 stimulus red NMH_MUTATE=P13-BITCLR: in the OCS SWEEP run the round of bit 0 in the CDANG-clear group writes COPCON = $0003 instead of $0001 (prog_cbsw_o_bitclr) -- fx68k/TG68K: FAIL (OCS single bits equal to their reference 15 of 30: the CDANG-clear reference round and the round of the bit show 18 and 20 blitter accesses where the other CDANG-clear rounds show none); every precondition holds and P13-CONTROL passes
+// MUTATION P13-CONTROL stimulus red NMH_MUTATE=P13-CONTROL: the CDANG-clear reference of the OCS SWEEP run writes COPCON = $0002 (prog_cbsw_o_ctrl) -- fx68k/TG68K: FAIL (ECS differ OCS equal); P13 is NOT GRADED
+// MUTATION P13-PRE1 stimulus red NMH_MUTATE=P13-PRE1-SW: DMACON without COPEN in the OCS SWEEP run (prog_cbsw_o_nocop) -- fx68k/TG68K: FAIL (rounds with a Copper field: ECS 32, OCS 0); P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE1 stimulus red NMH_MUTATE=P13-PRE1-POP: the OCS SWEEP run writes only the first 8 values (prog_cbsw_o_short) -- fx68k/TG68K: FAIL (rounds with a Copper field: ECS 32, OCS 8); P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SW: the OCS SWEEP program holds a CPU store of BLTSIZE after its last instruction, which never runs (prog_cbsw_o_cpudead) -- fx68k/TG68K: FAIL (the structural count of stores is 1 where none is declared); P13-CONTROL and P13 are NOT GRADED
+// MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3-SW: the CPU writes $1111 to $30200 in every round of the OCS SWEEP run (prog_cbsw_o_cpuwr) -- fx68k/TG68K: FAIL (unexplained writes in M1-M2); P13-CONTROL and P13 are NOT GRADED
 // MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM: the ECS run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back ECS=DEAD); P14 is NOT GRADED
 // MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM-NODONE: the ECS run never writes DONE (prog_beam_nodone) -- fx68k/TG68K: FAIL (read back ECS=no-DONE OCS=BEEF); P14-PRE1, P14-PRE2, P14-PRE3, P14-POP and R5-ANCHOR-BEAM print NOT GRADED, depends on FIXTURE-BEAM (the run gives them nothing), P14-PRE4 (the OCS run) holds and P14 is NOT GRADED
 // MUTATION P14-PRE1 stimulus red NMH_MUTATE=P14-PRE1: the run declared ECS is configured as OCS -- fx68k/TG68K: FAIL (VPOSR identification $10, expected $30); P14 is NOT GRADED
 // MUTATION P14-PRE2 stimulus red NMH_MUTATE=P14-PRE2: BEAMCON0 = $0020 is written right after step 1 of the ECS run (prog_beam_earlypal) -- fx68k/TG68K: FAIL (ECS N=625 before M1); every other precondition holds (the identification stays $30 and $10) and P14 is NOT GRADED
 // MUTATION P14-PRE3 stimulus red NMH_MUTATE=P14-PRE3: BPLCON0 = $0200 (LACE clear) in step 1 of both runs -- fx68k/TG68K: FAIL (the two fields of a frame have the same length); P14 is NOT GRADED
 // MUTATION P14-PRE4 stimulus red NMH_MUTATE=P14-PRE4: in the OCS run COLOR00 = $0F00 is written after the third VERTB before M1 (prog_beam_o_color) -- fx68k/TG68K: FAIL (the fields before M1 of one parity differ); P14 is NOT GRADED
-// MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight (three BEAMCON0 writes in the OCS run instead of sixteen) -- fx68k/TG68K: FAIL (two frames after M1 on ECS instead of four, two fields after M1 on OCS instead of at least 15); P14 is NOT GRADED
-// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (most refresh groups malformed: ECS 28144 of 29016 and OCS 25448 of 26233 on fx68k); P14-PRE2 and P14-PRE3 print NOT GRADED, depends on R5-ANCHOR-BEAM (their scan-line counts use the same groups), and P14 is NOT GRADED
+// MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight (three BEAMCON0 writes in the OCS run instead of sixteen) -- fx68k/TG68K: FAIL (two frames after M1 on ECS instead of four, 2 of 16 BEAMCON0 values with a complete field on OCS); P14 is NOT GRADED
+// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k: FAIL (malformed refresh groups: ECS 28144 of 29016, OCS 25449 of 26237), TG68K: FAIL (ECS 29508 of 30291, OCS 26682 of 27392); P14-PRE2 and P14-PRE3 print NOT GRADED, depends on R5-ANCHOR-BEAM (their scan-line counts use the same groups), and P14 is NOT GRADED
 // MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-ECS: BEAMCON0 = $0000 in the ECS run -- fx68k/TG68K: FAIL (ECS frames after M1 stay 525); every precondition holds
-// MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-OCS: BPLCON0 = $0200 (LACE clear) is written at M1 in the OCS run -- fx68k/TG68K: FAIL (OCS frames after M1 are 526, not 525, and every field after M1 differs from the field before it, the first one at field 10); every precondition holds
+// MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-OCS: contrast of the clause that the outputs on OCS stay unchanged after BEAMCON0 writes: BPLCON0 = $0200 (LACE clear) is written at M1 in the OCS run as well (prog_beam_o_lace1), so the outputs after M1 differ from those before -- fx68k/TG68K: FAIL (OCS frames after M1 are 526, not 525, and the fields after M1 differ from their reference); P14-PRE1 to P14-PRE4 and P14-POP hold, since they look at the frames before M1
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR: the SHR-SWEEP run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back SHR-SWEEP=DEAD); P1 and P1-CONTROL are NOT GRADED
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR-NODONE: the SHR-SWEEP run never writes DONE (prog_shr_nodone) -- fx68k/TG68K: FAIL (read back SHR-SWEEP=no-DONE); R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 and P1-PRE3 print NOT GRADED, depends on FIXTURE-SHR (the run gives them nothing), and P1 and P1-CONTROL are NOT GRADED
-// MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k/TG68K: FAIL (every refresh group malformed); P1-PRE2 and P1-PRE3 print NOT GRADED, depends on R5-ANCHOR-SHR (their heights use the same groups), P1 and P1-CONTROL are NOT GRADED
+// MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k: FAIL (malformed refresh groups: 6588 of 6821), TG68K: FAIL (7071 of 7261); P1-PRE2 and P1-PRE3 print NOT GRADED, depends on R5-ANCHOR-SHR (their heights use the same groups), P1-CONTROL and P1 are NOT GRADED
 // MUTATION P1-PRE1 stimulus red NMH_MUTATE=P1-PRE1: the SHR-SWEEP slot runs the Lores program (BPLCON0 = $1200) -- fx68k/TG68K: FAIL (ruler period 32, not 8); P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE2 stimulus red NMH_MUTATE=P1-PRE2: SREF with 79 scan lines (CTL $8F00, 79 data pairs) in the SHR-SWEEP run (prog_shr_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds, P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE3 stimulus red NMH_MUTATE=P1-PRE3: usage 0 of the SHR-SWEEP run has VSTOP = VSTART + 5 (a fifth data pair keeps the next usages aligned) -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-CONTROL stimulus red NMH_MUTATE=P1-CONTROL: usage 2 of the SHR-SWEEP run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); every precondition holds
-// MUTATION P1 implementation green a private copy of the RTL outside the repository in which SPRxCTL bit 4 (SHSH1) delays the sprite's serial output by two 28 MHz clocks (70 ns) while the sprite resolution is SuperHires (denise_sprites_shifter.v and denise_sprites.v; the EBR shifter build of TG68K and the non-EBR build of fx68k), built with make NANOMIG=<copy> and run on both cores: every precondition holds, P1-CONTROL passes and P1 passes with d = 80 81 82 ... 89 in both graded fields; with the repository's RTL P1 is red on both cores (d = 80 80 82 82 84 84 86 86 88 88). The control through the same comparator on the same run is P1-CONTROL (even k, SHSH1 clear)
+// MUTATION P1 implementation green a private copy of the RTL outside the repository, built with make NANOMIG=<copy> and run on both cores: every precondition holds, P1-CONTROL passes and P1 passes with d = 80 81 82 ... 89 in both graded fields; with the repository's RTL P1 is red on both cores (d = 80 80 82 82 84 84 86 86 88 88). The control through the same comparator on the same run is P1-CONTROL (even k, SHSH1 clear)
 // MUTATION P2-PRE1 stimulus red NMH_MUTATE=P2-PRE1: the SHR-LORES slot runs the SuperHires program (BPLCON0 = $1240) -- fx68k/TG68K: FAIL (ruler period 8, not 32); P2 is NOT GRADED
 // MUTATION P2-PRE2 stimulus red NMH_MUTATE=P2-PRE2: usage 2 of the Lores run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); P2 is NOT GRADED
 // MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4: usage 0 of the Lores run has VSTOP = VSTART + 5 -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P2 is NOT GRADED
 // MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4-SREF: SREF with 79 scan lines in the Lores run (prog_shrl_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds and P2 is NOT GRADED
-// MUTATION P2 implementation green the private copy of the RTL described at P1 (SPRxCTL bit 4 acts in SuperHires), both cores: every precondition holds, P1 passes and P2 passes (d even on every line of every group in the Lores run); with the repository's RTL P2 prints RECORDED NOT GRADED, depends on P1, because P1 is red
-// MUTATION P2 stimulus red NMH_MUTATE=P2-PROP: the Copper switches to SuperHires after the ruler lines of the Lores run (prog_shrl_sw) -- on the private copy of the RTL described at P1, both cores: P2 FAIL with every precondition holding (the sprite lines are drawn in SuperHires, odd k give odd d); with the repository's RTL P2 is NOT GRADED, depends on P1
-// MUTATION P2 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy of the RTL described at P1, both cores: P1 FAIL and P2 NOT GRADED, depends on P1, with P2-PRE1, P2-PRE2 and P2-PRE4 holding
-// MUTATION P1 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy of the RTL described at P1, both cores: P1 FAIL (d = 80 80 82 82 84 84 86 86 88 88: every odd k shows the d of k-1) with every precondition holding; the same comparator passes on the same RTL and the same run with SHSH1 set (P1 implementation green above)
+// MUTATION P2 implementation green the private copy described at P1, both cores: every precondition holds, P1 passes and P2 passes (d even on every line of every group in the Lores run); with the repository's RTL P2 prints RECORDED NOT GRADED, depends on P1, because P1 is red
+// MUTATION P2 stimulus red NMH_MUTATE=P2-PROP: the Copper switches to SuperHires after the ruler lines of the Lores run (prog_shrl_sw) -- on the private copy described at P1, both cores: P2 FAIL with every precondition holding (the sprite lines are drawn in SuperHires, odd k give odd d); with the repository's RTL P2 is NOT GRADED, depends on P1
+// MUTATION P2 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy described at P1, both cores: P1 FAIL and P2 NOT GRADED, depends on P1, with P2-PRE1, P2-PRE2 and P2-PRE4 holding
+// MUTATION P1 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy described at P1, both cores: P1 FAIL (d = 80 80 82 82 84 84 86 86 88 88: every odd k shows the d of k-1) with every precondition holding; the same comparator passes on the same RTL and the same run with SHSH1 set (P1 implementation green above)
 // MUTATION P3-PRE1 stimulus red NMH_MUTATE=P3-PRE1: the BITS-OCS slot runs the ECS chip set -- fx68k/TG68K: FAIL (VPOSR identification $20, expected $00); P3 is NOT GRADED
 // MUTATION P3-PRE2 stimulus red NMH_MUTATE=P3-PRE2: the BITS-OCS slot runs BPLCON0 = $9200 (Hires) on OCS, bit 4 clear in every usage (prog_shro_hires) -- fx68k/TG68K: FAIL (ruler period 16, not 32); every other precondition holds and P3 is NOT GRADED
 // MUTATION P3-PRE3 stimulus red NMH_MUTATE=P3-PRE3: usage 4 has CTL $6400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 4 has d=80, not 82); P3 is NOT GRADED
@@ -487,6 +513,67 @@ std::string field_text(const FieldGrade& g) {
            (g.one_column ? "yes" : "no");
 }
 
+std::string bin_nopos(const std::string& mv) {
+    if (mv == "P5-NOPOS")         return "prog_manual_nopos_green.bin";
+    if (mv == "RUN-NOPOS")        return "prog_manual_nopos_nodone.bin";
+    if (mv == "FIXTURE-NOPOS")    return "prog_manual_nopos_fix.bin";
+    if (mv == "P5-NOPOS-PRE1")    return "prog_manual_nopos_pre1.bin";
+    if (mv == "P5-NOPOS-PRE2")    return "prog_manual_nopos_pre2.bin";
+    if (mv == "P5-NOPOS-PRE2-RB") return "prog_manual_nopos_pre3.bin";
+    if (mv == "R5-ANCHOR-NOPOS")  return "prog_manual_nopos_lowrd.bin";
+    return "prog_manual_p4nopos.bin";
+}
+
+// The run in which field B writes no SPR0POS: p.123 (the armed data "will then be displayed on every
+// line, at the horizontal position given in the 'H' portion of the position registers SPRxPOS and
+// SPRxCTL") and p.126 (writing SPRxDATA enables the comparator, and "the current contents of the sprite
+// data register will be output at the selected horizontal position") put the sprite at SPR0POS = $0060
+// from field A and SPR0CTL = $0000: d = 64.
+void nopos(const std::string& dir, const std::string& mv, const nmh::Config& cfg, Checks& c) {
+    const std::string bin = bin_nopos(mv);
+    auto o = run_program(cfg, dir + "/" + bin);
+    bool run_ok = run_line(c, "RUN-NOPOS", bin, o);
+    if (!run_ok) { c.record("P5-NOPOS: NOT GRADED, the run did not reach DONE (RUN-NOPOS)"); return; }
+    const auto& nlog = o.h->ram_log();
+    auto fixture = o.h->peek_logical(kResults + 0);
+    bool fx = fixture.has_value() && *fixture == 0xBEEF;
+    c.expect(fx, "FIXTURE-NOPOS: the run without field B's SPR0POS write stores a known constant (BEEF) at RESULTS"
+                 " before anything else is trusted (read back " + (fixture ? hex4(*fixture) : std::string("nothing")) + ")");
+    auto nma = find_write(nlog, kMarkMA, 1);
+    auto nmb = find_write(nlog, kMarkMB, 3);
+    auto nrb = find_write(nlog, kMarkRB, 4);
+    if (!nma || !nmb || !nrb || !(*nma < *nmb && *nmb < *nrb)) {
+        c.record("P5-NOPOS: NOT GRADED, the markers MA, MB and RB were not observed in order");
+        return;
+    }
+    auto dmaconr = o.h->peek_logical(kResults + 2);
+    bool pre1 = dmaconr.has_value() && ((*dmaconr >> 5) & 1) == 0 && ((*dmaconr >> 9) & 1) == 1;
+    c.expect(pre1, "P5-NOPOS-PRE1: in the run without field B's SPR0POS write RESULT+2 (DMACONR) has bit 5=0 and bit 9=1, so no "
+                   "sprite DMA can have loaded SPR0POS (DMACONR=" + (dmaconr ? hex4(*dmaconr) : std::string("--")) + ")");
+    auto vmb = o.h->peek_logical(kResults + 16);
+    auto vrb = o.h->peek_logical(kResults + 18);
+    bool pre2 = vmb && vrb && *vmb < 0x2C && *vrb >= 0xF8;
+    c.expect(pre2, "P5-NOPOS-PRE2: in that run marker MB precedes the display window of its field and the read marker RB follows it "
+                   "(V(MB)<$2C and V(RB)>=$F8; measured V(MB)=" + (vmb ? hex4(*vmb) : std::string("--")) +
+                   " V(RB)=" + (vrb ? hex4(*vrb) : std::string("--")) + ")");
+    auto nrg = ct::refresh_groups(nlog);
+    auto anc = ct::anchor_between(nrg, *nma, *nrb);
+    bool anchor = anc.total > 0 && anc.malformed == 0;
+    c.expect(anchor, "R5-ANCHOR-NOPOS: in that run every refresh group from MA to RB has four refresh cycles (p.194) (malformed groups: " +
+                     std::to_string(anc.malformed) + " of " + std::to_string(anc.total) + ")");
+    if (!(fx && pre1 && pre2 && anchor)) {
+        c.record("P5-NOPOS: NOT GRADED, a precondition does not hold (FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2 or R5-ANCHOR-NOPOS)");
+        return;
+    }
+    FieldGrade g = grade_field(o.h->video(), nrg, *nmb, *nrb, Px::Blue, Px::Green, Px::Red);
+    c.expect(g.ok && g.d == 64,
+             "P5-NOPOS: a sprite armed by SPR0DATB/SPR0DATA with SPR0CTL = $0000 and no new SPR0POS write keeps the SPR0POS written before "
+             "(p.123, p.126) -- field B shows sprite 0 at d=64 (COLOR19,COLOR18,COLOR17 from e_B) on every display-window line showing the "
+             "sprite-4 reference: one column, consecutive output lines, at least 200 scan lines (measured d=" + std::to_string(g.d) +
+             " sprite-4 output lines=" + std::to_string(g.n_lines) + ", of them followed by a sprite-0 run=" + std::to_string(g.n_sprite0) +
+             ", scan lines=" + std::to_string(g.scan_lines) + ")");
+}
+
 void run(const std::string& dir, const std::string& mv, Checks& c) {
     nmh::Config cfg; // ECS PAL, default
     const std::string bin = bin_for(mv);
@@ -610,27 +697,8 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                  " RESULT+8=" + (r8 ? hex4(*r8) : std::string("--")) + " RESULT+10=" + (r10 ? hex4(*r10) : std::string("--")) + ")");
     }
 
-    // ---- measured, not graded: field B without any SPR0POS write. p.123 predicts that the
-    // sprite then keeps SPR0POS = $0060 from field A and shows at d=64. ------------------
-    if (mv.empty()) {
-        auto o = run_program(cfg, dir + "/prog_manual_p4nopos.bin");
-        if (!(o.loaded > 0 && o.released && o.done_seen)) {
-            c.note("MANUAL field B without an SPR0POS write: the run did not reach DONE");
-        } else {
-            const auto& nlog = o.h->ram_log();
-            auto nrg = ct::refresh_groups(nlog);
-            auto nmb = find_write(nlog, kMarkMB, 3);
-            auto nrb = find_write(nlog, kMarkRB, 4);
-            if (!nmb || !nrb) {
-                c.note("MANUAL field B without an SPR0POS write: markers MB and RB not observed");
-            } else {
-                FieldGrade g = grade_field(o.h->video(), nrg, *nmb, *nrb, Px::Blue, Px::Green, Px::Red);
-                c.note("MANUAL field B without an SPR0POS write (SPR0POS keeps $0060, SPR0CTL $0000; p.123 predicts "
-                       "d=64): " + std::to_string(g.n_lines) + " sprite-4 output lines, " + std::to_string(g.n_sprite0) +
-                       " of them followed by a sprite-0 run, first d=" + std::to_string(g.d));
-            }
-        }
-    }
+    // ---- P5-NOPOS: field B without any SPR0POS write. SPR0POS keeps $0060 from field A. ----------
+    if (mv.empty() || mv.find("NOPOS") != std::string::npos) nopos(dir, mv, cfg, c);
 }
 
 } // namespace manual
@@ -666,6 +734,19 @@ std::string bin_odd(const std::string& mv) {
     if (mv == "P8-PRE2") return "prog_auto.bin"; // precondition comparator applied to the even ($5000) run
     return "prog_autoodd.bin";
 }
+
+// the fast-RAM run (P7's necessity clause)
+std::string bin_fast(const std::string& mv) {
+    if (mv == "RUN-AUTOFAST")     return "prog_autofast_nodone.bin";
+    if (mv == "FIXTURE-AUTOFAST") return "prog_autofast_fix.bin";
+    if (mv == "P7-PRE1")          return "prog_autofast_pre1.bin";
+    if (mv == "P7-PRE2")          return "prog_autofast_bad.bin";
+    if (mv == "P7-PRE3")          return "prog_autofast_nos4.bin";
+    if (mv == "P7-PROP-FAST")     return "prog_autofast_same.bin";
+    return "prog_autofast.bin";
+}
+
+constexpr uint32_t kAliasBase = 0x0B5000 / 2;
 
 typedef std::vector<std::pair<uint64_t,uint64_t>> Fields;
 
@@ -817,6 +898,36 @@ Disp p6_display(const std::vector<nmh::VideoSample>& video, const ct::RefGroups&
     return r;
 }
 
+// Output lines of the graded fields that show a sprite-0 run after the sprite-4 reference, and how many
+// of them show S1's colours (three 8-pixel bands from e_B, as in P6's two groups).
+void count_sig(const std::vector<nmh::VideoSample>& video, const Fields& fields, long& s0_lines, long& sig_lines) {
+    s0_lines = 0; sig_lines = 0;
+    for (auto& fi : fields) {
+        std::vector<nmh::VideoSample> slice(video.begin() + (long)fi.first,
+                                             video.begin() + (long)std::min(fi.second, (uint64_t)video.size()));
+        auto lines = nmh::find_lines(slice);
+        for (auto& ln : lines) {
+            LineEdges e = find_edges(slice, ln);
+            if (!e.white_found || !e.sprite0_found) continue;
+            ++s0_lines;
+            if (check_24(slice, ln, e.e_b, Px::Blue, Px::Red, Px::Green) ||
+                check_24(slice, ln, e.e_b, Px::Blue, Px::Green, Px::Red)) ++sig_lines;
+        }
+    }
+}
+
+bool white_in_every_field(const std::vector<nmh::VideoSample>& video, const Fields& fields) {
+    if (fields.empty()) return false;
+    for (auto& fi : fields) {
+        std::vector<nmh::VideoSample> slice(video.begin() + (long)fi.first,
+                                             video.begin() + (long)std::min(fi.second, (uint64_t)video.size()));
+        bool any = false;
+        for (auto& ln : nmh::find_lines(slice)) if (find_edges(slice, ln).white_found) any = true;
+        if (!any) return false;
+    }
+    return true;
+}
+
 std::string disp_text(const Disp& d) {
     return "measured h4=" + std::to_string(d.h4) + " h1=" + std::to_string(d.h1) + " h2=" + std::to_string(d.h2) +
            " off1=" + std::to_string(d.off1) + " off2=" + std::to_string(d.off2) + " d1=" + std::to_string(d.d1) +
@@ -831,6 +942,13 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     bool a_run = run_line(c, "RUN-AUTO", binA, A.out);
     bool o_run = run_line(c, "RUN-AUTOODD", binO, O.out);
     if (!a_run || !o_run) { c.record("AUTO: NOT GRADED, a run did not reach DONE (RUN-AUTO or RUN-AUTOODD)"); return; }
+
+    // the fast-RAM run: Zorro II fast RAM offered, SPR0PT naming a fast-RAM address
+    nmh::Config cfgF;
+    cfgF.fastram_config = 0x01;
+    const std::string binF = bin_fast(mv);
+    ARun F = load(cfgF, dir + "/" + binF);
+    bool f_run = run_line(c, "RUN-AUTOFAST", binF, F.out);
 
     bool fx = A.fixture.has_value() && *A.fixture == 0xBEEF && O.fixture.has_value() && *O.fixture == 0xBEEF;
     c.expect(fx, "FIXTURE-AUTO: both programs store a known constant (BEEF) at RESULTS before anything else is trusted"
@@ -868,6 +986,36 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     c.expect(p8pre2, "P8-PRE2: the Copper's fetch of the SPR0PTL MOVE's data word returns an odd value at the port (bit 0 "
              "set), showing that an odd value was the one written");
 
+    // ---- P7's fast-RAM run: its fixture and preconditions -----------------------------------
+    bool fxF = false, f_pre1 = false, f_pre2 = false, f_pre3 = false, f_fields = false;
+    if (!f_run) {
+        c.record("FIXTURE-AUTOFAST: NOT GRADED, depends on RUN-AUTOFAST, which fails");
+        c.record("P7-PRE1: NOT GRADED, depends on RUN-AUTOFAST, which fails");
+        c.record("P7-PRE2: NOT GRADED, depends on RUN-AUTOFAST, which fails");
+        c.record("P7-PRE3: NOT GRADED, depends on RUN-AUTOFAST, which fails");
+    } else {
+        fxF = F.fixture.has_value() && *F.fixture == 0xBEEF;
+        c.expect(fxF, "FIXTURE-AUTOFAST: the fast-RAM program stores a known constant (BEEF) at RESULTS before anything else is trusted"
+                      " (read back " + (F.fixture ? hex4(*F.fixture) : std::string("nothing")) + ")");
+        f_fields = F.m1 && F.m2 && !F.fields.empty();
+        f_pre1 = dma_bits_ok(F);
+        c.expect(f_pre1, "P7-PRE1: in the fast-RAM run RESULT+2 (DMACONR) has bits 9 and 5 set (DMAEN, SPREN) (DMACONR=" +
+                         (F.dmaconr ? hex4(*F.dmaconr) : std::string("--")) + ")");
+        auto diff = F.out.h->peek_logical(kResults + 4);
+        auto cnt = F.out.h->peek_logical(kResults + 6);
+        f_pre2 = diff && cnt && *diff == 0 && *cnt == 26;
+        c.expect(f_pre2, "P7-PRE2: the CPU reads back the 26 words it wrote to the fast-RAM address and every one equals the word of S1 "
+                         "(differing " + (diff ? std::to_string(*diff) : std::string("--")) + " of " +
+                         (cnt ? std::to_string(*cnt) : std::string("--")) + " compared)");
+        if (!f_pre1) {
+            c.record("P7-PRE3: NOT GRADED, depends on P7-PRE1, which fails (without sprite DMA no sprite 4 shows)");
+        } else {
+            f_pre3 = f_fields && white_in_every_field(F.out.h->video(), F.fields);
+            c.expect(f_pre3, "P7-PRE3: sprite 4 (the reference, in Chip RAM) shows in every graded field of the fast-RAM run (" +
+                             std::to_string(F.fields.size()) + " graded fields)");
+        }
+    }
+
     // ---- R5 anchor: every refresh group of the graded span has four refresh cycles ------
     bool anchor = A.anc.total > 0 && A.anc.malformed == 0 && O.anc.total > 0 && O.anc.malformed == 0;
     c.expect(anchor, "R5-ANCHOR-AUTO: in every graded field of both runs, every refresh group has four refresh cycles (p.194) "
@@ -886,9 +1034,10 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     }
 
     // ---- P7 (CH4-p104.c6 CH4-mem.c5 CH4-p105.c12): sprite data taken from
-    // Chip memory at the pointer, in order, every field. ------------------
-    if (!(fx && pre1 && pre2)) {
-        c.record("P7: NOT GRADED, a precondition does not hold (FIXTURE-AUTO, P6-PRE1 or P6-PRE2)");
+    // Chip memory at the pointer, in order, every field; and only from Chip memory. ------
+    if (!(fx && pre1 && pre2 && f_run && fxF && f_pre1 && f_pre2 && f_pre3)) {
+        c.record("P7: NOT GRADED, a precondition does not hold (FIXTURE-AUTO, P6-PRE1, P6-PRE2, RUN-AUTOFAST, FIXTURE-AUTOFAST, "
+                 "P7-PRE1, P7-PRE2 or P7-PRE3)");
     } else {
         // Fixed, unchanged comparator (base=kS1Base always, matching the
         // proposition's own claim): under MUT_P7PROP the Copper's SPR0PT
@@ -897,9 +1046,21 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         // prediction is $27000-$27032 instead, not graded here again).
         bool ok = !A.fields.empty();
         for (auto& fi : A.fields) if (!check_full_traversal(A.out.h->ram_log(), kS1Base, 26, fi.first, fi.second)) ok = false;
-        c.expect(ok, "P7 (CH4-p104.c6 CH4-mem.c5 CH4-p105.c12): the sprite DMA channel takes the whole sprite "
+        // Necessity: with SPR0PT naming the fast-RAM copy of S1 no output line of any graded field shows
+        // S1's colours. What the sprite shows instead is not graded.
+        long s0 = 0, sig = 0;
+        count_sig(F.out.h->video(), F.fields, s0, sig);
+        long alias_fields = 0;
+        for (auto& fi : F.fields) if (check_full_traversal(F.out.h->ram_log(), kAliasBase, 26, fi.first, fi.second)) ++alias_fields;
+        c.note("P7 fast-RAM run (SPR0PT = $2B5000): " + std::to_string(F.fields.size()) + " graded fields, " + std::to_string(s0) +
+               " output lines show a sprite-0 run after the reference, " + std::to_string(sig) + " of them in S1's colours; the " +
+               "26 words at the Chip address $0B5000 are read in order in " + std::to_string(alias_fields) + " fields");
+        bool none = sig == 0;
+        c.expect(ok && none, "P7 (CH4-p104.c6 CH4-mem.c5 CH4-p105.c12): the sprite DMA channel takes the whole sprite "
                  "data structure from Chip memory, at the pointer, in order (p.104,105) -- 26 reads at $25000.."
-                 "$25032 ascending, each once, per field");
+                 "$25032 ascending, each once, per field -- and only from Chip memory: with the same structure in fast RAM "
+                 "and SPR0PT naming it, no output line of any graded field shows its colours (S1-coloured lines " +
+                 std::to_string(sig) + " of " + std::to_string(s0) + ")");
     }
 
     // ---- P8 (CH4-build.c12 CH4-p104.c7): SPRxPTL's LSB is ignored. --------
@@ -1424,6 +1585,98 @@ bool field_p12(bool ecs, const std::vector<Acc>& f) {
     return true;
 }
 
+
+// The sweep run of P13: after M1 the program writes 32 COPCON values, one Copper field each (the first 16
+// with CDANG set, the reference and the other fifteen bits one at a time; the last 16 with CDANG clear
+// likewise). Late in each field, once the Copper's list and its blit are over, it reads one distinct Chip
+// word -- the marker of that round, a read, so no CPU write enters the window -- and then writes the next
+// value. Round r is the Copper field that begins after marker r, and marker r+1 lies inside it.
+constexpr uint32_t kMarkRd = (kMark + 0x40) / 2;
+
+struct Sweep {
+    bool ecs = false, done = false;
+    std::optional<uint16_t> fixture, dmaconr;
+    std::optional<uint64_t> m1, m2;
+    int rounds_mapped = 0;
+    std::vector<std::vector<Acc>> out;
+    std::vector<std::vector<bool>> l1;
+    std::vector<bool> mapped;
+    int bltsize_writes = 0, bltsizh_writes = 0;
+    bool bin_read = false;
+    size_t stray_writes = 0;
+    std::string stray_first;
+};
+
+Sweep do_sweep(const std::string& dir, const std::string& bin, bool ecs) {
+    Sweep r;
+    r.ecs = ecs;
+    r.out.assign(32, {});
+    r.l1.assign(32, std::vector<bool>(kL1Words, false));
+    r.mapped.assign(32, false);
+    bool ok1 = false, ok2 = false;
+    r.bltsize_writes = ct::count_move_imm_a0(dir + "/" + bin, 0x0058, &ok1);
+    r.bltsizh_writes = ct::count_move_imm_a0(dir + "/" + bin, 0x005E, &ok2);
+    r.bin_read = ok1 && ok2;
+    auto o = run_program(ct::make_cfg(ecs, false), dir + "/" + bin);
+    r.done = o.loaded > 0 && o.released && o.done_seen;
+    if (!r.done) return r;
+    const auto& log = o.h->ram_log();
+    r.fixture = o.h->peek_logical(kResults + 0);
+    r.dmaconr = o.h->peek_logical(kResults + 2);
+    r.m1 = find_write(log, kMark / 2 + 0, 1);
+    r.m2 = find_write(log, kMark / 2 + 1, 2);
+    if (!r.m1 || !r.m2) return r;
+    std::vector<std::optional<uint64_t>> mk(33);
+    for (uint32_t i = 0; i < 33; ++i) mk[i] = find_read(log, kMarkRd + i, *r.m1);
+    auto fetches = find_reads(log, kL1);
+    std::sort(fetches.begin(), fetches.end());
+    for (size_t rnd = 0; rnd < 32; ++rnd) {
+        if (!mk[rnd] || !mk[rnd + 1]) continue;
+        std::optional<uint64_t> fa, fb;
+        for (auto f : fetches) if (f > *mk[rnd]) { fa = f; break; }
+        if (!fa) continue;
+        for (auto f : fetches) if (f > *fa) { fb = f; break; }
+        if (!fb || !(*fa < *mk[rnd + 1] && *mk[rnd + 1] < *fb)) continue;
+        std::vector<Acc> seq;
+        for (auto& a : log) {
+            if (a.cycle < *fa || a.cycle >= *fb) continue;
+            if (!a.is_write && a.word_addr >= kL1 && a.word_addr < kL1 + kL1Words) r.l1[rnd][a.word_addr - kL1] = true;
+            if (a.word_addr >= kRegLo && a.word_addr < kRegHi) {
+                Acc x{a.word_addr, a.is_write, a.data};
+                if (seq.empty() || !(seq.back() == x)) seq.push_back(x);
+            }
+        }
+        r.out[rnd] = seq;
+        r.mapped[rnd] = true;
+        ++r.rounds_mapped;
+    }
+    auto exp = expected_writes(ecs);
+    for (auto& a : log) {
+        if (!a.is_write || a.cycle <= *r.m1 || a.cycle >= *r.m2) continue;
+        bool known = false;
+        for (auto& e : exp) if (e.a == a.word_addr && e.d == a.data) known = true;
+        if (a.word_addr >= 0x030300u / 2 && a.word_addr < 0x030400u / 2) known = true;
+        if (!known) {
+            ++r.stray_writes;
+            if (r.stray_first.size() < 120) r.stray_first += " $" + hex6(a.word_addr * 2) + "=" + hex4(a.data);
+        }
+    }
+    return r;
+}
+
+// the swept bits against their CDANG reference: round 0 (CDANG set) and round 16 (CDANG clear)
+bool sweep_bits_equal(const Sweep& w, std::string& detail) {
+    int equal = 0, total = 0;
+    bool ok = w.rounds_mapped == 32 && !w.out[0].empty();
+    for (int r = 1; r < 32; ++r) {
+        if (r == 16) continue;
+        ++total;
+        if (w.mapped[r] && w.out[r] == w.out[r < 16 ? 0 : 16]) ++equal; else ok = false;
+    }
+    detail = num((long)equal) + " of " + num((long)total);
+    return ok;
+}
+
 bool l1_read_through(const Run& r, size_t f) {
     int last = r.ecs ? 69 : 49;
     for (int i = 0; i <= last; ++i) if (!r.l1[f][i]) return false;
@@ -1441,6 +1694,9 @@ bool p12_pre2(const Run& r) {
 // the Copper can read its list only with DMAEN and COPEN set (P12-PRE2's bits 9 and 7)
 bool copper_on(const Run& r) {
     return r.dmaconr && ((*r.dmaconr >> 9) & 1) && ((*r.dmaconr >> 7) & 1);
+}
+bool sweep_dma_ok(const Sweep& w) {
+    return w.dmaconr && ((*w.dmaconr >> 9) & 1) && ((*w.dmaconr >> 7) & 1) && ((*w.dmaconr >> 6) & 1);
 }
 bool pre_structure(const Run& r) {
     return r.bin_read && r.bltsize_writes == r.exp_cpu_bltsize && r.bltsizh_writes == 0;
@@ -1486,6 +1742,22 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         runs[k] = do_run(dir, k, bin + ".bin", exp_cpu);
     }
 
+    std::map<std::string, Sweep> sw;
+    if (want13) {
+        for (const char* k : {"o", "e"}) {
+            std::string bin = std::string("prog_cbsw_") + k;
+            bool e = k[0] == 'e';
+            if (mv == "P13-BITSET") bin += "_bitset";
+            if (!e && mv == "P13-BITCLR") bin += "_bitclr";
+            if (!e && mv == "P13-CONTROL") bin += "_ctrl";
+            if (!e && mv == "P13-PRE1-SW") bin += "_nocop";
+            if (!e && mv == "P13-PRE1-POP") bin += "_short";
+            if (!e && mv == "P13-PRE2-SW") bin += "_cpudead";
+            if (!e && mv == "P13-PRE3-SW") bin += "_cpuwr";
+            sw[k] = do_sweep(dir, bin + ".bin", e);
+        }
+    }
+
     // FIXTURE-CB: every run reaches DONE and delivers the known constant
     bool fx = true;
     std::string fxs;
@@ -1494,6 +1766,11 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         bool ok = r.done && r.fixture && *r.fixture == 0xBEEF;
         fx = fx && ok;
         fxs += " " + k + "=" + (r.done ? opt4(r.fixture) : std::string("no-DONE"));
+    }
+    for (auto& kv : sw) {
+        bool ok = kv.second.done && kv.second.fixture && *kv.second.fixture == 0xBEEF;
+        fx = fx && ok;
+        fxs += " sweep-" + kv.first + "=" + (kv.second.done ? opt4(kv.second.fixture) : std::string("no-DONE"));
     }
     c.expect(fx, "FIXTURE-CB: every COPBLT run reaches DONE and stores a known constant (BEEF) at RESULTS"
                  " before anything else is trusted (read back:" + fxs + ")");
@@ -1567,15 +1844,44 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
             if (r->out.empty()) q1 = false;
             for (auto& f : r->out) if (f.empty()) q1 = false;
         }
+        // the sweep runs: DMACONR, every round has its own Copper field, the CDANG-set reference shows
+        // blitter accesses and the Copper reads L1 through in its field
+        std::string sws;
+        for (auto& kv : sw) {
+            const Sweep& w = kv.second;
+            bool ok = w.done && sweep_dma_ok(w) && w.rounds_mapped == 32 && !w.out[0].empty();
+            if (ok) {
+                int last = w.ecs ? 69 : 49;
+                for (int i = 0; i <= last; ++i) if (!w.l1[0][(size_t)i]) ok = false;
+            }
+            q1 = q1 && ok;
+            sws += std::string(" ") + (w.ecs ? "ECS" : "OCS") + ":" + num((long)w.rounds_mapped);
+        }
+        for (auto& kv : sw) {
+            const Sweep& w = kv.second;
+            c.note(std::string("COPBLT sweep ") + (w.ecs ? "ECS" : "OCS") + ": rounds with a Copper field " + num((long)w.rounds_mapped) +
+                   ", unexplained writes in M1-M2 " + num((long)w.stray_writes) + (w.stray_first.empty() ? std::string() : " (first:" + w.stray_first + ")") + ", blitter accesses per round:" + [&] {
+                       std::string t;
+                       for (size_t i = 0; i < w.out.size(); ++i) t += " " + num((long)w.out[i].size());
+                       return t;
+                   }());
+        }
         bool q2 = true, q3 = true;
         for (auto* r : all) { q2 = q2 && pre_structure(*r); q3 = q3 && pre_quiet(*r); }
+        for (auto& kv : sw) {
+            const Sweep& w = kv.second;
+            q2 = q2 && w.bin_read && w.bltsize_writes == 0 && w.bltsizh_writes == 0;
+            q3 = q3 && w.m1 && w.m2 && w.stray_writes == 0;
+        }
         c.expect(q1, "P13-PRE1: in every run RESULT+2 (DMACONR) has bits 9, 7 and 6 set; in the $0002 runs"
                      " the Copper reads L1 through the last BLTSIZE/BLTSIZH MOVE in each graded field, in the $FFFF, $0000"
                      " and $FFFD runs it fetches L1's first word in each graded field; the $0002 runs show blitter"
-                     " accesses in every graded field");
+                     " accesses in every graded field; in each sweep run RESULT+2 (DMACONR) has bits 9, 7 and 6 set, every one of the"
+                     " 32 values has its own Copper field (rounds with a field:" + sws + "), the first value's field shows blitter"
+                     " accesses and the Copper reads L1 through its last MOVE in it");
         c.expect(q2, "P13-PRE2: the CPU stores BLTSIZE only where a contrasting case says so (store count in each binary"
-                     " equals the count declared for it) and never BLTSIZH");
-        c.expect(q3, "P13-PRE3: M1-M2 is a quiet window in every run (every write at the port in M1-M2 is a blitter write)");
+                     " equals the count declared for it, none in the sweep runs) and never BLTSIZH");
+        c.expect(q3, "P13-PRE3: M1-M2 is a quiet window in every run (every write at the port in M1-M2 is a blitter write, in the sweep runs too)");
         std::string fl, sz;
         for (auto* r : all) {
             fl += " " + r->tag + ":" + num((long)r->fields.size());
@@ -1589,8 +1895,24 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
             return true;
         };
         bool gate = fx && q1 && q2 && q3;
+        bool ctl = false;
+        std::string ctls;
+        if (gate) {
+            ctl = true;
+            for (auto& kv : sw) {
+                const Sweep& w = kv.second;
+                bool differs = !(w.out[0] == w.out[16]);
+                ctl = ctl && differs;
+                ctls += std::string(" ") + (w.ecs ? "ECS" : "OCS") + " " + (differs ? "differ" : "equal");
+            }
+            c.expect(ctl, "P13-CONTROL: the outcomes of COPCON = $0002 and COPCON = $0000, which differ in bit 1 only, differ through the "
+                          "comparator P13 applies to every other bit, so that comparator sees a bit that matters (" + ctls.substr(1) + ")");
+        }
         if (!gate) {
+            c.record("P13-CONTROL: NOT GRADED, a precondition does not hold (FIXTURE-CB, P13-PRE1, P13-PRE2 or P13-PRE3)");
             c.record("P13: NOT GRADED, a precondition does not hold (FIXTURE-CB, P13-PRE1, P13-PRE2 or P13-PRE3)");
+        } else if (!ctl) {
+            c.record("P13: NOT GRADED, depends on P13-CONTROL, which fails");
         } else {
             bool pair1_o = same(o2, oF), pair1_e = same(e2, eF);
             bool pair2_o = o0.out.size() == oD.out.size() && !o0.out.empty();
@@ -1600,10 +1922,14 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
             c.note("P13 equal outcomes: OCS $0002=$FFFF " + std::string(pair1_o ? "yes" : "no") + ", ECS $0002=$FFFF " +
                    (pair1_e ? "yes" : "no") + ", OCS $0000=$FFFD " + (pair2_o ? "yes" : "no") + ", ECS $0000=$FFFD " +
                    (pair2_e ? "yes" : "no"));
-            c.expect(pair1_o && pair1_e && pair2_o && pair2_e,
+            std::string bd_o, bd_e;
+            bool bits_o = sweep_bits_equal(sw["o"], bd_o), bits_e = sweep_bits_equal(sw["e"], bd_e);
+            c.note("P13 each other bit alone: OCS " + bd_o + " equal to their CDANG reference, ECS " + bd_e);
+            c.expect(pair1_o && pair1_e && pair2_o && pair2_e && bits_o && bits_e,
                      "P13 (APPC2-copcon.c1): COPCON is a 1-bit register, only bit 1 matters -- on each chip set the "
-                     "blitter outcome with COPCON=$FFFF equals that with $0002 and with $FFFD equals that with $0000 "
-                     "(p.310,p.26,p.274)");
+                     "blitter outcome with COPCON=$FFFF equals that with $0002 and with $FFFD equals that with $0000, and "
+                     "each of the other fifteen bits alone, added to $0002 and to $0000, leaves the outcome of that value "
+                     "(p.310,p.26,p.274) (single bits equal to their reference: OCS " + bd_o + ", ECS " + bd_e + ")");
         }
     }
 }
@@ -1634,6 +1960,9 @@ struct Run {
     bool stationary = false, fields_unchanged = false;
     long parity_before[2] = {0, 0};
     long first_changed = -1;
+    // the sweep's values (OCS run): value k is in force from its marker to the next one (M2 for the last);
+    // mapped counts the values that have a complete field inside that span
+    int mapped = 0;
 };
 
 // bin: the program; cfg_ecs/cfg_ntsc: what the harness is configured to (the declared
@@ -1702,6 +2031,13 @@ Run do_run(const std::string& dir, const std::string& tag, const std::string& bi
         if (!ref || !same_field(*ref, f)) { un = false; if (r.first_changed < 0) r.first_changed = (long)f; }
     }
     r.fields_unchanged = un;
+    for (int k = 0; k < 16; ++k) {
+        auto t0 = find_write(log, kMark / 2 + 2 + (uint32_t)k, (uint16_t)(0x100 + k));
+        std::optional<uint64_t> t1 = (k < 15) ? find_write(log, kMark / 2 + 3 + (uint32_t)k, (uint16_t)(0x101 + k)) : r.m2;
+        if (!t0 || !t1) continue;
+        for (size_t f : r.fa)
+            if (r.vs[f] >= *t0 && r.vs[f + 1] <= *t1) { ++r.mapped; break; }
+    }
     if (!r.before.empty()) r.anc_before = ct::anchor_between(r.rg, r.vs[r.before.front()], r.vs[r.before.back() + 2]);
     if (!r.after.empty()) r.anc_after = ct::anchor_between(r.rg, r.vs[r.after.front()], r.vs[r.after.back() + 2]);
     return r;
@@ -1800,14 +2136,15 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                        "hs and vs), with at least two of each parity, so the display is stationary (fields before M1 "
                        + num((long)O.fb.size()) + ")");
     }
-    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4 && O.fa.size() >= 15;
+    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4 && O.mapped == 16;
     if (!both) {
         c.record("P14-POP: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
     } else {
-        c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs, and at "
-                      "least 15 fields after M1 in the OCS run, one per BEAMCON0 value written (ECS "
+        c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs, and in the "
+                      "OCS run a complete field inside the span in which each of the 16 BEAMCON0 values written is in force (ECS "
                       + num((long)E.before.size()) + "+" + num((long)E.after.size()) + ", OCS " + num((long)O.before.size()) +
-                      "+" + num((long)O.after.size()) + ", OCS fields after M1 " + num((long)O.fa.size()) + ")");
+                      "+" + num((long)O.after.size()) + ", OCS fields after M1 " + num((long)O.fa.size()) +
+                      ", values with a complete field " + num((long)O.mapped) + " of 16)");
     }
     if (!both) {
         c.record("R5-ANCHOR-BEAM: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
@@ -1829,7 +2166,7 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     for (long n : O.na) if (n != O.nb[0]) ocs_ok = false;
     ocs_ok = ocs_ok && O.fields_unchanged;
     c.expect(ecs_ok && ocs_ok,
-             "P14 (APPC2-BEAMCON0.uhres1): BEAMCON0 is new with ECS -- writing its PAL bit makes the interlaced frame 625 scan lines"
+             "P14: writing BEAMCON0's PAL bit makes the interlaced frame 625 scan lines"
              " on ECS, and on OCS writing each bit p.305 defines alone, then all of them, changes nothing at the port: the frame"
              " keeps its line count and every field keeps its colour, hs and vs samples (p.298,p.305,p.304,p.24) (ECS frames"
              " after M1 " + list(E.na) + "; OCS frames after M1 " + list(O.na) + " against " + num(O.nb.empty() ? -1 : O.nb[0]) +
@@ -2225,6 +2562,7 @@ const Row kRows[] = {
     {"CH4-build.c11", "p104", "P7 grades sprite data read by DMA from Chip memory; 'like all other data accessed by the custom chips' covers every DMA channel, and this package reads sprite data only"},
     {"APPC-pos.c14", "p303", "P2 grades that in Lores bit 4 gives no 70 ns position; 'only available in SuperHires mode' covers Hires too, and for Hires p.303 says the result 'may lead to unpredictable results', so no test sets bit 4 in Hires (section 2.9)"},
     {"CH4-appC-position.c22", "p303", "P2 grades that in Lores bit 4 gives no 70 ns position; 'only available in SuperHires mode' covers Hires too, and for Hires p.303 says the result 'may lead to unpredictable results', so no test sets bit 4 in Hires (section 2.9)"},
+    {"APPC2-BEAMCON0.uhres1", "p298", "'new' with the enhanced Agnus (p.298, p.305) is a statement that the register does not exist in the original chip set; unchanged colour, hs and vs samples and frame counts after writing each bit do not show that, because the functions of several bits (LPENDIS, p.305 bit 13, acts on a latched light-pen vertical-position read this run never makes; the composite-sync bits act on signals the selected outputs do not carry) are not observed; P14 grades the PAL bit on ECS and the unchanged outputs on OCS without the id"},
     {"CH4-fig4-13.c9", "p125", "names two sources for every load, '68000 or DMA'; P5 grades the 68000 loads in the MANUAL run and P6 the DMA loads in the AUTO run, so no single line holds both and neither carries the id"},
     {"CH4-fig413.f6", "p125", "names two sources for every load, '68000 or DMA'; P5 grades the 68000 loads in the MANUAL run and P6 the DMA loads in the AUTO run, so no single line holds both and neither carries the id"},
 };
@@ -2257,10 +2595,10 @@ int main(int argc, char** argv) {
         shr::run(dir, mv, c);
         declined::print(c);
     } else if (mv.rfind("P4", 0) == 0 || mv.rfind("P5", 0) == 0 || mv == "FIXTURE-MANUAL" || mv == "RUN-MANUAL" ||
-               mv == "R5-ANCHOR-MANUAL") {
+               mv == "R5-ANCHOR-MANUAL" || mv == "RUN-NOPOS" || mv == "FIXTURE-NOPOS" || mv == "R5-ANCHOR-NOPOS") {
         manual::run(dir, mv, c);
     } else if (mv.rfind("P6", 0) == 0 || mv.rfind("P7", 0) == 0 || mv.rfind("P8", 0) == 0 || mv == "FIXTURE-AUTO" ||
-               mv == "RUN-AUTO" || mv == "RUN-AUTOODD" || mv == "R5-ANCHOR-AUTO") {
+               mv == "RUN-AUTOFAST" || mv == "FIXTURE-AUTOFAST" || mv == "RUN-AUTO" || mv == "RUN-AUTOODD" || mv == "R5-ANCHOR-AUTO") {
         autorun::run(dir, mv, c);
     } else if (mv.rfind("P9", 0) == 0 || mv == "FIXTURE-CPUPTR" || mv == "RUN-CPUPTR") {
         cpuptr::run(dir, mv, c);

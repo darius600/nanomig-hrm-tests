@@ -9,8 +9,10 @@
 ;                  written just before the read, instead of the register
 ;   MUT_P4WRITE -- P4's write-half contrast: field B's SPR0POS write carries
 ;                  $0062 instead of $0061 (p.123: d = 72 instead of 68)
-;   MUT_P4NOPOS -- not a contrast: field B without any SPR0POS write, run once
-;                  for the MEASURED line (SPR0POS keeps $0060 from field A)
+;   MUT_P4NOPOS -- field B without any SPR0POS write (SPR0POS keeps $0060 from
+;                  field A): the run of the P5-NOPOS line
+;   MUT_NOPOSW  -- with MUT_P4NOPOS: field B writes SPR0POS = $0060, the value the
+;                  other run keeps
 ;   MUT_P4PRE1  -- P4 precondition 1 contrast: omit the DECOY reads
 ;   MUT_P4PRE2  -- P4 precondition 2 contrast: read at V7-0=$0080 (inside
 ;                  the display window) instead of $00F8
@@ -173,7 +175,10 @@ start:
         endif
 
         ifd     MUT_P4NOPOS
-        ; not a contrast: omit field B's SPR0POS write
+        ; omit field B's SPR0POS write (MUT_NOPOSW: write the retained value $0060 instead)
+        ifd     MUT_NOPOSW
+        move.w  #$0060,SPR0POS(a0)
+        endif
         else
         ifd     MUT_P4WRITE
         move.w  #$0062,SPR0POS(a0)             ; P4 write-half contrast

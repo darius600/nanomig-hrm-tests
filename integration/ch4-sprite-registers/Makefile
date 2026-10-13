@@ -39,4 +39,16 @@ PROGS    += prog_shr prog_shr_nosh1 prog_shr_sref79 prog_shr_g0h5 prog_shr_fix p
             prog_shrl prog_shrl_sref79 prog_shrl_g0h5 prog_shrl_u2cl \
             prog_shro prog_shro_u1sh0 prog_shro_hires prog_shro_u4cl prog_shro_g0h5 prog_shro_sref79
 
+# FASTPT (P7's necessity clause): the Copper's sprite-0 pointer names a fast-RAM address
+PROGS    += prog_autofast prog_autofast_nodone prog_autofast_fix prog_autofast_same \
+            prog_autofast_bad prog_autofast_pre1 prog_autofast_nos4
+
+# NOPOS (P5-NOPOS): MANUAL with field B's SPR0POS write left out, and its contrasts
+PROGS    += prog_manual_nopos_green prog_manual_nopos_nodone prog_manual_nopos_fix \
+            prog_manual_nopos_pre1 prog_manual_nopos_pre2 prog_manual_nopos_pre3 prog_manual_nopos_lowrd
+
+# SWEEP (P13): thirty-two COPCON values, one Copper field each; o = OCS, e = ECS
+PROGS    += prog_cbsw_o prog_cbsw_e prog_cbsw_o_bitset prog_cbsw_e_bitset prog_cbsw_o_bitclr \
+            prog_cbsw_o_ctrl prog_cbsw_o_nocop prog_cbsw_o_short prog_cbsw_o_cpudead prog_cbsw_o_cpuwr
+
 include ../harness/nanomig.mk
