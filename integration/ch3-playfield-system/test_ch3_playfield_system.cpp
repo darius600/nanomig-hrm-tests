@@ -1864,6 +1864,12 @@ int main(int argc, char** argv) {
                         "immediately followed by a line showing none of C1/C2/C3; at least 3 such lines, one field apart");
                     agg5.add(true, main_ok);
                 }
+                std::string s5 = "P5 " + tag + ": first graded field, lines N-2..N+8 (N = the line VBSTRT names):";
+                for (long k = -2; !c2_pos.empty() && c2_pos.front() >= 1 && c2_pos.front() + 1 + k < lines.size() && k <= 8; ++k) {
+                    const auto& l = lines[c2_pos.front() + 1 + k];
+                    s5 += " N" + std::string(k > 0 ? "+" : "") + (k ? std::to_string(k) : "") + "=" + (l.c1 || l.c2 || l.c3 ? std::string(l.c1 ? "C1" : "") + (l.c2 ? "C2" : "") + (l.c3 ? "C3" : "") : "none");
+                }
+                c.note(s5);
             }
         }
         if (do_p5) {
