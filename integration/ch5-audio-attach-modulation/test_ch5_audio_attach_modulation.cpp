@@ -120,6 +120,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -498,49 +499,120 @@ constexpr uint32_t kChannelRegionWords = 0x800;
 
 struct ChSpan { int ch; uint32_t len; };
 
-void pc1_line(Checks& checks, const std::string& tag, const Capture& c, uint16_t expect_mask) {
-    bool pc1 = c.adkr && (*c.adkr & 0xFF) == expect_mask;
-    checks.expect(c.loaded && c.done.has_value() && pc1,
-        "PC1 [p.265] " + tag + ": stored ADKCONR bits 7-0 equal the session's attach mask");
+// The cycle of channel ch's own first restart in [lo, hi] (the anchor PC3 grades from), if any.
+std::optional<uint64_t> restart_in(const Capture& c, int ch, uint64_t lo, uint64_t hi) {
+    return first_restart_cycle(fetch_records(c.log, ch_base(ch), kChannelRegionWords, lo, hi));
 }
-void pc2_line(Checks& checks, const std::string& tag, const Capture& c, uint16_t expect_aud_mask) {
+
+// The verdicts of one session's PC1, PC2 and PC3 lines. The lines of the propositions that grade the
+// session are gated on them. PC3 passes when no enabled channel breaks its step; a channel with too
+// few cycles prints "not evaluated" and does not fail it.
+struct Pre {
+    bool pc1 = false, pc2 = false, pc3 = false;
+    bool ok() const { return pc1 && pc2 && pc3; }
+    std::string unmet(const std::string& session) const {
+        std::string u;
+        if (!pc1) u += "PC1";
+        if (!pc2) u += std::string(u.empty() ? "" : "/") + "PC2";
+        if (!pc3) u += std::string(u.empty() ? "" : "/") + "PC3";
+        return u + " (" + session + ")";
+    }
+};
+
+// A session as SPECIFICATION.md defines it: its attach mask, the AUDxEN bits it sets, the channels it
+// enables with their AUDxLEN, and the complete cycles PC3 needs.
+struct SessSpec {
+    std::string name;
+    uint16_t mask, aud;
+    std::vector<ChSpan> enabled;
+    uint32_t min_cycles;
+    bool pc3;
+};
+
+// Each evaluator prints its line when `out` is given and returns the verdict either way.
+bool pc1_eval(Checks* out, const std::string& tag, const Capture& c, uint16_t expect_mask) {
+    bool pc1 = c.adkr && (*c.adkr & 0xFF) == expect_mask;
+    bool ok = c.loaded && c.done.has_value() && pc1;
+    if (out) out->expect(ok, "PC1 [p.265] " + tag + ": stored ADKCONR bits 7-0 equal the session's attach mask");
+    return ok;
+}
+bool pc2_eval(Checks* out, const std::string& tag, const Capture& c, uint16_t expect_aud_mask) {
     bool pc2 = c.dmacr && (*c.dmacr & 0x0200) == 0x0200 && (*c.dmacr & expect_aud_mask) == expect_aud_mask;
-    checks.expect(c.loaded && c.done.has_value() && pc2,
-        "PC2 [p.278] " + tag + ": stored DMACONR has DMAEN and the session's AUDxEN bits set");
+    bool ok = c.loaded && c.done.has_value() && pc2;
+    if (out) out->expect(ok, "PC2 [p.278] " + tag + ": stored DMACONR has DMAEN and the session's AUDxEN bits set");
+    return ok;
 }
 // min_cycles: the specification's population for PC3's modulator clause --
 // two complete cycles after the first restart, or one in S-P2 (the only
 // caller that passes 1). Short of that population, PC3 prints "not
 // evaluated" (RECORDED), never PASS or FAIL; a broken step (stepping_cycles
 // == -1) is always FAIL, whatever the population.
-void pc3_lines(Checks& checks, const std::string& tag, const Capture& c, const std::vector<ChSpan>& enabled,
-               bool have_bounds, uint64_t lo, uint64_t hi, uint32_t min_cycles = 2) {
+bool pc3_eval(Checks* out, const std::string& tag, const Capture& c, const std::vector<ChSpan>& enabled,
+              bool have_bounds, uint64_t lo, uint64_t hi, uint32_t min_cycles = 2) {
+    bool all_ok = true;
     for (auto& e : enabled) {
         std::string label = "PC3 [p.147] " + tag + " ch" + std::to_string(e.ch) + ": fetches step 0.." +
             std::to_string(e.len - 1) + ",0,... from the channel's first restart on (the first "
             "pass is graded in hrm/ch5-audio-dma-first-pass), with >=" + std::to_string(min_cycles) +
             " complete cycle(s) in its own 4 KB region";
-        if (!have_bounds || !c.loaded || !c.done.has_value()) { checks.expect(false, label); continue; }
+        if (!have_bounds || !c.loaded || !c.done.has_value()) {
+            all_ok = false;
+            if (out) out->expect(false, label);
+            continue;
+        }
         auto offs = fetch_offsets(c.log, ch_base(e.ch), kChannelRegionWords, lo, hi);
         int cycles = stepping_cycles(offs, e.len);
         if (cycles < 0) {
-            checks.expect(false, label);
+            all_ok = false;
+            if (out) out->expect(false, label);
         } else if ((uint32_t)cycles < min_cycles) {
-            checks.record(label + " [not evaluated: only " + std::to_string(cycles) +
+            if (out) out->record(label + " [not evaluated: only " + std::to_string(cycles) +
                 " complete cycle(s) after the first restart in this window]");
-        } else {
-            checks.expect(true, label);
+        } else if (out) {
+            out->expect(true, label);
         }
     }
+    return all_ok;
+}
+Pre run_pre(Checks* out, const std::string& tag, const Capture& c,
+            uint16_t expect_mask, uint16_t expect_aud_mask,
+            const std::vector<ChSpan>& enabled, bool have_bounds, uint64_t lo, uint64_t hi,
+            uint32_t min_cycles = 2, bool with_pc3 = true) {
+    Pre p;
+    p.pc1 = pc1_eval(out, tag, c, expect_mask);
+    p.pc2 = pc2_eval(out, tag, c, expect_aud_mask);
+    p.pc3 = with_pc3 ? pc3_eval(out, tag, c, enabled, have_bounds, lo, hi, min_cycles) : true;
+    return p;
 }
 void assert_pc123(Checks& checks, const std::string& tag, const Capture& c,
                   uint16_t expect_mask, uint16_t expect_aud_mask,
                   const std::vector<ChSpan>& enabled, bool have_bounds, uint64_t lo, uint64_t hi,
                   uint32_t min_cycles = 2) {
-    pc1_line(checks, tag, c, expect_mask);
-    pc2_line(checks, tag, c, expect_aud_mask);
-    pc3_lines(checks, tag, c, enabled, have_bounds, lo, hi, min_cycles);
+    run_pre(&checks, tag, c, expect_mask, expect_aud_mask, enabled, have_bounds, lo, hi, min_cycles);
 }
+// The PC lines of a named session, bounds from the capture's own markers.
+Pre sess_pre(Checks* out, const SessSpec& sp, const Capture& c) {
+    auto mk = markers(c);
+    auto on = m_on(mk), off = m_off(mk);
+    bool have_bounds = on && off;
+    return run_pre(out, sp.name, c, sp.mask, sp.aud, sp.enabled, have_bounds,
+                   have_bounds ? *on : 0, have_bounds ? *off : 0, sp.min_cycles, sp.pc3);
+}
+
+const SessSpec kSAV{"S-AV", 0x01, 0x0003, {{0, 8}, {1, 4}}, 2, true};
+const SessSpec kSAP{"S-AP", 0x10, 0x0003, {{0, 4}, {1, 4}}, 2, true};
+const SessSpec kSBOTH{"S-BOTH", 0x11, 0x0003, {{0, 8}, {1, 4}}, 2, true};
+const SessSpec kSBV{"S-BOTH-volonly", 0x01, 0x0003, {{0, 8}, {1, 4}}, 2, true};
+const SessSpec kSP2{"S-P2", 0x10, 0x0003, {{0, 17}, {1, 8}}, 1, true};
+const SessSpec kSLENA{"S-LEN-A", 0x01, 0x0003, {{0, 5}, {1, 3}}, 2, true};
+const SessSpec kSLENB{"S-LEN-B", 0x01, 0x0003, {{0, 2}, {1, 7}}, 2, true};
+const SessSpec kDAC3V{"S-DAC3-V", 0x08, 0x0008, {{3, 2}}, 2, true};
+const SessSpec kDAC3P{"S-DAC3-P", 0x80, 0x0008, {{3, 2}}, 2, true};
+const SessSpec kRMOD{"R-MOD", 0x00, 0x0001, {{0, 8}}, 2, true};
+const SessSpec kRDACP4{"R-DAC-P4", 0x00, 0x0001, {{0, 4}}, 2, true};
+const SessSpec kRDACVP{"R-DAC-VP", 0x00, 0x0001, {{0, 8}}, 2, true};
+const SessSpec kRDAC3V{"R-DAC3-V", 0x00, 0x0008, {{3, 2}}, 2, true};
+const SessSpec kRDAC3P{"R-DAC3-P", 0x00, 0x0008, {{3, 2}}, 2, true};
 
 }  // namespace
 
@@ -665,29 +737,33 @@ int main(int argc, char** argv) {
         cal.offset = rec[cal.r].offset;
         // One line is 227.5 ticks (p.141, as in "Units"); requests go out once
         // each line (p.164), so the fetch nearest to the instant is unambiguous
-        // within half a line. The page's "first data word ... thrown away" is one
-        // fetch before F_2; "reset the pointer to the beginning of the table of
-        // data" makes F_2 the data set's first word.
+        // within half a line. The page's "first data word ... thrown away" is at
+        // most one fetch before F_2. F_2 is the first word of the data set: Table 5-4
+        // (p.150) and p.265 make the first word of a data set the volume under attach
+        // volume, and Figure 5-8 loads the word that arrives on 101->010, F_2, with
+        // pbufld1, the volume (p.164's "reset the pointer to the beginning of the
+        // table of data" is the restart at the end of the length, p.147, not the
+        // start-up).
         cal.ok = bd <= ticks(227.5) / 2.0 && cal.r <= 1 && cal.offset == 0;
         return cal;
     };
-    const Cal cal = calibrate(rmod);
-    const bool cal_ok = rmod.loaded && rmod.done.has_value() && cal.ok;
+    // The calibration is made once, on R-MOD; a contrast of PC7-CAL replaces the capture it is
+    // made on, and the verdict gates PC7-LOOP, PC7-N3 and every P10 line.
+    Capture cal_cap = mutating("PC7-CAL") ? run_capture(dir + "/prog_rmod_per6000.bin", budget_for(200000)) : rmod;
+    mut_note("PC7-CAL", "prog_rmod_per6000.bin", cal_cap);
+    const Cal cal = calibrate(cal_cap);
+    const bool cal_ok = cal_cap.loaded && cal_cap.done.has_value() && cal.ok;
+    auto cal_bounds = sweep_bounds(cal_cap, {});
     checks.note("PC7-CAL measured: the lower byte of the first word is output at M_on+" +
-        std::to_string(cal.t010 + d_mod - (rmod_bounds ? (double)rmod_b[0] : 0.0)) +
-        " clk, so state 010 was entered at M_on+" + std::to_string(cal.t010 - (rmod_bounds ? (double)rmod_b[0] : 0.0)) +
+        std::to_string(cal.t010 + d_mod - (cal_bounds.size() == 2 ? (double)cal_bounds[0] : 0.0)) +
+        " clk, so state 010 was entered at M_on+" + std::to_string(cal.t010 - (cal_bounds.size() == 2 ? (double)cal_bounds[0] : 0.0)) +
         " clk; the nearest fetch is record entry " + std::to_string(cal.r) + " of " + std::to_string(cal.n) +
         " (offset " + std::to_string(cal.offset) + ") " + std::to_string(cal.dist) + " clk away");
-    {
-        Capture cc = mutating("PC7-CAL") ? run_capture(dir + "/prog_rmod_vol0.bin", budget_for(200000)) : rmod;
-        mut_note("PC7-CAL", "prog_rmod_vol0.bin", cc);
-        Cal k = mutating("PC7-CAL") ? calibrate(cc) : cal;
-        checks.expect(cc.loaded && cc.done.has_value() && k.ok,
-            "PC7-CAL [p.164]: in R-MOD, the fetch whose arrival enters state 010 is calibrated from channel "
-            "0's own output; it is the fetch nearest to that instant, within half a line of it, it is the "
-            "data set's first word, and at most one fetch (the one thrown away) precedes it -- it is the "
-            "page's F_2");
-    }
+    checks.expect(cal_ok,
+        "PC7-CAL [p.164]: in R-MOD, the fetch whose arrival enters state 010 is calibrated from channel "
+        "0's own output; it is the fetch nearest to that instant, within half a line of it, it is the "
+        "data set's first word (Table 5-4, p.265 and Figure 5-8: F_2 is loaded by pbufld1, the volume), "
+        "and at most one fetch (the one thrown away) precedes it -- it is the page's F_2");
     // The frame -- no read of channel 0's region before M_on.
     {
         const Capture& fc = mutating("PC7-FRAME") ? run_capture(dir + "/prog_rmod_pc7frame.bin", budget_for(200000)) : rmod;
@@ -935,19 +1011,18 @@ int main(int argc, char** argv) {
 
     // PC1/PC2/PC3 for every reference session (every session asserts
     // these, not only the attach sessions). PC1, PC2 and PC3 each have their own mutation
-    // (below); their per-session call sites are the same functions.
+    // (below), which replaces the capture of the R-MOD line it grades; their per-session
+    // call sites are the same functions.
     {
         Capture c2 = mutating("PC2") ? run_capture(dir + "/prog_rmod_nodma.bin", budget_for(200000)) : rmod;
         mut_note("PC2", "prog_rmod_nodma.bin", c2);
-        if (mutating("PC2")) pc2_line(checks, "R-MOD (DMAEN omitted)", c2, 0x0001);
-        Capture c3 = mutating("PC3") ? run_capture(dir + "/prog_rmod_noaud.bin", budget_for(200000)) : rmod;
-        mut_note("PC3", "prog_rmod_noaud.bin", c3);
-        if (mutating("PC3")) {
-            auto b3 = sweep_bounds(c3, {});
-            pc3_lines(checks, "R-MOD (AUD0EN omitted)", c3, {{0, 8}}, b3.size() == 2, b3.size() ? b3[0] : 0, b3.size() ? b3[1] : 0);
-        }
+        Capture c3 = mutating("PC3") ? run_capture(dir + "/prog_rmod_len7.bin", budget_for(200000)) : rmod;
+        mut_note("PC3", "prog_rmod_len7.bin", c3);
+        auto b3 = sweep_bounds(c3, {});
+        pc1_eval(&checks, "R-MOD", rmod, 0x00);
+        pc2_eval(&checks, "R-MOD", c2, 0x0001);
+        pc3_eval(&checks, "R-MOD", c3, {{0, 8}}, b3.size() == 2, b3.size() ? b3[0] : 0, b3.size() ? b3[1] : 0);
     }
-    assert_pc123(checks, "R-MOD", rmod, 0x00, 0x0001, {{0, 8}}, rmod_bounds, rmod_b.size() ? rmod_b[0] : 0, rmod_b.size() ? rmod_b[1] : 0);
     assert_pc123(checks, "R-VOL-1", rvol1, 0x00, 0x0002, {{1, 4}}, rvol1_bnd.size() == vol1_def.values.size() + 1, rvol1_bnd.size() ? rvol1_bnd.front() : 0, rvol1_bnd.size() ? rvol1_bnd.back() : 0);
     assert_pc123(checks, "R-VOL-2", rvol2, 0x00, 0x0004, {{2, 4}}, rvol2_bnd.size() == vol2_def.values.size() + 1, rvol2_bnd.size() ? rvol2_bnd.front() : 0, rvol2_bnd.size() ? rvol2_bnd.back() : 0);
     assert_pc123(checks, "R-VOL-3", rvol3, 0x00, 0x0008, {{3, 4}}, rvol3_bnd.size() == vol3_def.values.size() + 1, rvol3_bnd.size() ? rvol3_bnd.front() : 0, rvol3_bnd.size() ? rvol3_bnd.back() : 0);
@@ -1010,50 +1085,104 @@ int main(int argc, char** argv) {
         return -1;
     };
 
-    // The S-AP and S-AV sessions, loaded once for every section below.
+    // The S-AP session, loaded once for every section below.
     Capture sap_cap = run_capture(dir + "/prog_s_ap.bin", budget_for(110000));
     // The destination half of the AUDxAP joint line (filled in P5), the source half in P8.
     bool sap_dest_ok = false;
     size_t sap_dest_pop = 0;
+    // P7 hands the verdicts of channel 3's two bits to the joint lines printed after P8:
+    // index 0 is bit 3 (ATVOL3), index 1 is bit 7 (ATPER3).
+    bool p7_const_ok[2] = {false, false}, p7_spacing_ok[2] = {false, false};
+    Pre p7_pre[2];
+
+    // S-P2's window on channel 1's output (P2, P3-SP2): from the modulator's first restart to the
+    // end of play (see Measurements).
+    struct P2Win { bool ok = false; uint64_t ws = 0, we = 0; };
+    auto p2_window = [&](const Capture& c) -> P2Win {
+        P2Win w;
+        auto mk = markers(c);
+        auto on = m_on(mk), off = m_off(mk);
+        if (!(on && off) || side_of[1] < 0) return w;
+        auto restart = restart_in(c, 0, *on, *off);
+        if (!restart) return w;
+        w.ws = *restart;
+        w.we = play_end(c.audio, side_of[1], *off);
+        w.ok = w.we > w.ws;
+        return w;
+    };
+
+    // The applied periods of S-P2's channel 1 in its window: runs of equal durations, each matched to the
+    // reference duration of a word (R-RAMP), -1 for a run no word explains. The first run shows the period in
+    // force at the window's edge, applied before the window opened; the changes are the runs after it, and a window without one has an empty
+    // population of changes (P2-B, P2-C and P3-SP2 print "not evaluated").
+    struct P2Runs { P2Win w; std::vector<int> periods; std::vector<double> means; size_t changes() const { return periods.size() > 1 ? periods.size() - 1 : 0; }
+        std::vector<int> applied() const { return periods.size() > 1 ? std::vector<int>(periods.begin() + 1, periods.end()) : std::vector<int>{}; }
+        std::vector<double> applied_means() const { return means.size() > 1 ? std::vector<double>(means.begin() + 1, means.end()) : std::vector<double>{}; } };
+    auto p2_runs = [&](const Capture& c) -> P2Runs {
+        P2Runs r;
+        r.w = p2_window(c);
+        if (!r.w.ok) return r;
+        auto runs = runs_in_window(c.audio, r.w.ws, r.w.we, side_of[1]);
+        auto comp = complete_runs(runs, r.w.ws, r.w.we);
+        size_t i = 0;
+        while (i < comp.size()) {
+            size_t j = i;
+            uint64_t dur0 = comp[i].end - comp[i].start;
+            std::vector<uint64_t> durs;
+            while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end - comp[j].start) - (long long)dur0) <= (uint64_t)kClkRes)
+                { durs.push_back(comp[j].end - comp[j].start); ++j; }
+            double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
+            // Match against DR (R-RAMP), not D1 (R-PER-1).
+            int found = -1;
+            for (auto& kv : DR) if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; }
+            r.periods.push_back(found);
+            r.means.push_back(mean);
+            i = j;
+        }
+        return r;
+    };
 
     // ================= P1: ATVOL0 =========================================
     {
-        const bool noattach = mutating("P1-NOATTACH") || mutating("PC1");
-        std::string bin = dir + (noattach ? "/prog_s_av_noattach.bin"
+        std::string bin = dir + (mutating("PC1") ? "/prog_s_av_noattach.bin"
+                                 : mutating("P1-A") ? "/prog_s_av_swap.bin"
+                                 : mutating("P1-JOINT") ? "/prog_s_av_ch3.bin"
+                                 : mutating("P1-WINDOW") ? "/prog_s_av_stop.bin"
                                  : mutating("P1-MV33") ? "/prog_s_av_mv33.bin"
                                  : mutating("P1-PER1WRITE") ? "/prog_s_av_per1write.bin" : "/prog_s_av.bin");
         Capture c = run_capture(bin, budget_for(200000));
-        mut_note("P1-NOATTACH", bin, c);
+        mut_note("PC1", bin, c);
+        mut_note("P1-A", bin, c);
+        mut_note("P1-JOINT", bin, c);
+        mut_note("P1-WINDOW", bin, c);
         mut_note("P1-MV33", bin, c);
         mut_note("P1-PER1WRITE", bin, c);
-        mut_note("PC1", bin, c);
         int side = side_of[1];
-        // The contrast that omits the attach write expects mask $00 from PC1; the PC1 contrast keeps $01.
-        uint16_t expect_mask = mutating("P1-NOATTACH") ? 0x00 : 0x01;
         auto mk = markers(c);
         auto on = m_on(mk), off = m_off(mk);
         bool have_bounds = on && off;
-        assert_pc123(checks, "S-AV", c, expect_mask, 0x0003, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+        const Pre pre = sess_pre(&checks, kSAV, c);
 
-        // The window runs from the third fetch of channel 0's own data set (the modulator is then in its
-        // main loop: p.164) to the end of play of channel 1's output (see Measurements). It does not
-        // depend on what channel 1 plays, so a channel 1 that is never modulated has a window and its
-        // verdict is the line's own.
+        // The window runs from the modulator's first restart (channel 0's first fetch at offset 0 after the
+        // first entry of its record: the first pass is graded in hrm/ch5-audio-dma-first-pass, not here) to the
+        // end of play of channel 1's output (see Measurements). It does not depend on what channel 1 plays,
+        // so a channel 1 that is never modulated has a window and its verdict is the line's own.
         uint64_t win_start = 0, win_end = 0;
         bool win_ok = false;
         if (have_bounds && side >= 0) {
-            auto fc0w = fetch_cycles(c.log, ch_base(0), 8, *on, *off);
-            if (fc0w.size() >= 3) {
-                win_start = fc0w[2];
+            auto restart0 = restart_in(c, 0, *on, *off);
+            if (restart0) {
+                win_start = *restart0;
                 win_end = play_end(c.audio, side, *off);
                 win_ok = win_end > win_start;
                 checks.note("S-AV: the window of channel 1's output ends " + std::to_string((long long)*off - (long long)win_end) +
                     " clk before M_off, inside the sample the DMA stop cuts short");
             }
         }
-        // Applied volumes are the CHANGES of channel 1's level pair away from its own written starting value
-        // (VOL 40); a segment that merely shows the value in force is not a change. A pair that is no
-        // reference pair counts as a change to -1 and makes the window's levels fail P1-B.
+        // Applied volumes are the CHANGES of channel 1's level pair: the first segment of the window shows the
+        // value in force at its edge, which was applied before the window opened and is not a change, and
+        // neither is a later segment that merely repeats the value in force. A pair that is no reference pair
+        // counts as a change to -1 and makes the window's levels fail P1-B.
         std::vector<int> applied;
         bool level_ok = win_ok, dur_ok = false;
         size_t dur_pop = 0;
@@ -1061,9 +1190,15 @@ int main(int argc, char** argv) {
             auto runs = runs_in_window(c.audio, win_start, win_end, side);
             auto segs = segment_by_pair(runs);
             int last_val = 40;
+            bool in_force = true;
             for (auto& sg : segs) {
                 int found = -1;
                 for (auto& kv : L1) if (kv.second.first == sg.a && kv.second.second == sg.b) { found = kv.first; break; }
+                if (in_force) {
+                    in_force = false;
+                    if (found < 0) level_ok = false; else last_val = found;
+                    continue;
+                }
                 if (found < 0) { level_ok = false; applied.push_back(-1); continue; }
                 if (found != last_val) { applied.push_back(found); last_val = found; }
             }
@@ -1075,32 +1210,35 @@ int main(int argc, char** argv) {
             for (auto& sm : comp)
                 if (D1.count(200) && std::fabs((double)(sm.end - sm.start) - D1[200]) > kClkRes) { dur_ok = false; break; }
         }
-        // P1-WINDOW is a precondition of the lines that grade levels and durations inside the window; when
-        // it is not met they print NOT GRADED. P1-A and P1-JOINT carry their own n >= 17.
+        // P1-WINDOW is a precondition of every line below it; when it is not met they print NOT GRADED,
+        // and so they do when PC1, PC2 or PC3 of the session fails.
         if (win_ok) {
             checks.expect(c.loaded && win_ok,
-                "P1-WINDOW [p.149]: the window exists -- channel 0 has a third fetch of its own data set before "
-                "the end of play of channel 1's output");
+                "P1-WINDOW [p.149]: the window exists -- channel 0 has a first restart (its first fetch at "
+                "offset 0 after the first entry of its record) before the end of play of channel 1's output");
         } else {
-            checks.record("P1-WINDOW [p.149]: precondition not met -- no window from channel 0's third fetch to "
-                "the end of play; P1-B and P1-C print NOT GRADED");
+            checks.record("P1-WINDOW [p.149]: precondition not met -- no window from channel 0's first restart to "
+                "the end of play; P1-A, P1-B, P1-C and P1-JOINT print NOT GRADED");
         }
+        const bool gate = pre.ok() && win_ok;
+        const std::string unmet = std::string(pre.ok() ? "" : pre.unmet("S-AV")) +
+            ((!pre.ok() && !win_ok) ? " and " : "") + (win_ok ? "" : "P1-WINDOW");
         bool a_ok = c.loaded && c.done.has_value() && applied.size() >= 17 && level_ok && cyclic_consecutive(applied, m_v_order);
         checks.note("P1: window has " + std::to_string(applied.size()) + " applied-volume changes "
             "(need >=17); cyclic-consecutive-in-M_V=" +
             std::string(cyclic_consecutive(applied, m_v_order) ? "yes" : "no") +
             "; every level pair matched a reference=" + std::string(level_ok ? "yes" : "no"));
 
-        checks.expect(a_ok,
+        dep_expect(checks, gate, a_ok,
             "P1-A [p.149,p.150,p.265] 5-hw.c3,5-p136.c3,5-p149.c5,5-mod.c3,5-p149.c7,5-mod.c20,5-p150.c23,"
             "5-mod.c15,5-p150.c2,5-p150.c8,5-p150.c12,5-p150.c16,5-p150.c20,5-t54.w1.c4,5-t54.w2.c4,"
             "5-t54.w3.c4,5-t54.w4.c4,5-p151.c8,5-t55.b0,5-appA-p265.c29,A-adkcon.b00: the applied volumes in "
-            "the window are cyclically consecutive in M_V, n>=17, every value from M_V");
+            "the window are cyclically consecutive in M_V, n>=17, every value from M_V", unmet);
         // P1-B and P1-C grade what the words that reach channel 1 do, so their population is the applied
         // changes; with none, no word has reached the volume and nothing can be said about its levels or
         // about the period "not being reached".
-        if (!win_ok) {
-            not_graded(checks, "P1-B", "P1-WINDOW");
+        if (!gate) {
+            not_graded(checks, "P1-B", unmet);
         } else if (applied.empty()) {
             checks.record("P1-B [p.149,p.165]: not evaluated -- the window's applied-volume "
                 "population is empty (measured population: " + std::to_string(applied.size()) + ")");
@@ -1109,8 +1247,8 @@ int main(int argc, char** argv) {
                 "P1-B [p.149,p.165]: every level pair in the window is channel 1's own reference "
                 "pair L_1(v) of the current applied volume");
         }
-        if (!win_ok) {
-            not_graded(checks, "P1-C", "P1-WINDOW");
+        if (!gate) {
+            not_graded(checks, "P1-C", unmet);
         } else if (applied.empty() || dur_pop == 0) {
             checks.record("P1-C [Table 5-4 Modulating Volume Only]: not evaluated -- the "
                 "window's applied-volume population is empty or it has no complete sample (measured populations: " +
@@ -1132,6 +1270,9 @@ int main(int argc, char** argv) {
             "line here establishes (both kinds of modulation; every attach bit; the output ceasing and the "
             "data modulating the next channel for every bit), so none is asserted; the volume half for "
             "bit 0 is P1-A and the AUDxAV joint line below.");
+        checks.record("Scope of the claim that each attach bit modulates what it names: graded here for channel 0's "
+            "bit 0 only (P1-A); bits 1 and 2 and the three period bits are graded by P6-A for the parameter each "
+            "names (half graded: 5-mod.c20, 5-p150.c23).");
 
         // Joint AUDxAV assertion: the destination effect (channel
         // 1 follows M_V, established above) and the source DAC bypass
@@ -1145,68 +1286,32 @@ int main(int argc, char** argv) {
                 ch0_const = e0 > s0 && is_constant(c.audio, s0, e0, side_of[0]);
             }
         }
-        checks.expect(a_ok && ch0_const,
+        dep_expect(checks, gate, a_ok && ch0_const,
             "P1-JOINT [p.165] 5-p165.c19,5-sig.audxav: in S-AV, channel 1 follows channel 0's "
             "data (destination half) AND channel 0's own side holds one value once its data is "
-            "flowing (source half) -- both halves of the AUDxAV claim, one session");
+            "flowing (source half) -- both halves of the AUDxAV claim, one session", unmet);
+        checks.record("Scope of AUDxAV: graded jointly for channel 0 attached to channel 1 "
+            "(S-AV) only; for the other channels the destination half is P6-A (bits 1 and 2) and the converter "
+            "half is P8-ATT for channel 3 (S-DAC3-V), with no line holding both halves for x = 1, 2 "
+            "(half graded: 5-p165.c19, 5-sig.audxav).");
     }
 
     // ================= P2: ATPER0 =========================================
     {
-        std::string bin = dir + (mutating("P2-NOATTACH") ? "/prog_s_p2_noattach.bin" : "/prog_s_p2.bin");
-        Capture c = run_capture(bin, budget_for(1400000));
-        mut_note("P2-NOATTACH", bin, c);
+        std::string bin = dir + (mutating("P2-A") ? "/prog_s_p2_swap.bin" : "/prog_s_p2.bin");
+        Capture c = run_capture(bin, budget_for(2700000));
+        mut_note("P2-A", bin, c);
         int side = side_of[1];
-        uint16_t expect_mask = mutating("P2-NOATTACH") ? 0x00 : 0x10;
-        auto mk = markers(c);
-        auto on = m_on(mk), off = m_off(mk);
-        bool have_bounds = on && off;
-        assert_pc123(checks, "S-P2", c, expect_mask, 0x0003, {{0,17},{1,8}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0, 1);
+        const Pre pre = sess_pre(&checks, kSP2, c);
 
-        // Window opens at the first run whose applied period differs from
-        // D_1(700) (from R-RAMP) -- guarded against an idle lead-in run --
-        // and then only when that run's duration matches a RECOGNIZED
-        // reference duration -- some DR value != 700 -- not any
-        // deviation from 700. A duration outside every reference (the
-        // sample the DMA stop cuts short, for example) must not open the
-        // window either.
-        double ref700 = DR.count(700) ? DR[700] : 0;
-        std::vector<int> applied_periods;
-        uint64_t win_start = 0, win_end = 0;
-        bool win_ok = false;
-        if (have_bounds && side >= 0 && ref700 > 0) {
-            auto runs = runs_in_window(c.audio, *on, *off, side);
-            auto comp = complete_runs(runs, *on, *off);
-            bool seen700 = false;
-            for (auto& r : comp) {
-                double dd = (double)(r.end - r.start);
-                if (!seen700) { if (std::fabs(dd - ref700) <= 0.5 * ticks(1)) seen700 = true; continue; }
-                bool matches_ref = false;
-                for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(dd - kv.second) <= 0.5 * ticks(1)) { matches_ref = true; break; } }
-                if (matches_ref) { win_start = r.start; win_ok = true; break; }
-            }
-            win_end = play_end(c.audio, side, *off);
-        }
-        std::vector<double> run_means; // for (b)'s own 0.5-tick check
-        if (win_ok) {
-            auto runs = runs_in_window(c.audio, win_start, win_end, side);
-            auto comp = complete_runs(runs, win_start, win_end);
-            size_t i = 0;
-            while (i < comp.size()) {
-                size_t j = i;
-                uint64_t dur0 = comp[i].end - comp[i].start;
-                std::vector<uint64_t> durs;
-                while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end - comp[j].start) - (long long)dur0) <= (uint64_t)kClkRes)
-                    { durs.push_back(comp[j].end - comp[j].start); ++j; }
-                double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
-                // Match against DR (R-RAMP), not D1 (R-PER-1).
-                int found = -1;
-                for (auto& kv : DR) if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; }
-                applied_periods.push_back(found);
-                run_means.push_back(mean);
-                i = j;
-            }
-        }
+        // The window runs from the modulator's first restart (the first pass is graded in
+        // hrm/ch5-audio-dma-first-pass, not here) to the end of play of channel 1's output, which leaves out
+        // the sample the DMA stop cuts short.
+        const P2Runs pr = p2_runs(c);
+        const bool win_ok = pr.w.ok;
+        const uint64_t win_start = pr.w.ws, win_end = pr.w.we;
+        const std::vector<int> applied_periods = pr.applied();      // the runs after the one in force at the edge
+        const std::vector<double> run_means = pr.applied_means();   // for (b)'s own 0.5-tick check
         // (a): the applied periods are cyclically consecutive in the 17 words of M_P, from at least
         // 18 runs (one full cycle of M_P plus one).
         bool cyclic_ok = win_ok && applied_periods.size() >= 18 &&
@@ -1221,14 +1326,17 @@ int main(int argc, char** argv) {
         checks.note("P2: window has " + std::to_string(applied_periods.size()) + " applied-period "
             "runs (need >=18); cyclic-consecutive-in-M_P (via DR)=" + std::string(cyclic_ok ? "yes" : "no"));
 
-        checks.expect(c.loaded && c.done.has_value() && cyclic_ok,
+        const std::string unmet = pre.unmet("S-P2");
+        dep_expect(checks, pre.ok(), c.loaded && c.done.has_value() && cyclic_ok,
             "P2-A [p.149 Table 5-4 Modulating Period Only] 5-mod.c4,5-p149.c8,5-p149.c4,"
             "5-mod.c13,5-p149.c19,5-mod.c16,5-p150.c3,5-p150.c7,5-p150.c11,5-p150.c15,5-p150.c19,"
             "5-t54.w1.c3,5-t54.w2.c3,5-t54.w3.c3,5-t54.w4.c3,5-p151.c4,5-t55.b4,"
             "5-appA-p265.c25,A-adkcon.b04: the applied periods of the runs are "
             "cyclically consecutive in the 17 words of M_P (matched against R-RAMP's own durations), "
-            "from at least 18 runs");
-        if (applied_periods.empty()) {
+            "from at least 18 runs", unmet);
+        if (!pre.ok()) {
+            not_graded(checks, "P2-B", unmet);
+        } else if (applied_periods.empty()) {
             checks.record("P2-B [p.149]: not evaluated -- the window's applied-period-run "
                 "population is empty (measured population: " + std::to_string(applied_periods.size()) + ")");
         } else {
@@ -1269,7 +1377,7 @@ int main(int argc, char** argv) {
         }
         bool ramp_seq_ok = false;
         size_t p2c_pop = 0;
-        if (win_ok && ramp_order.size() == 16) {
+        if (win_ok && pr.changes() > 0 && ramp_order.size() == 16) {
             auto runs = runs_in_window(c.audio, win_start, win_end, side);
             auto comp = complete_runs(runs, win_start, win_end);
             std::vector<int> seq;
@@ -1277,7 +1385,9 @@ int main(int argc, char** argv) {
             p2c_pop = seq.size();
             ramp_seq_ok = seq.size() >= 32 && cyclic_consecutive(seq, ramp_order);
         }
-        if (p2c_pop == 0) {
+        if (!pre.ok()) {
+            not_graded(checks, "P2-C", unmet);
+        } else if (p2c_pop == 0) {
             checks.record("P2-C [p.149,Table 5-4] 5-p149.c9: not evaluated -- the window's "
                 "complete-run population is empty (measured population: " + std::to_string(p2c_pop) + ")");
         } else {
@@ -1289,107 +1399,96 @@ int main(int argc, char** argv) {
 
     // ================= P3: whole word, not two bytes ======================
     {
-        // S P3.3: graded in the P1 window (normal run) or, for the
-        // contrasting cases, R-MOD's own [M_on, end of play] -- channel 0
-        // unattached has no "away from 40" concept, since it is not
-        // channel 1. P3-WHOLE grades R-MOD's channel 0 side (bytes), P3-SILENT
-        // channel 1's side (silent in R-MOD).
-        const bool m_sub = mutating("P3-WHOLE") || mutating("P3-SILENT");
-        Capture ctrl = m_sub ? rmod : run_capture(dir + "/prog_s_av.bin", budget_for(200000));
-        mut_note("P3-WHOLE", "prog_rmod.bin", ctrl);
-        mut_note("P3-SILENT", "prog_rmod.bin", ctrl);
-        auto ctrl_mk = markers(ctrl);
-        auto con = m_on(ctrl_mk), coff = m_off(ctrl_mk);
-        bool ctrl_ok = con && coff;
-        int side_a = mutating("P3-WHOLE") ? side_of[0] : side_of[1];
+        // S P3.3: graded in the P1 window (S-AV: from channel 0's first restart to the end of play of
+        // channel 1's output). Each of P3-SILENT and P3-WHOLE reads its own capture, so the contrast of one
+        // never reaches the other: a session in which channel 1 is silent (P3-SILENT), and one in which
+        // channel 1 plays modulator words as its own data (P3-WHOLE).
+        Capture sav = run_capture(dir + "/prog_s_av.bin", budget_for(200000));
+        Capture sil_c = mutating("P3-SILENT") ? run_capture(dir + "/prog_s_av_zero.bin", budget_for(200000)) : sav;
+        Capture who_c = mutating("P3-WHOLE") ? run_capture(dir + "/prog_s_av_ch1bytes.bin", budget_for(200000)) : sav;
+        mut_note("P3-SILENT", "prog_s_av_zero.bin", sil_c);
+        mut_note("P3-WHOLE", "prog_s_av_ch1bytes.bin", who_c);
 
-        uint64_t p3_ws = 0, p3_we = 0;
-        bool p3_win_ok = false;
-        if (m_sub) {
-            if (ctrl_ok && side_a >= 0) { p3_ws = *con; p3_we = play_end(ctrl.audio, side_a, *coff); p3_win_ok = p3_we > p3_ws; }
-        } else if (ctrl_ok && side_a >= 0) {
-            // P1's own window: from channel 0's third fetch to the end of play of channel 1's output.
-            auto fc0w = fetch_cycles(ctrl.log, ch_base(0), 8, *con, *coff);
-            if (fc0w.size() >= 3) { p3_ws = fc0w[2]; p3_we = play_end(ctrl.audio, side_a, *coff); p3_win_ok = p3_we > p3_ws; }
-        }
-
-        bool no_silent = false, one_pair_ok = false;
-        size_t p3_pop = 0;
-        if (p3_win_ok && side_a >= 0) {
-            auto runs = runs_in_window(ctrl.audio, p3_ws, p3_we, side_a);
+        struct P3Eval { bool win_ok = false; size_t pop = 0; bool no_silent = false, one_pair_ok = false; };
+        auto p3_eval = [&](const Capture& ctrl) -> P3Eval {
+            P3Eval r;
+            auto ctrl_mk = markers(ctrl);
+            auto con = m_on(ctrl_mk), coff = m_off(ctrl_mk);
+            const int side_a = side_of[1];
+            uint64_t ws = 0, we = 0;
+            if (con && coff && side_a >= 0) {
+                auto restart = restart_in(ctrl, 0, *con, *coff);
+                if (restart) { ws = *restart; we = play_end(ctrl.audio, side_a, *coff); r.win_ok = we > ws; }
+            }
+            if (!r.win_ok) return r;
+            auto runs = runs_in_window(ctrl.audio, ws, we, side_a);
             auto segs = segment_by_pair(runs);
             // Word intervals are the intervals of applied words: the changes of channel 1's level pair
-            // away from its written starting value (S-AV), or every segment where R-MOD's own output is
-            // graded in place of it.
-            if (m_sub) {
-                p3_pop = segs.size();
-            } else {
-                int last_val = 40;
-                for (auto& sg : segs) {
-                    int found = -1;
-                    for (auto& kv : L1) if (kv.second.first == sg.a && kv.second.second == sg.b) { found = kv.first; break; }
-                    if (found != last_val) { ++p3_pop; last_val = found; }
-                }
+            // away from its written starting value.
+            int last_val = 40;
+            for (auto& sg : segs) {
+                int found = -1;
+                for (auto& kv : L1) if (kv.second.first == sg.a && kv.second.second == sg.b) { found = kv.first; break; }
+                if (found != last_val) { ++r.pop; last_val = found; }
             }
-            no_silent = !segs.empty();
-            for (auto& s : segs) if (s.a == 0 && s.b == 0) { no_silent = false; break; }
+            r.no_silent = !segs.empty();
+            for (auto& s : segs) if (s.a == 0 && s.b == 0) { r.no_silent = false; break; }
             // "Exactly one level pair, the whole word's L_1(v)" -- every
             // SEGMENT (word interval), not every raw run, must match some
             // L1 entry exactly; a byte-split channel's segments (one member
             // always 0, the other a raw data byte) never match L1's
             // symmetric non-zero pairs.
-            one_pair_ok = !segs.empty();
+            r.one_pair_ok = !segs.empty();
             for (auto& s : segs) {
                 bool found = false;
                 for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) { found = true; break; }
-                if (!found) { one_pair_ok = false; break; }
+                if (!found) { r.one_pair_ok = false; break; }
             }
-        }
-        if (p3_pop == 0) {
+            return r;
+        };
+        const P3Eval e_sil = p3_eval(sil_c), e_who = p3_eval(who_c);
+        const Pre pre_sil = sess_pre(nullptr, kSAV, sil_c), pre_who = sess_pre(nullptr, kSAV, who_c);
+
+        if (!pre_sil.ok()) {
+            not_graded(checks, "P3-SILENT", pre_sil.unmet("S-AV"));
+        } else if (e_sil.pop == 0) {
             checks.record("P3-SILENT [p.149]: not evaluated -- the P1 window's word-interval population "
-                "is empty (measured population: " + std::to_string(p3_pop) + ")");
+                "is empty (measured population: " + std::to_string(e_sil.pop) + ")");
+        } else {
+            checks.expect(sil_c.loaded && e_sil.win_ok && e_sil.no_silent,
+                "P3-SILENT [p.149]: in the P1 window, no word interval is silent (volume 0 never occurs)");
+        }
+        if (!pre_who.ok()) {
+            not_graded(checks, "P3-WHOLE", pre_who.unmet("S-AV"));
+        } else if (e_who.pop == 0) {
             checks.record("P3-WHOLE [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: not evaluated -- "
                 "the P1 window's word-interval population is empty (measured population: " +
-                std::to_string(p3_pop) + ")");
+                std::to_string(e_who.pop) + ")");
         } else {
-            checks.expect(ctrl.loaded && p3_win_ok && no_silent,
-                "P3-SILENT [p.149]: in the P1 window, no word interval is silent (volume 0 never occurs)");
-            checks.expect(ctrl.loaded && p3_win_ok && one_pair_ok,
+            checks.expect(who_c.loaded && e_who.win_ok && e_who.one_pair_ok,
                 "P3-WHOLE [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: every word interval in the P1 "
                 "window has exactly one level pair, the whole word's reference pair L_1(v) -- the "
                 "modulator's whole word reaches the modulated channel and no intermediate byte-split value "
                 "ever appears");
         }
+        checks.record("Scope of the claim that a modulator word is used whole: P3-WHOLE grades it in volume mode "
+            "(S-AV) only; the period half is P3-SP2, which carries no id (half graded: 5-mod.c8, 5-mod.c9, "
+            "5-p149.c14, 5-p149.c15).");
 
         // The S-P2 half ("never a byte's D_1(P)") -- reuse P2's own
-        // window (the same DMA-stop exclusion and reference-value opening
-        // applied identically); verify no run duration matches any
-        // byte-split period.
+        // window (from the modulator's first restart to the end of play of channel 1's output);
+        // verify no run duration matches any byte-split period.
         {
             std::string p2bin = dir + "/prog_s_p2.bin";
-            Capture p2c = run_capture(p2bin, budget_for(1400000));
-            auto mk2 = markers(p2c); auto on2 = m_on(mk2), off2 = m_off(mk2);
-            bool have2 = on2 && off2;
-            double ref700 = DR.count(700) ? DR[700] : 0;
-            uint64_t ws = 0, we = 0; bool wok = false;
-            if (have2 && side_of[1] >= 0 && ref700 > 0) {
-                auto runs = runs_in_window(p2c.audio, *on2, *off2, side_of[1]);
-                auto comp = complete_runs(runs, *on2, *off2);
-                bool seen700 = false;
-                for (auto& r : comp) {
-                    double dd = (double)(r.end - r.start);
-                    if (!seen700) { if (std::fabs(dd - ref700) <= 0.5 * ticks(1)) seen700 = true; continue; }
-                    bool matches_ref = false;
-                    for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(dd - kv.second) <= 0.5 * ticks(1)) { matches_ref = true; break; } }
-                    if (matches_ref) { ws = r.start; wok = true; break; }
-                }
-                we = play_end(p2c.audio, side_of[1], *off2);
-            }
-            bool no_byte_split = wok;
+            Capture p2c = run_capture(p2bin, budget_for(2700000));
+            const Pre pre_p2 = sess_pre(nullptr, kSP2, p2c);
+            const P2Runs pr3 = p2_runs(p2c);
+            const P2Win& w3 = pr3.w;
+            bool no_byte_split = w3.ok;
             size_t p3sp2_pop = 0;
-            if (wok) {
-                auto runs = runs_in_window(p2c.audio, ws, we, side_of[1]);
-                auto comp = complete_runs(runs, ws, we);
+            if (w3.ok && pr3.changes() > 0) {
+                auto runs = runs_in_window(p2c.audio, w3.ws, w3.we, side_of[1]);
+                auto comp = complete_runs(runs, w3.ws, w3.we);
                 p3sp2_pop = comp.size();
                 static const double bad[7] = {65, 129, 3, 33, 5, 17, 9};
                 for (auto& r : comp) {
@@ -1398,11 +1497,13 @@ int main(int argc, char** argv) {
                     if (!no_byte_split) break;
                 }
             }
-            if (p3sp2_pop == 0) {
+            if (!pre_p2.ok()) {
+                not_graded(checks, "P3-SP2", pre_p2.unmet("S-P2"));
+            } else if (p3sp2_pop == 0) {
                 checks.record("P3-SP2 [p.149,Table 5-4]: not evaluated -- the S-P2 window's run "
                     "population is empty (measured population: " + std::to_string(p3sp2_pop) + ")");
             } else {
-                checks.expect(p2c.loaded && wok && no_byte_split,
+                checks.expect(p2c.loaded && w3.ok && no_byte_split,
                     "P3-SP2 [p.149,Table 5-4]: in S-P2, no run's duration matches a byte-split period "
                     "(65,129,3,33,5,17,9 ticks) -- a whole word is used, never its high byte alone");
             }
@@ -1431,18 +1532,22 @@ int main(int argc, char** argv) {
     Capture s_both_volonly = run_capture(dir + (mutating("P4-VOLONLY") ? "/prog_s_both_volonly_per.bin" : "/prog_s_both_volonly.bin"), budget_for(110000));
     mut_note("P4-VOLONLY", "prog_s_both_volonly_per.bin", s_both_volonly);
     bool p4a_ok = false;
+    bool p4_pre_ok = false;
     {
-        std::string bin = dir + (mutating("P4-C") || mutating("P4-B") || mutating("P4-A") ? "/prog_s_both_volonly.bin" : "/prog_s_both.bin");
+        std::string bin = dir + (mutating("P4-A") ? "/prog_s_both_swap.bin"
+                                 : mutating("P4-B") ? "/prog_s_both_v32.bin"
+                                 : mutating("P4-C") ? "/prog_s_both_perconst.bin" : "/prog_s_both.bin");
         Capture c = run_capture(bin, budget_for(110000));
         mut_note("P4-A", bin, c);
         mut_note("P4-B", bin, c);
         mut_note("P4-C", bin, c);
         int side = side_of[1];
-        uint16_t expect_mask = (bin.find("volonly") != std::string::npos) ? 0x01 : 0x11;
         auto mk = markers(c);
         auto on = m_on(mk), off = m_off(mk);
         bool have_bounds = on && off;
-        assert_pc123(checks, "S-BOTH", c, expect_mask, 0x0003, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+        const Pre pre = sess_pre(&checks, kSBOTH, c);
+        p4_pre_ok = pre.ok();
+        const std::string unmet = pre.unmet("S-BOTH");
 
         // Events start only after the first genuine change -- seed with
         // the pre-modulation initial values (63 for volume, 200 for
@@ -1488,15 +1593,17 @@ int main(int argc, char** argv) {
         checks.note("P4: merged sequence has " + std::to_string(seq.size()) + " events (need >=16); "
             "cyclic-consecutive-in-M_VP=" + std::string(cyclic_ok ? "yes" : "no"));
 
-        checks.expect(p4a_ok,
+        dep_expect(checks, pre.ok(), p4a_ok,
             "P4-A [p.149,p.150,p.265] 5-mod.c2,5-p149.c6,5-mod.c15,5-mod.c16,"
             "5-p150.c2,5-p150.c3,5-mod.c17,5-p150.c4,5-p150.c6,5-p150.c10,5-p150.c14,5-p150.c18,"
             "5-t54.w1.c2,5-t54.w2.c2,5-t54.w3.c2,5-t54.w4.c2,5-appA-p265.c30,5-appA-p265.c32,"
             "A-adkcon.note1: the merged sequence (events start only after the first genuine change) is "
-            "cyclically consecutive in M_VP, alternating volume then period");
+            "cyclically consecutive in M_VP, alternating volume then period", unmet);
         // P4-B grades what the changes carry: it has a population only where a change of either kind
         // occurred.
-        if (vol_events.empty() && per_events.empty()) {
+        if (!pre.ok()) {
+            not_graded(checks, "P4-B", unmet);
+        } else if (vol_events.empty() && per_events.empty()) {
             checks.record("P4-B [p.150]: not evaluated -- no applied volume and no applied period change in "
                 "the window (measured populations: volume changes " + std::to_string(vol_events.size()) +
                 ", period changes " + std::to_string(per_events.size()) + ")");
@@ -1505,8 +1612,8 @@ int main(int argc, char** argv) {
                 "P4-B [p.150]: after the first change of each kind, no applied volume lies outside "
                 "{24,56,8,40} and no applied period lies outside {300,700,500,900}");
         }
-        checks.expect(c.loaded && have_bounds && vol_events.size() >= 8 && per_events.size() >= 8,
-            "P4-C [p.149]: both parameters change in the window, each at least 8 times");
+        dep_expect(checks, pre.ok(), c.loaded && have_bounds && vol_events.size() >= 8 && per_events.size() >= 8,
+            "P4-C [p.149]: both parameters change in the window, each at least 8 times", unmet);
         checks.record("5-appA-p265.c31 (V5-V0), A-adkcon.note2: V6 is withdrawn here as in P1 -- "
             "every stimulus has bit 6 clear.");
     }
@@ -1537,10 +1644,11 @@ int main(int argc, char** argv) {
         }
         checks.note("S-BOTH-volonly: channel 1 volume-change count (context only, not graded) = " +
             std::to_string(vol_changes));
-        pc1_line(checks, "S-BOTH-volonly", s_both_volonly, 0x01);
-        pc2_line(checks, "S-BOTH-volonly", s_both_volonly, 0x0003);
-        pc3_lines(checks, "S-BOTH-volonly", s_both_volonly, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
-        if (period_pop == 0) {
+        const Pre pre_v = sess_pre(&checks, kSBV, s_both_volonly);
+        const std::string unmet_v = pre_v.unmet("S-BOTH-volonly");
+        if (!pre_v.ok()) {
+            not_graded(checks, "P4-VOLONLY", unmet_v);
+        } else if (period_pop == 0) {
             checks.record("P4-VOLONLY [p.149,p.150]: not evaluated -- S-BOTH-volonly's "
                 "complete-sample population is empty (measured population: " +
                 std::to_string(period_pop) + ")");
@@ -1552,20 +1660,34 @@ int main(int argc, char** argv) {
         }
         // 5-mod.c14 / 5-p150.c1: both halves, one line -- both bits modulate both parameters (P4-A) AND
         // bit 0 alone leaves the period alone (P4-VOLONLY).
-        checks.expect(p4a_ok && s_both_volonly.loaded && have_bounds && period_pop > 0 && period_const,
+        dep_expect(checks, p4_pre_ok && pre_v.ok(),
+            p4a_ok && s_both_volonly.loaded && have_bounds && period_pop > 0 && period_const,
             "P4-JOINT [p.150] 5-mod.c14,5-p150.c1: modulating both period and volume requires both attach "
             "bits -- with both bits set, channel 1's volume and period follow M_VP (P4-A), and with only bit 0 "
-            "set its period stays at D_1(200) (P4-VOLONLY)");
+            "set its period stays at D_1(200) (P4-VOLONLY)",
+            std::string(p4_pre_ok ? "" : "PC1/PC2/PC3 (S-BOTH)") + ((!p4_pre_ok && !pre_v.ok()) ? " and " : "") +
+            (pre_v.ok() ? "" : unmet_v));
     }
 
     // ================= P5: time-out phase (S-AV/S-AP/S-BOTH) ==============
     {
-        Capture av = run_capture(dir + (mutating("P5-AV") ? "/prog_s_av_per6000.bin" : "/prog_s_av.bin"), budget_for(200000));
-        Capture ap = mutating("P5-AP") ? run_capture(dir + "/prog_s_ap_per6000.bin", budget_for(110000)) : sap_cap;
-        Capture both = run_capture(dir + (mutating("P5-BOTH") ? "/prog_s_both_per6000.bin" : "/prog_s_both.bin"), budget_for(110000));
+        // S-AP is graded by P5, P8 and P10; its PC lines are printed here, once.
+        sess_pre(&checks, kSAP, sap_cap);
+
+        Capture av = run_capture(dir + (mutating("P5-AV") ? "/prog_s_av_per6000.bin"
+                                        : mutating("P5-POP-AV") ? "/prog_s_av_short.bin" : "/prog_s_av.bin"), budget_for(200000));
+        Capture ap = mutating("P5-AP") ? run_capture(dir + "/prog_s_ap_per6000.bin", budget_for(110000))
+                   : mutating("P5-POP-AP") ? run_capture(dir + "/prog_s_ap_short.bin", budget_for(110000)) : sap_cap;
+        Capture both = run_capture(dir + (mutating("P5-BOTH") ? "/prog_s_both_per6000.bin"
+                                          : mutating("P5-POP-BOTH") ? "/prog_s_both_short.bin" : "/prog_s_both.bin"), budget_for(110000));
         mut_note("P5-AV", "prog_s_av_per6000.bin", av);
+        mut_note("P5-POP-AV", "prog_s_av_short.bin", av);
         mut_note("P5-AP", "prog_s_ap_per6000.bin", ap);
+        mut_note("P5-POP-AP", "prog_s_ap_short.bin", ap);
         mut_note("P5-BOTH", "prog_s_both_per6000.bin", both);
+        mut_note("P5-POP-BOTH", "prog_s_both_short.bin", both);
+        const Pre pre_av = sess_pre(nullptr, kSAV, av), pre_ap = sess_pre(nullptr, kSAP, ap),
+                  pre_both = sess_pre(nullptr, kSBOTH, both);
         int side = side_of[1];
         // Delta = C - F_k, graded per spec, against the page's relation (an
         // integer multiple of D_mod, within lambda plus a *measured*
@@ -1598,6 +1720,21 @@ int main(int argc, char** argv) {
             }
             return true;
         };
+        // Phase (010->011 only, S-AP): in the frame PC7-CAL calibrates, state 010 is entered with F_2 and the
+        // period counter times out every D_mod after it; the 010->011 transitions are the odd time-outs.
+        // Every change carried by pbufld2 lands an odd multiple of D_mod after F_2, within lambda plus eps.
+        auto odd_phase_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, const std::vector<FetchRec>& rec) {
+            if (changes.empty() || d_mod <= 0 || rec.size() <= cal.r) return false;
+            const double f2 = (double)rec[cal.r].cycle;
+            for (auto& [ctime, pos, val] : changes) {
+                double delta = (double)ctime - f2;
+                long j = (long)std::llround((delta / d_mod - 1.0) / 2.0);
+                if (j < 0) return false;
+                double centre = (2.0 * j + 1.0) * d_mod;
+                if (!(delta >= centre - lambda && delta <= centre + lambda + eps5)) return false;
+            }
+            return true;
+        };
         auto mk_a = markers(av); auto on_a = m_on(mk_a), off_a = m_off(mk_a);
         auto mk_p = markers(ap); auto on_p = m_on(mk_p), off_p = m_off(mk_p);
         auto mk_b = markers(both); auto on_b = m_on(mk_b), off_b = m_off(mk_b);
@@ -1618,24 +1755,27 @@ int main(int argc, char** argv) {
         // "Changes" are departures from the value in force: the first segment or period run of the window
         // shows the value in force at the window's edge and is not a change, and neither is a later one that
         // merely repeats it; an unchanging channel 1 has no changes (an empty population of real events).
-        std::vector<std::tuple<uint64_t,int,int>> av_changes, ap_changes, both_changes;
-        if (av_win && side >= 0) {
-            auto runs = runs_in_window(av.audio, av_ws, av_we, side);
+        using Changes = std::vector<std::tuple<uint64_t,int,int>>;
+        auto vol_changes = [&](const Capture& cap, uint64_t ws, uint64_t we, int init, const std::function<int(int)>& posf) {
+            Changes out;
+            auto runs = runs_in_window(cap.audio, ws, we, side);
             auto segs = segment_by_pair(runs);
-            // The first segment starts at the window's edge and shows the value in force there; it is not a change.
-            int last_val = 40;
+            int last_val = init;
             bool in_force = true;
+            // The first segment starts at the window's edge and shows the value in force there; it is not a change.
             for (auto& s : segs) for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) {
                 if (in_force) { last_val = kv.first; in_force = false; break; }
-                if (kv.first != last_val) { av_changes.push_back({s.start, m_v_pos(kv.first), kv.first}); last_val = kv.first; }
+                if (kv.first != last_val) { out.push_back({s.start, posf(kv.first), kv.first}); last_val = kv.first; }
                 break;
             }
-        }
-        if (ap_win && side >= 0) {
-            auto runs = runs_in_window(ap.audio, ap_ws, ap_we, side);
+            return out;
+        };
+        auto per_changes = [&](const Capture& cap, uint64_t ws, uint64_t we, int init, const std::function<int(int)>& posf) {
+            Changes out;
+            auto runs = runs_in_window(cap.audio, ws, we, side);
             auto samples = samples_by_sign(runs);
-            auto comp = complete_samples(samples, ap_ws, ap_we);
-            int last_per = 200;
+            auto comp = complete_samples(samples, ws, we);
+            int last_per = init;
             bool in_force = true;
             size_t i = 0;
             while (i < comp.size()) {
@@ -1644,38 +1784,22 @@ int main(int argc, char** argv) {
                 double mean = 0; for (size_t k=i;k<j;++k) mean += (double)(comp[k].end-comp[k].start); mean /= (double)(j-i);
                 for (auto& kv : D1) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)) {
                     if (in_force) { last_per = kv.first; in_force = false; break; }
-                    if (kv.first != last_per) { ap_changes.push_back({comp[i].start, m_p4_pos(kv.first), kv.first}); last_per = kv.first; }
+                    if (kv.first != last_per) { out.push_back({comp[i].start, posf(kv.first), kv.first}); last_per = kv.first; }
                     break;
                 }
                 i = j;
             }
-        }
+            return out;
+        };
+        Changes av_changes, ap_changes, both_changes;
+        if (av_win && side >= 0)
+            av_changes = vol_changes(av, av_ws, av_we, 40, [&](int v) { return m_v_pos(v); });
+        if (ap_win && side >= 0)
+            ap_changes = per_changes(ap, ap_ws, ap_we, 200, [&](int v) { return m_p4_pos(v); });
         if (both_win && side >= 0) {
-            auto runs = runs_in_window(both.audio, both_ws, both_we, side);
-            auto segs = segment_by_pair(runs);
-            int last_val = 63;
-            bool in_force = true;
-            for (auto& s : segs) for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) {
-                if (in_force) { last_val = kv.first; in_force = false; break; }
-                if (kv.first != last_val) { both_changes.push_back({s.start, m_vp_pos(false, kv.first), kv.first}); last_val = kv.first; }
-                break;
-            }
-            auto samples = samples_by_sign(runs);
-            auto comp = complete_samples(samples, both_ws, both_we);
-            int last_per = 200;
-            bool in_force_p = true;
-            size_t i = 0;
-            while (i < comp.size()) {
-                size_t j = i; uint64_t dur0 = comp[i].end - comp[i].start;
-                while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end-comp[j].start)-(long long)dur0) <= (uint64_t)kClkRes) ++j;
-                double mean = 0; for (size_t k=i;k<j;++k) mean += (double)(comp[k].end-comp[k].start); mean /= (double)(j-i);
-                for (auto& kv : D1) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)) {
-                    if (in_force_p) { last_per = kv.first; in_force_p = false; break; }
-                    if (kv.first != last_per) { both_changes.push_back({comp[i].start, m_vp_pos(true, kv.first), kv.first}); last_per = kv.first; }
-                    break;
-                }
-                i = j;
-            }
+            both_changes = vol_changes(both, both_ws, both_we, 63, [&](int v) { return m_vp_pos(false, v); });
+            auto pc = per_changes(both, both_ws, both_we, 200, [&](int v) { return m_vp_pos(true, v); });
+            both_changes.insert(both_changes.end(), pc.begin(), pc.end());
             std::sort(both_changes.begin(), both_changes.end());
         }
         // F_k is looked up in the whole record of channel 0's own data set (from M_on): the word a change
@@ -1685,18 +1809,36 @@ int main(int argc, char** argv) {
         auto fr_both = (both_win && on_b && off_b) ? fetch_records(both.log, ch_base(0), 8, *on_b, *off_b) : std::vector<FetchRec>{};
 
         // The destination half of the AUDxAP joint line (P8): in S-AP, channel 1's applied periods
-        // follow M_P4 cyclically, from at least 2L = 8 changes.
-        if (!mutating("P5-AP")) {
-            sap_dest_pop = ap_changes.size();
+        // follow M_P4 cyclically from at least 2L = 8 changes, counted from the modulator's first restart on
+        // (the first pass is graded in hrm/ch5-audio-dma-first-pass, not here). It reads the ordinary S-AP
+        // capture (or its own contrast), never the capture a contrast of P5-AP replaces.
+        {
+            Capture dcap = mutating("P8-JOINT-AP") ? run_capture(dir + "/prog_s_ap_swap.bin", budget_for(110000)) : sap_cap;
+            mut_note("P8-JOINT-AP", "prog_s_ap_swap.bin", dcap);
+            auto mk = markers(dcap);
+            auto on = m_on(mk), off = m_off(mk);
+            Changes dc;
+            bool dwin = false;
+            if (on && off && side >= 0) {
+                auto restart = restart_in(dcap, 0, *on, *off);
+                if (restart) {
+                    uint64_t we = play_end(dcap.audio, side, *off);
+                    dwin = we > *restart;
+                    if (dwin) dc = per_changes(dcap, *restart, we, 200, [&](int v) { return m_p4_pos(v); });
+                }
+            }
+            sap_dest_pop = dc.size();
             std::vector<int> seqp;
-            for (auto& ch : ap_changes) seqp.push_back(std::get<2>(ch));
-            sap_dest_ok = ap.loaded && ap.done.has_value() && ap_win && seqp.size() >= 8 && cyclic_consecutive(seqp, m_p4_order);
+            for (auto& ch : dc) seqp.push_back(std::get<2>(ch));
+            sap_dest_ok = dcap.loaded && dcap.done.has_value() && dwin && seqp.size() >= 8 && cyclic_consecutive(seqp, m_p4_order);
         }
 
         // Population precondition (S P5.5): at least 2L changes of
         // channel 1 (L=4, SQ's own length) in the window. An empty
         // population (0 genuine changes) is "not evaluated", never FAIL.
-        if (av_changes.empty()) {
+        if (!pre_av.ok()) {
+            not_graded(checks, "P5-POP-AV", pre_av.unmet("S-AV"));
+        } else if (av_changes.empty()) {
             checks.record("P5-POP-AV [p.149]: not evaluated -- S-AV's applied-change "
                 "population is empty (measured population: 0)");
         } else {
@@ -1704,65 +1846,81 @@ int main(int argc, char** argv) {
                 "P5-POP-AV [p.149]: S-AV -- the window (from channel 0's third fetch) has "
                 ">=2L=8 changes of channel 1");
         }
-        if (ap_changes.empty()) {
+        if (!pre_ap.ok()) {
+            not_graded(checks, "P5-POP-AP", pre_ap.unmet("S-AP"));
+        } else if (ap_changes.empty()) {
             checks.record("P5-POP-AP [p.149]: not evaluated -- S-AP's applied-change "
                 "population is empty (measured population: 0)");
         } else {
             checks.expect(ap.loaded && ap_win && ap_changes.size() >= 8,
                 "P5-POP-AP [p.149]: S-AP -- the window has >=2L=8 changes of channel 1");
         }
-        if (both_changes.empty()) {
-            checks.record("P5-POP-BOTH [p.149]: not evaluated -- S-BOTH's applied-change "
-                "population is empty (measured population: 0)");
+        if (!pre_both.ok()) {
+            not_graded(checks, "P5-POP-BOTH", pre_both.unmet("S-BOTH"));
+        } else if (both_changes.empty()) {
+            checks.record("P5-POP-BOTH [p.149]: not evaluated -- S-BOTH's applied-change population is "
+                "empty (measured population: 0)");
         } else {
             checks.expect(both.loaded && both_win && both_changes.size() >= 8,
                 "P5-POP-BOTH [p.149]: S-BOTH -- the window has >=2L=8 changes of channel 1");
         }
 
+        // The start-up frame of S-AP (record entry r of channel 0 is F_2, at offset 0), for the phase.
+        auto rec_ap = rec_of(ap);
+        const bool ap_frame = cal_ok && d_mod > 0 && rec_ap.size() > cal.r + 3 && rec_ap[cal.r].offset == 0;
         bool av_ok = grid_ok(av_changes, fr_av, d_mod) && consec_ok(av_changes, 2.0 * d_mod);
-        bool ap_ok = grid_ok(ap_changes, fr_ap, d_mod) && consec_ok(ap_changes, 2.0 * d_mod);
+        bool ap_grid = grid_ok(ap_changes, fr_ap, d_mod) && consec_ok(ap_changes, 2.0 * d_mod);
+        bool ap_ok = ap_grid && odd_phase_ok(ap_changes, rec_ap);
         bool both_ok = grid_ok(both_changes, fr_both, d_mod) && consec_ok(both_changes, d_mod);
         checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes, S-AP " +
             std::to_string(ap_changes.size()) + ", S-BOTH " + std::to_string(both_changes.size()) +
             "; av_ok=" + std::to_string(av_ok) + " ap_ok=" + std::to_string(ap_ok) +
-            " both_ok=" + std::to_string(both_ok));
-        if (av_changes.empty()) {
-            checks.record("P5-AV [p.149,p.164] 5-mod.c10,5-p149.c16: not evaluated -- S-AV's "
+            " (grid and spacing " + std::to_string(ap_grid) + ") both_ok=" + std::to_string(both_ok));
+        if (!pre_av.ok()) {
+            not_graded(checks, "P5-AV", pre_av.unmet("S-AV"));
+        } else if (av_changes.empty()) {
+            checks.record("P5-AV [p.149,p.164]: not evaluated -- S-AV's "
                 "applied-change population is empty (measured population: 0)");
         } else {
             checks.expect(av.loaded && av_win && av_ok,
-                "P5-AV [p.149,p.164] 5-mod.c10,5-p149.c16: S-AV -- for every change, Delta=C-F_k lies "
+                "P5-AV [p.149,p.164]: S-AV -- for every change, Delta=C-F_k lies "
                 "within [m*D_mod-lambda, m*D_mod+lambda+eps] for some integer m>=1, and consecutive "
                 "changes are 2*D_mod apart (as normal, 011->010)");
         }
-        if (ap_changes.empty()) {
+        if (!pre_ap.ok() || (!ap_changes.empty() && !ap_frame)) {
+            not_graded(checks, "P5-AP", !pre_ap.ok() ? pre_ap.unmet("S-AP") : std::string("PC7-CAL and a start-up frame in S-AP"));
+        } else if (ap_changes.empty()) {
             checks.record("P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: not evaluated -- S-AP's "
                 "applied-change population is empty (measured population: 0)");
         } else {
             checks.expect(ap.loaded && ap_win && ap_ok,
                 "P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- Delta=C-F_k on the same grid, "
-                "consecutive changes 2*D_mod apart (010->011)");
+                "consecutive changes 2*D_mod apart, and every change an odd multiple of D_mod after F_2, "
+                "within lambda+eps (on the 010->011 transition only)");
         }
-        if (both_changes.empty()) {
-            checks.record("P5-BOTH [p.164]: not evaluated -- S-BOTH's applied-change population is "
+        if (!pre_both.ok()) {
+            not_graded(checks, "P5-BOTH", pre_both.unmet("S-BOTH"));
+        } else if (both_changes.empty()) {
+            checks.record("P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: not evaluated -- S-BOTH's applied-change population is "
                 "empty (measured population: 0)");
         } else {
             checks.expect(both.loaded && both_win && both_ok,
-                "P5-BOTH [p.164]: S-BOTH -- Delta=C-F_k on the same grid, consecutive changes D_mod "
-                "apart, alternating volume and period (both transitions)");
+                "P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- Delta=C-F_k on the same grid, consecutive "
+                "changes D_mod apart, alternating volume and period: a word lands at every time-out of the "
+                "modulator's period (both transitions)");
         }
     }
 
     // ================= P6: each attach bit pairs x with x+1 ================
     {
-        struct Pair6 { int b; int mod_ch, tgt_ch, trip_a, trip_b; bool is_vol; std::string bin, noattach, extra, tgt; std::string extra_clause; };
+        struct Pair6 { int b; int mod_ch, tgt_ch, trip_a, trip_b; bool is_vol; std::string bin, swap, extra, tgt; std::string extra_clause; };
         std::vector<Pair6> cases = {
-            {0,0,1,2,3,true,"/prog_s_pair0.bin","/prog_s_pair0_noattach.bin","/prog_s_pair0_extra.bin","/prog_s_pair0_tgtper.bin","(c)"},
-            {1,1,2,0,3,true,"/prog_s_pair1.bin","/prog_s_pair1_noattach.bin","","",""},
-            {2,2,3,0,1,true,"/prog_s_pair2.bin","/prog_s_pair2_noattach.bin","/prog_s_pair2_extra.bin","","(c)"},
-            {4,0,1,2,3,false,"/prog_s_pair4.bin","/prog_s_pair4_noattach.bin","/prog_s_pair4_extra.bin","/prog_s_pair4_tgtvol.bin","(d)"},
-            {5,1,2,0,3,false,"/prog_s_pair5.bin","/prog_s_pair5_noattach.bin","/prog_s_pair5_extra.bin","","(d)"},
-            {6,2,3,0,1,false,"/prog_s_pair6.bin","/prog_s_pair6_noattach.bin","/prog_s_pair6_extra.bin","","(d)"},
+            {0,0,1,2,3,true,"/prog_s_pair0.bin","/prog_s_pair0_swap.bin","/prog_s_pair0_extra.bin","/prog_s_pair0_tgtper.bin","(c)"},
+            {1,1,2,0,3,true,"/prog_s_pair1.bin","/prog_s_pair1_swap.bin","","",""},
+            {2,2,3,0,1,true,"/prog_s_pair2.bin","/prog_s_pair2_swap.bin","/prog_s_pair2_extra.bin","","(c)"},
+            {4,0,1,2,3,false,"/prog_s_pair4.bin","/prog_s_pair4_swap.bin","/prog_s_pair4_extra.bin","/prog_s_pair4_tgtvol.bin","(d)"},
+            {5,1,2,0,3,false,"/prog_s_pair5.bin","/prog_s_pair5_swap.bin","/prog_s_pair5_extra.bin","","(d)"},
+            {6,2,3,0,1,false,"/prog_s_pair6.bin","/prog_s_pair6_swap.bin","/prog_s_pair6_extra.bin","","(d)"},
         };
         // Claim ids per bit (Table 5-5 / p.265), matching the bit numbers the ids' own quotes name.
         // Bits 0 and 4 carry theirs on P1-A and P2-A.
@@ -1780,7 +1938,7 @@ int main(int argc, char** argv) {
             "establishes both, so neither id is asserted.");
         for (auto& pc : cases) {
             std::string tag = "P6-" + std::to_string(pc.b);
-            std::string bin = mutating(tag) ? pc.noattach
+            std::string bin = mutating(tag) ? pc.swap
                             : (mutating(tag + "-EXTRA") && !pc.extra.empty()) ? pc.extra
                             : (mutating("P6-TGT-" + std::to_string(pc.b)) && !pc.tgt.empty()) ? pc.tgt : pc.bin;
             Capture c = run_capture(dir + bin, budget_for(110000));
@@ -1789,7 +1947,6 @@ int main(int argc, char** argv) {
             mut_note("P6-TGT-" + std::to_string(pc.b), bin, c);
             int tside = side_of[pc.tgt_ch], oside = other_side(pc.tgt_ch);
             uint16_t bitval = (uint16_t)(1u << pc.b);
-            uint16_t expect_mask = mutating(tag) ? 0x00 : bitval;
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             // Length per channel: the modulator (M6V/M_P4, 4 words) and the
@@ -1798,17 +1955,21 @@ int main(int argc, char** argv) {
             uint32_t len_by_ch[4] = {2, 2, 2, 2};
             len_by_ch[pc.mod_ch] = 4;
             len_by_ch[pc.tgt_ch] = 4;
-            assert_pc123(checks, tag, c, expect_mask, 0x000F,
+            const Pre pre = run_pre(&checks, tag, c, bitval, 0x000F,
                          {{0,len_by_ch[0]},{1,len_by_ch[1]},{2,len_by_ch[2]},{3,len_by_ch[3]}},
                          have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            const std::string unmet = pre.unmet("S-PAIR-" + std::to_string(pc.b)) + ", bit " + std::to_string(pc.b);
 
-            auto mod_fetches = have_bounds ? fetch_cycles(c.log, ch_base(pc.mod_ch), 4, *on, *off) : std::vector<uint64_t>{};
-            uint64_t win_start = 0; bool win_ok = have_bounds && mod_fetches.size() >= 3;
-            if (win_ok) win_start = mod_fetches[2];
+            // The window runs from the modulator's first restart (the first pass is graded in
+            // hrm/ch5-audio-dma-first-pass, not here) to the end of play of the target's output.
+            auto mod_restart = have_bounds ? restart_in(c, pc.mod_ch, *on, *off) : std::optional<uint64_t>{};
+            uint64_t win_start = 0; bool win_ok = have_bounds && mod_restart.has_value();
+            if (win_ok) win_start = *mod_restart;
             // Samples, runs and levels of the target's output end before the sample the DMA stop
             // cuts short; the fetch records and the constant outputs end at M_off.
             uint64_t win_end = have_bounds ? play_end(c.audio, tside, *off) : 0;
             uint64_t fetch_end = have_bounds ? *off : 0;
+            if (win_ok && win_end <= win_start) win_ok = false;
 
             std::vector<int> applied; bool level_ok = true;
             auto& table = (pc.tgt_ch == 1) ? L1 : (pc.tgt_ch == 2) ? L2 : L3;
@@ -1816,16 +1977,25 @@ int main(int argc, char** argv) {
             if (win_ok && tside >= 0) {
                 auto runs = runs_in_window(c.audio, win_start, win_end, tside);
                 if (pc.is_vol) {
+                    // The first segment shows the value in force at the window's edge, applied before the
+                    // window opened: it is not an applied change.
                     auto segs = segment_by_pair(runs);
+                    bool in_force = true;
                     for (auto& s : segs) {
                         int found = -1;
                         for (auto& kv : table) if (kv.second.first == s.a && kv.second.second == s.b) { found = kv.first; break; }
                         if (found < 0) level_ok = false;
+                        if (in_force) { in_force = false; continue; }
                         applied.push_back(found);
                     }
                 } else {
-                    auto comp = complete_runs(runs, win_start, win_end);
+                    // The durations of a period session are graded on sign-alternation samples (see
+                    // Measurements), so a volume written to the target halfway through a sample does not
+                    // split it.
+                    auto samples = samples_by_sign(runs);
+                    auto comp = complete_samples(samples, win_start, win_end);
                     size_t i = 0;
+                    bool in_force = true;
                     while (i < comp.size()) {
                         size_t j = i; uint64_t dur0 = comp[i].end - comp[i].start;
                         while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end-comp[j].start)-(long long)dur0) <= (uint64_t)kClkRes) ++j;
@@ -1833,25 +2003,27 @@ int main(int argc, char** argv) {
                         int found = -1;
                         for (auto& kv : dtable) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)+kClkRes) { found = kv.first; break; }
                         if (found < 0) level_ok = false;
-                        applied.push_back(found);
+                        if (in_force) in_force = false; else applied.push_back(found);
                         i = j;
                     }
                 }
             }
             std::vector<int> order6 = pc.is_vol ? std::vector<int>{8,48,20,60} : m_p4_order;
             bool cyclic_ok = win_ok && applied.size() >= 9 && level_ok && cyclic_consecutive(applied, order6);
+            checks.note("P6 bit " + std::to_string(pc.b) + ": the window has " + std::to_string(applied.size()) +
+                (pc.is_vol ? " applied volumes" : " applied periods") + " (need >=9)");
             std::string ids = bit_ids.count(pc.b) ? bit_ids[pc.b] : "";
-            checks.expect(c.loaded && win_ok && cyclic_ok,
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && cyclic_ok,
                 pc.is_vol
                 ? ("P6-A [p.149,p.150,p.151,p.265]" + (ids.empty() ? "" : (" " + ids)) + " bit " + std::to_string(pc.b) +
                    ": the target's applied volumes are cyclically consecutive in M6V, every level "
                    "pair a reference pair of the target")
                 : ("P6-A [p.149,p.150,p.151,p.265]" + (ids.empty() ? "" : (" " + ids)) + " bit " + std::to_string(pc.b) +
-                   ": the target's applied periods are cyclically consecutive in M_P4"));
+                   ": the target's applied periods are cyclically consecutive in M_P4"), unmet);
 
             // (b): durations (volume sessions) / level pair (period
             // sessions) stay at their own reference, and per-session
-            // preconditions (already added above via assert_pc123).
+            // preconditions (already added above via run_pre).
             bool b_ok = false;
             if (win_ok && tside >= 0) {
                 auto runs = runs_in_window(c.audio, win_start, win_end, tside);
@@ -1868,16 +2040,16 @@ int main(int argc, char** argv) {
                     for (auto& s : segs) if (s.a != pr40.first || s.b != pr40.second) { b_ok = false; break; }
                 }
             }
-            checks.expect(c.loaded && win_ok && b_ok,
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && b_ok,
                 pc.is_vol
                 ? ("P6-B [p.149,p.150] bit " + std::to_string(pc.b) + ": the target's durations stay at D_c(200)")
-                : ("P6-B [p.149,p.150] bit " + std::to_string(pc.b) + ": the target's level pair stays at the reference for VOL 40"));
+                : ("P6-B [p.149,p.150] bit " + std::to_string(pc.b) + ": the target's level pair stays at the reference for VOL 40"), unmet);
 
-            // (c) uses win_start (the modulator's third fetch), not M_on.
+            // (c) uses win_start (the modulator's first restart), not M_on.
             bool other_const = win_ok && oside >= 0 && fetch_end > win_start && is_constant(c.audio, win_start, fetch_end, oside);
-            checks.expect(c.loaded && win_ok && other_const,
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && other_const,
                 "P6-C [p.150] bit " + std::to_string(pc.b) + ": the other side's output is constant "
-                "for the whole window");
+                "for the whole window", unmet);
 
             // (d): every channel but the target keeps fetching at 2*AUDxPER as written: the modulator
             // (4 words, PER 4000) and both tripwires (2 words, PER 1400..2000).
@@ -1895,25 +2067,30 @@ int main(int argc, char** argv) {
                 if (!check_trip(pc.trip_a, 2, pers[pc.trip_a])) spacing_ok = false;
                 if (!check_trip(pc.trip_b, 2, pers[pc.trip_b])) spacing_ok = false;
             }
-            checks.expect(c.loaded && win_ok && spacing_ok,
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && spacing_ok,
                 "P6-D [p.164] bit " + std::to_string(pc.b) + ": every non-target channel's fetch spacing (the "
-                "modulator's and both tripwires', from the modulator's third fetch) equals 2*AUDxPER within lambda");
+                "modulator's and both tripwires', from the modulator's first restart) equals 2*AUDxPER within lambda",
+                unmet);
         }
     }
 
     // ================= P7: channel 3 attaches to nothing ===================
     {
-        // Per-bit ids: 5-appA-p265.c22/A-adkcon.b03 name ATVOL3
-        // (bit 3) specifically; c26/b07 name ATPER3 (bit 7).
-        struct P7Case { std::string bin, mutbin; uint16_t mask; std::string tag, ids; };
+        // Per-bit ids: 5-appA-p265.c26/A-adkcon.b03 name ATVOL3 (bit 3), c22/b07 name ATPER3 (bit 7).
+        // Bit 3 modulates a volume, which P7-CONST sees (every channel is at VOL 0, so a modulated
+        // volume makes an output move); bit 7 modulates a period, which P7-SPACING sees (a modulated
+        // period changes a fetch spacing) and P7-CONST cannot. The A-adkcon ids bundle "modulates nothing"
+        // with "disables channel 3's audio output": they sit on the joint lines printed after P8.
+        struct P7Case { std::string bin, mutbin; uint16_t mask; std::string tag, const_ids, spacing_ids; };
         std::vector<P7Case> cases = {
-            {"/prog_s_ch3v.bin", "/prog_s_ch3v_extra.bin", 0x08, "P7V", "5-appA-p265.c22,A-adkcon.b03"},
-            {"/prog_s_ch3p.bin", "/prog_s_ch3p_extra.bin", 0x80, "P7P", "5-appA-p265.c26,A-adkcon.b07"},
+            {"/prog_s_ch3v.bin", "/prog_s_ch3v_extra.bin", 0x08, "P7V", "5-appA-p265.c26", ""},
+            {"/prog_s_ch3p.bin", "/prog_s_ch3p_extra.bin", 0x80, "P7P", "", "5-appA-p265.c22"},
         };
         checks.record("5-mod.c23, 5-p150.c26: the sentence says an attached channel always modulates the next "
             "higher channel, so channel 3 cannot be attached, and p.150 adds that its modulate bits only disable "
             "its audio output; the lines below grade that nothing is modulated, and the output half is P8's, so "
             "neither id is asserted.");
+        size_t bit_idx = 0;
         for (auto& pc : cases) {
             std::string bin = mutating(pc.tag) ? pc.mutbin : pc.bin;
             Capture c = run_capture(dir + bin, budget_for(60000));
@@ -1921,16 +2098,18 @@ int main(int argc, char** argv) {
             uint16_t expect = pc.mask;
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
-            assert_pc123(checks, pc.tag, c, expect, 0x000F, {{0,2},{1,2},{2,2},{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            const Pre pre = run_pre(&checks, pc.tag, c, expect, 0x000F, {{0,2},{1,2},{2,2},{3,2}}, have_bounds,
+                                    have_bounds ? *on : 0, have_bounds ? *off : 0);
+            const std::string unmet = pre.unmet(pc.tag);
             auto ch3f = have_bounds ? fetch_cycles(c.log, ch_base(3), 2, *on, *off) : std::vector<uint64_t>{};
             uint64_t win_start = have_bounds && ch3f.size() >= 3 ? ch3f[2] : 0;
             uint64_t win_end = have_bounds ? *off : 0;
             bool win_ok = have_bounds && ch3f.size() >= 3 && win_end > win_start;
             bool both_const = win_ok && is_constant(c.audio, win_start, win_end, 0) && is_constant(c.audio, win_start, win_end, 1);
-            checks.expect(c.loaded && win_ok && both_const,
-                "P7-CONST [p.150,p.151,p.265] " + pc.ids + ": both "
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && both_const,
+                "P7-CONST [p.150,p.151,p.265]" + (pc.const_ids.empty() ? "" : (" " + pc.const_ids)) + ": both "
                 "outputs are constant for the whole window -- channel 3's attach bit modulates "
-                "nothing");
+                "nothing", unmet);
             bool spacing_ok = true;
             double pers[4] = {1400,1600,1800,2000};
             if (win_ok) {
@@ -1941,68 +2120,31 @@ int main(int argc, char** argv) {
                         if (std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(pers[ch])) > lambda) spacing_ok = false;
                 }
             }
-            checks.expect(c.loaded && win_ok && spacing_ok,
-                "P7-SPACING [p.164]: every channel's consecutive fetch spacing equals 2*AUDxPER within "
-                "lambda (2800,3200,3600,4000 ticks)");
+            dep_expect(checks, pre.ok(), c.loaded && win_ok && spacing_ok,
+                "P7-SPACING [p.164]" + (pc.spacing_ids.empty() ? "" : (" " + pc.spacing_ids)) + ": every channel's "
+                "consecutive fetch spacing equals 2*AUDxPER within lambda (2800,3200,3600,4000 ticks)", unmet);
+            p7_pre[bit_idx] = pre;
+            p7_const_ok[bit_idx] = c.loaded && win_ok && both_const;
+            p7_spacing_ok[bit_idx] = c.loaded && win_ok && spacing_ok;
+            ++bit_idx;
         }
     }
 
     // ================= P8: an attached channel's own DAC is bypassed ======
     {
-        struct P8Case { int ch; std::string bin; std::string ids; };
-        std::vector<P8Case> cases = {
-            {0, "/prog_s_av.bin",   ""},
-            {0, "/prog_s_ap.bin",   ""},
-            {0, "/prog_s_both.bin", ""},
-            {3, "/prog_s_dac3v.bin","A-adkcon.b03"},
-            {3, "/prog_s_dac3p.bin","A-adkcon.b07"},
-        };
-        bool sap_src_const = false;
-        for (auto& pc : cases) {
-            const bool omit = mutating("P8-OMIT");
-            // The contrast omits the attach write: the matching unattached reference session runs in
-            // the attached one's place (its session lines are not printed for it).
-            std::string bin = pc.bin;
-            Capture c;
-            if (omit) {
-                c = pc.ch == 0 ? rmod : (pc.bin == "/prog_s_dac3v.bin" ? rdac3v : rdac3p);
-            } else {
-                c = (pc.bin == "/prog_s_ap.bin") ? sap_cap : run_capture(dir + pc.bin, budget_for(200000));
-            }
-            int side = side_of[pc.ch];
-            auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
-            bool have_bounds = on && off;
-            // S-AP and S-DAC3-V/S-DAC3-P get no PC1-3 assertions anywhere
-            // else in this file (S-AV, S-BOTH already do, in P1 and P4).
-            if (!omit) {
-                if (pc.bin == "/prog_s_ap.bin")
-                    assert_pc123(checks, "S-AP", c, 0x10, 0x0003, {{0,4},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
-                else if (pc.bin == "/prog_s_dac3v.bin")
-                    assert_pc123(checks, "S-DAC3-V", c, 0x08, 0x0008, {{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
-                else if (pc.bin == "/prog_s_dac3p.bin")
-                    assert_pc123(checks, "S-DAC3-P", c, 0x80, 0x0008, {{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
-            }
-            auto fc = have_bounds ? fetch_cycles(c.log, ch_base(pc.ch), pc.ch == 0 ? 17 : 2, *on, *off) : std::vector<uint64_t>{};
-            uint64_t win_start = have_bounds && fc.size() >= 3 ? plus_La(fc[2]) : 0;
-            uint64_t win_end = have_bounds ? play_end(c.audio, side, *off) : 0;
-            bool win_ok = have_bounds && fc.size() >= 3 && side >= 0 && win_end > win_start;
-            bool constant = win_ok && is_constant(c.audio, win_start, win_end, side);
-            if (pc.bin == "/prog_s_ap.bin") sap_src_const = constant;
-            mut_note("P8-OMIT", pc.bin + " replaced by its unattached reference session", c);
-            checks.expect(c.loaded && win_ok && constant,
-                "P8-ATT [p.165,p.151,p.265]" + (pc.ids.empty() ? "" : (" " + pc.ids)) + " channel " + std::to_string(pc.ch) +
-                "'s own side has one value for the whole window while it is attached (" + pc.bin + ")");
-        }
-        // The unattached control -- the same channel, same data, period
-        // and volume, changes its own side >=2x per data word.
-        struct CtrlCase { int ch; const Capture* c; uint32_t len; std::string name; };
+        // The unattached controls -- the same channel, same data, period
+        // and volume, changes its own side >=2x per data word (P8-PRE). Their verdicts gate the P8-ATT
+        // line of the attached session each one belongs to.
+        struct CtrlCase { int ch; const Capture* c; uint32_t len; std::string name; const SessSpec* spec; };
         Capture rmod_ctrl = mutating("P8-PRE") ? run_capture(dir + "/prog_rmod_vol0.bin", budget_for(200000)) : rmod;
         mut_note("P8-PRE", "prog_rmod_vol0.bin", rmod_ctrl);
         std::vector<CtrlCase> ctrls = {
-            {0, &rmod_ctrl, 8, "R-MOD"}, {0, &rdacp4, 4, "R-DAC-P4"}, {0, &rdacvp, 8, "R-DAC-VP"},
-            {3, &rdac3v, 2, "R-DAC3-V"}, {3, &rdac3p, 2, "R-DAC3-P"},
+            {0, &rmod_ctrl, 8, "R-MOD", &kRMOD}, {0, &rdacp4, 4, "R-DAC-P4", &kRDACP4}, {0, &rdacvp, 8, "R-DAC-VP", &kRDACVP},
+            {3, &rdac3v, 2, "R-DAC3-V", &kRDAC3V}, {3, &rdac3p, 2, "R-DAC3-P", &kRDAC3P},
         };
-        for (auto& cc : ctrls) {
+        bool ctrl_pass[5] = {false, false, false, false, false};
+        for (size_t k = 0; k < ctrls.size(); ++k) {
+            auto& cc = ctrls[k];
             auto mk = markers(*cc.c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             int side = side_of[cc.ch];
@@ -2012,86 +2154,175 @@ int main(int argc, char** argv) {
                 auto comp = complete_runs(runs, *on, *off);
                 changes_enough = comp.size() >= 2 * cc.len;
             }
-            checks.expect(cc.c->loaded && cc.c->done.has_value() && have_bounds && changes_enough,
+            const Pre pre_c = sess_pre(nullptr, *cc.spec, *cc.c);
+            ctrl_pass[k] = pre_c.ok() && cc.c->loaded && cc.c->done.has_value() && have_bounds && changes_enough;
+            dep_expect(checks, pre_c.ok(), cc.c->loaded && cc.c->done.has_value() && have_bounds && changes_enough,
                 "P8-PRE [reference frame]: " + cc.name + " -- the same channel, unattached, "
-                "changes its own side at least twice per data word");
+                "changes its own side at least twice per data word", pre_c.unmet(cc.name));
+        }
+
+        struct P8Case { int ch; std::string bin; const SessSpec* spec; size_t ctrl; };
+        std::vector<P8Case> cases = {
+            {0, "/prog_s_av.bin",   &kSAV,   0},
+            {0, "/prog_s_ap.bin",   &kSAP,   1},
+            {0, "/prog_s_both.bin", &kSBOTH, 2},
+            {3, "/prog_s_dac3v.bin", &kDAC3V, 3},
+            {3, "/prog_s_dac3p.bin", &kDAC3P, 4},
+        };
+        bool sap_src_const = false;
+        bool att3_ok[2] = {false, false};   // S-DAC3-V, S-DAC3-P: the P8-ATT comparator holds
+        bool att3_gate[2] = {false, false}; // PC1-PC3 of the session and its P8-PRE control hold
+        for (auto& pc : cases) {
+            const bool omit = mutating("P8-OMIT");
+            // The session itself, as every other section grades it; S-AV's, S-AP's and S-BOTH's PC lines are
+            // printed where those sessions are graded, S-DAC3-V's and S-DAC3-P's here.
+            Capture c_att = (pc.bin == "/prog_s_ap.bin") ? sap_cap : run_capture(dir + pc.bin, budget_for(200000));
+            const bool own_pc = (pc.spec == &kDAC3V || pc.spec == &kDAC3P);
+            const Pre pre_att = sess_pre(own_pc ? &checks : nullptr, *pc.spec, c_att);
+            // The contrast omits the attach write: the matching unattached reference session is graded in
+            // the attached one's place.
+            const Capture& c = omit ? *ctrls[pc.ctrl].c : c_att;
+            int side = side_of[pc.ch];
+            auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
+            bool have_bounds = on && off;
+            auto fc = have_bounds ? fetch_cycles(c.log, ch_base(pc.ch), pc.ch == 0 ? 17 : 2, *on, *off) : std::vector<uint64_t>{};
+            uint64_t win_start = have_bounds && fc.size() >= 3 ? plus_La(fc[2]) : 0;
+            uint64_t win_end = have_bounds ? play_end(c.audio, side, *off) : 0;
+            bool win_ok = have_bounds && fc.size() >= 3 && side >= 0 && win_end > win_start;
+            bool constant = win_ok && is_constant(c.audio, win_start, win_end, side);
+            if (pc.bin == "/prog_s_ap.bin") sap_src_const = constant;
+            if (pc.spec == &kDAC3V) { att3_ok[0] = c.loaded && win_ok && constant; att3_gate[0] = pre_att.ok() && ctrl_pass[pc.ctrl]; }
+            if (pc.spec == &kDAC3P) { att3_ok[1] = c.loaded && win_ok && constant; att3_gate[1] = pre_att.ok() && ctrl_pass[pc.ctrl]; }
+            mut_note("P8-OMIT", pc.bin + " replaced by its unattached reference session", c);
+            const bool gate = pre_att.ok() && ctrl_pass[pc.ctrl];
+            dep_expect(checks, gate, c.loaded && win_ok && constant,
+                "P8-ATT [p.165,p.151,p.265] channel " + std::to_string(pc.ch) +
+                "'s own side has one value for the whole window while it is attached (" + pc.bin + ")",
+                std::string(pre_att.ok() ? "" : pre_att.unmet(pc.spec->name)) + ((!pre_att.ok() && !ctrl_pass[pc.ctrl]) ? " and " : "") +
+                (ctrl_pass[pc.ctrl] ? "" : "P8-PRE (" + ctrls[pc.ctrl].name + ")"));
         }
         // The AUDxAP joint line (5-p165.c20, 5-sig.audxap): both halves of "send data to the period
         // latch of the next channel instead of to the D->A converter", in S-AP -- channel 1's period
-        // follows channel 0's words (destination, P5's S-AP window) and channel 0's own side holds one
-        // value (source).
-        checks.expect(sap_dest_ok && sap_src_const,
-            "P8-JOINT-AP [p.165] 5-p165.c20,5-sig.audxap: in S-AP, channel 1's applied periods follow "
-            "channel 0's words cyclically in M_P4 (destination half, measured applied-period changes: " +
-            std::to_string(sap_dest_pop) + ") AND channel 0's own side holds one value once its data is "
-            "flowing (source half) -- both halves of the AUDxAP claim, one session");
+        // follows channel 0's words (destination, from the modulator's first restart) and channel 0's own
+        // side holds one value (source).
+        {
+            const Pre pre_sap = sess_pre(nullptr, kSAP, sap_cap);
+            dep_expect(checks, pre_sap.ok() && ctrl_pass[1], sap_dest_ok && sap_src_const,
+                "P8-JOINT-AP [p.165] 5-p165.c20,5-sig.audxap: in S-AP, channel 1's applied periods follow "
+                "channel 0's words cyclically in M_P4 (destination half, measured applied-period changes: " +
+                std::to_string(sap_dest_pop) + ") AND channel 0's own side holds one value once its data is "
+                "flowing (source half) -- both halves of the AUDxAP claim, one session",
+                std::string(pre_sap.ok() ? "" : pre_sap.unmet("S-AP")) + ((!pre_sap.ok() && !ctrl_pass[1]) ? " and " : "") +
+                (ctrl_pass[1] ? "" : "P8-PRE (R-DAC-P4)"));
+            checks.record("Scope of AUDxAP: graded jointly for channel 0 attached to channel 1 (S-AP) only; "
+                "for the other channels the destination half is P6-A (bits 5 and 6) and the converter half is "
+                "P8-ATT for channel 3 (S-DAC3-P), with no line holding both halves for x = 1, 2 "
+                "(half graded: 5-p165.c20, 5-sig.audxap).");
+        }
+        // Channel 3's two bits, each bundling "modulates nothing" (P7) with "disables channel 3's audio
+        // output" (P8-ATT): one joint line per bit.
+        {
+            auto joint_unmet = [&](size_t k, const std::string& p7name, const std::string& p8name) {
+                return std::string(p7_pre[k].ok() ? "" : p7_pre[k].unmet(p7name)) +
+                       ((!p7_pre[k].ok() && !att3_gate[k]) ? " and " : "") + (att3_gate[k] ? "" : "PC1-PC3 and P8-PRE of " + p8name);
+            };
+            dep_expect(checks, p7_pre[0].ok() && att3_gate[0], p7_const_ok[0] && att3_ok[0],
+                "P7-JOINT-V [p.150,p.151,p.265] A-adkcon.b03: channel 3's attach-volume bit modulates nothing "
+                "(P7-CONST, S-CH3-V) AND disables channel 3's audio output (P8-ATT, S-DAC3-V) -- both halves "
+                "of the claim", joint_unmet(0, "P7V", "S-DAC3-V"));
+            dep_expect(checks, p7_pre[1].ok() && att3_gate[1], p7_spacing_ok[1] && att3_ok[1],
+                "P7-JOINT-P [p.150,p.151,p.265] A-adkcon.b07: channel 3's attach-period bit modulates nothing "
+                "(P7-SPACING, S-CH3-P) AND disables channel 3's audio output (P8-ATT, S-DAC3-P) -- both halves "
+                "of the claim", joint_unmet(1, "P7P", "S-DAC3-P"));
+        }
     }
 
     // ================= P9: data-set lengths are independent ===============
     {
-        struct P9Case { std::string bin, mutbin; std::vector<int> mod_order; int lm, lc; };
+        struct P9Case { std::string bin; std::vector<int> mod_order; int lm, lc; const SessSpec* spec; };
         std::vector<P9Case> cases = {
-            {"/prog_s_lena.bin", "/prog_s_lena_len4.bin", {8,48,20,60,32}, 5, 3},
-            {"/prog_s_lenb.bin", "", {8,48}, 2, 7},
+            {"/prog_s_lena.bin", {8,48,20,60,32}, 5, 3, &kSLENA},
+            {"/prog_s_lenb.bin", {8,48}, 2, 7, &kSLENB},
         };
         for (auto& pc : cases) {
-            bool is_a = !pc.mutbin.empty();
+            bool is_a = pc.spec == &kSLENA;
             // The contrasts change the stimulus of S-LEN-A only; every line below grades with the page's
-            // own lengths (L_m = 5, L_c = 3).
+            // own lengths (L_m = 5, L_c = 3) and the page's data set.
             std::string bin = pc.bin;
-            if (is_a && (mutating("P9-A") || mutating("P9-C"))) bin = pc.mutbin;
-            if (is_a && mutating("P9-B")) bin = "/prog_s_lena_ch1len2.bin";
+            if (is_a) {
+                if (mutating("P9-A")) bin = "/prog_s_lena_len10.bin";
+                else if (mutating("P9-B")) bin = "/prog_s_lena_ch1len2.bin";
+                else if (mutating("P9-C")) bin = "/prog_s_lena_swap.bin";
+                else if (mutating("P9-D")) bin = "/prog_s_lena_per1write.bin";
+                else if (mutating("P9-WINDOW")) bin = "/prog_s_lena_ch1len1000.bin";
+            }
             Capture c = run_capture(dir + bin, budget_for(150000));
             mut_note("P9-A", bin, c);
             mut_note("P9-B", bin, c);
             mut_note("P9-C", bin, c);
+            mut_note("P9-D", bin, c);
+            mut_note("P9-WINDOW", bin, c);
             int side = side_of[1];
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
-            assert_pc123(checks, is_a ? "S-LEN-A" : "S-LEN-B", c, 0x01, 0x0003,
-                         {{0, (uint32_t)pc.lm}, {1, (uint32_t)pc.lc}},
-                         have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            // PC1, PC2 and PC3 are printed for the session as its ordinary program builds it. PC3's stepping
+            // is the check P9-A (channel 0) and P9-B (channel 1) make from the later of the two restarts, so
+            // a contrast of those lines replaces the session for P9-A to P9-D only and PC3 stays that of the
+            // ordinary program.
+            Capture c_ord = run_capture(dir + pc.bin, budget_for(150000));
+            const Pre pre = sess_pre(&checks, *pc.spec, c_ord);
+            const std::string which = pc.spec->name;
             // The window opens after EACH channel's own first restart (PC3's
             // own anchor, SPECIFICATION.md) -- independent of any value
             // either channel plays. A scan for "departure from 40" is fooled
             // by a first-pass overrun on channel 1's own data region
             // (graded in hrm/ch5-audio-dma-first-pass, not here), which can
             // spuriously open the window inside that overrun.
-            auto fr0_anchor = have_bounds ? fetch_records(c.log, ch_base(0), kChannelRegionWords, *on, *off) : std::vector<FetchRec>{};
-            auto fr1_anchor = have_bounds ? fetch_records(c.log, ch_base(1), kChannelRegionWords, *on, *off) : std::vector<FetchRec>{};
-            auto restart0 = first_restart_cycle(fr0_anchor);
-            auto restart1 = first_restart_cycle(fr1_anchor);
+            auto restart0 = have_bounds ? restart_in(c, 0, *on, *off) : std::optional<uint64_t>{};
+            auto restart1 = have_bounds ? restart_in(c, 1, *on, *off) : std::optional<uint64_t>{};
             uint64_t win_start = (restart0 && restart1) ? std::max(*restart0, *restart1) : 0;
             uint64_t win_end = have_bounds ? play_end(c.audio, side, *off) : 0;
             bool win_ok = have_bounds && restart0.has_value() && restart1.has_value() && win_end > win_start;
 
-            auto off0 = win_ok ? fetch_offsets(c.log, ch_base(0), pc.lm, win_start, *off) : std::vector<uint32_t>{};
-            auto off1 = win_ok ? fetch_offsets(c.log, ch_base(1), pc.lc, win_start, *off) : std::vector<uint32_t>{};
+            // The offsets of each channel are read in its own 4 KB region, so that a fetch beyond the
+            // channel's own length is seen.
+            auto off0 = win_ok ? fetch_offsets(c.log, ch_base(0), kChannelRegionWords, win_start, *off) : std::vector<uint32_t>{};
+            auto off1 = win_ok ? fetch_offsets(c.log, ch_base(1), kChannelRegionWords, win_start, *off) : std::vector<uint32_t>{};
             // Grade the stepping itself (previous+1 mod L), from the
             // channel's own first restart on.
             bool off0_ok = stepping_cycles(off0, (uint32_t)pc.lm) >= 0;
             bool off1_ok = stepping_cycles(off1, (uint32_t)pc.lc) >= 0;
-            const std::string which = is_a ? "S-LEN-A" : "S-LEN-B";
             bool window_met = win_ok && !off0.empty() && !off1.empty();
-            dep_expect(checks, true, window_met,
-                "P9-WINDOW [p.147] " + which + ": the window opens after each channel's own first "
-                "restart, with fetches recorded for both channels", "");
+            if (window_met) {
+                checks.expect(true, "P9-WINDOW [p.147] " + which + ": the window opens after each channel's own first "
+                    "restart, with fetches recorded for both channels");
+            } else {
+                checks.record("P9-WINDOW [p.147] " + which + ": precondition not met -- no window after each "
+                    "channel's own first restart with fetches recorded for both channels; P9-A to P9-D print NOT GRADED");
+            }
+            const bool gate = window_met && pre.ok();
+            const std::string unmet = std::string(pre.ok() ? "" : pre.unmet(which)) +
+                ((!pre.ok() && !window_met) ? " and " : "") + (window_met ? "" : "P9-WINDOW (" + which + ")");
 
-            // (c): applied-volume CHANGES only -- an unchanging segment
-            // still at channel 1's own written starting VOL 40 is not a
-            // change and must not be counted as one.
+            // (c): applied-volume CHANGES only -- the value in force at the window's edge is not a
+            // change (it was applied before the window opened), and neither is a later segment that
+            // repeats it.
             std::vector<int> applied; bool level_ok = true;
             if (win_ok && side >= 0) {
                 auto runs = runs_in_window(c.audio, win_start, win_end, side);
                 auto segs = segment_by_pair(runs);
                 int last_val = 40;
+                bool in_force = true;
                 for (auto& s : segs) {
                     int found = -1;
                     for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) { found = kv.first; break; }
                     if (found < 0) { level_ok = false; continue; }
+                    if (in_force) { last_val = found; in_force = false; continue; }
                     if (found != last_val) { applied.push_back(found); last_val = found; }
                 }
             }
+            checks.note("P9 " + which + ": the window has " + std::to_string(applied.size()) +
+                " applied-volume changes (need >=" + std::to_string(2 * pc.mod_order.size()) + ")");
             bool cyclic_ok = level_ok && applied.size() >= 2*pc.mod_order.size() &&
                 cyclic_consecutive(applied, pc.mod_order);
             // (d): channel 1's durations stay at D_1(200).
@@ -2105,22 +2336,22 @@ int main(int argc, char** argv) {
                 for (auto& s : comp)
                     if (D1.count(200) && std::fabs((double)(s.end - s.start) - D1[200]) > kClkRes) { dur_ok = false; break; }
             }
-            if (!window_met) {
-                not_graded(checks, "P9-A", "P9-WINDOW (" + which + ")");
+            if (!gate) {
+                not_graded(checks, "P9-A", unmet);
             } else {
                 checks.expect(c.loaded && off0_ok,
                     "P9-A [p.147,p.150]: channel 0's offsets step 0.." + std::to_string(pc.lm - 1) +
                     ",0,... (" + bin + ")");
             }
-            if (!window_met) {
-                not_graded(checks, "P9-B", "P9-WINDOW (" + which + ")");
+            if (!gate) {
+                not_graded(checks, "P9-B", unmet);
             } else {
                 checks.expect(c.loaded && off1_ok,
                     "P9-B [p.147,p.150]: channel 1's offsets step 0.." + std::to_string(pc.lc-1) +
                     ",0,...(" + bin + ")");
             }
-            if (!window_met) {
-                not_graded(checks, "P9-C", "P9-WINDOW (" + which + ")");
+            if (!gate) {
+                not_graded(checks, "P9-C", unmet);
             } else if (applied.empty()) {
                 checks.record("P9-C [p.150] 5-mod.c18,5-p150.c21: not evaluated -- the window's "
                     "applied-volume-change population is empty (measured population: " +
@@ -2130,8 +2361,8 @@ int main(int argc, char** argv) {
                     "P9-C [p.150] 5-mod.c18,5-p150.c21: channel 1's applied volumes are cyclically "
                     "consecutive across the modulator's own restarts, none skipped or repeated (" + bin + ")");
             }
-            if (!window_met) {
-                not_graded(checks, "P9-D", "P9-WINDOW (" + which + ")");
+            if (!gate) {
+                not_graded(checks, "P9-D", unmet);
             } else if (dur_pop == 0) {
                 checks.record("P9-D: not evaluated -- the window's complete-sample population is "
                     "empty (measured population: " + std::to_string(dur_pop) + ") (" + bin + ")");
@@ -2141,13 +2372,16 @@ int main(int argc, char** argv) {
                     "(" + bin + ")");
             }
         }
+        checks.record("Scope of the claim that the data-set lengths are completely independent: graded for two "
+            "length pairs, 5 and 3 (S-LEN-A) and 2 and 7 (S-LEN-B), the modulator once longer and once "
+            "shorter than the modulated channel's (half graded: 5-mod.c18, 5-p150.c21).");
     }
 
     // ================= P10: DMA-request phase ==============================
     // p.164: F_1 is thrown away, F_2 arrives and enters state 010 (the record entry PC7-CAL calibrates), and
     // the main loop continues; the n-th fetch of the page is record entry r + n - 2 in every session, because
     // the start-up is the same in every session. Every line below grades only fetches from the page's F_3 on,
-    // in that frame, and prints NOT GRADED where the frame is not established.
+    // in that frame, and prints NOT GRADED where the frame is not established or PC1-PC3 of its session fail.
     {
         auto frame_met = [&](const std::vector<FetchRec>& rec) -> bool {
             return cal_ok && d_mod > 0 && rec.size() > cal.r + 3 && rec[cal.r].offset == 0;
@@ -2187,25 +2421,37 @@ int main(int argc, char** argv) {
             }
             return true;
         };
-        Capture av = run_capture(dir + (mutating("P10-AV") ? "/prog_s_av_per6000.bin" : "/prog_s_av.bin"), budget_for(200000));
+        Capture av = mutating("P10-AV") ? run_capture(dir + "/prog_s_av_per6000.bin", budget_for(200000))
+                   : mutating("P10-AV-PHASE") ? sap_cap
+                   : run_capture(dir + "/prog_s_av.bin", budget_for(200000));
         Capture ap = mutating("P10-AP") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000)) : sap_cap;
         Capture both = mutating("P10-BOTH") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000))
                                             : run_capture(dir + "/prog_s_both.bin", budget_for(110000));
         mut_note("P10-AV", "prog_s_av_per6000.bin", av);
+        mut_note("P10-AV-PHASE", "prog_s_ap.bin in place of prog_s_av.bin", av);
         mut_note("P10-AP", "prog_s_av.bin in place of prog_s_ap.bin", ap);
         mut_note("P10-BOTH", "prog_s_av.bin in place of prog_s_both.bin", both);
+        // Each session's own PC lines gate its P10 line; a contrast that replaces a capture is graded
+        // against the session it stands in for.
+        const Pre pre_av = sess_pre(nullptr, kSAV, mutating("P10-AV-PHASE") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000)) : av);
+        const Pre pre_ap = sess_pre(nullptr, kSAP, mutating("P10-AP") ? sap_cap : ap);
+        const Pre pre_both = sess_pre(nullptr, kSBOTH, mutating("P10-BOTH") ? run_capture(dir + "/prog_s_both.bin", budget_for(110000)) : both);
         auto av_rec = rec_of(av), ap_rec = rec_of(ap), both_rec = rec_of(both);
-        dep_expect(checks, frame_met(av_rec), av.loaded && av.done.has_value() && phase_normal_ok(av_rec),
+        auto p10_unmet = [&](const Pre& pre, const std::string& sess, bool frame) {
+            return std::string(pre.ok() ? "" : pre.unmet(sess)) + ((!pre.ok() && !frame) ? " and " : "") +
+                   (frame ? "" : "PC7-CAL and a start-up frame in " + sess);
+        };
+        dep_expect(checks, pre_av.ok() && frame_met(av_rec), av.loaded && av.done.has_value() && phase_normal_ok(av_rec),
             "P10-AV [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- in the calibrated frame F_n - F_2 lies within lambda of "
             "2(n-3)*D_mod for every n >= 3, 'as they do in normal operation' (011->010)",
-            "PC7-CAL and a start-up frame in S-AV");
+            p10_unmet(pre_av, "S-AV", frame_met(av_rec)));
         // F58.loop.attach kept only here (the attach-period bracket S-AP
         // alone exercises); napnav's DMA-half is recorded, not
         // re-asserted (it is the same formula PC7 already grades).
-        dep_expect(checks, frame_met(ap_rec), ap.loaded && ap.done.has_value() && phase_ap_ok(ap_rec),
+        dep_expect(checks, pre_ap.ok() && frame_met(ap_rec), ap.loaded && ap.done.has_value() && phase_ap_ok(ap_rec),
             "P10-AP [p.164] 5-p164.c34,5-sm.c34,F58.loop.attach: S-AP -- the phase of the fetches (F_n - F_2 mod "
             "2*D_mod, n >= 3) is R-MOD's plus D_mod, within lambda (010->011)",
-            "PC7-CAL and a start-up frame in S-AP");
+            p10_unmet(pre_ap, "S-AP", frame_met(ap_rec)));
         checks.record("5-p165.c22, 5-sig.napnav: the DMA-request half is graded only through the phases above "
             "(P10-AV, P10-AP, P10-BOTH); no assertion isolates napnav's own contribution beyond them, and the "
             "interrupt half is not graded at all (see spec's partial-claims table).");
@@ -2214,10 +2460,10 @@ int main(int argc, char** argv) {
             "or register value in this package distinguishes one way of combining from another, "
             "so this is not turned into an assertion (SPECIFICATION.md, claims not turned into a "
             "proposition).");
-        dep_expect(checks, frame_met(both_rec), both.loaded && both.done.has_value() && spacing_both_ok(both_rec),
+        dep_expect(checks, pre_both.ok() && frame_met(both_rec), both.loaded && both.done.has_value() && spacing_both_ok(both_rec),
             "P10-BOTH [p.164] 5-p164.c35,5-sm.c35: S-BOTH -- the fetches from the page's F_3 on are D_mod apart, "
             "within lambda (both transitions)",
-            "PC7-CAL and a start-up frame in S-BOTH");
+            p10_unmet(pre_both, "S-BOTH", frame_met(both_rec)));
     }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);

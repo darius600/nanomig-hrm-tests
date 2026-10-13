@@ -7,8 +7,9 @@
 ; sets it to 3000 (PC7's own contrast). FRAMEMUT writes M_on late, after a
 ; delay following the DMACON enable (PC7 frame's own contrast). None of the
 ; three is combined with another. NODMAMUT omits DMAEN from the DMACON enable
-; (PC2's own contrast), NOAUDMUT omits AUD0EN (PC3's own contrast) and VOL0MUT
-; sets AUD0VOL = 0 (PC7-CAL's and P8's R-MOD contrast).
+; (PC2's own contrast), LEN7MUT sets AUD0LEN = 7 (PC3's own contrast), PER6000MUT
+; sets AUD0PER = 6000 from the start (PC7-CAL's own contrast) and VOL0MUT sets
+; AUD0VOL = 0 (P3-PRE's and P8-PRE's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -25,7 +26,15 @@ desc:
         ifd     VOL0MUT
         dc.w    8,4000,0
         else
+        ifd     LEN7MUT
+        dc.w    7,4000,63
+        else
+        ifd     PER6000MUT
+        dc.w    8,6000,63
+        else
         dc.w    8,4000,63
+        endif
+        endif
         endif
         dc.l    0
         dc.w    0,0,0
@@ -37,11 +46,7 @@ desc:
         ifd     NODMAMUT
         dc.w    $8001                   ; DMACON on: AUD0EN only, DMAEN omitted
         else
-        ifd     NOAUDMUT
-        dc.w    $8200                   ; DMACON on: DMAEN only, AUD0EN omitted
-        else
         dc.w    $8201                   ; DMACON on: DMAEN + AUD0EN
-        endif
         endif
         dc.w    $0001                   ; DMACON off
         dc.l    200000                  ; duration, ticks

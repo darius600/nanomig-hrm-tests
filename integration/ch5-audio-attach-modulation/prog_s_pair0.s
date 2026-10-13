@@ -2,7 +2,8 @@
 ; modulates ch1's volume (SQ, target, left). ch2/ch3 are tripwires
 ; (W_V, silent). See SPECIFICATION.md, P6.
 ;
-; NOATTACH set: omit the attach write (target then keeps VOL 40 always).
+; SWAP set: the second and third modulator words are exchanged (P6-A's contrast:
+; every value is still a word of the modulator's data set, the order is not).
 ; EXTRA set: ch3 (the tripwire on ch0's own side) is given a non-zero
 ; starting AUDxVOL (48) instead of 0, with the ordinary attach write
 ; ($8001) unchanged: ch3 becomes audible on its own, so the "other side
@@ -15,7 +16,12 @@
         include "ch5_regs.i"
 
         org     CH0_DATA
-m6v_data:       dc.w    $0008,$0030,$0014,$003C
+m6v_data:
+        ifd     SWAP
+        dc.w    $0008,$0014,$0030,$003C
+        else
+        dc.w    $0008,$0030,$0014,$003C
+        endif
         org     CH1_DATA
 sq_data:        dc.w    $649C,$649C,$649C,$649C
         org     CH2_DATA
@@ -40,11 +46,7 @@ desc:
         else
         dc.w    2,2000,0
         endif
-        ifd     NOATTACH
-        dc.w    $8000
-        else
         dc.w    $8001
-        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    110000

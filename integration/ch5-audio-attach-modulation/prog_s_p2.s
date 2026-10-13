@@ -2,16 +2,22 @@
 ; ADKCON bit 4) modulates ch1's period; ch1 plays RAMP, sample for sample,
 ; at its own volume. See SPECIFICATION.md.
 ;
-; NOATTACH set: P2's own contrasting case (omit the ADKCON $8010 write;
-; ch1 then plays at 700 throughout).
+; SWAP: the eighth and ninth modulator words (464 and 272) are exchanged (P2-A's
+; contrast: every value is still a word of M_P, the order is not).
 
         include "nanomig.i"
         include "ch5_regs.i"
 
         org     CH0_DATA
-mp_data:        dc.w    $0190,$0191,$0192,$0194,$0198,$0180,$01B0,$01D0
-                dc.w    $0110,$4190,$0090,$8190,$0390,$2190,$0590,$1190
-                dc.w    $0990
+mp_data:
+        ifd     SWAP
+        dc.w    $0190,$0191,$0192,$0194,$0198,$0180,$01B0,$0110
+        dc.w    $01D0,$4190,$0090,$8190,$0390,$2190,$0590,$1190
+        else
+        dc.w    $0190,$0191,$0192,$0194,$0198,$0180,$01B0,$01D0
+        dc.w    $0110,$4190,$0090,$8190,$0390,$2190,$0590,$1190
+        endif
+        dc.w    $0990
         org     CH1_DATA
 ramp_data:      dc.w    $0818,$2838,$4858,$6878,$F8E8,$D8C8,$B8A8,$9888
 
@@ -28,14 +34,10 @@ desc:
         dc.w    0,0,0
         dc.l    0
         dc.w    0,0,0
-        ifd     NOATTACH
-        dc.w    $8000
-        else
         dc.w    $8010
-        endif
         dc.w    $8203
         dc.w    $0003
-        dc.l    1400000
+        dc.l    2600000
 
 start:
         lea     CUSTOM,a0

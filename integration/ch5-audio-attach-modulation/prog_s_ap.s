@@ -1,12 +1,20 @@
-; prog_s_ap.s -- S-AP [P5, P10]: ch0 (M_P4, attach period, ADKCON bit 4)
+; prog_s_ap.s -- S-AP [P5, P8, P10]: ch0 (M_P4, attach period, ADKCON bit 4)
 ; modulates ch1's period (SQ, unaffected in volume). See SPECIFICATION.md.
-; PER6000 set: AUD0PER=6000 instead of 4000 (P5's contrasting case).
+; PER6000: AUD0PER=6000 instead of 4000 (P5's contrast).
+; SWAP: the second and third modulator words are exchanged (P8-JOINT-AP's contrast
+;   for the destination half: every value is still a word of M_P4, the order is not).
+; SHORT: the session lasts 55000 ticks (P5-POP-AP's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
 
         org     CH0_DATA
-mp4_data:       dc.w    $012C,$02BC,$01F4,$0384
+mp4_data:
+        ifd     SWAP
+        dc.w    $012C,$01F4,$02BC,$0384
+        else
+        dc.w    $012C,$02BC,$01F4,$0384
+        endif
         org     CH1_DATA
 sq_data:        dc.w    $649C,$649C,$649C,$649C
 
@@ -30,7 +38,11 @@ desc:
         dc.w    $8010
         dc.w    $8203
         dc.w    $0003
+        ifd     SHORT
+        dc.l    55000
+        else
         dc.l    110000
+        endif
 
 start:
         lea     CUSTOM,a0
