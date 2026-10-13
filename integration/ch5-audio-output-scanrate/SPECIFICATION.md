@@ -439,9 +439,9 @@ A failing precondition means "not graded", never green.
 |---|---|---|---|
 | A1 | Audio DMA for the table ran, pass after pass, from its first restart on, long enough to cover the window | F2's anchor check holds from t_2 on, with at least N + 3 reads of the table's first word (t_1 ... t_(N+3)), and the last of them lies at or after the window's end e (2.5). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0). Graded once per program that reads the output: the audio program (T1, T2, T3) and T2S's own program | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
-| A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples and equals the programmed held level r_T (2.5) | AUD0PER = 129 for T1 only (the other tables keep 128): T1's held levels last 1032 samples against the programmed 1024, so the median run is not r_T and A3 goes red for T1. A4, A5 and the propositions of T1 are then not graded |
-| A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
-| A5 | The window holds the programmed population of held levels, nothing dropped or added | L has exactly N x K entries: N passes of K held levels, the last level kept (p. 139 and p. 145: the table repeats after the programmed word count; p. 140: one period per sample). N and K come from the table (2.6), not from the output | (1) A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short by one per pass. (2) A systematic merge (T1 with every pair of adjacent codes equal: $0000, $2020, $4040, $6060): every level lasts twice as long and there are half as many; L has half of N x K entries, although the median held level doubles with it |
+| A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples and equals the programmed held level r_T (2.5) | (1) AUD0PER = 129 for T1 only (the other tables keep 128): T1's held levels last 1032 samples against the programmed 1024, so the median run is not r_T and A3 goes red for T1. (2) A systematic merge (T1 with every pair of adjacent codes equal: $0000, $2020, $4040, $6060): every level lasts twice as long, the median run is 2048 against the programmed 1024, and A3 goes red for T1. A4, A5 and the propositions of T1 are then not graded |
+| A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | T1's AUD0VOL is set to 0 seven lines after its DMA starts (p. 266: "000000=no output"), inside the window: the output is flat from there on, the runs before it keep their length (A3 holds) and L has fewer than 2K entries |
+| A5 | The window holds the programmed population of held levels, nothing dropped or added | L has exactly N x K entries: N passes of K held levels, the last level kept (p. 139 and p. 145: the table repeats after the programmed word count; p. 140: one period per sample). N and K come from the table (2.6), not from the output | (1) A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short by one per pass |
 | A6 | The color-clock time unit holds in the run | F1's anchor (2.4) holds in the run itself: over the interval from the program's first to its last read of an audio table, the mean spacing of all refresh groups in it is 227-228 color clocks, using 8 `clk_sys` cycles per color clock. The window of 2.5 is built with that unit, so A1 (its last read against the window's end), A3-A5 and the propositions are graded behind A6 | ECS only: before the table is started, VTOTAL = 524, HTOTAL = 113 and BEAMCON0 = $00A0, F1's contrasting case (2.4). Lines then last 114 color clocks and A6 goes red. The OCS configuration has no such registers, and A6 stays green there |
 
 Why A5 counts N x K and builds its window from the programmed period. The
@@ -452,7 +452,8 @@ uniformly: a systematic merge doubles the observed level and halves both the
 population found and the population expected. Here the level comes from the
 programmed period (2.5, step 1), the window from that level, and the expected
 population from the table's N and K, so the output is compared with the
-programming and not with itself. The window's end is not a DMA read (2.5), so
+programming and not with itself; a systematic merge already fails A3, which
+compares the median run with the programmed level. The window's end is not a DMA read (2.5), so
 the unspecified phase between a read and the output transition it feeds does
 not enter the count, and the last level is graded like the rest.
 
@@ -858,9 +859,9 @@ otherwise.
   the page's 227-228 window. 8 `clk_sys` cycles per color clock (`kCck`) is
   taken from the design, since `nanomig_harness.h` declares no such ratio;
   B4, measured in that same interval, guards it. In the audio runs A6 does
-  the same over the interval of each program's own audio reads: 227.00 color
-  clocks, ECS/PAL and OCS/PAL, on both cores (prog_audio: 1786 groups on
-  fx68k, 1681 on TG68K; prog_t2s: 254 and 237).
+  the same over the interval of each program's own audio reads, averaging
+  every group of it: 227.00 color clocks, ECS/PAL and OCS/PAL, on both cores
+  (prog_audio: 1786 groups on fx68k, 1681 on TG68K; prog_t2s: 254 and 237).
 - **Audio port scale.** `nanomig_harness.h` documents only the width of
   `audio_left`/`audio_right` ("15 bits significant"), not their sign or
   scale. LEVELS(W) (2.5) reads the raw magnitude and recovers a continuous
@@ -913,6 +914,15 @@ otherwise.
   the second run comes at cycle 2341125 on fx68k and 2340965 on TG68K, between
   the two reads. P1 goes red and exactly one entry of L, the last, differs
   from the level one pass earlier.
+- **A3's contrasting cases.** With AUD0PER = 129 for T1 only, T1's median run
+  is 1032 samples against the programmed 1024 and A3 goes red for T1, on both
+  cores in ECS/PAL and OCS/PAL; A4, A5, P1 and P2 of T1 are not graded, and T2
+  and T3 are unchanged. The systematic merge (T1 with every pair of adjacent
+  codes equal) gives a median run of 2048 and also fails A3.
+- **A4's contrasting case.** With T1's AUD0VOL set to 0 seven lines after its
+  DMA starts, the window holds 5 runs on fx68k and 4 on TG68K in both
+  configurations, the median run is still 1024 (A3 holds) and A4 goes red for
+  T1.
 - **A6's contrasting case.** With VTOTAL, HTOTAL and BEAMCON0 rewritten before
   the tables start (ECS only), the refresh groups recur 114.00 color clocks
   apart in prog_audio's and prog_t2s's runs on both cores, and A6 goes red in
