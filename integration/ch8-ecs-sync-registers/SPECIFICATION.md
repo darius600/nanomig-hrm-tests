@@ -95,11 +95,11 @@ HSSTOP's stop-position effect).
 c4 and c5 each also say which edge of the sync pulse the register sets (sync
 stop, sync start). P3 and P4 cannot show that, and this is a stated limit of
 the package: both grade a move relative to the picture (the landmark M of
-P3 point 3), and the scan doubler regenerates sync (`nanomig.v` selects the
-doubler; `Amber.v` restarts its read-out at the incoming HSYNC edge), so no
-page-anchored reference for which edge moved survives to the boundary the
-test sees. The ids therefore stay on the RECORDED lines of c4 and c5, with
-this reason, and on no graded line.
+P3 point 3), and the video output the test sees has passed a line doubler
+that re-times the chip's lines (as for HCENTER above), so no page-anchored
+reference for which edge moved survives to the boundary the test sees. The
+ids therefore stay on the RECORDED lines of c4 and c5, with this reason, and
+on no graded line.
 
 ## 2. Page notes
 
@@ -216,17 +216,29 @@ one that comes from a program that never finished.
   runtime by anchor A3 below, which requires every graded period -- not
   only the first -- to convert exactly (no remainder) to 227 or 228, the
   page's own PAL line length. Every other check that consumes this ratio
-  (P1-COVER, P2-LINES, A2, P2(a) and P2(b)) records "precondition not met"
-  unless its own anchor A3 holds.
+  (P1-COVER, P2-LINES, A2, P2(a), P2(b), P2(c), P2-CONTRAST and A5-REF)
+  records "precondition not met" unless both A3 lines hold.
 - An *output pixel clock* is the video output's sample clock.
 - Horizontal counts written to HTOTAL and read from VHPOSR are in the same
   unit. HTOTAL uses "h8 h7 h6 h5 h4 h3 h2 h1" in bits 7 to 0 (p.304).
   VHPOSR bits 7 to 0 are "The horizontal position, bits H8-H1" (p.216),
   "RESOLUTION = 1/160 of screen width (280 ns)" (p.285).
 
-**Shared preconditions.** Every graded run asserts these first. A run that
-fails one reports "precondition not met" and is neither green nor red.
+**Shared preconditions.** Every graded run asserts these first. Every graded
+line of a run is gated on that run's own PC-ID and PC-MARK, and names every
+other precondition it consumes; a line whose gate fails reports "precondition
+not met" with the names of the preconditions that failed, and is neither
+green nor red. A contrast turns red only the line it targets: the lines gated
+on it report "precondition not met", and every other precondition stays green.
 
+- **FIXTURE (a program-stored constant reads back).** Program H stores the
+  constant `$C3A5` to a word FIXCONST in Chip memory before it reads anything
+  back, and the test reads the word back with the harness's `peek_logical()`
+  call, the same call that reads ID. It is asserted first, so every later read
+  through that call rests on it. It stores nothing the markers or the samples
+  depend on.
+  - *Contrast:* the same program storing `$DEAD` instead. FIXTURE fails; the
+    markers, the samples and DONE are the normal run's.
 - **PC-ID (ECS and PAL).** The program's first register read is `VPOSR`,
   stored to a Chip-memory word ID before any BEAMCON0 write. Bits 14 to 8
   (I6 to I0) must hold the value p.299 gives for the enhanced Agnus in PAL:
@@ -238,10 +250,13 @@ fails one reports "precondition not met" and is neither green nor red.
     read "30" ($30 or $1E) and fail PC-ID.
 - **PC-MARK (program reached its register writes).** MARK1 appears at the
   port. Where MARK2 is defined, it appears later than MARK1.
-  - *Contrast:* the same program with MARK1's own write omitted. No marker
-    appears, PC-MARK fails, and the rest of the program -- including
+  - *Contrast (MARK1):* the same program with MARK1's own write omitted. No
+    marker appears, PC-MARK fails, and the rest of the program -- including
     DONE -- still runs: an honest mutation targets the one clause under
     test, not the whole program.
+  - *Contrast (MARK2 later):* the same program with MARK2's write omitted.
+    MARK1 appears and nothing follows it, PC-MARK fails through its second
+    clause alone, and the rest of the program still runs.
 
 ## 4. Programs
 
@@ -249,7 +264,8 @@ fails one reports "precondition not met" and is neither green nor red.
 
 1. `INTENA ← $7FFF`, `DMACON ← $07FF`, then `BPLCON0 ← $0000`. BPLCON0
    clears LPEN, so VHPOSR reads the beam and not the light pen (p.216, p.271).
-2. Read `VPOSR` and store it to ID.
+2. Store `$C3A5` to FIXCONST (FIXTURE, section 3), then read `VPOSR` and
+   store it to ID.
 3. `HTOTAL ← N`, then `VTOTAL ← $0138`.
    - p.298 marks VTOTAL "(VARBEAMEN=1)" as well, so VARBEAMEN also brings
      VTOTAL into effect. p.304 says "VTOTAL contains the line number at
@@ -287,8 +303,8 @@ refresh (p.194). The run lasts until MARK2 has been written.
    "Causes copper to load PC from COP1LC"). Only then
    `DMACON ← $8380` (SET, DMAEN, BPLEN, COPEN; p.30, p.278).
 5. `HSSTRT ← s`, then `HSSTOP ← e`.
-6. `HTOTAL ← $00E2`, then `VTOTAL ← $0138`, before BEAMCON0: B now sets
-   VARBEAMEN, and HTOTAL and VTOTAL each carry "(VARBEAMEN=1)" (p.280,
+6. `HTOTAL ← $00E2`, then `VTOTAL ← $0138`, before BEAMCON0: B sets
+   VARBEAMEN in every S run, and HTOTAL and VTOTAL each carry "(VARBEAMEN=1)" (p.280,
    p.298), so the enabled comparators must not use an unprogrammed value
    -- the same reasoning as Program H's own HTOTAL/VTOTAL writes. $00E2 is
    "The horizontal position has a maximum value of $E2" (p.23); $0138 =
@@ -352,22 +368,50 @@ LOLDIS to HSSTRT or HSSTOP, and P3/P4 do not grade the line's own length
 In each contrast pair, only BEAMCON0's enable bit differs. The program still
 finishes, and PC-ID and PC-MARK still hold.
 
-Precondition contrast runs:
+Precondition contrast runs. Each replaces the named run's capture, so every
+line that consumes the run sees it; the line named in the last column is the
+only one that goes red, and the lines gated on it report "precondition not
+met".
 
 | Run | Change | Must fail |
 |---|---|---|
-| X-OCS | H1 with the harness set to OCS | PC-ID |
-| X-NTSC | H1 with the harness set to NTSC | PC-ID |
-| X-HALT-H | H1 with MARK1's write omitted | PC-MARK |
-| X-HALT-S | SA with MARK1's write omitted | PC-MARK |
-| X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE |
-| X-SHORT | H1 with a `DBRA` count of 16 blocks (1024 samples) | P1-LINES, P2-LINES |
-| X-BURST | H1 and H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER (both runs) |
-| X-NOBPL | SA with PLANE holding only 32 of its 256 lines of pattern | P3/P4-LINES |
-| X-AUD0 | H1, H2, H1c and H2c, each with audio channel 0 DMA started | A2 (all four) |
-| X-A4DOUBLE | SA with data words 14-19 of every line changed to two white spans instead of one | A4 |
+| FIXTURE | H1 storing `$DEAD` to FIXCONST | FIXTURE |
+| X-OCS | H1 with the harness set to OCS | PC-ID [H1] |
+| X-NTSC | H1 with the harness set to NTSC | PC-ID [H1] |
+| X-HALT-H | H1 with MARK1's write omitted | PC-MARK [H1] |
+| X-NOMARK2 | H1 with MARK2's write omitted | PC-MARK [H1] (second clause) |
+| X-HALT-S | SA with MARK1's write omitted | PC-MARK [SA] |
+| X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE [H1] |
+| X-SHORT, X-SHORT-H2, X-SHORT-H1C, X-SHORT-H2C | the run with a `DBRA` count of 16 blocks (1024 samples), followed by a delay loop that keeps the MARK1..MARK2 window as long as the normal run's | P1-LINES [run] |
+| X-LATE, X-LATE-H2, X-LATE-H1C, X-LATE-H2C | the run with all 16384 samples but MARK1 written only when 15 blocks remain | P2-LINES [run] |
+| X-BURST, X-BURST-H2 | H1 / H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER [H1] / [H2] |
+| X-AUD0, X-AUD0-H2, X-AUD0-H1C, X-AUD0-H2C | the run with audio channel 0 DMA started (p.145: location, length 8, volume 64, period 124, enable; p.140 and p.266 give 124 as the smallest period, p.140 gives 64 as the maximum volume) | A2 [run] |
+| X-NOBPL, X-NOBPL-SB, X-NOBPL-SC, X-NOBPL-SA0, X-NOBPL-SB0, X-NOBPL-SC0 | the run with PLANE holding only 32 of its 256 lines of pattern | P3/P4-LINES [run] |
+| X-A4DOUBLE | SA with every line's data words changed to 6 black, 6 white, 2 black, 6 white | A4 (transition clause) |
+| X-A4WIDTH | SA with every line's data words changed to 14 black, 5 white, 1 black | A4 (width clause) |
+| X-SHIFT-SA, -SB, -SC, -SA0, -SB0, -SC0 | the run whose lines 128 to 255 of PLANE carry the white span one data word earlier, same width | P3/P4(a) [run] |
+| X-A5REF | SA0 with audio channel 0 DMA started on a one-word buffer at Chip address 0 (p.145; period 124) | A5-REF |
+| P3C | SB with HSSTOP also changed (s = `$0020`, e = `$0040`) | P3(c) |
+| P4C | SC with HSSTRT also changed (s = `$0020`, e = `$0040`) | P4(c) |
 
-A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
+Proposition contrasts. Each feeds other values to one line's unchanged
+comparator and changes nothing else; section 7 lists the line each turns red.
+
+| Selector | Input replaced |
+|---|---|
+| A1, A1-H2 | H1's / H2's graded samples in A1 [H1c] / A1 [H2c] |
+| A3, A3-H2 | H1's / H2's graded periods in A3 [H1c] / A3 [H2c] |
+| P1, P1-H2 | H1c's / H2c's graded samples in P1 [H1] / P1 [H2] |
+| P1C, P1C-H2 | H1's / H2's graded samples in P1-CONTRAST [H1c] / [H2c] |
+| P2A, P2A-H2 | a run of H1 / H2 whose HTOTAL is written again mid-loop, in P2(a) [H1] / [H2] |
+| P2B | H1c's and H2c's first periods in P2(b) |
+| P2C | H1c's first period in P2(c) |
+| P2CON | H1's and H2's periods in P2-CONTRAST |
+| A5 | SB's lines in place of SB0's in A5 |
+| P3-NOMOVE | SA's lines in place of SB's in P3(b) |
+| P4-NOMOVE | SA's lines in place of SC's in P4(b) |
+| P3CON | SB's lines in place of SB0's in P3-CONTRAST |
+| P4CON | SC's lines in place of SC0's in P4-CONTRAST |
 
 ## 6. Propositions
 
@@ -400,13 +444,15 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    lines (p.216), so the graded lines include a field boundary and vertical
    blanking lines.
 5. **Preconditions.**
-   - PC-ID and PC-MARK.
-   - **P1-LINES:** the graded samples contain at least 320 wraps.
+   - PC-ID and PC-MARK of the run.
+   - **P1-LINES [H1], [H2], [H1c], [H2c]:** the graded samples of the run
+     contain at least 320 wraps. The contrast runs' lines gate their
+     contrasts.
    - **P1-COVER [H1], P1-COVER [H2]:** consecutive sample stores at the
      port in the graded range are never more than 16 color clocks apart
      (compared as raw clk_sys cycles against 16 × the clk_sys-per-CCK
      ratio, not after integer-dividing first; this consumes kCck and
-     records "precondition not met" unless its own anchor A3 holds), and
+     records "precondition not met" unless both A3 lines hold), and
      at least one graded sample has H ≥ N − 16, for each run. Together
      these show that the sampling reached across the whole line, including
      its end: they establish that no *readback* was missed, which is the
@@ -418,16 +464,19 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
 6. **Contrasting cases.**
    - Runs H1c and H2c (VARBEAMEN = 0, all else equal). Here the counter
      runs its standard course, "a value of $0 to $E2" (p.23). At least one
-     graded sample must have H > N: > $B0 in H1c and > $C0 in H2c.
-   - For the preconditions: X-SHORT fails P1-LINES, X-BURST fails
-     P1-COVER (both runs), and X-OCS, X-NTSC and X-HALT-H fail the shared
+     graded sample must have H > N: > $B0 in H1c and > $C0 in H2c. These
+     two lines are P1-CONTRAST [H1c] and P1-CONTRAST [H2c]; each is gated
+     on its own run's PC-ID, PC-MARK and P1-LINES and on nothing else.
+   - For the preconditions: the X-SHORT runs fail P1-LINES, the X-BURST runs
+     fail P1-COVER, and X-OCS, X-NTSC, X-HALT-H and X-NOMARK2 fail the shared
      ones.
 7. **Reference frame.** The H field of VHPOSR (bits 7 to 0, H8 to H1) is
    compared with HTOTAL's field (bits 7 to 0, h8 to h1). The bit names are
    the same on p.216, p.285 and p.304.
    - **Anchor A1:** in H1c and H2c, the largest graded H lies between
      $E2 − 16 and $E3. p.23 gives $E2. With LOLDIS set, a 228-count line
-     would reach $E3 (page note 3).
+     would reach $E3 (page note 3). A1 is gated on its run's PC-ID, PC-MARK
+     and P1-LINES and gates no other line.
 
 ### P2. With VARBEAMEN set, every line lasts N or N+1 color clocks, and HTOTAL changes it count for count
 
@@ -469,16 +518,17 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    320, which crosses a field boundary. LOLDIS is set so that no page
    predicts alternating lengths (page note 3).
 5. **Preconditions.**
-   - PC-ID and PC-MARK.
-   - **P2-LINES:** at least 320 graded periods. Consumes kCck (via the
-     32-CCK refresh grouping); records "precondition not met" unless its
-     own anchor A3 holds.
+   - PC-ID and PC-MARK of the run.
+   - **P2-LINES [H1], [H2], [H1c], [H2c]:** at least 320 graded periods in
+     the run. Consumes kCck (via the 32-CCK refresh grouping); records
+     "precondition not met" unless both A3 lines hold. The contrast runs'
+     lines gate P2-CONTRAST and A2 [H1c], A2 [H2c].
 6. **Contrasting cases.**
    - Runs H1c and H2c. With VARBEAMEN = 0, the page's condition for HTOTAL
      does not hold. Every graded period in H1c equals every graded period in
-     H2c, so the HTOTAL value has no effect.
-   - For the preconditions: X-SHORT fails P2-LINES, and X-OCS, X-NTSC and
-     X-HALT-H fail the shared ones.
+     H2c, so the HTOTAL value has no effect (P2-CONTRAST).
+   - For the preconditions: the X-LATE runs fail P2-LINES, and X-OCS,
+     X-NTSC, X-HALT-H and X-NOMARK2 fail the shared ones.
 7. **Reference frame.** The line start is the first refresh access of a
    group. p.194: "The time-slot allocation per horizontal line is: 4 cycles
    for memory refresh". p.285: "There are four refresh time slots". Figure
@@ -486,15 +536,16 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    ("MEMORY REFRESH DMA TIME" from $0). Its footnote says the chart has been
    "adjusted", so only one group per line is used, not the group's exact
    position.
-   - **Anchor A2:** every graded period contains exactly 4 refresh
-     accesses. Consumes kCck (via the same 32-CCK grouping); records
-     "precondition not met" unless its own anchor A3 holds.
-   - **Anchor A3:** in H1c and H2c, every graded period -- not only the
-     first -- is exactly divisible by kCck (the clk_sys-per-CCK ratio) and
-     converts to 227 or 228 color clocks. p.23 gives 227. p.304's average
-     of 227.5 can only become 227 or 228 once the toggle is disabled. This
-     is the conversion anchor every other kCck-consuming check (P1-COVER,
-     P2-LINES, A2, P2(a), P2(b)) is gated on.
+   - **Anchor A2** (one line per H run): every graded period contains
+     exactly 4 refresh accesses. Gated on the run's PC-ID, PC-MARK and
+     P2-LINES (hence on both A3 lines).
+   - **Anchor A3** (A3 [H1c], A3 [H2c]): in the run, every graded period --
+     not only the first -- is exactly divisible by kCck (the clk_sys-per-CCK
+     ratio) and converts to 227 or 228 color clocks. p.23 gives 227. p.304's
+     average of 227.5 can only become 227 or 228 once the toggle is
+     disabled. This is the conversion anchor every other kCck-consuming
+     check (P1-COVER, P2-LINES, A2, P2(a), P2(b), P2(c), P2-CONTRAST,
+     A5-REF) is gated on.
 
 ### P3. With VARHSYEN set, HSSTRT alone sets where the HSYNC pulse begins
 
@@ -520,13 +571,21 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    - The graded distances are dL = M − L and dT = M − T.
 4. **Expected.**
    - (a) Within each run, dL and dT are exactly the same in every graded
-     line (no tolerance band: the pages give none).
-   - (b) dL(SB) ≠ dL(SA): exact inequality.
-   - (c) dT(SB) = dT(SA): exact equality.
+     line (no tolerance band: the pages give none). One line per run,
+     P3/P4(a) [SA], [SB], [SC], [SA0], [SB0], [SC0], shared with P4; P3 uses
+     the first and second, and the contrast runs SA0 and SB0.
+   - (b) dL(SB) ≠ dL(SA): exact inequality. (P3(b).)
+   - (c) dT(SB) = dT(SA): exact equality. (P3(c).)
+   - Contrast: with VARHSYEN = 0, dL(SB0) = dL(SA0) and dT(SB0) = dT(SA0).
+     (P3-CONTRAST, point 6.)
+   - The conjunction line P3 is the whole proposition: (a) for SA, SB, SA0
+     and SB0, (b), (c) and the contrast hold together in one parity class.
 
    dL(SA), dL(SB), dT(SA) and dT(SB) in (b) and (c) are each the value (a)
    establishes as the same in every line of that run's class (named as the
-   class's median, rather than a single line's own reading).
+   class's median, rather than a single line's own reading); P3(b), P3(c)
+   and P3-CONTRAST are therefore gated on the (a) lines of the runs they
+   compare.
 
    Sources: "HSSTRT 1DE W A(E) Horizontal sync start (VARHSY)" (p.280),
    "HSSTRT W A Horizontal line position for HSYNC start" (p.304), and "8
@@ -548,74 +607,90 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    lines carry no landmark, and the
    pages say nothing about HSYNC during VSYNC.
 5. **Preconditions.**
-   - PC-ID and PC-MARK.
-   - **P3/P4-LINES:** exactly 256 graded output lines in each parity class
-     (512 total; section 7's "Doubled lines").
+   - PC-ID and PC-MARK of the run.
+   - **P3/P4-LINES [SA], [SB], [SC], [SA0], [SB0], [SC0]:** exactly 256
+     graded output lines in each parity class (512 total; section 7's
+     "Doubled lines") in the run. One line is one output line carrying
+     white; its first white span is its landmark.
+   - **Anchor A4**, below, on all six runs: it gates P3/P4(a), (b), (c), the
+     contrasts and the conjunctions.
 6. **Contrasting cases.**
    - Runs SA0 and SB0 (VARBEAMEN = 1, VARHSYEN = 0, all else equal). The
      page ties HSSTRT to "(VARHSY)", so with the enable clear, the HSSTRT
      value must not move either edge: dL(SB0) = dL(SA0) and
-     dT(SB0) = dT(SA0), both exact equality.
-   - For the preconditions: X-NOBPL fails P3/P4-LINES, and X-OCS, X-NTSC
-     and X-HALT-S fail the shared ones.
+     dT(SB0) = dT(SA0), both exact equality (P3-CONTRAST).
+   - For the preconditions: the X-NOBPL runs fail P3/P4-LINES, and X-OCS,
+     X-NTSC and X-HALT-S fail the shared ones.
 7. **Reference frame.** The output line runs from one HSYNC leading edge to
    the next.
    - The pulse level is determined in each run as the HSYNC level held for
-     less than half of the output line. HSYTRUE is 0 in every run.
+     less than half of the graded field, measured once over the field (the
+     polarity is a property of the run, not of one line). HSYTRUE is 0 in
+     every run.
    - L is the transition into that level, and T is the first transition out
      of it after L.
    - The landmark is the black-to-white edge at data word 14. It is fixed in
      the chip's line by DIWSTRT, DDFSTRT and the data (p.58 to p.60), none of
      which the sync registers touch.
-   - **Anchor A4:** every graded line has exactly one trailing edge between
-     consecutive leading edges, exactly one transition into white and one
-     out of white, and a white run whose length is *exactly* the same in
-     all six S runs. The pages give no tolerance band for this width, so
-     none is invented; the measured population (section 7, Measurements)
-     shows the same width in every one of the 512 lines of every run.
-   - **A4-DROPPED:** A4's own quantifier ("every graded line") is graded
-     only over the lines that measurement can turn into a value; a
-     white-carrying line with 0 or 2 or more trailing edges, or with no
-     black-to-white transition strictly after L, is silently dropped
-     instead of counted red. A4-DROPPED counts such drops across all six
-     S runs and requires 0. It has no contrast run: no page gives HSSTRT or
-     HSSTOP a layout or scale (page note 7) from which to choose a
-     stimulus that is page-predicted, rather than tuned against this RTL,
-     to land the sync pulse on the landmark and force a drop; not
-     exercised, by a scope decision.
+   - **Anchor A4:** every graded line has exactly one transition into white
+     and one out of white, and a first white span whose length is *exactly*
+     the same in every line of all six S runs, in both parity classes. The
+     pages give no tolerance band for this width, so none is invented; the
+     measured population (section 7, Measurements) shows the same width in
+     every one of the 512 lines of every run. A4 reads the white
+     transitions and the width only, not dL or dT, so it does not depend on
+     clause (a) or any other clause it gates. (A two-level sync signal has
+     exactly one transition out of the pulse between two consecutive
+     transitions into it, so a count of trailing edges is not a clause.)
+     Two contrasts, each breaking one clause: X-A4DOUBLE gives every line a
+     second white span (the first as wide as the normal one), X-A4WIDTH
+     gives every line one white span a data word narrower.
+   - **Anchor A5-REF:** in SA0, SB0 and SC0, the accesses this test selects
+     as memory refresh -- the reads of Chip word 0 (a selection rule of the
+     test, which the anchor checks against the pages) -- behave as the pages'
+     refresh slots do: groups (neighbours less than 32 color clocks apart,
+     as in P2) of exactly 4 accesses (p.194: "4 cycles for memory refresh";
+     p.285: "four refresh time slots"), at least 256 of them in the graded
+     field, and the first accesses of consecutive groups 227 or 228 color
+     clocks apart (p.23: "all 227 long"; p.304: 227.5 on average, the S
+     runs leaving the long-line toggle on). It consumes kCck and is gated on
+     both A3 lines. Contrast: X-A5REF starts audio channel 0 DMA on a
+     one-word buffer at Chip address 0, adding reads of word 0 to the groups.
    - **Anchor A5:** the landmark M's own distance to R, the nearest
      memory-refresh access before it (the reference: p.194, p.285) -- a
      landmark independent of DIWSTRT, DDFSTRT, HSSTRT and HSSTOP alike.
      Graded on the three VARHSYEN = 0 contrast runs, where nothing is
      expected to move (p.280 "(VARHSY)", p.305 VARHSYEN): M's distance to R
-     must be exactly the same in SA0, SB0 and SC0.
-     This confirms the apparatus introduces no spurious shift of its own
-     when the chip's own signals do not move. With VARHSYEN = 1 (the live
-     SA/SB/SC runs), M's distance to R is measured and printed but not
+     must be exactly the same in SA0, SB0 and SC0, in both parity classes.
+     A5 is gated on A5-REF and on P3/P4(a) of its three runs (a landmark
+     that moves relative to the sync edges within a run is reported once, by
+     that line). This confirms the apparatus introduces no spurious shift of
+     its own when the chip's own signals do not move. With VARHSYEN = 1 (the
+     live SA/SB/SC runs), M's distance to R is measured and printed but not
      graded: it changes between SA, SB and SC even though DIWSTRT and
-     DDFSTRT (hence M's own chip-side position) are unchanged, because
-     the scan doubler (`Amber.v`, compiled as part of `nanomig.v`)
-     restarts its read-out at the incoming HSYNC edge and so regenerates
-     sync. A5 therefore cannot attribute (b)'s and (c)'s move to the
-     leading edge specifically rather than to the picture; it establishes
-     only that the apparatus itself is exact when nothing moves.
+     DDFSTRT (hence M's own chip-side position) are unchanged, because the
+     video output the test sees has passed a line doubler that re-times the
+     chip's lines. A5 therefore cannot attribute the move of (b) and (c) to
+     the leading edge specifically rather than to the picture; it
+     establishes only that the apparatus itself is exact when nothing moves.
    - **Stated limit.** P3 and P4 are graded in the picture-relative frame:
      dL and dT are distances from the sync edges to the landmark M, and a
      change of HSSTRT or HSSTOP shows as a change of one distance with
-     the other exactly unchanged. Which edge moved is not shown: the scan
-     doubler regenerates sync, so no reference fixed in the chip's line
-     (A5's refresh access is the page-anchored candidate) survives to the
-     test's boundary, and a reference that did would be harness or RTL
-     knowledge, not page. The labels of P3 and P4 and a RECORDED line say
-     so.
+     the other exactly unchanged. Which edge moved is not shown: the
+     line doubler re-times the chip's lines, so no reference fixed in the
+     chip's line (A5's refresh access is the page-anchored candidate)
+     survives to the boundary the test sees. The labels of P3 and P4 and a
+     RECORDED line say so.
 
    **Doubled lines.** The line doubler emits two output lines per chip
    line, and nothing on the pages covers the second. The graded lines are
    therefore split into two classes by the parity of their index within the
-   graded field. (a) is graded within each class. (b), (c) and the contrast
-   are graded class by class, comparing the same class across runs. The
-   proposition is green when all of them hold together in at least one
-   class, and red otherwise.
+   graded field. P3/P4(a) is graded within each class; (b), (c) and the
+   contrast are graded class by class, comparing the same class across runs.
+   Each of these lines is green when it holds in at least one class; the
+   conjunction P3 or P4 is green when all of them hold together in one
+   class, and red otherwise. A4 and A5 are exact invariants of the
+   apparatus and are graded in both classes.
 
 ### P4. With VARHSYEN set, HSSTOP alone sets where the HSYNC pulse ends
 
@@ -632,12 +707,17 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
 3. **Observation.** As P3: graded lines, L, T, M, dL and dT.
 4. **Expected.**
    - (a) Within each run, dL and dT are exactly the same in every graded
-     line.
-   - (b) dT(SC) ≠ dT(SA): exact inequality.
-   - (c) dL(SC) = dL(SA): exact equality.
+     line (P3/P4(a) [SA], [SC], [SA0], [SC0]).
+   - (b) dT(SC) ≠ dT(SA): exact inequality. (P4(b).)
+   - (c) dL(SC) = dL(SA): exact equality. (P4(c).)
+   - Contrast: with VARHSYEN = 0, dT(SC0) = dT(SA0) and dL(SC0) = dL(SA0).
+     (P4-CONTRAST, point 6.)
+   - The conjunction line P4 is the whole proposition: (a) for SA, SC, SA0
+     and SC0, (b), (c) and the contrast hold together in one parity class.
 
    As in P3, dT(SA), dT(SC), dL(SA) and dL(SC) in (b) and (c) are each the
-   value (a) establishes for that run's class.
+   value (a) establishes for that run's class, and P4(b), P4(c) and
+   P4-CONTRAST are gated on the (a) lines of the runs they compare.
 
    Sources: "HSSTOP 1C2 W A(E) Horizontal line position for HSYNC stop"
    (p.280, and in the same words on p.304 and p.298). The start is HSSTRT's
@@ -650,11 +730,12 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    for the moved edge and exact equality for the untouched one. The
    quantifier is as in P3.
 5. **Preconditions.** PC-ID, PC-MARK and P3/P4-LINES (exactly 256 lines
-   per parity class).
+   per parity class) of each run, and anchor A4.
 6. **Contrasting cases.**
    - Runs SA0 and SC0 (VARBEAMEN = 1, VARHSYEN = 0). With variable
      horizontal sync disabled, the HSSTOP value must not move either edge:
-     dT(SC0) = dT(SA0) and dL(SC0) = dL(SA0), both exact equality.
+     dT(SC0) = dT(SA0) and dL(SC0) = dL(SA0), both exact equality
+     (P4-CONTRAST).
    - For the preconditions: as P3.
 7. **Reference frame.** As P3, including anchors A4 and A5 and the grading
    by parity class. A5's own limit and the stated limit apply identically: A5
@@ -667,20 +748,22 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
 Values below are what the build produced; both cores agree except where
 marked.
 
-**P1.** Graded max H: H1 = $B0 (= N), H2 = $C0 (= N), H1c = $E2, H2c = $E2.
-Anchor A1's bound ($E2−16 to $E3) holds in both contrast runs.
+**P1.** Graded max H: H1 = $B0 (= N), H2 = $C0 (= N) on fx68k and $BE on
+TG68K, H1c = $E2, H2c = $E2. Anchor A1's bound ($E2−16 to $E3) holds in both
+contrast runs. P1-LINES, graded wraps (fx68k / TG68K): H1 564 / 566, H2 516 /
+519, H1c 439 / 441, H2c 439 / 441, each from 16384 samples.
 
 **P2.** Graded periods: H1 563 (fx68k) / 565 (TG68K), first = 1416
 `clk_sys` cycles on both; H2 516 (fx68k) / 518 (TG68K), first = 1544 on
 both; H1c 438 (fx68k) / 440 (TG68K), first = 1816 on both; H2c matches
 H1c's count and period exactly on both cores. Converted at 8 `clk_sys`
-cycles per colour clock -- read off the implementation, not from the
-page; every graded period in H1c and H2c is exactly divisible by 8 and
-converts to 227 CCK (anchor A3, matching p.23's own PAL count exactly,
-LOLDIS holding the line to one length) on both cores. T1 = 177 CCK, T2 =
-193 CCK (N+1, the first reading of page note 2); T2 − T1 = 16 CCK (b);
-T1 − $B0 = 1 (c). Every graded period within a run is identical (P2(a)).
-The conjunction (P2) is PASS on both cores.
+cycles per colour clock -- measured, not taken from the page; every graded
+period in H1c and H2c is exactly divisible by 8 and converts to 227 CCK
+(anchor A3, matching p.23's own PAL count exactly, LOLDIS holding the line
+to one length) on both cores. T1 = 177 CCK, T2 = 193 CCK (N+1, the first
+reading of page note 2); T2 − T1 = 16 CCK (b); T1 − $B0 = 1 (c). Every
+graded period within a run is identical (P2(a)). The conjunction (P2) is
+PASS on both cores.
 
 **P1-COVER.** Largest consecutive-sample gap in the graded range: H1 13
 CCK, H2 13 CCK, on both cores (bound: 16).
@@ -702,66 +785,104 @@ both cores, for every one of 512 graded lines, in both parity classes:
 P3's (b): dL(SB) = 601 ≠ dL(SA) = 665. P3's (c): dT(SB) = 537 = dT(SA) =
 537. P4's (b): dT(SC) = 473 ≠ dT(SA) = 537. P4's (c): dL(SC) = 665 =
 dL(SA) = 665. Both contrasts hold exactly: with VARHSYEN=0, dL and dT do
-not move at all between SA0/SB0/SC0. P3 and P4 are PASS on both cores. A4
-holds throughout (white run exactly 192 in all 512 lines of every run, 0
-dropped white-carrying lines, A4-DROPPED PASS).
+not move at all between SA0/SB0/SC0. P3(a) holds in every run, both
+classes; P3, P4 and their clause lines are PASS on both cores. A4 holds
+throughout: 1536 lines per class over the six runs, every one with one
+transition into white and one out of white, and a white run of exactly 192
+output pixel clocks.
+
+**A5-REF.** In SA0, SB0 and SC0 the graded field holds 314 groups of
+selected refresh accesses, every group with exactly 4 accesses, and every
+distance between the first accesses of consecutive groups is 227 or 228
+CCK (0 groups of another size, 0 other distances), on both cores.
 
 **A5.** With VARHSYEN=0 (SA0/SB0/SC0), the landmark's distance to the
 nearest memory-refresh access is exactly the same (1681 in class 0, 773
-in class 1, on both cores): PASS. With VARHSYEN=1 (SA/SB/SC, not graded),
-the same distance is 1671/1735/1671 in class 0 and 763/827/763 in class
-1 -- SB (whose HSSTRT differs from SA and SC) differs from both by
-exactly 64, while SA and SC (equal HSSTRT) match exactly, on both cores
-(the scan doubler regenerates sync).
-Recorded as A5-NOT-DISPOSITIVE (section 6, P3 point 7).
+in class 1, on both cores): PASS in both classes. With VARHSYEN=1
+(SA/SB/SC, not graded), the same distance is 1671/1735/1671 in class 0 and
+763/827/763 in class 1 -- SB (whose HSSTRT differs from SA and SC) differs
+from both by exactly 64, while SA and SC (equal HSSTRT) match exactly, on
+both cores (the line doubler re-times the chip's lines). Recorded as
+A5-NOT-DISPOSITIVE (section 6, P3 point 7).
 
-**Mutations.** Replayed on both cores, from `out_<core>.txt` under each
-`NMH_MUTATE` value; each run turned exactly the check(s) named red and
-nothing else.
+**X-OCS, X-NTSC.** The ID read back by the changed harness: VPOSR bits
+14-8 are $00 under X-OCS and $30 under X-NTSC (printed on the PC-ID [H1]
+line of each run).
 
-| NMH_MUTATE | Went red | fx68k | TG68K |
-|---|---|---|---|
-| `FIXTURE` | FIXTURE | FAIL | FAIL |
-| `X-OCS` | PC-ID [H1, X-OCS] | FAIL | FAIL |
-| `X-NTSC` | PC-ID [H1, X-NTSC] | FAIL | FAIL |
-| `X-HALT-H` | PC-MARK [H1, X-HALT-H] | FAIL | FAIL |
-| `X-HALT-S` | PC-MARK [SA, X-HALT-S] | FAIL | FAIL |
-| `X-NODONE` | DONE [H1,X-NODONE] | FAIL | FAIL |
-| `X-SHORT` | P1-LINES [H1], P2-LINES [H1] | FAIL, FAIL | FAIL, FAIL |
-| `X-BURST` | P1-COVER [H1], P1-COVER [H2] | FAIL, FAIL | FAIL, FAIL |
-| `X-NOBPL` | P3/P4-LINES [SA] | FAIL | FAIL |
-| `X-A4DOUBLE` | A4 | FAIL | FAIL |
-| `A1` | A1 [H1c], A1 [H2c], P1 [H1], P1 [H2], P1 [H1c], P1 [H2c] | FAIL x6 | FAIL x6 |
-| `X-AUD0` | A2 [H1], A2 [H2], A2 [H1c], A2 [H2c] | FAIL x4 | FAIL x4 |
-| `A3` | A3 [H1c], A3 [H2c] | FAIL, FAIL | FAIL, FAIL |
-| `P2A` | P2(a) [H1], P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
-| `P2A-H2` | P2(a) [H2], P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
-| `P2B` | P2(b), P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
-| `P2C` | P2(c), P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
-| `P2CON` | P2 contrast | FAIL | FAIL |
-| `P3-NOMOVE` | P3 | FAIL | FAIL |
-| `P4-NOMOVE` | P4 | FAIL | FAIL |
-| `A5` | A5 | FAIL | FAIL |
+**Mutations.** Replayed on both cores, from the built binary of each core
+under each `NMH_MUTATE` value; every run turned exactly the lines named in
+"Went red" red, and printed "precondition not met" for the lines gated on
+them, and nothing else changed.
 
-The conjunction line P2 depends on P2(a) [H1], P2(a) [H2], P2(b) and
-P2(c), so P2A, P2A-H2, P2B and P2C each turn it red together with their
-own clause; P2CON turns the P2 contrast line red.
+| NMH_MUTATE | Went red | Printed "precondition not met" | fx68k | TG68K |
+|---|---|---|---|---|
+| `FIXTURE` | FIXTURE | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-OCS` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
+| `X-NTSC` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
+| `X-HALT-H` | PC-MARK [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
+| `X-NOMARK2` | PC-MARK [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
+| `X-HALT-S` | PC-MARK [SA] | P3/P4-LINES [SA], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 64 passed, 1 failed | 64 passed, 1 failed |
+| `X-NODONE` | DONE [H1] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-SHORT` | P1-LINES [H1] | P1 [H1] | 80 passed, 1 failed | 80 passed, 1 failed |
+| `X-SHORT-H2` | P1-LINES [H2] | P1 [H2] | 80 passed, 1 failed | 80 passed, 1 failed |
+| `X-SHORT-H1C` | P1-LINES [H1c] | A1 [H1c], P1-CONTRAST [H1c] | 79 passed, 1 failed | 79 passed, 1 failed |
+| `X-SHORT-H2C` | P1-LINES [H2c] | A1 [H2c], P1-CONTRAST [H2c] | 79 passed, 1 failed | 79 passed, 1 failed |
+| `X-LATE` | P2-LINES [H1] | A2 [H1], P2(a) [H1], P2(b), P2(c), P2 | 76 passed, 1 failed | 76 passed, 1 failed |
+| `X-LATE-H2` | P2-LINES [H2] | A2 [H2], P2(a) [H2], P2(b), P2(c), P2 | 76 passed, 1 failed | 76 passed, 1 failed |
+| `X-LATE-H1C` | P2-LINES [H1c] | A2 [H1c], P2-CONTRAST | 79 passed, 1 failed | 79 passed, 1 failed |
+| `X-LATE-H2C` | P2-LINES [H2c] | A2 [H2c], P2-CONTRAST | 79 passed, 1 failed | 79 passed, 1 failed |
+| `X-BURST` | P1-COVER [H1] | P1 [H1] | 80 passed, 1 failed | 80 passed, 1 failed |
+| `X-BURST-H2` | P1-COVER [H2] | P1 [H2] | 80 passed, 1 failed | 80 passed, 1 failed |
+| `X-AUD0` | A2 [H1] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-AUD0-H2` | A2 [H2] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-AUD0-H1C` | A2 [H1c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-AUD0-H2C` | A2 [H2c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `A1` | A1 [H1c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `A1-H2` | A1 [H2c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `A3` | A3 [H1c] | P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5 | 61 passed, 1 failed | 61 passed, 1 failed |
+| `A3-H2` | A3 [H2c] | P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5 | 61 passed, 1 failed | 61 passed, 1 failed |
+| `P1` | P1 [H1] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `P1-H2` | P1 [H2] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `P1C` | P1-CONTRAST [H1c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `P1C-H2` | P1-CONTRAST [H2c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `P2A` | P2(a) [H1], P2 | - | 84 passed, 2 failed | 84 passed, 2 failed |
+| `P2A-H2` | P2(a) [H2], P2 | - | 84 passed, 2 failed | 84 passed, 2 failed |
+| `P2B` | P2(b), P2 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P2C` | P2(c), P2 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P2CON` | P2-CONTRAST | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-NOBPL` | P3/P4-LINES [SA] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 65 passed, 1 failed | 65 passed, 1 failed |
+| `X-NOBPL-SB` | P3/P4-LINES [SB] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 65 passed, 1 failed | 65 passed, 1 failed |
+| `X-NOBPL-SC` | P3/P4-LINES [SC] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 65 passed, 1 failed | 65 passed, 1 failed |
+| `X-NOBPL-SA0` | P3/P4-LINES [SA0] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 64 passed, 1 failed | 64 passed, 1 failed |
+| `X-NOBPL-SB0` | P3/P4-LINES [SB0] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 64 passed, 1 failed | 64 passed, 1 failed |
+| `X-NOBPL-SC0` | P3/P4-LINES [SC0] | A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 64 passed, 1 failed | 64 passed, 1 failed |
+| `X-A4DOUBLE` | A4 | P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 66 passed, 1 failed | 66 passed, 1 failed |
+| `X-A4WIDTH` | A4 | P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 66 passed, 1 failed | 66 passed, 1 failed |
+| `X-SHIFT-SA` | P3/P4(a) [SA], P3, P4 | P3(b), P3(c), P4(b), P4(c) | 75 passed, 3 failed | 75 passed, 3 failed |
+| `X-SHIFT-SB` | P3/P4(a) [SB], P3 | P3(b), P3(c) | 78 passed, 2 failed | 78 passed, 2 failed |
+| `X-SHIFT-SC` | P3/P4(a) [SC], P4 | P4(b), P4(c) | 78 passed, 2 failed | 78 passed, 2 failed |
+| `X-SHIFT-SA0` | P3/P4(a) [SA0], P3, P4 | A5, P3-CONTRAST, P4-CONTRAST | 76 passed, 3 failed | 76 passed, 3 failed |
+| `X-SHIFT-SB0` | P3/P4(a) [SB0], P3 | A5, P3-CONTRAST | 78 passed, 2 failed | 78 passed, 2 failed |
+| `X-SHIFT-SC0` | P3/P4(a) [SC0], P4 | A5, P4-CONTRAST | 78 passed, 2 failed | 78 passed, 2 failed |
+| `X-A5REF` | A5-REF | A5 | 80 passed, 1 failed | 80 passed, 1 failed |
+| `A5` | A5 | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `P3C` | P3(c), P3 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P4C` | P4(c), P4 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P3-NOMOVE` | P3(b), P3 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P4-NOMOVE` | P4(b), P4 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P3CON` | P3-CONTRAST, P3 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `P4CON` | P4-CONTRAST, P4 | - | 80 passed, 2 failed | 80 passed, 2 failed |
+| `BOGUS` | NMH_MUTATE | - | 82 passed, 1 failed | 82 passed, 1 failed |
 
-Every mutant capture prints its own liveness lines, and each is PASS in
-every row except the line the row targets:
-
-- DONE, for every capture that runs a program of its own (the row that
-  targets it is `X-NODONE`; in `X-HALT-H` and `X-HALT-S` the program still
-  reaches DONE and only the marker is missing; `FIXTURE` prints DONE only);
-- PC-ID and PC-MARK, for every H and S capture except where the row targets
-  one (`X-OCS`, `X-NTSC` target PC-ID; `X-HALT-H`, `X-HALT-S` target
-  PC-MARK);
-- a population line for each capture whose red is a comparator over a
-  population: P2-LINES for the four `X-AUD0` captures and for `P2A` and
-  `P2A-H2`, P3/P4-LINES for `X-A4DOUBLE` (at least 256 graded entries in each parity
-  class, since a line with two white spans counts twice) and, as its target,
-  `X-NOBPL`.
-
-The substitution rows (`A1`, `A3`, `P2B`, `P2C`, `P2CON`, `P3-NOMOVE`,
-`P4-NOMOVE`, `A5`) run no capture of their own: they feed other runs'
-measured values through the unchanged comparator.
+The conjunction lines P2, P3 and P4 require the clause lines they name, so
+a selector that turns one clause red turns its conjunction red with it. A
+selector for a precondition replaces the run's capture, so the run's PC-ID,
+PC-MARK and DONE lines are the mutant's own and stay PASS except the line
+the row targets; the P2A and P2A-H2 captures, which are inputs of one
+proposition line only, print their own PC-ID, PC-MARK, DONE and P2-LINES
+lines under the tags `[H1,P2A]` and `[H2,P2A-H2]`. The proposition rows
+(`A1`, `A1-H2`, `A3`, `A3-H2`, `P1`, `P1-H2`, `P1C`, `P1C-H2`, `P2B`, `P2C`,
+`P2CON`, `A5`, `P3-NOMOVE`, `P4-NOMOVE`, `P3CON`, `P4CON`) run no capture of
+their own: they feed other runs' measured values through the unchanged
+comparator. `BOGUS` stands for any value no branch of the test knows: the
+test prints a FAIL line for it and otherwise runs as the normal run.
