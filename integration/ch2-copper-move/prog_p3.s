@@ -7,6 +7,7 @@
 ;   P3_DEST   address the four values are written to (default $3600A, the IR2 word)
 ;   P3_FAST   the four writes follow each other without a wait for the beam
 ;   P3_ATTR   a CPU read of the IR2 word before the Copper starts
+;   P3_PREBLIT  before the Copper starts, the blitter writes $1234 to the IR2 word, then blitter DMA is turned off
 
         include "nanomig.i"
         include "ch2move.i"
@@ -40,6 +41,19 @@ start:
         PARKPTRS
         ifd     P3_ATTR
         move.w  $3600A,d1
+        endc
+        ifd     P3_PREBLIT
+        move.w  #$01F0,CUSTOM+BLTCON0
+        move.w  #$0000,CUSTOM+BLTCON1
+        move.w  #$FFFF,CUSTOM+BLTAFWM
+        move.w  #$FFFF,CUSTOM+BLTALWM
+        move.w  #$1234,CUSTOM+BLTADAT
+        move.l  #$0003600A,CUSTOM+BLTDPTH
+        move.w  #$0000,CUSTOM+BLTDMOD
+        move.w  #$8240,CUSTOM+DMACON
+        move.w  #$0041,CUSTOM+BLTSIZE
+        WAITLINE $40
+        move.w  #$0040,CUSTOM+DMACON
         endc
         COPSTART P3_T
         IDLEFIELDS 3

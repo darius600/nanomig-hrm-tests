@@ -12,11 +12,11 @@ TEST_CPP := test_ch2_copper_move.cpp
 PROGS    := prog_nodone \
             prog_p1 prog_p1_a prog_p1_b prog_p1_attr \
             prog_p2 prog_p2_attr \
-            prog_p3 prog_p3_b prog_p3_dest prog_p3_fast prog_p3_attr \
+            prog_p3 prog_p3_b prog_p3_dest prog_p3_fast prog_p3_attr prog_p3_preblit \
             prog_p4 prog_p4_b prog_p4_attr \
             prog_p5_r1 prog_p5_r1x prog_p5_r1_a prog_p5_r1_b prog_p5_r1_attr \
             prog_p5_r2 prog_p5_r2x prog_p5_r2_a prog_p5_r2_b prog_p5_r2_attr \
-            prog_p5_r2c prog_p5_r2cx \
+            prog_p5_r2c prog_p5_r2cx prog_p5_r2c_a prog_p5_r2c_b prog_p5_r2c_attr \
             prog_p6 prog_p6_value prog_p6_nopre prog_p6_probe2 \
             prog_p7 prog_p7_a prog_p7_b prog_p7_c prog_p7_attr prog_p7_lf0 \
             prog_p8 prog_p8_c prog_p8_len prog_p8_c_nolc prog_p8_noaud prog_p8_early prog_p8_attr \
