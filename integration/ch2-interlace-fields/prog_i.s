@@ -23,6 +23,9 @@
 ;   I_NOPTRLIST + M1_DELAY   I-q   both lists omit the BPL1PT MOVEs and M1 waits between samples
 ;   I_NOSPRLIST + M1_DELAY   I-r   both lists omit the SPR0PT MOVEs and M1 waits between samples
 ;   I_BADMOVE    I-s   both lists end, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
+;   I_MIDPTR     I-t   the BPL1PT MOVEs placed after WAIT $2001,$FF00 (line 32)
+;   I_MIDSPR     I-u   the SPR0PT MOVEs placed after WAIT $1901,$FF00 (line 25)
+;   I_LONGLIST   I-v   both lists, relocated, wait for line 255 and then hold 4,700 MOVEs before the terminal wait
 
         include "nanomig.i"
         include "ch2.i"
@@ -31,8 +34,13 @@
 PIC             equ     $082000         ; 512 lines x 40 bytes = 20480 bytes
 SPR             equ     $087000         ; sprite 0 structure, 16 bytes
 NULLSPR         equ     $087010         ; $0000,$0000, for sprites 1-7
+        ifd     I_LONGLIST
+LISTA           equ     $0A0000
+LISTB           equ     $0A5000
+        else
 LISTA           equ     $080800
 LISTB           equ     $080900
+        endif
 HCNT            equ     $087222         ; word
 
 M1_K            equ     8
@@ -185,14 +193,18 @@ i_handler:
         org     LISTA
         ifnd    I_NOPTRLIST
         ifnd    I_LATEPTR
+        ifnd    I_MIDPTR
         dc.w    BPL1PTH,(PIC>>16)&$FFFF
         dc.w    BPL1PTL,PIC&$FFFF
         endif
         endif
+        endif
         ifnd    I_NOSPRLIST
         ifnd    I_LATESPR
+        ifnd    I_MIDSPR
         dc.w    SPR0PTH,(SPR>>16)&$FFFF
         dc.w    SPR0PTL,SPR&$FFFF
+        endif
         endif
         endif
         dc.w    SPR1PTH,(NULLSPR>>16)&$FFFF
@@ -209,6 +221,16 @@ i_handler:
         dc.w    SPR6PTL,NULLSPR&$FFFF
         dc.w    SPR7PTH,(NULLSPR>>16)&$FFFF
         dc.w    SPR7PTL,NULLSPR&$FFFF
+        ifd     I_MIDPTR
+        dc.w    $2001,$FF00
+        dc.w    BPL1PTH,(PIC>>16)&$FFFF
+        dc.w    BPL1PTL,PIC&$FFFF
+        endif
+        ifd     I_MIDSPR
+        dc.w    $1901,$FF00
+        dc.w    SPR0PTH,(SPR>>16)&$FFFF
+        dc.w    SPR0PTL,SPR&$FFFF
+        endif
         dc.w    $2D01,$FF00
         ifd     I_LATEPTR
         ifnd    I_NOPTRLIST
@@ -225,12 +247,19 @@ i_handler:
         dc.w    INTREQ,$8010
         ifd     I_BADMOVE
         dc.w    $0000,$0000
+        endif
+        ifd     I_LONGLIST
+        dc.w    $FF01,$FFFE
+        rept    4700
+        dc.w    COLOR00,$0000
+        endr
         endif
         dc.w    $FFFF,$FFFE
 
         org     LISTB
         ifnd    I_NOPTRLIST
         ifnd    I_LATEPTR
+        ifnd    I_MIDPTR
         ifd     I_SAMEPTR
         dc.w    BPL1PTH,(PIC>>16)&$FFFF
         dc.w    BPL1PTL,PIC&$FFFF
@@ -240,10 +269,13 @@ i_handler:
         endif
         endif
         endif
+        endif
         ifnd    I_NOSPRLIST
         ifnd    I_LATESPR
+        ifnd    I_MIDSPR
         dc.w    SPR0PTH,(SPR>>16)&$FFFF
         dc.w    SPR0PTL,SPR&$FFFF
+        endif
         endif
         endif
         dc.w    SPR1PTH,(NULLSPR>>16)&$FFFF
@@ -260,6 +292,21 @@ i_handler:
         dc.w    SPR6PTL,NULLSPR&$FFFF
         dc.w    SPR7PTH,(NULLSPR>>16)&$FFFF
         dc.w    SPR7PTL,NULLSPR&$FFFF
+        ifd     I_MIDPTR
+        dc.w    $2001,$FF00
+        ifd     I_SAMEPTR
+        dc.w    BPL1PTH,(PIC>>16)&$FFFF
+        dc.w    BPL1PTL,PIC&$FFFF
+        else
+        dc.w    BPL1PTH,((PIC+40)>>16)&$FFFF
+        dc.w    BPL1PTL,(PIC+40)&$FFFF
+        endif
+        endif
+        ifd     I_MIDSPR
+        dc.w    $1901,$FF00
+        dc.w    SPR0PTH,(SPR>>16)&$FFFF
+        dc.w    SPR0PTL,SPR&$FFFF
+        endif
         dc.w    $2D01,$FF00
         ifd     I_LATEPTR
         ifnd    I_NOPTRLIST
@@ -281,6 +328,12 @@ i_handler:
         dc.w    INTREQ,$8010
         ifd     I_BADMOVE
         dc.w    $0000,$0000
+        endif
+        ifd     I_LONGLIST
+        dc.w    $FF01,$FFFE
+        rept    4700
+        dc.w    COLOR00,$0000
+        endr
         endif
         dc.w    $FFFF,$FFFE
 

@@ -15,6 +15,7 @@
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 ;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
+;   T_LONGLIST     T-k  LISTT waits for line 255 and then holds 900 MOVEs before the terminal $FFFF,$FFFE
 
         include "nanomig.i"
         include "ch2.i"
@@ -93,6 +94,12 @@ start:
         include "listt_body.i"
         ifd     T_BADMOVE
         dc.w    $0000,$0000
+        endif
+        ifd     T_LONGLIST
+        dc.w    $FF01,$FFFE
+        rept    900
+        dc.w    COLOR00,$0000
+        endr
         endif
         dc.w    $FFFF,$FFFE
 
