@@ -354,9 +354,10 @@ failure, never a pass.
 - **P1-c:** in B, C and E, DDFSTOP is 8 colour clocks lower than the value of step 6
   with bitplane DMA still on (p.60: DDFSTOP names the last fetch); the bitplane reads
   of a DMA field are fewer than N, and still a nonempty set. In A the Copper list
-  carries a one-plane BPLCON0 ($1000, p.89), so reads occur where none are expected.
+  also points sprite 0 at the bitplane buffer's address and turns sprite DMA on, so a
+  channel other than bitplane DMA reads that address range where no read is expected.
 - **P1-d:** in B, fill the bitplane with $0000; no sample shows C1.
-- **P1-e:** in configuration B at S1 the program writes BEAMCON0 with bit 5 opposite
+- **P1-e:** in configuration B at S2 the program writes BEAMCON0 with bit 5 opposite
   to the configured standard (p.304: "NTSC (525 lines ...) PAL (625 lines ...)"), and
   the field length is the other standard's.
 - **Fixture:** in run "1" of every configuration at S1 the program stores a start word
@@ -444,7 +445,8 @@ two border samples in item 3.
 - **P2-a:** as in P1.
 - **P2-b:** BPL1MOD = $0002; p.61 ("the modulo is added to the bitplane pointers")
   predicts every line after the first starts 2 bytes later, and the address check
-  fails. Item 1 fails too and item 2 is not graded.
+  fails. Item 1 holds (valid data words follow the buffer, so every line still shows
+  data) and item 2 is not graded.
 - **Item 1 as a count:** DIWSTOP with VSTOP one line lower ($2BC1 in PAL, $F3C1 in
   NTSC); p.59 predicts H-1 data lines per field, and item 1 fails. The buffer is then
   read for H-1 lines only, so P2-b fails too and item 2 is not graded; item 3 holds
@@ -581,7 +583,8 @@ Not graded, because the pages leave it open:
   inclusive. In both L0 and L1, consecutive t_f satisfy the field-length check.
 - **P3-M (the blocks are the program's own):** in both runs the stores to the
   measurement buffer from $0C1000 up are exactly five blocks; block k (k = 0..4) is the
-  marker word k followed by 600 long words (20 in the P3-a contrast), each stored high
+  marker word k followed by the number of long words the program's own `MOVE.W #n-1,D5`
+  names (600; 20 in the P3-a contrast), each stored high
   half then low half at consecutive word addresses. Every word the grading takes for a
   marker or for a read is then one the program stored as such. P3-a, P3-b, P3-c, P3-LIVE
   and P3-MAIN wait for it.
@@ -700,8 +703,8 @@ in four system configurations and with both cores.
 
 - **P4-a:** the P3-a check on the one program: each window holds at least 100 counted
   reads, spread over it.
-- **P4-M:** as P3-M, for the one program: five blocks of marker k and 600 long words
-  (20 in the P4-a contrast). P4-a, P4-c and P4-MAIN wait for it.
+- **P4-M:** as P3-M, for the one program: five blocks of marker k and the number of long words the program's own
+  `MOVE.W #n-1,D5` names (600; 20 in the P4-a contrast). P4-a, P4-c and P4-MAIN wait for it.
 - **P4-L:** as P3-L, for the one program. P4-c waits for it.
 - **P4-b:** the program contains no write to $DFF100; no Copper instruction
   fetched from the Copper list's address ($020000) at the Chip-memory port is a MOVE
@@ -798,8 +801,8 @@ Copper's VP carry a line in the high byte). Only lines below $100 are used.
    Copper's MOVE (P5-b) fall into the same line.
 9. Copper start; DMACON = $8380.
 10. Four times: poll INTREQR for VERTB (as in P3), clear it (INTREQ = $0020),
-    then poll VHPOSR until its V7-V0 field is at least N-3, then execute 200 times
-    `MOVE.L $DFF004,(A0)+`.
+    then poll VHPOSR until its V7-V0 field is at least N-3, then store a marker word (the
+    iteration number 0..3) into Chip memory, then execute 200 times `MOVE.L $DFF004,(A0)+`.
 11. Idle loop.
 
 Run in S1 and S2.
@@ -956,7 +959,9 @@ stored with its value; the fixtures of P3, P4 and P5 also require the DONE write
 P2 programs end in an idle loop and write none). The fixture gates every line that reads
 its run: when it fails, every precondition and
 component line of that run prints NOT GRADED, including the lines that read the
-program image or the Copper-fetch log (an empty image or an empty log never passes).
+program image or the Copper-fetch log (an empty image or an empty log never passes); the
+lines of P1, P2 and P5 that are not run print `RECORDED: NOT GRADED: <line> -- precondition
+<fixture> failed`.
 The preconditions each line waits for:
 
 | line | waits for |
@@ -1013,8 +1018,8 @@ Two claims are declined and printed as RECORDED lines that name their ids:
   detection of vsync (P1-e, P2-a, and the vsync part of P5-c) has no loop and uses the
   tolerance of one line. The marker part of P5-c uses one line plus the longer of the
   periods of the program's two polling loops, the `INTREQR` loop and the `VHPOSR` loop,
-  measured from their instruction fetches (the `VHPOSR` loop: 224 clk_sys cycles on fx68k and
-  176 on TG68K).
+  measured from their instruction fetches (the longer is the `VHPOSR` loop on fx68k, 224
+  clk_sys cycles, and the `INTREQR` loop on TG68K, 176; its `VHPOSR` loop takes 144).
   The package holds no tuned margin.
 - A read lies inside a window when the two stores that bound it, the one before it and
   the one after it, both lie inside it (Common definitions). A read is placed by the
@@ -1064,14 +1069,15 @@ NOT GRADED.
 - **P1-a, P1-e.** The dedicated contrast `P1A` (a genuine PAL run's sync samples
   against a genuine NTSC run's) prints its own fixture line first and grades only
   when it passes. The contrast for P1-e is `P1ESTD`: the program of configuration
-  B at S1 writes BEAMCON0 with bit 5 opposite the configured standard, so the field length
-  is the other standard's; P1-c B prints FAIL too.
+  B at S2 writes BEAMCON0 with bit 5 opposite the configured standard, so the field length
+  is the other standard's; the 200-line window fits the longer field and P1-c B holds.
 - **P1-c.** `P1C` lowers DDFSTOP by 8 colour clocks in B, C and E with bitplane DMA on,
   so each DMA field still reads part of the buffers (4864 of 5120 words in B and E,
-  38912 of 40960 in C), and gives A a one-plane Copper list; the one-plane list carries
-  other BPLCON0 words, so P1-b A prints FAIL too. P1-d holds in B, C and E.
-- **P2 contrasts.** `P2B` (BPL1MOD = $0002) turns P2-b and P2-I1 red and leaves P2-I2 not
-  graded; `P2ITEM1` (VSTOP one line lower) turns P2-I1 and P2-b red (the buffer is read
+  38912 of 40960 in C), and gives A a Copper list that also points sprite 0 at the
+  bitplane buffer's address and turns sprite DMA on, so reads of that address range occur
+  with the BPLCON0 words unchanged. P1-b and P1-d hold in A, B, C and E.
+- **P2 contrasts.** `P2B` (BPL1MOD = $0002, with 20 more lines of valid data words after
+  the buffer) turns P2-b red and leaves P2-I2 and the P2 aggregate not graded; `P2ITEM1` (VSTOP one line lower) turns P2-I1 and P2-b red (the buffer is read
   for H-1 lines) and leaves P2-I2 not graded, P2-I3 holds; `P2EDGE` (window 32 pixels
   wider) turns P2-I3 and P2-b red and leaves P2-I2 not graded; `P2A` turns P2-a red and
   leaves P2-I1, P2-I2 and P2-I3 not graded.
