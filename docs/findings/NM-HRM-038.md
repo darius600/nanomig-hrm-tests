@@ -12,7 +12,7 @@
 | **Chapter** | 8 — Interface Hardware, printed pp. 234, 235 (body text and Figure 8-5), 236, 237 (Figure 8-6), 240 (Table 8-4); Appendix A — Register Summary, printed p. 282, as cited in `P1-START`'s message · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `opus:8-potchg.c1` and `sol:8-pot.c16` (p.235 body text) are carried by the assertions of those names and by `FINALCOUNT-BODY-OPUS` and `FINALCOUNT-BODY-SOL`; `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5) by the assertions of those names and by `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`; `opus:8-dio.c21` and `sol:8-dio.c19` (p. 240) by `P1-START` in each configuration. `C0-Fc` to `C4-Fc` and `C1-Fc-OUT` to `C4-Fc-OUT` carry no claim id |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L136-L150) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L157-L171); inherited (from Minimig-AGA) |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge): `make -C hrm/ch8-pot-counter-start-and-charge test`; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports): `make -k -C integration/ch8-controller-ports test`; an expected red exits nonzero |
-| **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1`, `sol:8-pot.c16` (p.235 body text), `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), expected 7 or 8 lines (Figure 8-5: 8), observed 0; on the final count after 8 + 10 lines `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`, expected 10 or 11 (Figure 8-5: 10), observed 18 on all four counters. 24 red per core in `integration/ch8-controller-ports` (55 passed, 24 failed on each core), expected every input line 0 in POTGOR after START, observed $5500 in every counted read: `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`) and each configuration's aggregate over them (`P1-START`, `P1-START-NTSC+ECS`, `P1-START-PAL+OCS`, `P1-START-NTSC+OCS`), on fx68k and on TG68K. Green in each configuration on the same measurement basis: the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) |
+| **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1`, `sol:8-pot.c16` (p.235 body text), `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), expected 7 or 8 lines (Figure 8-5: 8), observed 0; on the final count after 8 + 10 lines `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`, expected 10 or 11 (Figure 8-5: 10), observed 18 on all four counters. 24 red per core in `integration/ch8-controller-ports` (109 passed, 24 failed on each core), expected every input line 0 in POTGOR after START, observed $5500 in every counted read: `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`) and each configuration's aggregate over them (`P1-START`, `P1-START-NTSC+ECS`, `P1-START-PAL+OCS`, `P1-START-NTSC+OCS`), on fx68k and on TG68K. Green in each configuration on the same measurement basis: the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) |
 | **Verdict of the four** | **2–2 on the counter read, 3–1 on the POTGOR discharge, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the counter package's first-increment assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. On POTGOR, WinUAE, vAmiga and Denise discharge an input line through the interval, so a line nothing pulls up reads 0 there, as the integration package's assertions require; Copperline's POTGOR read has no discharge and returns 1 on a released line, as NanoMig's does. vAmiga's joystick, its mouse at the default setting, and Denise's joypad and mouse pull a released button's line high in every read, so with one attached those two read 1 as well. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7. Hardware: not measured |
 | **Effort** | M — `userio.v` only — a reset-hold on the four pot counters (eight lines on PAL) and a START term in `potcap`, which START does not reach today |
 
@@ -76,18 +76,16 @@ as before START. The output-driven line reads 1 in the same reads, lines the chi
 drives low read $0000 at the same line of their frame (`PC2`), and `PC1` to `PC4`
 hold.
 
-The same comparator does read 0 on a line that is at 0: a mutation build
-(`NMH_MUTATE=VGREEN`, not run by `make test`) grounds each configuration's
-reachable input lines at the ports from just after START to the end of the read,
-and in PAL+ECS `C3-Fc` turns green on both cores; `C0-Fc`, `C1-Fc`, `C2-Fc` and
-`C4-Fc` stay red on bit 12 alone ($1000, $1100, $1400, $5000), because no port
-at this boundary reaches RX ([NM-HRM-037](NM-HRM-037.md))
-([`test_ch8_controller_ports.cpp:815-834`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L815-L834)).
-The grading and its hex record are
-[`:711-760`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L711-L760),
-the four configurations
-[`:279-281`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L279-L281)
-and [`:763-784`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L763-L784).
+A private copy of the RTL does read 0 there. `make sm-test-fx68k` and
+`make sm-test-tg68k` build it, in their own object directories, from the
+package's `start_model.patch`: for eight lines after a POTGO write with START,
+POTGOR reads the input pot lines as 0 (Figure 8-5's reading). On it the same
+unchanged test prints 133 passed, 0 failed on each core, so `C0-Fc` to `C4-Fc`
+and `P1-START` pass in all four configurations. In
+`integration/ch8-controller-ports/test_ch8_controller_ports.cpp`, the four
+configurations are `kConfigs` at `:358-360` and `grade_all` at `:874-892` runs
+and grades each; one configuration's grading is `:732-870`, whose red `expect`
+calls are `C0-Fc` to `C4-Fc` at `:831` and `P1-START` at `:864`.
 
 The cause is the same absence on the register side: POTGOR's input bits are the
 button levels, gated only by each line's output-enable and data bits
