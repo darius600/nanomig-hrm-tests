@@ -16,6 +16,7 @@ differs from the scan, the scan is quoted and the difference is named.
 | `5-appA-p264.c2` | 263-264 | "If a register is marked as a write-only register, do not attempt to read from it, as this may trash the register and crash the system." The consequence is only possible ("may"), so there is no expected value. The page also forbids the read, and a read that did trash a register would spoil every other check of the run. No program in this package reads a write-only register. |
 | `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8` | 263 | "The custom chips can only access Chip memory; using a non-Chip address will fail". "Fail" names no observable outcome. The system under test has no memory besides Chip memory, so a "non-Chip address" could only be an address above the selected Chip-memory size, and no page says what the port, the video or the audio output then show (p.169 says of the blitter only that such use "may result in destruction of the contents of Chip memory", again a possibility). No expected value. |
 | `5-appA-p263.c9`, `A-pre.c9` | 263 | "Disk data, sprite data, bitplane data, audio data, copper lists and anything that will be blitted or accessed by custom chip DMA must be located in chip memory." This is an instruction to the programmer. Every stimulus below obeys it, and P1 checks its positive side: audio DMA fetches its data from the Chip-memory location written. The page does not say what happens when the instruction is broken. |
+| `5-appA-p263.c1`, `A-pre.c1` | 263 | "680x0 address = (chip address) + $DFF000". The formula is stated for every custom register. Grading it would need an access through every register's address; P1 and P2 reach AUDxLCH, AUDxLCL, DMACON and DMACONR only, and use the formula to name them. |
 | `5-appB-p287.c5` | 287 | "+ Address register pair. Must be an even address pointing to chip memory." Same kind of claim: every location and pointer written below is even and lies in Chip memory, and the page does not say what happens otherwise. |
 | `5-appB-p290.c3` | 290 | "DMACON is assigned to Denise." The chip column says which chip decodes a register, and no output of the system shows that. The claim also comes from a text-layer error: the printed row on p.290 reads `DMACON 096 W A D P`, as p.278 does, but the text layer lost "A" and "P". |
 | `C-interp.copcon`, `C-interp.copcon.ecs` | 310 | The claims name a whole range: "the Copper can access the address range from $DFF03E through $DFF07E" (standard chip set) and "all of the Amiga chip registers" (ECS). Grading them would need an observation of the Copper's write to every register of the range. P10 and P11 observe the eight audio location registers and `$054`, `$056`, `$058`; `$07E` (DSKSYNC) and the unassigned addresses have no output at the RAM port. The two ids are declined, and P10 and P11 carry none. |
@@ -70,15 +71,15 @@ a blitter pointer keeps its high 5 bits (p.309).
 | Name | Address | Content |
 |---|---|---|
 | A_x (x = 0..3) | `$60000 + $1000*x` | audio data, 8 words (any values) |
-| A_x^L | `A_x + $0100` | copy of the audio data (P1 contrast C2) |
+| A_x^L | `A_x + $0100` | audio data, 8 words (any values; P1 contrast C2) |
 | L | `$64000` | Copper list (at most 64 bytes) |
 | S_0 | `$65000` | sprite 0 structure of p.109: `$6D60,$7200, $0990,$07E0, $13C8,$0FF0, $23C4,$1FF8, $13C8,$0FF0, $0990,$07E0, $0000,$0000` |
 | N_k (k = 1..7) | `$65000 + $100*k` | null sprite `$0000,$0000` |
 | F | `$66000` | 16 words `$FFFF` |
 | Zb | `$66100` | 16 words `$0000` |
 | P | `$68000` | bitplane area, `$8000` bytes, all zero |
-| A_x^H | `$70000 + $1000*x` (= `A_x + $10000`) | copy of the audio data (P1 contrast C1) |
-| B_x | `$70800 + $1000*x` | copy of the audio data (the location the Copper writes in P10) |
+| A_x^H | `$70000 + $1000*x` (= `A_x + $10000`) | audio data, 8 words (any values; P1 contrast C1) |
+| B_x | `$70800 + $1000*x` | audio data (any values; the location the Copper writes in P10) |
 | Q | `$74000` | blitter destination area, `$2000` bytes, all zero before each run |
 | Q2 | `$75000` | second blitter destination (P11), `$20` bytes |
 | G | `$78000` | CPU log area, `$4000` bytes |
@@ -171,7 +172,6 @@ program prints NOT GRADED on it.
   `B-aud3lcl.acc`
 - p.298: `5-appC-p298.c4`, `C-map.lch.acc`
 - p.309: `5-appC-p309.c4`
-- p.263, for the addresses: `5-appA-p263.c1`, `A-pre.c1`
 
 **Proposition.** For x = 0..3, when the 68000 writes an even Chip address A
 to AUDxLCH (`$DFF0A0 + $10*x`, high word) and AUDxLCL (`$DFF0A2 + $10*x`, low
@@ -280,7 +280,6 @@ of this proposition, is P1a and P1b together. P1a and P1b carry no claim id.
 - p.289: `5-appB-p289.c1`, `.c2`
 - the status part of the register, `5-appA-p278.c8`, `5-appA-p278.c10` and
   `5-appB-p289.c4`, is graded by the aggregate line DMACONR (after P9)
-- p.263: `5-appA-p263.c1`, `A-pre.c1`
 
 **Proposition.** A word read at `$DFF002` returns, in bits 10 and 8-0, the
 control bits last set or cleared through DMACON at `$DFF096`. Every one of
@@ -639,11 +638,12 @@ read on:
   blocks of 4096 words, zero-filled (section 2.3).
 
 **Observation.**
-- For the D-only blit, T_first and T_last are the times of the first and last
-  port write in [Q, Q + `$2000`). For the blit of USE code E they are the
-  times of the first and last port read in [SA, SC + `$2000`), the blitter's
-  A, B and C fetches (the 68000 never reads there). The interval
-  (T_first, T_last) is "while blitter DMA is running".
+- T_first and T_last are the times of the first and last blitter access at
+  the port, by one rule for every run: a port read in [SA, SC + `$2000`) or a
+  port write in [Q, Q + `$2000`) (the 68000 never reads SA-SC and never
+  writes Q). For the D-only blit they are its first and last destination
+  write, for the blit of USE code E its first and last A, B or C fetch. The
+  interval (T_first, T_last) is "while blitter DMA is running".
 - The test counts the CPU accesses (section 2.4) whose time lies inside that
   interval.
 
@@ -654,8 +654,9 @@ as P7-ON-E for the blit of USE code E.
 **Preconditions.**
 - G1.
 - The stored value shows bits 10, 9 and 6 set and no other bit among 8-0.
-- The blit ran: at least 2 writes in the Q range (2 reads in the source
-  range, for the blit of USE code E), so T_first < T_last.
+- The blit ran: every word of [Q, Q + `$2000`) was written (every word of
+  [SA, SC + `$2000`) read, for the blit of USE code E); BLTSIZE `$2020` is
+  128 rows of 32 words (p.269). (T_first, T_last) then spans the whole blit.
 - The CPU still wanted the bus when the blit ended: at least one CPU write
   into G falls after T_last, with a loop count below 2048.
 
@@ -664,21 +665,26 @@ as P7-ON-E for the blit of USE code E.
   access in (T_first, T_last), by p.198. All preconditions still hold, with
   bit 10 clear in the stored value. This run is graded in the normal run as
   P7-OFF (P7-OFF-E for the blit of USE code E).
-- For the comparators of P7-ON and P7-OFF: the BLTPRI-clear program put
-  through the zero-access comparator of P7-ON (it makes CPU accesses, so the
-  line goes red), and the main program put through the at-least-one
-  comparator of P7-OFF (it makes none, so the line goes red). The blit of USE
-  code E has the same pair for P7-ON-E and P7-OFF-E. The same two inputs of
-  the D-only blit are the contrasts of the aggregate line P7.
+- For the comparators of P7-ON, P7-OFF and P7: the programs of the blit of
+  USE code E. Its BLTPRI-set program makes no CPU access between its first
+  and last blitter access; put through the at-least-one comparator of P7-OFF
+  it turns that line red, and put through the zero-access comparator of
+  P7-ON, with its BLTPRI-clear program through the at-least-one comparator,
+  it turns P7-ON and the aggregate line P7 green. The blit of USE code E has
+  its own pair for P7-ON-E and P7-OFF-E: its BLTPRI-clear program through the
+  zero-access comparator and its main program through the at-least-one
+  comparator; both turn the line red.
 - For the "blit ran" precondition: replace the BLTSIZE write by a write to
   COLOR00 (`$180`). No blit starts and the precondition goes red.
 - For the "CPU still wanted the bus" precondition: the CPU's logging loop runs
-  before the BLTSIZE write. No log write follows T_last, the program still
-  finishes, and the precondition goes red.
+  before the BLTSIZE write, and the CPU then waits for the blit to end
+  without writing G. The blit completes, no log write follows T_last, the
+  program still finishes, and only this precondition goes red.
 
 **Reference frame.** The blit interval is anchored on the first and last
-destination write at the port (source read, for the blit of USE code E). The
-test checks the anchor by requiring at least two such accesses.
+blitter access at the port (destination write or source read, one rule for
+every run). The test checks the anchor by requiring every word of the run's
+own blocks to be accessed.
 
 **Not graded.**
 - The /BLS pin: it is inside the chips.
@@ -896,7 +902,10 @@ its inputs; otherwise it is `NOT GRADED` and names the unmet precondition.
 
 **Contrasting cases.** Each component has its own: the program without one
 SET write through the table of P2, and the exchanged program through the
-table of P9, turn the aggregate red through their component.
+table of P9, turn the aggregate red through their component. A system whose
+DMACONR reads bit 14 as 0 while a blit is still running turns P8 and the
+aggregate red with P9-G(after-completion) green (section 6, implementation
+copy).
 
 ### P10: The Copper writes AUDxLCH and AUDxLCL whatever the danger bit, under OCS and ECS
 
@@ -1123,8 +1132,8 @@ the real list and with both lists of the contrasting cases.
 
 | Proposition | Claims |
 |---|---|
-| P1 | `5-appA-p266.c2`, `5-appA-p266.c8`, `A-audxlch.acc`, `A-audxlcl.acc`, `5-appB-p290.c20`, `5-appB-p290.c27`, `5-appB-p290.c55`, `5-appB-p290.c62`, `5-appB-p290.c90`, `5-appB-p290.c97`, `5-appB-p290.c125`, `5-appB-p290.c132`, `B-aud0lch.acc`, `B-aud0lcl.acc`, `B-aud1lch.acc`, `B-aud1lcl.acc`, `B-aud2lch.acc`, `B-aud2lcl.acc`, `B-aud3lch.acc`, `B-aud3lcl.acc`, `5-appC-p298.c4`, `C-map.lch.acc`, `5-appC-p309.c4`, `5-appA-p263.c1`, `A-pre.c1` |
-| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2`, `5-appA-p263.c1`, `A-pre.c1` |
+| P1 | `5-appA-p266.c2`, `5-appA-p266.c8`, `A-audxlch.acc`, `A-audxlcl.acc`, `5-appB-p290.c20`, `5-appB-p290.c27`, `5-appB-p290.c55`, `5-appB-p290.c62`, `5-appB-p290.c90`, `5-appB-p290.c97`, `5-appB-p290.c125`, `5-appB-p290.c132`, `B-aud0lch.acc`, `B-aud0lcl.acc`, `B-aud1lch.acc`, `B-aud1lcl.acc`, `B-aud2lch.acc`, `B-aud2lcl.acc`, `B-aud3lch.acc`, `B-aud3lcl.acc`, `5-appC-p298.c4`, `C-map.lch.acc`, `5-appC-p309.c4` |
+| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2` |
 | P3 | `5-appA-p278.c17`, `A-dmacon.b08` |
 | P4 | `5-appA-p278.c18`, `A-dmacon.b07` |
 | P5 | `5-appA-p278.c19`, `A-dmacon.b06` |
@@ -1135,7 +1144,7 @@ the real list and with both lists of the contrasting cases.
 | DMACONR (P2, P8, P9) | `5-appA-p278.c8`, `5-appA-p278.c10`, `5-appB-p289.c4` |
 | P10 | none (section 1) |
 | P11 | none (section 1) |
-| none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3`, `C-interp.copcon`, `C-interp.copcon.ecs` |
+| none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3`, `5-appA-p263.c1`, `A-pre.c1`, `C-interp.copcon`, `C-interp.copcon.ecs` |
 
 ## 6. What the build adds
 
@@ -1160,14 +1169,32 @@ section 2.3, and the mechanism items below.
   RESULTS and, after the overlay is cleared, at R; the test reads the first
   by peeking memory and the second from the RAM-port record, which is how
   every proposition reads its results.
-- **DMA-block content.** Every DMA block a proposition reads from (audio
-  data, sprite structures, the Copper list, the all-ones block F) is poked
-  into chip RAM directly before `boot()`, the same mechanism
-  `load_program()` itself uses; no program instruction writes it. Zb, P and
-  the blitter source blocks SA, SB and SC are not poked: they are zero from
-  reset, as section 2.3 requires. Content is immaterial where section 2.3
+- **DMA-block content.** A_x, A_x^L and A_x^H, the sprite structures, the
+  Copper lists and the all-ones block F are poked into chip RAM directly
+  before `boot()`, the same mechanism `load_program()` itself uses; no
+  program instruction writes them. A_x^L and A_x^H hold patterns of their
+  own, not copies of A_x. Zb, P, B_x and the blitter source blocks SA, SB
+  and SC are not poked: they are zero from reset (section 2.3 requires that
+  of Zb, P and SA-SC). Content is immaterial where section 2.3
   says so ("any values"; the sprite and Copper-list content follow the
   pages P1/P6/P10/P11 cite).
+- **Implementation copy.** No stimulus can make a DMACONR read taken during
+  a running blit show bit 14 = 0 on a system that follows p.186, so the red of
+  P8 (b) on such a system is shown on a private copy of the design in which
+  bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still
+  running. `private_copy.patch` makes that copy from the pinned design; the
+  pinned design is never modified. `NMH_ONLY=P8 make priv-test-fx68k` and
+  `NMH_ONLY=P8 make priv-test-tg68k` (or `make priv-test` for both) copy the
+  design to `obj_dir_priv/`, apply the patch there and build the test against
+  the copy, each core in its own object directory (`obj_dir_priv_fx68k/`,
+  `obj_dir_priv_tg68k/`) and each writing its own output (`out_priv_fx68k.txt`,
+  `out_priv_tg68k.txt`); `obj_dir_fx68k/`, `obj_dir_tg68k/` and `out_fx68k.txt`,
+  `out_tg68k.txt` are those of the unmodified build and are not touched.
+  Measured, with `NMH_MUTATE` unset: `NMH_ONLY=P8` gives 7 passed, 1 failed on
+  each core (P8 fails, P8-G1 to P8-G4 and P8-NOBLIT pass; the poll holds 5
+  graded reads on fx68k and 6 on tg68k, and (b) fails over them);
+  `NMH_ONLY=P2,P8,P9` gives 18 passed, 2 failed on each core (P8 and DMACONR
+  fail; P9-G(after-completion) passes, so the aggregate is graded).
 - **R's stored values are read from the RAM port's own log** of the CPU's
   store instructions (the write's data field), not peeked from memory
   content: a value the program never actually stored is then absent, not
@@ -1300,6 +1327,7 @@ The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` 
 | `P11-NOBLTSIZE` | PASS | PASS |
 | `P11-NOPTR` | PASS | PASS |
 | `5-appA-p264.c2` | RECORDED | RECORDED |
+| `5-appA-p263.c1` | RECORDED | RECORDED |
 | `5-appB-p287.c5` | RECORDED | RECORDED |
 | `5-appB-p290.c3` | RECORDED | RECORDED |
 
