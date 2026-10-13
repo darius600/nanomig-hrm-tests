@@ -88,7 +88,7 @@ follows PRA bit 0 otherwise, as pp. 341 and 354 say; `minimig.v` keeps only bits
 
 | | |
 |---|---|
-| configuration — `chipset_config` driven with 0 ([`test_minimig.cpp:234`](../../hrm/ch7-overlay-source/test_minimig.cpp#L234)) | OCS, the **A500** mode |
+| configuration — `chipset_config` driven with 0 (`hrm/ch7-overlay-source/test_minimig.cpp:217`) | OCS, the **A500** mode |
 | precondition — `ovl` before the write | **1** |
 | after a byte write (lower data strobe) to CIA-A **timer A low** (`$BFE401`) | `ovl` reads **0** |
 | the same test built without the write (mutation build `MUT_2`, not run by `make test`) | `ovl` stays **1** |
