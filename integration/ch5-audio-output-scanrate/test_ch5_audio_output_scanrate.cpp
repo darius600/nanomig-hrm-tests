@@ -994,7 +994,7 @@ int main(int argc, char** argv) {
                         ": the refresh groups of prog_audio's own audio DMA interval, all of them, recur 227-228 color "
                         "clocks apart on average, so the window's level is 8 clk_sys cycles per color clock of the "
                         "programmed period";
-                    if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
+                    if (mv == "A6" && std::string(cs.label) == "ECS/PAL") a6l += " [NMH_MUTATE demonstrates this precondition red]";
                     checks.expect(a6_ok, a6l);
                 } else {
                     checks.record(std::string("A6 ") + cs.label + ": not graded, no audio read of any table");
@@ -1105,9 +1105,9 @@ int main(int argc, char** argv) {
                     FitResult fu, fl;
                     if (!L.empty()) { fu = fit(L, c_up()); fl = fit(L, c_low()); }
                     double b = fu.matches ? fu.b : fl.b;
-                    bool a4 = L.size() >= (size_t)(2 * t1.words);
+                    bool a4 = L.size() >= (size_t)(2 * t1.K);
                     std::string a4_label = std::string("A4 for T1 ") + cs.label +
-                        ": L has >= " + std::to_string(2 * t1.words) + " entries (" + std::to_string(L.size()) + ")";
+                        ": L has >= " + std::to_string(2 * t1.K) + " entries (" + std::to_string(L.size()) + ")";
                     if (mv == "A4") a4_label += " [NMH_MUTATE demonstrates this precondition red]";
                     checks.expect(a4, a4_label);
                     checks.note(std::string("fitted output change per LSB, T1 ") + cs.label + " (not graded): |b| = " +
@@ -1164,9 +1164,9 @@ int main(int argc, char** argv) {
                 } else {
                     auto& L = pc.L;
                     FitResult f2c = L.empty() ? FitResult{} : fit(L, c2());
-                    bool a4 = L.size() >= (size_t)(2 * t2.words);
+                    bool a4 = L.size() >= (size_t)(2 * t2.K);
                     checks.expect(a4, std::string("A4 for T2 ") + cs.label +
-                        ": L has >= " + std::to_string(2 * t2.words) + " entries (" + std::to_string(L.size()) + ")");
+                        ": L has >= " + std::to_string(2 * t2.K) + " entries (" + std::to_string(L.size()) + ")");
                     checks.note(std::string("fitted output change per LSB, T2 ") + cs.label + " (not graded): |b| = " +
                         fmt(std::fabs(f2c.b), 3) + " raw port counts");
                     if (!a4) {
@@ -1300,7 +1300,7 @@ int main(int argc, char** argv) {
                     ": the refresh groups of prog_t2s's own audio DMA interval, all of them, recur 227-228 color "
                     "clocks apart on average, so the window's level is 8 clk_sys cycles per color clock of the "
                     "programmed period";
-                if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
+                if (mv == "A6" && std::string(cs.label) == "ECS/PAL") a6l += " [NMH_MUTATE demonstrates this precondition red]";
                 checks.expect(cal.ok, a6l);
                 if (!cal.ok) {
                     checks.record(std::string("T2S ") + cs.label +
@@ -1369,9 +1369,9 @@ int main(int argc, char** argv) {
             }
             auto L = unwrap15(run_values(win.runs));
             FitResult fs = L.empty() ? FitResult{} : fit(L, c2s());
-            bool a4 = L.size() >= 4;
+            bool a4 = L.size() >= (size_t)(2 * ts2s.K);
             checks.expect(a4, std::string("A4 for T2S ") + cs.label +
-                ": L has >= 4 entries (" + std::to_string(L.size()) + ")");
+                ": L has >= " + std::to_string(2 * ts2s.K) + " entries (" + std::to_string(L.size()) + ")");
             checks.note(std::string("fitted output change per LSB, T2S ") + cs.label + " (not graded): |b| = " +
                 fmt(std::fabs(fs.b), 3) + " raw port counts");
             if (!a4) {
