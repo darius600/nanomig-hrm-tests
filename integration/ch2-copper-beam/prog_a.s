@@ -31,8 +31,10 @@
 ;   RUN_P7EARLY  -- WAIT($00,$60) and its marker precede WAIT($FF,$E0), so its
 ;                    second word is fetched on line 255; the other tail
 ;                    WAITs follow the padding as before.
-;   RUN_NOE1     -- A-noe1: SAMPLE_COUNT reads of VPOSR,VHPOSR, of which the
-;                    ones whose H is $E1 are not stored.
+;   RUN_NOE1     -- A-noe1: on each of NOE1_LINES lines, reads of VPOSR,VHPOSR
+;                    compared with $E1 and stored unless equal until H is
+;                    below NOE1_THR, then NOE1_BURST reads stored without
+;                    compare; no sample whose H is $E1 is stored.
 ;   RUN_TAILSHIFT-- the tail loop's WAIT(n,$60) becomes WAIT(n+1,$60).
 ;   RUN_LONGPAD  -- 16 further padding moves: WAIT(0,$60) is fetched after count $60.
 ;   RUN_NOFIX    -- the fixture constant is not stored (copbeam.i).
@@ -57,14 +59,9 @@ FLATDUP         macro                   ; DUP_GAP samples, then one read stored 
                 endm
 SLOW_BLOCK      equ     1000            ; samples between two delays
 SLOW_DELAY      equ     20              ; dbra iterations of a delay
-NOE1_BLOCK      equ     1000            ; reads between two loop controls
-E1READ          macro                   ; one read, stored unless its H is $E1
-                move.l  (a5),d1
-                cmp.b   d2,d1
-                beq.s   .skip\@
-                move.l  d1,(a6)+
-.skip\@:
-                endm
+NOE1_LINES      equ     3000            ; lines of A-noe1
+NOE1_THR        equ     $20             ; H below this starts the reads without compare
+NOE1_BURST      equ     15              ; reads without compare, ending before $E1
 
         org     PROGRAM_ORG
 
@@ -205,16 +202,30 @@ start:
         lea     TRACE_BASE,a6
 
         ifd     RUN_NOE1
-        ; SAMPLE_COUNT reads of the same register pair, each compared with $E1
-        ; in the H byte and stored unless equal
+        ; per line: every read compared with $E1 in the H byte and stored
+        ; unless equal, until H is below NOE1_THR (the next line has begun);
+        ; then NOE1_BURST reads stored without compare, which end before H
+        ; reaches $E1, and a delay of 8 + 2 * (line mod 32) cycles, so the
+        ; phase of the compared reads changes from line to line
         lea     VPOSR(a0),a5
         moveq   #$E1,d2
-        move.w  #(SAMPLE_COUNT/NOE1_BLOCK)-1,d6
-.e1block:
-        rept    NOE1_BLOCK
-        E1READ
+        moveq   #NOE1_THR,d3
+        moveq   #31,d5
+        moveq   #0,d6
+        move.w  #NOE1_LINES-1,d7
+.e1line: move.l (a5),d1
+        cmp.b   d2,d1
+        beq.s   .e1line
+        move.l  d1,(a6)+
+        cmp.b   d3,d1
+        bcc.s   .e1line
+        rept    NOE1_BURST
+        move.l  (a5),(a6)+
         endr
-        dbra    d6,.e1block
+        addq.w  #1,d6
+        and.w   d5,d6
+        lsl.l   d6,d0
+        dbra    d7,.e1line
         else
         ifd     RUN_SLOW
         move.w  #(SAMPLE_COUNT/SLOW_BLOCK)-1,d6

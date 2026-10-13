@@ -1,0 +1,11 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -247,7 +247,7 @@
+ reg end_of_line;
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+-		if (hpos[8:0]=={htotal[8:1],1'b0})
++		if (hpos[8:0]=={(htotal[8:1] + ((!pal && long_line) ? 8'd1 : 8'd0)),1'b0})
+ 			end_of_line <= 1'b1;
+ 		else
+ 			end_of_line <= 1'b0;

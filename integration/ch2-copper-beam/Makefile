@@ -17,7 +17,7 @@ include ../harness/nanomig.mk
 # Implementation-copy runs: the same package against a private copy of the
 # NanoMig chip-set RTL, made by applying a patch file of this package to a
 # copy of the pinned submodule's files. The submodule is never modified; each
-# copy is made under its own directory (obj_dir_op/, obj_dir_rn/), and each
+# copy is made under its own directory (obj_dir_op/, obj_dir_rn/, obj_dir_lc/, obj_dir_cs/), and each
 # core builds in its own object directory (obj_dir_<copy>_<core>/) and writes
 # its own output file (out_<copy>_<core>.txt), so obj_dir_<core>/ and
 # out_<core>.txt stay those of the unmodified build, which `make test` uses.
@@ -31,12 +31,29 @@ include ../harness/nanomig.mk
 #       The record of P1-ORIGIN (SPECIFICATION.md 8.6).
 #         NMH_ONLY=A make rn-test-fx68k
 #         NMH_ONLY=A make rn-test-tg68k
+#   lc: ntsc_long.patch -- the long NTSC lines are 228 counts long and the
+#       others 227 (0 ... $E3 and 0 ... $E2 alternating). The records of the
+#       P2-NTSC family (SPECIFICATION.md 8.6).
+#         NMH_ONLY=A make lc-test-fx68k
+#         NMH_ONLY=A make lc-test-tg68k
+#   cs: wait_e2.patch -- the Copper WAIT for ($FF,$E2) ends in line $FF. The
+#       record of P6-LARGEST (SPECIFICATION.md 8.6).
+#         NMH_ONLY=B make cs-test-fx68k
+#         NMH_ONLY=B make cs-test-tg68k
+# The directory of a private copy (obj_dir_<copy>/) is shared by its two
+# cores and is removed and made again by <copy>-rtl: build the two cores of a
+# copy one after the other (<copy>-test does), never in two shells at once, or
+# give each core its own copy directory.
 OP_DIR   := $(PKG_DIR)/obj_dir_op/minimig-aga
 OP_FILES := $(patsubst $(MINIMIG_DIR)/%,$(OP_DIR)/%,$(MINIMIG_FILES))
 RN_DIR   := $(PKG_DIR)/obj_dir_rn/minimig-aga
 RN_FILES := $(patsubst $(MINIMIG_DIR)/%,$(RN_DIR)/%,$(MINIMIG_FILES))
+LC_DIR   := $(PKG_DIR)/obj_dir_lc/minimig-aga
+LC_FILES := $(patsubst $(MINIMIG_DIR)/%,$(LC_DIR)/%,$(MINIMIG_FILES))
+CS_DIR   := $(PKG_DIR)/obj_dir_cs/minimig-aga
+CS_FILES := $(patsubst $(MINIMIG_DIR)/%,$(CS_DIR)/%,$(MINIMIG_FILES))
 
-.PHONY: op-rtl op-test op-test-fx68k op-test-tg68k rn-rtl rn-test rn-test-fx68k rn-test-tg68k
+.PHONY: op-rtl op-test op-test-fx68k op-test-tg68k rn-rtl rn-test rn-test-fx68k rn-test-tg68k \n        lc-rtl lc-test lc-test-fx68k lc-test-tg68k cs-rtl cs-test cs-test-fx68k cs-test-tg68k
 op-rtl:
 	rm -rf obj_dir_op
 	mkdir -p obj_dir_op
@@ -90,3 +107,57 @@ rn-test-tg68k: rn-rtl $(BINS)
 	( cd obj_dir_rn_tg68k && ./Vnanomig $(PKG_DIR) ) > out_rn_tg68k.txt; rc=$$?; cat out_rn_tg68k.txt; exit $$rc
 
 rn-test: rn-test-fx68k rn-test-tg68k
+
+lc-rtl:
+	rm -rf obj_dir_lc
+	mkdir -p obj_dir_lc
+	cp -r $(MINIMIG_DIR) obj_dir_lc/minimig-aga
+	cd obj_dir_lc/minimig-aga && patch -p1 < $(PKG_DIR)/ntsc_long.patch
+
+lc-test-fx68k: lc-rtl $(BINS)
+	rm -rf obj_dir_lc_fx68k out_lc_fx68k.txt
+	verilator $(COMMON_VFLAGS) -Wno-BLKANDNBLK --no-assert \
+		--Mdir obj_dir_lc_fx68k -cc --exe --build -j 0 \
+		$(LC_FILES) $(FX68K_FILES) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=fx68k"
+	cp $(FX68K_DIR)/microrom.mem $(FX68K_DIR)/nanorom.mem obj_dir_lc_fx68k/
+	( cd obj_dir_lc_fx68k && ./Vnanomig $(PKG_DIR) ) > out_lc_fx68k.txt; rc=$$?; cat out_lc_fx68k.txt; exit $$rc
+
+lc-test-tg68k: lc-rtl $(BINS)
+	rm -rf obj_dir_lc_tg68k out_lc_tg68k.txt
+	verilator $(COMMON_VFLAGS) \
+		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR \
+		-I$(NANOMIG)/sim \
+		--Mdir obj_dir_lc_tg68k -cc --exe --build -j 0 \
+		$(LC_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
+	( cd obj_dir_lc_tg68k && ./Vnanomig $(PKG_DIR) ) > out_lc_tg68k.txt; rc=$$?; cat out_lc_tg68k.txt; exit $$rc
+
+lc-test: lc-test-fx68k lc-test-tg68k
+
+cs-rtl:
+	rm -rf obj_dir_cs
+	mkdir -p obj_dir_cs
+	cp -r $(MINIMIG_DIR) obj_dir_cs/minimig-aga
+	cd obj_dir_cs/minimig-aga && patch -p1 < $(PKG_DIR)/wait_e2.patch
+
+cs-test-fx68k: cs-rtl $(BINS)
+	rm -rf obj_dir_cs_fx68k out_cs_fx68k.txt
+	verilator $(COMMON_VFLAGS) -Wno-BLKANDNBLK --no-assert \
+		--Mdir obj_dir_cs_fx68k -cc --exe --build -j 0 \
+		$(CS_FILES) $(FX68K_FILES) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=fx68k"
+	cp $(FX68K_DIR)/microrom.mem $(FX68K_DIR)/nanorom.mem obj_dir_cs_fx68k/
+	( cd obj_dir_cs_fx68k && ./Vnanomig $(PKG_DIR) ) > out_cs_fx68k.txt; rc=$$?; cat out_cs_fx68k.txt; exit $$rc
+
+cs-test-tg68k: cs-rtl $(BINS)
+	rm -rf obj_dir_cs_tg68k out_cs_tg68k.txt
+	verilator $(COMMON_VFLAGS) \
+		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR \
+		-I$(NANOMIG)/sim \
+		--Mdir obj_dir_cs_tg68k -cc --exe --build -j 0 \
+		$(CS_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
+	( cd obj_dir_cs_tg68k && ./Vnanomig $(PKG_DIR) ) > out_cs_tg68k.txt; rc=$$?; cat out_cs_tg68k.txt; exit $$rc
+
+cs-test: cs-test-fx68k cs-test-tg68k

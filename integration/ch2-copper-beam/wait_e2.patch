@@ -1,0 +1,11 @@
+--- a/agnus_copper.v
++++ b/agnus_copper.v
+@@ -305,7 +305,7 @@
+ always @(posedge clk)
+   if (clk7_en) begin
+   	if (clk_ena)
+-  		if ({vpos[7:0],hpos[8:2]} >= {vercmp[7:0],horcmp[8:2]}) 
++  		if ({vpos[7:0],hpos[8:2]} >= {vercmp[7:0],horcmp[8:2]} || (beam_match && copper_state==WAITSKIP2))
+   			beam_match <= 1'b1;
+   		else
+   			beam_match <= 1'b0;

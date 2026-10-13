@@ -205,8 +205,8 @@ start:
         move.w  #$00D4,DDFSTOP(a0)
         else
         ifd     RUN_EBRDBLNK
-        move.w  #$0020,BPLCON3(a0)
         move.w  #$1201,BPLCON0(a0)
+        move.w  #$0020,BPLCON3(a0)
         else
         move.w  #$1200,BPLCON0(a0)
         endif
