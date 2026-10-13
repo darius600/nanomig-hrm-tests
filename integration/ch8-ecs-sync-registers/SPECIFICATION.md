@@ -237,8 +237,11 @@ on it report "precondition not met", and every other precondition stays green.
   call, the same call that reads ID. It is asserted first, so every later read
   through that call rests on it. It stores nothing the markers or the samples
   depend on.
+  - Every PC-ID line, in both groups, reads its ID through that call and is
+    gated on FIXTURE.
   - *Contrast:* the same program storing `$DEAD` instead. FIXTURE fails; the
-    markers, the samples and DONE are the normal run's.
+    markers, the samples and DONE are the normal run's, and every PC-ID line
+    reports "precondition not met".
 - **PC-ID (ECS and PAL).** The program's first register read is `VPOSR`,
   stored to a Chip-memory word ID before any BEAMCON0 write. Bits 14 to 8
   (I6 to I0) must hold the value p.299 gives for the enhanced Agnus in PAL:
@@ -383,13 +386,13 @@ met".
 | X-HALT-S | SA with MARK1's write omitted | PC-MARK [SA] |
 | X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE [H1] |
 | X-SHORT, X-SHORT-H2, X-SHORT-H1C, X-SHORT-H2C | the run with a `DBRA` count of 16 blocks (1024 samples), followed by a delay loop that keeps the MARK1..MARK2 window as long as the normal run's | P1-LINES [run] |
-| X-LATE, X-LATE-H2, X-LATE-H1C, X-LATE-H2C | the run with all 16384 samples but MARK1 written only when 15 blocks remain | P2-LINES [run] |
+| X-LATE, X-LATE-H2, X-LATE-H1C, X-LATE-H2C | the run with all 16384 samples but MARK1 written only after the last of them, followed by a delay loop that keeps the MARK1..MARK2 window short | P2-LINES [run] |
 | X-BURST, X-BURST-H2 | H1 / H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER [H1] / [H2] |
-| X-AUD0, X-AUD0-H2, X-AUD0-H1C, X-AUD0-H2C | the run with audio channel 0 DMA started (p.145: location, length 8, volume 64, period 124, enable; p.140 and p.266 give 124 as the smallest period, p.140 gives 64 as the maximum volume) | A2 [run] |
+| X-AUD0, X-AUD0-H2, X-AUD0-H1C, X-AUD0-H2C | the run with audio channel 0 DMA started (p.145: location, length 8, volume 64, period 124, enable; p.266 gives 124 as the smallest period (p.140: 124 NTSC, 123 PAL), p.140 gives 64 as the maximum volume) | A2 [run] |
 | X-NOBPL, X-NOBPL-SB, X-NOBPL-SC, X-NOBPL-SA0, X-NOBPL-SB0, X-NOBPL-SC0 | the run with PLANE holding only 32 of its 256 lines of pattern | P3/P4-LINES [run] |
 | X-A4DOUBLE | SA with every line's data words changed to 6 black, 6 white, 2 black, 6 white | A4 (transition clause) |
 | X-A4WIDTH | SA with every line's data words changed to 14 black, 5 white, 1 black | A4 (width clause) |
-| X-SHIFT-SA, -SB, -SC, -SA0, -SB0, -SC0 | the run whose lines 128 to 255 of PLANE carry the white span one data word earlier, same width | P3/P4(a) [run] |
+| X-SHIFT-SA, -SB, -SC, -SA0, -SB0, -SC0 | the run whose lines 0 to 127 of PLANE carry the white span one data word earlier, same width | P3/P4(a) [run] |
 | X-A5REF | SA0 with audio channel 0 DMA started on a one-word buffer at Chip address 0 (p.145; period 124) | A5-REF |
 | P3C | SB with HSSTOP also changed (s = `$0020`, e = `$0040`) | P3(c) |
 | P4C | SC with HSSTRT also changed (s = `$0020`, e = `$0040`) | P4(c) |
@@ -407,11 +410,11 @@ comparator and changes nothing else; section 7 lists the line each turns red.
 | P2B | H1c's and H2c's first periods in P2(b) |
 | P2C | H1c's first period in P2(c) |
 | P2CON | H1's and H2's periods in P2-CONTRAST |
-| A5 | SB's lines in place of SB0's in A5 |
+| A5 | the X-SHIFT-SB0 capture's lines (prog_s_sb0_shift.bin; p.58 to p.60 place the landmark of half of its lines one data word earlier) in place of SB0's in A5 |
 | P3-NOMOVE | SA's lines in place of SB's in P3(b) |
 | P4-NOMOVE | SA's lines in place of SC's in P4(b) |
-| P3CON | SB's lines in place of SB0's in P3-CONTRAST |
-| P4CON | SC's lines in place of SC0's in P4-CONTRAST |
+| P3CON | SA's and SB's lines (VARHSYEN = 1) in place of SA0's and SB0's in P3-CONTRAST |
+| P4CON | SA's and SC's lines (VARHSYEN = 1) in place of SA0's and SC0's in P4-CONTRAST |
 
 ## 6. Propositions
 
@@ -523,6 +526,8 @@ comparator and changes nothing else; section 7 lists the line each turns red.
      the run. Consumes kCck (via the 32-CCK refresh grouping); records
      "precondition not met" unless both A3 lines hold. The contrast runs'
      lines gate P2-CONTRAST and A2 [H1c], A2 [H2c].
+   - **A2 [H1], [H2]** (P2(a), P2(b), P2(c), P2) and **A2 [H1c], [H2c]**
+     (P2-CONTRAST).
 6. **Contrasting cases.**
    - Runs H1c and H2c. With VARBEAMEN = 0, the page's condition for HTOTAL
      does not hold. Every graded period in H1c equals every graded period in
@@ -538,7 +543,8 @@ comparator and changes nothing else; section 7 lists the line each turns red.
    position.
    - **Anchor A2** (one line per H run): every graded period contains
      exactly 4 refresh accesses. Gated on the run's PC-ID, PC-MARK and
-     P2-LINES (hence on both A3 lines).
+     P2-LINES (hence on both A3 lines). It gates P2(a), P2(b), P2(c), P2 and
+     P2-CONTRAST for the runs each of them reads.
    - **Anchor A3** (A3 [H1c], A3 [H2c]): in the run, every graded period --
      not only the first -- is exactly divisible by kCck (the clk_sys-per-CCK
      ratio) and converts to 227 or 228 color clocks. p.23 gives 227. p.304's
@@ -673,6 +679,10 @@ comparator and changes nothing else; section 7 lists the line each turns red.
      chip's lines. A5 therefore cannot attribute the move of (b) and (c) to
      the leading edge specifically rather than to the picture; it
      establishes only that the apparatus itself is exact when nothing moves.
+     Contrast: the lines of the X-SHIFT-SB0 capture in place of SB0's. Its
+     landmark sits one data word earlier in half of its lines (p.58 to
+     p.60), so M's distance to R is no longer the same within a class and A5
+     goes red.
    - **Stated limit.** P3 and P4 are graded in the picture-relative frame:
      dL and dT are distances from the sync edges to the landmark M, and a
      change of HSSTRT or HSSTOP shows as a change of one distance with
@@ -816,7 +826,7 @@ them, and nothing else changed.
 
 | NMH_MUTATE | Went red | Printed "precondition not met" | fx68k | TG68K |
 |---|---|---|---|---|
-| `FIXTURE` | FIXTURE | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `FIXTURE` | FIXTURE | PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, PC-ID [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0], P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4 | 20 passed, 1 failed | 20 passed, 1 failed |
 | `X-OCS` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
 | `X-NTSC` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
 | `X-HALT-H` | PC-MARK [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 72 passed, 1 failed | 72 passed, 1 failed |
@@ -833,10 +843,10 @@ them, and nothing else changed.
 | `X-LATE-H2C` | P2-LINES [H2c] | A2 [H2c], P2-CONTRAST | 79 passed, 1 failed | 79 passed, 1 failed |
 | `X-BURST` | P1-COVER [H1] | P1 [H1] | 80 passed, 1 failed | 80 passed, 1 failed |
 | `X-BURST-H2` | P1-COVER [H2] | P1 [H2] | 80 passed, 1 failed | 80 passed, 1 failed |
-| `X-AUD0` | A2 [H1] | - | 81 passed, 1 failed | 81 passed, 1 failed |
-| `X-AUD0-H2` | A2 [H2] | - | 81 passed, 1 failed | 81 passed, 1 failed |
-| `X-AUD0-H1C` | A2 [H1c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
-| `X-AUD0-H2C` | A2 [H2c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `X-AUD0` | A2 [H1] | P2(a) [H1], P2(b), P2(c), P2 | 77 passed, 1 failed | 77 passed, 1 failed |
+| `X-AUD0-H2` | A2 [H2] | P2(a) [H2], P2(b), P2(c), P2 | 77 passed, 1 failed | 77 passed, 1 failed |
+| `X-AUD0-H1C` | A2 [H1c] | P2-CONTRAST | 80 passed, 1 failed | 80 passed, 1 failed |
+| `X-AUD0-H2C` | A2 [H2c] | P2-CONTRAST | 80 passed, 1 failed | 80 passed, 1 failed |
 | `A1` | A1 [H1c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
 | `A1-H2` | A1 [H2c] | - | 81 passed, 1 failed | 81 passed, 1 failed |
 | `A3` | A3 [H1c] | P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5 | 61 passed, 1 failed | 61 passed, 1 failed |
@@ -865,7 +875,7 @@ them, and nothing else changed.
 | `X-SHIFT-SB0` | P3/P4(a) [SB0], P3 | A5, P3-CONTRAST | 78 passed, 2 failed | 78 passed, 2 failed |
 | `X-SHIFT-SC0` | P3/P4(a) [SC0], P4 | A5, P4-CONTRAST | 78 passed, 2 failed | 78 passed, 2 failed |
 | `X-A5REF` | A5-REF | A5 | 80 passed, 1 failed | 80 passed, 1 failed |
-| `A5` | A5 | - | 81 passed, 1 failed | 81 passed, 1 failed |
+| `A5` | A5 | - | 84 passed, 1 failed | 84 passed, 1 failed |
 | `P3C` | P3(c), P3 | - | 80 passed, 2 failed | 80 passed, 2 failed |
 | `P4C` | P4(c), P4 | - | 80 passed, 2 failed | 80 passed, 2 failed |
 | `P3-NOMOVE` | P3(b), P3 | - | 80 passed, 2 failed | 80 passed, 2 failed |
@@ -882,7 +892,8 @@ the row targets; the P2A and P2A-H2 captures, which are inputs of one
 proposition line only, print their own PC-ID, PC-MARK, DONE and P2-LINES
 lines under the tags `[H1,P2A]` and `[H2,P2A-H2]`. The proposition rows
 (`A1`, `A1-H2`, `A3`, `A3-H2`, `P1`, `P1-H2`, `P1C`, `P1C-H2`, `P2B`, `P2C`,
-`P2CON`, `A5`, `P3-NOMOVE`, `P4-NOMOVE`, `P3CON`, `P4CON`) run no capture of
+`P2CON`, `P3-NOMOVE`, `P4-NOMOVE`, `P3CON`, `P4CON`) run no capture of
 their own: they feed other runs' measured values through the unchanged
-comparator. `BOGUS` stands for any value no branch of the test knows: the
+comparator. `A5` runs the X-SHIFT-SB0 capture and prints its own PC-ID,
+PC-MARK and DONE lines under the tag `[SB0,A5]`. `BOGUS` stands for any value no branch of the test knows: the
 test prints a FAIL line for it and otherwise runs as the normal run.
