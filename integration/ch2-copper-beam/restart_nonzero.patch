@@ -1,0 +1,20 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -247,7 +247,7 @@
+ reg end_of_line;
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+-		if (hpos[8:0]=={htotal[8:1],1'b0})
++		if (hpos[8:0]=={(htotal[8:1] + 8'd1),1'b0})
+ 			end_of_line <= 1'b1;
+ 		else
+ 			end_of_line <= 1'b0;
+@@ -264,7 +264,7 @@
+ 		if (reg_address_in[8:1]==VHPOSW[8:1])
+ 			hpos_r[8:1] <= data_in[7:0]; 
+ 		else if (end_of_line)
+-			hpos_r[8:1] <= 0;
++			hpos_r[8:1] <= 1;
+ 		else if (cck && (~ersy || |hpos_r[8:1]))
+ 			hpos_r[8:1] <= hpos_r[8:1] + 1'b1;
+ 	end

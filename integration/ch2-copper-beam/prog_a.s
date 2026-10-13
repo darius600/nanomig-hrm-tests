@@ -19,13 +19,11 @@
 ;                    after every DUP_GAP samples.
 ;   RUN_ANCHOR   -- A-anchor: the main loop's WAIT target is v+1 instead of
 ;                    v (v running $30..$FE), while MARK(v) keeps v.
-;   RUN_SHIFT    -- A-shift: WAIT($80,$42) in place of WAIT($80,$40).
 ;   RUN_P2WAITED -- an extra WAIT($7F,$40) inserted right after MARK($7F):
 ;                    it is already satisfied when fetched (P2's "waited"
 ;                    precondition mutation).
 ;   RUN_NODONE   -- the whole program, but it halts in place of storing the
 ;                    completion word.
-;   RUN_SHORT    -- A-short: the trace buffer holds 64 samples.
 ;   RUN_FEW      -- A-few: the trace buffer holds 35000 samples.
 ;   RUN_EARLYCOP -- the Copper is started before the list is written; the
 ;                    CPU writes the list once V is in $20 .. $3F.
@@ -33,9 +31,8 @@
 ;   RUN_P7EARLY  -- WAIT($00,$60) and its marker precede WAIT($FF,$E0), so its
 ;                    second word is fetched on line 255; the other tail
 ;                    WAITs follow the padding as before.
-;   RUN_NOH0     -- the sampler stores bursts of NOH0_BURST samples that
-;                    start at H >= $10 and end before the end of the line,
-;                    so H = 0 is never stored.
+;   RUN_NOE1     -- A-noe1: SAMPLE_COUNT reads of VPOSR,VHPOSR, of which the
+;                    ones whose H is $E1 are not stored.
 ;   RUN_TAILSHIFT-- the tail loop's WAIT(n,$60) becomes WAIT(n+1,$60).
 ;   RUN_LONGPAD  -- 16 further padding moves: WAIT(0,$60) is fetched after count $60.
 ;   RUN_NOFIX    -- the fixture constant is not stored (copbeam.i).
@@ -43,14 +40,10 @@
         include "nanomig.i"
         include "copbeam.i"
 
-        ifd     RUN_SHORT
-SAMPLE_COUNT    equ     64
-        else
         ifd     RUN_FEW
 SAMPLE_COUNT    equ     35000
         else
 SAMPLE_COUNT    equ     50000
-        endif
         endif
 NOCOP_FIRST     equ     28000           ; samples before DMACON is written
 DUP_GAP         equ     5000            ; samples between two reads stored twice
@@ -64,8 +57,14 @@ FLATDUP         macro                   ; DUP_GAP samples, then one read stored 
                 endm
 SLOW_BLOCK      equ     1000            ; samples between two delays
 SLOW_DELAY      equ     20              ; dbra iterations of a delay
-NOH0_LINES      equ     2500            ; lines sampled
-NOH0_BURST      equ     12              ; samples of a burst
+NOE1_BLOCK      equ     1000            ; reads between two loop controls
+E1READ          macro                   ; one read, stored unless its H is $E1
+                move.l  (a5),d1
+                cmp.b   d2,d1
+                beq.s   .skip\@
+                move.l  d1,(a6)+
+.skip\@:
+                endm
 
         org     PROGRAM_ORG
 
@@ -105,15 +104,7 @@ start:
         addq.w  #1,d1
         endif
         lsl.w   #8,d1
-        ifd     RUN_SHIFT
-        cmpi.w  #$80,d0
-        bne.s   .noshift80
-        ori.w   #$43,d1                ; WAIT($80,$42)
-        bra.s   .wwrite
-.noshift80:
-        endif
         ori.w   #$41,d1                ; WAIT(v[+1],$40)
-.wwrite:
         move.w  d1,(a1)+
         move.w  #$FFFE,(a1)+
         move.w  #$01FE,(a1)+
@@ -213,22 +204,17 @@ start:
         ; ---- step 6: trace loop -----------------------------------------
         lea     TRACE_BASE,a6
 
-        ifd     RUN_NOH0
-        ; one burst per line: wait for the start of a line (H below $30), then
-        ; for H >= $10, and store NOH0_BURST samples, which end before the end
-        ; of the line
-        move.w  #NOH0_LINES-1,d7
-.nline:
-.nw1:   move.b  VHPOSR+1(a0),d0
-        cmpi.b  #$30,d0
-        bcc.s   .nw1
-.nw2:   move.b  VHPOSR+1(a0),d0
-        cmpi.b  #$10,d0
-        bcs.s   .nw2
-        rept    NOH0_BURST
-        move.l  VPOSR(a0),(a6)+
+        ifd     RUN_NOE1
+        ; SAMPLE_COUNT reads of the same register pair, each compared with $E1
+        ; in the H byte and stored unless equal
+        lea     VPOSR(a0),a5
+        moveq   #$E1,d2
+        move.w  #(SAMPLE_COUNT/NOE1_BLOCK)-1,d6
+.e1block:
+        rept    NOE1_BLOCK
+        E1READ
         endr
-        dbra    d7,.nline
+        dbra    d6,.e1block
         else
         ifd     RUN_SLOW
         move.w  #(SAMPLE_COUNT/SLOW_BLOCK)-1,d6

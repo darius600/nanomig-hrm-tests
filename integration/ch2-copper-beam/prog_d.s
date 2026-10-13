@@ -10,8 +10,9 @@
 ;   RUN_EWIDEFETCH -- E-widefetch: DDFSTRT $30, DDFSTOP $D8, 22 words per line.
 ;   RUN_EWIDEWIN   -- E-widewindow: E-widefetch with DIWSTRT $2C71 and
 ;                     DIWSTOP $..D1.
-;   RUN_EBLACK     -- E-black: COLOR00 = $000.
-;   RUN_EBLACKGAP  -- E-black with the 10th plane word of every line $0000.
+;   RUN_EBRDBLNK   -- E-border-blank: Run E with BPLCON0 bit 0 and BPLCON3 bit 5 set
+;                     (p.307: ENBPLCN3, BRDRBLNK "Border blank").
+;   RUN_EBLACKGAP  -- COLOR00 = $000 with the 10th plane word of every line $0000.
 ;   RUN_ENOBPL     -- Run E with bitplane DMA left off (DMACON = $8280).
 ;   RUN_DFLAT      -- D-flat: D-lo / D-hi with every plane word $FFFF.
 ;   RUN_DSHIFT     -- D-shift: line $50, second WAIT at $36+2*24+2.
@@ -203,7 +204,12 @@ start:
         move.w  #$003C,DDFSTRT(a0)
         move.w  #$00D4,DDFSTOP(a0)
         else
+        ifd     RUN_EBRDBLNK
+        move.w  #$0020,BPLCON3(a0)
+        move.w  #$1201,BPLCON0(a0)
+        else
         move.w  #$1200,BPLCON0(a0)
+        endif
         ifd     RUN_EWIDEFETCH
         move.w  #$0030,DDFSTRT(a0)
         move.w  #$00D8,DDFSTOP(a0)
@@ -217,14 +223,10 @@ start:
         endif
         endif
         endif
-        ifd     RUN_EBLACK
-        move.w  #$0000,COLOR00(a0)
-        else
         ifd     RUN_EBLACKGAP
         move.w  #$0000,COLOR00(a0)
         else
         move.w  #$000F,COLOR00(a0)
-        endif
         endif
         ifd     RUN_E
         move.w  #$0FF0,COLOR01(a0)
@@ -235,14 +237,10 @@ start:
         ifd     RUN_EWIDEWIN
         move.w  #$0FF0,COLOR01(a0)
         else
-        ifd     RUN_EBLACK
-        move.w  #$0FF0,COLOR01(a0)
-        else
         ifd     RUN_EBLACKGAP
         move.w  #$0FF0,COLOR01(a0)
         else
         move.w  #$0FFF,COLOR01(a0)
-        endif
         endif
         endif
         endif

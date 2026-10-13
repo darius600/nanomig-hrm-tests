@@ -12,6 +12,7 @@ COPJMP1         equ     $088
 BPLCON0         equ     $100
 BPLCON1         equ     $102
 BPLCON2         equ     $104
+BPLCON3         equ     $106
 DIWSTRT         equ     $08E
 DIWSTOP         equ     $090
 DDFSTRT         equ     $092
