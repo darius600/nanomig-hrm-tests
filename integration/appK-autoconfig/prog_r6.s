@@ -5,13 +5,11 @@
 ; the RESET sequence of section 2.3, whose tail is R6/R6m's own last
 ; action instead of a hang loop.
 ;
-; Three independent points vary, each selected by a symbol an including
+; Two independent points vary, each selected by a symbol an including
 ; source sets before this file; prog_r6.s itself sets none of them:
 ;   MUT_R6M       -- selects the R6m ending (P0'=$6996 re-check at B1)
 ;                     instead of R6's own ending (IMG3 read)
 ;   MUT_R6_NORESET -- R6a/R6am: RESET at A replaced by NOP
-;   MUT_R6_HANG    -- the instruction stream stops at the tail (no M2, no
-;                     completion marker)
 
         include "nanomig.i"
         include "common.i"
@@ -105,9 +103,6 @@ seq_a:
 seq_ap2:
         move.w  d0,(a0)
 tail:
-        ifd     MUT_R6_HANG
-.stop:  bra.s   .stop                   ; the stream stops here: no M2, no completion marker
-        endif
         move.w  #V2,MK2
 
         ifd     MUT_R6M
