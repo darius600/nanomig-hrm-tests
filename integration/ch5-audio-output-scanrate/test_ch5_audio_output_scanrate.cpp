@@ -4,7 +4,7 @@
 // sequence; table content is poked directly into chip RAM (the same
 // "direct memory preload" mechanism load_program() itself uses), so one
 // capture's ram_log()+audio() trace serves all four propositions and
-// their shared preconditions A1-A5. P3B: prog_t2s.s. P5: prog_adkcon.s.
+// their shared preconditions A1-A6. P3B: prog_t2s.s. P5: prog_adkcon.s.
 // P6/F1/F3: prog_diskrate.s.
 //
 // Measured, per core and per config: channel 0's own byte sequence
@@ -25,7 +25,7 @@
 // NMH_MUTATE selects one mutated program or table in place of its normal
 // counterpart; unset, every section runs its normal binary and table, and
 // the summary counts the fixture, preconditions and assertions only.
-// Selectors: P1 P1LAST P2 P3 P4 A1 A2 A2T A4 A5 A5SYS A6 P3B P5 C1 C1DUP FASTF0 FASTS1 B2 B3 F1
+// Selectors: P1 P1LAST P2 P3 P4 A1 A2 A2T A3 A4 A5 A5SYS A6 P3B P5 C1 C1DUP FASTF0 FASTS1 B2 B3 F1
 // FIXCONST FIXDATA FIXWRITE NODONE.
 //
 // Each MUTATION record states the measured result of its selector on both
@@ -69,32 +69,35 @@
 //   graded (RECORDED, "precondition A2 failed or not graded"); A1 of every table unchanged
 //   fx68k 20 passed, 2 failed; TG68K 20 passed, 2 failed
 // MUTATION A2 stimulus red NMH_MUTATE=A2T: ADKCON $8001 (USE0V1) set before the ADKCONR read of prog_t2s
-//   measured: fx68k and TG68K: A2 for T2S red (ECS/PAL, OCS/PAL); T2S's A3-A6 and P3B not graded (RECORDED,
-//   "precondition A2 failed"); A1 for T2S and every other line unchanged
-//   fx68k 10 passed, 2 failed; TG68K 10 passed, 2 failed
-// MUTATION A3 none impossible unfalsifiable at this boundary: this harness's audio() capture is one sample per
-//   clk_sys cycle, far above the sample-rate threshold at which P=124 would fail A3 (SPECIFICATION.md 2.7); no
-//   legal period fails A3 on this harness, so no stimulus makes it red and no NMH_MUTATE run stands behind this record
-// MUTATION A4 stimulus red NMH_MUTATE=A4: T1's AUD0VOL = 0 instead of 64
-//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 1 entry); T1's A5, P1 and P2 not graded
-//   (RECORDED, "precondition A4 failed"); A1 and A3 for T1 green, T2 and T3 unchanged
+//   measured: fx68k and TG68K: A2 for T2S red (ECS/PAL, OCS/PAL); T2S's A3-A5 and P3B not graded (RECORDED,
+//   "precondition A2 failed"); A1 and A6 for T2S and every other line unchanged
+//   fx68k 12 passed, 2 failed; TG68K 12 passed, 2 failed
+// MUTATION A3 stimulus red NMH_MUTATE=A3: T1's AUD0PER = 129 instead of 128 (T2 and T3 keep 128)
+//   measured: fx68k and TG68K: A3 for T1 red (ECS/PAL, OCS/PAL; median run 1032 against the programmed held level
+//   of 1024); T1's A4, A5, P1 and P2 not graded (RECORDED, "precondition A3 failed"); A1 and A6 for T1, T2 and T3
+//   unchanged
+//   fx68k 38 passed, 2 failed; TG68K 38 passed, 2 failed
+// MUTATION A4 stimulus red NMH_MUTATE=A4: T1's AUD0VOL set to 0 seven lines after its DMA starts, inside the window
+//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 5 entries on fx68k and 4 on TG68K, the output
+//   flat from there on); A3 for T1 green (median run 1024); T1's P1 and P2 not graded (RECORDED, "precondition A4
+//   failed"); A1 for T1, T2 and T3 unchanged
 //   fx68k 40 passed, 2 failed; TG68K 40 passed, 2 failed
 // MUTATION A5 stimulus red NMH_MUTATE=A5: T2's word 2 changed from $0101 to $0000 (repeats word 1's code, adjacent
 //   within a pass)
 //   measured: fx68k and TG68K: A5 for T2 red (ECS/PAL, OCS/PAL; 24 found where 32 is the programmed population: one
 //   level lost per pass, 8 passes); P3 not graded (RECORDED, "precondition A5 failed"); no other line changes
 //   fx68k 44 passed, 2 failed; TG68K 44 passed, 2 failed
-// MUTATION A5 stimulus red NMH_MUTATE=A5SYS: T1's words $0000, $2020, $4040, $6060 (every pair of adjacent codes equal:
+// MUTATION A3 stimulus red NMH_MUTATE=A5SYS: T1's words $0000, $2020, $4040, $6060 (every pair of adjacent codes equal:
 //   levels twice as long, half as many)
-//   measured: fx68k and TG68K: A5 for T1 red (ECS/PAL, OCS/PAL; 32 found where 64 is the programmed population);
-//   A3 for T1 green (median run 2048); P1 and P2 not graded (RECORDED, "precondition A5 failed"); no other line changes
-//   fx68k 42 passed, 2 failed; TG68K 42 passed, 2 failed
+//   measured: fx68k and TG68K: A3 for T1 red (ECS/PAL, OCS/PAL; median run 2048 against the programmed held level of
+//   1024); T1's A4, A5, P1 and P2 not graded (RECORDED, "precondition A3 failed"); no other line changes
+//   fx68k 38 passed, 2 failed; TG68K 38 passed, 2 failed
 // MUTATION A6 stimulus red NMH_MUTATE=A6: before the tables start, VTOTAL=524/HTOTAL=113/BEAMCON0=$00A0 in prog_audio and in
 //   prog_t2s (ECS only, 2.4)
 //   measured: fx68k and TG68K: A6 red for prog_audio and for T2S (ECS/PAL only; OCS/PAL has no such registers and stays
-//   green); behind them not graded (RECORDED, "precondition A6 failed"): A3-A5 and P1-P4 of T1, T2, T3 and A3-A5 and
-//   P3B of T2S in ECS/PAL; every other line unchanged
-//   fx68k 51 passed, 2 failed; TG68K 51 passed, 2 failed
+//   green); behind them not graded (RECORDED, "precondition A6 failed"): A1, A3-A5 and P1-P4 of T1, T2, T3 and
+//   A1-A5 and P3B of T2S in ECS/PAL; every other line unchanged
+//   fx68k 46 passed, 2 failed; TG68K 46 passed, 2 failed
 // MUTATION P3B stimulus red NMH_MUTATE=P3B: T2S's two words byte-swapped ($8001,$7F00 -> $0180,$007F)
 //   measured: fx68k and TG68K: P3B red (ECS/PAL, OCS/PAL); no other line changes (T2S's own program is
 //   independent of prog_audio.s)
@@ -105,9 +108,10 @@
 //   "audio fixture did not complete"); 0 passed, 2 failed on both cores
 // MUTATION FIXTURE-CONST stimulus red NMH_MUTATE=FIXCONST: each of the four programs' own KFIX store becomes $DEAD instead of $BEEF
 //   measured: fx68k and TG68K: all nine FIXTURE-CONST lines red (prog_audio x2, prog_t2s x2, prog_adkcon x2,
-//   prog_diskrate x3); behind them not graded (RECORDED): A2 and A2 for T2S, then A3, A4, A5 and P1-P4 of every table
-//   (ECS/PAL, OCS/PAL), C1 and P5 (x2), B1 and B2 of both disk runs (x3); every other line unchanged
-//   fx68k 61 passed, 9 failed; TG68K 61 passed, 9 failed
+//   prog_diskrate x3); behind them not graded (RECORDED): A2 and A2 for T2S, then A3, A4, A5 and P1-P4 of T1, T2 and
+//   T3 and A3-A5 and P3B of T2S (ECS/PAL, OCS/PAL), C1 and P5 (x2), B1 and B2 of both disk runs (x3); A6 of both
+//   programs, which reads no result slot, stays graded and green; every other line unchanged
+//   fx68k 63 passed, 9 failed; TG68K 63 passed, 9 failed
 // MUTATION FIXTURE-DATA stimulus red NMH_MUTATE=FIXDATA: one word of every poked table other than the content the
 //   check expects (T1 word 2 $2031, T2 word 2 $0100, T3 word 11 flipped in bit 0, T2S word 2 $7F01) and both disk
 //   buffers poked with $5555 instead of $AAAA
@@ -119,9 +123,9 @@
 //   run F's store of its ADKCONR read into the B1 slot (prog_diskrate) are left out
 //   measured: fx68k and TG68K: FIXTURE-WRITE red for the A2 slot of prog_audio (ECS/PAL, OCS/PAL), of prog_t2s
 //   (ECS/PAL, OCS/PAL) and the B1-for-run-F slot (ECS/PAL, OCS/PAL, ECS/NTSC); behind them not graded (RECORDED): A2
-//   (prog_audio and T2S) and, through it, A3-A5 and the propositions of every table (x2), B1 for run F (x3); every
-//   other line unchanged
-//   fx68k 68 passed, 7 failed; TG68K 68 passed, 7 failed
+//   (prog_audio and T2S) and, through it, A3-A5 and the propositions of T1, T2 and T3 and A3-A5 and P3B of T2S (x2),
+//   B1 for run F (x3); every other line unchanged
+//   fx68k 70 passed, 7 failed; TG68K 70 passed, 7 failed
 // MUTATION P5 stimulus red NMH_MUTATE=P5: step 2 writes $8200 instead of $8100
 //   measured: fx68k and TG68K: P5 red (ECS/PAL, OCS/PAL); no other line changes
 //   fx68k 6 passed, 2 failed; TG68K 6 passed, 2 failed
@@ -587,7 +591,11 @@ struct F1Result { bool anchor_ok = false; double color_clocks = 0.0; size_t grou
 // Bounded to [lo_cycle, hi_cycle]: SPECIFICATION.md 2.4 says F1 is "used
 // by P6", so its 100 lines must lie inside the interval P6 itself grades
 // (F3's read k=16 to k=528 of the run in question), not before it.
-F1Result f1_check(const std::vector<nmh::RamAccess>& log, uint64_t lo_cycle, uint64_t hi_cycle) {
+//
+// all_groups: false averages the first 100 group spacings (B4, P6's interval);
+// true averages every group spacing between lo_cycle and hi_cycle (A6).
+F1Result f1_check(const std::vector<nmh::RamAccess>& log, uint64_t lo_cycle, uint64_t hi_cycle,
+                  bool all_groups = false) {
     F1Result r;
     std::vector<uint64_t> refresh;
     for (const auto& a : log)
@@ -599,9 +607,10 @@ F1Result f1_check(const std::vector<nmh::RamAccess>& log, uint64_t lo_cycle, uin
         if (i == 0 || refresh[i] - refresh[i - 1] > kGroupGap) groups.push_back(refresh[i]);
     r.groups = groups.size();
     if (groups.size() < 101) return r;
+    const size_t n = all_groups ? groups.size() - 1 : 100;
     double total = 0;
-    for (size_t i = 0; i < 100; ++i) total += (double)(groups[i + 1] - groups[i]);
-    double mean_cycles = total / 100.0;
+    for (size_t i = 0; i < n; ++i) total += (double)(groups[i + 1] - groups[i]);
+    double mean_cycles = total / (double)n;
     r.color_clocks = mean_cycles / (double)kCck;
     r.anchor_ok = (r.color_clocks >= 227.0 && r.color_clocks <= 228.0);
     return r;
@@ -648,7 +657,7 @@ CalResult calibrate(const AudioCapture& cap, uint32_t lo_word, uint32_t hi_word)
         r.hi = a.cycle;
     }
     if (!any) return r;
-    F1Result f = f1_check(cap.log_raw, r.lo, r.hi);
+    F1Result f = f1_check(cap.log_raw, r.lo, r.hi, true);
     r.graded = true; r.ok = f.anchor_ok; r.cck = f.color_clocks; r.groups = f.groups;
     return r;
 }
@@ -659,6 +668,7 @@ AudioCapture run_audio(const std::string& dir, const std::string& mv, const nmh:
     std::string bin = dir + "/prog_audio.bin";
     if (mv == "A1") bin = dir + "/prog_audio_a1mut.bin";
     else if (mv == "A2") bin = dir + "/prog_audio_a2mut.bin";
+    else if (mv == "A3") bin = dir + "/prog_audio_a3mut.bin";
     else if (mv == "A4") bin = dir + "/prog_audio_a4mut.bin";
     else if (mv == "FIXCONST") bin = dir + "/prog_audio_fixturemut.bin";
     else if (mv == "FIXWRITE") bin = dir + "/prog_audio_fixwritemut.bin";
@@ -859,7 +869,7 @@ int main(int argc, char** argv) {
     const bool fixwrite_mv = (mv=="FIXWRITE");
     const bool nodone_mv   = (mv=="NODONE");
     const bool audio_mv   = (mv=="P1"||mv=="P2"||mv=="P3"||mv=="P4"||mv=="A1"||mv=="A2"||mv=="A4"||mv=="A5"||
-                             mv=="A5SYS"||mv=="A6"||mv=="P1LAST"||
+                             mv=="A5SYS"||mv=="A6"||mv=="A3"||mv=="P1LAST"||
                              fixconst_mv||fixdata_mv||fixwrite_mv||nodone_mv);
     const bool t2s_mv     = (mv=="P3B"||mv=="A2T"||mv=="A6"||fixconst_mv||fixdata_mv||fixwrite_mv);
     const bool adkcon_mv  = (mv=="P5"||mv=="C1"||mv=="C1DUP"||fixconst_mv);
@@ -892,7 +902,7 @@ int main(int argc, char** argv) {
             checks.expect(base_ok, done_label);
             if (!base_ok) {
                 checks.record(std::string("audio fixture did not complete in ") + cs.label +
-                    "; A1-A5, P1-P4 not graded there");
+                    "; A1-A6, P1-P4 not graded there");
                 continue;
             }
 
@@ -981,8 +991,9 @@ int main(int argc, char** argv) {
                         " groups found");
                     a6_ok = cal.ok;
                     std::string a6l = std::string("A6 ") + cs.label +
-                        ": refresh groups recur 227-228 color clocks apart over prog_audio's own audio DMA "
-                        "interval, so the window's level is 8 clk_sys cycles per color clock of the programmed period";
+                        ": the refresh groups of prog_audio's own audio DMA interval, all of them, recur 227-228 color "
+                        "clocks apart on average, so the window's level is 8 clk_sys cycles per color clock of the "
+                        "programmed period";
                     if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
                     checks.expect(a6_ok, a6l);
                 } else {
@@ -993,14 +1004,16 @@ int main(int argc, char** argv) {
             TableSpec t1{"T1", T1_ADDR, 4, kNT1, 8, 1}, t2{"T2", T2_ADDR, 4, kNT2, 4, 2},
                       t3{"T3", T3_ADDR, 256, kNT3, 256, 2};
 
-            // A1 (F2's anchor from the first restart on), A6 and A3 (median
-            // run length): shared by every proposition on this table. `ok`
-            // is false only when A1 or A2 or A6 or A3 already failed (and
-            // that failure has already been printed or recorded); it stays
-            // true into A4's own territory even when LEVELS(W_T) collapses
-            // to no entry, so a flat signal (A4's own contrasting case) is
-            // graded as A4 red, not swallowed as "a precondition failed"
-            // further upstream.
+            // A6 (the window's time unit), A1 (F2's anchor from the first
+            // restart on, covering the window), A2 and A3 (median run
+            // length against the programmed level): shared by every
+            // proposition on this table, graded in that order. `ok` is false
+            // only when one of them already failed (and that failure has
+            // already been printed or recorded); it stays true into A4's own
+            // territory, so a window that holds few runs (A4's own
+            // contrasting case: the output goes flat inside it) is graded as
+            // A4 red, not swallowed as "a precondition failed" further
+            // upstream.
             //
             // Every mutation below runs this same, unchanged comparator: the
             // label states what the mutated stimulus is expected to make it
@@ -1008,10 +1021,17 @@ int main(int argc, char** argv) {
             // the comparator actually found, never an inverted "the defect
             // was reproduced, so print PASS" reading.
             struct PrecondResult { bool ok; std::vector<double> L; uint64_t level; };
-            auto grade_precond = [&](const TableSpec& ts, bool a1_mut) -> PrecondResult {
+            auto grade_precond = [&](const TableSpec& ts, bool a1_mut, bool a3_mut) -> PrecondResult {
                 uint32_t lo = ts.addr / 2, hi = lo + ts.words - 1;
                 F2Result f2 = f2_check(cap.log, lo, hi);
                 checks.note(first_pass_text(ts.name, cs.label, f2, ts.words));
+                // The window is built with A6's unit: A1, A3-A5 and the
+                // propositions are graded only behind A6.
+                if (!a6_ok) {
+                    checks.record(std::string(ts.name) + " " + cs.label +
+                        ": A1, A3, A4, A5 and its proposition(s) not graded, precondition A6 failed or not graded");
+                    return {false, {}, 0};
+                }
                 Window win = make_window(cap.audio, f2, ts, use_right);
                 bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= ts.N + 3 && win.have &&
                           win.e <= f2.pass_starts.back();
@@ -1032,15 +1052,13 @@ int main(int argc, char** argv) {
                         ": A3, A4, A5 and its proposition(s) not graded, precondition A2 failed or not graded");
                     return {false, {}, 0};
                 }
-                if (!a6_ok) {
-                    checks.record(std::string(ts.name) + " " + cs.label +
-                        ": A3, A4, A5 and its proposition(s) not graded, precondition A6 failed or not graded");
-                    return {false, {}, 0};
-                }
                 double median = median_run_len(win.runs);
-                bool a3 = median >= 4.0;
-                checks.expect(a3, std::string("A3 for ") + ts.name + " " + cs.label +
-                    ": the median run in W_" + ts.name + " spans >= 4 output samples (" + fmt(median, 1) + ")");
+                bool a3 = median >= 4.0 && median == (double)win.level;
+                std::string a3_label = std::string("A3 for ") + ts.name + " " + cs.label +
+                    ": the median run in W_" + ts.name + " spans >= 4 output samples and equals the programmed held level of " +
+                    std::to_string(win.level) + " (" + fmt(median, 1) + ")";
+                if (a3_mut) a3_label += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(a3, a3_label);
                 uint64_t shortest = ~0ull, longest = 0;
                 for (auto& r : win.runs) { shortest = std::min(shortest, r.len); longest = std::max(longest, r.len); }
                 checks.note(std::string("window W_") + ts.name + " " + cs.label + " (not graded): " +
@@ -1070,14 +1088,13 @@ int main(int argc, char** argv) {
                     std::to_string(ts.K) + " codes, " + std::to_string(pc.level) +
                     " samples per level programmed; " + std::to_string(found) + " found)";
                 if (mv == "A5" && std::string(ts.name) == "T2") a5_label += " [NMH_MUTATE demonstrates this precondition red]";
-                if (mv == "A5SYS" && std::string(ts.name) == "T1") a5_label += " [NMH_MUTATE demonstrates this precondition red]";
                 checks.expect(a5, a5_label);
                 return a5;
             };
 
             // ---- T1: P1, P2 ----
             {
-                auto pc = grade_precond(t1, mv == "A1");
+                auto pc = grade_precond(t1, mv == "A1", mv == "A3" || mv == "A5SYS");
                 if (!pc.ok) {
                     checks.record(std::string("P1/P2 ") + cs.label + ": not graded, a precondition failed");
                 } else if (!t1_data_ok) {
@@ -1138,7 +1155,7 @@ int main(int argc, char** argv) {
 
             // ---- T2: P3 ----
             {
-                auto pc = grade_precond(t2, false);
+                auto pc = grade_precond(t2, false, false);
                 if (!pc.ok) {
                     checks.record(std::string("P3 ") + cs.label + ": not graded, a precondition failed");
                 } else if (!t2_data_ok) {
@@ -1171,7 +1188,7 @@ int main(int argc, char** argv) {
 
             // ---- T3: P4 ----
             {
-                auto pc = grade_precond(t3, false);
+                auto pc = grade_precond(t3, false, false);
                 if (!pc.ok) {
                     checks.record(std::string("P4 ") + cs.label + ": not graded, a precondition failed");
                 } else if (!t3_data_ok) {
@@ -1229,7 +1246,7 @@ int main(int argc, char** argv) {
                 ": prog_t2s reached DONE [not graded -- fixture, no claim uid]");
             if (!base_ok) {
                 checks.record(std::string("T2S fixture did not complete in ") + cs.label +
-                    "; A1, A3-A5, P3B not graded there");
+                    "; A1-A6, P3B not graded there");
                 continue;
             }
 
@@ -1272,6 +1289,25 @@ int main(int argc, char** argv) {
             uint32_t lo = T2S_ADDR / 2, hi = lo + 1;   // 2 words
             F2Result f2 = f2_check(cap.log, lo, hi);
             checks.note(first_pass_text("T2S", cs.label, f2, 2));
+            // A6: the color-clock unit of the window holds in this run; the
+            // window, A1 and everything after them are graded only behind it.
+            {
+                CalResult cal = calibrate(cap, lo, hi);
+                checks.note(std::string("F1 anchor in prog_t2s's own run ") + cs.label + ": mean refresh-group "
+                    "spacing " + fmt(cal.cck, 2) + " color clocks over " + std::to_string(cal.groups) +
+                    " groups found");
+                std::string a6l = std::string("A6 for T2S ") + cs.label +
+                    ": the refresh groups of prog_t2s's own audio DMA interval, all of them, recur 227-228 color "
+                    "clocks apart on average, so the window's level is 8 clk_sys cycles per color clock of the "
+                    "programmed period";
+                if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(cal.ok, a6l);
+                if (!cal.ok) {
+                    checks.record(std::string("T2S ") + cs.label +
+                        ": A1-A5, P3B not graded, precondition A6 failed");
+                    continue;
+                }
+            }
             Window win = make_window(cap.audio, f2, ts2s, use_right);
             bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= kNT2S + 3 && win.have &&
                       win.e <= f2.pass_starts.back();
@@ -1282,7 +1318,7 @@ int main(int argc, char** argv) {
             if (!f2.diag.empty()) checks.note(std::string("T2S ") + cs.label + " F2 break: " + f2.diag);
             if (!a1) {
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A2-A6, P3B not graded, precondition A1 failed");
+                    ": A2-A5, P3B not graded, precondition A1 failed");
                 continue;
             }
             // A2 reads a stored slot: graded only when the fixture constant
@@ -1291,7 +1327,7 @@ int main(int argc, char** argv) {
                 checks.record(std::string("A2 for T2S ") + cs.label +
                     ": not graded, FIXTURE-CONST or FIXTURE-WRITE failed");
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A3-A6, P3B not graded, precondition A2 not graded");
+                    ": A3-A5, P3B not graded, precondition A2 not graded");
                 continue;
             }
             bool t2s_a2 = cap.adkconr.has_value() && ((*cap.adkconr) & 0x00FF) == 0;
@@ -1303,30 +1339,14 @@ int main(int argc, char** argv) {
             }
             if (!t2s_a2) {
                 checks.record(std::string("T2S ") + cs.label +
-                    ": A3-A6, P3B not graded, precondition A2 failed");
+                    ": A3-A5, P3B not graded, precondition A2 failed");
                 continue;
             }
-            // A6: the color-clock unit of the window holds in this run.
-            {
-                CalResult cal = calibrate(cap, lo, hi);
-                checks.note(std::string("F1 anchor in prog_t2s's own run ") + cs.label + ": mean refresh-group "
-                    "spacing " + fmt(cal.cck, 2) + " color clocks over " + std::to_string(cal.groups) +
-                    " groups found");
-                std::string a6l = std::string("A6 for T2S ") + cs.label +
-                    ": refresh groups recur 227-228 color clocks apart over prog_t2s's own audio DMA "
-                    "interval, so the window's level is 8 clk_sys cycles per color clock of the programmed period";
-                if (mv == "A6") a6l += " [NMH_MUTATE demonstrates this precondition red]";
-                checks.expect(cal.ok, a6l);
-                if (!cal.ok) {
-                    checks.record(std::string("T2S ") + cs.label +
-                        ": A3-A5, P3B not graded, precondition A6 failed");
-                    continue;
-                }
-            }
             double median = median_run_len(win.runs);
-            bool a3 = median >= 4.0;
+            bool a3 = median >= 4.0 && median == (double)win.level;
             checks.expect(a3, std::string("A3 for T2S ") + cs.label +
-                ": the median run in W_T2S spans >= 4 output samples (" + fmt(median, 1) + ")");
+                ": the median run in W_T2S spans >= 4 output samples and equals the programmed held level of " +
+                std::to_string(win.level) + " (" + fmt(median, 1) + ")");
             {
                 uint64_t shortest = ~0ull, longest = 0;
                 for (auto& r : win.runs) { shortest = std::min(shortest, r.len); longest = std::max(longest, r.len); }
@@ -1678,8 +1698,6 @@ int main(int argc, char** argv) {
             } else {
                 checks.record(std::string("G1 ") + cs.label + ": not graded, B3 for run F failed");
             }
-
-            if (mv == "FASTF0") continue;   // G2/G3 use run S, unaffected by this mutation
 
             if (have_ds) {
                 checks.record(std::string("G2 ") + cs.label +

@@ -28,7 +28,10 @@
 ; apparatus-vasm-program/prog_control.s):
 ;   MUT_A1  T1's own DMA is never enabled (DMACON $8200 instead of $8201: A1 for T1 goes red)
 ;   MUT_A2  ADKCON $8001 (USE0V1) is set before the ADKCONR read (A2 goes red)
-;   MUT_A4  T1's own AUD0VOL is 0 instead of 64 (A4 for T1 goes red)
+;   MUT_A3  T1's own AUD0PER is 129 instead of 128 (A3 for T1 goes red: the median run is 1032 samples,
+;           not the programmed held level of 1024)
+;   MUT_A4  T1's own AUD0VOL is set to 0, a fixed number of lines after its DMA starts and
+;           inside the window: the output goes flat from there on (A4 for T1 goes red)
 ;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 ;   MUT_FIXWRITE  the ADKCONR store is left out (FIXTURE-WRITE's own contrasting case)
 ;   MUT_A6  VTOTAL/HTOTAL/BEAMCON0 are rewritten before the tables start (ECS only):
@@ -107,16 +110,29 @@ start:
         ; ---- table T1 (P1, P2; A1/A2/A4 demonstrated on this table) ----
         move.l  #T1_ADDR,AUD0LCH(a0)   ; one 32-bit write sets both halves (p.139)
         move.w  #4,AUD0LEN(a0)
-        ifd     MUT_A4
-        move.w  #0,AUD0VOL(a0)         ; MUT_A4: no output, L has at most one entry
-        else
         move.w  #64,AUD0VOL(a0)        ; p.140: 64 = maximum volume
-        endc
+        ifd     MUT_A3
+        move.w  #129,AUD0PER(a0)       ; MUT_A3: not the programmed period of 128
+        else
         move.w  #128,AUD0PER(a0)       ; p.140/p.266 minimum is 124; well above it
+        endc
         ifd     MUT_A1
         move.w  #$8200,DMACON(a0)      ; MUT_A1: AUD0EN not set -- no audio reads
         else
         move.w  #$8201,DMACON(a0)      ; SET, DMAEN, AUD0EN (p.144)
+        endc
+        ifd     MUT_A4
+        move.w  VHPOSR(a0),d4
+        lsr.w   #8,d4                  ; d4 = the beam's line (low byte)
+        move.w  #7,d3
+.a4l    move.w  VHPOSR(a0),d5
+        lsr.w   #8,d5
+        cmp.b   d4,d5
+        beq.s   .a4l                   ; wait for the line to change ...
+        move.b  d5,d4
+        subq.w  #1,d3
+        bne.s   .a4l                   ; ... seven times
+        move.w  #0,AUD0VOL(a0)         ; MUT_A4: "000000=no output" (p.266) from here on
         endc
         ifd     MUT_P1LAST
         move.w  #1,PL_MARK             ; the reference instant, visible at the port
