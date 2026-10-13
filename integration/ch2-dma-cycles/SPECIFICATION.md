@@ -379,9 +379,10 @@ completion word is then missing.
   audio block is 512 bytes for 16 data words, a sprite block 1024 bytes for 86 data words,
   the null-sprite block 4096 bytes, a plane block 32768 bytes for the 10240 (low resolution)
   or 20480 (high resolution) bytes the display fetches. The disk block is exactly its 8000
-  data words. No block has padding on its low side. No access of any run falls outside the
-  declared ranges: a stray access would join the refresh set and lengthen a refresh group,
-  and F2-COUNT, which holds in every run, rejects that.
+  data words. No block has padding on its low side. In the observed frames no channel's read falls outside its declared block: such a read would
+  join the refresh set and lengthen a refresh group (F2-COUNT) or start one of its own (F3), and
+  both hold in every run; no write below `$080000` falls in the observed frames (§2.2, measured
+  in C0, C2a, C6, S2 and C7a).
 - The Copper block holds only Copper lists.
 - The builder chooses the addresses within these rules.
 - **As built, the pointer writes of S2 and the lists differ from §2.6 and §2.8 as follows; no
@@ -557,10 +558,12 @@ precondition is part of a graded expression.
    are fixed by the hardware (P1.2: p.194 allocates four refresh cycles to every line, Fig.
    6-9 draws them at fixed slots, and Appendix A p.278 gives DMACON no enable bit for
    refresh), and no register and no instruction moves one to an odd cycle. A program that
-   puts another agent's access into memory no block declares (D7) makes P1 red only together
-   with F1, F3 or F2-COUNT in the same run: a displaced or additional access in a refresh
-   group is F2-COUNT's, or F2's, to reject, and one that starts a group of its own breaks
-   F3. P1's red path is therefore shown by a self-test on a synthetic trace, **SELFTEST-P1**:
+   puts another agent's access into memory no block declares (D7) makes P1 red through a
+   false attribution, not a changed refresh. A read there is a displaced or additional access
+   in a refresh group, F2's or F2-COUNT's to reject, or starts a group of its own and breaks
+   F3; a CPU write there breaks F1 (the CPU's own phase, §2.1); a DMA write there, which only
+   the blitter's D channel could make and no run enables (§2.2), turns P1 red with C1, the
+   restarts, F1 and F3 met (P1.4: P1 grades writes attributed to R). P1's red path is therefore shown by a self-test on a synthetic trace, **SELFTEST-P1**:
    fourteen lines of 227 memory cycles, each with the four slots at 0, 2, 4 and 6, and a restart
    fetch in every second line; the second slot of one observed line is moved to the third
    memory cycle. C1, the restarts, F1, F3 and F2-COUNT hold in it, F2 fails, and P1's comparator
@@ -745,7 +748,7 @@ graded, the measurement that stands in its place and the reason are in one place
    - the Copper's first fetch after S4, with the in-line cycle of its line and its parity, for
      C0, C7a, S2 and C2a. The in-line cycle is read only from a regular line: the line from one
      refresh group that has the four slots of Fig. 6-9 to the next such group, 227·S or 228·S
-     later. Two memory cycles before the first fetch there is a read of word 0 (measured), which
+     later. Before the first fetch there is a read of word 0 (measured: two memory cycles before it in every run on fx68k and in C0, S2 and C2a on TG68K; in C7a on TG68K three such reads, one, two and three memory cycles before it), which
      the exclusion of §2.2 puts in R: the plain construction of §2.3 starts a line of its own at
      it and cuts the regular line, so the plain line holding the first fetch is not used. The
      MEASURED line also prints the length of the plain line, and drops the fetch when no regular
@@ -1005,7 +1008,7 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | P6 (withdrawn, MEASURED, not graded) | the Copper-block reads on an even in-line cycle are held continuations, all at s = 226 (the cycle before the next line's first refresh), each the sample of the same word, direction, data and byte enables one memory cycle (S) after the s = 225 sample: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b), and 24 in each of C6 NTSC/ECS, C6 PAL/OCS and C6 NTSC/OCS; none remains on an even cycle once they are set aside; no sample repeats the one before it at S/2 | identical counts |
 | A1 | PASS (0 violations) | PASS |
 | P5, K5 | PASS; K5: 256 lines with fetches for every enabled plane in every observed frame | PASS |
-| K6, T1, T2, T3 | PASS (each gated by the observation preconditions of C5 and C6); T1: 0 segments differ, 0 segments empty in C5; T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |
+| K6, T1, T2, T3 | PASS (K6 gated by the observation preconditions of C5, C6, C7a and C7b, T1 and T2 by those of C5 and C6, T3 by those of C6); T1: 0 segments differ, 0 segments empty in C5; T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |
 | P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
 | Copper first fetch after S4 (MEASURED, not graded) | in a regular line of 227 memory cycles, at s = 165 (C0), 135 (C7a), 111 (S2) and 189 (C2a): odd in all four | s = 155 (C0), 125 (S2) and 179 (C2a), odd in all three; C7a dropped (the regular lines around the fetch are 454 memory cycles apart) |
 | NOT GRADED lines | none | none |
@@ -1016,7 +1019,7 @@ the built object directories (`NMH_MUTATE=<value>`). The stimulus records print 
 comparator they target, unchanged, with the program reaching DONE (the FIXTURE mutation removes
 DONE, which is what that check tests), after printing the line's own preconditions, all met, and
 the lines the contrast must leave alone: K2b's counts and P2's population for K2a; F1–F3 and
-F2-COUNT for K2b; T1, T2, T3 and P7's comparator for K6; K6, T2, T3 and P7's comparator for T1.
+F2-COUNT for K2b; T1, T2, T3 and P7's comparator for K6; K6, T2 and T3 for T1 (P7's comparator, which T1 gates, finds the 6 changed segment/frame pairs).
 The 24 gate records (`<line>-NOFINISH`, `-HTOTAL` and `-NORESTART` for K2b, K3, K4, K5, K6, T1,
 T2 and T3, §2.11) print NOT GRADED with the failed precondition. A mutation changes the stimulus
 only, never an expected value, window, population, gate or comparator. P1–P5, F1, F2, F2-COUNT and
