@@ -9,10 +9,10 @@
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | the 68000's chip-bus accesses on both CPU cores (fx68k, TG68K), measured with a counting loop with no DMA but refresh (red on fx68k only) and beside a share-mode A-to-D blit (red on both); chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, pp. 194, 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198; `A2`, green and not evidence here: `ch6-sysdma.c53`, p. 198. `PARITY-REF` (Figure 6-9) and the `A8` line carry no claim id |
+| **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, p. 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198; `A2`, green and not evidence here: `ch6-sysdma.c53`, p. 198. `PARITY-REF` (Figure 6-9) and the `A8` line carry no claim id |
 | **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code; TC64 the same acknowledge, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
-| **Assertions** | `PARITY` is red on both cores (36 passed, 2 failed each, `A4` the other red): expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `PARITY-REF` and the `A8` line pass on both cores; `A8` is not evidence for this finding |
+| **Assertions** | `PARITY` is red on both cores (35 passed, 3 failed each, `A4` and `A8` the other reds): expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `PARITY-REF` passes on both cores; `A8` is red on both cores, its early grants are odd-numbered grants, the events `PARITY` counts, and it is not evidence for this finding |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not measured |
 | **Effort** | S — one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
 
@@ -156,45 +156,56 @@ plane 1.
 - **Not graded: the missed-cycle wait.** The claims of `A8-BOUNDARY` and
   `SYSDMA-C29-BOUNDARY` are conditional on a missed cycle: p. 196 says that *if*
   an instruction misses its even slot the 68000 waits for its next available
-  slot. The RAM port shows grants, not the 68000's readiness, so a missed cycle
-  and its next grant cannot be separated from the odd-numbered-slot grants
-  `PARITY` grades. The `A8` line without a claim id passes on both cores; for the
-  share-mode run its measurement line shows 124 missed even cycles on fx68k, 122
-  of them granted before the first free even slot and 2 exactly on it, and 125 on
-  TG68K, 120 and 5; the first missed pair is a fetch at $80500 followed by one at
-  $80502, 5 slots apart, on both cores. Accesses after a missed even cycle are
-  thus mostly granted on an odd slot before the next free even slot, which is the
-  behaviour `PARITY` grades.
+  slot. The package records both and does not grade them. `A8-BOUNDARY` records
+  that the page sets an instruction's missed cycles apart from blitter
+  interference, and that `A8` instead grades the cycles a share-mode blit took
+  from a ready 68000, whose release p. 198 governs. `SYSDMA-C29-BOUNDARY`
+  records that on an implementation which keeps the 68000 on even-numbered slots
+  an instruction's own miss is not found, and the package prints its counts as
+  measurements: on the four-lores-plane BRA.S loop 11097 missed odd cycles in
+  92965 access pairs on fx68k and 0 in 107423 on TG68K. The RAM port shows
+  grants, not the 68000's readiness: an even-numbered ready slot is shown by
+  `A8PRE`'s witness, a DMA access on that slot, and an odd-numbered ready slot is
+  only inferred from the address pair's gap. `A8` is a separate red line without
+  a claim id; for the share-mode run its measurement line shows 124 missed even
+  cycles on fx68k, 122 of them granted before the first free even slot and 2
+  exactly on it, and 125 on TG68K, 120 and 5; the first missed pair is a fetch at
+  $80500 followed by one at $80502, 5 slots apart, on both cores. Those grants
+  before the free even slot are odd-numbered grants, the behaviour `PARITY`
+  grades.
 - **The suggested change has not been run.**
 
 ### The share-mode window and p. 198
 
 TG68K's red rests on the share-mode half alone, so it depends on where the
 blitter hands the bus back, and p. 198 is the page that says so. p. 194 makes a
-memory cycle one colour clock. What p. 198 does not fix is from which slot after
-a grant the 68000 counts as *unsatisfied*, and the package reads it three ways
-(`A5-WITHDRAWN`):
-
-| the 68000 counts as unsatisfied | from, after a grant at g | spacing between grants | parity of the grants |
-|---|---|---:|---|
-| in every slot | g+1 | 4 slots | one parity |
-| in every slot, past Figure 6-10's internal operation portion | g+2 | 5 slots | alternating |
-| only in its own even-numbered memory cycles (p. 196) | g+2 | 8 slots | one parity |
-
-**NanoMig's first missed pair is 5 slots apart on both cores**, the spacing of the second reading, and that is the only reading of the three that puts a grant
-on an odd slot. The first and the third keep the 68000 on one parity and
-satisfy p. 198 and p. 196 together, so the page does not force an odd grant,
-and p. 198 says nothing about the released cycle's parity. The share-mode
-odd grants are therefore filed here, against p. 196, on both cores — they are
-the same acknowledge that ignores parity with no DMA. Which count p. 198 means
-is a separate question, and the package withdraws `A5` rather than choose.
+memory cycle one colour clock. What p. 198 does not fix is where the count of
+three *unsatisfied* cycles starts and in which unit it runs, and `A5-WITHDRAWN`
+records two questions: the count starts either at the cycle the request is
+raised, which the RAM port does not show, or at the first even-numbered slot the
+68000 was ready for; and it runs either in memory cycles, so that the released
+slot is the fourth and an odd-numbered one, or in the 68000's own alternate
+cycles, so that it is the seventh and an even-numbered one, which p. 196 would
+require. The package prints the share-mode pattern as a measurement: of 124
+missed even cycles on fx68k 121 were granted exactly four slots after the slot
+the 68000 was ready for, with the three slots between taken by DMA, and on TG68K
+120 of 125. **NanoMig's first missed pair is 5 slots apart on both cores.** The
+memory-cycle reading puts the release on an odd-numbered slot, which p. 196 does
+not allow; the alternate-cycle reading puts it on an even-numbered one and keeps
+p. 196, and p. 198 says nothing about the released cycle's parity. The
+share-mode odd grants are therefore filed here, against p. 196, on both cores —
+they are the same acknowledge that ignores parity with no DMA. Which count
+p. 198 means is a separate question, and the package withdraws `A5` rather than
+choose.
 
 ### For the specialists
 
-1. **Which count does p. 198 mean?** See the table above: 4, 5 or 8 slots
-   between grants. NanoMig and, by their code, the four implementations count
-   every denied colour clock; only the reading that counts the 68000's own
-   even cycles is written in the terms of p. 196.
+1. **Which count does p. 198 mean?** See the two questions above: memory
+   cycles, which release on the fourth slot, an odd-numbered one, or the 68000's
+   own alternate cycles, which release on the seventh, an even-numbered one.
+   NanoMig and, by their code, the four implementations count every denied
+   colour clock; only the reading that counts the 68000's own cycles is written
+   in the terms of p. 196.
 
 ## Independent evidence
 
