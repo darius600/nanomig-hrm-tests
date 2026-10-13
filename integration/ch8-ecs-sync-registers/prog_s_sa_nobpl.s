@@ -1,8 +1,8 @@
-; prog_s_sa_nobpl.s -- X-NOBPL mutation: SA (BCON=$01A0, s=$0010, e=$0030)
-; with PLANE holding only 32 lines of pattern instead of 256 (SHORT_PLANE).
+; prog_s_sa_nobpl.s -- X-NOBPL mutation for SA (BCON=$01A0, s=$0010, e=$0030) with
+; PLANE holding only 32 lines of pattern instead of 256 (SHORT_PLANE).
 ; Bitplane DMA still runs normally; the fetch continues unmodified past
 ; line 32 into the harness's zero-filled memory, so those lines carry no
-; white. Must fail P3/P4-LINES with a live, reduced but nonempty
+; white. Must fail P3/P4-LINES [SA] with a live, reduced but nonempty
 ; white-carrying population (not an emptied one).
 BCON            equ     $01A0
 SVAL            equ     $0010

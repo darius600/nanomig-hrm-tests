@@ -5,14 +5,25 @@
 ;   MARK_OMIT    -- X-HALT-S: MARK1's write omitted. PC-MARK fails (the
 ;                   marker never appears), while the rest of the program,
 ;                   including DONE, still runs.
-;   SHORT_PLANE  -- X-NOBPL: PLANE holds only 32 lines of pattern instead
+;   SHORT_PLANE  -- X-NOBPL*: PLANE holds only 32 lines of pattern instead
 ;                   of 256 (the fetch continues, unmodified, into the
 ;                   zero-filled memory beyond -- a live, reduced but
 ;                   nonempty white-carrying population).
-;   A4_DOUBLE    -- X-A4DOUBLE: every line's data words 14-19 become
-;                   $FFFF,$FFFF,$0000,$FFFF,$FFFF,$FFFF instead of six
-;                   $FFFF words, so the display carries two transitions
-;                   into white per line instead of one.
+;   A4_DOUBLE    -- X-A4DOUBLE: every line's data words become 6 black,
+;                   6 white, 2 black, 6 white instead of 14 black and
+;                   6 white, so the display carries two transitions into
+;                   white per line instead of one, the first white span as
+;                   wide as the normal one.
+;   A4_WIDTH     -- X-A4WIDTH: every line's data words become 14 black,
+;                   5 white, 1 black, so each line carries one transition
+;                   into white and one out of white, with a white span one
+;                   data word narrower than the normal one.
+;   SHIFT_ROWS   -- X-SHIFT-*: from line 128 of PLANE on, the white span
+;                   starts one data word earlier (13 black, 6 white,
+;                   1 black), so the span keeps its width and moves
+;                   relative to the sync pulse in half of the lines.
+;   AUD0_AT0     -- X-A5REF: audio channel 0 DMA started on a one-word
+;                   buffer at Chip address 0 (period 124, p.140/p.266).
 ; MARK1 is the word the test finds as the CPU write of $A5A5 at the
 ; Chip-memory port. ID holds the VPOSR value read before any BEAMCON0
 ; write (PC-ID). COPLIST and PLANE are filled by the CPU itself before the
@@ -24,9 +35,9 @@
 ; Copper DMA do not depend on further CPU activity.
 ;
 ; HTOTAL and VTOTAL are written before BEAMCON0 because their own rows
-; carry "(VARBEAMEN=1)" (p.280, p.298) and this program's BCON now sets
+; carry "(VARBEAMEN=1)" (p.280, p.298) and this program's BCON sets
 ; VARBEAMEN: the enabled comparators must not use an unprogrammed value
-; (as Program H's own HTOTAL/VTOTAL writes already do for the same reason).
+; (as Program H's own HTOTAL/VTOTAL writes do for the same reason).
 
         include "nanomig.i"
         include "regs.i"
@@ -69,16 +80,40 @@ start:
         endif
 .line:
         ifd     A4_DOUBLE
-        moveq   #13,d0
-.blk0:  move.w  #$0000,(a1)+
-        dbra    d0,.blk0
-        move.w  #$FFFF,(a1)+
-        move.w  #$FFFF,(a1)+
+        moveq   #5,d0
+.d0:    move.w  #$0000,(a1)+
+        dbra    d0,.d0
+        moveq   #5,d0
+.d1:    move.w  #$FFFF,(a1)+
+        dbra    d0,.d1
         move.w  #$0000,(a1)+
-        move.w  #$FFFF,(a1)+
-        move.w  #$FFFF,(a1)+
-        move.w  #$FFFF,(a1)+
+        move.w  #$0000,(a1)+
+        moveq   #5,d0
+.d2:    move.w  #$FFFF,(a1)+
+        dbra    d0,.d2
         else
+        ifd     A4_WIDTH
+        moveq   #13,d0
+.w0:    move.w  #$0000,(a1)+
+        dbra    d0,.w0
+        moveq   #4,d0
+.w1:    move.w  #$FFFF,(a1)+
+        dbra    d0,.w1
+        move.w  #$0000,(a1)+
+        else
+        ifd     SHIFT_ROWS
+        cmp.w   #128,d1
+        bcs.s   .norm
+        moveq   #12,d0
+.s0:    move.w  #$0000,(a1)+
+        dbra    d0,.s0
+        moveq   #5,d0
+.s1:    move.w  #$FFFF,(a1)+
+        dbra    d0,.s1
+        move.w  #$0000,(a1)+
+        bra.s   .rowend
+        endif
+.norm:
         moveq   #13,d0
 .blk0:  move.w  #$0000,(a1)+
         dbra    d0,.blk0
@@ -86,6 +121,8 @@ start:
 .blk1:  move.w  #$FFFF,(a1)+
         dbra    d0,.blk1
         endif
+        endif
+.rowend:
         dbra    d1,.line
 
         ; COPLIST: MOVE BPL1PTH,hi(PLANE); MOVE BPL1PTL,lo(PLANE); WAIT forever (p.21,p.30).
@@ -101,6 +138,18 @@ start:
         move.w  COPJMP1(a0),d0         ; the strobe: causes Copper to load PC from COP1LC (p.30)
 
         move.w  #$8380,DMACON(a0)      ; SET,DMAEN,BPLEN,COPEN (p.30,p.278)
+
+        ifd     AUD0_AT0
+        ; Audio channel 0 as p.145 prescribes (location, length in words,
+        ; volume, period, DMA enable): a one-word buffer at Chip address 0,
+        ; the smallest period p.140 and p.266 give, the maximum volume
+        ; (p.140: "from 64 to 0").
+        move.l  #0,AUD0LCH(a0)
+        move.w  #1,AUD0LEN(a0)
+        move.w  #124,AUD0PER(a0)
+        move.w  #64,AUD0VOL(a0)
+        move.w  #$8201,DMACON(a0)      ; SET,DMAEN,AUD0EN
+        endif
 
         move.w  #SVAL,HSSTRT(a0)
         move.w  #EVAL,HSSTOP(a0)

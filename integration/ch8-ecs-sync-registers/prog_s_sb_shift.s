@@ -1,0 +1,9 @@
+; prog_s_sb_shift.s -- X-SHIFT mutation for SB (BCON=$01A0, s=$0020, e=$0030): from
+; line 128 of PLANE on, the white span starts one data word earlier and keeps
+; its width, so the landmark's distance to the sync edges is no longer the
+; same in every graded line. Must fail P3/P4(a) [SB] and nothing else.
+BCON            equ     $01A0
+SVAL            equ     $0020
+EVAL            equ     $0030
+SHIFT_ROWS      equ     1
+        include "prog_s.s"
