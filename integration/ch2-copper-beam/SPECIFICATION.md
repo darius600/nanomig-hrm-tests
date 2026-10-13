@@ -393,16 +393,20 @@ Variants:
   Copper's first fetch of the list precedes the CPU's first write of it.
 - **A-nodone**: the whole program, but it halts in place of storing the
   completion word.
-- **A-noh0**: the sampler stores bursts of samples that start at H ≥ $10 and
-  end before the end of the line, so H = 0 is never stored.
+- **Count that starts each line at a nonzero value** (private chip-set copy,
+  P1-ORIGIN): every line starts the horizontal count at 1 in place of 0 and ends
+  it at $E3 in place of $E2, so a line still has 227 counts. The program, the
+  sampler and every precondition are those of the normal run.
 - **A-std**: the NTSC program on a machine configured as PAL (the harness
   selects the standard; section 3.1).
 - **A-anchor**: every `WAIT(v,$40)` of the first loop becomes
   `WAIT(v+1,$40)`, with v running $30 ... $FE.
-- **A-shift**: `WAIT($80,$42)` in place of `WAIT($80,$40)`.
+- **Odd PAL lines of 228 counts** (private chip-set copy, P2-PAL and P3-PAL): the odd
+  lines of a PAL field end one count later, so they run 0 ... $E3.
 - **A-dup**: the flat run, with one read of the long word at $DFF004 stored
   twice at several places.
-- **A-short**: NTSC, the trace buffer holds 64 samples.
+- **A-noe1**: NTSC, the program reads the registers 50000 times, as the normal
+  run does, and stores every sample except those whose H is $E1.
 - **A-few**: PAL, the trace buffer holds 35000 samples, fewer than 6 complete
   fields.
 
@@ -549,7 +553,8 @@ Variants:
   (PAL) or $F4D1 (NTSC): the horizontal values widen the window, and the
   vertical stop keeps the normal value for each standard (p.59: "Normally,
   the VSTOP is set to ($F4) for NTSC, ($2C) for PAL").
-- **E-black**: COLOR00 = $000.
+- **E-border-blank**: Run E with BPLCON0 bit 0 and BPLCON3 bit 5 set (p.307:
+  "Enable new BPLCON3 register"; "Border blank").
 
 ## 6. Propositions
 
@@ -580,10 +585,10 @@ Trusted samples only.
 - Without parity coverage: the lowest value of the observed parity occurs,
   $00 if the H values read are even and $01 if they are odd; p.196 gives
   the 68000 one parity ("The 68000 uses only the even-numbered memory access
-  cycles"). If the observed parity is odd, count 0 cannot be read, so
-  `COP2-putting-together-a-copper-instruction-list.c7` is not graded whole:
-  the assertion is made without that id, and the id goes on a record line
-  with this reason.
+  cycles"). If the observed parity is odd, count 0 cannot be read.
+- `COP2-putting-together-a-copper-instruction-list.c7` is not asserted
+  whole in any case (8.4 item 9): the two facts above are graded without that
+  id, and the id goes on a record line.
 - p.27: "The video beam traverses the screen from position (0,0) in the
   upper left hand corner".
 - Quantifier: every complete field of the trace, at least 6.
@@ -603,8 +608,11 @@ Trusted samples only.
   (interlace only) ... in PAL, 312, then 313 lines" (p.34 agrees: "625 in
   interlaced mode"). A field with 313 distinct values appears, and "every
   field has 312" goes red.
-- H = 0 (or the lowest value of the observed parity) occurs: A-noh0. The
-  sampler stores no sample with H = 0.
+- H = 0 (or the lowest value of the observed parity) occurs: a private
+  chip-set copy whose horizontal count starts each line at 1 in place of 0 and
+  ends it at $E3 in place of $E2 (p.27: the traversal begins at (0,0); p.23: the
+  count has values "$0 to $E2"). H = 0 is never read, and P3-PAL is red on it
+  too, through the same range of p.23: $00 is not read and $E3 is.
   The clause "the first trusted sample of every field has V = 0" has no
   contrasting case of its own: no input exists for which the pages predict a
   field that starts on another line, and a trace whose field starts at
@@ -630,7 +638,8 @@ restart by R1.
 `COP2-horizontal-beam-position.c15` (p.23); `COP2-vertical-beam-position.c11` (p.24).
 
 **Not claimed here.** `COP2-horizontal-beam-position.c14` ("the others being 227
-color clocks long") is declined (section 1).
+color clocks long") is declined (section 1). `COP2-horizontal-beam-position.c15`
+is graded over the measured lines only and is not asserted whole (8.4 item 10).
 
 **Stimulus.** Run A (PAL and NTSC). The markers `m_v` come from
 `WAIT(v,$40)` on lines v = $30 ... $FF, and `m_(256+n)` from `WAIT(n,$60)`.
@@ -677,10 +686,10 @@ color clocks long") is declined (section 1).
 
 - Main: select NTSC for the PAL check. L alternates, so "every L = 227" is
   red. Select PAL for the NTSC check. No alternation, so it is red.
-- Main, the values 227 and 228: A-shift. m_$80 comes 2 slots later, so
-  L($7F) is 229 or 230 and L($80) is 225 or 226 (PAL: 229 and 225), outside
-  both expected sets, while m_$80 still lies on line $80 and its WAIT still
-  waited.
+- Main, the values 227 and 228: a private chip-set copy whose odd PAL lines
+  are 228 counts long. L(v) is 228 on every other line, outside the expected
+  value 227 (p.23: "In PAL, they are all 227 long"), while every marker still
+  lies on its line and every WAIT still waited. P3-PAL is red on it too.
 - "waited": insert `WAIT($7F,$40)` directly after `MARK($7F)`. It is
   fetched after its target has passed, so its delay equals λ_min.
 - A-anchor: variant A-anchor. The markers lie on line v + 1.
@@ -760,7 +769,7 @@ memory access cycles"; section 7, item 15):
   coverage) to be seen, so sampling that never reaches the end of a line
   turns the check red, not green; the sample coverage above keeps a trace
   too short or too sparse from being graded, but not a dense trace that
-  reads only part of every line (A-noh0): P3-PAL is graded on it and red.
+  reads only part of every line (a count that starts each line at 1): P3-PAL is graded on it and red.
 - P2's preconditions, for the NTSC line types.
 
 **Contrasting cases.**
@@ -777,8 +786,8 @@ memory access cycles"; section 7, item 15):
     the check has no contrasting case at this boundary.
 - Sample coverage: A-few (PAL). The trace ends after 35000 samples, fewer
   than 6 complete fields, so the field coverage fails and P3 is NOT GRADED.
-  A-short (NTSC) ends the trace after 64 samples, about four lines, so the
-  odd count $E1 is not read.
+  A-noe1 (NTSC) stores every sample except those whose H is $E1, so the odd
+  count $E1 is not read.
 - Every value present, in both forms, and nothing above the page's highest
   count: the PAL check on a chip set whose odd PAL lines are 228 counts
   long ($E3 appears, which p.23 gives to NTSC long lines only) is red, and
@@ -1216,9 +1225,11 @@ graded (section 1).
 - (a): E-widewindow. Pixels in the former unused portion show COLOR01, and
   the COLOR01 run becomes 352 · P_lo (p.59: the window spans HSTART to
   HSTOP).
-- (b): E-black. The background is 0, so no background pixel is
-  distinguishable on either side of the blanking.
-- "one run of 0": E-black with the 10th plane word of every line set to
+- (b): E-border-blank. BPLCON0 bit 0 and BPLCON3 bit 5 are set (p.307:
+  "Enable new BPLCON3 register"; "Border blank"): the unused portion shows
+  pixels of value 0 in place of the background colour, a distinguishable
+  pixel that is not COLOR00.
+- "one run of 0": COLOR00 = $000 with the 10th plane word of every line set to
   $0000. The gap in the playfield shows COLOR00 = 0, a second run of 0 on
   each window line.
 - Calibration: D-flat.
@@ -1430,7 +1441,7 @@ test run the variant named in 8.6 in place of the normal run. A normal run
 | `PRE-C-R1LINE`, `PRE-C-WAITED` | r1_j lies on line w_j; every WAIT under test waited | P4 as section 6 states |
 | `PRE-B-CHAIN`, `PRE-B-L255`, `PRE-B-WAITED` | each restart fetches the list the previous one named, at least 3 fields of L_15; the WAIT of each list is fetched on line 255; every WAIT($FF,$40) waited | P6 as section 6 states |
 | `PRE-P5-CALLO`, `PRE-P5-CALHI`, `PRE-P5-EDGES`, `PRE-P5-WAITED` | the calibration and edge preconditions of P5 | P5 as section 6 states |
-| `PRE-P9-PLO`, `PRE-P9-LINES`, `PRE-P9-ONE0` | P_lo valid; at least one window line per field; exactly one run of 0 per window line | P9 as section 6 states |
+| `PRE-P9-LINES`, `PRE-P9-ONE0` | at least one window line per field; exactly one run of 0 per window line | P9 as section 6 states; P9 also rests on `PRE-P5-CALLO` (P_lo valid) |
 
 The common preconditions are printed once per capture, with the capture's run
 named after the standard (`PRE-DONE PAL run A: ...`); they carry the same id in
@@ -1455,8 +1466,7 @@ and `PRE-FIELDS`; `PRE-P3ODDEND` on `FIX-LOAD`, `FIX-CONST`, `PRE-DONE` and
 `PRE-STD`, `PRE-T1E`, P2's preconditions and P2's population; `PRE-P5-CALLO`,
 `PRE-P5-CALHI`, `PRE-P5-EDGES`, `PRE-P5-WAITED` and `PRE-P9-LINES` on their
 capture's common lines except `PRE-STD`; `PRE-P9-ONE0` on those and
-`PRE-P9-LINES`; `PRE-P9-PLO` on the common lines of the D-lo capture and
-`PRE-P5-CALLO`. The P5 and P9 lines name the capture without `run`.
+`PRE-P9-LINES`; P9 on `PRE-P5-CALLO` of the D-lo capture. The P5 and P9 lines name the capture without `run`.
 
 `PRE-T1` is a `MEASURED:` line in every trace capture of both cores: how many
 steps between consecutive samples exceed 16 slots, and how many of them lie
@@ -1501,7 +1511,7 @@ page-conforming Copper lengthens a step. The lines that rest on RF2 are gated by
    is shorter or sparser is NOT GRADED.
 3. **P2, the contrast "select NTSC for the PAL check".** Not built: the lines
    of the NTSC capture are all 227 slots, so `P2-PAL` stays green on it. The
-   mutation of `P2-PAL` is A-shift. `COP2-horizontal-beam-position.c14` is not
+   mutation of `P2-PAL` is a private chip-set copy (8.6). `COP2-horizontal-beam-position.c14` is not
    carried by `P2-NTSC`; it is declined on a `RECORDED:` line.
 4. **P4 (c).** `E_j = $40` is not graded. Where the next fetch falls in the
    first counts of a line is left open by the pages (p.20: the Copper's cycles
@@ -1546,6 +1556,25 @@ page-conforming Copper lengthens a step. The lines that rest on RF2 are gated by
 8. **The OCS check.** The `OCS-CHECK` line of Run A compares the sets of field
    lengths and of line lengths L(v) of the ECS and the OCS capture; the sets are
    the same, so P2 does not rest on BEAMCON0's reset state (3.1).
+9. **P1, `COP2-putting-together-a-copper-instruction-list.c7`.** Not asserted
+   whole. p.27 starts the traversal at (0,0), and no line grades V = 0 and H = 0
+   together in one observation at a field start: the first trusted sample of a
+   field has H of at least 16 (RF2), and H = 0 is read somewhere else in the
+   trace. `P1-ORIGIN` grades the two facts apart, as section 6 states, without
+   the id; the id is declined on a `RECORDED:` line.
+10. **P2, `COP2-horizontal-beam-position.c15`, `COP2-horizontal-beam-position.c11`,
+   `COP2-horizontal-beam-position.c12`, `COP2-vertical-beam-position.c11`.**
+   `P2-PAL` and `P2-NTSC` grade the lines the markers measure: v = $30 ... $FE
+   and the tail pairs of lines 256 + n, in every complete field. Lines 0 ... $2F,
+   line $FF, the lines after the tail pairs and the phase of the alternation
+   across these gaps are not graded. `c15` is declined on a `RECORDED:` line and
+   carried by no graded line. The NTSC ids stay on the `P2-NTSC` line: a
+   witnessed pair of equal adjacent lines contradicts them whatever the coverage.
+   A `RECORDED:` line states that a green `P2-NTSC` would establish them over the
+   measured lines only.
+11. **P9 and `PRE-P5-CALLO`.** "P_lo is valid" is the verdict of `PRE-P5-CALLO`
+   in the D-lo capture. P9 rests on that line, and no second line grades the
+   same check.
 
 ### 8.5 The final run of each core
 
