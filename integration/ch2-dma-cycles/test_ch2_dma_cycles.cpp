@@ -1103,7 +1103,7 @@ bool gate_selector(const std::string& mv) {
 } // namespace
 
 // Each record names an assertion's leading label, its kind and its result, and runs on one line. NMH_MUTATE=<selector> replays it on a core; the values are what that replay printed. A mutation run evaluates and prints the line's preconditions with the comparators of the normal run first; the normal run's line on the same comparator is the green control. Kind `stimulus red`: the line prints FAIL; kind `stimulus not graded`: the line prints NOT GRADED with the failed precondition.
-// MUTATION P1 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9; DMACON has no enable bit for refresh) and no register or instruction moves one to an odd cycle; another agent's access to memory no block declares joins R by exclusion (D7), a false attribution that turns P1 red only together with F1, F2, F2-COUNT or F3 of the same run; P1's gate has C1, the restarts, F1 and F3 and neither F2 nor F2-COUNT, and its red path is shown by SELFTEST-P1
+// MUTATION P1 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9; DMACON has no enable bit for refresh) and no register or instruction moves one to an odd cycle; another agent's access to memory no block declares joins R by exclusion (D7), a false attribution and not a changed refresh: a read there joins or starts a refresh group and fails F2, F2-COUNT or F3 of the same run, a CPU write there fails F1 (the CPU's own phase), and a DMA write there (the blitter's D channel; no run enables the blitter) turns P1 red with every precondition met; P1's gate has C1, the restarts, F1 and F3 and neither F2 nor F2-COUNT, and its red path is shown by SELFTEST-P1
 // MUTATION P2 none impossible the disk channel's slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; DSKPT, DSKLEN and ADKCON change which words are transferred, not in which cycle, and a run that aims DSKPT at the Copper's words fails only through the address attribution
 // MUTATION P3 none impossible the audio channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; AUDxLC, AUDxLEN and AUDxPER change which words and how often, not in which cycle, and a run that aims a channel at the Copper's words fails only through the address attribution
 // MUTATION P4 none impossible the sprite channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; the sprite pointers and the data structure change which words are fetched, not in which cycle, and a run in which the Copper executes words a sprite channel reads fails only through the address attribution
@@ -1658,13 +1658,12 @@ int main(int argc, char** argv) {
             return Pop{displaced ? "synthetic-displaced" : "synthetic-regular", run, {copper_block()}, {wordof(COP_MAIN)}};
         };
         const Pop p1_reg = p1_trace(false), p1_dis = p1_trace(true);
-        auto p1_verdict = [&](const Pop& q) {
-            auto pr = analyze_population(q.run.log, q.blocks, q.starts, "R", false);
-            return pr.population > 0 && pr.all_even;
-        };
-        bool p1_reg_gate = run_unmet(p1_reg, false).empty(), p1_dis_gate = run_unmet(p1_dis, false).empty();
-        bool p1_dis_old_gate = run_unmet(p1_dis, true).empty();
-        bool p1_reg_ok = p1_verdict(p1_reg), p1_dis_ok = p1_verdict(p1_dis);
+        const std::vector<Pop> p1_all = {p1_reg, p1_dis};
+        const Fold f_reg = fold_check(p1_all, {"synthetic-regular"}, "R", true, checks, "SELFTEST-P1 regular", false);
+        const Fold f_dis = fold_check(p1_all, {"synthetic-displaced"}, "R", true, checks, "SELFTEST-P1 displaced", false);
+        const Fold f_old = fold_check(p1_all, {"synthetic-displaced"}, "R", true, checks, "SELFTEST-P1 old gate", true);
+        bool p1_reg_gate = f_reg.unmet.empty(), p1_dis_gate = f_dis.unmet.empty(), p1_dis_old_gate = f_old.unmet.empty();
+        bool p1_reg_ok = f_reg.ok, p1_dis_ok = f_dis.ok;
         checks.note("SELFTEST-P1: regular trace gate (C1, restarts, F1, F3) met=" + std::to_string(p1_reg_gate) +
                     " P1 comparator=" + std::to_string(p1_reg_ok) + "; displaced trace gate met=" +
                     std::to_string(p1_dis_gate) + " P1 comparator=" + std::to_string(p1_dis_ok) +
