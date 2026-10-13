@@ -19,6 +19,8 @@
 ;             contrast)
 ;   MUT_C     case 11 is assembled as CLR.L instead of CLR.W (P1.c's
 ;             contrast); together with MUT_MOVE, as MOVE.L instead of MOVE.W
+;   MUT_NOKIND the table marker (S_KIND) is not written (P1.c's no-marker
+;             contrast)
 ;   MUT_ORD   case 4's S_B store and readback move behind case 5's S_A
 ;             store, so windows 4 and 5 overlap (P1.a's ordering contrast)
 ;   MUT_C4B   S_START is written after case 1's S_A (C4's ordering contrast)
@@ -34,10 +36,12 @@
 
 start:
         SETUP
+        ifnd    MUT_NOKIND
         ifd     MUT_MOVE
         move.w  #$C1A1,S_KIND           ; the case table names MOVE.x #0
         else
         move.w  #$C1A0,S_KIND           ; the case table names CLR.x
+        endc
         endc
         moveq   #0,d1                  ; Xn for every d8(An,Xn) case, always zero
 

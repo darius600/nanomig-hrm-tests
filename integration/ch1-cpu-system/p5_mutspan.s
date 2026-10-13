@@ -1,3 +1,4 @@
-; p5_mutspan.s -- p5.s with MUT_SPAN set: P5.b's static contrast (SPECIFICATION.md section 7): the image differs from the 68000-mode image in a four-byte span of the same size as step 3's, outside step 3.
+; p5_mutspan.s -- p5.s with MUT_VBR and MUT_SPAN set: P5.b's static contrast (SPECIFICATION.md section 7): the VBR image (step 3's MOVEC kept) that also differs from the 68000-mode image at case 3's MOVE.W #1,CCR, outside step 3.
+MUT_VBR         equ     1
 MUT_SPAN        equ     1
         include "p5.s"

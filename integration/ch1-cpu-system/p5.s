@@ -25,7 +25,8 @@
 ;   MUT_SPAN case 3's MOVE.W #0,CCR becomes MOVE.W #1,CCR: the image
 ;            differs from the 68000-mode image in a four-byte span of the
 ;            same size as step 3's, but not in step 3 (P5.b's static
-;            contrast); step 3 keeps its two NOPs
+;            contrast); used with MUT_VBR, so step 3 holds the MOVEC as in
+;            every VBR image
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 ;

@@ -15,6 +15,9 @@
 ;              SAVE_SP is made between steps 6 and 7: a read inside the
 ;              window that is neither a program-image read nor the read of
 ;              SAVE_SP (P2.c's read clause contrast)
+;   MUT_VEC    a TST.W of vector word $0010 (not word 0) is made between
+;              steps 6 and 7: a read inside the window in the vector area
+;              (P2.c's vector-area contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
@@ -110,6 +113,9 @@ start:
         endc
         ifd     MUT_RD
         tst.w   (T_BASE+16).l           ; P2.c contrast: a data read inside the window
+        endc
+        ifd     MUT_VEC
+        tst.w   ($0010).w               ; P2.c contrast: a read of vector word $0010 inside the window
         endc
 
 ; ---- step 7: USP --------------------------------------------------------
