@@ -21,7 +21,7 @@ These claims are used only in part:
 | Claim | Part used, and why the rest is not |
 |---|---|
 | 5-mod.c12, 5-p149.c18, 5-appA-p265.c31, A-adkcon.note2 | Volume bits V5-V0 are used (P1, P4). V6 is not, because the pages disagree about the width of a volume value. p.139: "There is a six-bit volume register for each audio channel ... You can specify values from 64 to 0." p.140: "For any volume setting from 64 to 0, you write the value into bits 5-0 of AUD0VOL." Against them, p.149: "6 - 0 Volume information, V6 - V0"; p.265: "First word xxxxxxxx V6-V0"; and p.266 (AUDxVOL): "06 Forces volume to max (64 ones, no zeros)", "05-00 Sets one of 64 levels". Every page agrees that values 0-63 are volumes carried in bits 5-0. All volume words here are 0-63, with bit 6 = 0. |
-| 5-p165.c22, 5-sig.napnav | The DMA-request half is used (P10). The claim also says napnav conditions the normal *interrupt* requests. With attach period alone, Figure 5-8 routes the interrupt through a different bracket on 010->011 that no claim of this package records. So the claim gives no interrupt time for that mode. In attach-volume mode it predicts only "as normal", which is the same loop phase that P10 already measures on the DMA requests. |
+| 5-p165.c22, 5-sig.napnav | The DMA-request half is recorded, not asserted: no line isolates napnav's own contribution, and it is graded only through the phases that P10-AV, P10-AP and P10-BOTH grade. The claim also says napnav conditions the normal *interrupt* requests. With attach period alone, Figure 5-8 routes the interrupt through a different bracket on 010->011 that no claim of this package records. So the claim gives no interrupt time for that mode. In attach-volume mode it predicts only "as normal", which is the same loop phase that P10-AV measures on the DMA requests. |
 | 5-mod.c19, 5-p150.c22 | "Channels are attached by the system in a predetermined order, as shown in Table 5-5." The six fixed pairs are checked (P6). The claim also implies that no other pairing can be selected. That describes a control that does not exist, and nothing can be observed about it beyond the six pairs. |
 
 ## Conventions
@@ -39,8 +39,9 @@ these claims depends on the CPU model, and none of them involves the disk.
 The program runs with all interrupts disabled (INTENA = $7FFF at start;
 p.280, bit 15 = 0 clears). All DMA other than audio stays off (DMACON =
 $7FFF at start). The CPU never reads or writes an audio data region while a
-session runs. All data sets and the marker and result words lie in the
-first 256 KB of Chip memory. Data sets start on a word boundary (p.138:
+session runs. The data sets lie at $088000 (channel 0), $089000, $08A000 and
+$08B000, one 4 KB region per channel, and the marker and result words at
+$0C0000 (ch5_regs.i), all in Chip memory. Data sets start on a word boundary (p.138:
 "the first byte of data must start at a word-address boundary"), and each
 channel's data set lies in its own region, so every audio fetch at the
 Chip-memory port can be attributed to one channel and one word offset.
@@ -183,7 +184,7 @@ and AUDxVOL = 0. Durations are minimum ticks from M_on to M_off.
 | S-AV | $01 | M_V, 8, 4000, 63 | SQ, 4, 200, 40 | off | off | 200,000 | P1, P3, P5, P8, P10 |
 | S-AP | $10 | M_P4, 4, 4000, 63 | SQ, 4, 200, 40 | off | off | 110,000 | P5, P8, P10 |
 | S-BOTH | $11 | M_VP, 8, 4000, 63 | SQ, 4, 200, 63 | off | off | 110,000 | P4, P5, P8, P10 |
-| S-P2 | $10 | M_P, 17, 35000, 63 | RAMP, 8, 700, 48 | off | off | 1,400,000 | P2, P3 |
+| S-P2 | $10 | M_P, 17, 35000, 63 | RAMP, 8, 700, 48 | off | off | 2,700,000 | P2, P3 |
 | S-PAIR-b | see P6 | | | | | 110,000 | P6 |
 | S-CH3-V / S-CH3-P | $08 / $80 | see P7 | | | | 60,000 | P7 |
 | S-DAC3-V / S-DAC3-P | $08 / $80 | off | off | off | W_V / W_P, 2, 2000, 63 | 30,000 | P8 |
@@ -240,10 +241,20 @@ a separate run of the same build and configuration.
   the page's n-th fetch of the channel after the DMA start (p.164): F_1 is the
   word "thrown away", F_2 the word whose arrival enters state 010, F_3 the word
   requested on the 101->010 transition. The page gives no address for F_1, so the
-  record may or may not hold it. PC7-CAL finds in the run which record entry r is
-  F_2, and every grade of a fetch of channel 0 by its page index n is of record
-  entry r + n - 2. A window "from the third fetch" without a page index is from
-  the third entry of the record of the channel's own data set.
+  record may or may not hold it. Which data-set word F_2 is, the pages fix jointly,
+  and no single sentence does: Table 5-4 (p.150) and p.265 ("First word xxxxxxxx
+  V6-V0") make the first word of a data set the volume under attach volume, and
+  Figure 5-8 (p.166) loads the word that arrives on 101->010, F_2, with pbufld1,
+  the volume under AUDxAV, and the next word with pbufld2 on 010->011. So F_2 is
+  data-set word 1, at offset 0. (p.164, "reset the pointer to the beginning of the
+  table of data", describes the restart when the length counter finishes, p.147,
+  not the start-up, and is not the source of this.) PC7-CAL finds in the run which
+  record entry r is F_2, requires it to be at offset 0, and every grade of a fetch
+  of channel 0 by its page index n is of record entry r + n - 2. A window "from the
+  third fetch" without a page index is from the third entry of the record of the
+  channel's own data set; a window "from the modulator's first restart" is from the
+  cycle of the first fetch at offset 0 after the first entry of the record of its
+  own 4 KB region (the anchor PC3 uses).
 - **End of play** of a channel's output: the DMACON clear that stops the channel
   precedes the M_off marker by one instruction and shows on the output as the
   final run (the output idle to the end of the capture). The window of every
@@ -262,7 +273,7 @@ a separate run of the same build and configuration.
   samples, word intervals or runs). Where a clause's population is empty --
   its window never contains an instance of what it counts -- it prints
   RECORDED "not evaluated" with the measured population, never PASS or
-  FAIL (PC3, P4-B, P4-VOLONLY, P1-B, P1-C, P2-B, P2-C, P3-SILENT, P3-WHOLE, P3-SP2, P5, P9-C). A clause keeps grading normally whenever its
+  FAIL (PC3, P4-B, P4-VOLONLY, P1-B, P1-C, P2-B, P2-C, P3-SILENT, P3-WHOLE, P3-SP2, P5, P9-C, P9-D). A clause keeps grading normally whenever its
   population is present, whatever its size. A "change" is counted only
   where a value differs from the one before it (or, at a window's start,
   from the channel's own written starting value in P1, P3 and P9; in P5 the
@@ -273,18 +284,24 @@ a separate run of the same build and configuration.
 ### Common preconditions
 
 Every session asserts these. Each one comes with a stimulus change that
-makes it fail, so that the check itself can be shown to go red.
+makes it fail, so that the check itself can be shown to go red. A proposition's
+lines are gated on the PC1, PC2 and PC3 lines of the session they grade (PC3 only
+where it is printed for that session; a PC3 line that prints "not evaluated" does
+not gate): where one of them fails, the gated lines print NOT GRADED and name
+the precondition, never PASS or FAIL. A contrast of a precondition changes the
+program of the session it grades; the expected value of the precondition does
+not change with it.
 
 | Id | Precondition | Contrast that makes it fail |
 |---|---|---|
 | PC1 | Bits 7-0 of the stored ADKCONR word equal the session's attach mask (p.265: "ADKCONR 010 R P Audio, disk, control read"). | Omit the step-4 ADKCON write in an attach session (bits read 0); or write $8001 in a reference session. |
 | PC2 | The stored DMACONR word has bit 9 (DMAEN) and the session's AUDxEN bits set (p.278). | R-MOD with the enable $8001 (AUD0EN, no DMAEN; prog_rmod_nodma). Bit 9 then reads 0, and no audio fetch occurs (p.144: "For any audio DMA to occur ... the DMAEN bit in DMACON must be set"). |
-| PC3 | Every enabled channel has fetches in its own region (its own 4 KB, Appendix B), at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"), graded from that channel's first restart (the first fetch at offset 0 after F_1) on -- the first pass is graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here. The modulator has at least two complete cycles after its own first restart, inside the proposition's window (one in S-P2). Where a window holds fewer than the required cycles, PC3 prints "not evaluated" for that channel, never PASS or FAIL. | R-MOD with the enable $8200 (DMAEN, no AUD0EN; prog_rmod_noaud): the channel makes no fetches. |
+| PC3 | Every enabled channel has fetches in its own region (its own 4 KB, Appendix B), at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"), graded from that channel's first restart (the first fetch at offset 0 after the first entry of its record) on, over [M_on, M_off] of the session -- the first pass is graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here. The modulator has at least two complete cycles after its own first restart (one in S-P2). Where the session holds fewer than the required cycles, PC3 prints "not evaluated" for that channel, never PASS or FAIL. In S-LEN-A and S-LEN-B the same stepping is P9-A (channel 0) and P9-B (channel 1), graded from the later of the two restarts: PC3 is printed for those two sessions as their ordinary programs build them, and a contrast of P9-A or P9-B replaces the session for P9-A to P9-D only. | R-MOD with AUD0LEN = 7 (prog_rmod_len7), graded with LEN 8: the offsets step 0..6,0,... and the ordinary R-MOD line fails. |
 | PC4-VOL | In R-VOL-c the reference level pairs of all VSET_c values are pairwise distinct. | R-VOL-1 with 40 written in the step labelled 60 (prog_rvol1_mut): two labels then have the same pair. R-VOL-2 and R-VOL-3 are graded by the same call and have no contrast of their own. |
 | PC4-DUR | In R-PER-c and R-RAMP the reference durations are pairwise distinct and rise strictly with the written value. | R-PER-1 with 500 written in the step labelled 700 (prog_rper1_mut): two labels then have the same duration. R-PER-2, R-PER-3 and R-RAMP are graded by the same call and have no contrast of their own. |
 | PC5-VOL, PC5-PER | Pairing anchor: channels 0 and 3 measure on one output, 1 and 2 on the other, and the two outputs differ, each channel's own output taken from its own reference session (see *Output sides and silence*). PC5-VOL is graded from the volume-sweep family and PC5-PER from the period-sweep family. No jack name enters the check. | PC5-VOL: R-VOL-1's capture is graded as R-VOL-3's, so "channel 3's" output is channel 1's. PC5-PER: R-VOL-3's capture is graded as R-PER-1's, so "channel 1's" output is channel 3's. Each pairing then fails against the same comparator. |
 | PC6 | Unit anchor: in R-MOD, channel 0's complete sample durations differ from D_mod by at most 1 part in 4000 (one tick) plus the apparatus resolution (1 clk). | CPU writes AUD0PER = 5000 halfway through R-MOD: the spread fails. |
-| PC7-CAL | Frame calibration (P10): in R-MOD the record entry r of channel 0 that is the page's F_2 (p.164: "When the data arrives, state 010 is entered"). The lower byte of the first word is output when state 011 is entered, one period D_mod after 010 (p.164: "In the 010 state the upper byte is output, and in the 011 state the lower byte is output"; "Transitions such as 010->011->010 occur whenever the period counter counts down to one"): its instant is the start of the first run of channel 0's output whose value is neither the first run's nor the most frequent one's (the level of byte 0), and the instant 010 was entered is D_mod before it. The entry r is the record entry nearest to that instant; the precondition holds when it lies within half a line (113.75 ticks) of it, is at word offset 0 (p.164: "reset the pointer to the beginning of the table of data"), and at most one entry (the word thrown away) precedes it. | R-MOD with AUD0VOL = 0 (prog_rmod_vol0): the output never changes, no instant is found, and the calibration fails. |
+| PC7-CAL | Frame calibration (P10): in R-MOD the record entry r of channel 0 that is the page's F_2 (p.164: "When the data arrives, state 010 is entered"). The lower byte of the first word is output when state 011 is entered, one period D_mod after 010 (p.164: "In the 010 state the upper byte is output, and in the 011 state the lower byte is output"; "Transitions such as 010->011->010 occur whenever the period counter counts down to one"): its instant is the start of the first run of channel 0's output whose value is neither the first run's nor the most frequent one's (the level of byte 0), and the instant 010 was entered is D_mod before it. The entry r is the record entry nearest to that instant; the precondition holds when it lies within half a line (113.75 ticks) of it, is at word offset 0 (F_2 is data-set word 1: Table 5-4 and p.265 with Figure 5-8, see *Measurements*, Fetch record), and at most one entry (the word thrown away) precedes it. | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the instant 010 is computed 2000 ticks late, no fetch lies within half a line of it, and the calibration fails. PC7-LOOP, PC7-N3 and P10-AV, P10-AP and P10-BOTH take the contrast's calibration and print NOT GRADED. |
 | PC7-FRAME | No read of channel 0's data region occurs before M_on. | M_on is written late (prog_rmod_pc7frame): a fetch occurs before it. |
 | PC7-LOOP | Loop anchor (P10): in R-MOD, every consecutive pair of fetches from the page's F_3 on is D_mod·2 apart, within λ (the page's own ordering; no additive window beyond λ). Requires PC7-CAL; prints NOT GRADED without it. | CPU writes AUD0PER = 3000 halfway through R-MOD (prog_rmod_pc7): the gap leaves λ. |
 | PC7-N3 | F_3 − F_2 is within λ of 0 (Figure 5-8's 101->010 bracket, "AUDxDR if napnav", with napnav = 1; no claim id in either claims file names that transition). Requires PC7-CAL; prints NOT GRADED without it. | S-AP's capture graded through the same comparator: with napnav = 0 the figure prints no request on 101->010, so on a page-conforming implementation F_3 − F_2 is one period, not within λ of 0. The repository RTL requests there as well, so this contrast moves the line only on the page-model RTL. |
@@ -317,9 +334,11 @@ bit 6 is 0 (disputed, see top). AUD1VOL = 40 is not in M_V, so an interval
 at 40 is recognisably unmodulated.
 
 **3. Observation.** Channel 1's own output (see *Output sides and silence*).
-Window: from the first change of channel 1's applied volume away from 40
-to a recognised reference level pair until the end of play (see
-*Measurements*).
+Window: from the modulator's first restart (channel 0's first fetch at offset 0
+after the first entry of its record: the first pass is graded in
+hrm/ch5-audio-dma-first-pass, not here) until the end of play of channel 1's
+output (see *Measurements*). The window does not depend on what channel 1
+plays.
 
 **4. Expected.**
 - (a) (P1-A) The applied volumes A_1 ... A_n in the window are cyclically
@@ -347,26 +366,38 @@ for every interval. M_V holds each of bits 0-5 alone and all six together,
 so ignoring any one of bits 5-0 makes some A_i differ from its word.
 
 **5. Preconditions.** PC1 (mask $01), PC2, PC3 (channels 0 and 1;
-channel 0 has at least 2 cycles in the window), PC4-VOL and PC4-DUR (VSET_1,
-D_1(200)), PC5. P1-WINDOW: the window opens, that is, channel 1 shows L_1(40)
-and afterwards a recognised reference level pair other than L_1(40). Where it
-does not, it prints as a precondition not met (RECORDED, not FAIL) and P1-B and
-P1-C print NOT GRADED; it is not a red. P1-A and P1-JOINT do not depend on it:
-their own n ≥ 17 requires the words to have been used, and a channel 1 that
-never leaves L_1(40) has used none. (b)'s and (c)'s own populations are the
-window's level-pair segments and complete samples (an empty population prints
-RECORDED "not evaluated", per *Measurements*).
+channel 0 has at least 2 cycles after its first restart), PC4-VOL and PC4-DUR
+(VSET_1, D_1(200)), PC5. P1-WINDOW: the window exists, that is, channel 0 has a
+first restart before the end of play of channel 1's output. Where it does not,
+it prints as a precondition not met (RECORDED, not FAIL) and P1-A, P1-B, P1-C
+and P1-JOINT print NOT GRADED, as they do when PC1, PC2 or PC3 of S-AV fails;
+it is not a red. Inside a window that exists, P1-A and P1-JOINT need n ≥ 17
+applied changes, and a channel 1 that never leaves L_1(40) has none. (b)'s and
+(c)'s own populations are the window's level-pair segments and complete samples
+(an empty population prints RECORDED "not evaluated", per *Measurements*).
 
-**6. Contrasting cases.** Omit the ADKCON $8001 write (P1-NOATTACH).
-p.149: "Normally, each channel produces sound when it is enabled." Nothing then
-modulates channel 1, which plays at AUD1VOL = 40 throughout, and P1-A and
-P1-JOINT fail and P1-WINDOW is not met. The program still finishes; PC1 then
-expects mask $00. A last modulator word of 33 (prog_s_av_mv33, P1-MV33) is a
-volume with no reference level pair: P1-B fails. Channel 1's own AUDxPER
-rewritten from 200 to 300 halfway through (prog_s_av_per1write, P1-PER1WRITE):
-P1-C fails. On the repository RTL, where attach has no effect, these three
-contrasts move no verdict (the lines are red or not evaluated before and after);
-they move the lines on the page-model RTL (Mutation scope).
+**6. Contrasting cases.** Each changes the program of S-AV and nothing else.
+- Omit the ADKCON $8001 write (prog_s_av_noattach, selector PC1). PC1 keeps
+  expecting mask $01 and fails; P1-A, P1-B, P1-C and P1-JOINT print NOT GRADED.
+- The second and third modulator words exchanged (prog_s_av_swap, selector P1-A):
+  every value is still a word of M_V, the order is not, and P1-A fails (P1-JOINT
+  contains it and fails with it).
+- Channel 3 also plays, audibly, on the output channel 0 is observed on
+  (prog_s_av_ch3, selector P1-JOINT): channel 0's side no longer holds one value
+  and P1-JOINT fails (the source half; P1-A holds).
+- Channel 1's DMA stopped after one eighth of the session (prog_s_av_stop,
+  selector P1-WINDOW): channel 1's output ends before channel 0 restarts, P1-WINDOW
+  is not met and P1-A, P1-B, P1-C and P1-JOINT print NOT GRADED.
+- A last modulator word of 33 (prog_s_av_mv33, selector P1-MV33) is a volume with
+  no reference level pair: P1-B fails (P1-A and P1-JOINT contain the level
+  check and fail with it).
+- Channel 1's own AUDxPER rewritten from 200 to 300 halfway through
+  (prog_s_av_per1write, selector P1-PER1WRITE): P1-C fails.
+
+On the repository RTL, where attach has no effect, the contrasts of P1-A, P1-B,
+P1-C and P1-JOINT move no verdict (the lines are red or not evaluated before
+and after); they move the lines on the page-model RTL (Mutation scope). The
+contrasts of PC1 and P1-WINDOW move the lines on both.
 
 **7. Reference frame.** Channel 1's own output is measured directly, from
 R-VOL-1 (see *Output sides and silence*); PC5 checks only the pairing, not
@@ -398,10 +429,11 @@ at least two complete samples (33168 follows 144), and every word up to 1000
 at least 20. Channel 1 plays RAMP at AUD1PER = 700, a value not in M_P, and
 AUD1VOL = 48. The references come from R-RAMP.
 
-**3. Observation.** Channel 1's own output. Window: from the
-start of the first run whose applied period differs from 700 until the end
-of play (see *Measurements*). The window must hold at least 18 runs, which is
-one full cycle of M_P plus one.
+**3. Observation.** Channel 1's own output. Window: from the modulator's
+first restart (the first pass is graded in hrm/ch5-audio-dma-first-pass, not
+here) until the end of play of channel 1's output (see *Measurements*). The
+window must hold at least 18 runs, which is one full cycle of M_P plus one; the
+17 words of M_P last 17 × 70,000 ticks, so S-P2 lasts 2,700,000 ticks.
 
 **4. Expected.**
 - (a) (P2-A) The applied periods of the runs are cyclically consecutive in
@@ -431,12 +463,10 @@ the value, and the sixteen levels are distinct), PC5. (b)'s and (c)'s own
 populations are the window's applied-period runs and complete runs (an
 empty population prints RECORDED "not evaluated", per *Measurements*).
 
-**6. Contrasting case.** Omit the ADKCON $8010 write (P2-NOATTACH). Channel 1
-then plays at 700 throughout, and (a) and (b) fail (they have a population only
-where the repository RTL's attach has an effect, see Mutation scope). For (c):
-with mask $11 and M_VP (session S-BOTH), the odd words become volumes (P4), so
-channel 1's levels change and (c) fails; (c) has no contrast of its own in the
-package (Mutation scope).
+**6. Contrasting case.** The eighth and ninth words of M_P (464 and 272)
+exchanged (prog_s_p2_swap, selector P2-A): every value is still a word of M_P,
+the order is not, and (a) fails with a full population; (b) and (c) have no
+contrast of their own in the package (Mutation scope).
 
 **7. Reference frame.** Runs are delimited by the durations themselves,
 anchored on p.164's reload at each sample transition. Periods are
@@ -459,8 +489,9 @@ low byte. Seven words of M_P have a non-zero high byte (16784, 33168, 912,
 8592, 1424, 4496, 2448), whose bytes as periods would be (65, 144),
 (129, 144), (3, 144), (33, 144), (5, 144), (17, 144) and (9, 144).
 
-**3. Observation.** Channel 1's own output, in the P1 and P2 windows. A word
-interval is the span between two consecutive applied changes.
+**3. Observation.** Channel 1's own output, in the P1 and P2 windows (from the
+modulator's first restart). A word interval is the span between two consecutive
+applied changes.
 
 **4. Expected.** In S-AV, each word interval has exactly one level pair,
 the whole word's L_1(v) (P3-WHOLE), and no interval is silent -- volume 0
@@ -478,12 +509,18 @@ population -- word intervals in the P1 window (two lines) and runs in the
 P2 window (one line) -- and prints RECORDED "not evaluated" where that
 population is empty, per *Measurements*.
 
-**6. Contrasting cases.** R-MOD's capture takes the place of S-AV's (P3-WHOLE,
-P3-SILENT): graded on channel 0's own output, the words are played as two bytes
-each and no word interval has the whole word's level pair (P3-WHOLE fails);
-graded on channel 1's output, which is silent there, every interval is silent
-(P3-SILENT fails). P3-PRE: R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no
-byte. P3-SP2 has no contrast of its own (Mutation scope).
+**6. Contrasting cases.** Each changes the program of S-AV and nothing else, and
+is graded through the unchanged P1 window and channel 1's own output.
+- Every modulator word 0 (prog_s_av_zero, selector P3-SILENT): channel 1 is silent
+  in every interval and P3-SILENT fails.
+- Channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes,
+  selector P3-WHOLE): its words reach the output as two bytes each and no word
+  interval has a whole word's level pair; P3-WHOLE fails.
+- P3-PRE: R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte.
+- P3-SP2 has no contrast of its own (Mutation scope).
+Each of P3-SILENT and P3-WHOLE reads its own capture, so the contrast of one does
+not reach the other. P3-WHOLE grades the whole word in volume mode only; the
+period half is P3-SP2, which carries no id.
 
 **7. Reference frame.** As in P1 and P2.
 
@@ -532,24 +569,35 @@ containing at least 16 changes.
 - (c) (P4-C) Both parameters change in the window, each at least 8 times. p.149:
   "or do both types of modulation on a channel at the same time".
 
-Which data-set word the first change after M_on carries is not graded.
-p.164 says the first word fetched after the DMA start "must be thrown
-away", but not whether that is data-set word 1. The alternation itself is
-anchored on data-set positions, through the distinct values.
+Which data-set word the first change after M_on carries is not graded here.
+The alternation is anchored on data-set positions, through the distinct values,
+and F_2 is data-set word 1 by the derivation under *Measurements*, Fetch
+record. P4-A, P4-B, P4-C, P4-JOINT and P5-BOTH depend on Figure 5-8's count of
+the first pass (the length counter counts on 001->101 only, not on 101->010, so a
+first pass is AUDxLEN words): on an implementation whose first pass is one word
+longer or shorter, every later word of a dual-mode data set takes the other of
+the two roles for the whole session, and these lines fail against Table 5-4
+("Word 1 ... volume for other channel", "Word 2 ... period for other channel") in
+every pass. That red is P4's own claim; the count is NM-HRM-084's.
 
 **5. Preconditions.** PC1 ($11), PC2, PC3 (channel 0 at least 2 cycles in
 the window), PC4-VOL and PC4-DUR (VSET_1 including 63, 24, 56, 8, 40; R-PER-1 durations
 for 200, 300, 500, 700, 900), PC5.
 
-**6. Contrasting cases.** Write $8001 instead of $8011, so only bit 0 is set
-(S-BOTH-volonly's capture in place of S-BOTH's, selectors P4-A, P4-B, P4-C).
+**6. Contrasting cases.** Each changes the data set of S-BOTH and nothing else;
+ADKCON stays $8011, so PC1 keeps expecting $11 and stays green.
+- The volume words 56 and 8 exchanged (prog_s_both_swap, selector P4-A): every
+  value is still a word of M_VP, the order is not; (a) fails (and P4-JOINT,
+  which contains it); (b) and (c) hold.
+- The last volume word 32 instead of 40 (prog_s_both_v32, selector P4-B): a
+  volume outside the four of M_VP; (b) fails, and (a) and P4-JOINT with it, since
+  they contain the sets; (c) holds.
+- Every period word 300 (prog_s_both_perconst, selector P4-C): the period changes
+  once; (c) fails, and (a) and P4-JOINT with it; (b) holds.
 p.150: "If you want to modulate both period and volume on the same channel,
 you need to attach the channel as both a period and volume modulator."
-Table 5-4, "Modulating Volume Only": every word is a volume. Channel 1's
-period then stays 200, and (a) and (c) fail. The program still finishes, and
-PC1 then expects $01. (The volumes that words 2, 4, 6, 8 would give are not
-predicted, because they have bits 15-7 set; the contrast relies only on the
-period staying 200.)
+Table 5-4, "Modulating Volume Only": every word is a volume. Writing $8001
+instead of $8011 (S-BOTH-volonly) is graded on its own terms, below.
 
 S-BOTH-volonly (section 6's own stimulus) is also graded on its own terms,
 not only as P4's contrast. P4-VOLONLY: with only bit 0 set, channel 1's period
@@ -577,9 +625,10 @@ only at an instant when the modulator's period counter times out, never
 before the first time-out after the word was fetched. With one attach bit,
 successive words take effect two modulator periods apart. With both bits,
 a word takes effect at every time-out.
-Claims: 5-mod.c10, 5-p149.c16 (p.149; P5-AV); 5-p165.c18, 5-sig.pbufld2
-(p.165; P5-AP). P5-BOTH carries no id. P5-POP-AV, P5-POP-AP and P5-POP-BOTH
-are the population preconditions of the three lines.
+Claims: 5-mod.c10, 5-p149.c16 (p.149; P5-BOTH, the one session in which a word
+lands at every time-out); 5-p165.c18, 5-sig.pbufld2 (p.165; P5-AP). P5-AV carries
+no id. P5-POP-AV, P5-POP-AP and P5-POP-BOTH are the population preconditions of
+the three lines.
 
 **2. Stimulus.** Sessions S-AV (volume), S-AP (period, M_P4) and S-BOTH
 (both), all with AUD0PER = 4000. Channel 1 plays at periods of at most 900,
@@ -612,7 +661,11 @@ period counter is reloaded at these transitions").
   requests occurs on the 010->011 transition". Each is one request per
   010->011->010 loop. p.165: "pbufld2 Like pbufld1, but only during
   010->011 with attach period" -- graded on S-AP, the one session where
-  that transition alone carries the request.
+  that transition alone carries the request. In the frame PC7-CAL calibrates
+  (F_2 enters state 010, and the period counter times out every D_mod after it),
+  the 010->011 transitions are the odd time-outs, so every change of S-AP lands
+  an odd multiple of D_mod after F_2, within λ + ε (the same bound as the grid).
+  A word carried on 011->010 would land an even multiple.
 - Both bits (S-BOTH): consecutive changes are D_mod apart, within λ + ε,
   alternating volume and period. p.164: "When both attach period and attach
   volume are high, requests occur on both transitions".
@@ -624,18 +677,22 @@ is graded on every change and every consecutive pair in the window. With
 one attach bit, the page does not say which of the two time-outs after a
 fetch carries the word (m = 1 or m = 2). That is not graded.
 
-**5. Preconditions.** PC1 ($01, $10, $11), PC2, PC3, PC4-VOL, PC4-DUR, PC6
-(D_mod). At least 2L changes of channel 1 in the window (P5-POP-AV,
-P5-POP-AP, P5-POP-BOTH; an empty population of changes prints RECORDED "not
-evaluated", per *Measurements*).
+**5. Preconditions.** PC1 ($01, $10, $11), PC2, PC3 of the session a line grades,
+PC4-VOL, PC4-DUR, PC6 (D_mod); P5-AP also needs PC7-CAL and the start-up frame of
+S-AP (record entry r at offset 0), and prints NOT GRADED without them. At least
+2L changes of channel 1 in the window (P5-POP-AV, P5-POP-AP, P5-POP-BOTH; an empty
+population of changes prints RECORDED "not evaluated", per *Measurements*).
 
 **6. Contrasting cases.** Run the session with AUD0PER = 6000 while keeping
 the check's D_mod from R-MOD (4000 ticks): prog_s_av_per6000 (P5-AV),
 prog_s_ap_per6000 (P5-AP), prog_s_both_per6000 (P5-BOTH). The page then
 predicts changes 12,000 (6000 for both bits) ticks apart, on a 6000-tick grid,
-and both the grid check and the spacing check fail. The lines have a population
-only where attach has an effect, so on the repository RTL these contrasts
-print "not evaluated" like the lines themselves (Mutation scope).
+and both the grid check and the spacing check fail. A shorter session leaves
+fewer than 2L changes in the window: prog_s_av_short (70,000 ticks, P5-POP-AV),
+prog_s_ap_short (55,000 ticks, P5-POP-AP) and prog_s_both_short (40,000 ticks,
+P5-POP-BOTH). The lines have a population only where attach has an effect, so on
+the repository RTL these contrasts print "not evaluated" like the lines
+themselves (Mutation scope).
 
 **7. Reference frame.** The time-out grid is anchored on channel 0's
 fetches (p.164 transfer timing). D_mod comes from R-MOD (PC6).
@@ -692,18 +749,19 @@ channel 3"; "1 ATVOL1 ... volume of channel 2"; "0 ATVOL0 ... volume of
 channel 1". p.265 gives the same six rows (USE2P3 ... USE0V1).
 
 **3. Observation.** The target side's output; the other side's output; and
-the port fetch record of every channel. Window: from the third fetch of the
-modulator's own data set after M_on until the end of play of the target's
-output (see *Measurements*), which excludes the sample the DMA stop cuts short;
-the fetch records and the other side's constant-output check end at M_off. It
-must contain at least 9 changes of the target.
+the port fetch record of every channel. Window: from the modulator's first
+restart (the first pass is graded in hrm/ch5-audio-dma-first-pass, not here)
+until the end of play of the target's output (see *Measurements*), which excludes
+the sample the DMA stop cuts short; the fetch records and the other side's
+constant-output check end at M_off. It must contain at least 9 changes of the
+target.
 
 **4. Expected.**
 - (a) (P6-A) Volume sessions: the target's applied volumes are cyclically
   consecutive in M6V, and every level pair on the target side is a
   reference pair of the target channel (R-VOL-c) at an M6V value.
-  Period sessions: the target's applied periods are cyclically consecutive
-  in M_P4.
+  Period sessions: the target's applied periods, graded on sign-alternation
+  samples (see *Measurements*), are cyclically consecutive in M_P4.
 - (b) (P6-B) Volume sessions: the target's durations stay at D_c(200).
   Period sessions: the target's level pair stays at the reference for VOL 40.
 - (c) (P6-C) The other side's output is constant for the whole window.
@@ -720,12 +778,14 @@ modulates the next higher numbered channel, you cannot attach channel 3."
 target) is graded by (c) and (d) on every other channel.
 
 **5. Preconditions.** PC1 (mask per b), PC2, PC3 (all four channels, the
-modulator at least 2 cycles in the window), PC4-VOL and PC4-DUR (VSET_c and R-PER-c of the
-target channel c), PC5.
+modulator at least 2 cycles after its first restart), PC4-VOL and PC4-DUR (VSET_c
+and R-PER-c of the target channel c), PC5.
 
 **6. Contrasting cases.**
-- For every b: omit the attach write (selector P6-b). The target then keeps VOL 40 and
-  PER 200, and (a) fails.
+- For every b: the second and third modulator words exchanged
+  (prog_s_pair<b>_swap, selector P6-b). Every value is still a word of the
+  modulator's data set, the order is not, and (a) fails; PC1 keeps expecting the
+  bit's mask and stays green.
 - To show that (b) can fail: the target's own AUD1PER rewritten from 200 to
   300 halfway through the volume session b = 0 (prog_s_pair0_tgtper, selector
   P6-TGT-0), and the target's own AUD1VOL rewritten from 40 to 20 halfway through
@@ -769,11 +829,17 @@ from D_mod (PC6).
 **1. Proposition.** Setting ADKCON bit 3 (ATVOL3, Appendix A: USE3VN) or
 bit 7 (ATPER3, USE3PN) makes channel 3's words modulate nothing. No
 channel's volume or period changes, channel 3's own included.
-Claims: 5-appA-p265.c22, 5-appA-p265.c26, A-adkcon.b03, A-adkcon.b07 (p.265),
-asserted on P7-CONST for the bit each names. 5-mod.c23 and 5-p150.c26 (p.150)
-say that an attached channel always modulates the next higher channel, so channel
-3 cannot be attached, and that its modulate bits only disable its audio output:
-the second half is P8's, so neither is asserted.
+Claims: 5-appA-p265.c26 ("03 USE3VN", bit 3) on P7-CONST of S-CH3-V, and
+5-appA-p265.c22 ("07 USE3PN", bit 7) on P7-SPACING of S-CH3-P: the volume bit is
+seen by the outputs, which stay constant when no volume is modulated, and the
+period bit by the fetch spacings, since all four channels are at volume 0 and a
+modulated period moves no output. A-adkcon.b03 and A-adkcon.b07 (p.265, with
+p.151's parenthesis on bits 7 and 3) bundle "modulates nothing" with "disables
+channel 3's audio output": each sits on a joint line, P7-JOINT-V and P7-JOINT-P,
+that holds this proposition's line for the bit and P8-ATT for S-DAC3-V or S-DAC3-P.
+5-mod.c23 and 5-p150.c26 (p.150) say that an attached channel always modulates the
+next higher channel, so channel 3 cannot be attached, and that its modulate bits
+only disable its audio output: the second half is P8's, so neither is asserted.
 
 **2. Stimulus.**
 - S-CH3-V: ADKCON $8008, DMACON $820F. ch3 plays W_V (valid volume words
@@ -814,7 +880,8 @@ Measured: bit 2 and bit 6 leave ch3 unchanged on the repository RTL, the same
 as every attach bit there. The contrasts actually run drive the same two clauses
 directly instead: a tripwire given a non-zero starting AUDxVOL (P7V, P7-CONST),
 or a tripwire's AUDxPER rewritten mid-session as the PC6/PC7 mutants do (P7P,
-P7-SPACING).
+P7-SPACING). The joint lines P7-JOINT-V and P7-JOINT-P fail with these (they contain
+P7-CONST and P7-SPACING) and with P8-OMIT (they contain P8-ATT).
 
 **7. Reference frame.** As in P6.
 
@@ -827,7 +894,8 @@ channel 3's, the words its DMA delivers are not sent to its own
 digital-to-analog converter, so the channel's output does not follow its
 data.
 Claims: A-adkcon.b03, A-adkcon.b07 (p.265, with p.151's parenthesis on bits 7
-and 3), asserted on P8-ATT for channel 3. 5-p165.c19 and 5-sig.audxav
+and 3), asserted on the joint lines P7-JOINT-V and P7-JOINT-P (see P7), which hold
+P8-ATT for channel 3 as their converter half. 5-p165.c19 and 5-sig.audxav
 (AUDxAV), 5-p165.c20 and 5-sig.audxap (AUDxAP): each says the data goes to the
 next channel's latch instead of to the converter, which is two halves. Their
 lines are the joint lines P1-JOINT (S-AV, in P1) and P8-JOINT-AP (S-AP, below);
@@ -843,7 +911,9 @@ alone and carries no id.
 **3. Observation.** The attached channel's own output (see *Output sides
 and silence*). Window: from the attached channel's third fetch after M_on,
 shifted by L_a to align audio time with port time, until the end of play (see
-*Measurements*). By the third fetch words are flowing (p.164).
+*Measurements*). By the third fetch words are flowing (p.164). The destination
+half of P8-JOINT-AP counts channel 1's applied-period changes from the modulator's
+first restart (the first pass is graded in hrm/ch5-audio-dma-first-pass, not here).
 
 **4. Expected.** (P8-ATT) The channel's own output has one value for the whole
 window, with no change. p.165: "AUDxAV Attach volume. Send data to volume
@@ -857,18 +927,26 @@ applied periods follow channel 0's words cyclically in M_P4, from at least 8
 changes (the destination half, graded as P5-AP's changes are), AND channel 0's
 own output holds one value (the source half).
 
-**5. Preconditions.** PC1, PC2, PC3 (the attached channel fetches, so data
-is flowing). The same channel with the same data, period and volume,
-unattached, changes its own output at least twice per data word (P8-PRE):
-R-MOD (M_V), R-DAC-P4 (M_P4), R-DAC-VP (M_VP), R-DAC3-V (W_V) and R-DAC3-P
-(W_P).
+**5. Preconditions.** PC1, PC2, PC3 of the attached session (the attached channel
+fetches, so data is flowing). The same channel with the same data, period and
+volume, unattached, changes its own output at least twice per data word
+(P8-PRE): R-MOD (M_V), R-DAC-P4 (M_P4), R-DAC-VP (M_VP), R-DAC3-V (W_V) and
+R-DAC3-P (W_P). P8-ATT of a session prints NOT GRADED where PC1-PC3 of the session
+or its P8-PRE fails.
 
-**6. Contrasting cases.** Omit the attach write, which gives the matching
-R- session (selector P8-OMIT). The page predicts the channel's bytes on its own
-output (p.138), and the "constant" check fails. On the repository RTL P8-ATT is
-red with and without the attach write (attach has no effect there), so this
-contrast moves the line only on the page-model RTL. P8-PRE: R-MOD with AUD0VOL = 0
-(prog_rmod_vol0, selector P8-PRE) changes nothing on its own output.
+**6. Contrasting cases.** Omit the attach write: the matching unattached session,
+the one P8-PRE grades, is graded in the attached one's place (selector P8-OMIT:
+R-MOD for S-AV, R-DAC-P4 for S-AP, R-DAC-VP for S-BOTH, R-DAC3-V for S-DAC3-V and
+R-DAC3-P for S-DAC3-P). The page predicts the channel's bytes on its own output
+(p.138), and the "constant" check fails in all five lines and in P8-JOINT-AP and
+P7-JOINT-V and P7-JOINT-P, which contain them. The PC lines of the attached
+sessions are graded as in the ordinary run. On the repository RTL P8-ATT is red
+with and without the attach write (attach has no effect there), so this contrast
+moves the lines only on the page-model RTL. P8-JOINT-AP's destination half: the
+second and third words of M_P4 exchanged in S-AP (prog_s_ap_swap, selector
+P8-JOINT-AP), which leaves P5-AP and the source half as they are. P8-PRE: R-MOD
+with AUD0VOL = 0 (prog_rmod_vol0, selector P8-PRE) changes nothing on its own
+output; P8-ATT of S-AV prints NOT GRADED.
 
 **7. Reference frame.** Each channel's own output is measured directly
 (see *Output sides and silence*). The window is anchored on the attached
@@ -882,7 +960,8 @@ channel's own fetches.
 AUDxLEN words and the modulated channel after its own, whatever the ratio
 of the two. The modulation follows the modulator's cycle across the
 modulated channel's restarts.
-Claims: 5-mod.c18, 5-p150.c21 (p.150), asserted on P9-C.
+Claims: 5-mod.c18, 5-p150.c21 (p.150), asserted on P9-C for the two length
+pairs of S-LEN-A and S-LEN-B (5 and 3, 2 and 7) only.
 
 **2. Stimulus.** Two sessions, both with ADKCON $8001:
 - S-LEN-A: modulator 5 words (M_LA), modulated channel 3 words (SQ).
@@ -911,25 +990,37 @@ overrun. It must contain at least 2 modulator cycles.
 - (d) (P9-D) Channel 1's durations stay at D_1(200).
 
 p.150: "The lengths of the data sets of the modulator and the modulated
-channels are completely independent." "completely" is graded by both
-orderings of the lengths and by (c) holding across every restart of either
-channel.
+channels are completely independent." "completely" is graded for the two length
+pairs and orderings above, and by (c) holding across every restart of either
+channel; other pairs are not run.
 
-**5. Preconditions.** PC1 ($01), PC2, PC3, PC4-VOL (VSET_1 including 8, 48, 20,
-60, 32), PC4-DUR. P9-WINDOW: the window opens after each channel's own first
-restart, with fetches recorded for both channels; where it does not, P9-A to
-P9-D print NOT GRADED. (c)'s population is channel 1's applied-volume changes in
-the window and (d)'s its complete samples (an empty population prints RECORDED
-"not evaluated", per *Measurements*).
+**5. Preconditions.** PC1 ($01), PC2, PC3, PC4-VOL (VSET_1 including 8, 48, 20, 60,
+32), PC4-DUR, of the ordinary program of the session (PC3's stepping is the check
+P9-A and P9-B make, so a contrast of those lines does not reach it). P9-WINDOW: the window opens after each channel's own first restart,
+with fetches recorded for both channels; where it does not, it prints as a
+precondition not met (RECORDED, not FAIL) and P9-A to P9-D print NOT GRADED, as they
+do when PC1 or PC2 fails. (c)'s population is channel 1's applied-volume changes
+in the window, not counting the value in force at the window's edge, and (d)'s its
+complete samples (an empty population prints RECORDED "not evaluated", per
+*Measurements*). The offsets of each channel are read in its own 4 KB region, so
+that a fetch beyond the channel's own length is seen.
 
 **6. Contrasting cases.** Every line grades with the page's own lengths
-(L_m = 5, L_c = 3) whichever program runs. S-LEN-A with AUD0LEN = 4 (selectors
-P9-A and P9-C). p.147 and p.145 ("Set the length register, AUDxLEN, to the
-number of data words to be retrieved before starting at the address currently in
-AUDxLC") predict a 4-word cycle, 8, 48, 20, 60, and (a) and (c) with L_m = 5
-fail. S-LEN-A with AUD1LEN = 2 (prog_s_lena_ch1len2, selector P9-B): channel 1
-cycles two words, and (b) with L_c = 3 fails. (d) has no contrast of its own
-(Mutation scope).
+(L_m = 5, L_c = 3) and the page's data set whichever program runs. Each changes
+the program of S-LEN-A and nothing else.
+- AUD0LEN = 10 over a table that holds M_LA twice, 260,000 ticks
+  (prog_s_lena_len10, selector P9-A). p.147 and p.145 ("Set the length register,
+  AUDxLEN, to the number of data words to be retrieved before starting at the
+  address currently in AUDxLC") predict a 10-word cycle: the volumes still cycle
+  through M_LA, the offsets do not wrap at 5, and (a) with L_m = 5 fails.
+- AUD1LEN = 2 (prog_s_lena_ch1len2, selector P9-B): channel 1 cycles two words,
+  and (b) with L_c = 3 fails.
+- The third and fourth words of M_LA exchanged (prog_s_lena_swap, selector P9-C):
+  the offsets are right, the order of the volumes is not, and (c) fails.
+- Channel 1's own AUDxPER rewritten from 200 to 300 halfway through
+  (prog_s_lena_per1write, selector P9-D): (d) fails.
+- AUD1LEN = 1000 (prog_s_lena_ch1len1000, selector P9-WINDOW): channel 1 does not
+  restart in the session, P9-WINDOW is not met and P9-A to P9-D print NOT GRADED.
 
 **7. Reference frame.** Word offsets at the port are measured from each
 channel's own AUDxLC.
@@ -944,8 +1035,9 @@ one per loop, on the 011->010 transition. With attach period only, they
 come on the 010->011 transition, one modulator period later in the loop.
 With both bits, they come on both transitions, one per time-out.
 Claims: 5-p164.c33, 5-p164.c34, 5-p164.c35, 5-sm.c33, 5-sm.c34,
-5-sm.c35 (p.164); 5-p165.c22, 5-sig.napnav (p.165, DMA part);
-F58.loop.attach (p.166, Figure 5-8).
+5-sm.c35 (p.164); F58.loop.attach (p.166, Figure 5-8). 5-p165.c22 and
+5-sig.napnav (p.165, DMA part) are recorded, not asserted (see *Claims used only in
+part*): P10's phases are the only grade of the DMA requests they condition.
 
 **2. Stimulus.** R-MOD (normal), S-AV ($01), S-AP ($10) and S-BOTH ($11),
 all with AUD0PER = 4000.
@@ -988,14 +1080,21 @@ Windows for neighbouring phases are 4000 ticks apart. n = 3 for normal
 operation is graded by PC7-N3, which carries no claim id (no claim in either
 claims file of this package names the 101->010 transition).
 
-**5. Preconditions.** PC1, PC2, PC3, PC6, and PC7-CAL, PC7-LOOP and PC7-N3,
-which check the frame and the anchor: normal operation must show F_n − F_2 =
-2(n−3)·D_mod within λ.
+**5. Preconditions.** PC1, PC2 and PC3 of the session a line grades, PC6, and
+PC7-CAL with the start-up frame of that session (its record entry r is at offset 0
+and at least three entries follow it); a P10 line prints NOT GRADED where one of
+them fails. PC7-LOOP and PC7-N3 are printed beside them and check the anchor
+(normal operation shows F_n − F_2 = 2(n−3)·D_mod within λ); they are not gates of
+P10.
 
-**6. Contrasting cases.** P10-AV: S-AV with AUD0PER = 6000 (prog_s_av_per6000),
-graded with R-MOD's D_mod: the fetches are 12,000 ticks apart, not 8000, and
-the phase check fails on the repository RTL as well as on a page-conforming
-implementation. P10-AP and P10-BOTH: S-AV's capture (attach write $8001, M_V) in
+**6. Contrasting cases.** P10-AV: S-AV with AUD0PER = 6000 (prog_s_av_per6000,
+selector P10-AV), graded with R-MOD's D_mod: the fetches are 12,000 ticks apart,
+not 8000, and the phase check fails on the repository RTL as well as on a
+page-conforming implementation. S-AP's capture graded through P10-AV's comparator
+(selector P10-AV-PHASE): the spacing is the same as in normal operation, the phase is
+one D_mod later, so the line fails on a page-conforming implementation by the phase
+alone; the repository RTL requests as in normal operation, so it does not move
+there. P10-AP and P10-BOTH: S-AV's capture (attach write $8001, M_V) in
 place of S-AP's or S-BOTH's. The page predicts the attach-period phase for S-AP
 and the doubled fetch rate for S-BOTH, so S-AV's capture fails each comparator;
 on the repository RTL, which requests as in normal operation whatever the attach
@@ -1031,11 +1130,14 @@ R-MOD (PC6).
    which of the two time-outs a new word lands, or whether the other
    time-out rewrites the same word. P5 grades only what both allow.
 6. **The first word after DMA start.** p.164: "the first data word must be
-   thrown away". The page gives no address for it and does not say whether
-   data-set word 1 is lost at start-up, so the fetch record may or may not hold
-   it. PC7-CAL finds in the run which record entry is the page's F_2, and no
-   check depends on where the word thrown away was read from or on which word
-   comes first after M_on.
+   thrown away". The page gives no address for it, so the fetch record may or
+   may not hold it, and no check depends on where it was read from. Whether
+   data-set word 1 is the word whose arrival enters state 010 (F_2) is not said
+   by that sentence; it follows from Table 5-4 and p.265 (the first word of a
+   data set is the volume) together with Figure 5-8 (the word that arrives on
+   101->010 is loaded by pbufld1, the volume). PC7-CAL finds in the run which
+   record entry is the page's F_2 and requires it to be at offset 0 on that
+   derivation (see *Measurements*, Fetch record).
 7. **Both attach bits with an odd AUDxLEN.** The alternation is defined on
    data-set positions (p.150, p.265), and the data set wraps (p.147). With an
    odd length, word L and word 1 would both be volumes. No page says what
@@ -1081,28 +1183,30 @@ against the page model below, and the line prints PASS where it prints FAIL (or
 line says so).
 
 **The repository RTL does not implement the attach bits.** ADKCON bits 7-0 reach
-nothing in it ("attached modes are not supported", paula_audio_channel.v), so every
-line that grades attach behaviour is red or not evaluated on it with and without a
-stimulus change, and a red-going contrast of such a line cannot move it there. The
-row of such a record reads FAIL -> FAIL (or NOT EVALUATED -> NOT EVALUATED) in the
-RTL columns and PASS -> FAIL in the page-model columns.
+nothing in it, so every line that grades attach behaviour is red or not evaluated
+on it with and without a stimulus change, and a red-going contrast of such a line
+cannot move it there. The row of such a record reads FAIL -> FAIL (or NOT
+EVALUATED -> NOT EVALUATED) in the RTL columns and PASS -> FAIL in the page-model
+columns.
 
-**Page model.** `page_model.patch` changes three files of `src/minimig-aga`
-(paula.v, paula_audio.v, paula_audio_channel.v). `make pm-test-fx68k` and
-`make pm-test-tg68k` apply it to a private copy under `obj_dir_pm/` and run the
-package against that copy (they write obj_dir_<core>/ and out_<core>.txt like the
-ordinary targets); the pinned submodule is never modified. It implements, as pages
-149-151 and 164-165 and Figure 5-8 describe them: ADKCON bit x is AUDxAV and bit 4+x
-is AUDxAP of channel x; napnav = /AUDxAV * /AUDxAP + AUDxAV; the request "AUDxDR if
-napnav" on 101->010 and on 011->010, "AUDxDR if (AUDxAP & AUDxON)" on 010->011;
-pbufld1 sends the holding latch to the next channel's volume latch when AUDxAV is
-set, pbufld2 (010->011) to its period latch when AUDxAP is set; an attached
-channel's own output is disabled; and the length counter counts on 001->101 only,
-not on 101->010 (the figure's lencount), so a first pass is AUDxLEN words. The
-last item is the change NM-HRM-084 names, kept in the model so that the cyclic
-checks, which start before the channel's first restart, can pass. The model is a
-reading of the pages used to show that the lines can pass and fail; no expected
-value was taken from it.
+**Page model.** `page_model.patch` changes the audio RTL of `src/minimig-aga`.
+`make pm-test-fx68k` and `make pm-test-tg68k` apply it to a private copy under
+`obj_dir_pm/` and run the package against that copy in `obj_dir_pm_<core>/`,
+writing `out_pm_<core>.txt`, so the ordinary run's `obj_dir_<core>/` and
+`out_<core>.txt` are never replaced; the pinned submodule is never modified. It
+implements, as pages 149-151 and 164-165 and Figure 5-8 describe them: ADKCON bit x
+is AUDxAV and bit 4+x is AUDxAP of channel x; napnav = /AUDxAV * /AUDxAP + AUDxAV;
+the request "AUDxDR if napnav" on 101->010 and on 011->010, "AUDxDR if (AUDxAP &
+AUDxON)" on 010->011; pbufld1 sends the holding latch to the next channel's volume
+latch when AUDxAV is set, pbufld2 (010->011) to its period latch when AUDxAP is set;
+an attached channel's own output is disabled; and the length counter counts on
+001->101 only, not on 101->010 (the figure's lencount), so a first pass is AUDxLEN
+words. The last item is the change NM-HRM-084 names. The windows of P1, P2, P6 and
+the destination half of P8-JOINT-AP, and P9-C, start at the modulator's first
+restart and do not depend on it; P4-A, P4-B, P4-C, P4-JOINT and P5-BOTH do (see P4).
+The model is a reading of the pages used to show that the lines can pass and fail;
+no expected value was taken from it. `PM_PATCH` and `PM_NAME` build the same targets
+against another patch file in directories of their own.
 
 **Lines without a contrast, and why.** A line graded by the same call as one that
 has a record has none of its own.
@@ -1110,15 +1214,12 @@ has a record has none of its own.
   PC4-VOL for R-VOL-2 and R-VOL-3, PC4-DUR for R-PER-2, R-PER-3 and R-RAMP, P6-B for
   bits 1, 2, 5 and 6, P6-C for bits 1, 4, 5 and 6, P6-D for bits 0, 1 and 2, and
   P9-A to P9-D for S-LEN-B are the same calls as the ones that have records.
-- P2-B, P2-C and P3-SP2 grade a property of the whole 2.5 M tick S-P2 capture (the
+- P7-CONST for bit 7 and P7-SPACING for bit 3 are the same calls as the ones that
+  have records (P7-CONST for bit 3, P7-SPACING for bit 7).
+- P2-B, P2-C and P3-SP2 grade a property of the whole 2.7 M tick S-P2 capture (the
   mean duration of each run, RAMP's byte order, the absence of byte-split
   durations); their contrast would be a second session of that length with another
   data set. Not built; their implementation green shows that they can pass.
-- P5-POP-AV, P5-POP-AP and P5-POP-BOTH are counts of changes (at least 8); the
-  pages give no value that would make a session produce fewer.
-- P9-D and P9-WINDOW: no stimulus here makes channel 1's durations leave D_1(200)
-  or the window not open in S-LEN-A/S-LEN-B without changing what the other lines
-  grade. Not built.
 - The contrast of PC7-N3 moves it only on the page model (S-AP's capture; the
   repository RTL requests on 101->010 whatever the attach bits say, NM-HRM-028).
 
