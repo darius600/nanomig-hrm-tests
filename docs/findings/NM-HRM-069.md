@@ -164,9 +164,9 @@ plane 1.
   an instruction's own miss is not found, and the package prints its counts as
   measurements: on the four-lores-plane BRA.S loop 11097 missed odd cycles in
   92965 access pairs on fx68k and 0 in 107423 on TG68K. The RAM port shows
-  grants, not the 68000's readiness: an even-numbered ready slot is shown by
-  `A8PRE`'s witness, a DMA access on that slot, and an odd-numbered ready slot is
-  only inferred from the address pair's gap. `A8` is a separate red line without
+  grants, not the 68000's readiness: the package infers the ready slot, of either
+  parity, from the address pair's largest unimpeded gap, and counts a cycle as
+  missed where a DMA access took that slot (`A8PRE`'s witness). `A8` is a separate red line without
   a claim id; for the share-mode run its measurement line shows 124 missed even
   cycles on fx68k, 122 of them granted before the first free even slot and 2
   exactly on it, and 125 on TG68K, 120 and 5; the first missed pair is a fetch at
@@ -187,9 +187,9 @@ raised, which the RAM port does not show, or at the first even-numbered slot the
 slot is the fourth and an odd-numbered one, or in the 68000's own alternate
 cycles, so that it is the seventh and an even-numbered one, which p. 196 would
 require. The package prints the share-mode pattern as a measurement: of 124
-missed even cycles on fx68k 121 were granted exactly four slots after the slot
-the 68000 was ready for, with the three slots between taken by DMA, and on TG68K
-120 of 125. **NanoMig's first missed pair is 5 slots apart on both cores.** The
+missed even cycles on fx68k 121 were granted on the third slot after the slot
+the 68000 was ready for (the fourth counting that slot), that slot and the two
+after it taken by DMA, and on TG68K 120 of 125. **NanoMig's first missed pair is 5 slots apart on both cores.** The
 memory-cycle reading puts the release on an odd-numbered slot, which p. 196 does
 not allow; the alternate-cycle reading puts it on an even-numbered one and keeps
 p. 196, and p. 198 says nothing about the released cycle's parity. The
