@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**51 findings ask for a review, in 28 modules.** They are listed by the
+**52 findings ask for a review, in 28 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -69,13 +69,14 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-021](findings/NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | a test fails against the page |
 | [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | a test fails against the page |
 
-## [`src/minimig-aga/agnus_copper.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v) — 3
+## [`src/minimig-aga/agnus_copper.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v) — 4
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper address uses five high bits instead of three | a test fails against the page |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | a test fails against the page |
 | [NM-HRM-073](findings/NM-HRM-073.md) | a COPJMP2 written before Copper DMA is turned on starts the Copper at COP1LC, where pp. 25, 26, 30 and 276 start it at COP2LC | a test fails against the page |
+| [NM-HRM-089](findings/NM-HRM-089.md) | a Copper WAIT for ($FF,$E2) never ends on line 255, where pp. 23, 32 and 33 make $E2 a position the comparison reaches | a test fails against the page |
 
 ## [`src/minimig-aga/agnus_diskdma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v) — 2
 
