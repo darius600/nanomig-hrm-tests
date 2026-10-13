@@ -6,7 +6,7 @@ COPCON, and the location-register restart rule that Appendix B also applies to
 audio. It rests on the package's claims (`claims-spec-stage.jsonl`) and the
 pages of the *Amiga Hardware Reference Manual*, 3rd edition. Page numbers are
 printed page numbers. Where the electronic page text and the printed page could
-differ, the printed page was rendered and read.
+differ, the printed page governs.
 
 The package has eight propositions (P1 to P8). Section 1 lists the claims that
 could not be turned into a proposition. Section 2 lists where the pages
@@ -118,7 +118,7 @@ No claim in this package needs data read from or written to a disk.
 7. **Where the COPINS bit table is printed.** The claims cite the MOVE/WAIT/SKIP
    bit table of Appendix A as p.274, from the electronic page text. In the
    printed edition the table is on p.275, under the heading "COPINS (cont.)".
-   The printed page was rendered and read. Its MOVE columns (X / DA8-DA1 / 0 and
+   Its MOVE columns on the printed page (X / DA8-DA1 / 0 and
    RD15-RD00) match the electronic text and Table 2-2 on p.36 word for word.
    This is a placement difference, not a difference in content.
 
@@ -238,7 +238,8 @@ RD11-RD00 rows: on p.36 `ch2-summary-of-copper-instructions.c26`, `.c32`, `.c38`
 `COP2-copins-encoding.c26` ... `.c92` (same suffixes) and `ch2-appa-copins.c39`,
 `.c45`, `.c51`, `.c57`, `.c63`, `.c69`, `.c75`, `.c81`, `.c87`, `.c93`, `.c99`,
 `.c105`; the terms `ch2-summary-of-copper-instructions.c98`, `.c99`, `.c100`,
-`.c101` (p.36). The existential part of `ch2-about-the-copper.c6.s2` (p.19).
+`.c101` (p.36). `ch2-about-the-copper.c6.s2` (p.19): P1 uses its existential
+part, and the id stands on a RECORDED line (Section 5).
 
 **Stimulus.** Baseline with the video registers set. The list at $30000:
 
@@ -471,10 +472,13 @@ RAM to the address given by the DA field".
   $3600A returned, and (ii) goes red. Every read still returns the last value
   written and the values moved are unchanged, so (i) and (iii) hold, and so do
   (a) and (b).
-- (i): none. Every write to $3600A that reaches the port is counted as a value
-  write, whichever channel makes it, and RAM returns the word last written at
-  its address, so a read cannot differ from the last port write unless the
-  memory loses a written word. No stimulus changes that.
+- (i): before S($36000), the blitter writes $1234 to $3600A (BLTCON0 <- $01F0,
+  BLTADAT <- $1234, BLTDPT <- $3600A, BLTSIZE <- $0041). The reads before the
+  first value write then return $1234, not $0F0F, and (i) goes red; (iii) goes
+  red with it, because its first value is the same word. (a) and (b) still
+  hold. No stimulus turns (i) red while (iii) holds: from the enable marker on,
+  every write to $3600A at the port is counted as a value write, whichever
+  channel makes it, and RAM returns the word last written at its address.
 - (a): the CPU writes all four values within one field, with no wait. Several
   value writes then fall between the same two reads, and (a) goes red.
 - (b): start the Copper at a second list at $36080, `$0082,$6000`, `$0080,$0003`,
@@ -502,7 +506,7 @@ p.30.
 **Stimulus.** Baseline with the video registers set. The list at $38000:
 `$0180,$0FFF` (+0), `$8001,$FF00` (+4), `$0180,$00F0` (+8, MOVE A),
 `$FFFF,$FFFE` (+12), `$0180,$0F00` (+16, MOVE B), `$FFFF,$FFFE` (+20). Then
-S($38000). The CPU idles for 8 fields.
+S($38000). The CPU idles for 8 passages of the beam through line $A0.
 
 **Observation.** Copper accesses at the port from marker 0 until the end of the
 6th field after the enable marker (the Copper's first reads precede the enable
@@ -548,12 +552,13 @@ this package does not carry.
 the matching strobe, the Copper's first fetch is at A. At every vertical blank
 the Copper restarts at the address in COP1LC.
 Claims: `COP2-location-registers.c6`, `COP2-location-registers.c9`,
-`ch2-location-registers.c11`, `COP2-location-registers.c13`,
-`ch2-location-registers.c3.s2`, `ch2-location-registers.c5.s2` (bits 15-1 only)
-(p.25); the write half of `ch2-appa-location-registers.c2.s2`, `.c7.s2`,
+`ch2-location-registers.c11`, `COP2-location-registers.c13` (p.25);
+`appB-note.c9` (p.288). `ch2-location-registers.c3.s2`, `.c5.s2` (bits 15-1
+only, p.25) and the write half of `ch2-appa-location-registers.c2.s2`, `.c7.s2`,
 `.c11.s2`, `.c16.s2` (p.273), `ch2-appb-table.c16.s2`, `.c22.s2`, `.c26.s2`,
-`.c32.s2` (p.290), `ch2-appc-ecs.c3.s2`, `.c8.s2` (p.309);
-`ch2-appb-legend.c6.s2` (p.287); `appB-note.c9` (p.288).
+`.c32.s2` (p.290), `ch2-appc-ecs.c3.s2`, `.c8.s2` (p.309) and
+`ch2-appb-legend.c6.s2` (p.287) are exercised, and these ids stand on a
+RECORDED line (Section 5).
 
 **Stimulus.** Baseline. Lists, each a single end WAIT `$FFFF,$FFFE`, at $20004,
 $25A5C and $40002. Every run waits for the beam to leave line $80 before it
@@ -644,15 +649,16 @@ and state".
   restarts then stay at $25A5C and P5-LOCATION-R2-CTRL goes red.
 - (a): enable Copper DMA directly after the strobe and before writing markers 2
   and 3. Copper accesses fall before marker 2 and (a) goes red. The contrast is
-  applied to run R1 and, separately, to run R2.
-- (b): idle only 2 passages in each phase of run R1, and 2 passages in run R2.
-  (b) goes red.
+  applied to run R1 and, separately, to run R2 and to run R2c.
+- (b): idle only 2 passages in each phase of run R1, and 2 passages in run R2
+  and in run R2c. (b) goes red.
 - (c): put `$0180,$0F00` in front of the end WAIT at $20004. Each pass reads
   four words and (c) goes red in every run.
 - Attribution: a CPU read of a word of the list at $20004 stands behind the
   program's DONE write, where it is never executed. The listing check goes red
   and nothing else does. The contrast is applied to run R1 and, separately,
-  to run R2.
+  to run R2 and to run R2c. For run R2c, P5-LOCATION-R2-CTRL prints NOT GRADED
+  under each of the three contrasts.
 
 **Reference frame.** The markers time the CPU's steps. Restarts are defined in
 Section 3.
@@ -701,9 +707,10 @@ the CPU executes.
 **Proposition.** After the CPU writes COPCON ← $0002, a Copper MOVE to BLTSIZE
 ($058), one of the blitter control registers in $40-$7E, takes effect and
 starts the blit the CPU has prepared.
-Claims: `COP2-control-register.c9` (p.26, the bit-1-set direction only),
-`COP2-control-register.c11` (p.26); the existential part of
-`ch2-about-the-copper.c6.s2` (p.19). Every page agrees on this direction:
+Claims: `COP2-control-register.c11` (p.26). `COP2-control-register.c9` (p.26,
+the bit-1-set direction only) and the existential part of
+`ch2-about-the-copper.c6.s2` (p.19) are exercised, and these ids stand on a
+RECORDED line (Section 5). Every page agrees on this direction:
 p.26 "When CDANG is 1, these registers can be written by the Copper"; p.274
 CDANG "Allows Copper access to blitter if true"; p.21 "$20 or above"; p.310 "if
 this bit is set, the Copper can access all of the Amiga chip registers" (ECS)
@@ -786,8 +793,8 @@ $E000, $2000, $E000.
 - **Run M**: `MOVE.L #$00044000,$DFF0A0`; AUD0LEN ($DFF0A4) ← 4; AUD0VOL
   ($DFF0A8) ← 32; AUD0PER ($DFF0A6) ← 256 (at least 123/124, p.140); marker 1;
   wait for the beam to enter and leave line $40; DMACON ← $8201 (p.145 step 7);
-  marker 2. Idle 2 passages of the beam through line $A0 (more than 100 lines,
-  about 10 runs of 2048 colour clocks each); marker 3.
+  marker 2. Idle 2 passages of the beam through line $A0 (about 410 lines,
+  about 45 runs of 2048 colour clocks each); marker 3.
 - **Run C**: as M, but about 30 lines after marker 2 (timed with VHPOSR, line $5F)
   the CPU writes `MOVE.L #$00044100,$DFF0A0`, then marker W (marker 4 in the
   program). It then idles 2 passages before marker 3.
