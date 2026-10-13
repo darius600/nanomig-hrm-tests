@@ -486,8 +486,8 @@ one colour clock (one slot). The page leaves three things open:
 
 Measured on the share-mode run (printed as an `A5` measurement): of the
 missed even cycles, 121 of 124 on fx68k and 120 of 125 on TG68K are granted
-exactly four slots after the slot the 68000 was ready for, with the three
-slots between taken by DMA. That pattern fits the first reading of each pair
+on the third slot after the slot the 68000 was ready for (the fourth counting
+that slot), that slot and the two after it taken by DMA. That pattern fits the first reading of each pair
 above; the page does not say that reading is the one meant, so grading it
 would adopt the reading from the run instead of from the page. The modal
 spacing of consecutive CPU accesses inside the share-mode window is printed
@@ -1449,7 +1449,7 @@ A2: active window 2274377..2284489, 48 scratch write(s) strictly inside it (excl
 A4: window 2274377..2282489, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
 A4-SHARE: CPU accesses 243 in a share-mode window of 10112 clk_sys; reference 41007 in 726488 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (190 of 242 intervals)
-A5: of 124 missed even cycles in the share-mode run, 121 were granted exactly four slots after the slot the 68000 was ready for, with the three slots between taken by DMA
+A5: of 124 missed even cycles in the share-mode run, 121 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
 A8: 40669 access pairs, 124 missed even cycle(s), 305 missed odd cycle(s), 0 with an even free slot left unused (122 granted before the first free even slot, 2 exactly on it), 0 delayed with a free ready slot, 400 spanning a line start, 6 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
 SYSDMA-C29: four lores planes, BRA.S loop: 92965 access pairs, 0 missed even cycle(s), 11097 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 178 spanning a line start, 0 without an unimpeded gap; first missed pair: fetch $80506 -> fetch $80500, 4 slots
 SYSDMA-C29: four lores planes, aligned loop: 107421 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 949 spanning a line start, 0 without an unimpeded gap; first missed pair: none
@@ -1481,7 +1481,7 @@ A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excl
 A4: window 2274337..2282449, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
 A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
-A5: of 125 missed even cycles in the share-mode run, 120 were granted exactly four slots after the slot the 68000 was ready for, with the three slots between taken by DMA
+A5: of 125 missed even cycles in the share-mode run, 120 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
 A8: 44815 access pairs, 125 missed even cycle(s), 116 missed odd cycle(s), 0 with an even free slot left unused (120 granted before the first free even slot, 5 exactly on it), 0 delayed with a free ready slot, 399 spanning a line start, 7 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
 SYSDMA-C29: four lores planes, BRA.S loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
 SYSDMA-C29: four lores planes, aligned loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
