@@ -3,6 +3,7 @@
 ; the third field on, the CPU changes the IR2 word at $3600A once per field.
 ;
 ; Symbols this source answers to:
+;   P3_T      address the Copper starts at (default $36000)
 ;   P3_DEST   address the four values are written to (default $3600A, the IR2 word)
 ;   P3_FAST   the four writes follow each other without a wait for the beam
 ;   P3_ATTR   a CPU read of the IR2 word before the Copper starts
@@ -10,6 +11,9 @@
         include "nanomig.i"
         include "ch2move.i"
 
+        ifnd    P3_T
+P3_T            equ     $36000
+        endc
         ifnd    P3_DEST
 P3_DEST         equ     $3600A
         endc
@@ -37,7 +41,7 @@ start:
         ifd     P3_ATTR
         move.w  $3600A,d1
         endc
-        COPSTART $36000
+        COPSTART P3_T
         IDLEFIELDS 3
         ifd     P3_FAST
         move.w  #$00FF,P3_DEST

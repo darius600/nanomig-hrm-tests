@@ -7,8 +7,8 @@
 ;   P8_NOLC    run C without the AUD0LC write (marker 4 stays)
 ;   P8_LEN     AUD0LEN (default 4)
 ;   P8_NOAUD   DMACON <- $8200 (no AUD0EN)
-;   P8_EARLY   DMACON <- $8201 before marker 1
-;   P8_ATTR    a CPU read of the audio data block before the channel starts
+;   P8_EARLY   DMACON <- $8201 after the AUD0PER write and before marker 1
+;   P8_ATTR    a CPU read of the audio data block stands behind DONE, where it is never executed
 
         include "nanomig.i"
         include "ch2move.i"
@@ -28,16 +28,13 @@ start:
         BASELINE
         move.w  #$00FF,CUSTOM+ADKCON
         PARKPTRS
-        ifd     P8_ATTR
-        move.w  $44000,d1
-        endc
-        ifd     P8_EARLY
-        move.w  #P8_EN,CUSTOM+DMACON
-        endc
         move.l  #$00044000,CUSTOM+AUD0LCH
         move.w  #P8_LEN,CUSTOM+AUD0LEN
         move.w  #32,CUSTOM+AUD0VOL
         move.w  #256,CUSTOM+AUD0PER
+        ifd     P8_EARLY
+        move.w  #P8_EN,CUSTOM+DMACON
+        endc
         MARK    1
         WAITLINE $40
         ifnd    P8_EARLY
@@ -56,3 +53,6 @@ start:
         IDLEFIELDS 2
         MARK    3
         DONE
+        ifd     P8_ATTR
+        move.w  $44000,d1
+        endc

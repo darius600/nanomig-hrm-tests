@@ -7,9 +7,9 @@
 // names the graded line (the label passed to expect()), the selector, the
 // change of the stimulus, and what each core printed under it.
 //
-// MUTATION P1-RUN stimulus red NMH_MUTATE=P1-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-PRE-A P1-PRE-B P1-PRE-C), fx68k FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-PRE-A P1-PRE-B P1-PRE-C).
+// MUTATION P1-RUN stimulus red NMH_MUTATE=P1-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P1-PRE-A P1-PRE-B P1-PRE-C P1-COLOUR), fx68k FAIL (1 passed/1 failed; also NOT GRADED P1-PRE-A P1-PRE-B P1-PRE-C P1-COLOUR).
 // MUTATION P1-ATTR stimulus red NMH_MUTATE=P1-ATTR: the program reads $30000, a word of the Copper list, before it starts the Copper (prog_p1_attr); TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
-// MUTATION P1-PRE-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so every pass starts at $30004; TG68K FAIL (3 passed/2 failed; also FAIL P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/2 failed; also FAIL P1-PRE-C; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-A stimulus red NMH_MUTATE=P1-A: the Copper starts at an identical copy of the list at $30080 (prog_p1_a) so every pass starts at $30080 and all nine colours still appear; TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
 // MUTATION P1-PRE-B stimulus red NMH_MUTATE=P1-B: sprite DMA is enabled (DMACON <- $8020) with the eight sprite pointers at the zeroed region $4E000 (prog_p1_b) so sprite accesses appear; TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
 // MUTATION P1-PRE-C stimulus red NMH_MUTATE=P1-C: the WAIT at +20 of the list is $5001 instead of $6001 so the (6,6,6) band has no line; TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
 // MUTATION P1-COLOUR stimulus red NMH_MUTATE=P1-MAIN: IR2 at +34 of the list is $0F00 instead of $0F80 so the (F,8,0) band is (F,0,0); all preconditions still hold; TG68K FAIL (5 passed/1 failed), fx68k FAIL (5 passed/1 failed).
@@ -19,38 +19,54 @@
 // MUTATION P2-PRE-A stimulus red NMH_MUTATE=P2-A: the segment at $15554 holds its end WAIT first and the two MOVEs after it so the MOVEs are not read; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
 // MUTATION P2-PRE-B stimulus red NMH_MUTATE=P2-B: the segment at $13332 holds a WAIT for line $F0 in front of its end WAIT, so the Copper reads $1333E and $13340 before the next restart; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
 // MUTATION P2-RESTART stimulus red NMH_MUTATE=P2-MAIN: segment 3 writes $FF80 instead of $FF00 and a segment at $1FF80 continues the chain; all preconditions still hold; TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
-// MUTATION P3-RUN stimulus red NMH_MUTATE=P3-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B).
+// MUTATION P3-RUN stimulus red NMH_MUTATE=P3-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P3-PRE-A P3-PRE-B P3-MOVED), fx68k FAIL (1 passed/1 failed; also NOT GRADED P3-PRE-A P3-PRE-B P3-MOVED).
 // MUTATION P3-ATTR stimulus red NMH_MUTATE=P3-ATTR: the program reads the IR2 word $3600A before it starts the Copper (prog_p3_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
 // MUTATION P3-PRE-A stimulus red NMH_MUTATE=P3-A: the four value writes follow each other within one field without a wait for the beam (prog_p3_fast); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
-// MUTATION P3-PRE-B stimulus red NMH_MUTATE=P3-B: the WAIT at +4 of the list is $FFFF,$FFFE so the Copper stops there and never reads $3600A; TG68K FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED), fx68k FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED).
-// MUTATION P3-MOVED stimulus red NMH_MUTATE=P3-MAIN: the CPU writes the four values to the spare word $36010 instead of the IR2 word $3600A (prog_p3_dest); TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
-// MUTATION P4-RUN stimulus red NMH_MUTATE=P4-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B).
+// MUTATION P3-PRE-B stimulus red NMH_MUTATE=P3-B: the Copper starts at a list at $36080 (prog_p3_b) that reads no IR2 word and loads COP1LC with $36000, so the first pass has no read of $3600A and every value write is still followed by a read; TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
+// MUTATION P3-MOVED stimulus red NMH_MUTATE=P3-MAIN: the CPU writes the four values to the spare word $36010 instead of the IR2 word $3600A (prog_p3_dest); clause (iii); TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
+// MUTATION P3-MOVED stimulus red NMH_MUTATE=P3-II: a MOVE of $0F00 to COLOR00 stands behind a WAIT for line $C0 at +12 of the list, so the band rows after line $C0 are (F,0,0) while every read and every moved value is unchanged; clause (ii), all preconditions still hold; TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
+// MUTATION P4-RUN stimulus red NMH_MUTATE=P4-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P4-PRE-A P4-PRE-B P4-MOVE-AFTER-WAIT), fx68k FAIL (1 passed/1 failed; also NOT GRADED P4-PRE-A P4-PRE-B P4-MOVE-AFTER-WAIT).
 // MUTATION P4-ATTR stimulus red NMH_MUTATE=P4-ATTR: the program reads $38000, a word of the Copper list, before it starts the Copper (prog_p4_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
 // MUTATION P4-PRE-A stimulus red NMH_MUTATE=P4-A: the WAIT at +4 of the list is $FFFF,$FFFE so $3800C is never read; TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
 // MUTATION P4-PRE-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so every pass begins at $38004; TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
 // MUTATION P4-MOVE-AFTER-WAIT stimulus red NMH_MUTATE=P4-MAIN: the WAIT at +12 is $C001,$FF00 instead of $FFFF,$FFFE so MOVE B is performed at line $C0; all preconditions still hold; TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
-// MUTATION P5-RUN stimulus red NMH_MUTATE=P5-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
-// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR: the program of run R1 reads $20004, a word of the first list, before it starts the Copper (prog_p5_r1_attr); TG68K FAIL (14 passed/6 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (14 passed/6 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
-// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a) so Copper accesses fall before marker 2; TG68K FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
-// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B: run R1 idles two passages of the beam through line $A0 per phase instead of six (prog_p5_r1_b); TG68K FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
-// MUTATION P5-PRE-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so each pass reads four words; TG68K FAIL (16 passed/4 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (16 passed/4 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
-// MUTATION P5-LOCATION stimulus red NMH_MUTATE=P5-R1: the halves of $00020004 are written as separate words in the swapped order (prog_p5_r1x, run R1 swapped) so run R1 starts and restarts at $40002; the line grades run R1 alone and is green in the unmutated run; TG68K FAIL (20 passed/2 failed; also FAIL P5-LOCATION-R2), fx68k FAIL (20 passed/2 failed; also FAIL P5-LOCATION-R2).
-// MUTATION P5-LOCATION-R2 stimulus red NMH_MUTATE=P5-R2: run R2 strobes COPJMP1 instead of COPJMP2 (prog_p5_r2x); the line grades run R2 alone and is red in the unmutated run as well because run R2, whose COPJMP2 strobe is written with Copper DMA off, starts at COP1LC $20004 instead of COP2LC $25A5C, a measured result with no finding, and this contrast starts at $20004 as well, so no contrast can make the line greener; TG68K FAIL (21 passed/1 failed), fx68k FAIL (21 passed/1 failed).
-// MUTATION P6-RUN stimulus red NMH_MUTATE=P6-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (0 passed/3 failed; also NOT GRADED P6-LONG P6-PRE-A), fx68k FAIL (0 passed/1 failed; also NOT GRADED P6-LONG P6-PRE-A).
-// MUTATION P6-PRE-A stimulus red NMH_MUTATE=P6-A: the two word writes before marker 1 are omitted (prog_p6_nopre); TG68K FAIL (3 passed/3 failed; also NOT GRADED P6-LONG), fx68k FAIL (1 passed/1 failed; also NOT GRADED P6-LONG).
-// MUTATION P6-LONG stimulus red NMH_MUTATE=P6-MAIN: the long word is $56781234 instead of $12345678 (prog_p6_value); TG68K FAIL (6 passed/3 failed), fx68k FAIL (2 passed/1 failed).
-// MUTATION P7-RUN stimulus red NMH_MUTATE=P7-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT).
-// MUTATION P7-ATTR stimulus red NMH_MUTATE=P7-ATTR: the program writes $48000 a second time before it starts the Copper (prog_p7_attr); TG68K FAIL (6 passed/4 failed; also FAIL P7-PRE-A; also NOT GRADED P7-BLIT), fx68k FAIL (6 passed/4 failed; also FAIL P7-PRE-A; also NOT GRADED P7-BLIT).
+// MUTATION P5-RUN stimulus red NMH_MUTATE=P5-RUN: all three programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (6 passed/6 failed; also NOT GRADED P5-PRE-A P5-PRE-B P5-PRE-C P5-LOCATION P5-LOCATION-R2 P5-LOCATION-R2-CTRL), fx68k FAIL (6 passed/6 failed; also NOT GRADED P5-PRE-A P5-PRE-B P5-PRE-C P5-LOCATION P5-LOCATION-R2 P5-LOCATION-R2-CTRL).
+// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR: the program of run R1 has a CPU read of $20004, a word of the first list, behind its DONE write (prog_p5_r1_attr); TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR2: the program of run R2 has a CPU read of $20004, a word of the first list, behind its DONE write (prog_p5_r2_attr); TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a) so Copper accesses fall before marker 2; TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A2: Copper DMA is enabled before markers 2 and 3 in run R2 (prog_p5_r2_a) so Copper accesses fall before marker 2; TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B: run R1 idles two passages of the beam through line $A0 per phase instead of six (prog_p5_r1_b); TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B2: run R2 idles two passages of the beam through line $A0 instead of six (prog_p5_r2_b); TG68K FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2), fx68k FAIL (29 passed/2 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2).
+// MUTATION P5-PRE-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so each pass reads four words; TG68K FAIL (24 passed/6 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2 P5-LOCATION-R2-CTRL), fx68k FAIL (24 passed/6 failed; also NOT GRADED P5-LOCATION P5-LOCATION-R2 P5-LOCATION-R2-CTRL).
+// MUTATION P5-LOCATION stimulus red NMH_MUTATE=P5-R1: the halves of $00020004 are written as separate words in the swapped order (prog_p5_r1x, run R1 swapped) so run R1 starts and restarts at $40002; the line grades run R1 alone and is green in the unmutated run; TG68K FAIL (31 passed/2 failed; also FAIL P5-LOCATION-R2), fx68k FAIL (31 passed/2 failed; also FAIL P5-LOCATION-R2).
+// MUTATION P5-LOCATION-R2 stimulus green NMH_MUTATE=P5-R2C: the line is red in the unmutated run (run R2, whose COPJMP2 strobe is written with Copper DMA off, starts at COP1LC $20004 and not at COP2LC $25A5C); run R2c (prog_p5_r2c: COP1LC = COP2LC = $25A5C at the COPJMP2 strobe, then COP1LC <- $20004 after the enable marker, no strobe) runs in the place of run R2 through the same comparator -- measured: TG68K PASS (33 passed/0 failed), fx68k PASS (33 passed/0 failed).
+// MUTATION P5-LOCATION-R2 stimulus red NMH_MUTATE=P5-R2: run R2 strobes COPJMP1 instead of COPJMP2 (prog_p5_r2x); the line grades run R2 alone and is red in the unmutated run as well, so this run shows no change in this design (a machine that loads the program counter from COP2LC after COPJMP2 starts at $20004 here and fails the comparator); the green control is P5-R2C; TG68K FAIL (32 passed/1 failed), fx68k FAIL (32 passed/1 failed).
+// MUTATION P5-LOCATION-R2-CTRL stimulus red NMH_MUTATE=P5-R2CX: run R2c leaves out the COP1LC write after the enable marker (prog_p5_r2cx) so the restarts stay at $25A5C; TG68K FAIL (31 passed/2 failed; also FAIL P5-LOCATION-R2), fx68k FAIL (31 passed/2 failed; also FAIL P5-LOCATION-R2).
+// MUTATION P6-RUN stimulus red NMH_MUTATE=P6-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (0 passed/3 failed; also NOT GRADED P6-PRE-A P6-PRE-B P6-LONG), fx68k FAIL (0 passed/1 failed; also NOT GRADED P6-PRE-A P6-PRE-B P6-LONG).
+// MUTATION P6-PRE-A stimulus red NMH_MUTATE=P6-A: the two word writes before marker 1 are omitted (prog_p6_nopre); TG68K FAIL (6 passed/3 failed; also NOT GRADED P6-LONG), fx68k FAIL (2 passed/1 failed; also NOT GRADED P6-LONG).
+// MUTATION P6-PRE-B stimulus red NMH_MUTATE=P6-B: the CPU identification is replaced by the constant 2 (prog_p6_probe2) so the 68000 and 68010 runs store the wrong word; TG68K FAIL (8 passed/2 failed; also NOT GRADED P6-LONG), fx68k FAIL (2 passed/1 failed; also NOT GRADED P6-LONG).
+// MUTATION P6-LONG stimulus red NMH_MUTATE=P6-MAIN: the long word is $56781234 instead of $12345678 (prog_p6_value); TG68K FAIL (9 passed/3 failed), fx68k FAIL (3 passed/1 failed).
+// MUTATION P7-RUN stimulus red NMH_MUTATE=P7-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P7-PRE-A P7-PRE-B P7-PRE-C P7-BLIT), fx68k FAIL (2 passed/2 failed; also NOT GRADED P7-PRE-A P7-PRE-B P7-PRE-C P7-BLIT).
+// MUTATION P7-ATTR stimulus red NMH_MUTATE=P7-ATTR: the program has a second CPU write to $48000 behind its DONE write (prog_p7_attr); TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
 // MUTATION P7-PRE-A stimulus red NMH_MUTATE=P7-A: the program enables blitter DMA, writes BLTSIZE itself and idles one field before it starts the Copper (prog_p7_a) so the blit writes $48000 before the Copper reads $3A002; TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
 // MUTATION P7-PRE-B stimulus red NMH_MUTATE=P7-B: the CPU write of $0000 goes to $4F100 instead of $48000 (prog_p7_b); TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
 // MUTATION P7-PRE-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002; TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-MAIN: IR1 at $3A000 is $0180 (COLOR00) instead of $0058 so no blit starts; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
-// MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART).
-// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M reads $44000, a word of the audio data block, before it starts the channel (prog_p8_attr), and P8-PRE-B is red as well because the CPU read lands in the channel 0 region before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART).
-// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART).
-// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART).
+// MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-W2: the data of the BLTSIZE MOVE at $3A002 is $0042 (width 2) instead of $0041 so the blit writes $48000 and $48002; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
+// MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-LF: BLTCON0 is $0100 (LF = $00) instead of $01FF (prog_p7_lf0) so the blit writes $0000 and the result word is $0000; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
+// MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART).
+// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_attr); TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-CATTR: the program of run C has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_c_attr); TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-CA: run C writes DMACON <- $8200, without AUD0EN (prog_p8_c_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-CB: run C writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_c_early) so the channel fetches before marker 2; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
 // MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run after the first has five words; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
-// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words (the first run is graded, Section 8 A4), while the control P8-CTRL on runs after the first is green in the unmutated run and red here, run C without the AUD0LC write (P8-C, prog_p8_c_nolc) is red in the same way; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words (the first run is graded, Section 8 A4), while the control P8-CTRL on runs after the first is green in the unmutated run and red here; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; the line is red in the unmutated run as well, and the control P8-CTRL is green in the unmutated run and red here; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P3-MOVED none impossible clause (i), every Copper read of $3600A returns the last value the CPU wrote there: every write to $3600A that reaches the port is counted as a value write, whichever channel makes it, P3-RUN requires the four writes to carry the four values (whose two bytes differ, so none is a one-byte write), and a RAM word read returns the word last written at its address, so a read differs from the last port write only if the memory loses a written word; no stimulus changes that
+// MUTATION P7-BLIT none impossible clause "after the Copper's read of $3A002": P7-PRE-A requires that no blitter access precedes that read, so the clause holds whenever the line is graded; a blit started before the read makes P7-PRE-A red and the line NOT GRADED (P7-A)
 
 #include <algorithm>
 #include <cstdint>
@@ -352,7 +368,9 @@ struct Gate {
     // A precondition that reads the capture.
     void pre(Checks& c, bool cond, const std::string& label) {
         if (skipped) {
-            c.record("NOT GRADED " + first_word(label) + ": the run did not produce a capture to read");
+            const size_t b = label.rfind(" [");
+            c.record("NOT GRADED " + first_word(label) + (b == std::string::npos ? std::string() : label.substr(b)) +
+                     ": the run did not produce a capture to read");
             ok = false;
             return;
         }
@@ -403,10 +421,10 @@ namespace p1 {
 constexpr uint32_t kList = 0x30000;
 constexpr uint16_t kColours[9] = {0x0FFF, 0x0555, 0x0666, 0x0878, 0x0F80, 0x0AAA, 0x0999, 0x0787, 0x007F};
 
-std::vector<Poke> list_words(const std::string& mv) {
+std::vector<Poke> list_words(const std::string& mv, uint32_t base = kList) {
     std::vector<Poke> pk;
     const uint16_t waits[8] = {0x4001, 0x5001, 0x6001, 0x7001, 0x8001, 0x9001, 0xA001, 0xB001};
-    uint32_t a = kList;
+    uint32_t a = base;
     for (int i = 0; i < 9; ++i) {
         uint16_t ir1 = 0x0180;
         uint16_t ir2 = kColours[i];
@@ -442,6 +460,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     Setup s;
     s.bin = bin;
     s.pokes = list_words(mv);
+    // P1-A starts the Copper at an identical copy of the list at $30080.
+    if (mv == "P1-A") { auto cp = list_words(mv, kList + 0x80); s.pokes.insert(s.pokes.end(), cp.begin(), cp.end()); }
     s.budget = budget_for(9);
     Run r = run_program(s);
     auto m = marks(r);
@@ -540,7 +560,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     checks.note("P1 run sequences of the observed fields " + seqs);
     if (g.ok) checks.expect(seq_ok,
              "P1-COLOUR: [p19 p20 p21 p36 p274 p275] ch2-about-the-copper.c13.s2 ch2-what-is-a-copper-instruction.c4.s2 "
-             "ch2-the-move-instruction.c1.s2 ch2-the-move-instruction.c7 ch2-appa-copins.c8.s2 COP2-copins-fields-p275.c5 "
+             "ch2-the-move-instruction.c1.s2 ch2-appa-copins.c8.s2 COP2-copins-fields-p275.c5 "
              "COP2-copins-fields-p275.c6 COP2-copins-fields-p275.c9 ch2-appa-copins.c116 " + rd_ids(11, 0) + " "
              "ch2-summary-of-copper-instructions.c98 ch2-summary-of-copper-instructions.c99 ch2-summary-of-copper-instructions.c100 "
              "ch2-summary-of-copper-instructions.c101: in every observed field the run sequence holds, consecutively and in order, the "
@@ -698,9 +718,13 @@ constexpr uint16_t kInitial = 0x0F0F;
 void run(Checks& checks, const std::string& dir, const std::string& mv) {
     std::vector<Poke> pk;
     put(pk, kList, {0x0180, 0x0FFF, 0x8001, 0xFF00, 0x0180, kInitial, 0xFFFF, 0xFFFE});
-    if (mv == "P3-B") put(pk, kList + 4, {0xFFFF, 0xFFFE});
+    // P3-B: the Copper starts at a list at $36080 that reads no IR2 word and loads COP1LC with $36000.
+    if (mv == "P3-B") put(pk, kList + 0x80, {0x0082, 0x6000, 0x0080, 0x0003, 0xFFFF, 0xFFFE});
+    // P3-II: a later MOVE to COLOR00 behind a WAIT for line $C0 sets the colour of the rows after it.
+    if (mv == "P3-II") put(pk, kList + 12, {0xC001, 0xFF00, 0x0180, 0x0F00, 0xFFFF, 0xFFFE});
     std::string bin = dir + "/prog_p3.bin";
     if (mv == "P3-A") bin = dir + "/prog_p3_fast.bin";
+    if (mv == "P3-B") bin = dir + "/prog_p3_b.bin";
     if (mv == "P3-MAIN") bin = dir + "/prog_p3_dest.bin";
     if (mv == "P3-ATTR") bin = dir + "/prog_p3_attr.bin";
     if (mv == "P3-RUN") bin = dir + "/prog_nodone.bin";
@@ -812,7 +836,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     ii_ok = ii_ok && band > 0;
     checks.note("P3 values delivered by the Copper reads of " + hex(kIr2, 5) + " in the interval: " + dj + "; band rows graded: " + num(band));
     if (g.ok) checks.expect(i_ok && ii_ok && iii_ok,
-             "P3-MOVED: [p21 p275] COP2-copins-fields-p275.c7 COP2-copins-fields-p275.c8 ch2-appa-copins.c115 "
+             "P3-MOVED: [p21 p275] COP2-copins-fields-p275.c8 ch2-appa-copins.c115 "
              "ch2-the-move-instruction.c1.s2: the value a MOVE delivers is the word RAM held at its IR2 fetch: every Copper read of " + hex(kIr2, 5) +
              " returns the last value the CPU wrote there, every band row shows the low 12 bits of the word the latest such read returned, "
              "and the values delivered over the observed passes are " + hex(kInitial) + " " + hex(kValues[0]) + " " + hex(kValues[1]) + " " +
@@ -943,8 +967,11 @@ struct Leg {
     std::string text;
 };
 
-// One run (R1 or R2) in one mode.
-Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::string& mv) {
+enum Kind { kR1, kR2, kR2c };
+
+// One run (R1, R2 or R2c) in one mode.
+Leg leg(Checks& checks, const std::string& bin, Kind kind, bool ecs, const std::string& mv) {
+    const bool r1 = kind == kR1;
     std::vector<Poke> pk;
     put(pk, kA, {0xFFFF, 0xFFFE});
     put(pk, kB, {0xFFFF, 0xFFFE});
@@ -957,7 +984,7 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
     s.budget = budget_for(r1 ? 13 : 7);
     Run r = run_program(s);
     auto m = marks(r);
-    const std::string tag = std::string(" [") + (r1 ? "R1" : "R2") + ", " + (ecs ? "ECS" : "OCS") + "]";
+    const std::string tag = std::string(" [") + (kind == kR1 ? "R1" : kind == kR2 ? "R2" : "R2c") + ", " + (ecs ? "ECS" : "OCS") + "]";
     const std::vector<Region> cop = {{kA, kA + 0x1B}, {kB, kB + 0x23}, {kC, kC + 0x1D}};
     Gate g;
     const bool marks_ok = r1 ? marks_are(m, {0, 1, 2, 3, 4, 5}) : marks_are(m, {0, 1, 2, 3, 5});
@@ -969,7 +996,13 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
           "P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel" + tag +
           (attr_ok ? std::string() : " (" + why + ")"));
     Leg out;
-    if (!marks_ok) { out.pre_ok = false; return out; }
+    if (!marks_ok) {
+        // The run produced no capture to read: its preconditions are NOT GRADED.
+        g.pre(checks, false, "P5-PRE-A" + tag);
+        g.pre(checks, false, "P5-PRE-B" + tag);
+        g.pre(checks, false, "P5-PRE-C" + tag);
+        return out;
+    }
     // The Copper starts as soon as Copper DMA is on, so the boundary is marker 2, written before the DMACON write (Section 8, A3).
     const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m2 = uint64_t(mark_cycle(m, 2)), m5 = uint64_t(mark_cycle(m, 5));
     const uint64_t m4 = r1 ? uint64_t(mark_cycle(m, 4)) : m5;
@@ -1033,38 +1066,52 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
 }
 
 void run(Checks& checks, const std::string& dir, const std::string& mv) {
-    bool all_pre = true, r1_ok = true, r2_ok = true;
+    bool all_pre = true, ctrl_pre = true, r1_ok = true, r2_ok = true, ctrl_ok = true;
     for (bool ecs : {true, false}) {
-        std::string b1 = dir + "/prog_p5_r1.bin", b2 = dir + "/prog_p5_r2.bin";
+        std::string b1 = dir + "/prog_p5_r1.bin", b2 = dir + "/prog_p5_r2.bin", b3 = dir + "/prog_p5_r2c.bin";
         if (mv == "P5-R1") b1 = dir + "/prog_p5_r1x.bin";
         if (mv == "P5-R2") b2 = dir + "/prog_p5_r2x.bin";
+        if (mv == "P5-R2C") b2 = dir + "/prog_p5_r2c.bin";
+        if (mv == "P5-R2CX") b3 = dir + "/prog_p5_r2cx.bin";
         if (mv == "P5-A") b1 = dir + "/prog_p5_r1_a.bin";
         if (mv == "P5-B") b1 = dir + "/prog_p5_r1_b.bin";
         if (mv == "P5-ATTR") b1 = dir + "/prog_p5_r1_attr.bin";
-        if (mv == "P5-RUN") { b1 = dir + "/prog_nodone.bin"; b2 = dir + "/prog_nodone.bin"; }
-        Leg l1 = leg(checks, b1, true, ecs, mv);
-        Leg l2 = leg(checks, b2, false, ecs, mv);
+        if (mv == "P5-A2") b2 = dir + "/prog_p5_r2_a.bin";
+        if (mv == "P5-B2") b2 = dir + "/prog_p5_r2_b.bin";
+        if (mv == "P5-ATTR2") b2 = dir + "/prog_p5_r2_attr.bin";
+        if (mv == "P5-RUN") { b1 = dir + "/prog_nodone.bin"; b2 = dir + "/prog_nodone.bin"; b3 = dir + "/prog_nodone.bin"; }
+        Leg l1 = leg(checks, b1, kR1, ecs, mv);
+        Leg l2 = leg(checks, b2, kR2, ecs, mv);
+        Leg l3 = leg(checks, b3, kR2c, ecs, mv);
         all_pre = all_pre && l1.pre_ok && l2.pre_ok;
+        ctrl_pre = ctrl_pre && l3.pre_ok;
         r1_ok = r1_ok && l1.graded_ok;
         r2_ok = r2_ok && l2.graded_ok;
+        ctrl_ok = ctrl_ok && l3.graded_ok;
     }
     if (!all_pre) {
-        checks.record("NOT GRADED P5-LOCATION: a precondition of one of the four runs does not hold");
-        checks.record("NOT GRADED P5-LOCATION-R2: a precondition of one of the four runs does not hold");
-        return;
+        checks.record("NOT GRADED P5-LOCATION: a precondition of one of the runs R1 and R2 does not hold");
+        checks.record("NOT GRADED P5-LOCATION-R2: a precondition of one of the runs R1 and R2 does not hold");
+    } else {
+        checks.expect(r1_ok,
+                      "P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 "
+                      "COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; "
+                      "after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC "
+                      "(run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)");
+        checks.expect(r2_ok,
+                      "P5-LOCATION-R2: [p25 p26 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 "
+                      "ch2-jump-address-strobes.c7 ch2-appa-copins.c142: a jump strobe loads the program counter from its location register "
+                      "(COPJMP2 restarts from COP2LC); same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the "
+                      "COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004");
     }
-    checks.expect(r1_ok,
-                  "P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 "
-                  "COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; "
-                  "after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC "
-                  "(run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)");
-    checks.expect(r2_ok,
-                  "P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 "
-                  "ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c3 "
-                  "ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register "
-                  "(COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; "
-                  "same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, "
-                  "is at $25A5C, and every restart is at $20004");
+    if (!ctrl_pre) {
+        checks.record("NOT GRADED P5-LOCATION-R2-CTRL: a precondition of run R2c does not hold");
+    } else {
+        checks.expect(ctrl_ok,
+                      "P5-LOCATION-R2-CTRL: control on the comparator of P5-LOCATION-R2, run R2c in ECS and OCS: with COP1LC and COP2LC both $25A5C at "
+                      "the COPJMP2 strobe, written with Copper DMA off, the Copper's first fetch is at $25A5C, and after COP1LC is written $20004 (no "
+                      "strobe) every restart is at $20004");
+    }
 }
 
 } // namespace p5
@@ -1081,6 +1128,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, bool is_
     std::string bin = dir + "/prog_p6.bin";
     if (mv == "P6-MAIN") bin = dir + "/prog_p6_value.bin";
     if (mv == "P6-A") bin = dir + "/prog_p6_nopre.bin";
+    if (mv == "P6-B") bin = dir + "/prog_p6_probe2.bin";
     if (mv == "P6-RUN") bin = dir + "/prog_nodone.bin";
     for (const auto& md : modes) {
         Setup s;
@@ -1100,6 +1148,14 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, bool is_
         auto w2 = writes_in(r, {{0x46002, 0x46003}}, 0, t1);
         g.pre(checks, !w0.empty() && !w2.empty() && w0.back().data == 0xAAAA && w2.back().data == 0x5555,
               "P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1" + tag);
+        // The CPU setting shows at the port through the program's own probe: MOVEC is a 68010 instruction and EXTB.L a
+        // 68020 instruction, and a CPU without the instruction takes the illegal instruction exception instead.
+        auto idw = writes_in(r, {{kResults + 4, kResults + 5}}, 0, t1);
+        const uint16_t want_id = md.cfg == 0x00 ? 0 : md.cfg == 0x01 ? 1 : 2;
+        g.pre(checks, idw.size() == 1 && idw[0].data == want_id,
+              "P6-PRE-B: (b) the CPU identification the program stores at " + hex(kResults + 4, 6) + " before marker 1 is " + num(want_id) +
+              ", the value for a " + md.name + " (stored: " + (idw.empty() ? std::string("none") : hex(idw.back().data)) + ", " + num(idw.size()) +
+              " write(s))" + tag);
         auto a0 = writes_in(r, {{0x46000, 0x46001}}, t1, t2);
         auto a2 = writes_in(r, {{0x46002, 0x46003}}, t1, t2);
         const uint16_t res0 = r.peeked.count(kResults) ? r.peeked[kResults] : 0;
@@ -1128,7 +1184,8 @@ struct Leg { bool pre_ok = false, ok = false; };
 
 Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv) {
     std::vector<Poke> pk;
-    put(pk, kList, {mv == "P7-MAIN" ? uint16_t(0x0180) : uint16_t(0x0058), 0x0041, 0x0082, 0xA100, 0x0080, 0x0003, 0xFFFF, 0xFFFE});
+    put(pk, kList, {mv == "P7-MAIN" ? uint16_t(0x0180) : uint16_t(0x0058), mv == "P7-W2" ? uint16_t(0x0042) : uint16_t(0x0041),
+                    0x0082, 0xA100, 0x0080, 0x0003, 0xFFFF, 0xFFFE});
     put(pk, kSafe, {0xFFFF, 0xFFFE});
     put(pk, kDest, {0xA5A5});
     Setup s;
@@ -1151,7 +1208,13 @@ Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv)
           "P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its "
           "one clearing write and its one final read, or to a parked region of another channel" + tag + (attr_ok ? std::string() : " (" + why + ")"));
     Leg out;
-    if (!marks_are(m, {0, 1, 2, 3})) return out;
+    if (!marks_are(m, {0, 1, 2, 3})) {
+        // The run produced no capture to read: its preconditions are NOT GRADED.
+        g.pre(checks, false, "P7-PRE-A" + tag);
+        g.pre(checks, false, "P7-PRE-B" + tag);
+        g.pre(checks, false, "P7-PRE-C" + tag);
+        return out;
+    }
     const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m3 = uint64_t(mark_cycle(m, 3));
     // The result is stored by the CPU after it reads the destination word.
     auto stores = writes_in(r, {{kResults, kResults + 1}}, m3);
@@ -1159,7 +1222,7 @@ Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv)
     std::vector<Acc> extra;
     auto rd = cop_reads(r, cop, m0, tres, &extra);
     auto ps = passes_of(rd);
-    auto w48 = writes_in(r, {{kDest, kDest + 1}}, m0, tres);
+    auto w48 = writes_in(r, {{kDest, kDest + 0xFF}}, m0, tres);
     // The CPU's clearing write is the one that carries $0000 before the enable marker; every other write is the blitter's.
     std::vector<Acc> blit;
     bool cpu_write = false;
@@ -1192,7 +1255,7 @@ Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv)
     out.pre_ok = g.ok;
 
     const uint16_t result = r.peeked.count(kResults) ? r.peeked[kResults] : 0;
-    checks.note("P7" + tag + " blitter writes: " + num(blit.size()) + (blit.empty() ? std::string() : " first at " + hex(blit[0].addr, 5) +
+    checks.note("P7" + tag + " blitter writes in " + hex(kDest, 5) + "-" + hex(kDest + 0xFF, 5) + ": " + num(blit.size()) + (blit.empty() ? std::string() : " first at " + hex(blit[0].addr, 5) +
                 " data " + hex(blit[0].data)) + ", result word " + hex(result) +
                 "; extra reads (the word after the end WAIT, in no pass): " + extra_text(extra));
     out.ok = blit.size() == 1 && blit[0].addr == kDest && blit[0].data == 0xFFFF && r3a002 && blit[0].t > r3a002->t && result == 0xFFFF;
@@ -1207,6 +1270,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         if (mv == "P7-B") bin = dir + "/prog_p7_b.bin";
         if (mv == "P7-C") bin = dir + "/prog_p7_c.bin";
         if (mv == "P7-ATTR") bin = dir + "/prog_p7_attr.bin";
+        if (mv == "P7-LF") bin = dir + "/prog_p7_lf0.bin";
         if (mv == "P7-RUN") bin = dir + "/prog_nodone.bin";
         Leg l = leg(checks, bin, ecs, mv);
         all_pre = all_pre && l.pre_ok;
@@ -1217,9 +1281,10 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         return;
     }
     checks.expect(all_ok,
-                  "P7-BLIT: [p26 p270 p274] COP2-control-register.c11: with COPCON bit 1 set, a Copper MOVE to BLTSIZE ($058), a blitter control "
-                  "register in the range $40-$7E, starts the prepared blit: exactly one blitter write, at $48000 with data $FFFF, after the "
-                  "Copper's read of $3A002, and the result word is $FFFF (ECS and OCS)");
+                  "P7-BLIT: [p26 p269 p274] COP2-control-register.c11: with COPCON bit 1 set, a Copper MOVE to BLTSIZE ($058), a blitter control "
+                  "register in the range $40-$7E, starts the prepared blit: exactly one blitter write in $48000-$480FF, at $48000 with data $FFFF, "
+                  "after the Copper's read of $3A002, and the result word is $FFFF (ECS and OCS); of the blitter control registers this line "
+                  "exercises BLTSIZE only");
 }
 
 } // namespace p7
@@ -1275,7 +1340,12 @@ Leg leg(Checks& checks, const std::string& bin, bool run_c, const std::string& m
           "P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel" + tag +
           (attr_ok ? std::string() : " (" + why + ")"));
     Leg out;
-    if (!marks_ok) return out;
+    if (!marks_ok) {
+        // The run produced no capture to read: its preconditions are NOT GRADED.
+        g.pre(checks, false, "P8-PRE-A" + tag);
+        g.pre(checks, false, "P8-PRE-B" + tag);
+        return out;
+    }
     const uint64_t m2 = uint64_t(mark_cycle(m, 2)), m3 = uint64_t(mark_cycle(m, 3));
     const uint64_t mw = run_c ? uint64_t(mark_cycle(m, 4)) : 0;
     auto before = reads_in(r, {{kA, kA + 0xFF}, {kB, kB + 0xFF}}, 0, m2);
@@ -1332,10 +1402,14 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     if (mv == "P8-A") bm = dir + "/prog_p8_noaud.bin";
     if (mv == "P8-B") bm = dir + "/prog_p8_early.bin";
     if (mv == "P8-ATTR") bm = dir + "/prog_p8_attr.bin";
+    if (mv == "P8-CA") bc = dir + "/prog_p8_c_noaud.bin";
+    if (mv == "P8-CB") bc = dir + "/prog_p8_c_early.bin";
+    if (mv == "P8-CATTR") bc = dir + "/prog_p8_c_attr.bin";
     if (mv == "P8-RUN") { bm = dir + "/prog_nodone.bin"; bc = dir + "/prog_nodone.bin"; }
     Leg lm = leg(checks, bm, false, mv);
     Leg lc = leg(checks, bc, true, mv);
     if (!lm.pre_ok || !lc.pre_ok) {
+        checks.record("NOT GRADED P8-CTRL: a precondition of run M or run C does not hold");
         checks.record("NOT GRADED P8-RESTART: a precondition of run M or run C does not hold");
         return;
     }
@@ -1389,6 +1463,12 @@ void declined(Checks& checks) {
                   "CDANG rules, and the OCS value is unspecified, so there is no contrasting case");
     checks.record("ch2-location-registers.c3.s2 ch2-location-registers.c5.s2 are withdrawn from P5: \"Low 16 bits\" is graded for bits 15-1 only, "
                   "bit 0 of a word address is not visible at the port, and the pages disagree about whether the register holds 15 or 16 bits");
+    checks.record("COP2-copins-fields-p275.c7 is withdrawn from P3: \"The RD transfer occurs during IR2 time\" says when the register receives the "
+                  "word; P3 grades which word is moved (the RAM content at the IR2 fetch), and the page states no delay from that fetch to the "
+                  "register write, so the time of the transfer is not an observable");
+    checks.record("ch2-starting-the-copper-after-reset.c3 ch2-appa-copins.c146 are withdrawn from P5-LOCATION-R2: \"ensures a known start address and "
+                  "known state\" and \"insures a determined startup address and state\" do not say which register's address the start address is, "
+                  "and run R2 starts at a determined address, COP1LC's, so the run does not contradict either sentence");
     checks.record("ch2-appa-location-registers.c2.s2 ch2-appa-location-registers.c7.s2 ch2-appa-location-registers.c11.s2 "
                   "ch2-appa-location-registers.c16.s2 ch2-appb-table.c16.s2 ch2-appb-table.c22.s2 ch2-appb-table.c26.s2 ch2-appb-table.c32.s2 "
                   "ch2-appc-ecs.c3.s2 ch2-appc-ecs.c8.s2 ch2-appb-legend.c6.s2 are withdrawn from P2 and P5: the write half of \"write-only\" is "
