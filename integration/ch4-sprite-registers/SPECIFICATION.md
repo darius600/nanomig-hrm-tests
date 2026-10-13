@@ -27,6 +27,7 @@ the byte address divided by two.
 | `APPB2-legend.star`, `CH4-APPB-LEGEND.c006` (p.287) | The "\*" rows are $000–$03E. For $010–$03E, p.21 disagrees with p.287 and p.26 (section 2.1). For ECS with CDANG set, p.310 disagrees too. Every page agrees only on $000–$00E, and only for OCS or for ECS with CDANG clear. Those rows are all read-only or early-read dummy addresses (p.289), so a Copper write to them has no effect anyone could look for. No proposition is left. |
 | `APPC2-copcon.conf2` (p.310) | The claim records a disagreement between appendix B and appendix C and says it is "not resolved". Under this document's rule a disagreement yields no expected value (section 2.1). In addition, SPRHDAT's function is never described (row below). |
 | `APPC2-BEAMCON0.uhres3` (p.298) | SPRHDAT is "Ext. logic UHRES sprite pointer and data id" (p.290). No page describes its bits or any effect a program, the port, the video or the audio could show. The only reading "ext. logic" allows is a signal to logic outside the chip set, which a test cannot see. The pages also disagree on whether SPRHDAT is an ECS register (section 2.4). |
+| `APPC2-BEAMCON0.uhres1` (p.298) | "Does not exist in the standard chip set" is what a new register means (p.298, p.305). The frame line count and the colour, hs and vs samples cannot establish it: LPENDIS (p.305 bit 13) acts on a latched light-pen vertical-position read this run never makes, the harness has no light-pen input, and the composite-sync functions are not seen at the selected outputs. P14 grades the PAL bit on ECS and the unchanged outputs on OCS, without the id. |
 | `CH4-APPB-LEGEND.c016` (p.287) | "An early-read DMA transfer can originate at the disk" needs data read from a disk surface. The test harness cannot serve a floppy disk yet (no disk image), so this cannot be checked yet. P11 keeps the stimulus for later, marked as deferred. |
 
 Claims a proposition grades only in part. A claim id is carried only by an
@@ -107,7 +108,10 @@ checked in print). Against this, p.127 says "This pair of registers contains the
 32-bit word address of Sprite 0 DMA data". The ECS list of pointers that gained
 two bits (p.309) names DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH, but not
 SPRxPTH. Every address a DMA channel reads or writes in this document is below
-$80000. Every page's pointer width reaches that far.
+$80000, except the one pointer of P7's FAST run, which names fast RAM. Every
+page's pointer width reaches that far, and none reaches the address of that
+pointer; the pages say nothing about a pointer wider than they allow, so P7
+grades only that the structure in fast RAM is not displayed.
 
 ### 2.4 SPRHDAT, UHRES and BEAMCON0
 
@@ -197,8 +201,7 @@ The chip set, the video standard (PAL or NTSC) and the Chip-memory size are
 harness configuration. The builder sets them from the documented `Config`
 values of `nanomig_harness.h`. A configuration the harness cannot make leaves
 the runs that need it recorded as not made, and they grade nothing. If that is
-the NTSC configuration, P14 is not made, and `APPC2-BEAMCON0.uhres1` is
-declined for that reason.
+the NTSC configuration, P14 is not made.
 
 Every program is assembled for the 68000, vasm's default: the package's
 `VASMFLAGS` (`nanomig.mk`) select no CPU above it. With `-m68010` or higher,
@@ -245,6 +248,8 @@ reads back after the run.
 | $30400–$30409 | disk buffer (P11, deferred half only) |
 | $40000–$4FFFF | RULER: bitplane buffer, every word $FF00 |
 | $50000–$5FFFF | ZERO: bitplane buffer, every word $0000 |
+| $2B5000 | FAST: a copy of S1's structure in Zorro II fast RAM (P7, FAST run) |
+| $0B5000 | ALIAS: a Chip-RAM structure of S1's shape and other data (P7, FAST run) |
 | $0C0000 | RESULT (`RESULTS`): values the program read, one word each |
 | $0C0100 | MARK: marker words, one word per event |
 | $0C0200 | DECOY: one word $A5A5 |
@@ -704,8 +709,7 @@ MB/RB (P5). Line numbers from VHPOSR/VPOSR (3.8).
 
 **Open.** What a read returns. Whether a read has any side effect. Neither is
 graded. A field B without any SPR0POS write keeps SPR0POS = $0060 from field A;
-p.123 reads as d = 64 for it. That case is run once and printed as a MEASURED
-line, not graded.
+p.123 and p.126 give d = 64 for it, and P5-NOPOS grades it.
 
 ---
 
@@ -822,6 +826,55 @@ assumed (section 4). Fields are delimited by markers.
 
 ---
 
+### P5-NOPOS — A manual sprite keeps the position registers it was last given
+
+**1. Proposition.** A sprite armed by SPRxDATB and SPRxDATA is displayed "at the
+horizontal position given in the "H" portion of the position registers SPRxPOS
+and SPRxCTL" (p.123). SPR0POS keeps what the 68000 last wrote to it, so a field
+whose writes leave SPR0POS alone shows the sprite at the position that value and
+the new SPR0CTL give. No claim id: the clause combines p.123 ("on every line, at
+the horizontal position given") with p.126 ("As long as the comparator remains
+enabled, the current contents of the sprite data register will be output at the
+selected horizontal position on a video line"), and no claim of this package
+states it whole. Pages 123 and 126.
+
+**2. Stimulus.** Run MANUAL (P5) with field B's SPR0POS write left out: field B
+writes SPR0CTL = $0000, SPR0DATB = $FF00 and SPR0DATA = $F0F0 only. SPR0POS holds
+$0060 from field A.
+
+**3. Observation.** As in P5, for field B (between MB and RB) of this run.
+
+**4. Expected.** In field B the sprite-4 run appears as in P5 (one column,
+consecutive output lines, at least 200 scan lines), and on every line of it
+d = 64 with the colours of P5's field B (COLOR19, COLOR18, COLOR17 from e_B).
+Derivation, as in P5: H = $60 << 1 | 0 = $C0, d = 2 × ($C0 − $A0) = 64. A sprite
+that is not shown, or shown at another place, fails.
+
+**5. Preconditions.** In this run: RUN-NOPOS (loaded, released, DONE reached);
+FIXTURE-NOPOS (the known constant at RESULT+0); P5-NOPOS-PRE1 (DMACONR bit 5 = 0
+and bit 9 = 1, so no sprite DMA can have loaded the registers); P5-NOPOS-PRE2
+(V(MB) < $2C and V(RB) ≥ $F8 as read by the program, so the field holds its whole
+window); R5-ANCHOR-NOPOS (every refresh group from MA to RB has four refresh
+cycles).
+
+**6. Contrasting cases.**
+
+- Proposition (stimulus green): the same field B with an explicit write of
+  SPR0POS = $0060. The comparator, unchanged, then passes, since the page gives
+  the same position.
+- RUN-NOPOS: the program never writes DONE. FIXTURE-NOPOS: $DEAD instead of the
+  constant.
+- P5-NOPOS-PRE1: DMACON = $83A0 (SPREN set) with all eight sprite pointers at the
+  null sprite.
+- P5-NOPOS-PRE2: the field-B writes delayed until V7–V0 ≥ $80; and the read marker
+  taken at V7–V0 = $80.
+- R5-ANCHOR-NOPOS: the VERTB wait loop reads a Chip word at a low address on every
+  pass.
+
+**7. Reference frame.** As in P5.
+
+---
+
 ### P6 — Sprite DMA loads each of SPRxPOS, SPRxCTL, SPRxDATA and SPRxDATB
 
 **1. Proposition.** Each of the four load decodes in Figure 4-13 accepts a load
@@ -918,23 +971,53 @@ first line).
 
 ---
 
-### P7 — The sprite DMA channel takes the whole sprite data structure from Chip memory, at the pointer, in order
+### P7 — The sprite DMA channel takes the whole sprite data structure from Chip memory, at the pointer, in order, and only from Chip memory
 
 **1. Proposition.** The custom chips read a sprite's data structure from Chip
 memory. Every word of S1 appears as a read at the Chip-memory port, at
 consecutive word addresses starting from the pointer, in the order of Table 4-1.
-Claims: `CH4-p104.c6`, `CH4-mem.c5`, `CH4-p105.c12`. Pages 104 and 105.
-`CH4-build.c11` says the same of "all other data accessed by the custom chips"
-and is declined (section 1).
+The structure must be in Chip memory: the pages call it "must be loaded into
+Chip RAM" and "must be accessible by the special-purpose chips", so a structure
+that is only in Fast RAM is not displayed. Claims: `CH4-p104.c6`, `CH4-mem.c5`,
+`CH4-p105.c12`. Pages 104 and 105. `CH4-build.c11` says the same of "all other
+data accessed by the custom chips" and is declined (section 1).
 
-**2. Stimulus.** Run AUTO (P6).
+**2. Stimulus.** Two runs.
 
-**3. Observation.** The port, in each field between M1 and M2. The interval runs
-from the Copper's fetch of the data word of the SPR0PTL MOVE to the same fetch in
-the next field. Record the reads in $25000–$25FFF.
+- Run AUTO (P6).
+- Run FAST: AUTO with the harness offering Zorro II fast RAM
+  (`fastram_config` = 1). The program writes the board's register at `$E80048`,
+  which enables its RAM (the value is not decoded), copies S1's 26 words to the
+  fast-RAM word address FAST = `$2B5000` (3.2) and reads the copy back: the
+  number of words that differ from S1 goes to RESULT+4 and the number compared
+  to RESULT+6. It writes at the Chip address ALIAS = `$0B5000` (3.2) a structure
+  of S1's shape (the same POS and CTL words, four and six data pairs) whose
+  data pairs are `$0000,$FFFF`, so that it can show only colour 2. The Copper
+  list sets SPR0PT = FAST, and everything else is as in AUTO.
 
-**4. Expected.** In each interval, the first 26 reads in $25000–$25FFF are at
-$25000, $25002, …, $25032, in ascending order, each once. Sources:
+The pointer registers hold fewer address bits than FAST needs (2.3), so what the
+channel reads for FAST is not given by the pages. ALIAS has the low bits of FAST,
+and a structure of its own, so that the run does not depend on what an
+uninitialised word would show.
+
+**3. Observation.** AUTO: the port, in each field between M1 and M2. The
+interval runs from the Copper's fetch of the data word of the SPR0PTL MOVE to
+the same fetch in the next field. Record the reads in `$25000`–`$25FFF`. FAST:
+the video output in each graded field (a field being the span between two
+Copper fetches of L1's first word between M1 and M2), and the port's reads of the
+26 words at ALIAS.
+
+**4. Expected.**
+
+- AUTO: in each interval, the first 26 reads in `$25000`–`$25FFF` are at `$25000`,
+  `$25002`, …, `$25032`, in ascending order, each once.
+- FAST: in no graded field does an output line show a sprite-0 run after the
+  sprite-4 reference whose three 8-pixel bands from e_B are the colours of S1's
+  two groups (COLOR19, COLOR17, COLOR18 or COLOR19, COLOR18, COLOR17, P6). The
+  structure that S1 is a copy of is at an address the channel cannot take it
+  from, so S1's picture does not appear.
+
+Sources:
 
 - "Sprite data, like all other data accessed by the custom chips, must be loaded
   into Chip RAM." (p.104).
@@ -946,24 +1029,49 @@ $25000, $25002, …, $25032, in ascending order, each once. Sources:
   point first to the control words, then to the data words, and finally to the
   end-of-data words." (p.110).
 
-Quantifier: all 26 words of the structure are graded. "all other data accessed by
-the custom chips" goes beyond this package and is not graded, which is why
-`CH4-build.c11` is declined. Reads after the end-of-data words are not graded,
-because the pages do not say whether the channel fetches after them.
+Quantifier: all 26 words of the structure are graded in AUTO, and every output
+line of every graded field in FAST. "all other data accessed by the custom
+chips" goes beyond this package and is not graded, which is why `CH4-build.c11`
+is declined. Reads after the end-of-data words are not graded, because the
+pages do not say whether the channel fetches after them. What the channel
+shows for FAST (the structure at ALIAS, nothing) is not graded either: no page
+gives a value for it. It is printed: the output lines with a sprite-0 run, those
+in S1's colours, and the fields in which the 26 words at ALIAS are read in order.
 
-**5. Preconditions.** P6's preconditions 1 and 2.
+**5. Preconditions.** P6's preconditions 1 and 2 for the AUTO run. For the FAST
+run:
+
+1. RUN-AUTOFAST: the program was loaded, the CPU was released from reset and
+   DONE was reached. FIXTURE-AUTOFAST: it stores the known constant at RESULT+0.
+2. P7-PRE1: RESULT+2 (DMACONR) has bits 9 and 5 set (DMAEN, SPREN).
+3. P7-PRE2: the CPU's read-back of the copy at FAST shows 0 of 26 words
+   differing from S1, so the fast-RAM structure is the one the pointer names.
+4. P7-PRE3: sprite 4, whose structure is in Chip RAM, shows in every graded
+   field of the FAST run, so each field's lines can be examined and the field
+   set is not empty. It is graded only when P7-PRE1 holds: without sprite DMA no
+   sprite 4 shows.
 
 **6. Contrasting cases.**
 
-- Proposition: the Copper list sets SPR0PT = $27000 (S2). The page predicts the
-  reads at $27000–$27032 and none in $25000–$25FFF, so the check goes red.
-- Preconditions: as in P6.
+- Proposition, AUTO: the Copper list sets SPR0PT = `$27000` (S2). The page
+  predicts the reads at `$27000`–`$27032` and none in `$25000`–`$25FFF`, so the
+  check goes red.
+- Proposition, FAST: the structure at ALIAS is S1's, word for word. The
+  channel then shows S1's colours from the Chip structure, and the check goes
+  red.
+- RUN-AUTOFAST: the FAST program never writes DONE.
+- FIXTURE-AUTOFAST: `$DEAD` instead of the constant in the FAST run.
+- P7-PRE1: DMACON = `$8380` (SPREN clear) in the FAST run.
+- P7-PRE2: the last word of the copy at FAST differs from S1's.
+- P7-PRE3: SPR4PT names the null sprite in the FAST run.
+- Preconditions of AUTO: as in P6.
 
 **7. Reference frame.** The interval anchored on the Copper fetch named in 3.
-Addresses at the port.
+Addresses at the port. Fields of the FAST run as in 3.
 
-**Open.** What happens when the pointer names an address outside the selected
-Chip-memory size. The pages give no expected value, and no test tries it.
+**Open.** What the channel reads for a pointer that names fast RAM: the Chip
+word with the same low address bits, nothing, or something else. The pages give
+no value, and the run only prints it.
 
 ---
 
@@ -1397,65 +1505,108 @@ it.
 
 **1. Proposition.** The Copper's access to the blitter registers depends only on
 COPCON bit 1. Values that differ only in the other fifteen bits give identical
-outcomes. Claim: `APPC2-copcon.c1`. Page 310, with p.26 and p.274.
+outcomes, whether the other bits are changed together or one at a time. Claim:
+`APPC2-copcon.c1`. Page 310, with p.26 and p.274.
 
-**2. Stimulus.** Run COPBLT-v (P12) for v = $0002, $FFFF, $0000 and $FFFD, each on
-OCS PAL and on ECS PAL.
+**2. Stimulus.** Two parts, each on OCS PAL and on ECS PAL.
 
-**3. Observation.** For each run and each graded field, the outcome: the ordered
-list of (address, read/write, data) of port accesses in $30000–$303FF, without
-times.
+- Run COPBLT-v (P12) for v = `$0002`, `$FFFF`, `$0000` and `$FFFD`: all fifteen
+  bits together.
+- Run SWEEP: P12's program with 32 COPCON values written one after the other,
+  one Copper field each. The first 16 have CDANG set: the reference `$0002`,
+  then `$0002` with each of the other fifteen bits added alone (`$0003`,
+  `$0006`, `$000A`, … `$8002`). The last 16 have CDANG clear: the reference
+  `$0000`, then each of the other fifteen bits alone (`$0001`, `$0004`, … `$8000`).
+  Late in a field, after the Copper's list and its blit are over (V7–V0 ≥
+  `$B0`), the program reads one distinct Chip word, the marker of that round, and
+  then writes the next value to COPCON. The marker is a read, so the window
+  holds no CPU write. Round r is the Copper field that begins after marker r;
+  marker r+1 lies inside it, after the Copper has finished.
+
+**3. Observation.** For each run and each graded field (in SWEEP, the field of
+each round), the outcome: the ordered list of (address, read/write, data) of port
+accesses in `$30000`–`$303FF`, without times.
 
 **4. Expected.** For each chip set:
 
-- outcome($FFFF) = outcome($0002), which is P12's expected outcome.
-- outcome($FFFD) = outcome($0000).
+- outcome(`$FFFF`) = outcome(`$0002`), which is P12's expected outcome.
+- outcome(`$FFFD`) = outcome(`$0000`).
+- In SWEEP, the outcome of each of the 15 CDANG-set values equals the outcome
+  of the CDANG-set reference, and the outcome of each of the 15 CDANG-clear
+  values equals the outcome of the CDANG-clear reference.
 
-The value of the second pair is not expected, because it is disputed (2.1). Only
-the equality is graded. Sources:
+The value of the second pair and of the CDANG-clear group is not expected,
+because it is disputed (2.1). Only the equalities are graded. Sources:
 
 - "This 1-bit register, the danger bit (CDANG)" (p.310).
 - "In the Copper control register, called COPCON, only bit 1 is currently in use
   by the system." (p.26).
 - "This is a 1-bit register ... 01 CDANG" (p.274).
 
+Comparing all bits at once could hide effects that interact or cancel, so each
+other bit is also changed alone, against both settings of bit 1.
+
 **5. Preconditions.** In every run:
 
-1. P12's precondition 2. In the $0002 runs, also P12's precondition 1. In the
-   $FFFF, $0000 and $FFFD runs, the Copper fetches L1's first word in each
+1. P12's precondition 2. In the `$0002` runs, also P12's precondition 1. In the
+   `$FFFF`, `$0000` and `$FFFD` runs, the Copper fetches L1's first word in each
    graded field (R5, "no matter what the Copper is doing", p.25), and nothing
    more is required of its reads: no page says whether the Copper goes on
    reading its list after a MOVE it may not perform, so how far it reads L1 with
-   CDANG clear is not a precondition.
+   CDANG clear is not a precondition. In each SWEEP run: DMACONR has bits 9, 7
+   and 6 set, each of the 32 values has its own Copper field, the CDANG-set
+   reference shows blitter accesses, and the Copper reads L1 through its last
+   MOVE in that field.
 2. The CPU writes BLTSIZE only where a contrasting case below says so, and
-   never BLTSIZH.
-3. M1–M2 is a quiet window.
+   never BLTSIZH; the SWEEP programs contain no such store.
+3. M1–M2 is a quiet window, in the SWEEP runs too.
+4. P13-CONTROL, graded before P13: the outcome of the CDANG-set reference differs
+   from the outcome of the CDANG-clear reference, on each chip set. Bit 1 is the
+   one bit that matters, so this shows that the comparator P13 applies to every
+   other bit can see a bit that does.
 
 **6. Contrasting cases.**
 
-- First pair: the $FFFF run is run with COPCON = $FFFD, bit 1 clear. On OCS the
+- First pair: the `$FFFF` run is run with COPCON = `$FFFD`, bit 1 clear. On OCS the
   Copper then cannot write the blitter registers (p.26, p.310), so the run lacks
-  the accesses of the $0002 run. The equality check goes red.
-- Second pair: the $FFFD run is run with COPCON = $FFFF, bit 1 set. The Copper
-  then writes the blitter registers (P12), so this run gains accesses the $0000
+  the accesses of the `$0002` run. The equality check goes red.
+- Second pair: the `$FFFD` run is run with COPCON = `$FFFF`, bit 1 set. The Copper
+  then writes the blitter registers (P12), so this run gains accesses the `$0000`
   run lacks. The equality check goes red.
-- Precondition 1: as in P12.
-- Precondition 2: a CPU write of BLTSIZE in the $0000 run. The structural check
-  flags it. A CPU write of BLTSIZH ($05E) in the ECS $0000 run, which declares none,
-  is flagged in the same way.
-- Precondition 3: add a CPU write to $30200 inside the window.
+- Single bits, CDANG set: in both SWEEP runs the round of bit 15 writes `$8000`
+  instead of `$8002`. That round loses the blitter accesses of the reference,
+  and the equality check goes red.
+- Single bits, CDANG clear: in the OCS SWEEP run the round of bit 0 writes `$0003`
+  instead of `$0001`. That round gains the blitter accesses the reference lacks,
+  and the equality check goes red.
+- P13-CONTROL: the CDANG-clear reference of the OCS SWEEP run writes `$0002`.
+- Precondition 1: as in P12. In the OCS SWEEP run, DMACON without COPEN; and the
+  program writes only 8 values.
+- Precondition 2: a CPU write of BLTSIZE in the `$0000` run. The structural check
+  flags it. A CPU write of BLTSIZH (`$05E`) in the ECS `$0000` run, which declares
+  none, is flagged in the same way. A CPU store of BLTSIZE in the OCS SWEEP
+  program that never runs (after its last instruction), which only the structural
+  check sees.
+- Precondition 3: add a CPU write to `$30200` inside the window, in the `$0000`
+  runs and in each round of the OCS SWEEP run.
 
-**7. Reference frame.** As in P12. Outcomes are compared field by field in order.
+**7. Reference frame.** As in P12. Outcomes are compared field by field in order;
+in SWEEP the field is the one of the round (3).
 
 ---
 
-### P14 — BEAMCON0 is new with ECS: writing it changes the beam on ECS and nothing on OCS
+### P14 — BEAMCON0: its PAL bit changes the beam on ECS; on OCS none of its bits changes the outputs observed
 
-**1. Proposition.** BEAMCON0 ($1DC) exists in the enhanced Agnus and not in the
-standard chip set. Writing its PAL bit turns an NTSC ECS system into PAL line
-timing. On OCS, writing any bit that p.305 defines, alone or with the others,
-changes nothing at the port: not the line count, not the sync polarity, not the
-blanking. Claim: `APPC2-BEAMCON0.uhres1`. Page 298, with pp.304, 305 and 299.
+**1. Proposition.** BEAMCON0 ($1DC) is new with the enhanced Agnus. Writing its
+PAL bit turns an NTSC ECS system into PAL line timing. On OCS, writing any bit
+that p.305 defines, alone or with the others, changes none of the outputs
+observed here: not the line count, not the sync polarity, not the blanking. That
+is all this proposition grades. It does not grade that the register does not
+exist in the standard chip set: the outputs do not carry every function of the
+defined bits (LPENDIS, bit 13, acts on a light-pen vertical-position read this
+run does not make, and the composite-sync functions are not seen), so the claim
+`APPC2-BEAMCON0.uhres1` is declined (section 1). No claim id. Pages 298, 304,
+305, 299 and 24.
 
 **2. Stimulus.** Run BEAM, on ECS NTSC and on OCS NTSC. Both runs need the NTSC
 configuration; if the harness cannot make it, P14 is not made (3.1).
@@ -1471,12 +1622,13 @@ configuration; if the harness cannot make it, P14 is not made (3.1).
 6. Wait for 8 VERTB, write M2.
 
 Steps 5 and 6 are the ECS run's. On the OCS run, after M1, the program writes
-BEAMCON0 sixteen times and waits for one VERTB after each write: first each of
-bits 0 to 14 alone ($0001, $0002, $0004, ... $4000), which are the bits p.305
-defines (HSYTRUE, VSYTRUE, CSYTRUE, BLANKEN, VARCSYEN, PAL, DUAL, VARBEAMEN,
-VARHSYEN, VARVSYEN, CSCBEN, LOLDIS, VARVBEN, LPENDIS, HARDDIS), including the
-polarity bits of the H, V and composite sync, then $7FFF, all of them together.
-Then it writes M2.
+BEAMCON0 sixteen times, holds each value for two VERTB, and stores a marker
+word after each write (MARK+4+2k = $0100+k for the k-th value, counted from 0).
+The values are first each of bits 0 to 14 alone ($0001, $0002, $0004, ... $4000),
+which are the bits p.305 defines (HSYTRUE, VSYTRUE, CSYTRUE, BLANKEN, VARCSYEN,
+PAL, DUAL, VARBEAMEN, VARHSYEN, VARVSYEN, CSCBEN, LOLDIS, VARVBEN, LPENDIS,
+HARDDIS), including the polarity bits of the H, V and composite sync, then
+$7FFF, all of them together. Then it writes M2.
 
 Steps 1–3 follow the overlay clear of 3.2 and come before anything else.
 
@@ -1498,7 +1650,9 @@ a field being the span from one VSYNC activation to the next: the fields before
 M1 from the second VSYNC activation after the program's first instruction fetch
 on, and every complete field after M1 that ends before M2. The harness records hs
 and vs as they are at the video output, so a change of their polarity or of their
-pulses is a different sample.
+pulses is a different sample. The value k is in force from its marker to the next
+marker (to M2 for the last value); the fields inside that span are the fields of
+the value.
 
 **4. Expected.**
 
@@ -1506,7 +1660,8 @@ pulses is a different sample.
 - OCS: every graded N after M1 equals the N of the graded frames before M1, and
   every field after M1 is identical, sample for sample (red, green, blue, hs and
   vs), to the field of the same parity before M1, whichever of the sixteen values
-  was written before it.
+  was written before it. Each of the sixteen values has at least one complete
+  field of its own (P14-POP), so every value is compared.
 
 No NTSC line count is graded: the pages give 525 (p.24, p.304) and 524 (p.34)
 for an interlaced NTSC frame (2.10). Recorded, not graded: N before M1 on both
@@ -1514,10 +1669,8 @@ chip sets, and N after M1 on OCS.
 
 The display is stationary in this run (all DMA off, one background colour), so
 a field repeats at the field period and a change at the port is a change the
-write made. p.305 describes BEAMCON0 as "a new register in the enhanced Agnus", so
-on the standard chip set none of its bits has an effect. The line count is graded
-through the refresh groups and the sync polarity, the blanking and the timing of
-every field through the samples.
+write made. The line count is graded through the refresh groups and the sync
+polarity, the blanking and the timing of every field through the samples.
 
 Sources:
 
@@ -1534,7 +1687,7 @@ Sources:
 The first two fields after the write are not graded, because the pages do not say
 when the change takes effect. p.305 warns "Do not write to this register" and of
 damage to multisync monitors. That advice concerns real monitors, and the test
-writes only the PAL bit.
+writes only the PAL bit on ECS.
 
 **5. Preconditions.**
 
@@ -1552,16 +1705,23 @@ writes only the PAL bit.
 4. In the OCS run the fields before M1 of the same parity are identical, sample
    for sample, with at least two fields of each parity. This shows the display is
    stationary, so that a field after M1 can be compared with one before it.
+5. P14-POP: the graded populations exist: at least one frame before M1 and four
+   after on both runs, and on the OCS run a complete field inside the span of
+   each of the sixteen values (16 of 16).
 
 **6. Contrasting cases.**
 
 - Proposition (ECS): write BEAMCON0 = $0000. The page predicts that PAL is not
   enabled, so N stays at the NTSC count, which no page gives as 625 (2.10). The
   "625 after" check goes red.
-- Proposition (OCS): at M1, write BPLCON0 = $0200 (LACE clear) as well as
-  BEAMCON0. Long and short fields are "interlace only" (p.24). After M1 a frame
-  is then two fields of equal length, an even count. Before M1 it is two fields
-  that differ by one, an odd count. The "after = before" check goes red.
+- Proposition (OCS, outputs unchanged): at M1, write BPLCON0 = $0200 (LACE clear)
+  as well as the first BEAMCON0 value. Long and short fields are "interlace
+  only" (p.24). After M1 a frame is then two fields of equal length, an even
+  count. Before M1 it is two fields that differ by one, an odd count, and the
+  fields differ from those before M1. The outputs after M1 then differ from
+  those before it, and the "after = before" check goes red. The change is to the
+  stimulus, and preconditions 1 to 4 stay green because they look at the
+  frames before M1.
 - Precondition 1: the other chip set. The identification differs.
 - Precondition 2: in the ECS run, BEAMCON0 = $0020 written right after step 1,
   before M1. N = 625 before M1. The identification does not change with it.
@@ -1569,18 +1729,22 @@ writes only the PAL bit.
   frame before M1 have the same length, and the precondition goes red.
 - Precondition 4: in the OCS run, COLOR00 = $0F00 after the third VERTB before M1.
   The fields before M1 then differ within a parity.
+- Precondition 5: three VERTB (three values on OCS) after M1 instead of eight
+  (sixteen).
 
 **7. Reference frame.** VSYNC activations on the output and refresh groups
-(R5). Markers M1 and M2 for the timing of the write.
+(R5). Markers M1 and M2 for the timing of the write, and the value markers of
+the OCS run for the span of each value.
 
-**Open.** What the BEAMCON0 bits do on ECS other than PAL, and what "UHRES" names (2.4).
+**Open.** What the BEAMCON0 bits do on ECS other than PAL, what "UHRES" names
+(2.4), and whether the register exists in the standard chip set.
 
 ---
 
 ## 5. Recorded
 
-Final run of `make -k -B test` on both cores: fx68k 70 passed, 1 failed; TG68K 70 passed, 1 failed.
-The same line is red on both: P1. P2 is NOT GRADED on both. Every other graded line passes on both.
+Final run of `make -k -B test` on both cores: fx68k 81 passed, 2 failed; TG68K 81 passed, 2 failed.
+The same two lines are red on both: P1 and P5-NOPOS. P2 is NOT GRADED on both. Every other graded line passes on both.
 
 ### 5.1 Programs
 
@@ -1595,12 +1759,14 @@ and includes the program source; each wrapper is one contrasting case of its pro
 | program | source | propositions | graded lines |
 |---|---|---|---|
 | MANUAL | `prog_manual.s` | P4, P5 | RUN-MANUAL, FIXTURE-MANUAL, P5-PRE1, P5-PRE2, P4-PRE2, P4-PRE1, R5-ANCHOR-MANUAL, P5, P4 |
+| MANUAL without field B's SPR0POS write | `prog_manual_p4nopos.s` (the graded run), `prog_manual_nopos_*.s` (its contrasts) | P5-NOPOS | RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2, R5-ANCHOR-NOPOS, P5-NOPOS |
 | AUTO, AUTO-ODD | `prog_auto.s`, `prog_autoodd.s` | P6, P7, P8 | RUN-AUTO, RUN-AUTOODD, FIXTURE-AUTO, P6-PRE1, P6-PRE2, P8-PRE1, P8-PRE2, R5-ANCHOR-AUTO, P6, P7, P8 |
+| FAST (P7's necessity clause) | `prog_autofast.s` and wrappers `prog_autofast_*.s` (`prog_auto.s` with `MUT_FASTPT`) | P7 | RUN-AUTOFAST, FIXTURE-AUTOFAST, P7-PRE1, P7-PRE2, P7-PRE3, and P7 |
 | CPU-PTR | `prog_cpuptr.s` | P9 | RUN-CPUPTR, FIXTURE-CPUPTR, P9-PRE2, P9-PRE1, P9-PRE3, P9 |
 | JUMP | `prog_jump.s` | P10 | RUN-JUMP, FIXTURE-JUMP, P10-PRE2, P10-PRE1, P10-PRE3, P10 |
 | BLIT | `prog_blit.s` | P11 | RUN-BLIT, FIXTURE-BLIT, P11-PRE2, P11-PRE1, P11-PRE3, P11 |
-| COPBLT-v | `prog_cb.s`, wrappers `prog_cb_<o or e><2, F, 0 or D>[_<contrast>].s` | P12, P13 | FIXTURE-CB, P12-PRE1, P12-PRE2, P12-PRE3, P12, P13-PRE1, P13-PRE2, P13-PRE3, P13 |
-| BEAM | `prog_beam.s` (the ECS run), wrappers `prog_beam_o*.s` (the OCS run, sixteen BEAMCON0 writes) | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-PRE4, P14-POP, R5-ANCHOR-BEAM, P14 |
+| COPBLT-v | `prog_cb.s`, wrappers `prog_cb_<o or e><2, F, 0 or D>[_<contrast>].s` and `prog_cbsw_<o or e>[_<contrast>].s` (SWEEP) | P12, P13 | FIXTURE-CB, P12-PRE1, P12-PRE2, P12-PRE3, P12, P13-PRE1, P13-PRE2, P13-PRE3, P13-CONTROL, P13 |
+| BEAM | `prog_beam.s` (the ECS run), wrappers `prog_beam_o*.s` (the OCS run, sixteen BEAMCON0 writes, each held two VERTB and followed by a marker word) | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-PRE4, P14-POP, R5-ANCHOR-BEAM, P14 |
 | SHR-SWEEP, SHR-LORES, BITS-OCS | `prog_shr.s` (SHR-SWEEP), wrappers `prog_shrl*.s` (SHR-LORES) and `prog_shro*.s` (BITS-OCS) | P1, P2, P3 | FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL, P1, P2-PRE1, P2-PRE2, P2-PRE4, P2, P3-PRE1 to P3-PRE5, P3 |
 
 P2's proposition contrast is not P1's run with the Lores program replaced by BPLCON0 = $1240
@@ -1630,8 +1796,12 @@ that DONE was reached. Its contrast is the same program without the DONE mark (`
 FIXTURE-BEAM and FIXTURE-SHR carry the same DONE clause and the same contrast.
 The scan-line counts of MANUAL and AUTO use R5 like those of BEAM and SHR, with the anchors
 R5-ANCHOR-MANUAL and R5-ANCHOR-AUTO; their contrast is the program whose VERTB wait loop reads a
-Chip word at a low address. MANUAL's field B without any SPR0POS write is run once, as
-`prog_manual_p4nopos`, and printed as a MEASURED line.
+Chip word at a low address. MANUAL's field B without any SPR0POS write is the run
+`prog_manual_p4nopos`; its lines RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2 and
+R5-ANCHOR-NOPOS gate P5-NOPOS, and each has the contrast of its MANUAL counterpart.
+P5-NOPOS's own contrast is the same field B with an explicit SPR0POS = $0060 write, which passes.
+P7's FAST run runs under every tag of the AUTO family; P7 is NOT GRADED when one of its lines fails.
+P13's SWEEP runs under every P13 tag; P13 is NOT GRADED when P13-CONTROL fails.
 The scan-line counts of BEAM and SHR use R5: the refresh-group spacing is measured from the
 first group of the capture, which precedes the program, and R5-ANCHOR-BEAM and R5-ANCHOR-SHR grade
 that every refresh group of the graded span has four cycles at that spacing. R1's anchor (one
@@ -1650,14 +1820,16 @@ started).
 | P2 | NOT GRADED | the paired SHR-SWEEP run does not pass P1 (P1 is red), so the run prints `RECORDED: P2: NOT GRADED, depends on P1` |
 | P2-PRE1, P2-PRE2, P2-PRE4 | PASS | ruler period 32; even k show d = 80 + k; SREF and group 0 as in P1; the Lores groups show the same d sequence as the SuperHires run |
 | P3 and P3-PRE1 to P3-PRE5 | PASS | VPOSR identification $00; ruler period 32; five groups, d = 80 80 80 80 82, each four scan lines |
+| P5-NOPOS | FAIL | field B of the run without an SPR0POS write: 400 sprite-4 output lines and no sprite-0 run after any of them (first d = -1), where p.123 and p.126 give d = 64; the same field B with an explicit write of SPR0POS = $0060 shows d = 64 |
+| RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2, R5-ANCHOR-NOPOS | PASS | DMACONR $0380; V(MB) < $2C and V(RB) = $F8; no malformed refresh group |
 | P4, P5 and RUN-MANUAL, FIXTURE-MANUAL, P5-PRE1, P5-PRE2, P4-PRE2, P4-PRE1, R5-ANCHOR-MANUAL | PASS | field A d = 66 and field B d = 68, on 400 output lines each (200 scan lines), at one column, consecutive; SPR0POS and SPR0CTL read back $0000 after the writes |
-| P6, P7, P8 and RUN-AUTO, RUN-AUTOODD, FIXTURE-AUTO, P6-PRE1, P6-PRE2, P8-PRE1, P8-PRE2, R5-ANCHOR-AUTO | PASS | sprite 4 on 32 scan lines, sprite-0 groups of 4 and 6 scan lines 8 apart, d = 66 and 68, in the AUTO run and in the AUTO-ODD run; 26 reads at $25000-$25032 ascending in every graded field of both |
+| P6, P7, P8 and RUN-AUTO, RUN-AUTOODD, RUN-AUTOFAST, FIXTURE-AUTO, FIXTURE-AUTOFAST, P6-PRE1, P6-PRE2, P7-PRE1 to P7-PRE3, P8-PRE1, P8-PRE2, R5-ANCHOR-AUTO | PASS | sprite 4 on 32 scan lines, sprite-0 groups of 4 and 6 scan lines 8 apart, d = 66 and 68, in the AUTO run and in the AUTO-ODD run; 26 reads at $25000-$25032 ascending in every graded field of both; in the FAST run no output line in S1's colours (0 of 40 lines with a sprite-0 run) |
 | P9 and RUN-CPUPTR, FIXTURE-CPUPTR, P9-PRE1 to P9-PRE3 | PASS | in each of fields 2-4 the 26 reads in order, no read in $27000-$27FFF, group 1 d = 66; no read of the sprite-0 data between a field's head read and P_f in any of the four fields |
 | P10 and P10-PRE1 to P10-PRE3 | PASS | the first read after M_f in either list is at $020004 in all six fields; in fields 2, 4 and 6 L2's first word is then read and $020006 is not, in fields 1, 3 and 5 $020006 is read and L2 is not |
 | P11 and RUN-BLIT, FIXTURE-BLIT, P11-PRE1 to P11-PRE3 | PASS | exactly four writes at $30200-$30206 and none at $30208, in M1-M2 |
 | P12 and P12-PRE1 to P12-PRE3 | PASS | two graded fields on each chip set; 20 accesses in $30000-$303FF in the first graded field on OCS, 32 on ECS |
-| P13 and P13-PRE1 to P13-PRE3 | PASS | the $0002 and $FFFF outcomes are equal on both chip sets; the $0000 and $FFFD outcomes are equal on both |
-| P14 and P14-PRE1 to P14-PRE4, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS; on OCS the 15 fields after M1 (one per BEAMCON0 value written) are identical, sample for sample, to the field of their parity before M1 |
+| P13, P13-CONTROL and P13-PRE1 to P13-PRE3 | PASS | the $0002 and $FFFF outcomes are equal on both chip sets; the $0000 and $FFFD outcomes are equal on both; in the SWEEP runs 32 of 32 values have a Copper field, the 30 other-bit values equal their CDANG reference on both chip sets, and the two references differ |
+| P14 and P14-PRE1 to P14-PRE4, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS; on OCS the 31 fields after M1 are identical, sample for sample, to the field of their parity before M1, and each of the 16 BEAMCON0 values has a complete field of its own |
 | R5-ANCHOR-BEAM, R5-ANCHOR-SHR | PASS | no malformed refresh group; spacing 16 clk_sys cycles |
 
 ### 5.3 Measured, not graded
@@ -1671,10 +1843,11 @@ started).
   $5A5A each restart the Copper at COP2LC. JUMP's harness run continues 700000 clk_sys cycles past
   the program's own DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT for
   line $F0 to complete.
-- MANUAL, field B without any SPR0POS write (SPR0POS keeps $0060 from field A, SPR0CTL is $0000): on both
-  cores 400 sprite-4 output lines and no sprite-0 run after any of them. p.123 reads as d = 64 for that
-  case ("at the horizontal position given in the "H" portion of the position registers"). It is run once
-  and printed, not graded (P4, Open).
+- P7, FAST run (SPR0PT = $2B5000, fast RAM holding S1's copy, ALIAS holding a structure of S1's shape and
+  other data): 2 graded fields, 40 output lines with a sprite-0 run after the reference, none of them in
+  S1's colours, and the 26 words at the Chip address $0B5000 read in order in both fields. The channel
+  therefore took the structure from the Chip address with the same low bits. The pages give no value for
+  that, and it is not graded.
 - CPU-PTR, field 1: the 26 reads at $25000-$25032 in order, none in $27000-$27FFF, group 1 d = 66. P9
   grades fields 2-4 only, as section 3 of P9 says.
 - COPCON clear (P13, 2.1): in the $0000 and $FFFD runs there is no access at all in
@@ -1687,5 +1860,5 @@ started).
 ### 5.4 Not made
 
 The disk half of P11 and the claims of section 1 have no graded line. Each id of section 1 is
-printed on a `RECORDED` line of its own, with the reason of section 1 (26 ids). Every other
+printed on a `RECORDED` line of its own, with the reason of section 1 (27 ids). Every other
 proposition of section 4 has its lines above.
