@@ -61,18 +61,21 @@ The package has six propositions:
 - `opus:1-guidelines.c67`, `sol:1-guidelines.c67` (p.13): only the 68020
   against the 68000 is graded (P6). The page does not say whether the 68010
   counts as "more advanced", and the 68030 and 68040 are not available.
-  Beyond that: the harness documents `cpu_config` only as "00 = 68000 core
-  behaviour" and claims no 68020 prefetch depth anywhere, and the measured
-  RAM-port log under `cpu_config=3` is identical, cycle for cycle, to
-  `cpu_config=0` (P3's own instruction fetches). D(68020 mode) is measured
-  and recorded (section 10), not graded against this claim: a harness
-  option limit, not a red of the RTL against p.13.
+  Beyond that: the harness documents `cpu_config` 00 as "68000 core
+  behaviour" and the other values as changing "what the CPU executes
+  (MOVEC, VBR, exception frame formats), not the bus", and claims no 68020
+  prefetch depth anywhere. The run compares the RAM-port log of P3 under
+  `cpu_config` 1 and 3 with its log under 0, and the log of P6 under 3 with
+  its log under 0, entry for entry, and prints each result (section 10).
+  D(68020 mode) is measured and recorded (section 10), not graded against
+  this claim: a harness option limit, not a red of the RTL against p.13.
 - `opus:1-guidelines.c59`, `sol:1-guidelines.c59` (p.13, p.263): the same
-  harness-option limit as c67, for P4. `cpu_config` is documented only as
-  "00 = 68000 core behaviour"; nothing documents a 68020 bus, and the
-  measured RAM-port log under `cpu_config=3` is identical, cycle for
-  cycle, to `cpu_config=0` for CLR. The relation is measured and recorded
-  (section 10), not graded against this claim.
+  harness-option limit as c67, for P4. The harness documents the values of
+  `cpu_config` other than 00 as changing "what the CPU executes (MOVEC, VBR,
+  exception frame formats), not the bus"; nothing documents a 68020 bus.
+  The run compares P1's RAM-port log under `cpu_config=3` with its log
+  under 0, entry for entry, and prints the result. The relation is
+  measured and recorded (section 10), not graded against this claim.
 
 ---
 
@@ -124,7 +127,9 @@ The package has six propositions:
   - sentinels and results: $4000 to $40FF;
   - P1 operands: $4110 to $425F;
   - P1 readback: $4300 to $4357;
-  - P2 store area: $4400 to $4443;
+  - instruction-address tables: P1 $4400 to $4453, P3 $4550 to $455F,
+    P6 $4570 to $458F;
+  - P2 store area: $4500 to $4543;
   - program: from $8000 upward;
   - the far word Z for P3 and P6: $1FFFFE, the highest word of 2 MB,
     never referenced.
@@ -143,9 +148,13 @@ The package has six propositions:
 | R_DMA | $4012 | stored DMACONR |
 | SAVE_SP | $4014 (long) | P2 saved stack pointer |
 | PRE_SP | $4018 (long) | P5 stack pointer before each exception |
+| S_KIND | $401C | P1 table marker: $C1A0 when the case table names CLR, $C1A1 when it names MOVE |
 | POST_SP_e | $4020 + 4·e (long, e = 1 to 5) | P5 stack pointer on handler entry |
 
-Every sentinel is written with `MOVE.W #imm,abs.L`.
+Every sentinel is written with `MOVE.W #imm,abs`. The assembler chooses the
+absolute-short form for the sentinels in P1, P2, P3 and P6 (their addresses
+are below $8000), except for the guard word of P3 and P6, whose S_X write is
+forced to absolute long so that the guard is six words (section 5).
 
 ### 2.3 Setup sequence (start of every program)
 
@@ -190,9 +199,11 @@ port times. A byte address B belongs to the word at B with bit 0 cleared.
 A precondition that fails makes the affected check **not evaluated**, never
 green.
 
-C1 to C4 and the fixture are asserted in every run of every program. The
-setup and the ending are shared macros, so each contrast below exists in
-every program and is replayed per program.
+C1 to C4 and the fixture are asserted in every run of every program, except
+the P4 run (section 6), which runs P1's program on the second core and
+asserts its fixture's DONE clause only. The setup and the ending are shared
+macros, so each contrast below exists in every program and is replayed per
+program (the S_END ordering contrast of C4 exists in P1 only).
 
 - **C1, interrupts off.** The CPU's write to R_INT carries bits 14 to 0 all
   zero (p.280). Bit 15 is masked, because p.280 defines it only as a write
@@ -221,17 +232,26 @@ every program and is replayed per program.
     goes red on the S_FAIL clause alone.
 - **C4, sentinels are seen as CPU writes.** Every sentinel write the
   program executes appears as exactly one CPU write with the sentinel's
-  data. S_START comes before every window, and S_END comes after them.
+  data. S_START comes before every window (the first window-open sentinel
+  write, S_A or S_P, is later than the S_START write), and S_END comes after
+  them (the S_END write is later than the last window-close sentinel write,
+  S_B or S_L).
   - Contrast: write S_START twice. It is no longer written exactly once, C4
     goes red, and S_START still reads back $0001.
-  - Contrast (ordering): write S_START after the first window has opened.
-    S_START is still written once with its data, and C4 goes red because it
-    does not come before every window.
+  - Contrast (ordering, S_START): write S_START after the first window has
+    opened. S_START is still written once with its data, and C4 goes red
+    because it does not come before every window.
+  - Contrast (ordering, S_END): in P1, write S_END once, before case 21's
+    S_B write, and leave out the ending's own S_END write. S_END is written
+    once with its data, so C3 holds, and C4 goes red because S_END does not
+    come after every window.
 - **C5, core and mode.** RECORDED, not graded. No witness of the core or of
   the second core's mode exists at the ports: the record names neither. The
   core is the one the build selects, and the second core's mode is the
-  `cpu_config` value the test sets, which the harness documents only as
-  "00 = 68000 core behaviour". No graded line depends on C5. A line labelled
+  `cpu_config` value the test sets. The harness documents 00 as "68000 core
+  behaviour" and the other values as changing "what the CPU executes
+  (MOVEC, VBR, exception frame formats), not the bus", and says that nothing
+  at the ports shows which setting a run used. No graded line depends on C5. A line labelled
   68010 or 68020 grades what the program does under that set value.
 - **Fixture.** Every run's program is loaded, the CPU is released, and the
   program reaches DONE; S_START reads back $0001 through the memory
@@ -339,16 +359,21 @@ and T_c+2 for .L.
   - Contrast (ordering): move case 4's S_B write and its readback behind
     case 5's S_A write. Every case still has one ordered S_A/S_B pair,
     windows 4 and 5 overlap, P1.a goes red, and P1.b and P1.c hold.
-- **P1.b, the target was the operand and was cleared.** The last CPU write
-  to each operand word before W_c carries the prefill. The readback after
+- **P1.b, the target was the operand and was cleared.** Each T_c and R_c
+  belongs to case c alone, so the first CPU write to each operand word in
+  the log is its prefill step, and it carries the prefill. The readback after
   W_c (the CPU write to R_c, and to R_c+2 for .L) is $0000 for .W, $0000
   and $0000 for .L, and for .B one byte $00 with the other byte $A5.
-  - Contrast: in case 8, point the effective address at T_c+8 (a word this
-    variant also prefills with $A5A5). R_c stays $A5A5, so P1.b goes red for
-    case 8, and the program finishes.
+  - Contrast: in case 8, point the effective address at T_c+8 (a word the
+    program does not prefill). The clear lands there, T_c keeps its prefill,
+    R_c stays $A5A5, so P1.b goes red for case 8, and the program finishes.
 - **P1.c, the instruction in the window is the one the table names.** The
-  last CPU read at X_c before W_c ends carries the opcode word the assembler
-  produced for that case's instruction.
+  program writes a table marker (S_KIND) once in its setup: the case table
+  names CLR when the marker is $C1A0 and MOVE when it is $C1A1, and the test
+  takes the expected opcodes from that logged write (no marker, no
+  expectation: P1.c is red). Each X_c is executed once, so the last CPU read
+  of X_c in the log carries the opcode word the assembler produced for that
+  case's instruction.
   - Contrast: assemble case 11 as `CLR.L` while the case table still names
     `CLR.W`. The opcode read at X_c differs, so P1.c goes red for case 11,
     and the program finishes.
@@ -427,14 +452,15 @@ page gives no way to see their width.
    a half.
 4. `MOVE.W #$A200,S_A`.
 5. For r = D0 to D7 and A0 to A7: `MOVE.L r,M_r` (absolute long), with
-   M_r = $4400 + 4·index (D0 = 0 ... A7 = 15).
+   M_r = $4500 + 4·index (D0 = 0 ... A7 = 15).
 6. `MOVEA.L SAVE_SP,A7`.
-7. `MOVE.L USP,A0`, then `MOVE.L A0,M_USP` with M_USP = $4440.
+7. `MOVE.L USP,A0`, then `MOVE.L A0,M_USP` with M_USP = $4540.
 8. `MOVE.W #$B200,S_B`, then the S_END write.
 
 **Observation.** The Chip-memory port. Window W is the open interval
 between the CPU write of $A200 to S_A and the CPU write of $B200 to S_B.
-The test records the data of the CPU writes at M_r and M_r+2 inside W.
+The test reads the words at M_r and M_r+2 through the memory inspection
+after the run; P2.b ties each of them to exactly one CPU write inside W.
 
 **Expected relation.** For each of the 17 registers, the two words written
 at M_r and M_r+2 in W are the pattern's two halves:
@@ -458,13 +484,23 @@ depend on it. Quantifier: "internal registers are 32 bits wide" covers all
 - **P2.c, no exception while the registers held patterns.** Every CPU
   access inside W is one of these: a read inside the program image, the
   read of SAVE_SP (step 6), a write to one of the 34 store words (M_USP
-  included), or the S_B write. An exception would add stacking writes (and
-  a vector read) outside this list. Also, while A7 holds a pattern, the
-  handler could not return, so C3 would go red.
+  included), or the S_B write. A write outside the list, or a read outside
+  the program image and SAVE_SP, fails the check. Reads in the exception
+  vector area ($000000 to $0003FF) are not covered: the record names no
+  requester (2.4), and the baseline log of both cores shows four reads of
+  word 0 inside W that the program does not issue (it addresses nothing in
+  that area), so a read there cannot be attributed to the CPU. An exception
+  adds stacking writes outside the list, which the write clause covers (its
+  vector read lies in the uncovered area). Also, while A7 holds a pattern,
+  the handler could not return, so C3 would go red.
   - Contrast: before W, install a trap-0 handler that only executes `RTE`.
     Add `TRAP #0` between step 6 and step 7, after A7 has been restored to
     the stack in Chip memory. The exception's stacking writes then appear
     inside W, so P2.c goes red, and the program finishes.
+  - Contrast (read clause): add `TST.W $4110` between step 6 and step 7. The
+    word lies outside the program image and is not SAVE_SP. W holds a read
+    that is on neither list and no new write, so P2.c goes red alone: P2.b
+    and the relation hold, and the program finishes.
 - C1 to C4 and the fixture. C1 matters here: A7 holds a pattern during steps 3 to 6.
 
 **Contrasting case.** Variant P2-LOW loads every register with its
@@ -521,7 +557,7 @@ Block k, in address order:
         MOVE.W  #k,S_P          ; progress sentinel
         <preparation k>
 X_k:    <stop instruction k>    ; one word
-W_k:    MOVE.W  #$DEAD,S_X      ; guard: 4 words, never executed
+W_k:    MOVE.W  #$DEAD,S_X      ; guard: 4 words (S_X as absolute long), never executed
         BRA.W   FAIL            ; 2 words, never executed
 L_k:    MOVE.W  #k,S_L          ; landing sentinel; block k+1 follows
 ```
@@ -584,6 +620,13 @@ of its three modes. The 68030 and 68040 are absent (see 1).
     static check goes red.
   - Contrast (register-indirect): add `LEA W_3(PC),A1` and `TST.W (A1)`
     before block 3. The static check goes red.
+  - The check fails safe. Contrast (unresolvable address): add `LEA $4100,A1`,
+    `MOVEQ #0,D1` and `TST.W 0(A1,D1.W)` before block 3. The read touches
+    no guard word, but the check does not track index registers and cannot
+    resolve the address, so the static check goes red. Contrast
+    (undecodable opcode): add `ADDQ.W #1,D2` before block 3. The check
+    decodes only the instructions the package's programs use, so it fails
+    on this opcode and the static check goes red.
 - **P3.d, address anchor.** For each k, a CPU read at X_k carries the
   opcode word the image holds for block k's stop instruction. This shows
   that the image addresses (and therefore W_k) are the addresses the CPU
@@ -604,11 +647,13 @@ referenced, and it lies more than 1.9 MB above every program word. This is
 a calibration of the measurement, not a page prediction: the pages set no
 maximum prefetch distance.
 
-Two contrasts show that the two lines can go red. The run window R is
-bounded by the program's own sentinels: writing S_END right after the setup
-closes R before the first block, no read at any W_k lies inside R, and the
-relation goes red while every precondition holds. A `TST.W` of Z before the
-ending makes the calibration red.
+The relation has no contrast. p.13: "All 68000 family processors have a
+pre-fetch feature." Every processor the system can run is a member of that
+family and prefetches, so no program makes the CPU skip loading ahead, and
+every change of the program that leaves the preconditions true leaves a
+read at some W_k inside R. The package records this as `none impossible`
+for the relation. A `TST.W` of Z before the ending makes the calibration
+red.
 
 **Reference frame.** "Ahead" is an address relation: W_k = X_k + 2, taken
 from the assembled image. The anchor is P3.d.
@@ -772,31 +817,47 @@ pairs must hold.
     handler installed at vector 33 as well as at vector 32. The exception is
     taken, the window holds the frame and the handler's S_B write follows,
     but no read at the installed vector (32) lies inside W_1, so P5.a goes
-    red and the program finishes without S_FAIL.
+    red and the program finishes without S_FAIL. The contrast is replayed on
+    each image kind: the 68000-mode image for the 68000-mode run and the VBR
+    image (the same change) for the 68010 and 68020 runs, so each run's P5.a
+    line has its own contrast.
 - **P5.b, the same starting state in every run.** The CPU writes to PRE_SP
   carry the same value in all runs. The two images have the same length and
   every differing byte lies inside step 3's four bytes (a static check on
   the assembler listings, which locate step 3 and reproduce their images),
   with at least one difference there.
-  - Contrast: in the 68010 run, insert `SUBQ.L #4,A7` before step 5. PRE_SP
-    differs from the other runs, so P5.b goes red, and the program finishes.
-  - Contrast (static): an image that keeps step 3's two `NOP`s but differs
-    from the 68000-mode image at one byte (image offset $FB) inside case
-    3's four-byte `MOVE.W #imm,CCR` (`#1` for `#0`), outside step 3, and P5.b
-    goes red.
+  - Contrast: in the 68010 run, replace step 3's `MOVEC D0,VBR` by
+    `SUBQ.L #4,A7` and a `NOP`. The image still differs from the 68000-mode
+    image only inside step 3's four bytes, PRE_SP differs from the other
+    runs, so P5.b goes red through its dynamic half, and the program
+    finishes.
+  - Contrast (static): the 68010 run loads an image that keeps step 3's two
+    `NOP`s but differs from the 68000-mode image at one byte (image offset
+    $FB) inside case 3's four-byte `MOVE.W #imm,CCR` (`#1` for `#0`),
+    outside step 3, and P5.b goes red. The static half compares the images
+    the runs loaded, not fixed files.
 - **P5.c, the window holds only the frame.** Every CPU write inside W_e
   lies at an address from POST_SP_e (the value the handler stores) up to
   PRE_SP minus 2.
   - Contrast: in case 2, add `MOVE.W D0,S_P` between step d and step e. A
     write outside the stack appears in W_2, so P5.c goes red, and the
-    program finishes.
+    program finishes. The contrast is replayed on each image kind (the
+    68000-mode image, and the VBR image with the same change for the 68010
+    and 68020 runs), so each run's P5.c line has its own contrast. A red
+    P5.c leaves the three pair lines not evaluated.
 - C1 to C4 and the fixture. C1 matters here: an interrupt inside W_e would
   add a second frame.
 
-Each pair's relation also has its own contrast: the second core runs one
-of the two members' images under the other member's `cpu_config` value, so
-that those two runs write the same frames. That pair's relation goes red
-alone, while P5.a to P5.c and the other two pairs hold.
+Each pair's relation also has its own contrast: one of the two runs of the
+pair uses the other member's `cpu_config` value with its own image
+(the 68000-mode image under the 68010 value, the 68000-mode image under the
+68020 value, the VBR image of the 68010 run under the 68020 value), so that
+those two runs write the same frames. That pair's relation goes red alone,
+while P5.a to P5.c, P5.b and the other two pairs hold.
+
+A run whose fixture fails (the program does not reach DONE) turns only its
+fixture line red: its P5.a and P5.c lines and the pair relations that depend
+on it are not evaluated.
 
 **Contrasting case.** Compare the first core (a 68000, running the
 68000-mode image) with the second core in 68000 mode. The page ties the
@@ -846,8 +907,12 @@ graded. The 68010-mode run is measured and reported, not graded.
 with eight blocks: the four stop kinds of P3, each twice. In one copy, X_k
 lies at an address divisible by 4; in the other, at an address that leaves
 remainder 2. This keeps the result independent of where a stop falls
-relative to a long-word boundary. The builder pads with the one-word
-instruction `MOVEQ #0,D2` placed before the block's S_P write.
+relative to a long-word boundary. The builder pads with `MOVEQ #0,D2`
+placed before the block's S_P write, followed by a `NOP` for the first three
+pairs (blocks 1 to 6): their preparations leave the gap between the two
+copies a multiple of four bytes, so one word would leave both copies at the
+same parity. The `BEQ.S` pair (blocks 7 and 8) prepares with the one-word
+`CMP.W D0,D0`, so its pad stays the single `MOVEQ`.
 
 In each block, the order is: the S_P write, then `LEA` or `PEA` (for k = 2
 and 3), then `MOVE.L #$00001000,D0` and `DIVU.W D1,D0` (with D1 = 3, loaded
@@ -956,17 +1021,22 @@ counted as in P3, as a calibration.
 - **Measured, P4 (section 6).** On the second core with cpu_config=68020,
   0/21 cases showed a single write with no preceding read; case 1 (.B,
   (An)) shows the same read-then-write pair as the 68000-mode run. This
-  run's own RAM-port log is identical, cycle for cycle, to the same
-  program under cpu_config=0. The harness documents cpu_config only as
-  "00 = 68000 core behaviour" and names no 68020 bus: opus/sol:1-
-  guidelines.c59 is declined as a harness-option limit, not graded. The
-  first core has no 68020 mode and does not run it.
+  run's own RAM-port log is compared, entry for entry (time, address, data,
+  direction), with the same program under cpu_config=0, and the run prints
+  the result. The harness documents the other cpu_config values as changing
+  "what the CPU executes (MOVEC, VBR, exception frame formats), not the bus"
+  and names no 68020 bus: opus/sol:1-guidelines.c59 is declined as a
+  harness-option limit, not graded. The first core has no 68020 mode and
+  does not run it.
 - **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10);
   D(68000 mode) = 1 on both cores, D(68020 mode) = 1 on the second core,
-  the same image. The harness documents cpu_config only as "00 = 68000
-  core behaviour" and names no 68020 prefetch depth: opus/sol:1-
+  the same image. The harness documents the other cpu_config values as
+  changing "what the CPU executes (MOVEC, VBR, exception frame formats), not
+  the bus" and names no 68020 prefetch depth: opus/sol:1-
   guidelines.c67 is declined as the same kind of harness-option limit as
-  P4/c59, not graded.
+  P4/c59, not graded. The run also compares the 68020-mode RAM-port log with
+  the 68000-mode log of the same image, entry for entry, and prints the
+  result.
 - **P5's and P6's own "contrasting case"** (first core vs. second core in
   68000 mode) spans both cores' separate executables; neither build can
   read the other's data, so each core prints its own RECORDED frame/depth
