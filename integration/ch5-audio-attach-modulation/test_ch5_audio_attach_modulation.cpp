@@ -22,8 +22,8 @@
 // none is counted in its summary. "Page model" below is the private copy of the audio RTL built by
 // `make pm-test-fx68k` / `make pm-test-tg68k` (page_model.patch), which
 // implements the attach bits as pages 149-151 and 164-165 describe them; the
-// repository RTL does not implement them, so the lines that grade attach
-// behaviour are red on it before and after a stimulus change, and a record that
+// attach bits have no measured effect on the repository RTL, so the lines that grade attach
+// behaviour are red or not evaluated on it before and after a stimulus change, and a record that
 // can only move on the page model says so. Per-core results of every record are
 // in SPECIFICATION.md, "Measured values".
 //
@@ -73,11 +73,11 @@
 // MUTATION P4-JOINT stimulus red the volume words 56 and 8 are exchanged (prog_s_both_swap): the half that P4-A grades (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-JOINT stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per): the half that P4-VOLONLY grades (NMH_MUTATE=P4-VOLONLY); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-POP-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-AV stimulus red the session lasts 70000 ticks (prog_s_av_short) (NMH_MUTATE=P5-POP-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-AV stimulus red the session lasts 35000 ticks (prog_s_av_short) (NMH_MUTATE=P5-POP-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-POP-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-AP stimulus red the session lasts 55000 ticks (prog_s_ap_short) (NMH_MUTATE=P5-POP-AP); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-AP stimulus red the session lasts 25500 ticks (prog_s_ap_short) (NMH_MUTATE=P5-POP-AP); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-POP-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-BOTH stimulus red the session lasts 40000 ticks (prog_s_both_short) (NMH_MUTATE=P5-POP-BOTH); RTL/fx68k NOT EVALUATED -> NOT GRADED; RTL/TG68K NOT EVALUATED -> NOT GRADED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-BOTH stimulus red the session lasts 17500 ticks (prog_s_both_short) (NMH_MUTATE=P5-POP-BOTH); RTL/fx68k NOT EVALUATED -> NOT GRADED; RTL/TG68K NOT EVALUATED -> NOT GRADED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P5-AV stimulus red AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P5-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
@@ -2282,11 +2282,11 @@ int main(int argc, char** argv) {
                 else if (mutating("P9-WINDOW")) bin = "/prog_s_lena_ch1len1000.bin";
             }
             Capture c = run_capture(dir + bin, budget_for(150000));
-            mut_note("P9-A", bin, c);
-            mut_note("P9-B", bin, c);
-            mut_note("P9-C", bin, c);
-            mut_note("P9-D", bin, c);
-            mut_note("P9-WINDOW", bin, c);
+            if (is_a) mut_note("P9-A", bin, c);
+            if (is_a) mut_note("P9-B", bin, c);
+            if (is_a) mut_note("P9-C", bin, c);
+            if (is_a) mut_note("P9-D", bin, c);
+            if (is_a) mut_note("P9-WINDOW", bin, c);
             int side = side_of[1];
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
