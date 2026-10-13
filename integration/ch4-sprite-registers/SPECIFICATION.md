@@ -109,9 +109,11 @@ checked in print). Against this, p.127 says "This pair of registers contains the
 two bits (p.309) names DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH, but not
 SPRxPTH. Every address a DMA channel reads or writes in this document is below
 $80000, except the one pointer of P7's FAST run, which names fast RAM. Every
-page's pointer width reaches that far, and none reaches the address of that
-pointer; the pages say nothing about a pointer wider than they allow, so P7
-grades only that the structure in fast RAM is not displayed.
+page's pointer width reaches that far. Only p.127's "32-bit word address" also
+reaches the address of that pointer, and an address is not the memory behind it:
+pp.104-105 say the structure must be in Chip RAM, which fast RAM is not. So P7
+grades only that the structure in fast RAM is not displayed, whatever the width
+of the pointer.
 
 ### 2.4 SPRHDAT, UHRES and BEAMCON0
 
@@ -830,13 +832,15 @@ assumed (section 4). Fields are delimited by markers.
 
 **1. Proposition.** A sprite armed by SPRxDATB and SPRxDATA is displayed "at the
 horizontal position given in the "H" portion of the position registers SPRxPOS
-and SPRxCTL" (p.123). SPR0POS keeps what the 68000 last wrote to it, so a field
-whose writes leave SPR0POS alone shows the sprite at the position that value and
+and SPRxCTL" (p.123). SPR0POS keeps what the 68000 last wrote to it: in Figure 4-13 (p.125) the
+horizontal position register SPRxPOS is loaded only through its own load decode
+("68000 or DMA"), and the SPRxCTL load decode resets the "ARM" flip-flop that
+the SPRxDATA load decode sets. So a field whose writes leave SPR0POS alone shows the sprite at the position that value and
 the new SPR0CTL give. No claim id: the clause combines p.123 ("on every line, at
 the horizontal position given") with p.126 ("As long as the comparator remains
 enabled, the current contents of the sprite data register will be output at the
 selected horizontal position on a video line"), and no claim of this package
-states it whole. Pages 123 and 126.
+states it whole. Pages 123, 125 and 126.
 
 **2. Stimulus.** Run MANUAL (P5) with field B's SPR0POS write left out: field B
 writes SPR0CTL = $0000, SPR0DATB = $FF00 and SPR0DATA = $F0F0 only. SPR0POS holds
@@ -1056,9 +1060,11 @@ run:
 - Proposition, AUTO: the Copper list sets SPR0PT = `$27000` (S2). The page
   predicts the reads at `$27000`–`$27032` and none in `$25000`–`$25FFF`, so the
   check goes red.
-- Proposition, FAST: the structure at ALIAS is S1's, word for word. The
-  channel then shows S1's colours from the Chip structure, and the check goes
-  red.
+- Proposition, FAST: the structure at ALIAS is S1's, word for word. In
+  this run the channel reads the 26 words at ALIAS for the fast-RAM pointer
+  (5.3), so it then shows S1's colours and the check goes red. The pages do not
+  give which Chip address the channel reads (Open): this contrast shows that the
+  comparator sees S1's colours in this run, not a red the pages predict.
 - RUN-AUTOFAST: the FAST program never writes DONE.
 - FIXTURE-AUTOFAST: `$DEAD` instead of the constant in the FAST run.
 - P7-PRE1: DMACON = `$8380` (SPREN clear) in the FAST run.
@@ -1577,8 +1583,15 @@ other bit is also changed alone, against both settings of bit 1.
   instead of `$8002`. That round loses the blitter accesses of the reference,
   and the equality check goes red.
 - Single bits, CDANG clear: in the OCS SWEEP run the round of bit 0 writes `$0003`
-  instead of `$0001`. That round gains the blitter accesses the reference lacks,
-  and the equality check goes red.
+  instead of `$0001`. That round shows blitter accesses where the other
+  CDANG-clear rounds show none, and the equality check goes red. The write that
+  sets CDANG falls late in the field of the CDANG-clear reference, whose Copper
+  has read no word of L1 after the first; from that write on it reads the rest
+  of L1, and the reference round shows 18 blitter accesses, so every CDANG-clear
+  value then differs from it (15 of 30 equal). On ECS the same write lets the
+  rest of L1 write the registers of blits that are still running, three of their
+  writes are not declared ones, and precondition 3 goes red as well; this
+  contrast is therefore made on OCS only.
 - P13-CONTROL: the CDANG-clear reference of the OCS SWEEP run writes `$0002`.
 - Precondition 1: as in P12. In the OCS SWEEP run, DMACON without COPEN; and the
   program writes only 8 values.
@@ -1720,8 +1733,9 @@ writes only the PAL bit on ECS.
   count. Before M1 it is two fields that differ by one, an odd count, and the
   fields differ from those before M1. The outputs after M1 then differ from
   those before it, and the "after = before" check goes red. The change is to the
-  stimulus, and preconditions 1 to 4 stay green because they look at the
-  frames before M1.
+  stimulus: preconditions 1 to 4 stay green because they look at the frames
+  before M1, and precondition 5 stays green because clearing LACE changes no
+  population it counts.
 - Precondition 1: the other chip set. The identification differs.
 - Precondition 2: in the ECS run, BEAMCON0 = $0020 written right after step 1,
   before M1. N = 625 before M1. The identification does not change with it.
