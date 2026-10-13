@@ -40,6 +40,7 @@ F7LIST          equ     COPBASE+7*COPSTEP
 F8LIST          equ     COPBASE+8*COPSTEP
 F9LIST          equ     COPBASE+9*COPSTEP
 F10LIST         equ     COPBASE+10*COPSTEP
+F11LIST         equ     COPBASE+11*COPSTEP
 
 ; ---- mutation-selected constants ------------------------------------------
 ;

@@ -1,4 +1,4 @@
-; F2 contrast VLIVE: band 48 (n=04, b=00) also inverts COLOR01 bit 11, band 49 restores it
+; F2 contrast VLIVE: band 48 (n=04, b=00) also inverts COLOR01 bit 2, band 49 restores it
 ; 614 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$0100,$2040,$0102,$0000,$0104,$0024,$008E,$2C81
 	dc.w	$0090,$F4A1,$0092,$003C,$0094,$00D4,$0108,$0000
@@ -51,7 +51,7 @@
 	dc.w	$9C01,$FFFE,$0186,$0C16,$0186,$0D16,$9E01,$FFFE
 	dc.w	$0186,$0C16,$0186,$0E16,$A001,$FFFE,$0186,$0C16
 	dc.w	$0186,$0816,$A201,$FFFE,$0186,$0C16,$0186,$0416
-	dc.w	$A401,$FFFE,$0186,$0C16,$0188,$016A,$0182,$0C9E
+	dc.w	$A401,$FFFE,$0186,$0C16,$0188,$016A,$0182,$049A
 	dc.w	$A601,$FFFE,$0188,$016B,$0182,$049E,$0188,$0169
 	dc.w	$A801,$FFFE,$0188,$016B,$0188,$016F,$AA01,$FFFE
 	dc.w	$0188,$016B,$0188,$0163,$AC01,$FFFE,$0188,$016B

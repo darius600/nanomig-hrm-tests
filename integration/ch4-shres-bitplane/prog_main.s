@@ -53,6 +53,21 @@ start:
 	move.w	(a2)+,(a1)+
 	dbra	d0,.cpyp2
 
+	; C8B: plane 2's words over plane 1's for buffer words 1920-13439 (values 0 and 3 only there)
+	ifd	MUT_C8B
+	lea	PLANE2BUF+1920*2,a2
+	lea	PLANE1BUF+1920*2,a1
+	move.w	#(13440-1920)-1,d0
+.c8b:
+	move.w	(a2)+,(a1)+
+	dbra	d0,.c8b
+	endif
+
+	; C3D: bit 0 of plane 1 buffer word 1500 flipped (line 18 of every frame)
+	ifd	MUT_C3D
+	eori.w	#1,PLANE1BUF+1500*2
+	endif
+
 	; zero buffer (32768 words of $0000): a plain clear loop, no table needed
 	lea	ZEROBUF,a1
 	move.w	#32767,d0
@@ -72,6 +87,15 @@ start:
 	lea	NULLSPR,a1
 	move.w	#0,(a1)+
 	move.w	#0,(a1)+
+	; C9N: a non-zero control word that does not start a sprite
+	ifd	MUT_C9N
+	move.w	#$0001,NULLSPR+2
+	endif
+	; C9S: control words that start a one-line sprite (VSTART $2C, VSTOP $2D)
+	ifd	MUT_C9S
+	move.w	#$2C40,NULLSPR
+	move.w	#$2D00,NULLSPR+2
+	endif
 
 	; Copper lists F0-F10 (SPECIFICATION.md 4.3, 4.4, 4.6), one table and one
 	; copy loop per frame; each frame's own ifd cascade above its table
@@ -153,17 +177,26 @@ start:
 	move.w	(a2)+,(a1)+
 	dbra	d0,.cpyf10
 
+	lea	F11TAB,a2
+	move.l	#F11LIST,a1
+	move.w	#(F11TAB_END-F11TAB)/2-1,d0
+.cpyf11:
+	move.w	(a2)+,(a1)+
+	dbra	d0,.cpyf11
+
 	; ---- step 6 (4.5.6): start the Copper exactly as p.30 prescribes --
 	; initialise COP1LC and strobe COPJMP1 before Copper DMA is turned on.
 	move.l	#F0LIST,COP1LCH(a0)
 	move.w	COPJMP1(a0),d1
 	move.w	#$83A0,DMACON(a0)
 
-	; ---- step 7 (4.5.7): wait for at least 12 vertical blanks, writing no
-	; custom register from here on. A frame start is V dropping below 16
-	; after having been at or above 256 (VPOSR/VHPOSR, p.299/Appendix B).
+	; ---- step 7 (4.5.7): wait for at least 13 vertical blanks, writing no
+	; custom register from here on. F0 runs twice when it was started in the
+	; last lines of a frame, and F11 must be shown whole either way. A frame
+	; start is V dropping below 16 after having been at or above 256
+	; (VPOSR/VHPOSR, p.299/Appendix B).
 	moveq	#0,d5
-	move.w	#12,d7
+	move.w	#13,d7
 .poll:
 	move.w	VHPOSR(a0),d1
 	move.w	VPOSR(a0),d0
@@ -185,7 +218,11 @@ start:
 	bne.s	.poll
 
 	; ---- step 8 (4.5.8)
+	ifd	MUT_C2
+.never:	bra.s	.never
+	else
 	DONE
+	endif
 
 	; ---- data tables (below), never reached by falling off the end of the
 	; code above -- DONE hangs in place, and every ifd/else branch above
@@ -223,8 +260,41 @@ F0TAB:
 				include	"bp_cop_f0_base.i"
 F0TAB_END:
 F1TAB:
-				ifd	MUT_V1
-				include	"bp_cop_f1_v1.i"
+				ifd	MUT_V1C0R
+				include	"bp_cop_f1_v1c0r.i"
+				else
+				ifd	MUT_V1C0G
+				include	"bp_cop_f1_v1c0g.i"
+				else
+				ifd	MUT_V1C0B
+				include	"bp_cop_f1_v1c0b.i"
+				else
+				ifd	MUT_V1C1R
+				include	"bp_cop_f1_v1c1r.i"
+				else
+				ifd	MUT_V1C1G
+				include	"bp_cop_f1_v1c1g.i"
+				else
+				ifd	MUT_V1C1B
+				include	"bp_cop_f1_v1c1b.i"
+				else
+				ifd	MUT_V1C2R
+				include	"bp_cop_f1_v1c2r.i"
+				else
+				ifd	MUT_V1C2G
+				include	"bp_cop_f1_v1c2g.i"
+				else
+				ifd	MUT_V1C2B
+				include	"bp_cop_f1_v1c2b.i"
+				else
+				ifd	MUT_V1C3R
+				include	"bp_cop_f1_v1c3r.i"
+				else
+				ifd	MUT_V1C3G
+				include	"bp_cop_f1_v1c3g.i"
+				else
+				ifd	MUT_V1C3B
+				include	"bp_cop_f1_v1c3b.i"
 				else
 				ifd	MUT_V2
 				include	"bp_cop_f1_v2.i"
@@ -272,6 +342,17 @@ F1TAB:
 				endif
 				endif
 				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
 F1TAB_END:
 F2TAB:
 				ifd	MUT_C4S
@@ -283,25 +364,125 @@ F2TAB:
 				ifd	MUT_VLIVE
 				include	"bp_cop_f2_vlive.i"
 				else
+				ifd	MUT_V4DN0B2
+				include	"bp_cop_f2_v4dn0b2.i"
+				else
+				ifd	MUT_V4DN0B3
+				include	"bp_cop_f2_v4dn0b3.i"
+				else
+				ifd	MUT_V4DN0B6
+				include	"bp_cop_f2_v4dn0b6.i"
+				else
+				ifd	MUT_V4DN0B7
+				include	"bp_cop_f2_v4dn0b7.i"
+				else
+				ifd	MUT_V4DN0B10
+				include	"bp_cop_f2_v4dn0b10.i"
+				else
+				ifd	MUT_V4DN0B11
+				include	"bp_cop_f2_v4dn0b11.i"
+				else
+				ifd	MUT_V4DN1B2
+				include	"bp_cop_f2_v4dn1b2.i"
+				else
+				ifd	MUT_V4DN1B3
+				include	"bp_cop_f2_v4dn1b3.i"
+				else
+				ifd	MUT_V4DN1B6
+				include	"bp_cop_f2_v4dn1b6.i"
+				else
+				ifd	MUT_V4DN1B7
+				include	"bp_cop_f2_v4dn1b7.i"
+				else
+				ifd	MUT_V4DN1B10
+				include	"bp_cop_f2_v4dn1b10.i"
+				else
+				ifd	MUT_V4DN1B11
+				include	"bp_cop_f2_v4dn1b11.i"
+				else
+				ifd	MUT_V4DN2B2
+				include	"bp_cop_f2_v4dn2b2.i"
+				else
+				ifd	MUT_V4DN2B3
+				include	"bp_cop_f2_v4dn2b3.i"
+				else
+				ifd	MUT_V4DN2B6
+				include	"bp_cop_f2_v4dn2b6.i"
+				else
+				ifd	MUT_V4DN2B7
+				include	"bp_cop_f2_v4dn2b7.i"
+				else
+				ifd	MUT_V4DN2B10
+				include	"bp_cop_f2_v4dn2b10.i"
+				else
+				ifd	MUT_V4DN2B11
+				include	"bp_cop_f2_v4dn2b11.i"
+				else
+				ifd	MUT_V4DN3B2
+				include	"bp_cop_f2_v4dn3b2.i"
+				else
+				ifd	MUT_V4DN3B3
+				include	"bp_cop_f2_v4dn3b3.i"
+				else
+				ifd	MUT_V4DN3B6
+				include	"bp_cop_f2_v4dn3b6.i"
+				else
+				ifd	MUT_V4DN3B7
+				include	"bp_cop_f2_v4dn3b7.i"
+				else
+				ifd	MUT_V4DN3B10
+				include	"bp_cop_f2_v4dn3b10.i"
+				else
+				ifd	MUT_V4DN3B11
+				include	"bp_cop_f2_v4dn3b11.i"
+				else
 				ifd	MUT_V4A
 				include	"bp_cop_f2_v4a.i"
 				else
 				ifd	MUT_V4B
 				include	"bp_cop_f2_v4b.i"
 				else
-				ifd	MUT_V4D
-				include	"bp_cop_f2_v4d.i"
-				else
 				ifd	MUT_C6B
 				include	"bp_cop_f2_vc6b.i"
 				else
-				ifd	MUT_V4C
+				ifd	MUT_V4C2
 				include	"bp_cop_f2_vc4n.i"
 				else
-				ifd	MUT_VKEYA
-				include	"bp_cop_f2_vkeya.i"
+				ifd	MUT_VKEYAR
+				include	"bp_cop_f2_vkeyar.i"
+				else
+				ifd	MUT_VKEYAG
+				include	"bp_cop_f2_vkeyag.i"
+				else
+				ifd	MUT_VKEYAB
+				include	"bp_cop_f2_vkeyab.i"
 				else
 				include	"bp_cop_f2_base.i"
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
 				endif
 				endif
 				endif
@@ -316,17 +497,13 @@ F3TAB:
 				ifd	MUT_V4B
 				include	"bp_cop_f3_v4b.i"
 				else
-				ifd	MUT_V4D
-				include	"bp_cop_f3_v4d.i"
-				else
 				ifd	MUT_C6B
 				include	"bp_cop_f3_vc6b.i"
 				else
-				ifd	MUT_V4C
+				ifd	MUT_V4C3
 				include	"bp_cop_f3_vc4n.i"
 				else
 				include	"bp_cop_f3_base.i"
-				endif
 				endif
 				endif
 				endif
@@ -335,17 +512,13 @@ F4TAB:
 				ifd	MUT_V4B
 				include	"bp_cop_f4_v4b.i"
 				else
-				ifd	MUT_V4D
-				include	"bp_cop_f4_v4d.i"
-				else
 				ifd	MUT_C6B
 				include	"bp_cop_f4_vc6b.i"
 				else
-				ifd	MUT_V4C
+				ifd	MUT_V4C4
 				include	"bp_cop_f4_vc4n.i"
 				else
 				include	"bp_cop_f4_base.i"
-				endif
 				endif
 				endif
 				endif
@@ -360,7 +533,7 @@ F5TAB:
 				ifd	MUT_C4
 				include	"bp_cop_f5_vc4.i"
 				else
-				ifd	MUT_R2M
+				ifd	MUT_R2M5
 				include	"bp_cop_f5_vr2.i"
 				else
 				ifd	MUT_C6B
@@ -381,17 +554,18 @@ F6TAB:
 				ifd	MUT_V3C
 				include	"bp_cop_f6_v3c.i"
 				else
-				ifd	MUT_R2M
+				ifd	MUT_R2M6
 				include	"bp_cop_f6_vr2.i"
+				else
+				ifd	MUT_C6B
+				include	"bp_cop_f6_vc6b.i"
 				else
 				include	"bp_cop_f6_base.i"
 				endif
 				endif
+				endif
 F6TAB_END:
 F7TAB:
-				ifd	MUT_C11G
-				include	"bp_cop_f7_v6c.i"
-				else
 				ifd	MUT_V5C
 				include	"bp_cop_f7_v5c.i"
 				else
@@ -403,6 +577,9 @@ F7TAB:
 				else
 				ifd	MUT_V6S
 				include	"bp_cop_f7_v6s.i"
+				else
+				ifd	MUT_C10S
+				include	"bp_cop_f7_vc10s.i"
 				else
 				ifd	MUT_C10
 				include	"bp_cop_f7_vc10.i"
@@ -428,9 +605,6 @@ F7TAB:
 				endif
 F7TAB_END:
 F8TAB:
-				ifd	MUT_C11G
-				include	"bp_cop_f8_vc11g.i"
-				else
 				ifd	MUT_V6E
 				include	"bp_cop_f8_v6e.i"
 				else
@@ -441,7 +615,6 @@ F8TAB:
 				include	"bp_cop_f8_v5e.i"
 				else
 				include	"bp_cop_f8_base.i"
-				endif
 				endif
 				endif
 				endif
@@ -464,7 +637,22 @@ F10TAB:
 				ifd	MUT_V6L
 				include	"bp_cop_f10_v6l.i"
 				else
+				ifd	MUT_C4D
+				include	"bp_cop_f10_vc4d.i"
+				else
 				include	"bp_cop_f10_base.i"
 				endif
 				endif
+				endif
 F10TAB_END:
+F11TAB:
+				ifd	MUT_V3G
+				include	"bp_cop_f11_v3g.i"
+				else
+				ifd	MUT_C6B
+				include	"bp_cop_f11_vc6b.i"
+				else
+				include	"bp_cop_f11_base.i"
+				endif
+				endif
+F11TAB_END:
