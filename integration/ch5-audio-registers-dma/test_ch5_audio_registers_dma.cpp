@@ -72,7 +72,7 @@
 // MUTATION P7-G1 stimulus red branch-to-self inserted before END (both blits), via NMH_MUTATE=G1 -- P7-ON, P7-ON-E and P7 are NOT GRADED
 // MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set (both blits), via NMH_MUTATE=G2 -- P7-G3 and P7-G(CPU-still-wanted-the-bus) move with it (no blit runs without DMAEN); P7-ON, P7-ON-E and P7 are NOT GRADED
 // MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts (both blits), via NMH_MUTATE=G3 -- P7-G(CPU-still-wanted-the-bus) moves with it (no blit runs, so there is no T_last); P7-ON, P7-ON-E and P7 are NOT GRADED
-// MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU's logging loop runs before the BLTSIZE write (both blits), so no CPU write into G follows T_last, via NMH_MUTATE=GEARLY -- P7-ON, P7-ON-E and P7 are NOT GRADED
+// MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU's logging loop runs before the BLTSIZE write (both blits), and the CPU then waits for the blit to end without writing G, so no CPU write into G follows T_last, via NMH_MUTATE=GEARLY -- P7-ON, P7-ON-E and P7 are NOT GRADED
 // MUTATION P7-ON stimulus green the live program of the blit of USE code E (BLTPRI set: zero CPU accesses in its interval) through the unchanged zero-access comparator; P7-ON reads red on both cores unmutated and green with this input, via NMH_MUTATE=GREEN -- P7 turns green as well
 // MUTATION P7-OFF stimulus red BLTPRI set: the main program of the blit of USE code E (zero CPU accesses in its interval) through the unchanged at-least-one comparator of the D-only line, via NMH_MUTATE=DOFFINV
 // MUTATION P7 stimulus green the live programs of the blit of USE code E (BLTPRI set, BLTPRI clear) through the unchanged comparators of the aggregate line; P7 reads red on both cores unmutated and green with this input, via NMH_MUTATE=GREEN
@@ -82,7 +82,7 @@
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI -- P8 is NOT GRADED
 // MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P8-G4 moves with it (no blit runs, so no read precedes T_last); P8 is NOT GRADED
 // MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4 -- P8 is NOT GRADED
-// MUTATION P8 implementation red private copy of the design outside the repository in which DMACONR bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still running; the unchanged comparator finds a graded poll read made while the blit is in progress showing bit 14 = 0 (the binary is built from that copy, make test-<core> NANOMIG=<copy>, and run with NMH_ONLY=P8 and NMH_MUTATE unset); no stimulus can make a DMACONR read taken during a running blit show 0 on a system that follows p.186, so P8-NOBLIT is its control on the same comparator
+// MUTATION P8 implementation red private copy of the design outside the repository in which DMACONR bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still running; the unchanged comparator finds a graded poll read made while the blit is in progress showing bit 14 = 0 (the binary is built from that copy by private_copy.patch, NMH_ONLY=P8 make priv-test-<core>, NMH_MUTATE unset); no stimulus can make a DMACONR read taken during a running blit show 0 on a system that follows p.186, so P8-NOBLIT is its control on the same comparator
 // MUTATION P8-NOBLIT stimulus red the main program (a blit runs) through the unchanged no-blit comparator, via NMH_MUTATE=INVNOBLIT
 // MUTATION P9-G(writes) stimulus red blit 1 has BLTSIZE $0103 (12 words) instead of $0104, its logic output still zero, via NMH_MUTATE=GWRITES -- P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE -- P9-MAIN and P9 are NOT GRADED
@@ -95,6 +95,7 @@
 // MUTATION P9 stimulus red the main program through the unchanged exchanged table of the aggregate line, via NMH_MUTATE=INV
 // MUTATION DMACONR stimulus red the program without one SET write through the unchanged table of P2 (the DMA-control half), via NMH_MUTATE=OMIT
 // MUTATION DMACONR stimulus red the exchanged program through the unchanged main table of P9 (the blitter-zero half), via NMH_MUTATE=C1
+// MUTATION DMACONR implementation red the private copy of the P8 record (bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still running; built by private_copy.patch, NMH_ONLY=P2,P8,P9 make priv-test-<core>, NMH_MUTATE unset): the busy-bit half of the unchanged table finds a graded poll read showing bit 14 = 0 while P9-G(after-completion) passes, so the aggregate is graded and fails together with P8
 // MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P10 is NOT GRADED
 // MUTATION P10-G2 stimulus red DMAEN (bit 9) left out of the Copper enable, via NMH_MUTATE=G2K -- P10-G(list-ran) moves with it (without DMAEN the Copper does not run); P10 is NOT GRADED
 // MUTATION P10-G2 stimulus red DMAEN cleared after the Copper window and left out of channel 0's enable, via NMH_MUTATE=G2W -- P10 is NOT GRADED
@@ -248,8 +249,8 @@ struct Capture {
 // nanomig_harness.h poke_word), the same mechanism load_program() itself
 // uses to place the program image. Every DMA block this package fills
 // (audio data, sprite structures, the Copper list, the all-ones block F) is
-// filled this way, not by a CPU instruction; Zb, P and the blitter source
-// blocks SA, SB and SC stay zero from reset. The data is
+// filled this way, not by a CPU instruction; Zb, P, B_x and the blitter
+// source blocks SA, SB and SC stay zero from reset. The data is
 // simply there before reset releases, matching data the CPU has no
 // reason to write (its content is immaterial -- SPECIFICATION.md 2.3
 // gives "any values" -- and no check in this package grades a write into one of
@@ -281,7 +282,7 @@ void preload_all_blocks(nmh::NanomigHarness& h) {
     for (int k = 0; k < 7; ++k) preload(h, kN[k], {0x0000, 0x0000});
     preload(h, kF, std::vector<uint16_t>(16, 0xFFFF));
     preload(h, kList2, {0xFFFF, 0xFFFE});
-    // Zb, P, SA, SB and SC are already all-zero (mem_ default-initialised); no preload needed.
+    // Zb, P, B_x, SA, SB and SC are already all-zero (mem_ default-initialised); no preload needed.
 }
 
 struct ExtraPreload { uint32_t addr; std::vector<uint16_t> words; };
@@ -509,8 +510,7 @@ const char kClaims[] =
     "5-appB-p290.c90, 5-appB-p290.c97, 5-appB-p290.c125, 5-appB-p290.c132, "
     "B-aud0lch.acc, B-aud0lcl.acc, B-aud1lch.acc, B-aud1lcl.acc, "
     "B-aud2lch.acc, B-aud2lcl.acc, B-aud3lch.acc, B-aud3lcl.acc; "
-    "p.298 5-appC-p298.c4, C-map.lch.acc; p.309 5-appC-p309.c4; "
-    "p.263 5-appA-p263.c1, A-pre.c1";
+    "p.298 5-appC-p298.c4, C-map.lch.acc; p.309 5-appC-p309.c4";
 
 // What one run of one program shows: the preconditions, and what every
 // comparator of the proposition says about it.
@@ -717,8 +717,7 @@ constexpr uint16_t kExpected[26] = {
 
 const char kClaims[] =
     "p.278 5-appA-p278.c5, 5-appA-p278.c6, "
-    "A-dmaconr.acc, A-dmaconr.addr; p.289 5-appB-p289.c1, 5-appB-p289.c2; "
-    "p.263 5-appA-p263.c1, A-pre.c1";
+    "A-dmaconr.acc, A-dmaconr.addr; p.289 5-appB-p289.c1, 5-appB-p289.c2";
 
 // What one run of one program shows: G1, and what the comparators of P2 and
 // P2-OMIT say about it.
@@ -1124,29 +1123,40 @@ size_t cpu_accesses_in(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint
     return n;
 }
 
-// The blit's interval and the CPU's accesses inside it. For the D-only blit
-// (USE code 1) T_first and T_last are the times of the first and last
-// destination write in [Q, Q + $2000); for the blit of USE code E they are
-// the times of the first and last blitter source read.
+// The blit's interval and the CPU's accesses inside it. T_first and T_last
+// are the times of the first and last blitter access at the port, by one rule
+// for every run: a read in the source blocks [SA, SC + $2000) or a write in
+// [Q, Q + $2000) (the 68000 neither reads the one nor writes the other). For
+// the D-only blit (USE code 1) these are its first and last destination
+// write, for the blit of USE code E its first and last source read.
 struct Blit {
-    bool ran = false;          // at least 2 anchoring accesses, so T_first < T_last
+    bool ran = false;          // every word of the run's own blocks was accessed, so (T_first,T_last) spans the whole blit
     uint64_t t_first = 0, t_last = 0;
     size_t cpu_n = 0;          // CPU accesses in (T_first, T_last)
 };
 
+// `donly` names the run's own blocks for the "blit ran" precondition only;
+// the window does not depend on it.
 Blit measure(const Capture& cap, bool donly) {
     Blit b;
-    uint32_t lo = donly ? word_addr(kQ) : word_addr(kSrcLo);
-    uint32_t hi = donly ? word_addr(kQ + 0x2000) : word_addr(kSrcHi);
-    size_t n = 0;
+    const uint32_t q_lo = word_addr(kQ), q_hi = word_addr(kQ + 0x2000);
+    const uint32_t s_lo = word_addr(kSrcLo), s_hi = word_addr(kSrcHi);
+    const uint32_t own_lo = donly ? q_lo : s_lo, own_hi = donly ? q_hi : s_hi;
+    std::vector<bool> hit(own_hi - own_lo, false);
+    size_t distinct = 0;
     uint64_t tf = UINT64_MAX, tl = 0;
-    for (const auto& a : cap.log)
-        if ((a.is_write == donly) && a.word_addr >= lo && a.word_addr < hi) {
-            ++n;
-            tf = std::min(tf, a.cycle);
-            tl = std::max(tl, a.cycle);
+    for (const auto& a : cap.log) {
+        const bool src_read = !a.is_write && a.word_addr >= s_lo && a.word_addr < s_hi;
+        const bool dst_write = a.is_write && a.word_addr >= q_lo && a.word_addr < q_hi;
+        if (!src_read && !dst_write) continue;
+        tf = std::min(tf, a.cycle);
+        tl = std::max(tl, a.cycle);
+        if ((donly ? dst_write : src_read) && !hit[a.word_addr - own_lo]) {
+            hit[a.word_addr - own_lo] = true;
+            ++distinct;
         }
-    b.ran = cap.loaded && n >= 2;
+    }
+    b.ran = cap.loaded && distinct == hit.size();
     if (b.ran) {
         b.t_first = tf;
         b.t_last = tl;
@@ -1242,8 +1252,9 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the run's own enabling "
         "write (set in the main run, clear in the contrast run), and no other bit among 8-0");
     checks.expect(d_main_in.g3 && d_c1.g3 && e_main_in.g3 && e_c1.g3,
-        "P7-G3: the blit ran -- at least 2 anchoring accesses (destination writes of the D-only blit, source reads "
-        "of the blit of USE code E), so T_first < T_last");
+        "P7-G3: the blit ran -- every word of its own blocks accessed (each of the 4096 words of [Q,Q+$2000) "
+        "written by the D-only blit, each of the 12288 words of [SA,SC+$2000) read by the blit of USE code E), so "
+        "(T_first,T_last) spans the whole blit");
     checks.expect(d_main_in.g6 && d_c1.g6 && e_main_in.g6 && e_c1.g6,
         "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with fewer than 2048 "
         "recorded before it");
@@ -2098,6 +2109,10 @@ static void record_declined(Checks& checks) {
     checks.record(
         "5-appA-p263.c9 A-pre.c9: not graded. p.263 instructs the programmer where DMA data must be located and "
         "does not say what happens when the instruction is broken; every stimulus obeys it");
+    checks.record(
+        "5-appA-p263.c1 A-pre.c1: not graded. p.263, '680x0 address = (chip address) + $DFF000', is stated for "
+        "every custom register; the package reaches AUDxLCH, AUDxLCL, DMACON and DMACONR through it and no other "
+        "register");
     checks.record(
         "5-appB-p287.c5: not graded. p.287, 'Must be an even address pointing to chip memory', is the same kind of "
         "instruction; every location and pointer written is even and lies in Chip memory");

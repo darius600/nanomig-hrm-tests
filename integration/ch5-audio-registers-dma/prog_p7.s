@@ -8,7 +8,8 @@
 ; set):
 ;   prog_p7_c1.s    (C1 set)       -- BLTPRI clear (share mode)
 ;   prog_p7_gearly.s (GEARLY set)  -- the CPU's logging loop runs before the
-;                                     BLTSIZE write, so no CPU write into G
+;                                     BLTSIZE write and the CPU then waits for
+;                                     the blit to end, so no CPU write into G
 ;                                     follows the blit
 ;   prog_p7_g1.s    (G1_BREAK)     -- branch-to-self before END
 ;   prog_p7_g2.s    (G2_BREAK)     -- DMAEN (bit 9) left out of the enabling write
@@ -67,6 +68,12 @@ start:
         move.w  #$2020,COLOR00(a0)      ; no blit starts
         else
         move.w  #$2020,BLTSIZE(a0)      ; height=128,width=32 -- starts the blit
+        endif
+
+        ifd     GEARLY
+        move.l  #12000,d0               ; wait for the blit to end; nothing is written to G
+.W:     subq.l  #1,d0
+        bne.s   .W
         endif
 
         ifnd    GEARLY
