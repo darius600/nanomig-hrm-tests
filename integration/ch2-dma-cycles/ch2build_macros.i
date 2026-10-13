@@ -8,7 +8,7 @@
 ; Register convention, held across every macro below: a1 is always the
 ; destination cursor (a Copper-list or structure byte address, advanced by
 ; the subroutine's own post-increment writes); a5/a6 are consumed pointer
-; tables (8 and up-to-6 long words); a2/d1-d7 are the parameters a specific
+; tables (8 and up-to-6 long words); a2/d1-d6 are the parameters a specific
 ; subroutine needs, documented at its own definition in ch2build_code.i.
 ; a0 (CUSTOM) is never touched, so S2's own register writes need not
 ; reload it after S1.
@@ -43,8 +43,9 @@ BUILD_L4        macro
 ; L5 -- V_all (V_spr; V_bpl(6); COP2LC <- \4); the 113-WAIT/MOVE loop;
 ; trailer. \1 = destination (COP_MAIN), \2 = 8-long sprite pointer table,
 ; \3 = 6-long bpl pointer table, \4 = L5b destination address, \5 =
-; override_i (-1 if none: P7's own L5' contrast), \6 = override_hp, \7 =
-; extra_after_wait (-1 if none: T1's own contrast).
+; override_i (-1 if none: the L5' list of SELFTEST-P7), \6 = override_hp.
+; A contrast that changes words of L5 does so by writing them after this
+; macro, at the word offsets ch2dma.i names (L5_PROLOGUE, L5_SEGMENT).
 BUILD_L5        macro
                 move.l  #(\1),a1
                 lea     \2,a5
@@ -52,22 +53,7 @@ BUILD_L5        macro
                 move.l  #(\4),a2
                 move.w  #(\5),d5
                 move.w  #(\6),d6
-                move.w  #(\7),d7
                 bsr     build_L5
-                endm
-
-; L5, truncated to V_spr; V_bpl(6); END (K6's own contrast, SPECIFICATION.md
-; P6.6): the WAIT/MOVE loop and trailer are never written, so K6 (every
-; word of L5/L5b read) must fail. \1 = destination, \2/\3 as BUILD_L5.
-BUILD_L5_TRUNC  macro
-                move.l  #(\1),a1
-                lea     \2,a5
-                bsr     build_Vspr8
-                lea     \3,a6
-                moveq   #6,d4
-                bsr     build_Vbpln
-                move.w  #$FFFF,(a1)+
-                move.w  #$FFFE,(a1)+
                 endm
 
 ; L5b -- WAIT VP=$B8,HP=$20; four x MOVE COLOR00<-0; END. \1 = destination.

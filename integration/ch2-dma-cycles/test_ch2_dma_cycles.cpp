@@ -73,21 +73,21 @@ constexpr uint32_t CH_DISK      = 0x004000;
 constexpr uint32_t CH_SPR[8]    = {0x008000, 0x008400, 0x008800, 0x008C00,
                                     0x009000, 0x009400, 0x009800, 0x009C00};
 constexpr uint32_t CH_SPR_NULL  = 0x00A000;
-constexpr uint32_t CH_U_SUBLIST = 0x00B000;
+constexpr uint32_t CH_DISK_MOVED = 0x00C000;
 constexpr uint32_t CH_BPL[6]    = {0x010000, 0x018000, 0x020000,
                                     0x028000, 0x030000, 0x038000};
 
 // Every program's own code/vectors/stack/results (attribution table,
 // SPECIFICATION.md 2.2): the identity range the harness maps 1:1
 // ($080000-$1FFFFF, nmh::kChipIdentityLo/Hi). Every declared DMA block in
-// this package is placed below $080000 but at or above $008000 (ch2dma.i),
+// this package is placed below $080000 but at or above $001000 (ch2dma.i),
 // so this threshold separates "CPU block" from every DMA block without
 // listing sub-ranges -- except the level-3 (VERTB) autovector word at
 // byte $6C, which every program's own S0 step makes an ordinary,
 // CPU-reachable part of chip RAM (CLEAR_OVL): S0 writes it once (its own
 // INSTALL_VECT) and the CPU itself reads it on every VERTB exception, a
 // CPU bus access below kCpuWordThreshold that the declared DMA blocks
-// (all at $008000 and up) never reach. Refresh (D7) reads word 0 of the
+// (all at $001000 and up) never reach. Refresh (D7) reads word 0 of the
 // vector table (measured, not a page fact), so only the level-3 vector's
 // own two words are carved out here, not the whole table.
 constexpr uint32_t kCpuWordThreshold = 0x080000 / 2;
@@ -455,6 +455,13 @@ std::vector<Block> blocks_audio() {
 std::vector<Block> blocks_disk(uint32_t lo = CH_DISK, uint32_t words = 8000) {
     return {copper_block(), disk_block(lo, words)};
 }
+// The K2b contrast moves the disk transfer to CH_DISK_MOVED: that run declares the
+// moved transfer as a block of its own, so its accesses do not join the refresh set.
+std::vector<Block> blocks_disk_moved() {
+    std::vector<Block> b = blocks_disk();
+    b.push_back({"DiskMoved", wordof(CH_DISK_MOVED), wordof(CH_DISK_MOVED) + 8000});
+    return b;
+}
 std::vector<Block> blocks_sprite() {
     std::vector<Block> b = {copper_block(), sprite_null_block()};
     for (int x = 0; x < 8; ++x) b.push_back(sprite_block(x));
@@ -499,8 +506,8 @@ RunResult run_C2a(const std::string& dir) {
 RunResult run_C2b(const std::string& dir) {
     return run_config(dir + "/prog_c2b.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
 }
-RunResult run_C2a_noenable(const std::string& dir) {
-    return run_config(dir + "/prog_c2a_noenable.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
+RunResult run_C2a_earlyread(const std::string& dir) {
+    return run_config(dir + "/prog_c2a_earlyread.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
 }
 RunResult run_C2a_dskpt(const std::string& dir) {
     return run_config(dir + "/prog_c2a_dskpt.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
@@ -522,8 +529,11 @@ RunResult run_C6(const std::string& dir, const char* bin = "/prog_c6.bin", nmh::
     return run_config(dir + bin, cfg, nopoke, {RES_DSKBYTR});
 }
 RunResult run_C6prime(const std::string& dir) { return run_config(dir + "/prog_c6_prime.bin", nmh::Config{}, nopoke); }
-RunResult run_C6_end50(const std::string& dir) { return run_config(dir + "/prog_c6_end50.bin", nmh::Config{}, nopoke); }
-RunResult run_C6_truncated(const std::string& dir) { return run_config(dir + "/prog_c6_trunc.bin", nmh::Config{}, nopoke); }
+RunResult run_C6_skip50(const std::string& dir) { return run_config(dir + "/prog_c6_skip50.bin", nmh::Config{}, nopoke); }
+RunResult run_C6_endtrailer(const std::string& dir) { return run_config(dir + "/prog_c6_endtrailer.bin", nmh::Config{}, nopoke); }
+RunResult run_C6_nofinish(const std::string& dir) { return run_config(dir + "/prog_c6_nofinish.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
+RunResult run_C6_norestart(const std::string& dir) { return run_config(dir + "/prog_c6_norestart.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
+RunResult run_C6_htotal(const std::string& dir) { return run_config(dir + "/prog_c6_htotal.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
 
 RunResult run_C7a(const std::string& dir) { return run_config(dir + "/prog_c7a.bin", nmh::Config{}, nopoke); }
 RunResult run_C7b(const std::string& dir) { return run_config(dir + "/prog_c7b.bin", nmh::Config{}, nopoke); }
@@ -559,19 +569,37 @@ std::vector<WordRange> copper_list_words() {
 std::string unmet_if(bool ok, const std::string& name) { return ok ? std::string() : name + " "; }
 
 // The observation preconditions of one run: it reached DONE (C1), its restart
-// fetches delimit the observed frames, and F1, F2, F2-COUNT and F3 hold.
-std::string observation_unmet(const std::string& name, const RunResult& run, const ParityResult& r) {
+// fetches delimit the observed frames, and F1, F2, F2-COUNT and F3 hold. P1 alone
+// leaves F2 and F2-COUNT out (`with_f2` false): they grade the very accesses P1
+// grades, so a gate on them would make P1's own clause unable to go red.
+std::string observation_unmet(const std::string& name, const RunResult& run, const ParityResult& r,
+                              bool with_f2 = true) {
     std::string u = unmet_if(run.done.has_value(), name + ":C1");
     if (!r.restarts_ok) return u + name + ":restarts ";
-    return u + unmet_if(r.f1_ok, name + ":F1") + unmet_if(r.f2_ok, name + ":F2") +
-           unmet_if(r.f2count_ok, name + ":F2-COUNT") + unmet_if(r.f3_ok, name + ":F3");
+    u += unmet_if(r.f1_ok, name + ":F1");
+    if (with_f2) u += unmet_if(r.f2_ok, name + ":F2") + unmet_if(r.f2count_ok, name + ":F2-COUNT");
+    return u + unmet_if(r.f3_ok, name + ":F3");
 }
 
-// The restart fetches of the run, as the run declares them, delimit the
-// observed frames (at least six of them, section 2.4).
-std::string span_unmet(const Pop& p) {
-    LineRef lref = make_lines(p.run.log, p.blocks);
-    return unmet_if(restart_fetches(p.run.log, p.starts).size() >= 6, p.name + ":restarts");
+// The observation preconditions of a run that is read as its Pop declares it.
+std::string run_unmet(const Pop& p, bool with_f2 = true) {
+    auto pr = analyze_population(p.run.log, p.blocks, p.starts, "R", false);
+    return observation_unmet(p.name, p.run, pr, with_f2);
+}
+
+// The same, with the run's observation printed (a mutation run prints the
+// preconditions of the line under test before the line).
+std::string observe(Checks& checks, const Pop& p, bool with_f2 = true) {
+    auto pr = analyze_population(p.run.log, p.blocks, p.starts, "R", false);
+    std::string u = observation_unmet(p.name, p.run, pr, with_f2);
+    checks.note("observation " + p.name + ": done=" + std::to_string(p.run.done.has_value()) +
+                " restarts=" + std::to_string(restart_fetches(p.run.log, p.starts).size()) +
+                (pr.restarts_ok
+                     ? " F1=" + std::to_string(pr.f1_ok) + " F2=" + std::to_string(pr.f2_ok) +
+                           " F2-COUNT=" + std::to_string(pr.f2count_ok) + " F3=" + std::to_string(pr.f3_ok)
+                     : std::string(" F1, F2, F2-COUNT and F3 not evaluated (no observed frames)")) +
+                (u.empty() ? " (all met)" : " unmet: " + u));
+    return u;
 }
 
 void not_graded(Checks& checks, const std::string& id, const std::string& unmet) {
@@ -788,17 +816,30 @@ bool p7_check(const RunResult& c5, const std::vector<Block>& b5, const RunResult
     return mismatches == 0;
 }
 
-// T1: every segment has the same number of Copper accesses in both runs.
+// T1: every segment has the same number of Copper accesses in both runs, and
+// every segment of C5 has at least one (an empty population fails its line,
+// SPECIFICATION.md 2.11). `name` is the second run's name, for the printed line.
 bool t1_check(const RunResult& c5, const std::vector<Block>& b5, const RunResult& c6, const std::vector<Block>& b6,
-              Checks& checks) {
+              const std::string& name, Checks& checks) {
     auto s5 = compute_segments(c5, b5), s6 = compute_segments(c6, b6);
-    int mismatched = 0;
-    for (int f = 0; f < 3; ++f) for (int i = 0; i < 113; ++i) if (s5[f][i].size() != s6[f][i].size()) ++mismatched;
-    checks.note("T1: segments with differing access count (C5 vs C6) = " + std::to_string(mismatched));
-    return mismatched == 0;
+    int mismatched = 0, empty_in_c5 = 0;
+    std::ostringstream which; // frame, segment and the two access counts of the first differing pairs
+    for (int f = 0; f < 3; ++f)
+        for (int i = 0; i < 113; ++i) {
+            if (s5[f][i].size() != s6[f][i].size()) {
+                if (mismatched < 12) which << " f" << f << "s" << i << ":" << s5[f][i].size() << "/" << s6[f][i].size();
+                ++mismatched;
+            }
+            if (s5[f][i].empty()) ++empty_in_c5;
+        }
+    checks.note("T1: segments with differing access count (C5 vs " + name + ") = " + std::to_string(mismatched) +
+                (mismatched ? " (frame, segment, count in C5/count in " + name + "):" + which.str() : std::string()) +
+                ", segments empty in C5 = " + std::to_string(empty_in_c5));
+    return mismatched == 0 && empty_in_c5 == 0;
 }
 
-// T2: no CPU-block access lies in any line spanned by a segment.
+// T2: no CPU-block access lies in any line spanned by a segment, and some line
+// is spanned by a segment (an empty population fails its line).
 bool t2_check(const RunResult& run, const std::vector<Block>& blocks, Checks& checks, const std::string& name) {
     LineRef lref = make_lines(run.log, blocks);
     auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)});
@@ -821,7 +862,7 @@ bool t2_check(const RunResult& run, const std::vector<Block>& blocks, Checks& ch
     }
     checks.note("T2 " + name + ": segment_lines=" + std::to_string(segment_lines.size()) +
                 " cpu_violations=" + std::to_string(violations));
-    return violations == 0;
+    return !segment_lines.empty() && violations == 0;
 }
 
 // T3: in the lines of the segments in C6, bitplane fetches occur in every
@@ -888,11 +929,11 @@ struct Fold {
 };
 
 // The parity verdict of the target population over the named runs. The runs'
-// observation preconditions (C1, restarts, F1, F2, F3) are reported in
-// `unmet`, never folded into `ok`; the caller grades the line only when
-// `unmet` is empty, and prints NOT GRADED otherwise.
+// observation preconditions (C1, restarts, F1, F2, F2-COUNT, F3; P1 without
+// F2 and F2-COUNT) are reported in `unmet`, never folded into `ok`; the caller
+// grades the line only when `unmet` is empty, and prints NOT GRADED otherwise.
 Fold fold_check(const std::vector<Pop>& all, const std::vector<std::string>& names, const std::string& target,
-                bool want_even, Checks& checks, const std::string& tag) {
+                bool want_even, Checks& checks, const std::string& tag, bool with_f2 = true) {
     Fold out;
     out.ok = true;
     std::ostringstream note;
@@ -901,7 +942,7 @@ Fold fold_check(const std::vector<Pop>& all, const std::vector<std::string>& nam
         for (const auto& c : all) if (c.name == n) { p = &c; break; }
         if (!p) { out.ok = false; out.unmet += n + ":MISSING "; note << n << ":MISSING;"; continue; }
         auto r = analyze_population(p->run.log, p->blocks, p->starts, target, false);
-        out.unmet += observation_unmet(p->name, p->run, r);
+        out.unmet += observation_unmet(p->name, p->run, r, with_f2);
         bool this_ok = r.population > 0 && (want_even ? r.all_even : r.all_odd);
         out.ok = out.ok && this_ok;
         note << n << ":pop=" << r.population << (want_even ? ",even=" : ",odd=")
@@ -1014,27 +1055,55 @@ EvenReadInfo measure_p6_even_reads(const RunResult& run, const std::vector<Block
 
 // The Copper's first fetch after S4: the first read of a Copper-block word in
 // the run (before S4 no Copper DMA runs and the CPU only writes the lists).
-// Its line and in-line cycle number in the run's reference frame, and whether
-// it continues the sample before it.
+// Its in-line cycle number is read only from a regular line: the line from one
+// refresh group that has the four slots of Fig. 6-9 (F2's test) to the next such
+// group, 227*S or 228*S later. A read that other, stray refresh-set entries cut
+// out of a regular line (the plain construction of section 2.3 would start a
+// line of its own at the first of them) is placed in the regular line that holds
+// it; a fetch that no regular line brackets is dropped, with the length of the
+// plain line that holds it. Also whether it continues the sample before it.
 std::string copper_first_fetch_text(const Pop& p) {
     LineRef lref = make_lines(p.run.log, p.blocks);
     const std::vector<bool> held = nmh::held_continuations(p.run.log, gS);
+    std::vector<uint64_t> anchors;
+    for (const auto& g : refresh_groups(p.run.log, p.blocks))
+        if (refresh_slots_ok(g, gS)) anchors.push_back(g[0]);
     for (size_t i = 0; i < p.run.log.size(); ++i) {
         const auto& a = p.run.log[i];
         if (a.is_write || attribute(a.word_addr, p.blocks) != "Copper") continue;
+        std::string head = p.name + ": word=0x" + hex(a.word_addr);
+        std::string plain;
         int64_t li = line_of(lref, a.cycle);
-        if (li < 0) return p.name + ": word=0x" + hex(a.word_addr) + " before the first refresh group (no in-line cycle)";
-        int64_t s = in_line_cycle(lref, li, a.cycle);
-        return p.name + ": word=0x" + hex(a.word_addr) + " line=" + std::to_string(li) + " s=" + std::to_string(s) +
-               (s % 2 ? " (odd)" : " (even)") + (held[i] ? " held" : " not held");
+        if (li >= 0 && (size_t)li + 1 < lref.firsts.size())
+            plain = "; the plain line holding it is " + std::to_string((lref.firsts[(size_t)li + 1] - lref.firsts[(size_t)li]) / gS) +
+                    " memory cycles long";
+        auto it = std::upper_bound(anchors.begin(), anchors.end(), a.cycle);
+        if (it == anchors.begin() || it == anchors.end())
+            return head + " dropped: no regular line brackets it" + plain;
+        const uint64_t lo = *(it - 1), hi = *it;
+        if (hi - lo != 227 * gS && hi - lo != 228 * gS)
+            return head + " dropped: the regular lines around it are " + std::to_string((hi - lo) / gS) +
+                   " memory cycles apart, not 227 or 228" + plain;
+        int64_t s = (int64_t)((a.cycle - lo) / gS);
+        return head + " regular line of " + std::to_string((hi - lo) / gS) + " memory cycles, s=" + std::to_string(s) +
+               (s % 2 ? " (odd)" : " (even)") + (held[i] ? " held" : " not held") + plain;
     }
     return p.name + ": no Copper-block read";
 }
 
+// NMH_MUTATE=<line>-NOFINISH, <line>-HTOTAL or <line>-NORESTART for the lines whose gate is the
+// observation preconditions of the runs they grade (SPECIFICATION.md 2.11).
+bool gate_selector(const std::string& mv) {
+    for (const char* line : {"K2b", "K3", "K4", "K5", "K6", "T1", "T2", "T3"})
+        for (const char* suffix : {"-NOFINISH", "-HTOTAL", "-NORESTART"})
+            if (mv == std::string(line) + suffix) return true;
+    return false;
+}
+
 } // namespace
 
-// Each record names an assertion's leading label, its kind and its result, and runs on one line. NMH_MUTATE=<selector> replays it on a core; the values are what that replay printed. A mutation run evaluates and prints the line's preconditions with the comparators of the normal run first; the normal run's line on the same comparator is the green control.
-// MUTATION P1 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9; DMACON has no enable bit for refresh) and no register or instruction moves one to an odd cycle; another agent's access to memory no block declares joins R by exclusion (D7), which is a false attribution and not a changed refresh
+// Each record names an assertion's leading label, its kind and its result, and runs on one line. NMH_MUTATE=<selector> replays it on a core; the values are what that replay printed. A mutation run evaluates and prints the line's preconditions with the comparators of the normal run first; the normal run's line on the same comparator is the green control. Kind `stimulus red`: the line prints FAIL; kind `stimulus not graded`: the line prints NOT GRADED with the failed precondition.
+// MUTATION P1 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9; DMACON has no enable bit for refresh) and no register or instruction moves one to an odd cycle; another agent's access to memory no block declares joins R by exclusion (D7), a false attribution that turns P1 red only together with F1, F2, F2-COUNT or F3 of the same run; P1's gate has C1, the restarts, F1 and F3 and neither F2 nor F2-COUNT, and its red path is shown by SELFTEST-P1
 // MUTATION P2 none impossible the disk channel's slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; DSKPT, DSKLEN and ADKCON change which words are transferred, not in which cycle, and a run that aims DSKPT at the Copper's words fails only through the address attribution
 // MUTATION P3 none impossible the audio channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; AUDxLC, AUDxLEN and AUDxPER change which words and how often, not in which cycle, and a run that aims a channel at the Copper's words fails only through the address attribution
 // MUTATION P4 none impossible the sprite channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; the sprite pointers and the data structure change which words are fetched, not in which cycle, and a run in which the Copper executes words a sprite channel reads fails only through the address attribution
@@ -1046,19 +1115,44 @@ std::string copper_first_fetch_text(const Pop& p) {
 // MUTATION F3 stimulus red C0-htotal (S2 writes HTOTAL=$E0 and BEAMCON0=$00A0, VARBEAMEN with PAL kept: every line is 225 memory cycles; S taken from the normal C0 run as in every plain run), NMH_MUTATE=F3; both cores: DONE=1, S=8, 939 groups, F1=1 F2=1 F2-COUNT=1 F3=0, every observed line interval 225 S
 // MUTATION FIXTURE stimulus red C0-nofinish (the STOP loop's exit condition removed; the completion word is missing), NMH_MUTATE=FIXTURE; both cores: loaded=1, released=1, DONE=0
 // MUTATION FIXTURE-PEEK stimulus red C0-exit6 (the wait loop exits at FRAME_CTR 6; the stored word is 6 where the readback expects 7), NMH_MUTATE=FIXTURE-PEEK; both cores: DONE=1, FRAME_CTR=0006
-// MUTATION K2a stimulus red C2a with both DSKLEN writes $4000|8000 (bit 15 clear, DMAON=0), NMH_MUTATE=K2a; both cores: DONE=1, DSKBYTR=B000
-// MUTATION K2b stimulus red C2a-dskpt (C2a with DSKPT at $00C000, outside the declared disk block; both DSKLEN writes keep bit 15 set), NMH_MUTATE=K2b; both cores: DONE=1, K2a holds (DSKBYTR=F000), disk-block accesses per observed frame 0/0/0
+// MUTATION K2a stimulus red C2a-earlyread (C2a with DSKBYTR read right after DSKLEN <- $4000, before the two writes that start the transfer: DSKLEN bit 15 clear, DMAON=0), NMH_MUTATE=K2a; both cores: DONE=1, DSKBYTR=B000, F1=1 F2=1 F2-COUNT=1 F3=1, K2b comparator 936/939/939 and P2 population 2814, all even, unchanged
+// MUTATION K2b stimulus red C2a-dskpt (C2a with DSKPT at $00C000, outside the declared disk block and declared as a block of its own in that run's table; both DSKLEN writes keep bit 15 set), NMH_MUTATE=K2b; both cores: DONE=1, F1=1 F2=1 F2-COUNT=1 F3=1, K2a holds (DSKBYTR=F000), disk-block accesses per observed frame 0/0/0, the moved transfer 2814 accesses, all on even cycles
 // MUTATION K3 stimulus red C1a without AUD0EN in the S4 write, NMH_MUTATE=K3; both cores: DONE=1, channel 0 accesses per observed frame 0/0/0, channels 1-3 286/287/286
 // MUTATION K4 stimulus red C3 without SPREN, NMH_MUTATE=K4; both cores: DONE=1, every sprite structure 0/86 words read in every observed frame
 // MUTATION K5 stimulus red C4-4 without BPLEN, NMH_MUTATE=K5; both cores: DONE=1, 0 fetch lines for every plane in every observed frame
-// MUTATION K6 stimulus red C6 with list L5 truncated to V_spr+V_bpl(6)+END, NMH_MUTATE=K6; both cores: DONE=1, L5 59/972 and L5b 0/12 words read in every observed frame
-// MUTATION T1 stimulus red C6-end50 (list L5 with the end-of-list pair DC.W $FFFF,$FFFE in place of WAIT 50's two words, layout unchanged), NMH_MUTATE=T1; both cores: C5 and C6-end50 DONE=1, 189 segment/frame pairs differ in access count (segments 50-112, 3 frames)
-// MUTATION T2 stimulus red C6-stopself (STOP replaced by a self-branch loop, disk sequence unchanged), NMH_MUTATE=T2; DONE=1; fx68k: 342 segment lines, 32013 CPU accesses in them; tg68k: 342 segment lines, 36269
-// MUTATION T3 stimulus red C6-nospren (C6 without SPREN), NMH_MUTATE=T3; DONE=1; both cores: 339 segment lines, bpl_missing=0, spr_missing=120, disk lines per frame 113/113/113; audio lines per frame fx68k 106/105/106, tg68k 106/106/106
+// MUTATION K6 stimulus red C6-endtrailer (C6 with the trailer's MOVE of the COPJMP2 strobe replaced by DC.W $FFFF,$FFFE: L5 is read to its end and L5b never), NMH_MUTATE=K6; both cores: C5 and C6-endtrailer DONE=1, F1=1 F2=1 F2-COUNT=1 F3=1, L5 972/972 and L5b 0/12 words read in every observed frame, T1 0 segments differ, T2 342 segment lines and 0 CPU accesses in them, T3 339 lines with nothing missing, P7 comparator 0 mismatches
+// MUTATION T1 stimulus red C6-skip50 (C6 in which the Copper repeats WAIT 50's line with the SKIP loop of p.33: segment 49's third MOVE loads COP2LCL with the address of WAIT 50, segment 50's MOVEs are SKIP VP=$73 HP=0, COPJMP2 and MOVE COLOR00, segment 51's first MOVE loads COP2LCL with the address of L5b), NMH_MUTATE=T1; both cores: C5 and C6-skip50 DONE=1, F1=1 F2=1 F2-COUNT=1 F3=1, 6 of 339 segment/frame pairs differ in access count (segments 49 and 50 in each of 3 frames: 8/18 and 8/38), K6 972/972 and 12/12, T2 342 segment lines and 0 CPU accesses in them, T3 339 lines with nothing missing
+// MUTATION T2 stimulus red C6-stopself (STOP replaced by a self-branch loop, disk sequence unchanged), NMH_MUTATE=T2; DONE=1, K6, T1 and T3 hold; fx68k: 342 segment lines, 32014 CPU accesses in them; tg68k: 342 segment lines, 36269
+// MUTATION T3 stimulus red C6-nospren (C6 without SPREN), NMH_MUTATE=T3; DONE=1, K6, T1 and T2 hold; both cores: 339 segment lines, bpl_missing=0, spr_missing=120, disk lines per frame 113/113/113; audio lines per frame fx68k 107/105/107, tg68k 106/106/106
 // MUTATION P7 none impossible the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction moves one of those channels (audio, disk, refresh, sprite, low-resolution planes 1-4: p.20, Fig. 6-9, Fig. 6-11) to an odd cycle, so no program makes an even-cycle channel delay the Copper; the channels that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie outside P7's premise (at most four low-resolution planes), and changing the Copper's own list changes the comparison's inputs and not the clause
 // MUTATION SELFTEST-P7 stimulus red C6' (list L5 with WAIT 32 at HP=$42 instead of $40; a self-test of p7_check, whose three mismatches come from the Copper's own list), NMH_MUTATE=SELFTEST-P7; both cores: C5 and C6' DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 3 mismatches of 339 segment/frame pairs
 // MUTATION SELFTEST-F1 none impossible the check runs on a synthetic trace built in the test and no module stimulus enters it; it is a self-test of check_f1, printed in every plain run
 // MUTATION SELFTEST-F2 none impossible the checks run on synthetic refresh groups built in the test (four slots, a moved slot, three, five) and no module stimulus enters them; it is a self-test of refresh_slots_ok and refresh_count_ok, printed in every plain run
+// MUTATION SELFTEST-P1 none impossible the check runs on a synthetic trace built in the test (fourteen lines, the second refresh slot of one observed line on the third memory cycle) and no module stimulus enters it; it is a self-test of P1's comparator under P1's own gate, printed in every plain run
+// MUTATION K2b-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=K2b-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, K2b prints NOT GRADED (C6-nofinish:C1)
+// MUTATION K3-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=K3-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, K3 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION K4-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=K4-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, K4 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION K5-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=K5-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, K5 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION K6-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=K6-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, K6 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION T1-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=T1-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, T1 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION T2-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=T2-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, T2 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION T3-NOFINISH stimulus not graded C6-nofinish (C6 with the wait loop's exit condition removed: the completion word is missing), NMH_MUTATE=T3-NOFINISH; both cores: the line's other runs meet their observation preconditions, C6-nofinish DONE=0 with F1=1 F2=1 F2-COUNT=1 F3=1, T3 prints NOT GRADED (C6-nofinish:C1)
+// MUTATION K2b-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=K2b-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, K2b prints NOT GRADED (C6-htotal:F3)
+// MUTATION K3-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=K3-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, K3 prints NOT GRADED (C6-htotal:F3)
+// MUTATION K4-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=K4-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, K4 prints NOT GRADED (C6-htotal:F3)
+// MUTATION K5-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=K5-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, K5 prints NOT GRADED (C6-htotal:F3)
+// MUTATION K6-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=K6-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, K6 prints NOT GRADED (C6-htotal:F3)
+// MUTATION T1-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=T1-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, T1 prints NOT GRADED (C6-htotal:F3)
+// MUTATION T2-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=T2-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, T2 prints NOT GRADED (C6-htotal:F3)
+// MUTATION T3-HTOTAL stimulus not graded C6-htotal (C6 with HTOTAL=$E0 and BEAMCON0=$00A0: every line is 225 memory cycles; S taken from the normal C0 run), NMH_MUTATE=T3-HTOTAL; both cores: the line's other runs meet their observation preconditions, C6-htotal DONE=1 with F1=1 F2=1 F2-COUNT=1 F3=0, T3 prints NOT GRADED (C6-htotal:F3)
+// MUTATION K2b-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=K2b-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, K2b prints NOT GRADED (C6-norestart:restarts)
+// MUTATION K3-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=K3-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, K3 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION K4-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=K4-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, K4 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION K5-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=K5-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, K5 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION K6-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=K6-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, K6 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION T1-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=T1-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, T1 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION T2-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=T2-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, T2 prints NOT GRADED (C6-norestart:restarts)
+// MUTATION T3-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=T3-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, T3 prints NOT GRADED (C6-norestart:restarts)
 // MUTATION HELD-CONTROL none impossible unfalsifiable at this boundary: two genuine adjacent identical Copper accesses cannot be told from one held bus cycle in the RAM-port log, which carries no requester, so no stimulus produces the case; the control is the synthetic trace of this check
 //
 // Not exercised, by a scope decision: P8-P12 (video and sprite-image propositions) and
@@ -1125,26 +1219,39 @@ int main(int argc, char** argv) {
                 checks.expect(pr.f3_ok, "F3 C0-htotal: for every pair of consecutive refresh groups in the observed "
                               "frames, A(n+1)-A(n) equals 227*S or 228*S. p.23");
         } else if (mv == "K2a") {
-            RunResult r = run_C2a_noenable(dir);
+            // C2a-earlyread: DSKBYTR is read while DSKLEN bit 15 is clear, the
+            // transfer is started afterwards. The run's other lines are shown
+            // unchanged: its observation, K2b's comparator and P2's population.
+            RunResult r = run_C2a_earlyread(dir);
             set_gS(r.log, blocks_disk(), checks);
+            Pop p{"C2a-earlyread", r, blocks_disk(), {wordof(COP_MAIN)}};
             uint16_t v = 0;
             bool ok = dskbytr_ok(r, true, &v);
-            checks.note("C2a-noenable: done=" + std::to_string(r.done.has_value()) + " DSKBYTR=" + hex(v));
+            checks.note("C2a-earlyread: done=" + std::to_string(r.done.has_value()) + " DSKBYTR=" + hex(v));
+            observe(checks, p);
+            auto n = disk_frame_counts(p, plain_disk_range());
+            auto pd = analyze_population(r.log, p.blocks, p.starts, "Disk", false);
+            checks.note("C2a-earlyread: K2b comparator disk-block accesses per observed frame=" + frame_counts_text(n) +
+                        " P2 population=" + std::to_string(pd.population) + " all_even=" + std::to_string(pd.all_even));
             checks.expect(ok, "K2a: the stored DSKBYTR has DMAON=1 and DISKWRITE=1 in C2a and C6, DISKWRITE=0 in "
                           "C2b. p.248 Appendix A p.278");
         } else if (mv == "K2b") {
             // C2a-dskpt: the transfer runs (DMAON=1, so K2a holds) with DSKPT
             // outside the declared disk block.
+            // The moved transfer is declared as a block of its own (DiskMoved), so
+            // its accesses do not join the refresh set.
             RunResult r = run_C2a_dskpt(dir);
-            set_gS(r.log, blocks_disk(), checks);
-            Pop p{"C2a-dskpt", r, blocks_disk(), {wordof(COP_MAIN)}};
+            set_gS(r.log, blocks_disk_moved(), checks);
+            Pop p{"C2a-dskpt", r, blocks_disk_moved(), {wordof(COP_MAIN)}};
             uint16_t v = 0;
             bool k2a = dskbytr_ok(r, true, &v);
             auto n = disk_frame_counts(p, plain_disk_range());
-            std::string unmet = span_unmet(p);
+            auto pm = analyze_population(r.log, p.blocks, p.starts, "DiskMoved", false);
+            std::string unmet = observe(checks, p);
             checks.note("C2a-dskpt: done=" + std::to_string(r.done.has_value()) + " K2a (unchanged comparator)=" +
                         std::to_string(k2a) + " DSKBYTR=" + hex(v) +
-                        " disk-block accesses per observed frame=" + frame_counts_text(n));
+                        " disk-block accesses per observed frame=" + frame_counts_text(n) +
+                        " moved-transfer accesses=" + std::to_string(pm.population) + " all_even=" + std::to_string(pm.all_even));
             if (unmet.empty())
                 checks.expect(all_frames_nonempty(n), "K2b: the disk block receives accesses in each observed frame of "
                               "C2a and C6. p.246 p.247 p.194");
@@ -1155,7 +1262,7 @@ int main(int argc, char** argv) {
             set_gS(r.log, blocks_audio(), checks);
             Pop p{"C1a-noaud0", r, blocks_audio(), {wordof(COP_MAIN)}};
             checks.note("C1a-noaud0: done=" + std::to_string(r.done.has_value()));
-            std::string unmet = span_unmet(p);
+            std::string unmet = observe(checks, p);
             bool k3 = k3_check(p, plain_audio_ranges(), checks);
             if (unmet.empty())
                 checks.expect(k3, "K3: each of the four audio channels has accesses in each observed frame of C1a, "
@@ -1167,7 +1274,7 @@ int main(int argc, char** argv) {
             set_gS(r.log, blocks_sprite(), checks);
             Pop p{"C3-nospren", r, blocks_sprite(), {wordof(COP_MAIN)}};
             checks.note("C3-nospren: done=" + std::to_string(r.done.has_value()));
-            std::string unmet = span_unmet(p);
+            std::string unmet = observe(checks, p);
             bool k4 = k4_check(p, sprite_structures_c3(), checks);
             if (unmet.empty())
                 checks.expect(k4, "K4: in each observed frame of C3 and C6, every word of each of the eight sprite "
@@ -1179,7 +1286,7 @@ int main(int argc, char** argv) {
             set_gS(r.log, blocks_bitplane(4), checks);
             Pop p{"C4-4-nobplen", r, blocks_bitplane(4), {wordof(COP_MAIN)}};
             checks.note("C4-4-nobplen: done=" + std::to_string(r.done.has_value()));
-            std::string unmet = span_unmet(p);
+            std::string unmet = observe(checks, p);
             bool k5 = k5_check(p, plane_names(4), checks);
             if (unmet.empty())
                 checks.expect(k5, "K5: every enabled plane has fetches in at least as many lines of every observed "
@@ -1187,39 +1294,84 @@ int main(int argc, char** argv) {
             else
                 not_graded(checks, "K5", unmet);
         } else if (mv == "K6") {
-            RunResult r = run_C6_truncated(dir);
-            set_gS(r.log, blocks_full(4), checks);
-            Pop p{"C6-truncated", r, blocks_full(4), {wordof(COP_MAIN)}};
-            checks.note("C6-truncated: done=" + std::to_string(r.done.has_value()));
-            std::string unmet = span_unmet(p);
+            // C6-endtrailer: the trailer ends the list instead of jumping to L5b.
+            // The run's other lines are shown unchanged: T1 (against C5), T2, T3
+            // and P7's comparator.
+            RunResult c5 = run_C5(dir);
+            RunResult r = run_C6_endtrailer(dir);
+            set_gS(c5.log, blocks_full(4), checks);
+            Pop p5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}};
+            Pop p{"C6-endtrailer", r, blocks_full(4), {wordof(COP_MAIN)}};
+            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-endtrailer: done=" +
+                        std::to_string(r.done.has_value()));
+            std::string unmet = observe(checks, p);
             bool k6 = k6_check(p, checks);
+            t1_check(c5, p5.blocks, r, p.blocks, p.name, checks);
+            t2_check(r, p.blocks, checks, p.name);
+            t3_check(r, p.blocks, checks);
+            p7_check(c5, p5.blocks, r, p.blocks, checks);
             if (unmet.empty())
                 checks.expect(k6, "K6: in every observed frame of C5, C6, C7a and C7b, every word of L5 and L5b is "
                               "read at least once (the list ran to its end).");
             else
                 not_graded(checks, "K6", unmet);
         } else if (mv == "T1") {
+            // C6-skip50: the Copper repeats WAIT 50's line with the SKIP loop of p.33.
+            // The run's other lines are shown unchanged: K6, T2, T3 and P7's comparator.
             RunResult c5 = run_C5(dir);
-            RunResult c6x = run_C6_end50(dir);
+            RunResult c6x = run_C6_skip50(dir);
             set_gS(c5.log, blocks_full(4), checks);
-            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-end50: done=" +
+            Pop p5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}};
+            Pop p{"C6-skip50", c6x, blocks_full(4), {wordof(COP_MAIN)}};
+            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-skip50: done=" +
                         std::to_string(c6x.done.has_value()));
-            bool t1 = t1_check(c5, blocks_full(4), c6x, blocks_full(4), checks);
-            checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
+            std::string unmet = observe(checks, p5) + observe(checks, p);
+            k6_check(p, checks);
+            t2_check(c6x, p.blocks, checks, p.name);
+            t3_check(c6x, p.blocks, checks);
+            p7_check(c5, p5.blocks, c6x, p.blocks, checks);
+            bool t1 = t1_check(c5, p5.blocks, c6x, p.blocks, p.name, checks);
+            if (unmet.empty())
+                checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
+            else
+                not_graded(checks, "T1", unmet);
         } else if (mv == "T2") {
+            // C6-stopself against C5; the run's other lines are shown unchanged.
+            RunResult c5 = run_C5(dir);
             RunResult r = run_C6(dir, "/prog_c6_stopself.bin");
-            set_gS(r.log, blocks_full(4), checks);
+            set_gS(c5.log, blocks_full(4), checks);
+            Pop p5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}};
+            Pop p{"C6-stopself", r, blocks_full(4), {wordof(COP_MAIN)}};
             checks.note("C6-stopself: done=" + std::to_string(r.done.has_value()));
-            bool t2 = t2_check(r, blocks_full(4), checks, "C6-stopself");
-            checks.expect(t2, "T2: no CPU-block access lies in any line spanned by a segment, in C5 or C6.");
+            std::string unmet = observe(checks, p5) + observe(checks, p);
+            k6_check(p, checks);
+            t1_check(c5, p5.blocks, r, p.blocks, p.name, checks);
+            t3_check(r, p.blocks, checks);
+            bool t2 = t2_check(c5, p5.blocks, checks, "C5");
+            t2 = t2_check(r, p.blocks, checks, p.name) && t2;
+            if (unmet.empty())
+                checks.expect(t2, "T2: no CPU-block access lies in any line spanned by a segment, in C5 or C6.");
+            else
+                not_graded(checks, "T2", unmet);
         } else if (mv == "T3") {
+            // C6-nospren against C5; the run's other lines are shown unchanged.
+            RunResult c5 = run_C5(dir);
             RunResult r = run_C6(dir, "/prog_c6_nospren.bin");
-            set_gS(r.log, blocks_full(4), checks);
+            set_gS(c5.log, blocks_full(4), checks);
+            Pop p5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}};
+            Pop p{"C6-nospren", r, blocks_full(4), {wordof(COP_MAIN)}};
             checks.note("C6-nospren: done=" + std::to_string(r.done.has_value()));
-            bool t3 = t3_check(r, blocks_full(4), checks);
-            checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; "
-                          "sprite fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio "
-                          "and disk accesses each occur in the segment lines of every observed frame.");
+            std::string unmet = observe(checks, p);
+            k6_check(p, checks);
+            t1_check(c5, p5.blocks, r, p.blocks, p.name, checks);
+            t2_check(r, p.blocks, checks, p.name);
+            bool t3 = t3_check(r, p.blocks, checks);
+            if (unmet.empty())
+                checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; "
+                              "sprite fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio "
+                              "and disk accesses each occur in the segment lines of every observed frame.");
+            else
+                not_graded(checks, "T3", unmet);
         } else if (mv == "SELFTEST-P7") {
             RunResult c5 = run_C5(dir);
             RunResult c6p = run_C6prime(dir);
@@ -1234,7 +1386,7 @@ int main(int argc, char** argv) {
                 unmet += observation_unmet(q->name, q->run, pr);
             }
             bool k6a = k6_check(pc5, checks), k6b = k6_check(pc6p, checks);
-            bool t1 = t1_check(c5, pc5.blocks, c6p, pc6p.blocks, checks);
+            bool t1 = t1_check(c5, pc5.blocks, c6p, pc6p.blocks, "C6'", checks);
             bool t2a = t2_check(c5, pc5.blocks, checks, "C5"), t2b = t2_check(c6p, pc6p.blocks, checks, "C6'");
             bool t3 = t3_check(c6p, pc6p.blocks, checks);
             unmet += unmet_if(k6a && k6b, "K6") + unmet_if(t1, "T1") + unmet_if(t2a && t2b, "T2") + unmet_if(t3, "T3");
@@ -1259,6 +1411,85 @@ int main(int argc, char** argv) {
                         " done=" + std::to_string(r.done.has_value()));
             checks.expect(r.loaded && r.released && r.done.has_value(),
                           "FIXTURE: every configuration's program loaded, released reset, and reached DONE");
+        } else if (gate_selector(mv)) {
+            // <line>-NOFINISH / -HTOTAL / -NORESTART: the line's gate (SPECIFICATION.md 2.11) with C6
+            // replaced by a run in which C1 (the completion word), F3 (the line length) or the
+            // restart identification (the list start the run declares is never fetched) fails.
+            // S is taken from the plain C0 run, as in F3's contrast. The line's other runs are
+            // the plain ones, built as in the normal run; the line prints NOT GRADED.
+            const bool nofinish = mv.size() > 9 && mv.compare(mv.size() - 9, 9, "-NOFINISH") == 0;
+            const bool norestart = mv.size() > 10 && mv.compare(mv.size() - 10, 10, "-NORESTART") == 0;
+            const std::string line = mv.substr(0, mv.size() - (nofinish ? 9 : norestart ? 10 : 7));
+            RunResult base = run_C0(dir);
+            set_gS(base.log, blocks_C0(), checks);
+            const std::vector<uint32_t> st = {wordof(COP_MAIN)};
+            auto plain = [&](const std::string& n) -> Pop {
+                if (n == "C1a") return {n, run_C1a(dir), blocks_audio(), st};
+                if (n == "C1b") return {n, run_C1b(dir), blocks_audio(), st};
+                if (n == "C2a") return {n, run_C2a(dir), blocks_disk(), st};
+                if (n == "C3") return {n, run_C3(dir), blocks_sprite(), st};
+                if (n == "C4-4w") return {n, run_C4(dir, 4, true), blocks_bitplane(4), st};
+                if (n.rfind("C4-", 0) == 0) return {n, run_C4(dir, n[3] - '0'), blocks_bitplane(n[3] - '0'), st};
+                if (n == "C5") return {n, run_C5(dir), blocks_full(4), st};
+                if (n == "C7a") return {n, run_C7a(dir), blocks_bitplane(6), st};
+                return {n, run_C7b(dir), blocks_bitplane(4), st};
+            };
+            Pop px{nofinish ? "C6-nofinish" : norestart ? "C6-norestart" : "C6-htotal",
+                   nofinish ? run_C6_nofinish(dir) : norestart ? run_C6_norestart(dir) : run_C6_htotal(dir),
+                   blocks_full(4), st};
+            std::vector<Pop> runs; // the line's runs in the order of the normal run, the contrast in C6's place
+            auto add = [&](const char* n) { runs.push_back(std::string(n) == "C6" ? px : plain(n)); };
+            if (line == "K2b") { add("C2a"); add("C6"); }
+            else if (line == "K3") { add("C1a"); add("C1b"); add("C6"); }
+            else if (line == "K4") { add("C3"); add("C6"); }
+            else if (line == "K5") { for (const char* n : {"C4-1", "C4-2", "C4-3", "C4-4", "C4-5", "C4-6", "C4-4w", "C6"}) add(n); }
+            else if (line == "K6") { add("C5"); add("C6"); add("C7a"); add("C7b"); }
+            else if (line == "T3") { add("C6"); }
+            else { add("C5"); add("C6"); } // T1, T2
+            std::string unmet;
+            for (const auto& q : runs) unmet += observe(checks, q);
+            if (line == "K2b") {
+                auto n2 = disk_frame_counts(runs[0], plain_disk_range()), n6 = disk_frame_counts(px, plain_disk_range());
+                checks.note("K2b: disk-block accesses per observed frame C2a=" + frame_counts_text(n2) + " " + px.name + "=" + frame_counts_text(n6));
+                if (unmet.empty()) checks.expect(all_frames_nonempty(n2) && all_frames_nonempty(n6),
+                    "K2b: the disk block receives accesses in each observed frame of C2a and C6. p.246 p.247 p.194");
+            } else if (line == "K3") {
+                bool k3 = true;
+                for (const auto& q : runs) k3 = k3_check(q, plain_audio_ranges(), checks) && k3;
+                if (unmet.empty()) checks.expect(k3, "K3: each of the four audio channels has accesses in each observed frame of C1a, "
+                    "C1b and C6. p.144");
+            } else if (line == "K4") {
+                bool k4 = true;
+                for (const auto& q : runs) k4 = k4_check(q, sprite_structures_c3(), checks) && k4;
+                if (unmet.empty()) checks.expect(k4, "K4: in each observed frame of C3 and C6, every word of each of the eight sprite "
+                    "structures (control, data and end words) is read at least once. p.108");
+            } else if (line == "K5") {
+                bool k5 = true;
+                for (const auto& q : runs) {
+                    int np = q.name == "C4-4w" ? 4 : q.name == px.name ? 4 : q.name[3] - '0';
+                    k5 = k5_check(q, plane_names(np), checks) && k5;
+                }
+                if (unmet.empty()) checks.expect(k5, "K5: every enabled plane has fetches in at least as many lines of every observed "
+                    "frame as the display window is high (C4-1..C4-6, C4-4w, C6). p.59 Appendix A p.277");
+            } else if (line == "K6") {
+                bool k6 = true;
+                for (const auto& q : runs) k6 = k6_check(q, checks) && k6;
+                if (unmet.empty()) checks.expect(k6, "K6: in every observed frame of C5, C6, C7a and C7b, every word of L5 and L5b is "
+                    "read at least once (the list ran to its end).");
+            } else if (line == "T1") {
+                bool t1 = t1_check(runs[0].run, runs[0].blocks, px.run, px.blocks, px.name, checks);
+                if (unmet.empty()) checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
+            } else if (line == "T2") {
+                bool t2 = t2_check(runs[0].run, runs[0].blocks, checks, "C5");
+                t2 = t2_check(px.run, px.blocks, checks, px.name) && t2;
+                if (unmet.empty()) checks.expect(t2, "T2: no CPU-block access lies in any line spanned by a segment, in C5 or C6.");
+            } else {
+                bool t3 = t3_check(px.run, px.blocks, checks);
+                if (unmet.empty()) checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; "
+                    "sprite fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio "
+                    "and disk accesses each occur in the segment lines of every observed frame.");
+            }
+            if (!unmet.empty()) not_graded(checks, line, unmet);
         } else {
             checks.expect(false, "unknown NMH_MUTATE value: " + mv);
         }
@@ -1410,6 +1641,39 @@ int main(int argc, char** argv) {
                       "group of three; refresh_count_ok passes a group of four and fails a group of three and a group "
                       "of five. p.194 Fig. 6-9 p.195");
 
+        // P1 without F2 in its gate: fourteen lines of 227 memory cycles, each a refresh group at 0,
+        // 2, 4 and 6, and a restart fetch of the Copper's list in every second line. In the
+        // displaced trace the second slot of one observed line is at 3 instead of 2. C1, the
+        // restarts, F1, F3 and F2-COUNT hold in both traces; F2 fails in the displaced one.
+        auto p1_trace = [&](bool displaced) {
+            RunResult run;
+            run.loaded = run.released = true;
+            run.done = 1;
+            for (int n = 0; n < 14; ++n) {
+                const uint64_t t0 = (100 + (uint64_t)n * 227) * kSyntheticS;
+                const uint64_t slot[4] = {0, (displaced && n == 8) ? 3u : 2u, 4, 6};
+                for (uint64_t off : slot) run.log.push_back({t0 + off * kSyntheticS, 0, 0, false, true, true});
+                if (n % 2 == 1) run.log.push_back({t0 + 20 * kSyntheticS, wordof(COP_MAIN), 0, false, true, true});
+            }
+            return Pop{displaced ? "synthetic-displaced" : "synthetic-regular", run, {copper_block()}, {wordof(COP_MAIN)}};
+        };
+        const Pop p1_reg = p1_trace(false), p1_dis = p1_trace(true);
+        auto p1_verdict = [&](const Pop& q) {
+            auto pr = analyze_population(q.run.log, q.blocks, q.starts, "R", false);
+            return pr.population > 0 && pr.all_even;
+        };
+        bool p1_reg_gate = run_unmet(p1_reg, false).empty(), p1_dis_gate = run_unmet(p1_dis, false).empty();
+        bool p1_dis_old_gate = run_unmet(p1_dis, true).empty();
+        bool p1_reg_ok = p1_verdict(p1_reg), p1_dis_ok = p1_verdict(p1_dis);
+        checks.note("SELFTEST-P1: regular trace gate (C1, restarts, F1, F3) met=" + std::to_string(p1_reg_gate) +
+                    " P1 comparator=" + std::to_string(p1_reg_ok) + "; displaced trace gate met=" +
+                    std::to_string(p1_dis_gate) + " P1 comparator=" + std::to_string(p1_dis_ok) +
+                    " gate with F2 and F2-COUNT met=" + std::to_string(p1_dis_old_gate));
+        checks.expect(p1_reg_gate && p1_reg_ok && p1_dis_gate && !p1_dis_ok && !p1_dis_old_gate,
+                      "SELFTEST-P1: P1's comparator under the observation gate P1 has (C1, restarts, F1, F3; not F2 or "
+                      "F2-COUNT) passes a synthetic trace and fails the same trace with the second refresh slot of one "
+                      "line on an odd cycle, which F2 also rejects. p.20 p.194 Fig. 6-9 p.195");
+
         // Held cycle: a word sampled in two consecutive memory cycles is one
         // access; the same word two memory cycles apart, a different datum, a
         // different direction and different byte enables are separate ones.
@@ -1452,9 +1716,21 @@ int main(int argc, char** argv) {
                       "SPECIFICATION.md 2.2");
     }
 
-    // P1: its preconditions are F1, F2, F2-COUNT, F3 (per run), C1 and A1.
+    // The observation preconditions (C1, restarts, F1, F2, F2-COUNT, F3) of the named
+    // runs, concatenated: the gate of every line that grades those runs (SPECIFICATION.md 2.11).
+    auto gate = [&](std::initializer_list<const char*> names) {
+        std::string u;
+        for (const char* n : names) {
+            const Pop* q = find(n);
+            u += q ? run_unmet(*q) : std::string(n) + ":MISSING ";
+        }
+        return u;
+    };
+
+    // P1: its preconditions are C1, restarts, F1, F3 (per run) and A1. F2 and F2-COUNT
+    // grade the accesses P1 grades, so they do not gate it (SPECIFICATION.md P1.5).
     {
-        Fold f = fold_check(all, names_all, "R", true, checks, "P1");
+        Fold f = fold_check(all, names_all, "R", true, checks, "P1", false);
         std::string unmet = f.unmet + unmet_if(a1, "A1");
         if (unmet.empty())
             checks.expect(f.ok, "P1: every refresh access lies on an even in-line cycle, in every run and mode graded "
@@ -1489,7 +1765,7 @@ int main(int argc, char** argv) {
              k2b_c6 = all_frames_nonempty(cnt_c6);
         checks.note("K2b: disk-block accesses per observed frame C2a=" + frame_counts_text(cnt_c2a) + " C2b=" +
                     frame_counts_text(cnt_c2b) + " C6=" + frame_counts_text(cnt_c6));
-        std::string u2b = span_unmet(*c2a) + span_unmet(*c6);
+        std::string u2b = gate({"C2a", "C6"});
         if (u2b.empty())
             checks.expect(k2b_c2a && k2b_c6, "K2b: the disk block receives accesses in each observed frame of C2a "
                           "and C6. p.246 p.247 p.194");
@@ -1527,7 +1803,7 @@ int main(int argc, char** argv) {
         for (const char* cfgname : {"C1a", "C1b", "C6"}) {
             const Pop* p = find(cfgname);
             k3 = k3_check(*p, plain_audio_ranges(), checks) && k3;
-            u3 += span_unmet(*p);
+            u3 += run_unmet(*p);
         }
         if (u3.empty())
             checks.expect(k3, "K3: each of the four audio channels has accesses in each observed frame of C1a, "
@@ -1549,7 +1825,7 @@ int main(int argc, char** argv) {
         const Pop *c3 = find("C3"), *c6k4 = find("C6");
         bool k4 = k4_check(*c3, sprite_structures_c3(), checks);
         k4 = k4_check(*c6k4, sprite_structures_c3(), checks) && k4;
-        std::string u4 = span_unmet(*c3) + span_unmet(*c6k4);
+        std::string u4 = gate({"C3", "C6"});
         if (u4.empty())
             checks.expect(k4, "K4: in each observed frame of C3 and C6, every word of each of the eight sprite "
                           "structures (control, data and end words) is read at least once. p.108");
@@ -1572,7 +1848,7 @@ int main(int argc, char** argv) {
         for (auto& [cfgname, n] : p5cfgs) {
             const Pop* p = find(cfgname.c_str());
             k5 = k5_check(*p, plane_names(n), checks) && k5;
-            u5k += span_unmet(*p);
+            u5k += run_unmet(*p);
         }
         if (u5k.empty())
             checks.expect(k5, "K5: every enabled plane has fetches in at least as many lines of every observed frame "
@@ -1601,7 +1877,7 @@ int main(int argc, char** argv) {
     bool k6 = true; std::string u6;
     for (const Pop* p : {c5p, c6p, c7ap, c7bp}) {
         k6 = k6_check(*p, checks) && k6;
-        u6 += span_unmet(*p);
+        u6 += run_unmet(*p);
     }
     if (u6.empty())
         checks.expect(k6, "K6: in every observed frame of C5, C6, C7a and C7b, every word of L5 and L5b is read "
@@ -1660,24 +1936,33 @@ int main(int argc, char** argv) {
         const RunResult& c5 = c5p->run;
         const RunResult& c6 = c6p->run;
 
-        bool t1 = t1_check(c5, c5p->blocks, c6, c6p->blocks, checks);
-        checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
+        // T1-T3 are gated by the observation preconditions of the runs they grade.
+        std::string ut12 = gate({"C5", "C6"}), ut3 = gate({"C6"});
+
+        bool t1 = t1_check(c5, c5p->blocks, c6, c6p->blocks, "C6", checks);
+        if (ut12.empty())
+            checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
+        else
+            not_graded(checks, "T1", ut12);
 
         bool t2 = t2_check(c5, c5p->blocks, checks, "C5");
         t2 = t2_check(c6, c6p->blocks, checks, "C6") && t2;
-        checks.expect(t2, "T2: no CPU-block access lies in any line spanned by a segment, in C5 or C6.");
+        if (ut12.empty())
+            checks.expect(t2, "T2: no CPU-block access lies in any line spanned by a segment, in C5 or C6.");
+        else
+            not_graded(checks, "T2", ut12);
 
         bool t3 = t3_check(c6, c6p->blocks, checks);
-        checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; sprite "
-                      "fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio and "
-                      "disk accesses each occur in the segment lines of every observed frame.");
+        if (ut3.empty())
+            checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; sprite "
+                          "fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio and "
+                          "disk accesses each occur in the segment lines of every observed frame.");
+        else
+            not_graded(checks, "T3", ut3);
 
         bool p7 = p7_check(c5, c5p->blocks, c6, c6p->blocks, checks);
-        std::string unmet = unmet_if(u6.empty() && k6, "K6") + unmet_if(t1, "T1") + unmet_if(t2, "T2") + unmet_if(t3, "T3");
-        for (const Pop* p : {c5p, c6p}) {
-            auto pr = analyze_population(p->run.log, p->blocks, p->starts, "R", false);
-            unmet += observation_unmet(p->name, p->run, pr);
-        }
+        std::string unmet = unmet_if(u6.empty() && k6, "K6") + unmet_if(ut12.empty() && t1, "T1") +
+                            unmet_if(ut12.empty() && t2, "T2") + unmet_if(ut3.empty() && t3, "T3") + ut12;
         if (unmet.empty())
             checks.expect(p7, "P7: for every segment i (i=0..112) and every observed frame, the list of (line "
                           "offset, s) pairs is identical in C5 and C6 -- the channels on the even cycles never delay "

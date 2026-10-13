@@ -1,6 +1,7 @@
 ; prog_c7a.s -- configuration C7a (SPECIFICATION.md 2.9): list L5, DMACON
-; bit BPLEN only, registers of C4-6 (six low-res bitplanes -- odd-cycle
-; contention from planes 5-6, P6's own use). L5's own sprite pointers are
+; bit BPLEN only, registers of C4-6 (six low-res bitplanes: planes 5 and 6
+; take the odd cycles, D2). The run is one of P1's and K6's runs, and its
+; Copper reads are MEASURED (P6 is withdrawn). L5's own sprite pointers are
 ; all the null block (SPREN is never set for this run).
 
         include "nanomig.i"
@@ -12,7 +13,7 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c7a_spr_tab,c7a_bpl_tab,COP_SECOND,-1,0,-1
+        BUILD_L5  COP_MAIN,c7a_spr_tab,c7a_bpl_tab,COP_SECOND,-1,0
         BUILD_L5B COP_SECOND
         move.w  #$6200,BPLCON0(a0)     ; (6<<12)|$0200
         move.w  #0,BPLCON1(a0)

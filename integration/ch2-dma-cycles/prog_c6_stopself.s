@@ -14,7 +14,7 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0,-1
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0
         BUILD_L5B COP_SECOND
         bsr     build_structs_c3
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)

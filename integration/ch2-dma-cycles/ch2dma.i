@@ -149,10 +149,19 @@ CH_SPR5         equ     $009400
 CH_SPR6         equ     $009800
 CH_SPR7         equ     $009C00
 CH_SPR_NULL     equ     $00A000
-CH_U_SUBLIST    equ     $00B000         ; outside every declared block (D7/§2.7)
-CH_BPL1         equ     $010000
+CH_DISK_MOVED   equ     $00C000         ; K2b's contrast: DSKPT target, declared as a block of its own in that run's table
+CH_BPL1        equ     $010000
 CH_BPL2         equ     $018000
 CH_BPL3         equ     $020000
 CH_BPL4         equ     $028000
 CH_BPL5         equ     $030000
 CH_BPL6         equ     $038000
+
+; ---- list L5 layout (SPECIFICATION.md 2.8), in words from COP_MAIN ------
+; V_spr (32) + V_bpl(6) (24) + the COP2LC pair (4) = 60 words, then 113
+; segments of WAIT (2 words) and three MOVEs (6 words), then the trailer
+; WAIT $B4, SKIP, MOVE COLOR00, MOVE COPJMP2 (8 words, from word 964).
+; The contrasts that change words of L5 write them at these offsets.
+L5_PROLOGUE     equ     60
+L5_SEGMENT      equ     8
+L5_TRAILER      equ     L5_PROLOGUE+113*L5_SEGMENT

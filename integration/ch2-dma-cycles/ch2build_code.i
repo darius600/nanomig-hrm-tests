@@ -53,10 +53,8 @@ build_Vbpln:
 ; and L5's own trailer (WAIT VP=$B4; SKIP VP=$B4,HP=$40; MOVE COLOR00<-0;
 ; COPJMP2 strobe), SPECIFICATION.md 2.8 L5. a1 = cursor (in/out, must
 ; already be past V_all). d5.w = override_i (i whose HP is replaced) or
-; -1/$FFFF for none. d6.w = override_hp, used only when d0==d5. d7.w =
-; extra_after_wait (an extra MOVE COLOR00<-0 right after that WAIT's own
-; three MOVEs) or -1/$FFFF for none -- T1's own contrast
-; (SPECIFICATION.md P7.6). Destroys d0-d4.
+; -1/$FFFF for none. d6.w = override_hp, used only when d0==d5. Destroys
+; d0-d4.
 build_L5_waitloop:
                 moveq   #0,d0
 .wl:
@@ -79,11 +77,6 @@ build_L5_waitloop:
                 move.w  #$0000,(a1)+
                 move.w  #$0180,(a1)+
                 move.w  #$0000,(a1)+
-                cmp.w   d7,d0
-                bne.s   .noext
-                move.w  #$0180,(a1)+
-                move.w  #$0000,(a1)+
-.noext:
                 addq.w  #1,d0
                 cmp.w   #113,d0
                 blt.s   .wl
@@ -100,8 +93,8 @@ build_L5_waitloop:
 
 ; ---- build_L5: V_all (V_spr8; V_bpl(6); COP2LC <- a2) then
 ; build_L5_waitloop. a1 = destination (in/out). a5 = 8-long sprite table
-; (consumed). a6 = 6-long bpl table (consumed). a2.l = L5b address. d5/d6/
-; d7 = build_L5_waitloop's own override params (untouched by build_Vspr8/
+; (consumed). a6 = 6-long bpl table (consumed). a2.l = L5b address. d5/d6
+; = build_L5_waitloop's own override params (untouched by build_Vspr8/
 ; build_Vbpln, which only use d0-d4).
 build_L5:
                 bsr     build_Vspr8

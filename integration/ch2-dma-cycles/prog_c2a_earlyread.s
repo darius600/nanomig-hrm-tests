@@ -1,6 +1,8 @@
-; prog_c2a_noenable.s -- contrast for K2a/K2b (SPECIFICATION.md P2.5): C2a
-; with both DSKLEN writes of S6 set to $4000|8000 (bit 15 clear). Both
-; p.248 and Appendix A p.278 predict DMAON = 0, and no disk accesses occur.
+; prog_c2a_earlyread.s -- contrast for K2a (SPECIFICATION.md P2.6): C2a with DSKBYTR read right
+; after DSKLEN <- $4000 (p.247 step 2), before the two writes that start the transfer. DSKLEN
+; bit 15 is clear at that point; both p.248 and Appendix A p.278 predict DMAON = 0 in the value
+; read. The transfer is started afterwards exactly as in C2a, so the disk block keeps its
+; accesses.
 
         include "nanomig.i"
         include "ch2dma.i"
@@ -18,7 +20,7 @@ start:
         S3_COPPER COP_MAIN
         S4_DMAEN  DSKEN
         S5_ARM_INT
-        S6_WAIT_DISK $5F40             ; bit15 clear: DMAEN=0 in both S6 writes
+        S6_WAIT_DISK_EARLY $DF40
         S7_FINISH_DISK
         VBLANK_HANDLER
 

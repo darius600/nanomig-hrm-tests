@@ -1,7 +1,7 @@
-; prog_c6_end50.s -- T1's own contrast (SPECIFICATION.md P7.6): as C6, but the end-of-list
-; word pair `DC.W $FFFF,$FFFE` stands in place of WAIT i=50's two words; the layout is
-; unchanged. The Copper stops there until the next vertical blank (p.23), so segments 50 to
-; 112 are empty and T1 fails for them.
+; prog_c6_norestart.s -- the contrast of the restart identification in the gates of K2b, K3, K4,
+; K5, K6, T1, T2 and T3 (SPECIFICATION.md 2.11): as C6, but S3 points COP1LC at L5b instead of
+; L5. The Copper never reads the word at the address the run declares as its list start (L5's
+; first word), so no restart fetch of the run is found.
 
         include "nanomig.i"
         include "ch2dma.i"
@@ -12,9 +12,10 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,50,$FFFF,-1
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0
         BUILD_L5B COP_SECOND
         bsr     build_structs_c3
+        ; ---- C1a: audio, period 124 ----
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
         move.w  #16,AUD0LEN(a0)
@@ -35,9 +36,11 @@ start:
         move.w  #16,AUD3LEN(a0)
         move.w  #64,AUD3VOL(a0)
         move.w  #124,AUD3PER(a0)
+        ; ---- C2a: disk, write direction ----
         move.w  #$9100,ADKCON(a0)
         move.w  #(CH_DISK)>>16,DSKPTH(a0)
         move.w  #(CH_DISK)&$FFFF,DSKPTL(a0)
+        ; ---- C3: eight sprites ----
         move.w  #(CH_SPR0)>>16,SPR0PTH(a0)
         move.w  #(CH_SPR0)&$FFFF,SPR0PTL(a0)
         move.w  #(CH_SPR0+$0400)>>16,SPR1PTH(a0)
@@ -54,6 +57,7 @@ start:
         move.w  #(CH_SPR0+$1800)&$FFFF,SPR6PTL(a0)
         move.w  #(CH_SPR0+$1C00)>>16,SPR7PTH(a0)
         move.w  #(CH_SPR0+$1C00)&$FFFF,SPR7PTL(a0)
+        ; ---- C4-4: four low-res bitplanes ----
         move.w  #$4200,BPLCON0(a0)
         move.w  #0,BPLCON1(a0)
         move.w  #0,BPL1MOD(a0)
@@ -70,7 +74,7 @@ start:
         move.w  #(CH_BPL3)&$FFFF,BPL3PTL(a0)
         move.w  #(CH_BPL4)>>16,BPL4PTH(a0)
         move.w  #(CH_BPL4)&$FFFF,BPL4PTL(a0)
-        S3_COPPER COP_MAIN
+        S3_COPPER COP_SECOND
         S4_DMAEN  AUD0123EN|DSKEN|SPREN|BPLEN
         S5_ARM_INT
         S6_WAIT_DISK $DF40

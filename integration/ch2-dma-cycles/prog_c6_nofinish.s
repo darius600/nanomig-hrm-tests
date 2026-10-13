@@ -1,8 +1,7 @@
-; prog_c6_trunc.s -- K6's own contrast (SPECIFICATION.md P6.6): as C6, but
-; list L5 truncated to V_spr; V_bpl(6); END right after V_all -- the
-; WAIT/MOVE words after it are never fetched, so K6 (every word of L5/L5b
-; read) must fail. No COP2LC write is made (V_all's own COP2LC MOVE is
-; part of the omitted tail), so COP_SECOND is never installed or read.
+; prog_c6_nofinish.s -- the contrast of C1 in the gates of K2b, K3, K4, K5, K6, T1, T2 and T3
+; (SPECIFICATION.md 2.11): as C6, but the wait loop's exit condition is removed
+; (S6_WAIT_DISK_NOEXIT). The disk start sequence still runs once, FRAME_CTR keeps counting,
+; and the completion word is never written.
 
         include "nanomig.i"
         include "ch2dma.i"
@@ -13,8 +12,10 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5_TRUNC COP_MAIN,c6_spr_tab,c6_bpl_tab
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0
+        BUILD_L5B COP_SECOND
         bsr     build_structs_c3
+        ; ---- C1a: audio, period 124 ----
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
         move.w  #16,AUD0LEN(a0)
@@ -35,9 +36,11 @@ start:
         move.w  #16,AUD3LEN(a0)
         move.w  #64,AUD3VOL(a0)
         move.w  #124,AUD3PER(a0)
+        ; ---- C2a: disk, write direction ----
         move.w  #$9100,ADKCON(a0)
         move.w  #(CH_DISK)>>16,DSKPTH(a0)
         move.w  #(CH_DISK)&$FFFF,DSKPTL(a0)
+        ; ---- C3: eight sprites ----
         move.w  #(CH_SPR0)>>16,SPR0PTH(a0)
         move.w  #(CH_SPR0)&$FFFF,SPR0PTL(a0)
         move.w  #(CH_SPR0+$0400)>>16,SPR1PTH(a0)
@@ -54,6 +57,7 @@ start:
         move.w  #(CH_SPR0+$1800)&$FFFF,SPR6PTL(a0)
         move.w  #(CH_SPR0+$1C00)>>16,SPR7PTH(a0)
         move.w  #(CH_SPR0+$1C00)&$FFFF,SPR7PTL(a0)
+        ; ---- C4-4: four low-res bitplanes ----
         move.w  #$4200,BPLCON0(a0)
         move.w  #0,BPLCON1(a0)
         move.w  #0,BPL1MOD(a0)
@@ -73,8 +77,7 @@ start:
         S3_COPPER COP_MAIN
         S4_DMAEN  AUD0123EN|DSKEN|SPREN|BPLEN
         S5_ARM_INT
-        S6_WAIT_DISK $DF40
-        S7_FINISH_DISK
+        S6_WAIT_DISK_NOEXIT $DF40
         VBLANK_HANDLER
 
 c6_spr_tab:     dc.l    CH_SPR0,CH_SPR0+$0400,CH_SPR0+$0800,CH_SPR0+$0C00

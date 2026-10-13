@@ -89,6 +89,26 @@ S6_WAIT_DISK    macro
                 bne.s   .w6\@
                 endm
 
+; S6 -- as S6_WAIT_DISK, but DSKBYTR is read right after DSKLEN <- $4000
+; (p.247 step 2), before the two writes that start the transfer (K2a's own
+; contrast, SPECIFICATION.md P2.6). \1 = the run's DSKLEN value.
+S6_WAIT_DISK_EARLY macro
+                lea     CUSTOM,a0
+.w6\@           stop    #$2000
+                cmp.w   #2,FRAME_CTR
+                bne.s   .w6skip\@
+                tst.b   DISK_FLAG
+                bne.s   .w6skip\@
+                move.w  #$4000,DSKLEN(a0)
+                move.w  DSKBYTR(a0),d0
+                move.w  d0,RES_DSKBYTR
+                move.w  #\1,DSKLEN(a0)
+                move.w  #\1,DSKLEN(a0)
+                move.b  #1,DISK_FLAG
+.w6skip\@       cmp.w   #7,FRAME_CTR
+                bne.s   .w6\@
+                endm
+
 ; S6 -- as S6_WAIT_DISK, but the CPU never stops: it branches to itself
 ; instead (T2's own contrast, SPECIFICATION.md P7.6). \1 = the run's
 ; DSKLEN value. Interrupts must be unmasked explicitly once, since STOP
@@ -116,6 +136,26 @@ S6_LOOP_DISK    macro
 S6_WAIT_NOEXIT  macro
                 lea     CUSTOM,a0
 .w6\@           stop    #$2000
+                bra.s   .w6\@
+                endm
+
+; S6 -- as S6_WAIT_DISK, but the wait loop's exit condition is removed
+; (C1's contrast in a disk run, SPECIFICATION.md 2.11): the disk start
+; sequence runs once at FRAME_CTR==2, then the loop never ends and DONE is
+; never reached. \1 = the run's DSKLEN value.
+S6_WAIT_DISK_NOEXIT macro
+                lea     CUSTOM,a0
+.w6\@           stop    #$2000
+                cmp.w   #2,FRAME_CTR
+                bne.s   .w6\@
+                tst.b   DISK_FLAG
+                bne.s   .w6\@
+                move.w  #$4000,DSKLEN(a0)
+                move.w  #\1,DSKLEN(a0)
+                move.w  #\1,DSKLEN(a0)
+                move.w  DSKBYTR(a0),d0
+                move.w  d0,RES_DSKBYTR
+                move.b  #1,DISK_FLAG
                 bra.s   .w6\@
                 endm
 

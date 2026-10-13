@@ -12,7 +12,7 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c7b_spr_tab,c7b_bpl_tab,COP_SECOND,-1,0,-1
+        BUILD_L5  COP_MAIN,c7b_spr_tab,c7b_bpl_tab,COP_SECOND,-1,0
         BUILD_L5B COP_SECOND
         move.w  #$C200,BPLCON0(a0)     ; HIRES, 4 planes (p.63)
         move.w  #0,BPLCON1(a0)

@@ -1,7 +1,8 @@
-; prog_c6_prime.s -- run C6' (SPECIFICATION.md P7.6/T1's own record): as C6,
-; but list L5' -- the WAIT for i=32 uses HP=$42 instead of $40. Compared
-; with C5 on the unmodified L5, segment 32 must start later (p.22), so P7
-; and T1 go red for that one segment; T2 and T3 still hold.
+; prog_c6_prime.s -- run C6' (SELFTEST-P7, SPECIFICATION.md P7.6): as C6, but
+; list L5' -- the WAIT for i=32 uses HP=$42 instead of $40. Compared with C5
+; on the unmodified L5, segment 32 must start later (p.22), so the P7
+; comparator finds a mismatch for that one segment in each observed frame; K6,
+; T1, T2 and T3 still hold.
 
         include "nanomig.i"
         include "ch2dma.i"
@@ -12,7 +13,7 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,32,$42,-1
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,32,$42
         BUILD_L5B COP_SECOND
         bsr     build_structs_c3
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
