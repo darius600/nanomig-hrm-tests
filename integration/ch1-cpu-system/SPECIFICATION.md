@@ -221,8 +221,8 @@ program (the S_END ordering contrast of C4 exists in P1 only).
     never written, and p.186 (scan) says "When the BLTSIZE register is
     written the blit is started", so no blit runs and the program finishes
     as before.
-- **C3, completion.** The CPU writes $E0D0 to S_END exactly once, after
-  every window of the program, and never writes S_FAIL. The failure path
+- **C3, completion.** The CPU writes $E0D0 to S_END exactly once and never
+  writes S_FAIL (that S_END comes after every window is graded in C4). The failure path
   writes $FA11 to S_FAIL and then continues to the S_END write, so every
   variant ends.
   - Contrast: write S_END twice. It is no longer written exactly once, so C3
@@ -379,6 +379,9 @@ and T_c+2 for .L.
     and the program finishes.
   - Contrast (MOVE variant, below): assemble case 11 as `MOVE.L #0` while the
     table names `MOVE.W #0`; P1.c, graded against the MOVE opcodes, goes red.
+  - Contrast (no marker): leave out the table marker's write. The program
+    names no table, so P1.c has no expected opcodes and goes red alone, and
+    the program finishes.
 - C1 to C4 and the fixture (2.5).
 
 **Contrasting case.** Variant P1-MOVE replaces each `CLR.x <ea>` with
@@ -485,14 +488,15 @@ depend on it. Quantifier: "internal registers are 32 bits wide" covers all
   access inside W is one of these: a read inside the program image, the
   read of SAVE_SP (step 6), a write to one of the 34 store words (M_USP
   included), or the S_B write. A write outside the list, or a read outside
-  the program image and SAVE_SP, fails the check. Reads in the exception
-  vector area ($000000 to $0003FF) are not covered: the record names no
-  requester (2.4), and the baseline log of both cores shows four reads of
-  word 0 inside W that the program does not issue (it addresses nothing in
-  that area), so a read there cannot be attributed to the CPU. An exception
-  adds stacking writes outside the list, which the write clause covers (its
-  vector read lies in the uncovered area). Also, while A7 holds a pattern,
-  the handler could not return, so C3 would go red.
+  the program image and SAVE_SP, fails the check. Reads of word 0 are not
+  covered: the record names no requester (2.4), and the baseline log of both
+  cores shows four reads of word 0 inside W, two memory cycles apart and at
+  the same port times on both cores, that the program does not issue (it
+  addresses nothing in the vector area); a run that continues past S_END
+  repeats the group once per 227-cycle line. Every other read in the vector
+  area fails the check. An exception adds stacking writes and a vector read
+  outside the list. Also, while A7 holds a pattern, the handler could not
+  return, so C3 would go red.
   - Contrast: before W, install a trap-0 handler that only executes `RTE`.
     Add `TRAP #0` between step 6 and step 7, after A7 has been restored to
     the stack in Chip memory. The exception's stacking writes then appear
@@ -500,7 +504,10 @@ depend on it. Quantifier: "internal registers are 32 bits wide" covers all
   - Contrast (read clause): add `TST.W $4110` between step 6 and step 7. The
     word lies outside the program image and is not SAVE_SP. W holds a read
     that is on neither list and no new write, so P2.c goes red alone: P2.b
-    and the relation hold, and the program finishes.
+    holds, the relation is not evaluated, and the program finishes.
+  - Contrast (vector area): add `TST.W $0010` between step 6 and step 7. The
+    word is an exception vector other than word 0, so P2.c goes red alone:
+    P2.b holds, the relation is not evaluated, and the program finishes.
 - C1 to C4 and the fixture. C1 matters here: A7 holds a pattern during steps 3 to 6.
 
 **Contrasting case.** Variant P2-LOW loads every register with its
@@ -627,15 +634,19 @@ of its three modes. The 68030 and 68040 are absent (see 1).
     (undecodable opcode): add `ADDQ.W #1,D2` before block 3. The check
     decodes only the instructions the package's programs use, so it fails
     on this opcode and the static check goes red.
-- **P3.d, address anchor.** For each k, a CPU read at X_k carries the
-  opcode word the image holds for block k's stop instruction. This shows
-  that the image addresses (and therefore W_k) are the addresses the CPU
-  runs at. In 68020 mode, the opcode may arrive as part of a read that also
-  carries a neighbouring word. What counts is a CPU read whose word address
-  is X_k.
+- **P3.d, address anchor.** For each k, a CPU read at X_k inside R carries
+  the opcode word the image holds for block k's stop instruction. This
+  shows that the image addresses (and therefore W_k) are the addresses the
+  CPU runs at, and that block k runs inside R. In 68020 mode, the opcode may
+  arrive as part of a read that also carries a neighbouring word. What
+  counts is a CPU read whose word address is X_k.
   - Contrast: assemble block 1 with `BRA.W L_1` while the block table still
     names `BRA.S`. The opcode read at X_1 differs, so P3.d goes red, and the
     program finishes.
+  - Contrast (window): run the four blocks before S_START is written, and
+    write the markers P1, L1, ..., P4, L4 and then S_END after them. P3.a
+    and C4 still hold, but no CPU read of X_k lies inside R, so P3.d goes
+    red alone, the relation is not evaluated, and the program finishes.
 - C1 to C4 and the fixture.
 
 **Contrasting case.** None exists on the pages. The manual names no
@@ -675,6 +686,9 @@ read access to the operand. For a byte or word operand it makes exactly one
 access, a write. Claims: `opus:1-guidelines.c59`,
 `sol:1-guidelines.c59`, p.13. Graded on the second core in 68020 mode only.
 The first core cannot run it: it has no 68020 mode.
+
+Declined (section 1): measured and recorded, not graded; the preconditions
+below are not asserted (the run's fixture line is).
 
 **Source sentences.** p.13: "The 68020 CLR instruction does a single Write
 access. The 68000 CLR instruction does a Read access first, then a Write
@@ -831,11 +845,17 @@ pairs must hold.
     image only inside step 3's four bytes, PRE_SP differs from the other
     runs, so P5.b goes red through its dynamic half, and the program
     finishes.
-  - Contrast (static): the 68010 run loads an image that keeps step 3's two
-    `NOP`s but differs from the 68000-mode image at one byte (image offset
-    $FB) inside case 3's four-byte `MOVE.W #imm,CCR` (`#1` for `#0`),
-    outside step 3, and P5.b goes red. The static half compares the images
-    the runs loaded, not fixed files.
+  - Contrast (static, outside step 3): the 68010 run loads the VBR image
+    (step 3's `MOVEC D0,VBR` kept) that also differs from the 68000-mode
+    image at one byte (image offset $FB) inside case 3's four-byte
+    `MOVE.W #imm,CCR` (`#1` for `#0`), outside step 3. The image differs
+    inside step 3 as every VBR image does, so only the clause "every
+    differing byte lies inside step 3" fails, and P5.b goes red. The static
+    half compares the images the runs loaded, not fixed files.
+  - Contrast (static, no difference in step 3): the 68010 run loads the
+    68000-mode image. The two images are byte-identical and PRE_SP stays
+    equal, so only the clause "at least one difference there" fails, and
+    P5.b goes red. The pair relations are not evaluated.
 - **P5.c, the window holds only the frame.** Every CPU write inside W_e
   lies at an address from POST_SP_e (the value the handler stores) up to
   PRE_SP minus 2.
@@ -890,6 +910,9 @@ than in 68000 mode. Claims: `opus:1-guidelines.c67`,
 `sol:1-guidelines.c67`, p.13; the observable is the one P3 establishes (c64,
 c65). Graded on the second core only. The first core cannot run the 68020
 side; it serves only the contrasting case.
+
+Declined (section 1): the relation is measured and recorded, not graded.
+The preconditions below are still asserted, on every run they name.
 
 **Source sentence.** p.13: "All 68000 family processors have a pre-fetch
 feature. This means the CPU loads instructions ahead of the current program
@@ -1006,8 +1029,8 @@ counted as in P3, as a calibration.
 - **Addresses.** `PROGRAM_ORG` ($080400) is the harness's own fixed code
   entry; every program's first instruction clears the boot overlay
   (`CIAAPRA`, $BFE001, any write) so that the identity-mapped range
-  extends down to $000000, making 2.2's own literal addresses ($3FF0,
-  $4000-$4544, $8000 taken as "wherever code starts") real, writable chip
+  extends down to $000000, making 2.2's own literal addresses ($3E00, $3FF0,
+  $4000-$458F, $8000 taken as "wherever code starts") real, writable chip
   RAM, including P1's abs.W cases and P5's exception vectors.
 - **X_c/X_k self-report.** Every case/block stores the address of its own
   CLR/MOVE/stop instruction into a table (XTAB, XTAB3, XTAB6) with a
