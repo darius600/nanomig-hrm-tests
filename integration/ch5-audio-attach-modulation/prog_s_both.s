@@ -14,7 +14,7 @@
 ; V32: the last volume word is 32 instead of 40, a volume outside the four of M_VP
 ;   (P4-B's contrast).
 ; PERCONST: every period word is 300 (P4-C's contrast: the period changes once).
-; SHORT: the session lasts 40000 ticks (P5-POP-BOTH's contrast).
+; SHORT: the session lasts 17500 ticks (P5-POP-BOTH's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -62,7 +62,7 @@ desc:
         dc.w    $8203
         dc.w    $0003
         ifd     SHORT
-        dc.l    40000
+        dc.l    17500
         else
         dc.l    110000
         endif

@@ -18,7 +18,7 @@
 ; ZERO: every modulator word is 0 (P3-SILENT's contrast).
 ; CH1BYTES: ch1 plays the first four words of M_V as its own data (P3-WHOLE's
 ;   contrast: its words reach the output as two bytes each).
-; SHORT: the session lasts 70000 ticks (P5-POP-AV's contrast).
+; SHORT: the session lasts 35000 ticks (P5-POP-AV's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -85,7 +85,7 @@ desc:
         dc.w    $0003
         endif
         ifd     SHORT
-        dc.l    70000
+        dc.l    35000
         else
         dc.l    200000
         endif

@@ -15,8 +15,11 @@
 // // MUTATION records below name. NMH_MUTATE selects a mutated program (or a
 // substituted capture of another session) in place of the ordinary one: the
 // ordinary line of the same id then prints its verdict through the unchanged
-// comparator. None is exercised by a plain `make test` and none is counted in
-// its summary. "Page model" below is the private copy of the audio RTL built by
+// comparator. A selector changes the program (or the captured session) and nothing
+// else: no expected value, window, observed channel or population depends on it.
+// The contrast of a precondition replaces the capture of the line it grades and the
+// lines gated on it print NOT GRADED. None is exercised by a plain `make test` and
+// none is counted in its summary. "Page model" below is the private copy of the audio RTL built by
 // `make pm-test-fx68k` / `make pm-test-tg68k` (page_model.patch), which
 // implements the attach bits as pages 149-151 and 164-165 describe them; the
 // repository RTL does not implement them, so the lines that grade attach
@@ -26,46 +29,55 @@
 //
 // MUTATION FIXTURE-STORE stimulus red the program stores $DEAD in place of $BEEF (prog_fixture_mut) (NMH_MUTATE=FIXTURE-STORE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION FIXTURE-ACTIVITY stimulus red AUD0EN is left out of the enable, so channel 0 never plays (prog_fixture_noplay) (NMH_MUTATE=FIXTURE-ACTIVITY); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC1 stimulus red the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach), graded against the session's own $01 mask (NMH_MUTATE=PC1); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC2 stimulus red R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) (NMH_MUTATE=PC2); RTL/fx68k n/a -> FAIL; RTL/TG68K n/a -> FAIL; PM/fx68k n/a -> FAIL; PM/TG68K n/a -> FAIL
-// MUTATION PC3 stimulus red R-MOD with the enable $8200: DMAEN without AUD0EN (prog_rmod_noaud) (NMH_MUTATE=PC3); RTL/fx68k n/a -> FAIL; RTL/TG68K n/a -> FAIL; PM/fx68k n/a -> FAIL; PM/TG68K n/a -> FAIL
+// MUTATION PC1 stimulus red the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach); the line keeps expecting the session's $01 mask and the lines gated on it print NOT GRADED (NMH_MUTATE=PC1); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC2 stimulus red R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) replaces the capture of the R-MOD line (NMH_MUTATE=PC2); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC3 stimulus red R-MOD with AUD0LEN = 7 (prog_rmod_len7) replaces the capture of the R-MOD line, graded with LEN 8 (NMH_MUTATE=PC3); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC4-VOL stimulus red R-VOL-1 writes 40 in the step labelled 60 (prog_rvol1_mut); R-VOL-2 and R-VOL-3 are graded by the same call and have no contrast of their own (NMH_MUTATE=PC4-VOL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC4-DUR stimulus red R-PER-1 writes 500 in the step labelled 700 (prog_rper1_mut); R-PER-2, R-PER-3 and R-RAMP are graded by the same call and have no contrast of their own (NMH_MUTATE=PC4-DUR); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC5-VOL stimulus red R-VOL-1's capture is graded as R-VOL-3's, so "channel 3's" output is channel 1's (NMH_MUTATE=PC5-VOL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC5-PER stimulus red R-VOL-3's capture is graded as R-PER-1's, so "channel 1's" output is channel 3's (NMH_MUTATE=PC5-PER); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC6 stimulus red AUD0PER = 5000 is written halfway through R-MOD (prog_rmod_pc6) (NMH_MUTATE=PC6); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC7-CAL stimulus red R-MOD with AUD0VOL = 0 (prog_rmod_vol0): the output never changes and no instant is found (NMH_MUTATE=PC7-CAL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC7-CAL stimulus red R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the calibration fails and PC7-LOOP, PC7-N3 and every P10 line print NOT GRADED (NMH_MUTATE=PC7-CAL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC7-FRAME stimulus red M_on is written late, after a delay following the DMACON enable (prog_rmod_pc7frame), so a fetch occurs before it (NMH_MUTATE=PC7-FRAME); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC7-LOOP stimulus red AUD0PER = 3000 is written halfway through R-MOD (prog_rmod_pc7) (NMH_MUTATE=PC7-LOOP); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION PC7-N3 stimulus red S-AP's capture is graded through the same comparator: with napnav = 0 the figure prints no request on 101->010 (NMH_MUTATE=PC7-N3); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P1-WINDOW implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k PASS; RTL/TG68K PASS; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P1-WINDOW stimulus red channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts, and the lines gated on the window print NOT GRADED (NMH_MUTATE=P1-WINDOW); RTL/fx68k PASS -> PRECONDITION NOT MET; RTL/TG68K PASS -> PRECONDITION NOT MET; PM/fx68k PASS -> PRECONDITION NOT MET; PM/TG68K PASS -> PRECONDITION NOT MET
 // MUTATION P1-A implementation green the ordinary run of the page model, where the attach bits are implemented (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-A stimulus red the ADKCON $8001 write is omitted (prog_s_av_noattach); PC1 expects $00 (NMH_MUTATE=P1-NOATTACH); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-A stimulus red the second and third modulator words are exchanged (prog_s_av_swap) (NMH_MUTATE=P1-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P1-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P1-B stimulus red the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33) (NMH_MUTATE=P1-MV33); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P1-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P1-C stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write) (NMH_MUTATE=P1-PER1WRITE); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P1-JOINT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-JOINT stimulus red the ADKCON $8001 write is omitted (prog_s_av_noattach) (NMH_MUTATE=P1-NOATTACH); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-JOINT stimulus red ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half (NMH_MUTATE=P1-JOINT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-JOINT stimulus red the second and third modulator words are exchanged (prog_s_av_swap): the destination half (NMH_MUTATE=P1-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P2-A implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P2-A stimulus red the ADKCON $8010 write is omitted (prog_s_p2_noattach) (NMH_MUTATE=P2-NOATTACH); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-A stimulus red the eighth and ninth modulator words are exchanged (prog_s_p2_swap) (NMH_MUTATE=P2-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P2-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P2-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P3-PRE stimulus red R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte (NMH_MUTATE=P3-PRE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P3-SILENT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P3-SILENT stimulus red R-MOD's capture in place of S-AV's, graded on channel 1's output, which is silent there (NMH_MUTATE=P3-SILENT); RTL/fx68k NOT EVALUATED -> FAIL; RTL/TG68K NOT EVALUATED -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-SILENT stimulus red every modulator word is 0 (prog_s_av_zero) (NMH_MUTATE=P3-SILENT); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P3-WHOLE implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P3-WHOLE stimulus red R-MOD's capture in place of S-AV's, graded on channel 0's own output: every word is played as two bytes (NMH_MUTATE=P3-WHOLE); RTL/fx68k NOT EVALUATED -> FAIL; RTL/TG68K NOT EVALUATED -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-WHOLE stimulus red channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) (NMH_MUTATE=P3-WHOLE); RTL/fx68k NOT EVALUATED -> FAIL; RTL/TG68K NOT EVALUATED -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P3-SP2 implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P4-A implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-A stimulus red S-BOTH-volonly's capture (ADKCON $8001) in place of S-BOTH's (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-A stimulus red the volume words 56 and 8 are exchanged (prog_s_both_swap) (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-B stimulus red S-BOTH-volonly's capture in place of S-BOTH's: the even words (periods) reach the volume (NMH_MUTATE=P4-B); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-B stimulus red the last volume word is 32 instead of 40 (prog_s_both_v32) (NMH_MUTATE=P4-B); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-C stimulus red S-BOTH-volonly's capture in place of S-BOTH's: the period never changes (NMH_MUTATE=P4-C); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-C stimulus red every period word is 300 (prog_s_both_perconst) (NMH_MUTATE=P4-C); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-VOLONLY stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per) (NMH_MUTATE=P4-VOLONLY); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-JOINT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-JOINT stimulus red S-BOTH-volonly's capture in place of S-BOTH's (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-JOINT stimulus red the volume words 56 and 8 are exchanged (prog_s_both_swap): the half that P4-A grades (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-JOINT stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per): the half that P4-VOLONLY grades (NMH_MUTATE=P4-VOLONLY); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P5-POP-AV stimulus red the session lasts 70000 ticks (prog_s_av_short) (NMH_MUTATE=P5-POP-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P5-POP-AP stimulus red the session lasts 55000 ticks (prog_s_ap_short) (NMH_MUTATE=P5-POP-AP); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P5-POP-BOTH stimulus red the session lasts 40000 ticks (prog_s_both_short) (NMH_MUTATE=P5-POP-BOTH); RTL/fx68k NOT EVALUATED -> NOT GRADED; RTL/TG68K NOT EVALUATED -> NOT GRADED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P5-AV stimulus red AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P5-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
@@ -78,12 +90,12 @@
 // MUTATION P6-A implementation green bit 4, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P6-A implementation green bit 5, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P6-A implementation green bit 6, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A stimulus red bit 0, the attach write is omitted (prog_s_pair0_noattach) (NMH_MUTATE=P6-0); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 1, the attach write is omitted (prog_s_pair1_noattach) (NMH_MUTATE=P6-1); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 2, the attach write is omitted (prog_s_pair2_noattach) (NMH_MUTATE=P6-2); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 4, the attach write is omitted (prog_s_pair4_noattach) (NMH_MUTATE=P6-4); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 5, the attach write is omitted (prog_s_pair5_noattach) (NMH_MUTATE=P6-5); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 6, the attach write is omitted (prog_s_pair6_noattach) (NMH_MUTATE=P6-6); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) (NMH_MUTATE=P6-0); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) (NMH_MUTATE=P6-1); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap) (NMH_MUTATE=P6-2); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 4, the second and third modulator words are exchanged (prog_s_pair4_swap) (NMH_MUTATE=P6-4); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) (NMH_MUTATE=P6-5); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) (NMH_MUTATE=P6-6); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P6-B stimulus red bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper) (NMH_MUTATE=P6-TGT-0); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P6-B stimulus red bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol) (NMH_MUTATE=P6-TGT-4); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P6-C stimulus red bit 0: a tripwire (ch3) is given a non-zero starting AUDxVOL (prog_s_pair0_extra) (NMH_MUTATE=P6-0-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
@@ -93,25 +105,38 @@
 // MUTATION P6-D stimulus red bit 6: a tripwire's (ch1) AUDxPER is rewritten halfway through (prog_s_pair6_extra) (NMH_MUTATE=P6-6-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P7-CONST stimulus red a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra) (NMH_MUTATE=P7V); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P7-SPACING stimulus red a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra) (NMH_MUTATE=P7P); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (the first of the five lines, S-AV) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the unattached reference session takes the attached one's place (first line, S-AV) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-V implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P7-JOINT-V stimulus red a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra): the half that P7-CONST grades (NMH_MUTATE=P7V); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-V stimulus red the attach write is omitted: R-DAC3-V takes S-DAC3-V's place: the half that P8-ATT grades (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-P implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P7-JOINT-P stimulus red a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra): the half that P7-SPACING grades (NMH_MUTATE=P7P); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-P stimulus red the attach write is omitted: R-DAC3-P takes S-DAC3-P's place: the half that P8-ATT grades (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT implementation green the ordinary run of the page model (line 1 of the five, S-AV) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 1 of the five, S-AV) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT implementation green the ordinary run of the page model (line 2 of the five, S-AP) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 2 of the five, S-AP) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT implementation green the ordinary run of the page model (line 3 of the five, S-BOTH) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 3 of the five, S-BOTH) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT implementation green the ordinary run of the page model (line 4 of the five, S-DAC3-V) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 4 of the five, S-DAC3-V) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT implementation green the ordinary run of the page model (line 5 of the five, S-DAC3-P) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
+// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 5 of the five, S-DAC3-P) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P8-PRE stimulus red R-MOD with AUD0VOL = 0 (prog_rmod_vol0) (NMH_MUTATE=P8-PRE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P8-JOINT-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-JOINT-AP stimulus red the attach write is omitted in the source half: R-MOD takes S-AP's place (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P9-A stimulus red AUD0LEN = 4 in S-LEN-A (prog_s_lena_len4), graded with the page's L_m = 5 (NMH_MUTATE=P9-A); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-JOINT-AP stimulus red the attach write is omitted in the source half: R-DAC-P4 takes S-AP's place (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-JOINT-AP stimulus red the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half (NMH_MUTATE=P8-JOINT-AP); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P9-WINDOW stimulus red AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart, and P9-A to P9-D print NOT GRADED (NMH_MUTATE=P9-WINDOW); RTL/fx68k PASS -> PRECONDITION NOT MET; RTL/TG68K PASS -> PRECONDITION NOT MET; PM/fx68k PASS -> PRECONDITION NOT MET; PM/TG68K PASS -> PRECONDITION NOT MET
+// MUTATION P9-A stimulus red AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with the page's L_m = 5 (NMH_MUTATE=P9-A); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P9-B stimulus red AUD1LEN = 2 in S-LEN-A (prog_s_lena_ch1len2), graded with the page's L_c = 3 (NMH_MUTATE=P9-B); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P9-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P9-C stimulus red AUD0LEN = 4 in S-LEN-A (prog_s_lena_len4), graded with the page's modulator cycle of 5 words (NMH_MUTATE=P9-C); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P9-C stimulus red the third and fourth words of M_LA are exchanged (prog_s_lena_swap), graded with the page's M_LA (NMH_MUTATE=P9-C); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P9-D stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-LEN-A (prog_s_lena_per1write) (NMH_MUTATE=P9-D); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P10-AV stimulus red AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P10-AV); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P10-AV stimulus red S-AP's capture in place of S-AV's: the phase alone (NMH_MUTATE=P10-AV-PHASE); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P10-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P10-AP stimulus red S-AV's capture in place of S-AP's (NMH_MUTATE=P10-AP); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P10-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
 // MUTATION P10-BOTH stimulus red S-AV's capture in place of S-BOTH's (NMH_MUTATE=P10-BOTH); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-POP-AV implementation green the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-AP implementation green the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-BOTH implementation green the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P9-D none impossible not exercised, by a scope decision: no stimulus here makes the durations of channel 1 leave D_1(200) without changing what the other P9 lines grade (Mutation scope); the ordinary run (the ordinary run); RTL/fx68k PASS; RTL/TG68K PASS; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P9-WINDOW none impossible not exercised, by a scope decision: a window that does not open would leave every P9 line NOT GRADED (Mutation scope); the ordinary run (the ordinary run); RTL/fx68k PASS; RTL/TG68K PASS; PM/fx68k PASS; PM/TG68K PASS
 //
 // Not built, and why: see SPECIFICATION.md, "Mutation scope".
 
@@ -684,7 +709,7 @@ int main(int argc, char** argv) {
     {
         Capture pc6c = mutating("PC6") ? run_capture(dir + "/prog_rmod_pc6.bin", budget_for(200000)) : rmod;
         mut_note("PC6", "prog_rmod_pc6.bin", pc6c);
-        auto b = sweep_bounds(pc6c, mutating("PC6") ? std::vector<uint16_t>{3} : std::vector<uint16_t>{});
+        auto b = sweep_bounds(pc6c, {});
         checks.expect(pc6c.loaded && pc6c.done.has_value() && pc6_spread_ok(pc6c, b),
             "PC6 [p.141,p.164]: in R-MOD, channel 0's sample durations differ from D_mod by at "
             "most 1 part in 4000");

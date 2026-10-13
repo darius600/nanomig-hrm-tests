@@ -3,7 +3,7 @@
 ; PER6000: AUD0PER=6000 instead of 4000 (P5's contrast).
 ; SWAP: the second and third modulator words are exchanged (P8-JOINT-AP's contrast
 ;   for the destination half: every value is still a word of M_P4, the order is not).
-; SHORT: the session lasts 55000 ticks (P5-POP-AP's contrast).
+; SHORT: the session lasts 25500 ticks (P5-POP-AP's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -39,7 +39,7 @@ desc:
         dc.w    $8203
         dc.w    $0003
         ifd     SHORT
-        dc.l    55000
+        dc.l    25500
         else
         dc.l    110000
         endif

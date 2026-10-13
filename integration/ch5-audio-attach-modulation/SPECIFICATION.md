@@ -688,9 +688,9 @@ the check's D_mod from R-MOD (4000 ticks): prog_s_av_per6000 (P5-AV),
 prog_s_ap_per6000 (P5-AP), prog_s_both_per6000 (P5-BOTH). The page then
 predicts changes 12,000 (6000 for both bits) ticks apart, on a 6000-tick grid,
 and both the grid check and the spacing check fail. A shorter session leaves
-fewer than 2L changes in the window: prog_s_av_short (70,000 ticks, P5-POP-AV),
-prog_s_ap_short (55,000 ticks, P5-POP-AP) and prog_s_both_short (40,000 ticks,
-P5-POP-BOTH). The lines have a population only where attach has an effect, so on
+fewer than 2L changes in the window: prog_s_av_short (35,000 ticks, P5-POP-AV),
+prog_s_ap_short (25,500 ticks, P5-POP-AP) and prog_s_both_short (17,500 ticks,
+P5-POP-BOTH); each still holds the modulator's first restart. The lines have a population only where attach has an effect, so on
 the repository RTL these contrasts print "not evaluated" like the lines
 themselves (Mutation scope).
 
@@ -1223,6 +1223,29 @@ has a record has none of its own.
 - The contrast of PC7-N3 moves it only on the page model (S-AP's capture; the
   repository RTL requests on 101->010 whatever the attach bits say, NM-HRM-028).
 
+**Lines that move together.** A contrast changes the program of one session and turns
+its own line; the table gives every other line that moves with it, from the same
+replays as the Records, identical on fx68k and TG68K. NOT GRADED is the gate of a
+precondition working. A joint line moves with each of its halves and with the
+lines it contains (P1-JOINT with P1-A, P4-JOINT with P4-A and P4-VOLONLY,
+P7-JOINT-V and P7-JOINT-P with P7-CONST, P7-SPACING and P8-ATT, P8-JOINT-AP with
+P8-ATT of S-AP); P1-A contains P1-B's level check and P4-A contains P4-B's sets
+and P4-C's counts, so those contrasts move the containing line as well. Where the
+RTL column is "-", the lines are red or not evaluated on the repository RTL before
+and after.
+
+| NMH_MUTATE | Page model | Repository RTL |
+|---|---|---|
+| PC1 | P1-A PASS -> NOT GRADED; P1-B PASS -> NOT GRADED; P1-C PASS -> NOT GRADED; P1-JOINT PASS -> NOT GRADED | P1-A FAIL -> NOT GRADED; P1-B NOT EVALUATED -> NOT GRADED; P1-C NOT EVALUATED -> NOT GRADED; P1-JOINT FAIL -> NOT GRADED |
+| PC7-CAL | P10-AP PASS -> NOT GRADED; P10-AV PASS -> NOT GRADED; P10-BOTH PASS -> NOT GRADED; P5-AP PASS -> NOT GRADED; PC7-LOOP PASS -> NOT GRADED; PC7-N3 PASS -> NOT GRADED | P10-AP FAIL -> NOT GRADED; P10-AV PASS -> NOT GRADED; P10-BOTH FAIL -> NOT GRADED; PC7-LOOP PASS -> NOT GRADED; PC7-N3 PASS -> NOT GRADED |
+| P1-WINDOW | P1-A PASS -> NOT GRADED; P1-B PASS -> NOT GRADED; P1-C PASS -> NOT GRADED; P1-JOINT PASS -> NOT GRADED | P1-A FAIL -> NOT GRADED; P1-B NOT EVALUATED -> NOT GRADED; P1-C NOT EVALUATED -> NOT GRADED; P1-JOINT FAIL -> NOT GRADED |
+| P1-MV33 | P1-A PASS -> FAIL; P1-JOINT PASS -> FAIL | - |
+| P4-B | P4-A PASS -> FAIL; P4-JOINT PASS -> FAIL | - |
+| P4-C | P4-A PASS -> FAIL; P4-JOINT PASS -> FAIL | - |
+| P5-POP-BOTH | - | P5-BOTH NOT EVALUATED -> NOT GRADED |
+| P8-PRE | P8-ATT #1 PASS -> NOT GRADED | P8-ATT #1 FAIL -> NOT GRADED |
+| P9-WINDOW | P9-A #1 PASS -> NOT GRADED; P9-B #1 PASS -> NOT GRADED; P9-C #1 PASS -> NOT GRADED; P9-D #1 PASS -> NOT GRADED | P9-A #1 PASS -> NOT GRADED; P9-B #1 PASS -> NOT GRADED; P9-C #1 NOT EVALUATED -> NOT GRADED; P9-D #1 PASS -> NOT GRADED |
+
 ## Measured values
 
 Everything below is printed by `make -k -B test` (the MEASURED lines, the counts) or
@@ -1232,13 +1255,13 @@ No bound in this package is invented: every tolerance is lambda (Units), the
 apparatus resolution (Units), or a reference measured in the same run.
 
 **Counts of the ordinary run** (`make -k -B test`; the test exits 1 while a line is
-red, so make exits 2): repository RTL 173 passed, 20 failed on fx68k and on TG68K;
-page model 209 passed, 0 failed on fx68k and on TG68K. The 20 reds of the repository
+red, so make exits 2): repository RTL 173 passed, 22 failed on fx68k and on TG68K;
+page model 211 passed, 0 failed on fx68k and on TG68K. The 22 reds of the repository
 RTL are P1-A, P1-JOINT, P2-A, P4-A, P4-C, P4-JOINT, P6-A for bits 0, 1, 2, 4, 5 and
-6, P8-ATT for S-AV, S-AP, S-BOTH, S-DAC3-V and S-DAC3-P, P8-JOINT-AP, P10-AP and
-P10-BOTH. Lines whose population is empty there print RECORDED (P1-B, P1-C, P2-B,
-P2-C, P3-SILENT, P3-WHOLE, P3-SP2, P4-B, the three P5 population lines and the three
-P5 lines, P9-C).
+6, P8-ATT for S-AV, S-AP, S-BOTH, S-DAC3-V and S-DAC3-P, P8-JOINT-AP, P7-JOINT-V,
+P7-JOINT-P, P10-AP and P10-BOTH. Lines whose population is empty there print
+RECORDED (P1-B, P1-C, P2-B, P2-C, P3-SILENT, P3-WHOLE, P3-SP2, P4-B, the three P5
+population lines and the three P5 lines, P9-C).
 
 **Apparatus constants.**
 
@@ -1264,46 +1287,55 @@ without and with the change, a single verdict is the ordinary run.
 |---|---|---|---|---|---|---|
 | FIXTURE-STORE | FIXTURE-STORE | the program stores $DEAD in place of $BEEF (prog_fixture_mut) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | FIXTURE-ACTIVITY | FIXTURE-ACTIVITY | AUD0EN is left out of the enable, so channel 0 never plays (prog_fixture_noplay) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| PC1 | PC1 | the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach), graded against the session's own $01 mask | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| PC2 | PC2 | R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) | n/a -> FAIL | n/a -> FAIL | n/a -> FAIL | n/a -> FAIL |
-| PC3 | PC3 | R-MOD with the enable $8200: DMAEN without AUD0EN (prog_rmod_noaud) | n/a -> FAIL | n/a -> FAIL | n/a -> FAIL | n/a -> FAIL |
+| PC1 | PC1 | the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach); the line keeps expecting the session's $01 mask and the lines gated on it print NOT GRADED | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC2 | PC2 | R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) replaces the capture of the R-MOD line | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC3 | PC3 | R-MOD with AUD0LEN = 7 (prog_rmod_len7) replaces the capture of the R-MOD line, graded with LEN 8 | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC4-VOL | PC4-VOL | R-VOL-1 writes 40 in the step labelled 60 (prog_rvol1_mut); R-VOL-2 and R-VOL-3 are graded by the same call and have no contrast of their own | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC4-DUR | PC4-DUR | R-PER-1 writes 500 in the step labelled 700 (prog_rper1_mut); R-PER-2, R-PER-3 and R-RAMP are graded by the same call and have no contrast of their own | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC5-VOL | PC5-VOL | R-VOL-1's capture is graded as R-VOL-3's, so "channel 3's" output is channel 1's | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC5-PER | PC5-PER | R-VOL-3's capture is graded as R-PER-1's, so "channel 1's" output is channel 3's | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC6 | PC6 | AUD0PER = 5000 is written halfway through R-MOD (prog_rmod_pc6) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| PC7-CAL | PC7-CAL | R-MOD with AUD0VOL = 0 (prog_rmod_vol0): the output never changes and no instant is found | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC7-CAL | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the calibration fails and PC7-LOOP, PC7-N3 and every P10 line print NOT GRADED | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC7-FRAME | PC7-FRAME | M_on is written late, after a delay following the DMACON enable (prog_rmod_pc7frame), so a fetch occurs before it | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC7-LOOP | PC7-LOOP | AUD0PER = 3000 is written halfway through R-MOD (prog_rmod_pc7) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | PC7-N3 | PC7-N3 | S-AP's capture is graded through the same comparator: with napnav = 0 the figure prints no request on 101->010 | PASS -> PASS | PASS -> PASS | PASS -> FAIL | PASS -> FAIL |
 | P1-WINDOW | - | the ordinary run of the page model | PASS | PASS | PASS | PASS |
+| P1-WINDOW | P1-WINDOW | channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts, and the lines gated on the window print NOT GRADED | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET |
 | P1-A | - | the ordinary run of the page model, where the attach bits are implemented | FAIL | FAIL | PASS | PASS |
-| P1-A | P1-NOATTACH | the ADKCON $8001 write is omitted (prog_s_av_noattach); PC1 expects $00 | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-A | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P1-B | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P1-B | P1-MV33 | the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P1-C | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P1-C | P1-PER1WRITE | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P1-JOINT | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P1-JOINT | P1-NOATTACH | the ADKCON $8001 write is omitted (prog_s_av_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-JOINT | P1-JOINT | ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-JOINT | P1-A | the second and third modulator words are exchanged (prog_s_av_swap): the destination half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-A | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P2-A | P2-NOATTACH | the ADKCON $8010 write is omitted (prog_s_p2_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-A | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-B | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P2-C | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P3-PRE | P3-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-SILENT | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P3-SILENT | P3-SILENT | R-MOD's capture in place of S-AV's, graded on channel 1's output, which is silent there | NOT EVALUATED -> FAIL | NOT EVALUATED -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-SILENT | P3-SILENT | every modulator word is 0 (prog_s_av_zero) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P3-WHOLE | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P3-WHOLE | P3-WHOLE | R-MOD's capture in place of S-AV's, graded on channel 0's own output: every word is played as two bytes | NOT EVALUATED -> FAIL | NOT EVALUATED -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-WHOLE | P3-WHOLE | channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) | NOT EVALUATED -> FAIL | NOT EVALUATED -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-SP2 | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P4-A | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P4-A | P4-A | S-BOTH-volonly's capture (ADKCON $8001) in place of S-BOTH's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-A | P4-A | the volume words 56 and 8 are exchanged (prog_s_both_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-B | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P4-B | P4-B | S-BOTH-volonly's capture in place of S-BOTH's: the even words (periods) reach the volume | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P4-B | P4-B | the last volume word is 32 instead of 40 (prog_s_both_v32) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P4-C | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P4-C | P4-C | S-BOTH-volonly's capture in place of S-BOTH's: the period never changes | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-C | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-VOLONLY | P4-VOLONLY | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-JOINT | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P4-JOINT | P4-A | S-BOTH-volonly's capture in place of S-BOTH's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-JOINT | P4-A | the volume words 56 and 8 are exchanged (prog_s_both_swap): the half that P4-A grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-JOINT | P4-VOLONLY | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per): the half that P4-VOLONLY grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-AV | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
+| P5-POP-AV | P5-POP-AV | the session lasts 70000 ticks (prog_s_av_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-AP | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
+| P5-POP-AP | P5-POP-AP | the session lasts 55000 ticks (prog_s_ap_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-BOTH | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
+| P5-POP-BOTH | P5-POP-BOTH | the session lasts 40000 ticks (prog_s_both_short) | NOT EVALUATED -> NOT GRADED | NOT EVALUATED -> NOT GRADED | PASS -> FAIL | PASS -> FAIL |
 | P5-AV | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P5-AV | P5-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P5-AP | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
@@ -1316,12 +1348,12 @@ without and with the change, a single verdict is the ordinary run.
 | P6-A | - | bit 4, the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
 | P6-A | - | bit 5, the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
 | P6-A | - | bit 6, the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P6-A | P6-0 | bit 0, the attach write is omitted (prog_s_pair0_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P6-A | P6-1 | bit 1, the attach write is omitted (prog_s_pair1_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P6-A | P6-2 | bit 2, the attach write is omitted (prog_s_pair2_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P6-A | P6-4 | bit 4, the attach write is omitted (prog_s_pair4_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P6-A | P6-5 | bit 5, the attach write is omitted (prog_s_pair5_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P6-A | P6-6 | bit 6, the attach write is omitted (prog_s_pair6_noattach) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-0 | bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-2 | bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-4 | bit 4, the second and third modulator words are exchanged (prog_s_pair4_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-5 | bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-6 | bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-B | P6-TGT-0 | bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-B | P6-TGT-4 | bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-C | P6-0-EXTRA | bit 0: a tripwire (ch3) is given a non-zero starting AUDxVOL (prog_s_pair0_extra) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
@@ -1331,22 +1363,35 @@ without and with the change, a single verdict is the ordinary run.
 | P6-D | P6-6-EXTRA | bit 6: a tripwire's (ch1) AUDxPER is rewritten halfway through (prog_s_pair6_extra) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P7-CONST | P7V | a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P7-SPACING | P7P | a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P8-ATT | - | the ordinary run of the page model (the first of the five lines, S-AV) | FAIL | FAIL | PASS | PASS |
-| P8-ATT | P8-OMIT | the attach write is omitted: the unattached reference session takes the attached one's place (first line, S-AV) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-V | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
+| P7-JOINT-V | P7V | a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra): the half that P7-CONST grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-V | P8-OMIT | the attach write is omitted: R-DAC3-V takes S-DAC3-V's place: the half that P8-ATT grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-P | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
+| P7-JOINT-P | P7P | a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra): the half that P7-SPACING grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-P | P8-OMIT | the attach write is omitted: R-DAC3-P takes S-DAC3-P's place: the half that P8-ATT grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | - | the ordinary run of the page model (line 1 of the five, S-AV) | FAIL | FAIL | PASS | PASS |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place (line 1 of the five, S-AV) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | - | the ordinary run of the page model (line 2 of the five, S-AP) | FAIL | FAIL | PASS | PASS |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place (line 2 of the five, S-AP) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | - | the ordinary run of the page model (line 3 of the five, S-BOTH) | FAIL | FAIL | PASS | PASS |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place (line 3 of the five, S-BOTH) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | - | the ordinary run of the page model (line 4 of the five, S-DAC3-V) | FAIL | FAIL | PASS | PASS |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place (line 4 of the five, S-DAC3-V) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | - | the ordinary run of the page model (line 5 of the five, S-DAC3-P) | FAIL | FAIL | PASS | PASS |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place (line 5 of the five, S-DAC3-P) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P8-PRE | P8-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P8-JOINT-AP | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
-| P8-JOINT-AP | P8-OMIT | the attach write is omitted in the source half: R-MOD takes S-AP's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P9-A | P9-A | AUD0LEN = 4 in S-LEN-A (prog_s_lena_len4), graded with the page's L_m = 5 | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-JOINT-AP | P8-OMIT | the attach write is omitted in the source half: R-DAC-P4 takes S-AP's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-JOINT-AP | P8-JOINT-AP | the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P9-WINDOW | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart, and P9-A to P9-D print NOT GRADED | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET |
+| P9-A | P9-A | AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with the page's L_m = 5 | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P9-B | P9-B | AUD1LEN = 2 in S-LEN-A (prog_s_lena_ch1len2), graded with the page's L_c = 3 | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P9-C | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P9-C | P9-C | AUD0LEN = 4 in S-LEN-A (prog_s_lena_len4), graded with the page's modulator cycle of 5 words | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P9-C | P9-C | the third and fourth words of M_LA are exchanged (prog_s_lena_swap), graded with the page's M_LA | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P9-D | P9-D | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-LEN-A (prog_s_lena_per1write) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P10-AV | P10-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-AV | P10-AV-PHASE | S-AP's capture in place of S-AV's: the phase alone | PASS -> PASS | PASS -> PASS | PASS -> FAIL | PASS -> FAIL |
 | P10-AP | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
 | P10-AP | P10-AP | S-AV's capture in place of S-AP's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P10-BOTH | - | the ordinary run of the page model | FAIL | FAIL | PASS | PASS |
 | P10-BOTH | P10-BOTH | S-AV's capture in place of S-BOTH's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P5-POP-AV | - | the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P5-POP-AP | - | the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P5-POP-BOTH | - | the ordinary run of the page model; no stimulus makes the population smaller by a page-derived amount (Mutation scope) | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P9-D | - | not exercised, by a scope decision: no stimulus here makes the durations of channel 1 leave D_1(200) without changing what the other P9 lines grade (Mutation scope); the ordinary run | PASS | PASS | PASS | PASS |
-| P9-WINDOW | - | not exercised, by a scope decision: a window that does not open would leave every P9 line NOT GRADED (Mutation scope); the ordinary run | PASS | PASS | PASS | PASS |
