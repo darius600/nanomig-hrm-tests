@@ -47,12 +47,12 @@ FR_ITERS        equ     50
 BLIT_SRC        equ     $0C2000         ; unused content: only the blit's own timing matters here
 BLIT_DST        equ     $0C4000
 
-FR_REG          equ     $E80048         ; Zorro II autoconfig "Register 0x48", ZII RAM (cpu_wrapper.v:640);
+FR_REG          equ     $E80048         ; Zorro II autoconfig "Register 0x48", ZII RAM;
                                         ; not a manual register -- only how this harness capability is enabled
         ifd     FR_CHIPCODE
 FR_CODE         equ     $0C8000         ; chip RAM: this program's own MUTATION target (see header)
         else
-FR_CODE         equ     $200000         ; Zorro II fast RAM, bank 1 (cpu_wrapper.v:117, addr[23:21]=1)
+FR_CODE         equ     $200000         ; Zorro II fast RAM, bank 1 (address bits 23:21 = 1)
         endif
 FR_CNT          equ     $200100         ; the loop's own counter word, always in fast RAM
 
@@ -73,8 +73,8 @@ PRE_JUMP        equ     $0C0006         ; the CPU's own last chip-RAM write befo
         org     PROGRAM_ORG
 
 start:
-        ; Enable Zorro II fast RAM. The write's data value is not decoded
-        ; (cpu_wrapper.v:640): only the strobe matters.
+        ; Enable Zorro II fast RAM. The value written is zero
+        ; and is not what matters: the write itself is the enable.
         move.w  #0,FR_REG.l
 
         ; Relocate the loop (below) into fast RAM. Entirely self-contained

@@ -127,7 +127,7 @@ BB_REG          equ     DMACONR
 BLIT_SRC        equ     $0C2000         ; unused content: only the blit's own timing matters here
 BLIT_DST        equ     $0C4000         ; same range test_blitter_cpu_sharing.cpp's kShareDstLo/Hi use
 
-FR_REG          equ     $E80048         ; Zorro II autoconfig "Register 0x48", ZII RAM (cpu_wrapper.v:640)
+FR_REG          equ     $E80048         ; Zorro II autoconfig "Register 0x48", ZII RAM
         ifd     FR_CHIPCODE
 FR_CODE         equ     $0C0800         ; chip RAM: this program's own MUTATION target (see header).
                                         ; Not $0C8000 (prog_fastrun.s's own choice): that address falls
@@ -139,7 +139,7 @@ FR_CODE         equ     $0C0800         ; chip RAM: this program's own MUTATION 
                                         ; and COP_LIST ($0C1000), clear of every other range this
                                         ; program or the test uses.
         else
-FR_CODE         equ     $200000         ; Zorro II fast RAM, bank 1 (cpu_wrapper.v:117, addr[23:21]=1)
+FR_CODE         equ     $200000         ; Zorro II fast RAM, bank 1 (address bits 23:21 = 1)
         endif
 FR_CNT          equ     $200100         ; the loop's own counter word, always in fast RAM
 

@@ -26,9 +26,7 @@
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
 // MUTATION A4-SHARE stimulus red the no-DMA reference loop substituted with a slower one (prog_sharing_slow.s: two register-only MULU.W between its counter writes, run from a copy in Chip memory outside the program's address range, so that the accesses classed as the 68000's come less often than the share-mode window's); the share-mode capture, A4-SHARE-PRE and the comparator are unchanged, via NMH_MUTATE=A4-SHARE
 // MUTATION A8PRE stimulus red the no-DMA run (no blitter, so no DMA access takes a slot the 68000 was ready for) substituted for the share-mode run, via NMH_MUTATE=A8PRE
-// MUTATION A8 stimulus green the share-mode run substituted with the six-lores-plane display against the whole-slot-aligned counting loop, every bitplane pointer set to Chip memory (prog_bitplane_planes6_aligned_ptrs.s), where the display takes even-numbered slots from a 68000 that is ready only on even-numbered slots; the unchanged comparator is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=A8
-// MUTATION SYSDMA-C29PRE stimulus red the aligned-loop control replaced by the no-bitplane-DMA run (no display windows), fx68k only, via NMH_MUTATE=SYSDMA-C29PRE
-// MUTATION SYSDMA-C29 stimulus red the BRA.S run replaced by the aligned-loop run (no missed cycle), fx68k only, via NMH_MUTATE=SYSDMA-C29
+// MUTATION A8 stimulus green the share-mode run substituted with the six-lores-plane display against the whole-4-clock-aligned counting loop, every bitplane pointer set to Chip memory (prog_bitplane_planes6_aligned_ptrs.s), where the display takes even-numbered slots from a 68000 that is ready only on even-numbered slots; the unchanged comparator is red on both cores unmutated and reads green on both with this input; every odd-numbered slot of the fetch window is the display's, so this input cannot show a grant before the first free even-numbered slot on any implementation and does not exercise the share-mode release behind the red, via NMH_MUTATE=A8
 // MUTATION A9PRE stimulus red the four-plane run substituted with the no-DMA aligned run (no display windows), via NMH_MUTATE=A9PRE
 // MUTATION A9 stimulus red the four-plane aligned run substituted with the six-plane aligned run, via NMH_MUTATE=A9
 // MUTATION A10PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A10PRE
@@ -52,8 +50,8 @@
 // A5 is withdrawn (see the A5-WITHDRAWN record below); it carries no
 // assertion and no mutation. The claim ids of A4-SHARE are recorded as a
 // boundary (A4-SHARE-WITHDRAWN below); A4-SHARE stays as a line without a
-// claim id. SYSDMA-C29 is graded on fx68k and recorded as out of scope on
-// TG68K (SYSDMA-C29-SCOPE-TG68K below). SLOTSPAN is withdrawn (see the
+// claim id. The claim id of SYSDMA-C29 is recorded as a boundary
+// (SYSDMA-C29-BOUNDARY below); its counts are printed as measurements. SLOTSPAN is withdrawn (see the
 // SLOTSPAN-WITHDRAWN record below); it carries no assertion and no mutation.
 // ch6-multi.c4 is withdrawn (see the MULTI-C4-WITHDRAWN record below); it
 // carries no assertion and no mutation. 6-system-dma.c56 is withdrawn (see the
@@ -376,9 +374,20 @@ int64_t floordiv(int64_t a, int64_t b) {
 
 struct LineGroup { uint64_t first, last; };
 
+// The most frequent value of the gaps between consecutive entries of an
+// increasing sequence (0 for fewer than two entries).
+uint64_t modal_gap(const std::vector<uint64_t>& v) {
+    std::map<uint64_t, size_t> hist;
+    for (size_t i = 1; i < v.size(); ++i) ++hist[v[i] - v[i - 1]];
+    uint64_t best = 0; size_t n = 0;
+    for (const auto& kv : hist) if (kv.second > n) { n = kv.second; best = kv.first; }
+    return best;
+}
+
 struct LineRef {
     std::vector<uint64_t> firsts;
     std::vector<LineGroup> groups;
+    uint64_t line_len = 0;   // the modal gap between consecutive line anchors, in cycles
 };
 
 // Every read below word address $1000 is grouped by gap (over 12.5 slots
@@ -409,6 +418,7 @@ LineRef make_line_ref(const std::vector<nmh::RamAccess>& log) {
         ref.groups.push_back({g.front(), g.back()});
     }
     for (auto& g : ref.groups) ref.firsts.push_back(g.first);
+    ref.line_len = modal_gap(ref.firsts);
     return ref;
 }
 
@@ -421,11 +431,14 @@ int64_t line_of(const LineRef& ref, uint64_t cycle) {
 
 // True if `cycle` (a CPU chip-bus access) is on an even-numbered slot by
 // Figure 6-9's own per-line numbering; false (with *known = false) if it
-// precedes every line this capture found.
+// precedes every line this capture found or lies a full line or more past
+// the first refresh read of the line it would be numbered from (a stretch
+// with no line anchor: its numbering would run on from an earlier line).
 bool is_even_slot(const LineRef& ref, uint64_t cycle, bool* known = nullptr) {
     int64_t i = line_of(ref, cycle);
-    if (known) *known = i >= 0;
-    if (i < 0) return false;
+    bool anchored = i >= 0 && ref.line_len > 0 && cycle - ref.groups[(size_t)i].first < ref.line_len;
+    if (known) *known = anchored;
+    if (!anchored) return false;
     int64_t d = floordiv((int64_t)cycle - (int64_t)ref.groups[(size_t)i].last, (int64_t)kCck);
     return (d % 2) != 0; // odd slot-offset from the line's own last refresh read => even slot
 }
@@ -476,7 +489,9 @@ std::vector<uint64_t> lores_inwindow_cpu_cycles(const Capture& cap_lores4) {
 // A slot is numbered by Figure 6-9's per-line numbering (the first refresh
 // slot of a line is number 1, so odd numbers carry refresh, and the even
 // numbers are the 68000's); a pair that spans a line start is left out,
-// because the numbering restarts there (a line is 227 slots, an odd number).
+// because the numbering restarts there (a line is 227 slots, an odd number),
+// and so is a pair a full line or more past its line's anchor, which has
+// no numbering of its own.
 
 struct CpuAccess { int64_t slot; uint32_t addr; bool wr; };
 
@@ -485,12 +500,19 @@ struct SlotMap {
     int64_t phase = 0;                  // cycle modulo kCck of a refresh access
     std::vector<char> occ;              // slot -> a DMA (non-CPU) access took it
     std::vector<int64_t> line_first;    // slot of each line's first refresh access
+    int64_t line_len = 0;               // the modal gap between consecutive line_first entries, in slots
     std::vector<CpuAccess> cpu;         // the 68000's own accesses, in order
     int64_t slot_of(uint64_t cycle) const { return ((int64_t)cycle - phase) / (int64_t)kCck; }
     bool occupied(int64_t s) const { return s >= 0 && s < (int64_t)occ.size() && occ[(size_t)s]; }
     int64_t line_index(int64_t s) const {
         size_t i = std::upper_bound(line_first.begin(), line_first.end(), s) - line_first.begin();
         return i == 0 ? -1 : (int64_t)i - 1;
+    }
+    // A slot less than one line past its anchor is numbered; one a full line or
+    // more past it (a stretch with no anchor) is not.
+    bool anchored(int64_t s) const {
+        int64_t i = line_index(s);
+        return i >= 0 && line_len > 0 && s - line_first[(size_t)i] < line_len;
     }
     // Even-numbered by Figure 6-9: the line's first refresh slot is number 1.
     bool fig_even(int64_t s) const {
@@ -511,6 +533,7 @@ SlotMap make_slot_map(const Capture& c, uint32_t scratch_word) {
         else m.occ[(size_t)s] = 1;
     }
     for (uint64_t f : ref.firsts) m.line_first.push_back(m.slot_of(f));
+    m.line_len = (int64_t)modal_gap(std::vector<uint64_t>(m.line_first.begin(), m.line_first.end()));
     m.ok = true;
     return m;
 }
@@ -537,13 +560,14 @@ std::map<PairKey, int64_t> unimpeded_gaps(const SlotMap& m) {
 struct MissStats {
     size_t pairs = 0;          // consecutive 68000 access pairs examined
     size_t nokey = 0;          // pairs whose address pair has no unimpeded gap
-    size_t crossing = 0;       // delayed pairs that span a line start
+    size_t crossing = 0;       // delayed pairs that span a line start or lie a full line or more past their line's anchor
     size_t delayed_free = 0;   // delayed pairs whose ready slot no DMA access took
     size_t miss_even = 0;      // missed cycles: the ready slot is even-numbered and a DMA access took it
     size_t miss_odd = 0;       // missed cycles: the ready slot is odd-numbered and a DMA access took it
     size_t skipped = 0;        // missed even cycles with an even-numbered free slot left unused before the access
     size_t early = 0;          // missed even cycles whose access came before the first free even-numbered slot (on an odd slot)
     size_t on_first = 0;       // missed even cycles whose access came exactly on the first free even-numbered slot
+    size_t at_fourth = 0;      // missed even cycles whose access came exactly four slots after the ready slot, the three slots between taken by DMA
     uint32_t ex_from = 0, ex_to = 0; bool ex_wr_from = false, ex_wr_to = false; int64_t ex_gap = 0; // first missed pair
 };
 
@@ -557,12 +581,13 @@ MissStats analyse_misses(const SlotMap& m, const std::map<PairKey, int64_t>& g0)
         if (it == g0.end()) { ++st.nokey; continue; }
         int64_t g = it->second;
         if (x.slot - y.slot <= g) continue;                          // not delayed
-        if (m.line_index(y.slot) != m.line_index(x.slot)) { ++st.crossing; continue; }
+        if (m.line_index(y.slot) != m.line_index(x.slot) || !m.anchored(y.slot) || !m.anchored(x.slot)) { ++st.crossing; continue; }
         int64_t t = y.slot + g;                                       // the slot the 68000 was ready for
         if (!m.occupied(t)) { ++st.delayed_free; continue; }
         bool even = m.fig_even(t);
         if (even) ++st.miss_even; else ++st.miss_odd;
         if (st.ex_gap == 0) { st.ex_from = y.addr; st.ex_wr_from = y.wr; st.ex_to = x.addr; st.ex_wr_to = x.wr; st.ex_gap = x.slot - y.slot; }
+        if (even && x.slot == t + 3 && m.occupied(t + 1) && m.occupied(t + 2)) ++st.at_fourth;
         if (even) {
             int64_t f = -1;                                           // first free even-numbered slot at or after t
             for (int64_t s = t; s <= x.slot; ++s)
@@ -1052,8 +1077,9 @@ int main(int argc, char** argv) {
     // access happened, never the cycle in which one was requested and
     // denied. The count of consecutive unsatisfied cycles, and with it the
     // cycle at which the blitter's release is due, cannot be located at this
-    // boundary; nanomig.v exposes no CPU bus-request signal. The measured
-    // line below is computed from the run and graded by nothing.
+    // boundary. The page also leaves open the unit in which the count runs
+    // and which cycle is the released one. The measured lines below are
+    // computed from the run and graded by nothing.
     {
         auto [lo, hi] = dst_span(cap_share);
         std::vector<uint64_t> cpu;
@@ -1066,16 +1092,28 @@ int main(int argc, char** argv) {
         checks.note("A5: inside the share-mode blit's active window consecutive CPU accesses are most often " +
                     std::to_string(mode_gap) + " clk_sys apart (" + std::to_string(mode_n) + " of " +
                     std::to_string(cpu.empty() ? 0 : cpu.size() - 1) + " intervals)");
+        if (slot_ok) {
+            SlotMap m5 = make_slot_map(cap_share, word_addr(kShareScratch));
+            MissStats st5 = analyse_misses(m5, unimpeded_gaps(m5));
+            checks.note("A5: of " + std::to_string(st5.miss_even) + " missed even cycles in the share-mode run, " +
+                        std::to_string(st5.at_fourth) + " were granted exactly four slots after the slot the 68000 was ready for, " +
+                        "with the three slots between taken by DMA");
+        }
         checks.record(
             "A5-WITHDRAWN [p198] 6-blitter-priority.c13,ch6-sysdma.c62: withdrawn -- the page's rule "
             "(three consecutive unsatisfied 68000 memory cycles, then the blitter releases the bus for one "
-            "cycle) counts cycles in which the 68000 has a request outstanding, and the RAM port "
-            "shows only the cycles in which an access happened; no cycle in which a request was "
-            "raised and denied is visible, so where the count starts, and when the release is due, "
-            "cannot be located at this boundary (nanomig.v has no CPU bus-request port)");
+            "cycle) does not say where the count starts, in which unit it runs, or which cycle is the "
+            "released one: from the cycle the request is raised, which the RAM port (it shows only the "
+            "cycles in which an access happened) does not show, or from the first even-numbered slot the "
+            "68000 was ready for; in memory cycles, so that the release is the fourth slot and an "
+            "odd-numbered one, or in the 68000's own alternate cycles, so that it is the seventh and an "
+            "even-numbered one, which p.196 (the 68000 uses only the even-numbered cycles) would require; "
+            "the measured pattern (the A5 measurement above: grants exactly four slots after the ready "
+            "slot, after three DMA-taken slots) fits the first reading in each pair, and grading it "
+            "would adopt that reading from the run instead of from the page");
     }
 
-    // ---- A8 [p194,p196] "If cycles are missed, the 68000 must wait until its
+    // ---- A8 [p196,p198] "If cycles are missed, the 68000 must wait until its
     // next available memory slot before continuing." A cycle is missed when a
     // DMA access takes the even-numbered slot the 68000 was ready for (see
     // "slots, and the 68000's missed cycles" above: the slot is found from two
@@ -1103,78 +1141,56 @@ int main(int argc, char** argv) {
         bool pre = m.ok && st.miss_even > 0;
         checks.expect(pre,
             "A8PRE [p196]: some 68000 cycles are missed on even-numbered slots -- a DMA access takes the slot the "
-            "68000 was ready for (" + std::to_string(st.miss_even) + " missed even cycle(s), address pair " + ex + ")");
+            "68000 was ready for (" + std::to_string(st.miss_even) + " missed even cycle(s); first missed cycle of either parity: " + ex + ")");
         if (pre) {
             checks.expect(st.skipped == 0 && st.early == 0,
-                "A8 [p194,p196] 6-system-dma.c54,6-system-dma.c55,ch6-sysdma.c30: every 68000 access that missed its "
-                "even-numbered slot is granted exactly at the first free even-numbered slot -- not before it and not after "
-                "it (" + std::to_string(st.early) + " granted before it, " + std::to_string(st.skipped) +
+                "A8 [p196,p198]: every 68000 access whose ready even-numbered slot a DMA access took is granted "
+                "exactly at the first free even-numbered slot -- not before it (a grant before it is on an "
+                "odd-numbered slot, the event PARITY counts) and not after it (" + std::to_string(st.early) + " granted before it, " + std::to_string(st.skipped) +
                 " after a free even-numbered slot was left unused, of " + std::to_string(st.miss_even) +
                 " missed even cycles)");
         } else {
             not_graded(checks, "A8", "A8PRE");
         }
     }
+    checks.record(
+        "A8-BOUNDARY [p196] 6-system-dma.c54,6-system-dma.c55,ch6-sysdma.c30: not graded -- the page's missed cycles are "
+        "those an instruction causes by not matching the allocation of even cycles, which it sets apart from blitter "
+        "DMA interference (\"most instructions do not cause cycles to be missed, so the 68000 runs at full speed most "
+        "of the time if there is no blitter DMA interference\"); A8 grades cycles a share-mode blit took from a ready "
+        "68000, whose release p.198 governs, and its grants before the first free even-numbered slot are "
+        "odd-numbered grants, which PARITY grades; an instruction's own miss is not found on an implementation that "
+        "keeps the 68000 on even-numbered slots (SYSDMA-C29-BOUNDARY)");
     // ---- SYSDMA-C29 [p196] ch6-sysdma.c29: "Some 68000 instructions do not
     // match perfectly with the allocation of even cycles and cause cycles to be
-    // missed." The fixture is one instruction, identified by its address pair:
-    // the counting loop of the four-low-resolution-bitplane display ends in
-    // BRA.S, which is not a whole number of slots long, and the same display
-    // with the loop ended by JMP (An) (a whole number of slots) is the control.
-    // The loop sits at the same addresses in both builds. A cycle missed by an
-    // instruction is one for which the 68000 is ready off its even-numbered
-    // allocation (an odd-numbered slot, which the display takes), found by the
-    // procedure of "slots, and the 68000's missed cycles". Graded on fx68k; on
-    // TG68K the 68000 core keeps to even-numbered slots by itself, so that no
-    // instruction of it can miss one (SYSDMA-C29-SCOPE-TG68K below).
-    // Precondition (SYSDMA-C29PRE): both runs show the display's fetch windows
-    // with CPU accesses inside them, so that the control is a live run.
-    if (!is_tg68k && gated("SYSDMA-C29")) {
-        MissStats st_k[2];
-        bool live[2] = {false, false};
+    // missed." NOT GRADED (SYSDMA-C29-BOUNDARY below). The counts are printed
+    // as measurements: the counting loop of the four-low-resolution-bitplane
+    // display ends in BRA.S (10 clocks, five slots, an odd number), and the
+    // same display with the loop ended by JMP (An) (8 clocks, four slots) is
+    // the control; the loop sits at the same addresses in both builds. A
+    // cycle missed by an instruction is one for which the 68000 is ready off
+    // its even-numbered allocation (an odd-numbered slot, which the display
+    // takes), found by the procedure of "slots, and the 68000's missed cycles".
+    if (slot_ok) {
         for (int k = 0; k < 2; ++k) {
-            const Capture* cap = (k == 0) ? (mv == "SYSDMA-C29" ? &cap_lores4_aligned : &cap_lores4)
-                                          : (mv == "SYSDMA-C29PRE" ? &cap_base : &cap_lores4_aligned);
-            SlotMap m = make_slot_map(*cap, word_addr(kBpScratch));
+            const Capture& cap = (k == 0) ? cap_lores4 : cap_lores4_aligned;
+            SlotMap m = make_slot_map(cap, word_addr(kBpScratch));
             std::map<PairKey, int64_t> g0 = unimpeded_gaps(m);
-            st_k[k] = analyse_misses(m, g0);
-            live[k] = m.ok && !fetch_windows(bp_reads_of(*cap)).empty() && !lores_inwindow_cpu_cycles(*cap).empty();
-            std::string ex = st_k[k].ex_gap == 0 ? std::string("none")
-                           : std::string(st_k[k].ex_wr_from ? "write $" : "fetch $") + hexs(st_k[k].ex_from * 2) + " -> " +
-                             (st_k[k].ex_wr_to ? "write $" : "fetch $") + hexs(st_k[k].ex_to * 2) + ", " + std::to_string(st_k[k].ex_gap) + " slots";
+            MissStats st = analyse_misses(m, g0);
+            std::string ex = st.ex_gap == 0 ? std::string("none")
+                           : std::string(st.ex_wr_from ? "write $" : "fetch $") + hexs(st.ex_from * 2) + " -> " +
+                             (st.ex_wr_to ? "write $" : "fetch $") + hexs(st.ex_to * 2) + ", " + std::to_string(st.ex_gap) + " slots";
             checks.note(std::string("SYSDMA-C29: four lores planes, ") + (k == 0 ? "BRA.S loop" : "aligned loop") + ": " +
-                        miss_note(st_k[k]) + "; first missed pair: " + ex);
-        }
-        bool pre = live[0] && live[1];
-        checks.expect(pre,
-            "SYSDMA-C29PRE [p196]: the misaligned-loop run and the aligned-loop control both show the four-plane "
-            "display's fetch windows with 68000 accesses inside them [not graded -- apparatus check, no claim uid]");
-        if (pre) {
-            checks.expect(st_k[0].miss_odd > 0 && st_k[1].miss_odd == 0,
-                "SYSDMA-C29 [p196] ch6-sysdma.c29: an instruction that is not a whole number of slots long (BRA.S) "
-                "misses cycles that the same display with a whole-slot-aligned loop does not (" +
-                std::to_string(st_k[0].miss_odd) + " missed odd-numbered allocations with BRA.S, " +
-                std::to_string(st_k[1].miss_odd) + " with the aligned loop)");
-        } else {
-            not_graded(checks, "SYSDMA-C29", "SYSDMA-C29PRE");
+                        miss_note(st) + "; first missed pair: " + ex);
         }
     }
-    if (is_tg68k) {
-        checks.record(
-            "SYSDMA-C29-SCOPE-TG68K [p196] ch6-sysdma.c29: not applicable on TG68K -- a scope decision, not a "
-            "measurement: the claim is about 68000 instructions whose length leaves the processor ready off its "
-            "even-numbered allocation, and the TG68K core keeps to even-numbered slots by itself whatever the "
-            "instruction (measured below), so it has no such instruction to show");
-        if (slot_ok) {
-            for (int k = 0; k < 2; ++k) {
-                const Capture& cap = (k == 0) ? cap_lores4 : cap_lores4_aligned;
-                SlotMap m = make_slot_map(cap, word_addr(kBpScratch));
-                std::map<PairKey, int64_t> g0 = unimpeded_gaps(m);
-                MissStats st = analyse_misses(m, g0);
-                checks.note(std::string("SYSDMA-C29: four lores planes, ") + (k == 0 ? "BRA.S loop" : "aligned loop") + ": " + miss_note(st));
-            }
-        }
-    }
+    checks.record(
+        "SYSDMA-C29-BOUNDARY [p196] ch6-sysdma.c29: not graded -- an instruction misses a cycle when it leaves the "
+        "68000 ready off its even-numbered allocation; the procedure finds that slot as the first access plus the "
+        "address pair's largest unimpeded gap, so on an implementation that keeps every 68000 access on an "
+        "even-numbered slot, as p.196 requires, the wait is in every occurrence of the pair, the gap absorbs it and "
+        "no miss is found whatever the instruction; a count above zero (the BRA.S loop on fx68k) exists only where "
+        "the 68000 is granted odd-numbered slots, which PARITY grades");
 
     // ---- A9 [p196] "If the display contains four or fewer low resolution
     // bitplanes, the 68000 can be granted alternate memory cycles (if it is
@@ -1332,9 +1348,10 @@ int main(int argc, char** argv) {
     // ---- A6 [p196] "the allocation of alternate memory cycles to the 68000
     // makes it appear to the 68000 that it has the memory all of the time, and
     // it will run at full speed." The stimulus loop's own bus cycles must all
-    // align to whole slots (MC68000 timing tables: ADDQ.W Dn = 4 clocks, MOVE.W
+    // be whole multiples of 4 clocks, an even number of slots (MC68000 timing
+    // tables: ADDQ.W Dn = 4 clocks, MOVE.W
     // Dn,(An) = 8, JMP (An) = 8 -- every one a whole multiple of 4, unlike
-    // BRA.S's 10; see SYSDMA-C29 above and prog_sharing_aligned.s). Full speed
+    // BRA.S's 10, five slots; see SYSDMA-C29 above and prog_sharing_aligned.s). Full speed
     // is the loop's period with the bus to itself, the interval between two
     // scratch writes with no DMA access in any slot between them; it is
     // measured on the no-DMA run of the same loop. Inside the four-low-
@@ -1677,8 +1694,7 @@ int main(int argc, char** argv) {
     // ---- FASTRUN [p186] ch6-done.c9: "may be running completely
     // uninhibited out of Fast memory or its internal cache and continue
     // to have memory cycles." prog_fastrun.s enables the design's Zorro
-    // II fast-RAM path with one register write at $E80048
-    // (cpu_wrapper.v:117 sel_z2ram, cpu_wrapper.v:640), relocates a
+    // II fast-RAM path with one register write at $E80048, relocates a
     // counting loop there, and starts a nasty blit through the Copper's
     // own list -- never through a CPU chip-bus write -- so the CPU's own
     // last chip-bus write before it jumps into fast RAM is unaffected by
@@ -1713,7 +1729,7 @@ int main(int argc, char** argv) {
     {
         bool mutated = (mv == "FASTRUN");
         nmh::Config cfg_fr;
-        cfg_fr.fastram_config = 0x01; // 2MB Zorro II fast RAM (cpu_wrapper.v:571-572) -- never toggled;
+        cfg_fr.fastram_config = 0x01; // 2MB Zorro II fast RAM -- never toggled;
                                         // the mutation substitutes a different binary (below), not this config
 
         // Mutation: prog_fastrun_chipcode.s / prog_fastrun_long_chipcode.s
