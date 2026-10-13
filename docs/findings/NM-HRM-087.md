@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Should `agnus_beamcounter.v`, with BPLCON0 bit 3 set, freeze VPOSR and VHPOSR on a light-pen trigger and, with none, at the end of the field, until vertical position 20, as p. 239 prints, where NanoMig returns the running counter? It closes when the latch is in place and the nineteen reds listed under *Assertions* are green on both cores, or when an Amiga specialist rejects the reading; if that means pp. 238-239 are wrong, the page is refiled against the printed page |
+| **What is asked of a reader** | Should `agnus_beamcounter.v`, with BPLCON0 bit 3 set, freeze VPOSR and VHPOSR on a light-pen trigger and, with none, at the end of the field, until vertical position 20, as p. 239 prints, where NanoMig returns the running counter? It closes when the latch is in place and the nineteen reds listed under *Assertions*, with the 75 reds of the three further packages listed there, are green on both cores, or when an Amiga specialist rejects the reading; if that means pp. 238-239 are wrong, the page is refiled against the printed page |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
-| **Scope** | OCS Agnus, BPLCON0 bit 3 set for more than twenty fields, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC (p. 305 gives LPENDIS no reset value). Chip revision: unknown |
+| **Scope** | OCS Agnus, BPLCON0 bit 3 set for more than twenty fields, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC by `integration/ch8-light-pen-beam` (p. 305 gives LPENDIS no reset value). `integration/appDE-ports-disk`, `integration/ch7-system-control` and `integration/ch3-playfield-system` write BEAMCON0 with bit 13 clear first, so they grade ECS/PAL and ECS/NTSC as they grade OCS. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (43)</summary> claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id</details> |
+| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed pp. 79, 89; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (63)</summary> claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `integration/appDE-ports-disk`: `LP-P2-LATCH-AT-PULSE`: `opus:E-lightpen.c12`, `sol:E-lightpen.c10`, `sol:E-lightpen.c21`, pp. 333, 238; `LP-P3A-HOLD`: `opus:E-lightpen.c5`, `sol:E-lightpen.c4`, pp. 333, 239; `LP-P1-LATCH-ENABLE`: `opus:E-lightpen.c21`, `sol:E-lightpen.c18`, pp. 333, 239; `LP-LATCH-ENABLE-AND-POSITION`: `opus:E-lightpen.c3`, `sol:E-lightpen.c2`, p. 333. `integration/ch7-system-control`: `P3-LATCHED-PEN-POSITION`: `opus:7-bp.c3`, `sol:7-beam.c3`, `opus:7-bp.c11`, pp. 216, 238, 239. `integration/ch3-playfield-system`: `P3 aggregate`: `opus:A-bpc.b03.c0`, `sol:A-bplcon.c49`, `opus:A-leg.lpen1`, `sol:A-bplcon.c72`, `opus:3-r0.c09`, `sol:3-regsum-bplcon0.c6`, pp. 271, 89, 229, 239; `P4 aggregate`, recorded not graded: `opus:A-leg.lpen2`, `sol:A-bplcon.c73`, p. 271. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id, and neither do the other reds of the three further packages (`LP-P1A-LATCH-HOLDS`, `LP-P3B-HELD-PULSE-IGNORED`, `LP-P3D-PULSE-BEFORE-ENABLE`, `LP-P4-DETERMINE-TRIGGER`, `P3-HELD`, `P3-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL`, `P3-MAIN`) or `P4-LPENDIS-READ`, recorded not graded</details> |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121); MiSTer has the same read path and TC64's is NanoMig's line for line; inherited |
-| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam): `make -k -C integration/ch8-light-pen-beam test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. One program, graded in OCS/PAL and OCS/NTSC on both CPU cores |
-| **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC, in a package run of 156 passed, 38 failed on each core: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239). `P1` expects a pin-6 pulse on one port captured and observes *captured=no* on port 1 and on port 2; `P7` expects one value in lines 0 to 19 after a field with no pulse and observes reads that are not one value. In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded. The page-model control is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
-| **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line. Hardware: not measured |
+| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam): `make -k -C integration/ch8-light-pen-beam test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. One program, graded in OCS/PAL and OCS/NTSC on both CPU cores. Three more packages, each with an expected red exiting nonzero: [`integration/appDE-ports-disk`](../../integration/appDE-ports-disk): `make -k -C integration/appDE-ports-disk test`, pulses on one connector at a time, in OCS and ECS, PAL and NTSC; [`integration/ch7-system-control`](../../integration/ch7-system-control): `make -k -C integration/ch7-system-control test`, pulses on both ports at Copper-marked lines, in the same four; [`integration/ch3-playfield-system`](../../integration/ch3-playfield-system): `make -k -C integration/ch3-playfield-system test`, bit 3 set and no pulse, in the same four (each also as `test-fx68k` and `test-tg68k`) |
+| **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC, in a package run of 156 passed, 38 failed on each core: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239). `P1` expects a pin-6 pulse on one port captured and observes *captured=no* on port 1 and on port 2; `P7` expects one value in lines 0 to 19 after a field with no pulse and observes reads that are not one value. In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded. The page-model control is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green. Three further packages are red the same way on fx68k and on TG68K, 75 lines on each core. `integration/appDE-ports-disk`, 52 red in a run of `230 passed, 56 failed`, thirteen in each of OCS/PAL, OCS/NTSC, ECS/PAL and ECS/NTSC: `LP-P2-LATCH-AT-PULSE`; for each of the two connectors `LP-P1A-LATCH-HOLDS`, `LP-P3A-HOLD`, `LP-P3B-HELD-PULSE-IGNORED`, `LP-P3D-PULSE-BEFORE-ENABLE` and `LP-P4-DETERMINE-TRIGGER`; `LP-P1-LATCH-ENABLE`; `LP-LATCH-ENABLE-AND-POSITION` (pp. 333, 238, 239); `LP-P2-LATCH-AT-PULSE` expects the first read after each pulse to follow the pulse's position and observes, in ECS/PAL on J11, H = 82 on fx68k and 86 on TG68K in F2 where the target is 64; the other four reds, `LP-A2-LINE-LENGTHS` in NTSC on both connectors, are not this page's. `integration/ch7-system-control`, 18 red, the package's only reds (`115 passed, 18 failed`): in each of OCS-PAL, ECS-PAL, OCS-NTSC and ECS-NTSC `P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH`, and in ECS-PAL `P4-PRE-LATCHF1` and `P4-PRE-CONTROL` (pp. 216, 238, 239); `P3-PEN-POSITION` expects V(L1) = 100, V(L3) = 100, V(L5) = 180 and H(L3) - H(L1) = 40 and observes 110, 110, 190 and 6 in OCS-PAL on fx68k. `integration/ch3-playfield-system`, 5 red (`223 passed, 10 failed`; the other five are [NM-HRM-090](NM-HRM-090.md)'s): `P3-MAIN` in each of the four configurations and the `P3 aggregate` (pp. 271, 89, 229, 239); `P3-MAIN` expects every counted read after VERTB detections 2 to 5 to show one 17-bit value and observes reads that are not all one value. `LP-P3C-RELEASE`, `P4-LPENDIS-READ`, `P4-MAIN` and the `P4 aggregate` are recorded, not graded, because no latch is shown to hold anything; `LP-P1B-NO-LATCH-WHEN-CLEAR`, `P3-LIVE` and `P3-PRE-LIVE` are green |
+| **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line. With BEAMCON0 bit 13 clear the same split holds in ECS; with it set, WinUAE hides the latch from the read and Copperline refuses a pulse but keeps the field-end latch (read from their code, not run). Hardware: not measured |
 | **Effort** | M — `agnus_beamcounter.v` (the enable bit, the latch, the read multiplexer), a light-pen input on `agnus.v` and `agnus_beamcounter.v`, and its wiring from the controller ports' pin 6 in `nanomig.v` or `minimig.v` |
 
 ---
@@ -60,6 +60,10 @@ field-end latch, both by comparing the frozen long word with $10500 (V = 261).
 
 > LPEN =Light pen enable (reset on power up)
 
+**Chapter 3, printed p. 89**, the summary of BPLCON0:
+
+> Bit 3 -  LPEN  (light pen enable)
+
 **Appendix E, printed p. 333**, *Game Port Interface to Light Pen*:
 
 > As the electron beam sweeps past the light pen, a trigger pulse is generated which can be enabled to latch the horizontal and vertical beam positions.
@@ -100,7 +104,7 @@ and p. 295 introduces the chips with
 So in OCS the page is unconditional: bit 3 set, a trigger or a field end
 freezes VPOSR and VHPOSR until vertical blanking ends. In ECS it is the same
 unless LPENDIS is set, and whether it is set after reset the page does not
-say. That is why the package grades the latch in OCS and records it in ECS.
+say. That is why `integration/ch8-light-pen-beam`, which never writes BEAMCON0, grades the latch in OCS and records it in ECS. `integration/appDE-ports-disk`, `integration/ch7-system-control` and `integration/ch3-playfield-system` write BEAMCON0 with bit 13 clear before they read, `$0020` in PAL and `$0000` in NTSC, which leaves ECS under p. 239 alone, and grade ECS as they grade OCS.
 
 ## RTL and measurement
 
@@ -218,6 +222,86 @@ The page-model control replaces 38279 and 31600 of the 90000 phase-B samples
 on fx68k and 41427 and 34083 on TG68K (PAL and NTSC) with the values p. 238
 and p. 239 predict, and the same `P1` to `P13` code grades those green.
 
+### Where else the suite meets it
+
+Three more packages read VPOSR and VHPOSR with BPLCON0 bit 3 set, each by a method of its own, and in all three the reads are not held.
+The same lines are red on fx68k and on TG68K. `LP-P1B-NO-LATCH-WHEN-CLEAR`, `P3-LIVE` and `P3-PRE-LIVE`, which read with bit 3 clear or
+before a trigger, are green in every configuration on both cores.
+
+**`integration/appDE-ports-disk`, one connector at a time.** [`integration/appDE-ports-disk`](../../integration/appDE-ports-disk) reads VPOSR:VHPOSR as
+long words, first with bit 3 clear to fit the beam model, then with BPLCON0 = `$0008` for ten fields, F1 to F10. The harness pulses pin 6
+of one connector low for 4 colour clocks at scheduled positions in F2 to F7 and F9, leaves F1, F8 and F10 without a pulse, and runs each
+schedule on the left connector (J12) and on the right (J11). In ECS the program first writes BEAMCON0 with bit 13 clear
+(`LP-C6-LPENDIS-CLEAR`). Thirteen lines are red in each of OCS/PAL, OCS/NTSC, ECS/PAL and ECS/NTSC. In ECS/PAL on J11 the first read
+after each pulse of F2 to F7 is on the pulse's line, V = 100, 100, 100, 101, 258 and 60, but at H = 82, 88, 94, 82, 82 and 73 on fx68k
+(86, 88, 90, 86, 86 and 76 on TG68K) where the targets are 64, 65, 72, 64, 64 and 64:
+
+```text
+MEASURED: ECS/PAL J11 P1-P4 measured: P1=does not hold, P2(a)=holds, P2(c)=does not hold, P3(a)=does not hold, P3(b)=does not hold, P3(c)=holds, P3(d)=does not hold, P4=does not hold
+```
+
+Over the eight runs of each core the first read after a pulse lies 7 to 24 colour clocks past the pulse's position on fx68k and 8 to 26 on TG68K.
+`P2(a)`, the line alone, holds and `P2(c)`, the horizontal offsets following the pulses, does not
+(`test_appDE_ports_disk.cpp:1224-1225`; `LP-P2-LATCH-AT-PULSE`, `:1273-1274`). The reds that follow grade what p. 239 says a latch does:
+`LP-P1A-LATCH-HOLDS`, that a pulse freezes the reads and so does the end of a field without one (`test_appDE_ports_disk.cpp:1283`);
+`LP-P3A-HOLD`, that every read after a trigger until the end of the following vertical blanking has the latched position (`:1285`);
+`LP-P3B-HELD-PULSE-IGNORED`, that F7's second pulse, on line 180, changes nothing (`:1286`);
+`LP-P3D-PULSE-BEFORE-ENABLE`, that F9's pulse, on line 10, is not captured because the position of the end of F8 is still held (`:1291`);
+`LP-P4-DETERMINE-TRIGGER`, that p. 239's two ways of telling a trigger from a field end give the right answer (`:1292`).
+`LP-P1-LATCH-ENABLE` and `LP-LATCH-ENABLE-AND-POSITION` combine `LP-P1A-LATCH-HOLDS` with the bit-clear run (`:1295`, `:1299`).
+With bit 3 clear and the same pulses `LP-P1B-NO-LATCH-WHEN-CLEAR` is green in all eight runs:
+every read equals the beam model (`test_appDE_ports_disk.cpp:1250`). The beam model is anchored and every pulse is on pin 6 of the
+connector under test, 4 colour clocks wide, at its scheduled cycle, in every run (`LP-C3-A1-READS-CURRENT`, `LP-C3-A3-FIELD-LENGTH`,
+`LP-C3-A4-FIELD-ANCHOR`, `LP-C5-PULSES`, green). `LP-P3C-RELEASE` is recorded not graded in all eight, because nothing was held. The four reds besides
+the thirteen per configuration are `LP-A2-LINE-LENGTHS` in NTSC on both connectors, which grades the NTSC line length,
+[NM-HRM-010](NM-HRM-010.md)'s subject.
+
+**`integration/ch7-system-control`, both ports, Copper-marked reads.** [`integration/ch7-system-control`](../../integration/ch7-system-control) sets BPLCON0 = `$0008`
+and lets a Copper list raise COPER at lines 40, 60, 110, 130, 190 and 210 (E40 to E210). At each event the CPU reads VPOSR as a long
+word and VHPOSR as a word, and about 2 and 10 lines after each VERTB it reads twice more (V1 and V2), timed by counted polls of
+INTREQR, never by the register under test. The harness drives pin 6 of both ports for 4 colour clocks on line 100 of F1 and F3, at
+horizontal positions 40 colour clocks apart, and on line 180 of F5. In ECS the program first writes BEAMCON0 with bit 13 clear. Four lines are red in each of
+OCS-PAL, ECS-PAL, OCS-NTSC and ECS-NTSC; in OCS-PAL on fx68k:
+
+```text
+MEASURED: P3 OCS-PAL item2: V(L1)=110 V(L3)=110 V(L5)=190 H(L3)-H(L1)=6
+FAIL: P3-PEN-POSITION OCS-PAL [p.238,p.239]: the latched value is the light-pen position -- V(L1)=100, V(L3)=100, V(L5)=180, H(L3)-H(L1)=40
+```
+
+The reads after the pulses return their own lines, 110 and 190, not the pulses' 100 and 180 (`P3-PEN-POSITION`,
+`test_ch7_system_control.cpp:1591-1593`), and the reads that follow change (`P3-HELD`, `test_ch7_system_control.cpp:1575-1581`;
+`P3-LATCHED-PEN-POSITION`, `:1595-1598`). On TG68K L1, L3 and L5 read the same lines, and H(L3) - H(L1) is -4 in PAL, and 2 (OCS) and
+-20 (ECS) in NTSC, where fx68k reads 6 and 16; the page's 40 is in none. After a field with no pulse V1 and V2 read lines 2 and 11
+on fx68k (2 and 10 on TG68K), two different values below $10500, `$0029B` and `$00B1F` in F1 on fx68k, where `P3-FIELD-END-LATCH` expects
+them to agree, at an M greater than $10500 in PAL and not less than it in NTSC (`P3-FIELD-END-LATCH`, `test_ch7_system_control.cpp:1614-1617`). In ECS-PAL `P4` sets LPENDIS, reads X near line 270 of F1 after a pulse
+on line 100, clears LPENDIS and reads Y; in F3 it reads X' and Y' with LPENDIS clear throughout. Its two preconditions that need a
+latch are red:
+
+```text
+FAIL: P4-PRE-LATCHF1 ECS-PAL [p.239]: the latch is present in F1 -- V(Y)=100 and H(Y)=H(Y')
+FAIL: P4-PRE-CONTROL ECS-PAL [p.239]: F3 (LPENDIS clear throughout) shows X'=Y', V(X')=100
+```
+
+They measure V(Y) = 270 with H(Y) = 141 and H(Y') = 145 on fx68k (124 and 128 on TG68K), and V(X') = V(Y') = 270 with X' different from Y' (`P4-PRE-LATCHF1`,
+`test_ch7_system_control.cpp:1836-1838`; `P4-PRE-CONTROL`, `:1846-1848`). With nothing latched there is nothing for LPENDIS to hide, so
+`P4-LPENDIS-READ`, p. 305's bit, is recorded not graded (`P4-LPENDIS-READ`, `test_ch7_system_control.cpp:1859`).
+
+**`integration/ch3-playfield-system`, bit 3 alone, no pen.** [`integration/ch3-playfield-system`](../../integration/ch3-playfield-system) drives no pulse. Two programs,
+identical but for BPLCON0, `$0008` (L1) and `$0000` (L0), run with no DMA; after each of five VERTB detections each reads
+VPOSR:VHPOSR 600 times as long words. The windows after detections 2 to 5 run from one line after the VERTB marker to about 18 lines
+after it, before the vertical position 20 at which p. 239 releases the freeze, and p. 239's field-end latch, which needs no pen, predicts one frozen value in
+every L1 window. In ECS the program first writes BEAMCON0 with bit 13 clear. `P3-MAIN` is red in ECS/PAL, ECS/NTSC, OCS/PAL and
+OCS/NTSC on both cores (`P3-MAIN`, `test_ch3_playfield_system.cpp:1266-1267`), and so is the `P3 aggregate`, which joins it to `P3-LIVE`
+(`P3 aggregate`, `test_ch3_playfield_system.cpp:1277-1281`):
+
+```text
+FAIL: P3-MAIN S1 (ECS/PAL): with LPEN=1, every counted VPOSR/VHPOSR read in the windows after VERTB detections 2-5 shows the same 17-bit value (frozen)
+```
+
+`P3-LIVE`, the L0 windows, is green in all four: no two consecutive reads are equal (`P3-LIVE`, `test_ch3_playfield_system.cpp:1207-1210`). `P4-MAIN`, p. 271's reset value, waits for
+`P3-MAIN` and prints `RECORDED: P4-MAIN S1: NOT GRADED, P3-MAIN did not pass in this configuration, so a set LPEN is not shown to latch
+here and an LPEN of 1 would look like 0` in all four.
+
 ## Risks and unknowns
 
 - **Half of the implementations agree with NanoMig.** vAmiga and Denise have no
@@ -230,10 +314,12 @@ and p. 239 predict, and the same `P1` to `P13` code grades those green.
   vertical blanking ends. On real hardware, with nothing in either port: set
   BPLCON0 bit 3 and read VPOSR twice anywhere in lines 0 to 19. Equal reads at
   the last line's position settle it.
-- **ECS is recorded, not graded.** p. 305 gives LPENDIS no reset value, and it
+- **ECS is recorded, not graded, where BEAMCON0 is never written.** p. 305 gives LPENDIS no reset value, and it
   decides whether an ECS machine that never writes BEAMCON0 shows the latch at
-  all. NanoMig's own BEAMCON0 resets bit 13 to 0, which on NanoMig's own terms
+  all; the packages that grade ECS write it clear and do not depend on it. NanoMig's own BEAMCON0 resets bit 13 to 0, which on NanoMig's own terms
   would leave the latched value visible, if there were one.
+- **p. 305's LPENDIS read is not graded on NanoMig.** `P4-LPENDIS-READ` in `integration/ch7-system-control` needs a latch to hide;
+  with none its two preconditions, `P4-PRE-LATCHF1` and `P4-PRE-CONTROL`, are red and it is recorded not graded.
 - **Which port.** p. 238 and the technical reference put the pen on port 2's
   pin 6 on the A500, and the B2000's J200 moves it to p. 238's port 1. NanoMig
   would have to route one of its two fire lines to Agnus as well as to CIA-A.
@@ -271,6 +357,22 @@ fires the latch from a joystick's fire line**: WinUAE and Copperline take the
 trigger from a pen positioned on the screen, which is how an emulator models a
 pen, not from the level of pin 6. MiSTer and TC64, descendants, have NanoMig's
 read path and no latch, so the finding is inherited and fixed in neither line.
+
+**With BEAMCON0 bit 13 clear the same split holds in ECS.** WinUAE's Agnus is ECS when its chipset mask has
+the ECS Agnus bit
+([`custom.cpp:1187`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L1187)); Copperline
+counts every revision but OCS as ECS, `!matches!(self, Self::Ocs)`
+([`agnus.rs:105-107`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L105-L107)).
+They part on what bit 13 does when it is set. WinUAE hides the latch from the read, `if (beamcon0 & BEAMCON0_LPENDIS)` / `return 0;`
+in `islightpentriggered`
+([`custom.cpp:2273-2278`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2273-L2278)),
+and still takes it. Copperline refuses a pulse,
+`if !self.lpen_enabled || self.lpen_latch_disabled() || self.lpen_triggered_this_field {`
+([`:1256-1262`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L1256-L1262)),
+but takes the field-end latch and returns it on a read without looking at the bit
+([`:1106-1108`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L1106-L1108),
+[`:1223-1229`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L1223-L1229)).
+vAmiga and Denise have no latch in any chip set.
 
 ### What other Commodore documents say
 
@@ -336,7 +438,8 @@ The four changes, without LPENDIS:
 - **The read.** While latched, the multiplexer of lines 108–115 returns the
   stored `vpos[10:8]` and `{vpos[7:0],hpos[8:1]}` instead of the counters; in
   ECS, with BEAMCON0 bit 13 set, VPOSR returns the counter (p. 305: *"on
-  vertical pos read"*; the page does not say whether VHPOSR does too).
+  vertical pos read"*; the page does not say whether VHPOSR does too). `integration/ch7-system-control`'s `P4-LPENDIS-READ` grades the bit in ECS
+  once its preconditions, which need a latch, hold.
 
 ```diff
 -	data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
