@@ -9,3 +9,9 @@
 # and `bash run_all.sh` fails later with a syntax error on the first loop. The
 # files are stored with LF, so this concerns the checkout only.
 *.sh text eol=lf
+
+# The private RTL copies of three integration packages are built by applying a
+# patch file to a copy of the design (`patch -p1 < <package>/<name>.patch`).
+# Checked out with CRLF, the patch no longer matches the LF design files, so
+# patch files keep LF in the working tree for the same reason.
+*.patch text eol=lf
