@@ -233,9 +233,11 @@ a separate run of the same build and configuration.
   begins at the first sample with the new duration.
 - **Change instant C**: for a volume change, the time of the first output
   sample that shows the new level pair; for a period change, the start of
-  the first sample of the new run. Both are corrected by the audio latency
-  **L_a**, the minimum over all R-VOL-1 writes of (first output sample at
-  the new level − marker time).
+  the first sample of the new run. Neither is corrected for latency; P5 compares them with port times
+  directly, within λ + ε. The audio latency **L_a**, the minimum over all
+  R-VOL-1 writes of (first output sample at the new level − marker time),
+  shifts only the windows that start at a fetch (P1-JOINT's source half,
+  P8-ATT).
 - **Fetch record** of channel x: the port reads inside x's own 4 KB data
   region between M_on and M_off, each with its time and word offset. **F_n** is
   the page's n-th fetch of the channel after the DMA start (p.164): F_1 is the
@@ -275,10 +277,12 @@ a separate run of the same build and configuration.
   RECORDED "not evaluated" with the measured population, never PASS or
   FAIL (PC3, P4-B, P4-VOLONLY, P1-B, P1-C, P2-B, P2-C, P3-SILENT, P3-WHOLE, P3-SP2, P5, P9-C, P9-D). A clause keeps grading normally whenever its
   population is present, whatever its size. A "change" is counted only
-  where a value differs from the one before it (or, at a window's start,
-  from the channel's own written starting value in P1, P3 and P9; in P5 the
-  first segment or run of the window shows the value in force at its edge and
-  is not counted); an unchanging window is
+  where a value differs from the one before it. At a window's start P3 and P4
+  count from the channel's own written starting value; in P1, P2, P5, P6, P9
+  and the destination half of P8-JOINT-AP the first segment or run of the
+  window shows the value in force at its edge, applied before the window
+  opened, and is not counted, and P2-C and P3-SP2 have a population only where
+  S-P2's window holds a run after that one. An unchanging window is
   an empty population of changes, not one change.
 
 ### Common preconditions
@@ -296,7 +300,7 @@ not change with it.
 |---|---|---|
 | PC1 | Bits 7-0 of the stored ADKCONR word equal the session's attach mask (p.265: "ADKCONR 010 R P Audio, disk, control read"). | Omit the step-4 ADKCON write in an attach session (bits read 0); or write $8001 in a reference session. |
 | PC2 | The stored DMACONR word has bit 9 (DMAEN) and the session's AUDxEN bits set (p.278). | R-MOD with the enable $8001 (AUD0EN, no DMAEN; prog_rmod_nodma). Bit 9 then reads 0, and no audio fetch occurs (p.144: "For any audio DMA to occur ... the DMAEN bit in DMACON must be set"). |
-| PC3 | Every enabled channel has fetches in its own region (its own 4 KB, Appendix B), at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"), graded from that channel's first restart (the first fetch at offset 0 after the first entry of its record) on, over [M_on, M_off] of the session -- the first pass is graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here. The modulator has at least two complete cycles after its own first restart (one in S-P2). Where the session holds fewer than the required cycles, PC3 prints "not evaluated" for that channel, never PASS or FAIL. In S-LEN-A and S-LEN-B the same stepping is P9-A (channel 0) and P9-B (channel 1), graded from the later of the two restarts: PC3 is printed for those two sessions as their ordinary programs build them, and a contrast of P9-A or P9-B replaces the session for P9-A to P9-D only. | R-MOD with AUD0LEN = 7 (prog_rmod_len7), graded with LEN 8: the offsets step 0..6,0,... and the ordinary R-MOD line fails. |
+| PC3 | Every enabled channel has fetches in its own region (its own 4 KB, Appendix B), at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"), graded from that channel's first restart (the first fetch at offset 0 after the first entry of its record) on, over [M_on, M_off] of the session -- the first pass is graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here. The modulator has at least two complete cycles after its own first restart (one in S-P2). Where the session holds fewer than the required cycles after the channel's first restart, PC3 prints "not evaluated" for that channel, never PASS or FAIL; a channel whose record holds no restart at all fails PC3, as a broken step does. In S-LEN-A and S-LEN-B the same stepping is P9-A (channel 0) and P9-B (channel 1), graded from the later of the two restarts: PC3 is printed for those two sessions as their ordinary programs build them, and a contrast of P9-A or P9-B replaces the session for P9-A to P9-D only. | R-MOD with AUD0LEN = 7 (prog_rmod_len7), graded with LEN 8: the offsets step 0..6,0,... and the ordinary R-MOD line fails. |
 | PC4-VOL | In R-VOL-c the reference level pairs of all VSET_c values are pairwise distinct. | R-VOL-1 with 40 written in the step labelled 60 (prog_rvol1_mut): two labels then have the same pair. R-VOL-2 and R-VOL-3 are graded by the same call and have no contrast of their own. |
 | PC4-DUR | In R-PER-c and R-RAMP the reference durations are pairwise distinct and rise strictly with the written value. | R-PER-1 with 500 written in the step labelled 700 (prog_rper1_mut): two labels then have the same duration. R-PER-2, R-PER-3 and R-RAMP are graded by the same call and have no contrast of their own. |
 | PC5-VOL, PC5-PER | Pairing anchor: channels 0 and 3 measure on one output, 1 and 2 on the other, and the two outputs differ, each channel's own output taken from its own reference session (see *Output sides and silence*). PC5-VOL is graded from the volume-sweep family and PC5-PER from the period-sweep family. No jack name enters the check. | PC5-VOL: R-VOL-1's capture is graded as R-VOL-3's, so "channel 3's" output is channel 1's. PC5-PER: R-VOL-3's capture is graded as R-PER-1's, so "channel 1's" output is channel 3's. Each pairing then fails against the same comparator. |
@@ -999,7 +1003,7 @@ channel; other pairs are not run.
 P9-A and P9-B make, so a contrast of those lines does not reach it). P9-WINDOW: the window opens after each channel's own first restart,
 with fetches recorded for both channels; where it does not, it prints as a
 precondition not met (RECORDED, not FAIL) and P9-A to P9-D print NOT GRADED, as they
-do when PC1 or PC2 fails. (c)'s population is channel 1's applied-volume changes
+do when PC1, PC2 or PC3 of the session's ordinary program fails. (c)'s population is channel 1's applied-volume changes
 in the window, not counting the value in force at the window's edge, and (d)'s its
 complete samples (an empty population prints RECORDED "not evaluated", per
 *Measurements*). The offsets of each channel are read in its own 4 KB region, so
@@ -1182,8 +1186,7 @@ against the page model below, and the line prints PASS where it prints FAIL (or
 "not evaluated") on the repository RTL. Every mutated run reaches DONE (a MEASURED
 line says so).
 
-**The repository RTL does not implement the attach bits.** ADKCON bits 7-0 reach
-nothing in it, so every line that grades attach behaviour is red or not evaluated
+**On the repository RTL the attach bits have no measured effect.** Every line that grades attach behaviour is red or not evaluated
 on it with and without a stimulus change, and a red-going contrast of such a line
 cannot move it there. The row of such a record reads FAIL -> FAIL (or NOT
 EVALUATED -> NOT EVALUATED) in the RTL columns and PASS -> FAIL in the page-model
@@ -1331,11 +1334,11 @@ without and with the change, a single verdict is the ordinary run.
 | P4-JOINT | P4-A | the volume words 56 and 8 are exchanged (prog_s_both_swap): the half that P4-A grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-JOINT | P4-VOLONLY | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per): the half that P4-VOLONLY grades | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-POP-AV | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P5-POP-AV | P5-POP-AV | the session lasts 70000 ticks (prog_s_av_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-AV | P5-POP-AV | the session lasts 35000 ticks (prog_s_av_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P5-POP-AP | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P5-POP-AP | P5-POP-AP | the session lasts 55000 ticks (prog_s_ap_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-AP | P5-POP-AP | the session lasts 25500 ticks (prog_s_ap_short) | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P5-POP-BOTH | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
-| P5-POP-BOTH | P5-POP-BOTH | the session lasts 40000 ticks (prog_s_both_short) | NOT EVALUATED -> NOT GRADED | NOT EVALUATED -> NOT GRADED | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-BOTH | P5-POP-BOTH | the session lasts 17500 ticks (prog_s_both_short) | NOT EVALUATED -> NOT GRADED | NOT EVALUATED -> NOT GRADED | PASS -> FAIL | PASS -> FAIL |
 | P5-AV | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
 | P5-AV | P5-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | NOT EVALUATED -> NOT EVALUATED | NOT EVALUATED -> NOT EVALUATED | PASS -> FAIL | PASS -> FAIL |
 | P5-AP | - | the ordinary run of the page model | NOT EVALUATED | NOT EVALUATED | PASS | PASS |
