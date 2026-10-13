@@ -15,6 +15,8 @@
 //
 // P3 (BPLCON0 bit 3, LPEN) and P4 (LPEN after power-up) share one program family (prog_lpen_*.s /
 // prog_lpen_core.s): five VERTB-synchronized bursts of 600 long reads of VPOSR/VHPOSR, stored to MEASURE_BASE.
+// The burst length the block parser and P3-M/P4-M expect is the one the loaded program names in its own
+// MOVE.W #n-1,D5.
 // P3 grades LPEN=1 against LPEN=0, P4 grades the power-up state (BPLCON0 never written). P5 (prog_p5_*.s)
 // reads VPOSR/VHPOSR the same way. P1 and P2 (prog_p1_*.s) start a preloaded Copper list and grade the video output.
 //
@@ -59,13 +61,14 @@
 //   P1A           a genuine PAL run's sync samples compared with a genuine NTSC run's
 //   P1B           run "1" loads run "0"'s Copper list
 //   P1C           DDFSTOP 8 colour clocks lower with bitplane DMA on (B, C, E: prog_p1_2c_pal_narrow.bin,
-//                 prog_p1_16c_pal_narrow.bin), or A given a one-plane list
+//                 prog_p1_16c_pal_narrow.bin), or A given a list that also points sprite 0 at the bitplane
+//                 buffer and turns sprite DMA on (a transparent sprite stored there)
 //   P1D           bitplane buffers zeroed (B, C, E), or COLOR00 set to another value by the Copper (A)
-//   P1ESTD       prog_p1_2c_pal_wrongstd.bin in configuration B (BEAMCON0 bit 5 opposite the standard)
+//   P1ESTD       prog_p1_2c_ntsc_wrongstd.bin in configuration B at S2 (BEAMCON0 bit 5 opposite the standard)
 //   P1MAIN        run "1" also changes a colour register half way down the picture
 //   P2FIX         run "1" of configuration B at S1 stores another start word (prog_p1_2c_pal_badstart.bin)
 //   P2A           run "1" loads run "0"'s Copper list
-//   P2B           prog_p1_2c_pal_mod2.bin (BPL1MOD=$0002)
+//   P2B           prog_p1_2c_pal_mod2.bin (BPL1MOD=$0002), with 20 more lines of valid data words after the buffer
 //   P2FLIP        bit 14 of w(100,5) flipped in memory, the expectation unchanged
 //   P2ITEM1       prog_p1_2c_pal_vstoplow.bin (VSTOP one line lower)
 //   P2EDGE        prog_p1_2c_pal_rightedge.bin (window 32 pixels wider, 21 words per line)
@@ -117,14 +120,14 @@
 // MUTATION P1 stimulus red NMH_MUTATE=P1FIX: run "1" of every configuration at S1 stores a start word other than $5A01 and otherwise runs unchanged; both runs complete, the fixture line prints FAIL and P1-MAIN prints NOT GRADED
 // MUTATION P1-a stimulus red NMH_MUTATE=P1A: a genuine PAL run's sync samples are compared with a genuine NTSC run's; the contrast's own fixture line prints PASS
 // MUTATION P1-b stimulus red NMH_MUTATE=P1B: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s; P1-MAIN prints NOT GRADED
-// MUTATION P1-c stimulus red NMH_MUTATE=P1C: DDFSTOP is 8 colour clocks lower with bitplane DMA on in B, C and E (each DMA field still reads a nonempty part of the buffers), and A is given a one-plane Copper list; P1-c prints FAIL in A, B, C and E, P1-b A prints FAIL too (the one-plane list carries other BPLCON0 words), and P1-MAIN prints NOT GRADED
+// MUTATION P1-c stimulus red NMH_MUTATE=P1C: DDFSTOP is 8 colour clocks lower with bitplane DMA on in B, C and E (each DMA field still reads a nonempty part of the buffers), and in A the Copper list also points sprite 0 at the buffer and turns sprite DMA on, so reads of the buffer's address range occur with the BPLCON0 words unchanged; P1-c prints FAIL in A, B, C and E, every other P1 line holds, and P1-MAIN prints NOT GRADED
 // MUTATION P1-d stimulus red NMH_MUTATE=P1D: bitplane buffers zeroed in B, C and E, and COLOR00 set to another value by the Copper in A; P1-MAIN prints NOT GRADED
-// MUTATION P1-e stimulus red NMH_MUTATE=P1ESTD: the program of configuration B at S1 writes BEAMCON0 with bit 5 opposite the configured standard and the field length is the other standard's; P1-c B S1 prints FAIL too and P1-MAIN B S1 prints NOT GRADED
+// MUTATION P1-e stimulus red NMH_MUTATE=P1ESTD (S2 only): the program of configuration B writes BEAMCON0 with bit 5 opposite the configured standard and the field length is the other standard's; the 200-line window fits the longer field, P1-c B holds, P1-e B S2 prints FAIL and P1-MAIN B S2 prints NOT GRADED
 // MUTATION P1-MAIN stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, in A, B, C and E, every precondition holding
 // MUTATION opus:3-a1000.c04 stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, the aggregate prints FAIL
 // MUTATION P2 stimulus red NMH_MUTATE=P2FIX: run "1" of configuration B at S1 stores a start word other than $5A01 and otherwise runs unchanged; the fixture line prints FAIL and P2-MAIN prints NOT GRADED
 // MUTATION P2-a stimulus red NMH_MUTATE=P2A: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s; P2-I1, P2-I2 and P2-I3 print NOT GRADED
-// MUTATION P2-b stimulus red NMH_MUTATE=P2B: BPL1MOD=$0002, later lines start two bytes further out; P2-I1 prints FAIL too and P2-I2 prints NOT GRADED
+// MUTATION P2-b stimulus red NMH_MUTATE=P2B: BPL1MOD=$0002, later lines start two bytes further out, and 20 more lines of valid data words follow the buffer so every line still shows data; P2-I1 holds, P2-I2 and the P2 aggregate print NOT GRADED
 // MUTATION P2-I1 stimulus red NMH_MUTATE=P2ITEM1: VSTOP one line lower, a data block has H-1 lines; P2-b prints FAIL too (the buffer is read for H-1 lines) and P2-I2 prints NOT GRADED
 // MUTATION P2-I2 stimulus red NMH_MUTATE=P2FLIP: bit 14 of w(100,5) flipped in memory while the expectation is unchanged
 // MUTATION P2-I3 stimulus red NMH_MUTATE=P2EDGE: the window is 32 pixels wider and 21 words per line are fetched, so the sample after the 320th pixel shows data; P2-b prints FAIL too and P2-I2 prints NOT GRADED
@@ -411,6 +414,14 @@ std::vector<Detection> extract_detections(const std::vector<nmh::RamAccess>& log
     return out;
 }
 
+// The burst length a program names: its `MOVE.W #n-1,D5` (opcode $3A3C, the immediate in the next word), n. 0 when
+// the image holds no such instruction.
+int program_burst_len(const std::vector<uint16_t>& prog) {
+    for (size_t i = 0; i + 1 < prog.size(); ++i)
+        if (prog[i] == 0x3A3C) return (int)prog[i + 1] + 1;
+    return 0;
+}
+
 // P3-M, P4-M, P5-M: the stores to the measurement buffer are exactly `nblocks` blocks, block k being the
 // marker word k followed by `burstlen` long words, each stored high half then low half, all at consecutive word
 // addresses from the buffer's first.
@@ -606,14 +617,20 @@ std::vector<uint16_t> expected_bplcon0(char cfg, int run) {
 // The Copper list of one run. contrast: the list also changes one colour
 // register half way down the picture (a change the pages say is visible);
 // colour_top (config A): COLOR00 is set to another value for the whole field;
-// force: build the list of that configuration instead.
-std::vector<uint16_t> build_cop(char cfg, int run, bool contrast, bool colour_top, char force) {
+// force: build the list of that configuration instead; sprite_dma (config A): the list also points sprite 0 at
+// kBplPlane1 and turns sprite DMA on, so that a non-bitplane DMA channel reads the bitplane buffer's address range.
+std::vector<uint16_t> build_cop(char cfg, int run, bool contrast, bool colour_top, char force, bool sprite_dma = false) {
     std::vector<uint16_t> l;
     const char eff = force ? force : cfg;
     const uint16_t v = expected_bplcon0(eff, run)[0];
     switch (eff) {
         case 'A':
             cop_move(l, 0x100, v);
+            if (sprite_dma) {
+                cop_move(l, 0x120, uint16_t(kBplPlane1 >> 16));
+                cop_move(l, 0x122, uint16_t(kBplPlane1 & 0xFFFF));
+                cop_move(l, 0x096, 0x8020);
+            }
             if (colour_top) cop_move(l, 0x180, kC0Visible);
             if (contrast) {
                 cop_move(l, 0x180, kC0);
@@ -755,6 +772,8 @@ struct DispOpts {
     int flip_word_index = -1;        // XOR bit 14 into this word of plane 1 (both runs)
     char force_list = 0;             // build the list of this configuration for both runs
     bool a_colour_top = false;       // config A: COLOR00 set to another value by the Copper
+    bool a_sprite_dma = false;       // config A: sprite 0 reads a transparent sprite stored at kBplPlane1
+    int pad_lines = 0;               // configs B, E: this many more lines of valid data words after the buffer
 };
 
 struct DisplayData {
@@ -774,19 +793,25 @@ DisplayData build_and_run_display(const std::string& dir, char cfgname, int s, c
 
     std::vector<std::pair<uint32_t, std::vector<uint16_t>>> bpl;
     if (cfgname == 'B' || cfgname == 'E') {
-        std::vector<uint16_t> data = o.zero_bitplane ? std::vector<uint16_t>((size_t)20 * d.H, 0) : bitplane_be(d.H);
+        std::vector<uint16_t> data = o.zero_bitplane ? std::vector<uint16_t>((size_t)20 * d.H, 0)
+                                                     : bitplane_be(d.H + o.pad_lines);
         if (o.flip_word_index >= 0 && (size_t)o.flip_word_index < data.size()) data[o.flip_word_index] ^= 0x4000;
         bpl.push_back({kBplPlane1, data});
     } else if (cfgname == 'C') {
         const uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
         for (int p = 1; p <= 4; ++p)
             bpl.push_back({planes[p - 1], o.zero_bitplane ? std::vector<uint16_t>((size_t)40 * d.H, 0) : bitplane_c(p, d.H)});
+    } else if (o.a_sprite_dma) {
+        // a transparent sprite: position and control words, 64 lines of two zero words, the end marker
+        std::vector<uint16_t> spr(2 + 2 * 64 + 2, 0);
+        spr[0] = 0x5040; spr[1] = 0x9000;
+        bpl.push_back({kBplPlane1, spr});
     } else if (o.force_list == 'B') {
         bpl.push_back({kBplPlane1, bitplane_be(d.H)});
     }
 
-    auto list0 = build_cop(cfgname, 0, false, o.a_colour_top, o.force_list);
-    auto list1 = o.list1_is_list0 ? list0 : build_cop(cfgname, 1, o.contrast1, o.a_colour_top, o.force_list);
+    auto list0 = build_cop(cfgname, 0, false, o.a_colour_top, o.force_list, o.a_sprite_dma);
+    auto list1 = o.list1_is_list0 ? list0 : build_cop(cfgname, 1, o.contrast1, o.a_colour_top, o.force_list, o.a_sprite_dma);
     auto preloads0 = bpl; preloads0.push_back({kCopListAddr, list0});
     auto preloads1 = bpl; preloads1.push_back({kCopListAddr, list1});
 
@@ -1029,7 +1054,8 @@ int main(int argc, char** argv) {
     const bool do_p2 = grp("P2");
     // A mutation's run captures only what it changes, in the first system
     // configuration; the plain run grades every system configuration.
-    const int smax = mv.empty() ? 4 : 1;
+    const int smin = (mv == "P1ESTD") ? 2 : 1;
+    const int smax = mv.empty() ? 4 : smin;
     const int smax_p5 = mv.empty() ? 2 : 1;
     auto mut = [&](const char* n) { return mv == n; };
 
@@ -1048,6 +1074,11 @@ int main(int argc, char** argv) {
         if (k7.regular) g_cc = 2 * k7.period;
     }
     c.note("colour clock = " + std::to_string(g_cc) + " clk_sys cycles");
+
+    // A line that was not run because its fixture failed prints RECORDED: NOT GRADED, never PASS or FAIL.
+    auto skipped = [&](const std::string& label, const std::string& fixture) {
+        c.record("NOT GRADED: " + label + " -- precondition " + fixture + " failed");
+    };
 
     // A graded line whose precondition failed prints RECORDED ... NOT GRADED, never PASS or FAIL. Returns true
     // when the line was graded and passed.
@@ -1083,14 +1114,14 @@ int main(int argc, char** argv) {
             if (ecs && s == 1 && mut("P3C_WRONGSTD")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_wrongstd.bin";
             if (ecs && s == 1 && mut("P3L")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_nopoll.bin";
             if (ecs && s == 1 && mut("P3BLATE")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_late.bin";
-            const int burstlen1 = (ecs && s == 1 && mut("P3A")) ? 20 : 600;
-            const int burstlen0 = 600;
 
             Run r0 = run_program(bin_l0, cfg, kStartLpen);
             Run r1 = run_program(bin_l1, cfg, kStartLpen);
             const bool ok0 = r0.loaded && r0.released && r0.started && r0.done.has_value();
             const bool ok1 = r1.loaded && r1.released && r1.started && r1.done.has_value();
             const bool fix3 = ok0 && ok1;
+            const int burstlen0 = program_burst_len(r0.prog_words);
+            const int burstlen1 = program_burst_len(r1.prog_words);
 
             c.expect(fix3, "P3 fixture " + sn + " (" + s_name(s) +
                       "): both L0 and L1 programs loaded, released reset, stored their start word and reached DONE");
@@ -1274,13 +1305,13 @@ int main(int argc, char** argv) {
             if (ecs && s == 1 && mut("P4C")) bin = dir + "/prog_lpen_p4_ecs_pal_wrongstd.bin";
             if (ecs && s == 1 && mut("P4L")) bin = dir + "/prog_lpen_p4_ecs_pal_nopoll.bin";
             if (s == 1 && mut("P4B_COP")) { bin = dir + "/prog_lpen_p4_copper.bin"; use_copper_preload = true; }
-            const int burstlen = (ecs && s == 1 && mut("P4A")) ? 20 : 600;
 
             std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads;
             if (use_copper_preload) preloads.push_back({kCopListAddr, {0x0100, 0x0008, 0xFFFF, 0xFFFE}});
 
             Run r = run_program(bin, cfg, kStartLpen, preloads);
             const bool ok = r.loaded && r.released && r.started && r.done.has_value();
+            const int burstlen = program_burst_len(r.prog_words);
             c.expect(ok, "P4 fixture " + sn + " (" + s_name(s) +
                       "): program loaded, released reset, stored its start word and reached DONE");
 
@@ -1388,7 +1419,7 @@ int main(int argc, char** argv) {
         const char cfgs[4] = {'A', 'B', 'C', 'E'};
         // P1A is a dedicated contrast, run below; it does not run the main loop.
         const bool dedicated = mut("P1A");
-        for (int s = 1; (do_p1 || do_p2) && !dedicated && s <= smax; ++s) {
+        for (int s = smin; (do_p1 || do_p2) && !dedicated && s <= smax; ++s) {
             const bool ntsc = s_is_ntsc(s);
             const int H = ntsc ? 200 : 256;
             for (char cfg : cfgs) {
@@ -1401,7 +1432,7 @@ int main(int argc, char** argv) {
                     if (mut("P1MAIN")) o.contrast1 = true;
                     if (mut("P1B")) o.list1_is_list0 = true;
                     if (mut("P1C")) {
-                        if (cfg == 'A') o.force_list = 'B';
+                        if (cfg == 'A') o.a_sprite_dma = true;
                         else if (cfg == 'C') o.ov0 = o.ov1 = dir + "/prog_p1_16c_pal_narrow.bin";
                         else o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_narrow.bin";
                     }
@@ -1411,11 +1442,11 @@ int main(int argc, char** argv) {
                     }
                     if (mut("P1FIX"))
                         o.ov1 = dir + (cfg == 'C' ? "/prog_p1_16c_pal_badstart.bin" : "/prog_p1_2c_pal_badstart.bin");
-                    if (mut("P1ESTD") && cfg == 'B') o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_wrongstd.bin";
                 }
+                if (do_p1 && s == 2 && cfg == 'B' && mut("P1ESTD")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_ntsc_wrongstd.bin";
                 if (cfg == 'B' && do_p2 && m1) {
                     if (mut("P2A")) o.list1_is_list0 = true;
-                    if (mut("P2B")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_mod2.bin";
+                    if (mut("P2B")) { o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_mod2.bin"; o.pad_lines = 20; }
                     if (mut("P2FLIP")) o.flip_word_index = 100 * 20 + 5;
                     if (mut("P2ITEM1")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_vstoplow.bin";
                     if (mut("P2EDGE")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_rightedge.bin";
@@ -1443,8 +1474,17 @@ int main(int argc, char** argv) {
                 if (p2_here)
                     c.expect(p2fix_ok, "P2 fixture " + tag + ": both runs loaded, released reset and stored their start word, "
                               "the Copper fetched the list, and at least 6 vsync assertions and 6 DMA-field starts follow the first Copper fetch in both runs");
-                if (p1_here && !fixture_ok) { c.record("P1-MAIN " + tag + ": NOT GRADED, the fixture failed"); agg1.add(false, false); }
-                if (p2_here && !p2fix_ok) { c.record("P2-MAIN " + tag + ": NOT GRADED, the fixture failed"); agg2.add(false, false); }
+                if (p1_here && !fixture_ok) {
+                    for (const char* l : {"P1-a", "P1-b", "P1-c", "P1-d", "P1-e"})
+                        skipped(std::string(l) + " " + tag, "P1 fixture " + tag);
+                    c.record("P1-MAIN " + tag + ": NOT GRADED, the fixture failed");
+                    agg1.add(false, false);
+                }
+                if (p2_here && !p2fix_ok) {
+                    for (const char* l : {"CAL-VIDEO", "P2-a", "P2-b", "P2-I1", "P2-I2", "P2-I3"})
+                        skipped(std::string(l) + " " + tag, "P2 fixture " + tag);
+                    agg2.add(false, false);
+                }
 
                 // ---- P1 ----
                 if (p1_here && fixture_ok) {
@@ -1514,7 +1554,7 @@ int main(int argc, char** argv) {
                     // P1-e: the field length matches the configured standard.
                     const bool p1e_ok = vsync_field_length_ok(vsa0, ntsc) && vsync_field_length_ok(vsa1, ntsc);
                     c.expect(p1e_ok,
-                        "P1-e " + tag + (m1 && cfg == 'B' && mut("P1ESTD") ? " [contrast: BEAMCON0 bit 5 opposite the standard]" : "") +
+                        "P1-e " + tag + (s == 2 && cfg == 'B' && mut("P1ESTD") ? " [contrast: BEAMCON0 bit 5 opposite the standard]" : "") +
                         ": in both runs consecutive vsync assertions recur at the configured standard's field length");
 
                     // P1 main, graded when every precondition above holds.
@@ -1664,8 +1704,8 @@ int main(int argc, char** argv) {
             fixture_c = w0.size() >= 4 && w1.size() >= 4;
             if (fixture_c) p1a_ok = sync_samples_identical(dpal.run0.video, w0[1], w0[3], dntsc.run0.video, w1[1], w1[3]);
         }
-        c.expect(fixture_c, "P1 fixture B S1/S2 [contrast: P1-a, a PAL run and an NTSC run]: both runs loaded, the Copper "
-                  "fetched the list, and at least 4 vsync assertions follow the first Copper fetch in each");
+        c.expect(fixture_c, "P1 fixture B S1/S2 [contrast: P1-a, a PAL run and an NTSC run]: both runs loaded, released reset "
+                  "and stored their start word, the Copper fetched the list, and at least 4 vsync assertions follow the first Copper fetch in each");
         gated(fixture_c, "P1-a [contrast]", "the fixture failed",
               "P1-a [contrast: a genuine PAL run (S1) compared with a genuine NTSC run (S2), "
               "config B run \"0\" of each] : hsync and vsync samples of the two runs are identical over the "
@@ -1710,6 +1750,8 @@ int main(int argc, char** argv) {
                           "reached DONE, and enough DMA-field starts, vsync assertions after the first Copper fetch and "
                           "VERTB-synchronized read bursts follow");
                 if (!fixture_ok) {
+                    for (const char* l : {"P5-M", "CAL-VIDEO", "P5-a", "P5-b", "P5-c", "P5-d"})
+                        skipped(std::string(l) + " " + tag, "P5 fixture " + tag);
                     c.record("P5-MAIN " + tag + ": NOT GRADED, the fixture failed");
                     agg5.add(false, false);
                     continue;
@@ -1793,8 +1835,9 @@ int main(int argc, char** argv) {
                 // P5-c: the field length matches the configured standard, on consecutive detection markers (with
                 // the period of the program's two polling loops, measured from their instruction fetches, added to
                 // the tolerance of one line) and on consecutive vsync assertions.
-                const uint64_t loop5 = std::max(poll_loop(pr.vr.prog_words, pr.vr.log).period,
-                                                poll_loop(pr.vr.prog_words, pr.vr.log, 0x3228, 0x0006).period);
+                const uint64_t loop5_intreq = poll_loop(pr.vr.prog_words, pr.vr.log).period;
+                const uint64_t loop5_vhpos = poll_loop(pr.vr.prog_words, pr.vr.log, 0x3228, 0x0006).period;
+                const uint64_t loop5 = std::max(loop5_intreq, loop5_vhpos);
                 bool marker_fl = det.size() > 1;
                 for (int i = 0; i + 1 < (int)det.size(); ++i)
                     marker_fl = marker_fl && field_length_ok(det[i + 1].marker_cycle - det[i].marker_cycle, ntsc, loop5);
@@ -1802,7 +1845,8 @@ int main(int argc, char** argv) {
                     "P5-c " + tag + ": consecutive detection markers and consecutive vsync assertions recur at the "
                     "configured standard's field length",
                     marker_fl && vsync_field_length_ok(vsa, ntsc));
-                c.note("P5-c " + tag + ": polling-loop period " + std::to_string(loop5) + " clk_sys cycles");
+                c.note("P5-c " + tag + ": polling-loop period " + std::to_string(loop5) + " clk_sys cycles (INTREQR loop " +
+                       std::to_string(loop5_intreq) + ", VHPOSR loop " + std::to_string(loop5_vhpos) + ")");
 
                 // P5-d: the harness configuration of the run (p.298 lists VBSTRT and BEAMCON0 as new registers of
                 // the Enhanced Chip Set). A configuration of the host, not a measurement: recorded, not graded.

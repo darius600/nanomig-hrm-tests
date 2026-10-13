@@ -10,10 +10,10 @@
 ; the bit layout of VBSTRT and VBSTOP, so the line is written in the low bits and
 ; in the high byte alike: VBSTRT = N*$101, VBSTOP = (N+8)*$101.
 ;
-; Four times: poll INTREQR bit 5 (VERTB), clear it, store the iteration
-; index as a marker, poll VHPOSR's V7-V0 field until it reaches N-3 (both N
-; values stay under 256, so V8 is 0 throughout and can be ignored), then
-; read VPOSR/VHPOSR 200 times in a row, storing every value.
+; Four times: poll INTREQR bit 5 (VERTB), clear it, poll VHPOSR's V7-V0
+; field until it reaches N-3 (both N values stay under 256, so V8 is 0
+; throughout and can be ignored), store the iteration index as a marker,
+; then read VPOSR/VHPOSR 200 times in a row, storing every value.
 
         include "nanomig.i"
         include "playfield.i"
