@@ -567,7 +567,7 @@ struct MissStats {
     size_t skipped = 0;        // missed even cycles with an even-numbered free slot left unused before the access
     size_t early = 0;          // missed even cycles whose access came before the first free even-numbered slot (on an odd slot)
     size_t on_first = 0;       // missed even cycles whose access came exactly on the first free even-numbered slot
-    size_t at_fourth = 0;      // missed even cycles whose access came exactly four slots after the ready slot, the three slots between taken by DMA
+    size_t at_fourth = 0;      // missed even cycles whose access came on the third slot after the ready slot, that slot and the two after it taken by DMA
     uint32_t ex_from = 0, ex_to = 0; bool ex_wr_from = false, ex_wr_to = false; int64_t ex_gap = 0; // first missed pair
 };
 
@@ -1096,8 +1096,8 @@ int main(int argc, char** argv) {
             SlotMap m5 = make_slot_map(cap_share, word_addr(kShareScratch));
             MissStats st5 = analyse_misses(m5, unimpeded_gaps(m5));
             checks.note("A5: of " + std::to_string(st5.miss_even) + " missed even cycles in the share-mode run, " +
-                        std::to_string(st5.at_fourth) + " were granted exactly four slots after the slot the 68000 was ready for, " +
-                        "with the three slots between taken by DMA");
+                        std::to_string(st5.at_fourth) + " were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), " +
+                        "that slot and the two after it taken by DMA");
         }
         checks.record(
             "A5-WITHDRAWN [p198] 6-blitter-priority.c13,ch6-sysdma.c62: withdrawn -- the page's rule "
@@ -1108,8 +1108,8 @@ int main(int argc, char** argv) {
             "68000 was ready for; in memory cycles, so that the release is the fourth slot and an "
             "odd-numbered one, or in the 68000's own alternate cycles, so that it is the seventh and an "
             "even-numbered one, which p.196 (the 68000 uses only the even-numbered cycles) would require; "
-            "the measured pattern (the A5 measurement above: grants exactly four slots after the ready "
-            "slot, after three DMA-taken slots) fits the first reading in each pair, and grading it "
+            "the measured pattern (the A5 measurement above: grants on the third slot after the ready "
+            "slot, the ready slot and the two after it DMA-taken) fits the first reading in each pair, and grading it "
             "would adopt that reading from the run instead of from the page");
     }
 
