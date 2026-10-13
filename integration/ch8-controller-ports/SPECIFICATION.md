@@ -329,6 +329,13 @@ If one fails, the result is "not established", never "pass".
     clauses.
   - The result must be "not established" for every configuration, even though
     three of the four input lines of Rpost already read 0.
+- **K8 (PC3, drive-log clause alone).** The harness grounds LX (mouse_buttons
+  bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W
+  step, and releases it before Rpre is read.
+  - No R step and no Rpre read falls in that window, so Rb and Rpre still read
+    $5500 and the first clause of PC3 holds; the drive log shows LX at level 0,
+    so the second clause fails. PC3 must fail through that clause alone, and the
+    result must be "not established" for every configuration.
 - **K6.** The R step of every Fc moves to line 5.
   - A record only counts when Vr0=Vr1=10 (the grader's own fixed target, section
     3): moving the R step to line 5 means no record of any Fc ever counts, so
@@ -886,8 +893,8 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
   assembly-time symbol set (K1/K3/K4/K6/K7/OUTLOW), for the contrasting cases
   of section 6. K2 needs no separate program: it is already inside the
   sequence (each configuration's own output-driven line, graded by the same
-  assertion's "1" column). K5 is a harness-side stimulus variant of
-  the unmutated `prog_p1.s` (see the K5 record below).
+  assertion's "1" column). K5 and K8 are harness-side stimulus variants
+  of the unmutated `prog_p1.s` (see the K5 record below).
 - `start_model.patch` and the `sm-*` targets of the Makefile: the private copy
   of the RTL of the green evidence (section "The private copy of the RTL").
 - `prog_joy.s`: the joystick program (54 steps: N0, N1, Block A and Block B
@@ -897,8 +904,8 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
   variant): none of them changes the program's own code, only which
   harness port level `test_ch8_controller_ports.cpp` applies for a given
   step, selected by `NMH_MUTATE`.
-- The apparatus selectors `P1LOAD`, `CFGMUT` and `JOYLOAD` name a program file
-  that does not exist (`prog_p1_absent.bin`, `prog_joy_absent.bin`); the
+- The apparatus selectors `P1LOAD`, `CFGMUT`, `JOYLOAD` and `JOYCFGLOAD` name a
+  program file that does not exist (`prog_p1_absent.bin`, `prog_joy_absent.bin`); the
   repository holds no such file.
 - A selector runs only the part of the package whose lines it changes (the POTGO
   program, or the joystick program), and every selector runs all four
@@ -966,7 +973,12 @@ copy, POTGOR reads 0 on every pot line that is an input (its output-enable bit
 is 0), for eight lines after a POTGO write with START (Figure 8-5: charging
 starts eight lines after POTGO is written); a line that is an output reads as
 before. `make sm-test-fx68k` and `make sm-test-tg68k` build and run the
-unchanged package against it. The graded read is at L0+6, inside the interval
+unchanged package against it, each in its own object directory and output file
+(`obj_dir_sm_fx68k/` and `out_sm_fx68k.txt`, `obj_dir_sm_tg68k/` and
+`out_sm_tg68k.txt`). `obj_dir_fx68k/` and `obj_dir_tg68k/`, which `make test`
+builds against the repository's RTL, are neither used nor changed by them, so a
+selector replayed from those directories always runs against the repository's
+RTL. The graded read is at L0+6, inside the interval
 under either reading of p.235. This copy is the green evidence for `C0-Fc` to
 `C4-Fc` and `P1-START`; it is not the repository's RTL, and the repository's RTL
 stays red on these lines.
@@ -977,8 +989,8 @@ Run once each, both cores, via `NMH_MUTATE=<value>`, from each object
 directory (`./Vnanomig ..`). Every result below is the pass/fail count and
 the clause that actually printed; fx68k and TG68K printed the identical
 pattern for every mutation below, line for line. A selector runs only its own
-part (see Programs), so the counts are of that part: the POTGO part is 59
-lines, the joystick part 74. A line whose preconditions are not met prints
+part (see Programs), so the counts are of that part: a POTGO selector prints
+59 graded lines and a joystick selector 75 (`FIXTURE` included in both). A line whose preconditions are not met prints
 `NOT GRADED` (a `RECORDED` line naming the unmet preconditions), neither `PASS`
 nor `FAIL`, and is not counted.
 
@@ -1010,6 +1022,11 @@ POTGO part (all four configurations each; "the sixteen output lines" are
   GRADED`. Measured (RECORDED, in each configuration): Rb=Rpre=$1000 with LX, LY
   and RY grounded -- bit 12 (RX) is outside this mutation's reach and stays 1,
   the three others read 0.
+- **K8** (`PC3`, drive-log clause alone): 15 passed, 4 failed -- `PC3` prints
+  `FAIL` in each configuration; its note reads "reads clause holds, drive-log
+  clause fails (2 port changes ...)", and Rb=Rpre=$5500 (RECORDED, in each
+  configuration). `PC1`, `PC2` and `PC4` stay `PASS`, and the same 40 lines are
+  `NOT GRADED`.
 - **K6** (`PC1`, not `PC4`): 15 passed, 4 failed -- moving the R step to line 5
   leaves no record with Vr0=Vr1=10, so `PC1` prints `FAIL` in each
   configuration and `PC4` prints `PASS` (nothing there for it to check); the
@@ -1038,10 +1055,16 @@ Joystick part (each selector runs all four configurations):
 - **JOYCFG** (`JOY-CONFIGS`): 74 passed, 1 failed -- a further NTSC+ECS run
   takes Q3's stimulus and its records are compared with the PAL+ECS run's;
   `JOY-CONFIGS` prints `FAIL` ("disagreed: NTSC+ECS") and nothing else moves.
+- **JOYCFGLOAD** (`JOY-CONFIGS`): 56 passed, 1 failed -- the NTSC+ECS joystick
+  run loads a file that does not exist (`prog_joy_absent.bin`), so it is not
+  loaded; `JOY-CONFIGS` prints `FAIL` ("disagreed: NTSC+ECS"), the 18 lines of
+  that configuration are `NOT GRADED` (a `RECORDED: NOT GRADED` line names
+  them), and the 54 lines of the other three configurations, `JOY-FIXTURE` and
+  `FIXTURE` print `PASS`.
 - **Q1** (timing clause): 23 passed, 4 failed -- `Q1` prints `FAIL` in each
   configuration (t_apply(k) < t(T_k), graded over all 54 steps; the note prints
-  "timing clause fails, hold clause holds"), and, gated by it, the 24 P2/P3/P4
-  lines are `NOT GRADED`; `P3-ANCHOR` is unaffected (`PASS`).
+  "timing clause fails, hold clause holds"), and, gated by it, the 48 P2/P3/P4
+  lines (12 in each configuration) are `NOT GRADED`; `P3-ANCHOR` is unaffected (`PASS`).
 - **Q1HOLD** (hold clause): 23 passed, 4 failed -- `Q1` prints `FAIL` with the
   note "timing clause holds, hold clause fails": the trace shows a change of
   joystick0 inside (t_apply(k), t(U_k)] of step 5; the same lines are `NOT
@@ -1069,7 +1092,7 @@ Joystick part (each selector runs all four configurations):
   (`PASS`: the F1/F0 steps stay on their own connector).
 - **P2ANCHOR**: 23 passed, 4 failed -- `P2-ANCHOR` prints `FAIL` through its
   own clause (F1(A) additionally grounds pin 6 of B); `Q2` and `Q4` stay
-  `PASS`, and the 24 P2/P3/P4 lines are `NOT GRADED`.
+  `PASS`, and the 48 P2/P3/P4 lines (12 in each configuration) are `NOT GRADED`.
 - **P3ANCHOR**: 47 passed, 4 failed -- `P3-ANCHOR` prints `FAIL` through its
   own clause (N0 and N1 carry Yup(A) sub-step 0's pattern instead of staying
   released), `Q3` stays `PASS` (N0 still equals N1), and `P3-Y`, `P3-X` and the
