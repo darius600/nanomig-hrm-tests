@@ -184,8 +184,10 @@ order:
 The third clause has a page-predicted contrast. p25 says that "no matter what
 the Copper is doing" it is forced to restart when vertical blanking ends, and
 p20 gives four memory cycle times for a MOVE. A list that waits for line 255
-and then holds more MOVEs than the rest of the field can hold is therefore
-restarted in the middle of the list, and the last list word the Copper read
+and then holds more MOVEs than fit between line 255 and the end of the next
+field's vertical blanking at its latest (line 29 PAL, line 21 NTSC, p79) is
+therefore restarted in the middle of the list under either reading of p25
+(section 6, item 3), and the last list word the Copper read
 before the restart is a MOVE word, not a terminal wait (I-v for Program I,
 T-k for Program T; sections 3.5 and 4.4). The first two clauses hold there and
 the third fails.
@@ -346,7 +348,7 @@ Each variant changes only what is listed.
 | I-s | Both lists end in `$0000,$0000` (a MOVE to register `$000`, which the Copper cannot write, p21 and p26) in front of the `$FFFF,$FFFE` that stays in the list |
 | I-t | In both lists the two BPL1PT MOVEs are placed after `WAIT $2001,$FF00` (line 32): after the end of vertical blanking (p219, section 6 item 7) and in front of the first bitplane fetch (line 44) |
 | I-u | In both lists the two SPR0PT MOVEs are placed after `WAIT $1901,$FF00` (line 25): outside the 25 lines of vertical blanking that p219 guarantees, and in front of the sprite's first fetch (measured on both cores: line 25, colour clock 19; see PI-12 in section 3.6) |
-| I-v | LISTA is at `$0A0000` and LISTB at `$0A5000`. In both, in front of the terminal `$FFFF,$FFFE`, a `WAIT $FF01,$FFFE` (line 255) is followed by 4,700 `MOVE COLOR00, bg` (four memory cycle times each, p20: 18,800 colour clocks, more than the 57 lines of a PAL field after line 255) |
+| I-v | LISTA is at `$0A0000` and LISTB at `$0A6000`. In both, in front of the terminal `$FFFF,$FFFE`, a `WAIT $FF01,$FFFE` (line 255) is followed by 5,200 `MOVE COLOR00, bg` (four memory cycle times each, p20: 20,800 colour clocks, more than the 88 lines (19,976 colour clocks) from line 255 of a 313-line field through line 29 of the next) |
 
 ### 3.6 Preconditions of Program I
 
@@ -365,8 +367,9 @@ not, the run prints NOT GRADED for it: it neither passes nor fails.
   them (stimulus data in chip memory, not a fetch).
 - PI-6 needs PI-4: where PI-4 holds, every field has its 256 groups of 20
   fetches inside PIC, so every field has fetches there for PI-6 to read.
-- PI-7(bpl) needs a bitplane fetch in every field to order the MOVEs against,
-  and PI-7(spr) a sprite-0 fetch. PI-12 needs the matching PI-7.
+- PI-7(bpl) needs a bitplane fetch in every field to order the MOVEs against
+  (where one is missing, PI-4 fails). PI-7(spr) needs PI-8; where PI-8 holds, a
+  field without a sprite-0 fetch fails PI-7(spr). PI-12 needs the matching PI-7.
 
 | Id | Precondition | Fails in |
 |---|---|---|
@@ -380,8 +383,8 @@ not, the run prints NOT GRADED for it: it neither passes nor fails.
 | PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch, the earlier of the first fetch inside PIC and the first 20-word group that P4(a), P4(b) and P5 find from PIC upward (for P4 and P5). | I-l |
 | PI-7(spr) | In every field, the Copper fetch of the SPR0PT MOVEs precedes the field's first sprite-0 fetch (for P6). | I-m |
 | PI-8 | The sprite-0 structure at SPR is fetched at least once during the run (for P6). | I-i |
-| PI-12(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs lies in vertical blanking: less than 23 lines after the write that opens the M1 field (for P4 and P5). | I-t |
-| PI-12(spr) | In every field, the Copper fetch of the SPR0PT MOVEs lies in vertical blanking, as for PI-12(bpl) (for P6). | I-u |
+| PI-12(bpl) (gate of P4 and P5) | In every field, the Copper fetch of the BPL1PT MOVEs lies in vertical blanking: less than 23 lines after the write that opens the M1 field. p25 leaves open whether the restart lies at the start or at the end of vertical blanking (section 6, item 3); after a restart at the end the MOVEs are fetched after line 25, so PI-12 is printed as a gate state and is not graded; when it is closed, P4 and P5 are not graded. | I-t |
+| PI-12(spr) (gate of P6) | In every field, the Copper fetch of the SPR0PT MOVEs lies in vertical blanking, as for PI-12(bpl). It is printed as a gate state and is not graded; when it is closed, P6 is not graded. | I-u |
 | PI-9 | The LACE-clear control run (I-a) is a valid fixture: PI-1 and PI-2 hold on that run (for P1-NOLACE). | I-o |
 | PI-10 | The no-BPL1PT-rewrite run (I-c) is a valid fixture: PI-1 and PI-2 hold on that run, and the first 20-word fetch of every one of its fields is found (for P5-NOREWRITE). | I-q |
 | PI-11 | The no-SPR0PT-rewrite run (I-e) is a valid fixture: PI-1, PI-2 and PI-4 hold on that run, and the sprite structure is fetched at least once (for P6-NOREWRITE). | I-r |
@@ -389,10 +392,10 @@ not, the run prints NOT GRADED for it: it neither passes nor fails.
 **PI-12.** p219 gives the minimum time of vertical blanking as 25 horizontal scan
 lines for a PAL system, beginning at line 0 ("The range starts at line 0 and
 ends at line ... 25 for PAL"; section 6, item 7). The write that opens an M1
-field follows the sample that shows the field's line 0 (section 2.5) by less
-than one and a half lines: the sample lies in line 0, and the wrap routine
-that writes the record is a few instructions. A Copper fetch less than 23 lines
-after that write therefore lies before line 25. The limit is that arithmetic,
+field lies less than one and a half lines after the start of the field's
+line 0: the sample that shows line 0 (section 2.5) lies in that line, and the
+wrap routine writes the record a few instructions after it. A Copper fetch less
+than 23 lines after that write therefore lies before line 24.5. The limit is that arithmetic,
 not a fitted value. Where the lists hold no such MOVE, PI-12 is not graded.
 
 The two contrasts differ in reach. I-t puts the BPL1PT MOVEs at line 32, after
@@ -470,7 +473,7 @@ comparison works on the least significant bits of the vertical count").
 | T-h | `DMACON = $8300` (COPEN not set) |
 | T-i | FIXMARK stores `$DEAD`, not `$BEEF` |
 | T-j | LISTT ends in `$0000,$0000` (as in I-s) in front of the `$FFFF,$FFFE` that stays in the list |
-| T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 900 `MOVE COLOR00, bg` (four memory cycle times each, p20: 3,600 colour clocks, more than the 8 lines of an NTSC field after line 255; the list and the code of M1 behind it end below PLANE) |
+| T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 1,800 `MOVE COLOR00, bg` (four memory cycle times each, p20: 7,200 colour clocks, more than the 30 lines (at most 6,840 colour clocks) from line 255 of a 263-line field through line 21 of the next; LISTT is relocated to `$0A0000`, clear of PLANE, with the code of M1 behind it) |
 
 ### 4.5 Preconditions of Program T
 
@@ -726,12 +729,12 @@ there); PT-5 needs PT-3 and the gate PT-4.
    Not graded, because no page states them:
    - which hardware field (long or short, LOF 1 or 0) runs LISTA;
    - where the lines land on the screen.
-5. **Preconditions.** PI-1 to PI-6, PI-7(bpl) and PI-12(bpl); for (a) to (d)
+5. **Preconditions.** PI-1 to PI-6, PI-7(bpl) and the gate PI-12(bpl); for (a) to (d)
    also the gate (e). The proposition attributes the retrieval to the BPL1PT
    MOVEs of each field's list, and PI-7(bpl) proves that those MOVEs are
    fetched before the field's first bitplane fetch; with the MOVEs after the
-   first fetch the retrieval is not theirs. PI-12(bpl) shows that they are
-   fetched in vertical blanking.
+   first fetch the retrieval is not theirs. The gate PI-12(bpl) requires
+   that they are fetched in vertical blanking.
 6. **Contrasting cases.**
    - I-b (LISTB also writes PIC). The page requires "a different value for
      alternate fields". With the same value, the even memory lines 1, 3, ...,
@@ -761,8 +764,8 @@ there); PT-5 needs PT-3 and the gate PT-4.
      and I-t. On I-a (LACE clear), PI-3 is red and P4 is reported as not
      graded; on I-l (the BPL1PT MOVEs after the `WAIT $2D01,$FF00`), PI-7(bpl)
      is red and P4(a) to P4(e) are reported as not graded; on I-t (the BPL1PT
-     MOVEs after the `WAIT $2001,$FF00`, line 32), PI-12(bpl) is red and P4 is
-     reported as not graded.
+     MOVEs after the `WAIT $2001,$FF00`, line 32), the gate PI-12(bpl) prints closed
+     and P4 is reported as not graded.
 7. **Reference frame.**
    - Field: the restart interval (M2).
    - Frame: an A-field and the next B-field.
@@ -828,7 +831,7 @@ there); PT-5 needs PT-3 and the gate PT-4.
    control). The contrast of PI-10 is I-q.
 
    The contrasts for the preconditions are those of section 3.6, I-l for
-   PI-7(bpl) and I-t for PI-12(bpl).
+   PI-7(bpl) and I-t for the gate PI-12(bpl).
 7. **Reference frame.** The restart interval (M2).
 
 ### P6: sprite pointers rewritten during vertical blanking make the sprite data be fetched in every field
@@ -895,6 +898,8 @@ there); PT-5 needs PT-3 and the gate PT-4.
    - P3's measurement of the last line needs the restart on line 0 before
      position $E0. PT-4 gates it instead of assuming it: when it does not
      hold, PT-5 and P3 are not graded.
+   - PI-12 needs the restart at the start of vertical blanking; it gates P4, P5
+     and P6 instead of assuming it.
 4. **Who resets COP1LC.** p35: "during the vertical blanking interval, COP1LC
    will be automatically reset to point to the original list". This is not
    something p25 says the hardware does, and p33 gives the task to a graphics
@@ -912,7 +917,7 @@ there); PT-5 needs PT-3 and the gate PT-4.
    (21)" NTSC and "$1D (29)" PAL. p219 gives a minimum of "20 horizontal scan
    lines for an NTSC system and 25 horizontal scan lines for a PAL system".
    p239 speaks of the "end of internal vertical blanking (vertical position
-   20)". Nothing here depends on the exact value, except PI-12, which uses the 25-line
+   20)". Nothing here depends on the exact value, except the gate PI-12, which uses the 25-line
    minimum.
 8. **Odd and even against the hardware fields.** No page ties the odd field
    (the "first scan") to LOF or to the long or short field. p216 says only
@@ -960,9 +965,9 @@ record's own first V (which the page ties only to a wrap, section 2.4)
 is 12 (fx68k) and 35 (tg68k) under I-j, and 122 (fx68k) and 3 (tg68k)
 under T-f -- several lines' worth either way, on both cores. After the completion word
 the run goes on until the next fetch of the first word of a list (section
-2.5), so that the last field of an I-j run is complete: measured on both cores,
-PI-2, PI-4 and PI-5 hold under I-j, PI-1 is the only red, and PI-3, which
-reads the M1 lengths, is not graded.
+2.5), so that the last recorded field is not cut off. Measured on both cores,
+PI-1 is the only red under I-j: PI-2 to PI-7, PI-12(bpl) and PI-12(spr) need
+PI-1 (section 3.6) and print NOT GRADED, and PI-8 holds.
 
 **Measured (recorded, not graded).**
 - P1 (Program I, both cores): the 8 recorded PAL field lengths are
@@ -973,6 +978,8 @@ reads the M1 lengths, is not graded.
   of the 12 graded fields, never 228; P3 measures red on both cores. PT-5
   (every measured length is 227 or 228) is unaffected and stays green,
   since 227 is one of the two page values.
+- T-a (LACE clear, both cores): all 13 recorded NTSC fields measure 263 lines
+  (the PT-6 gate line of the PT-6 run).
 - The normal run prints Delta, the type f_k and the length x_k of each of
   the 12 graded fields, and the number of measured line lengths that are 227
   colour clocks, 228 colour clocks and neither, as MEASURED lines before the
@@ -1046,7 +1053,7 @@ on fx68k, and 95 to 181 and 87 to 173 on TG68K, against the limit of 5,221
 colour clocks (23 lines). Under I-t the later BPL1PT fetch lies 7,053 to 7,083
 (fx68k) and 7,064 to 7,164 (TG68K) colour clocks after the write, under I-u the
 later SPR0PT fetch 5,464 to 5,494 (fx68k) and 5,475 to 5,573 (TG68K); PI-7(bpl)
-and PI-7(spr) hold there. The sprite's first fetch comes 5,694 colour clocks
+and PI-7(spr) hold there, the gate PI-12 prints closed, and P4, P5 (I-t) or P6 (I-u) and their NOREWRITE lines print NOT GRADED. The sprite's first fetch comes 5,694 colour clocks
 after the restart (line 25, colour clock 19 at 227 colour clocks per line) and
 the first bitplane fetch 10,049 (line 44), the same on both cores.
 
