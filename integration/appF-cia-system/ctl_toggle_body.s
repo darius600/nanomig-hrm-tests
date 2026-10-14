@@ -1,7 +1,7 @@
 ; ctl_toggle_body.s -- a live toggle source: PBON=0 (the timer does not drive
 ; the pin), DDRB bit 7 an output, and the CPU inverts PRB data bit 7 once
 ; after every ICR read that shows the TB flag. Result layout as p3_body.s
-; (RESULTS+8: 600 PRB words, then 600 ICR words), so the same graders apply.
+; (RESULTS+8: 600 PRB words, then 600 ICR words, then one more PRB word), so the same graders apply.
 ;
 ; Wrapper symbols: LATCHVAL; INITLEVEL (PRB value written before the start);
 ; optional SKIP (invert only after every second flagged read).
@@ -11,6 +11,7 @@
                 include "ciaregs.i"
 P3_PRB          equ     RESULTS+8
 P3_ICR          equ     P3_PRB+600*2
+P3_PRB_LAST     equ     P3_ICR+600*2
 
         org     PROGRAM_ORG
 
@@ -45,6 +46,9 @@ start:
         eori.b  #$80,d5
         move.b  d5,CIAB_PRB
 .no:    dbra    d2,.rs
+        moveq   #0,d0
+        move.b  CIAB_PRB,d0
+        move.w  d0,P3_PRB_LAST
         move.b  #$00,CIAB_CRB
 
-        DONE
+        FINISH

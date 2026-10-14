@@ -65,4 +65,4 @@ start:
         move.w  #MARKER_SENTINEL,MK_C2_STOP_B
         READ_TIMER THI,TLO,CTL_V2
 
-        DONE
+        FINISH

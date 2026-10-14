@@ -38,4 +38,4 @@ start:
         move.w  #MARKER_SENTINEL,MK_UN_D
         READ_TIMER THI,TLO,PUN_W
 
-        DONE
+        FINISH

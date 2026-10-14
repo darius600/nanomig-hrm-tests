@@ -21,4 +21,4 @@ start:
         move.w  #$8280,DMACON(a0)       ; SET,DMAEN,COPEN
         move.w  #$0200,d7
 .d1:    dbra    d7,.d1
-        DONE
+        FINISH

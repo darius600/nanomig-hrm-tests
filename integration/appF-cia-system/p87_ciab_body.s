@@ -82,4 +82,4 @@ start:
         RSAMPLE2 SAMPLES,P87_YTOD,CIAB_TODLO,P87_YICR,CIAB_ICR
         endc
 
-        DONE
+        FINISH

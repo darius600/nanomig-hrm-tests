@@ -51,4 +51,4 @@ start:
         move.w  #MARKER_SENTINEL,MK_75_STOP_B
         READ_TIMER THI,TLO,P75_V
 
-        DONE
+        FINISH

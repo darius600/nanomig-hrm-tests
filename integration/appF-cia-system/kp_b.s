@@ -30,4 +30,4 @@ start:
         move.b  #$00,CIAA_CRA
         READ_TIMER CIAA_TAHI,CIAA_TALO,KPB_V
 
-        DONE
+        FINISH

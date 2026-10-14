@@ -60,4 +60,4 @@ start:
         dbra    d2,.k3
         endc
 
-        DONE
+        FINISH

@@ -1,0 +1,22 @@
+Private copy "sp" of the chip-set RTL: a deliberate fault against p. 345, used by the
+implementation-red record of P7.6-CIAA in appF-cia-system. It is made by
+`make sp-rtl-<core>` from a copy of the pinned submodule's src/minimig-aga/ and never
+changes the submodule.
+
+This copy is NOT a page-conforming implementation. p. 345 says that after eight CNT
+pulses an interrupt is generated and that the SP flag follows the serial port; here the key
+code no longer reaches the interrupt controller's serial input in ciaa.v (`.ser`), so SP
+stays 0 after a key code although every timing clause of P7.5-WINDOW holds. It exists to
+show that P7.6-CIAA can print FAIL on a run whose timing clauses hold.
+
+--- a/ciaa.v
++++ b/ciaa.v
+@@ -319,7 +319,7 @@
+   .tb(tb),
+   .alrm(alrm),
+   .flag(1'b0),
+-  .ser(keystrobe | ser_tx_irq),
++  .ser(ser_tx_irq),
+   .data_in(data_in),
+   .data_out(icr_out),
+   .irq(irq)

@@ -1,0 +1,144 @@
+Private copy "conf" of the chip-set RTL: a page-conforming CNT for both CIAs, used by
+the implementation records of appF-cia-system (P5-CONTRAST, P7.5, P7.5-CIAA-INMODE,
+P7.5-CIAB-GREENCTL, P8.65-MODE01, P8.65-MODE01-CIAB-GREENCTL). It is made by
+`make conf-rtl-<core>` from a copy of the pinned submodule's src/minimig-aga/ and never
+changes the submodule.
+
+What the copy does, and the page it follows:
+  - cia_timera.v: CRA bit 5 selects the count input of timer A, 1 = positive CNT
+    transitions, 0 = phi2 (p. 348).
+  - cia_timerb.v: CRB bits 6-5 select the count input of timer B, 00 phi2, 01 positive CNT
+    transitions, 10 timer A underflows, 11 timer A underflows while CNT is high (p. 349).
+  - ciab.v: CIA-B's CNT is wired to POUT (p. 351). Nothing drives POUT in this system and
+    the line is pulled up: it is high and has no positive transition, so timer A and
+    timer B get cnt = 0 (no transition) and timer B gets cnth = 1 (level high).
+  - ciaa.v: CIA-A's CNT is the keyboard clock KCLK (p. 351). A key code is eight bits; each
+    bit is followed by a pulse on KCLK, low and then high, KCLK is low about 20 us and a
+    bit takes about 60 us, and KCLK is high before the transmission and after the eighth
+    bit (pp. 357-358). One clk7_en period is one CPU clock period (p. 2, 7.09379 MHz), so
+    60 us is 426 periods and 20 us is 142. The positive transition (cnt, one period) comes
+    at the end of the low level; the level (cnth) is the KCLK level. The key code of the
+    harness's keyboard port starts the transmission.
+  - Nothing else in the chip set is changed. The copy is not a statement about the
+    repository's RTL, which does not implement the CNT input: with the repository's RTL
+    the records of these lines are the red ones.
+
+--- a/ciaa.v
++++ b/ciaa.v
+@@ -326,6 +326,40 @@
+ );
+ 
+ //----------------------------------------------------------------------------------
++// keyboard clock KCLK on CNT (pp. 351, 357, 358)
++//----------------------------------------------------------------------------------
++// One key code is eight bits; each bit is followed by a pulse on KCLK, low and then high.
++// p. 358: KCLK stays low about 20 us, and a bit takes about 60 us.
++// One clk7_en period is one CPU clock period (p. 2: 7.09379 MHz on PAL), so
++// 60 us = 60e-6 * 7.093790e6 = 425.6 -> 426 periods per bit and
++// 20 us = 20e-6 * 7.093790e6 = 141.9 -> 142 periods of low level.
++// Before the transmission and after the eighth bit KCLK is high (p. 357).
++localparam KCLK_BIT = 426;    // 60 us per bit
++localparam KCLK_LOW = 142;    // 20 us low
++reg [3:0] kclk_bits;          // bits still to send
++reg [8:0] kclk_pos;           // clk7_en periods since the start of the current bit
++reg       kclk;               // KCLK level
++wire      kclk_rise = (kclk_bits != 4'd0) && (kclk_pos == KCLK_LOW);   // the positive transition: one clk7_en period
++always @(posedge clk)
++  if (clk7_en) begin
++    if (reset) begin
++      kclk_bits <= 4'd0; kclk_pos <= 9'd0; kclk <= 1'b1;
++    end
++    else if (keystrobe) begin
++      kclk_bits <= 4'd8; kclk_pos <= 9'd0; kclk <= 1'b0;
++    end
++    else if (kclk_bits != 4'd0) begin
++      if (kclk_pos == KCLK_LOW - 1) kclk <= 1'b1;
++      if (kclk_pos == KCLK_BIT - 1) begin
++        kclk_pos <= 9'd0;
++        kclk_bits <= kclk_bits - 4'd1;
++        if (kclk_bits != 4'd1) kclk <= 1'b0;      // the next bit begins with the low level
++      end
++      else kclk_pos <= kclk_pos + 9'd1;
++    end
++  end
++
++//----------------------------------------------------------------------------------
+ // instantiate timer A
+ //----------------------------------------------------------------------------------
+ cia_timera tmra
+@@ -340,6 +374,7 @@
+   .data_in(data_in),
+   .data_out(tmra_out),
+   .eclk(eclk),
++  .cnt(kclk_rise),
+   .spmode(spmode),
+   .tmra_ovf(tmra_ovf),
+   .irq(ta)
+@@ -361,6 +396,8 @@
+   .data_out(tmrb_out),
+   .eclk(eclk),
+   .tmra_ovf(tmra_ovf),
++  .cnt(kclk_rise),
++  .cnth(kclk),
+   .irq(tb)
+ );
+ 
+--- a/ciab.v
++++ b/ciab.v
+@@ -204,6 +204,7 @@
+   .data_in(data_in),
+   .data_out(tmra_out),
+   .eclk(eclk),
++  .cnt(1'b0),
+   .tmra_ovf(tmra_ovf),
+   .spmode(),
+   .irq(ta)
+@@ -225,6 +226,8 @@
+   .data_out(tmrb_out),
+   .eclk(eclk),
+   .tmra_ovf(tmra_ovf),
++  .cnt(1'b0),
++  .cnth(1'b1),
+   .irq(tb)
+ );
+ 
+--- a/cia_timera.v
++++ b/cia_timera.v
+@@ -10,6 +10,7 @@
+   input   [7:0] data_in,      // bus data in
+   output   [7:0] data_out,      // bus data out
+   input  eclk,            // count enable
++  input  cnt,             // one clk7_en period per positive transition on CNT
+   output  tmra_ovf,        // timer A underflow
+   output  spmode,          // serial port mode
+   output  irq            // intterupt out
+@@ -29,7 +30,7 @@
+ wire  count;          // count enable signal
+ 
+ // count enable signal
+-assign count = eclk;
++assign count = tmcr[5] ? cnt : eclk;   // CRA bit 5 (p. 348): 1 = positive CNT transitions, 0 = phi2
+ 
+ // writing timer control register
+ always @(posedge clk)
+--- a/cia_timerb.v
++++ b/cia_timerb.v
+@@ -11,6 +11,8 @@
+   output   [7:0] data_out,      // bus data out
+   input  eclk,            // count enable
+   input  tmra_ovf,        // timer A underflow
++  input  cnt,             // one clk7_en period per positive transition on CNT
++  input  cnth,            // CNT level
+   output  irq            // intterupt out
+ );
+ 
+@@ -28,7 +30,8 @@
+ wire  count;          // count enable signal
+ 
+ // Timer B count signal source
+-assign count = tmcr[6] ? tmra_ovf : eclk;
++// CRB bits 6-5 (p. 349): 00 phi2, 01 positive CNT transitions, 10 timer A underflows, 11 timer A underflows while CNT is high
++assign count = (tmcr[6:5] == 2'b00) ? eclk : (tmcr[6:5] == 2'b01) ? cnt : (tmcr[6:5] == 2'b10) ? tmra_ovf : (tmra_ovf & cnth);
+ 
+ // writing timer control register
+ always @(posedge clk)

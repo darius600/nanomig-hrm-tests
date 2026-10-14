@@ -43,4 +43,4 @@ start:
         move.b  #$00,CIAA_CRB
         READ_TIMER CIAA_TBHI,CIAA_TBLO,P811_V
 
-        DONE
+        FINISH

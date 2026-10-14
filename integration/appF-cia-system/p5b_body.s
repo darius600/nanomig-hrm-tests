@@ -33,4 +33,4 @@ start:
         endc
         move.b  #$00,CR
 
-        DONE
+        FINISH

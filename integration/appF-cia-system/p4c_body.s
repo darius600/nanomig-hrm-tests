@@ -42,7 +42,7 @@ start:
         dbra    d2,.rs
         move.b  #$00,CR
 
-        DONE
+        FINISH
 
         ifnd    XHI2
 XHI2            equ     -1

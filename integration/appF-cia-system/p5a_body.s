@@ -53,4 +53,4 @@ start:
         READ_TIMER THI,TLO,P5A_V2
         READ_STORE ICR,P5A_I
 
-        DONE
+        FINISH

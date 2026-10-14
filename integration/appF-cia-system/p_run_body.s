@@ -35,4 +35,4 @@ start:
         READ_STORE CR,PRUN_C
         READ_TIMER THI,TLO,PRUN_U
 
-        DONE
+        FINISH

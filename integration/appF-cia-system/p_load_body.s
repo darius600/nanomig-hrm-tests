@@ -68,4 +68,4 @@ start:
         move.w  #MARKER_SENTINEL,MK_LD_D
         READ_TIMER THI,TLO,PLD_V3
 
-        DONE
+        FINISH

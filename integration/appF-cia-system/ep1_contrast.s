@@ -21,4 +21,4 @@ start:
         READ_STORE CIAB_CRA,EP1_CRA_B
         READ_STORE CIAB_CRB,EP1_CRB_B
         move.w  #MARKER_SENTINEL,MK_START
-        DONE
+        FINISH

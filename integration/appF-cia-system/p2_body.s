@@ -27,6 +27,10 @@
 ;   NORAISE_H1               -- no CPU raise after leg H's first start
 ;   MUT_LEGR_STARTED         -- a start, with the CPU raising the line, before
 ;                               leg R's own write
+;
+; Pre2.1's contrast:
+;   MUT_PRE21                -- R-LATCH($FFFF) and CR<-$07 (START, PBON, toggle,
+;                               continuous) before leg R's own write
 
         ifnd    SLATCH
 SLATCH          equ     $0020
@@ -66,6 +70,7 @@ P2_H3           equ     P2_H2+2
 P2_IH           equ     P2_H3+2
 P2_POLL         equ     P2_IH+2         ; 4 words, one per start (Pre2.2)
 P2_S0           equ     P2_POLL+4*2     ; the driven level right before start 1
+P2_CR0          equ     P2_S0+2         ; CR, read right before leg R's own write (Pre2.1)
 
 MK_R_SEL        equ     $0C1002
 MK_R_END        equ     $0C1004
@@ -134,9 +139,15 @@ start:
         move.b  #$05,CR                  ; START, PBON off, toggle, continuous
         move.b  #DDRB_INIT|M,PRB         ; the CPU raises the line at the start
         endc
+        READ_STORE CR,P2_CR0             ; Pre2.1: CR before leg R's own write
         move.b  #$04,CR                  ; toggle, not started
         else
         move.b  #DDRB_INIT,DDRB
+        ifd     MUT_PRE21
+        RLATCH  TLO,THI,$FFFF
+        move.b  #$07,CR                  ; START,PBON,toggle,continuous
+        endc
+        READ_STORE CR,P2_CR0             ; Pre2.1: CR before leg R's own write
         move.b  #$06,CR                  ; PBON,toggle,not started
         endc
         READ_STORE PRB,P2_R1
@@ -186,4 +197,4 @@ start:
         READ_STORE PRB,P2_H3
         READ_STORE ICR,P2_IH
 
-        DONE
+        FINISH

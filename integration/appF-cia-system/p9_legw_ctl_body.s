@@ -62,4 +62,4 @@ start:
 .pd:    move.w  d1,P9W_POLL
         move.b  #$00,CR
 
-        DONE
+        FINISH

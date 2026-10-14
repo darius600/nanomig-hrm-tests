@@ -45,4 +45,4 @@ start:
         move.w  #MARKER_SENTINEL,MK_810_STOP_B
         READ_TIMER CIAB_TBHI,CIAB_TBLO,P810_V
 
-        DONE
+        FINISH

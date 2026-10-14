@@ -18,4 +18,4 @@ start:
         RSAMPLE1 300,P76_ICR,CIAB_ICR
         move.b  #$00,CIAB_CRA
 
-        DONE
+        FINISH

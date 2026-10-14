@@ -47,6 +47,10 @@ start:
         move.b  PRB,d0
         endc
         move.w  d0,(a1)+
+        ifd     MUT_CHIP
+        nop                              ; padding, as in K3 (P6, Pre6.3)
+        nop
+        endc
         dbra    d2,.rs
         moveq   #0,d1
 .poll:  move.b  CR,d0
@@ -59,4 +63,4 @@ start:
         READ_STORE ICR,P9W_I
         move.b  #$00,CR
 
-        DONE
+        FINISH

@@ -60,4 +60,4 @@ start:
         move.l  d0,P87_T1Y
         endc
 
-        DONE
+        FINISH

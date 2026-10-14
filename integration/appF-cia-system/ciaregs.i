@@ -74,17 +74,21 @@ FIXTURE_ADDR    equ     $0C1FFC
 FIXTURE_VALUE   equ     $BEEF
         endc
 
-; ---- FINISH: the program's last action. DONE (nanomig.i), or, when a
-; wrapper defines MUT_EP3, a final marker with another value followed by a
-; branch to itself, so the program completes its work without the final
-; marker EP3 requires.
+; ---- FINISH: the program's last action (SPECIFICATION.md 1.2, EP3). The
+; completion word is stored first, then DONE (nanomig.i) stores the final
+; marker. A wrapper that defines MUT_EP3 stores another value in the
+; completion word and still ends with DONE: the program completes its work and
+; reaches the final marker, but its completion word is not COMPLETE_VALUE.
+COMPLETE_ADDR   equ     $0C0FFC
+COMPLETE_VALUE  equ     $600D
         ifd     MUT_EP3
 FINISH          macro
-                move.w  #$600E,DONE_ADDR
-.fin\@:         bra.s   .fin\@
+                move.w  #$600E,COMPLETE_ADDR
+                DONE
                 endm
         else
 FINISH          macro
+                move.w  #COMPLETE_VALUE,COMPLETE_ADDR
                 DONE
                 endm
         endc
@@ -206,13 +210,17 @@ RSAMPLE2        macro
                 endm
 
 ; ---- R-SAMPLE(n; X) with the register read replaced by a read of K3's Chip-memory
-; byte (the loop then holds no CIA access). \1=count \2=array base address.
+; byte (the loop then holds no CIA access). Two NOPs pad the loop body, as in K3, so
+; that its iteration time is not a multiple of 10*T_CPU (P6, Pre6.3).
+; \1=count \2=array base address.
 RSAMPLE1_CHIP   macro
                 lea     \2,a1
                 move.w  #(\1-1),d2
 .rs\@:          moveq   #0,d0
                 move.b  CHIPBYTE_K3,d0
                 move.w  d0,(a1)+
+                nop
+                nop
                 dbra    d2,.rs\@
                 endm
 

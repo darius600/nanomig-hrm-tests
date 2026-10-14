@@ -57,4 +57,4 @@ start:
         READ_TIMER THI,TLO,PST_U3
         READ_STORE ICR,PST_ICR
 
-        DONE
+        FINISH
