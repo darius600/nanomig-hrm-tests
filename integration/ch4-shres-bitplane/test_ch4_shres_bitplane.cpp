@@ -37,30 +37,30 @@
 // MUTATION C2 stimulus red NMH_MUTATE=C2: the program ends in a loop and never writes DONE: the line prints FAIL, the run is cut off at the cycle budget and nothing further is graded -> FAIL C2; 281 lines not printed (3 passed, 1 failed)
 // MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change); every later line depends on C1 and prints NOT GRADED -> FAIL C1; NOT GRADED R0, C6 x7, C3, C4, C4-F11, C9, C7 x2, C5/R2, R2 x4, C8 x2, R1, C4-F7F10, C3-F7F9, C5-F7F10, C7-F7F10, C10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (3 passed, 1 failed)
 // MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and no sample width divides all the run lengths: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL; the lines that read a visible pixel depend on R0, and C3 follows the data this program wrote -> FAIL R0; NOT GRADED C6 x7, C5/R2, R2 x4, C8 x2, R1, C5-F7F10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (14 passed, 1 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires); C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (33 passed, 7 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (33 passed, 7 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=R2M5: F5's BPLCON0=$2040 (SuperHires instead of hires): the line 'F5's hires pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8, P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, P7.3; 1 line not printed (35 passed, 7 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=R2M6: F6's BPLCON0=$A000 (hires instead of lores): the line 'F6's lores pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8, P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (35 passed, 7 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000): the line 'F2-F4's and F11's SuperHires pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (33 passed, 7 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, the program of V4B): the SuperHires clause of P5.L is not graded; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (33 passed, 7 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires); C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (65 passed, 36 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (65 passed, 36 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=R2M5: F5's BPLCON0=$2040 (SuperHires instead of hires): the line 'F5's hires pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, P3.H, P5.L; 1 line not printed (81 passed, 50 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=R2M6: F6's BPLCON0=$A000 (hires instead of lores): the line 'F6's lores pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, P3.L (83 passed, 50 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000): the line 'F2-F4's and F11's SuperHires pixel mapping' prints FAIL; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (36 passed, 10 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, the program of V4B): the SuperHires clause of P5.L is not graded; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, R2; NOT GRADED R2, C8, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (36 passed, 10 failed)
 // MUTATION R2 stimulus red NMH_MUTATE=R2B: F1's closing band also writes BPLCON1=$0011, which delays the bitplane data for the rest of the frame: the line 'the same s that fits the top Q0 lines also fits the bottom Q0 lines' prints FAIL -> FAIL R2; NOT GRADED C8, P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (69 passed, 35 failed)
-// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C6, C4; NOT GRADED C5/R2, R2, C8 x2, R1, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (31 passed, 7 failed)
-// MUTATION C6 stimulus red NMH_MUTATE=C6B: the DIWSTRT/DIWSTOP of F2, F3, F4, F5, F6 and F11 narrowed to a 64-lores-pixel window: the C6 lines of those six frames print FAIL; C4 (for F2-F6) and C4-F11 fail with it, because the headers they compare carry the changed DIW -> FAIL C6 x6, C4, C4-F11; NOT GRADED R2 x4, C8 x2, R1, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, P7.3; 1 line not printed (23 passed, 13 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched); C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C3, C4; NOT GRADED C5/R2, R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (32 passed, 7 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails; C4 fails with it, because the header it compares carries the value this contrast changes; C9 fails with it, a read outside the buffers being a sprite DMA read by C9's definition -> FAIL C3, C4, C9; NOT GRADED C5/R2, R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (31 passed, 8 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3D: bit 0 of word 1500 of plane 1's pattern section (line 18 of every frame) is flipped by the program: the clause 'data as written' fails on one line of each frame, the header and the fetch addresses are as planned; C3-F7F9 fails with it, lines 0-29 of F7-F9 reading the same word -> FAIL C3, C3-F7F9; NOT GRADED C5/R2, R2 x4, C8 x2, C5-F7F10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (22 passed, 2 failed)
+// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C6, C4; NOT GRADED C5/R2, R2, C8 x2, R1, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (63 passed, 36 failed)
+// MUTATION C6 stimulus red NMH_MUTATE=C6B: the DIWSTRT/DIWSTOP of F2, F3, F4, F5, F6 and F11 narrowed to a 64-lores-pixel window: the C6 lines of those six frames print FAIL; C4 (for F2-F6) and C4-F11 fail with it, because the headers they compare carry the changed DIW -> FAIL C6 x6, C4, C4-F11; NOT GRADED R2 x4, C8, R1, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, P7.3; 1 line not printed (24 passed, 13 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched); C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C3, C4; NOT GRADED C5/R2, R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 36 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails; C4 fails with it, because the header it compares carries the value this contrast changes; C9 fails with it, a read outside the buffers being a sprite DMA read by C9's definition -> FAIL C3, C4, C9; NOT GRADED C5/R2, R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (63 passed, 37 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3E: bit 0 of word 4256 of plane 1's buffer is flipped by the program (line 53 of F1-F4 and F11, line 106 of F5; F6 and lines 0-29 of F7-F10 do not read it): the clause 'data as written' fails, the header and the fetch addresses are as planned -> FAIL C3; NOT GRADED C5/R2, R2 x3, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (31 passed, 6 failed)
 // MUTATION C3-F7F9 stimulus red NMH_MUTATE=C3D: bit 0 of word 1500 of plane 1's pattern section (line 18 of every frame) is flipped by the program: line 18 of F7, F8 and F9 fetches data other than the pattern written; C3 fails with it, the other frames reading the same word -> FAIL C3, C3-F7F9; NOT GRADED C5/R2, R2 x4, C8 x2, C5-F7F10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (22 passed, 2 failed)
-// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6, so F6-F11 never run: the line prints FAIL and every line that reads a frame whose list did not run in order prints NOT GRADED, C4-F7F10 and C4-F11 among them -> FAIL C4; NOT GRADED C6 x3, C3, C4-F11, C9, C7 x2, C5/R2, R2 x4, C8 x2, R1, C4-F7F10, C3-F7F9, C5-F7F10, C7-F7F10, C10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (9 passed, 1 failed)
+// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6, so F6-F11 never run: the line prints FAIL and every line that reads a frame whose list did not run in order prints NOT GRADED, C4-F7F10 and C4-F11 among them -> FAIL C4; NOT GRADED C6 x3, C3, C4-F11, C9, C7 x2, R2 x4, C8, R1, C4-F7F10, C3-F7F9, C5-F7F10, C7-F7F10, C10, P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (57 passed, 43 failed)
 // MUTATION C4 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: the pointer values of the planned header are missing; C9 fails with it, sprite 1 fetching from the address its pointer reached in F1's frame -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 10 failed)
 // MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (69 passed, 36 failed)
 // MUTATION C9 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: sprite 1 fetches from the address its pointer reached in F1's frame, past the null sprite; C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 10 failed)
 // MUTATION C9 stimulus red NMH_MUTATE=C9N: the null sprite's control word SPRxCTL is $0001 instead of $0000, which starts no sprite: the clause 'returns $0000' fails and no header changes; C10 fails with it, sprites 1-7 of F7-F10 reading the same null sprite -> FAIL C9, C10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (31 passed, 2 failed)
 // MUTATION C9 stimulus red NMH_MUTATE=C9S: the null sprite's control words are $2C40 and $2D00, which start a one-line sprite at window line 0: its data words are read from addresses past the null sprite, and no header changes; C10 fails with it, sprites 1-7 of F7-F10 reading the same null sprite -> FAIL C9, C10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (31 passed, 2 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (70 passed, 35 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (70 passed, 35 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL; C5/R2 of F1 fails with it, F1 not being a SuperHires frame, and C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C7, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (32 passed, 8 failed)
-// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3: the line 'F1 Q0 diversity' (8 of 64 triples) and the line of pair coverage print FAIL; no stimulus fails F1's diversity alone, F1's Q0 lines reading the words that the bands of F2 and F3 read as well -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
-// MUTATION C8 stimulus red NMH_MUTATE=C8B: the pattern section restricted to values 0 and 3 over the words of lines 24-167 only: the line of pair coverage prints FAIL and 'F1 Q0 diversity' holds, F1's Q0 lines lying outside those words -> FAIL C8, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (39 passed, 7 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (69 passed, 35 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (69 passed, 35 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL; C5/R2 of F1 fails with it, F1 not being a SuperHires frame, and C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C7, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 37 failed)
+// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3: the line 'F1 Q0 diversity' (8 of 64 triples) and the line of pair coverage print FAIL; no contrast was tried that fails F1's diversity alone: the words of F1's Q0 lines are also read by F2's and F3's bands 72-79 and by the Q0 lines from which F2-F4 take their P4 baselines; C3 follows the data this program wrote -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
+// MUTATION C8 stimulus red NMH_MUTATE=C8B: the pattern section restricted to values 0 and 3 over the words of lines 24-167 only: the line of pair coverage prints FAIL and 'F1 Q0 diversity' holds, F1's Q0 lines lying outside those words; C3 follows the data this program wrote -> FAIL C8, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (39 passed, 7 failed)
 // MUTATION R1 none impossible: the line doubler shows one stored line twice, so the two copies of a source line are two read-outs of one stored line; no program changes one read-out and not the other (not exercised at this boundary)
 // MUTATION R1-F7F10 none impossible: the line doubler shows one stored line twice, so the two copies of a source line are two read-outs of one stored line; no program changes one read-out and not the other (not exercised at this boundary)
 // MUTATION P1.0R stimulus red NMH_MUTATE=V1C0R: F1's Q3 band inverts both letters of red of Color 0 and nothing else; the P1J line of the same Color and component fails with it -> FAIL P1, P1J (84 passed, 51 failed)
@@ -75,13 +75,13 @@
 // MUTATION P1.3R stimulus red NMH_MUTATE=V1C3R: F1's Q3 band inverts both letters of red of Color 3 and nothing else; the P1J line of the same Color and component fails with it -> FAIL P1 (85 passed, 50 failed)
 // MUTATION P1.3G stimulus red NMH_MUTATE=V1C3G: F1's Q3 band inverts both letters of green of Color 3 and nothing else; the P1J line of the same Color and component fails with it -> FAIL P1 (85 passed, 50 failed)
 // MUTATION P1.3B stimulus red NMH_MUTATE=V1C3B: F1's Q3 band inverts both letters of blue of Color 3 and nothing else; the P1J line of the same Color and component fails with it -> FAIL P1 (85 passed, 50 failed)
-// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C8B: the pattern section restricted to values 0 and 3 over the words of lines 24-167 only: the groups of values 1 and 2 are populated by the Q0 lines alone, so no (c, X) of those values has two palettes; the line of C8's pair coverage fails with it, both reading the same pixels -> FAIL C8, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (39 passed, 7 failed)
+// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C8B: the pattern section restricted to values 0 and 3 over the words of lines 24-167 only: the groups of values 1 and 2 are populated by the Q0 lines alone, so no (c, X) of those values has two palettes; the line of C8's pair coverage fails with it, both reading the same pixels; C3 follows the data this program wrote -> FAIL C8, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (39 passed, 7 failed)
 // MUTATION P2.R stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS; P1.0R, P1.0G, P1.0B and P1J.0R, P1J.0G, P1J.0B fail with it, since P1 expects Color 0's letters of the plan and P2 can only pass if Color 0 does not change between the palettes -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 52 failed)
 // MUTATION P2.G stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS; P1.0R, P1.0G, P1.0B and P1J.0R, P1J.0G, P1J.0B fail with it, since P1 expects Color 0's letters of the plan and P2 can only pass if Color 0 does not change between the palettes -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 52 failed)
 // MUTATION P2.B stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS; P1.0R, P1.0G, P1.0B and P1J.0R, P1J.0G, P1J.0B fail with it, since P1 expects Color 0's letters of the plan and P2 can only pass if Color 0 does not change between the palettes -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 52 failed)
-// MUTATION P3.H stimulus green NMH_MUTATE=V3G: F11's sweep bands keep Color 0 as Q0's and run Color 1's letters through four values, so a value-1 pixel takes at most four values of a component in F11 and fewer than sixteen together with F1: the unchanged comparator prints PASS -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
-// MUTATION P3.L stimulus green NMH_MUTATE=V3G: F11's sweep bands keep Color 0 as Q0's and run Color 1's letters through four values, so a value-1 pixel takes at most four values of a component in F11 and fewer than sixteen together with F1: the unchanged comparator prints PASS -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
-// MUTATION P7.1 stimulus green NMH_MUTATE=V3G: F11's sweep bands keep Color 0 as Q0's and run Color 1's letters through four values, so a value-1 pixel takes at most four values of a component in F11 and fewer than sixteen together with F1: the unchanged comparator prints PASS -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
+// MUTATION P3.H stimulus green NMH_MUTATE=V3G: F11's sweep bands are F1's S0, S1, S2 and S3 palettes four times over, so the SuperHires population holds F1's twelve palettes only and a display that colours a pixel from its palette shows at most twelve values of a component: the unchanged comparator prints PASS; this shows that the comparator can pass and that the FAIL at baseline comes from the Color 0 letters of the sweep -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
+// MUTATION P3.L stimulus green NMH_MUTATE=V3G: F11's sweep bands are F1's S0, S1, S2 and S3 palettes four times over, so the SuperHires population holds F1's twelve palettes only and a display that colours a pixel from its palette shows at most twelve values of a component: the unchanged comparator prints PASS; this shows that the comparator can pass and that the FAIL at baseline comes from the Color 0 letters of the sweep -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
+// MUTATION P7.1 stimulus green NMH_MUTATE=V3G: F11's sweep bands are F1's S0, S1, S2 and S3 palettes four times over, so the SuperHires population holds F1's twelve palettes only and a display that colours a pixel from its palette shows at most twelve values of a component: the unchanged comparator prints PASS; this shows that the comparator can pass and that the FAIL at baseline comes from the Color 0 letters of the sweep -> PASS P3.H, P3.L, P7.1 (89 passed, 46 failed)
 // MUTATION P3.H stimulus red NMH_MUTATE=V3B: on V3G's SuperHires side, F5's COLOR01 sweep masked with $0CCC, so Hires shows 4 distinct values per component and SuperHires no longer lies below it (moves listed against V3G, where P3.H and P7.1 pass) -> FAIL P3.H, P7.1 (87 passed, 48 failed)
 // MUTATION P3.L stimulus red NMH_MUTATE=V3C: on V3G's SuperHires side, F6's COLOR01 sweep masked with $0CCC, so Lores shows 4 distinct values per component and SuperHires no longer lies below it (moves listed against V3G, where P3.L and P7.1 pass) -> FAIL P3.L, P7.1 (87 passed, 48 failed)
 // MUTATION P7.1 stimulus red NMH_MUTATE=V3B: the Hires half as for P3.H: P7.1 prints FAIL (P3.H fails, P3.L holds); moves listed against V3G -> FAIL P3.H, P7.1 (87 passed, 48 failed)
@@ -169,12 +169,12 @@
 // MUTATION P1J.3R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3R and P1K.3R both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 13 failed)
 // MUTATION P1J.3G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3G and P1K.3G both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 13 failed)
 // MUTATION P1J.3B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3B and P1K.3B both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 13 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4B: F8's header writes BPLCON2=$0000 instead of $0024 -> FAIL C4-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (64 passed, 34 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4C: F7's list points at itself instead of F8, so F8-F11 never run -> FAIL C4-F7F10; NOT GRADED C6, C3, C4-F11, C9, C7 x2, C5/R2, R2 x4, C8 x2, R1, C3-F7F9, C5-F7F10, C7-F7F10, C10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (12 passed, 1 failed)
-// MUTATION C4-F11 stimulus red NMH_MUTATE=C4D: F10's list points at itself instead of F11, so F11 never runs -> FAIL C4-F11; NOT GRADED C6, C3, C9, C7 x2, C5/R2, R2 x4, C8 x2, R1, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P7.3 (24 passed, 6 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000; P1 and P2, which read lines 0-29 of F7, are not graded with it -> FAIL C4-F7F10, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (63 passed, 35 failed)
-// MUTATION C5-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 (no s fits F7's SuperHires mapping; the hires mapping fits) -> FAIL C4-F7F10, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (63 passed, 35 failed)
-// MUTATION C7-F7F10 stimulus red NMH_MUTATE=C7B: the block 3 band's WAIT of F7 at horizontal $80 instead of $00 -> FAIL C7-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (64 passed, 34 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4B: F8's header writes BPLCON2=$0000 instead of $0024 -> FAIL C4-F7F10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (79 passed, 46 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4C: F7's list points at itself instead of F8, so F8-F11 never run -> FAIL C4-F7F10; NOT GRADED C6, C3, C4-F11, C9, C7 x2, R2 x2, C8, R1, C3-F7F9, C5-F7F10, C7-F7F10, C10, P3.H, P3.L, P7.1, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (64 passed, 43 failed)
+// MUTATION C4-F11 stimulus red NMH_MUTATE=C4D: F10's list points at itself instead of F11, so F11 never runs -> FAIL C4-F11; NOT GRADED C6, C3, C9, C7 x2, R2 x2, C8, R1, P3.H, P3.L, P7.1 (76 passed, 47 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000; P1 and P2, which read lines 0-29 of F7, are not graded with it -> FAIL C4-F7F10, C5-F7F10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (78 passed, 47 failed)
+// MUTATION C5-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 (no s fits F7's SuperHires mapping; the hires mapping fits) -> FAIL C4-F7F10, C5-F7F10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (78 passed, 47 failed)
+// MUTATION C7-F7F10 stimulus red NMH_MUTATE=C7B: the block 3 band's WAIT of F7 at horizontal $80 instead of $00 -> FAIL C7-F7F10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (79 passed, 46 failed)
 // MUTATION C10 stimulus red NMH_MUTATE=C10: F7's SPR0PT points at the null sprite -> FAIL C10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (79 passed, 46 failed)
 // MUTATION C10 stimulus red NMH_MUTATE=C10S: F7's SPR1PT points two words past the null sprite: sprite 1 fetches from an address that is not the null sprite's, which C4-F7F10 does not read -> FAIL C10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (79 passed, 46 failed)
 // MUTATION C11 stimulus measured NMH_MUTATE=C11: sprite 0's data words are $FF00 where they are $FFFF (8 pixels wide): C11 stays FAIL as at baseline and the runs halve (F7, F8 and F9 8 periods, F10 16 periods) -> no other line moves (86 passed, 49 failed)
@@ -194,8 +194,8 @@
 // MUTATION P7.2 stimulus measured NMH_MUTATE=VLIVES: the stimulus of VLIVE (liveness of P5.L's change counter) and of V6S (a live input for P6.2): P6.2 holds and P5.L is not graded, so the joint prints NOT GRADED; no live input exists for P5.L's SuperHires half -> PASS P4, P6.2-SHR, P6.2, P7.4; NOT GRADED P5.L, P7.2, P7.3 (90 passed, 43 failed)
 // MUTATION P7.3 stimulus measured NMH_MUTATE=VLIVE: the stimulus of VLIVE (liveness of P5.L's change counter): P5.L is not graded, so the joint prints NOT GRADED; no live input exists for P5.L's SuperHires half -> PASS P4; NOT GRADED P5.L, P7.3 (87 passed, 47 failed)
 // MUTATION P7.4 stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead: P6.2's SuperHires half holds with P6.1, and the joint prints PASS -> PASS P6.2-SHR, P6.2, P7.4 (89 passed, 46 failed)
-// MUTATION P7.2 none impossible: no stimulus of this package turns the joint PASS: P5.L's SuperHires half is FAIL or NOT GRADED under every stimulus of the package, VLIVE and VLIVES included, since no program of the package makes a register COLOR04-0F change a pixel of a band that matches the plan; a measurement of the design under test, not a fact of the hardware (not exercised at this boundary)
-// MUTATION P7.3 none impossible: no stimulus of this package turns the joint PASS: P5.L's SuperHires half is FAIL or NOT GRADED under every stimulus of the package, VLIVE included, since no program of the package makes a register COLOR04-0F change a pixel of a band that matches the plan; a measurement of the design under test, not a fact of the hardware (not exercised at this boundary)
+// MUTATION P7.3 stimulus red NMH_MUTATE=VLIVE5C: on VLIVE's side, where P5.L is not graded, block 2 of F7 also writes Color 0's inverted letters into the seven lower registers that hold them (V5C): P5.U fails and the joint prints FAIL through its P5.U half (moves listed against VLIVE) -> FAIL P5.U, P7.3 (86 passed, 49 failed)
+// MUTATION P7.2 stimulus red NMH_MUTATE=VLIVES6D: on VLIVES's side, where P5.L is not graded and P6.2 holds, the block of F10 planned to invert COLOR20 inverts COLOR17 instead (V6D): P6.2's Hires half fails and the joint prints FAIL through its P6.2 half (moves listed against VLIVES) -> FAIL P6.2-HIRES, P6.2, P7.2 (88 passed, 46 failed)
 
 #include <algorithm>
 #include <array>
@@ -248,7 +248,7 @@ constexpr uint32_t kCopStep   = 0x001000;
 constexpr size_t   kBufWords  = 32768;
 
 constexpr uint64_t kBootBudget = 6'000'000;
-constexpr uint64_t kRunBudget  = 60'000'000;  // 12 vertical blanks plus margin (measured)
+constexpr uint64_t kRunBudget  = 60'000'000;  // 13 vertical blanks plus margin (measured)
 
 uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
 uint32_t cop_addr(int frame) { return word_addr(kCopBase + kCopStep * (uint32_t)frame); }
@@ -2253,17 +2253,17 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         long c3_bad_sum = 0;
         bool c3 = true;
         std::string fw;
-        if (d.ok())
-            for (int f : kG) {
-                long bad = 0;
-                pre[f].c3 = precondition_c3(g[f], pat.first, pat.second, stray, &bad);
-                c3_bad_sum += bad;
-                c3 = c3 && pre[f].c3;
-                std::map<int, int> per_count; int best = 0, best_n = 0;
-                for (auto& L : g[f].lines) { int w = fetch_words(L); if (w > 0) ++per_count[w]; }
-                for (auto& kv : per_count) if (kv.second > best_n) { best_n = kv.second; best = kv.first; }
-                fw += std::string(" ") + kName[f] + "=" + std::to_string(best);
-            }
+        for (int f : kG) {
+            if (!c1 || !usable[f]) continue;
+            long bad = 0;
+            pre[f].c3 = precondition_c3(g[f], pat.first, pat.second, stray, &bad);
+            c3_bad_sum += bad;
+            c3 = c3 && pre[f].c3;
+            std::map<int, int> per_count; int best = 0, best_n = 0;
+            for (auto& L : g[f].lines) { int w = fetch_words(L); if (w > 0) ++per_count[w]; }
+            for (auto& kv : per_count) if (kv.second > best_n) { best_n = kv.second; best = kv.first; }
+            fw += std::string(" ") + kName[f] + "=" + std::to_string(best);
+        }
         pre_line(checks, d.ok(), c3, "C3 precondition: F1-F6's and F11's graded lines fetch >=16 consecutive words per plane in both planes, data as written, "
                           "no other bitplane address inside a line's fetches, bad lines=" + std::to_string(c3_bad_sum), d.why());
         if (d.ok()) checks.note("C3: words fetched per plane and line (the count most lines show):" + fw);
@@ -2299,19 +2299,19 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         Deps d; d.need(c1, "C1");
         for (int f : kG) d.need(usable[f], std::string(kName[f]) + " ran its own list in order (C4)");
         bool c9 = true; std::string c9s;
-        if (d.ok())
-            for (int f : kG) {
-                const FrameCop& fc = g[f].fc;
-                // F11's window is one frame long, as long as the gap between the first fetches of F10's list and F11's (F11 shows
-                // twice when the mark comes a frame late)
-                uint64_t hi = f < 6 ? g[f + 1].fc.start_cycle : f == 6 ? fcs[7].start_cycle
-                            : std::min<uint64_t>(*cap.done, fc.start_cycle + (fc.start_cycle - fcs[10].start_cycle));
-                SprDma sd = sprite_dma_reads(cap.log, fc.start_cycle, hi);
-                pre[f].c9 = precondition_c9(sd);
-                c9 = c9 && pre[f].c9;
-                c9s += std::string(" ") + kName[f] + ":null_reads=" + std::to_string(sd.null_reads) + ",stray_reads=" + std::to_string(sd.stray) +
-                       ",refresh_bursts=" + std::to_string(sd.refresh_groups) + "(" + std::to_string(sd.refresh_bad) + " not of four)";
-            }
+        for (int f : kG) {
+            if (!c1 || !usable[f]) continue;
+            const FrameCop& fc = g[f].fc;
+            // F11's window is one frame long, as long as the gap between the first fetches of F10's list and F11's (F11 shows
+            // twice when the mark comes a frame late)
+            uint64_t hi = f < 6 ? g[f + 1].fc.start_cycle : f == 6 ? fcs[7].start_cycle
+                        : std::min<uint64_t>(*cap.done, fc.start_cycle + (fc.start_cycle - fcs[10].start_cycle));
+            SprDma sd = sprite_dma_reads(cap.log, fc.start_cycle, hi);
+            pre[f].c9 = precondition_c9(sd);
+            c9 = c9 && pre[f].c9;
+            c9s += std::string(" ") + kName[f] + ":null_reads=" + std::to_string(sd.null_reads) + ",stray_reads=" + std::to_string(sd.stray) +
+                   ",refresh_bursts=" + std::to_string(sd.refresh_groups) + "(" + std::to_string(sd.refresh_bad) + " not of four)";
+        }
         pre_line(checks, d.ok(), c9, "C9 precondition p.291: in each of F1-F6 and F11 every sprite DMA read is a word of the null sprite and returns $0000, "
                           "and the reads of word 0 come four at a time;" + c9s, d.why());
     }
@@ -2330,13 +2330,13 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         // band's WAIT at h=$00, after the previous line's last bitplane fetch
         // and, spacer lines excepted, before its own line's first.
         bool c7_timing = true; int c7_bad_h = 0, c7_bad_after = 0, c7_bad_before = 0;
-        if (d.ok())
-            for (int f : kG) {
-                C7Result t = check_c7_timing(g[f]);
-                pre[f].c7 = g[f].fc.bands.size() == kExpBands[f] && t.ok;
-                c7_timing = c7_timing && t.ok;
-                c7_bad_h += t.bad_h; c7_bad_after += t.bad_after; c7_bad_before += t.bad_before;
-            }
+        for (int f : kG) {
+            if (!c1 || !usable[f]) continue;
+            C7Result t = check_c7_timing(g[f]);
+            pre[f].c7 = g[f].fc.bands.size() == kExpBands[f] && t.ok;
+            c7_timing = c7_timing && t.ok;
+            c7_bad_h += t.bad_h; c7_bad_after += t.bad_after; c7_bad_before += t.bad_before;
+        }
         pre_line(checks, d.ok(), c7_timing,
             "C7 precondition (SPECIFICATION.md 6/C7, timing): every band's WAIT is at h=$00, after the previous line's "
             "last bitplane fetch and, spacer lines excepted, before its own line's first, in F1-F6 and F11 -- bad_h=" +
@@ -2377,13 +2377,13 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         Deps d; d.need(c1, "C1");
         for (int f : kG) d.need(pre[f].map, std::string(kName[f]) + " mapping (C5/R2)");
         bool r2_bottom = true;
-        if (d.ok())
-            for (int f : kG) {
-                int nb = (int)g[f].fc.bands.size();
-                int close_idx = nb - 1;
-                pre[f].r2b = close_idx >= 0 && check_bottom_s(cap.video, g[f], close_idx, (f >= 2 && f <= 4) ? 2 : 1);
-                r2_bottom = r2_bottom && pre[f].r2b;
-            }
+        for (int f : kG) {
+            if (!c1 || !pre[f].map) continue;
+            int nb = (int)g[f].fc.bands.size();
+            int close_idx = nb - 1;
+            pre[f].r2b = close_idx >= 0 && check_bottom_s(cap.video, g[f], close_idx, (f >= 2 && f <= 4) ? 2 : 1);
+            r2_bottom = r2_bottom && pre[f].r2b;
+        }
         pre_line(checks, d.ok(), r2_bottom, "R2 precondition: the same s that fits the top Q0 lines also fits the bottom Q0 lines, in F1-F6 and F11", d.why());
     }
 
@@ -2415,30 +2415,30 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         int c8_bands_ok = 0, c8_bands_total = 0;
         bool c8_frame[12] = {};
         for (int f : {1, 2, 3, 4, 11}) c8_frame[f] = true;
-        if (d.ok()) {
+        if (c1 && wp.ok) {
             for (size_t bi = 0; bi < kF1Bands.size(); ++bi) {
                 ++c8_bands_total;
-                bool ok = bi < g[1].fc.bands.size() && band_pair_coverage(g[1], g[1].fc.bands[bi].line + 1, g[1].fc.bands[bi].line + 12);
+                bool ok = pre[1].map && bi < g[1].fc.bands.size() && band_pair_coverage(g[1], g[1].fc.bands[bi].line + 1, g[1].fc.bands[bi].line + 12);
                 if (ok) ++c8_bands_ok; else c8_frame[1] = false;
             }
             for (int gi = 0; gi < 192; ++gi) {
                 int f, band_idx;
                 if (gi < 80) { f = 2; band_idx = gi; } else if (gi < 160) { f = 3; band_idx = gi - 80; } else { f = 4; band_idx = gi - 160; }
                 ++c8_bands_total;
-                bool ok = band_idx < (int)g[f].fc.bands.size() &&
+                bool ok = pre[f].map && band_idx < (int)g[f].fc.bands.size() &&
                           band_pair_coverage(g[f], g[f].fc.bands[band_idx].line, g[f].fc.bands[band_idx].line + 1);
                 if (ok) ++c8_bands_ok; else c8_frame[f] = false;
             }
             for (int bi = 0; bi < 16; ++bi) {
                 ++c8_bands_total;
-                bool ok = bi < (int)g[11].fc.bands.size() && band_pair_coverage(g[11], g[11].fc.bands[(size_t)bi].line + 1, g[11].fc.bands[(size_t)bi].line + 2);
+                bool ok = pre[11].map && bi < (int)g[11].fc.bands.size() && band_pair_coverage(g[11], g[11].fc.bands[(size_t)bi].line + 1, g[11].fc.bands[(size_t)bi].line + 2);
                 if (ok) ++c8_bands_ok; else c8_frame[11] = false;
             }
         }
         pre_line(checks, d.ok(), c8_bands_total > 0 && c8_bands_ok == c8_bands_total,
             "C8 precondition (SPECIFICATION.md 6/C8): every ordered pair occurs both as (v[i],v[i+1]) and (v[i-1],v[i]) "
             "in every band of F1-F4 and F11, " + std::to_string(c8_bands_ok) + " of " + std::to_string(c8_bands_total) + " bands", d.why());
-        for (int f : {1, 2, 3, 4, 11}) pre[f].c8 = d.ok() && c8_frame[f] && (f != 1 || c8_div);
+        for (int f : {1, 2, 3, 4, 11}) pre[f].c8 = c1 && wp.ok && pre[f].map && c8_frame[f] && (f != 1 || c8_div);
     }
 
     // R1: every output copy of a graded source line agrees with
@@ -2448,12 +2448,12 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         Deps d; d.need(c1, "C1"); d.need(wp.ok, "R0");
         for (int f : kG) { d.need(usable[f], std::string(kName[f]) + " ran its own list in order (C4)"); d.need(pre[f].c6, std::string("C6 ") + kName[f]); }
         long r1_pairs = 0, r1_mismatch = 0;
-        if (d.ok())
-            for (int f : kG) {
-                R1Result r = check_r1_copies(cap.video, g[f]);
-                pre[f].r1 = r.ok;
-                r1_pairs += r.pairs; r1_mismatch += r.mismatches;
-            }
+        for (int f : kG) {
+            if (!c1 || !wp.ok || !usable[f] || !pre[f].c6) continue;
+            R1Result r = check_r1_copies(cap.video, g[f]);
+            pre[f].r1 = r.ok;
+            r1_pairs += r.pairs; r1_mismatch += r.mismatches;
+        }
         pre_line(checks, d.ok(), r1_pairs > 0 && r1_mismatch == 0,
             "R1 precondition (SPECIFICATION.md 4.7): every output copy of a graded source line agrees with the others, " +
             std::to_string(r1_pairs) + " pairs checked, " + std::to_string(r1_mismatch) + " differing", d.why());
@@ -2525,7 +2525,7 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
 
     std::string why_p1;
     bool g_p1 = gate({1, 2, 3, 4}, &why_p1);
-    if (!spr_pop) { g_p1 = false; why_p1 += std::string(why_p1.empty() ? "" : "; ") + "F7-F10: C3-F7F9, C4-F7F10, C5-F7F10 or C7-F7F10 did not hold"; }
+    if (!spr_pop) checks.note("P1, P2: lines 0-29 of F7-F9 are not read, C3-F7F9, C4-F7F10, C5-F7F10 or C7-F7F10 did not hold");
     static const char* kColorName[4] = {"0","1","2","3"};
     static const char* kCompName[3] = {"R","G","B"};
     static const char* kP1Id[12] = {
@@ -2572,9 +2572,9 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         div_detail += std::string(" ") + kCompName[comp] + ": " + std::to_string(groups_diverse) + " of " +
                       std::to_string(p2s.bykey[comp].size()) + " groups have >=2 contributing palettes;";
     }
-    // P2-DIVERSITY reads the palette bands of F1 and the Q0 lines of F2-F4: it is graded when those frames' pixel mappings hold
+    // P2-DIVERSITY reads the palette bands of F1 and the Q0 lines of F2-F4: it is graded when those frames' pixel mappings and band changes (C7) hold
     Deps ddiv; ddiv.need(c1, "C1"); ddiv.need(wp.ok, "R0");
-    for (int f : {1, 2, 3, 4}) ddiv.need(pre[f].map, std::string(kName[f]) + " mapping (C5/R2)");
+    for (int f : {1, 2, 3, 4}) { ddiv.need(pre[f].map, std::string(kName[f]) + " mapping (C5/R2)"); ddiv.need(pre[f].c7, std::string("C7 ") + kName[f]); }
     bool p2_div = div_ok == 12;
     pre_line(checks, ddiv.ok(), p2_div,
                   "P2-DIVERSITY precondition (SPECIFICATION.md 7/P2 item 4): for every (Color c, component X) some group of pixels of value c with equal "
@@ -3012,7 +3012,7 @@ std::set<std::string> known_mutations() {
         "C1","C2","C3","C3D","C4","C5","C6","C7","C8","C8B","C9","C9N","C9S","FIX",
         "V5C","V6A","V6B","V6C","V6D","V6E","V6L","V6Q","V6S",
         "C4B","C4C","C4D","C7B","C10","C10S","C11","RUNENDS","VLIVE","VLIVES","VP1JG","C4S",
-        "R2M5","R2M6","R2B","C6B","C7C","C3P","V4C2","V4C3","V4C4","V5D","V5E","R0","P2G","VKEYAR","VKEYAG","VKEYAB",
+        "R2M5","R2M6","R2B","C6B","C7C","C3P","V4C2","V4C3","V4C4","V5D","V5E","R0","P2G","VKEYAR","VKEYAG","VKEYAB","VLIVE5C","VLIVES6D","C3E",
     };
     for (int c = 0; c < 4; ++c) for (const char* x : {"R", "G", "B"}) k.insert("V1C" + std::to_string(c) + x);
     for (int n = 0; n < 4; ++n) for (int b : {2, 3, 6, 7, 10, 11}) k.insert("V4DN" + std::to_string(n) + "B" + std::to_string(b));

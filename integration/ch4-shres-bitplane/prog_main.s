@@ -68,6 +68,11 @@ start:
 	eori.w	#1,PLANE1BUF+1500*2
 	endif
 
+	; C3E: bit 0 of plane 1 buffer word 4256 flipped (line 53 of F1-F4 and F11, line 106 of F5)
+	ifd	MUT_C3E
+	eori.w	#1,PLANE1BUF+4256*2
+	endif
+
 	; zero buffer (32768 words of $0000): a plain clear loop, no table needed
 	lea	ZEROBUF,a1
 	move.w	#32767,d0
@@ -97,7 +102,7 @@ start:
 	move.w	#$2D00,NULLSPR+2
 	endif
 
-	; Copper lists F0-F10 (SPECIFICATION.md 4.3, 4.4, 4.6), one table and one
+	; Copper lists F0-F11 (SPECIFICATION.md 4.3, 4.4, 4.6), one table and one
 	; copy loop per frame; each frame's own ifd cascade above its table
 	; picks the mutation's data, or the baseline if none is selected.
 	lea	F0TAB,a2

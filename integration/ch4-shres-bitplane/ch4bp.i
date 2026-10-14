@@ -44,7 +44,7 @@ F11LIST         equ     COPBASE+11*COPSTEP
 
 ; ---- mutation-selected constants ------------------------------------------
 ;
-; Exactly one of the MUT_xxx symbols is equ'd to 1 by a mutant wrapper
+; One or more of the MUT_xxx symbols are equ'd to 1 by a mutant wrapper (V3B, V3C, VLIVES, VLIVE5C and VLIVES6D set several)
 ; before it includes prog_main.s; prog_main.s assembled standalone (no
 ; symbol defined) gives the baseline/normal stimulus. Every Copper-list
 ; table is chosen the same way, directly at each frame's `include` in
