@@ -15,14 +15,18 @@
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 ;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
-;   T_LONGLIST     T-k  LISTT waits for line 255 and then holds 900 MOVEs before the terminal $FFFF,$FFFE
+;   T_LONGLIST     T-k  LISTT waits for line 255 and then holds 1,800 MOVEs before the terminal $FFFF,$FFFE
 
         include "nanomig.i"
         include "ch2.i"
 
 ; ---- this program's own memory layout (chip RAM, identity-mapped) ----
 PLANE           equ     $082000         ; 11,000 bytes of $0000
+        ifd     T_LONGLIST
+LISTT           equ     $0A0000
+        else
 LISTT           equ     $080800
+        endif
 
 M1_K            equ     13
 M1_STARTW       equ     $086000
@@ -97,7 +101,7 @@ start:
         endif
         ifd     T_LONGLIST
         dc.w    $FF01,$FFFE
-        rept    900
+        rept    1800
         dc.w    COLOR00,$0000
         endr
         endif

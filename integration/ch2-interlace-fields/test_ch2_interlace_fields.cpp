@@ -36,15 +36,15 @@
 //
 // MUTATION FIX-I stimulus red: NMH_MUTATE=FIX-I runs prog_i_n (FIXMARK stores $DEAD, not $BEEF, I-n); the known-value comparator prints FAIL
 // MUTATION PI-1 stimulus red: NMH_MUTATE=PI-1 runs prog_i_j (M1 waits between samples, I-j); PI-1's comparator prints FAIL
-// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(long) runs prog_i_v (both lists, relocated, wait for line 255 and then hold 4,700 MOVEs in front of the terminal wait, I-v: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PI-2's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
+// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(long) runs prog_i_v (both lists, relocated, wait for line 255 and then hold 5,200 MOVEs in front of the terminal wait, I-v: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PI-2's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
 // MUTATION SELFTEST-PI-2-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PI-2-ANCHOR runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s); a self-test of the third clause of PI-2's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PI-2's comparator prints FAIL under the label SELFTEST-PI-2-ANCHOR; controls: one restart per M1 field, consecutive matched restarts
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k); PI-6's comparator prints FAIL through the tags
 // MUTATION PI-7(bpl) stimulus red: NMH_MUTATE=PI-7(bpl) runs prog_i_l (the BPL1PT MOVEs sit after the WAIT, I-l); the comparator locates the MOVEs in the assembled list and prints FAIL; the gates of P4 and P5 close, so P4a to P4e and P5 print NOT GRADED, as does PI-12(bpl)
 // MUTATION PI-7(spr) stimulus red: NMH_MUTATE=PI-7(spr) runs prog_i_m (the SPR0PT MOVEs sit after the WAIT, I-m); the comparator locates the MOVEs in the assembled list and prints FAIL; the gate of P6 closes
-// MUTATION PI-12(bpl) stimulus red: NMH_MUTATE=PI-12(bpl) runs prog_i_t (the BPL1PT MOVEs sit after WAIT $2001,$FF00, line 32: in front of the first bitplane fetch, so PI-7(bpl) holds, and after the end of vertical blanking, I-t); PI-12(bpl)'s comparator prints FAIL; the gates of P4 and P5 close
-// MUTATION PI-12(spr) stimulus red: NMH_MUTATE=PI-12(spr) runs prog_i_u (the SPR0PT MOVEs sit after WAIT $1901,$FF00, line 25: in front of the sprite's first fetch, so PI-7(spr) holds, and outside the 25 lines of vertical blanking p219 guarantees, I-u); PI-12(spr)'s comparator prints FAIL; the gate of P6 closes
+// GATE PI-12(bpl) (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PI-12(bpl) runs prog_i_t (the BPL1PT MOVEs sit after WAIT $2001,$FF00, line 32: in front of the first bitplane fetch, so PI-7(bpl) holds, and after the end of vertical blanking, I-t); the gate prints closed; P4a to P4e, P5 and P5-NOREWRITE print NOT GRADED
+// GATE PI-12(spr) (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PI-12(spr) runs prog_i_u (the SPR0PT MOVEs sit after WAIT $1901,$FF00, line 25: in front of the sprite's first fetch, so PI-7(spr) holds, and outside the 25 lines of vertical blanking p219 guarantees, I-u); the gate prints closed; P6 and P6-NOREWRITE print NOT GRADED
 // MUTATION PI-8 stimulus red: NMH_MUTATE=PI-8 runs prog_i_i (DMACON leaves SPREN clear, I-i); PI-8's comparator prints FAIL
 // MUTATION PI-9 stimulus red: NMH_MUTATE=PI-9 runs prog_i_o as the control run (LACE clear and M1 waits between samples, I-o); PI-9's comparator prints FAIL; P1-NOLACE prints NOT GRADED
 // MUTATION PI-3 stimulus red: NMH_MUTATE=PI-3 runs prog_i_a (LACE clear, I-a); PI-3 is the check of P1 itself, so P1 and the first half of P1-NOLACE are red on the same run by construction and are not printed; PI-3's comparator prints FAIL and P4a to P4e print NOT GRADED; controls: all 8 lengths equal, the other preconditions
@@ -66,7 +66,7 @@
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL
 // MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present
-// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(long) runs prog_t_k (LISTT waits for line 255 after its last mark and then holds 900 MOVEs in front of the terminal wait, T-k: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PT-7's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
+// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(long) runs prog_t_k (LISTT waits for line 255 after its last mark and then holds 1,800 MOVEs in front of the terminal wait, T-k: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PT-7's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
 // MUTATION SELFTEST-PT-7-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); a self-test of the third clause of PT-7's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PT-7's comparator prints FAIL under the label SELFTEST-PT-7-ANCHOR; controls: one restart per M1 field, consecutive matched restarts
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-3, PT-5, PT-7
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-2, PT-3, PT-7
@@ -128,6 +128,8 @@ constexpr uint32_t kI_FIXMARK    = 0x087400;
 constexpr uint32_t kT_PLANE      = 0x082000;
 constexpr uint32_t kT_PLANE_END  = kT_PLANE + 11000;
 constexpr uint32_t kT_LISTT      = 0x080800;
+constexpr uint32_t kT_LISTT_LONG = 0x0A0000;   // T-k: LISTT relocated, its list is longer than the room in front of PLANE
+constexpr uint32_t kT_LISTT_LONG_SPAN = 0x6000;
 constexpr int       kT_K         = 13;
 constexpr uint32_t kT_M1_STARTW  = 0x086000;
 constexpr uint32_t kT_M1_DONEW   = 0x086002;
@@ -467,7 +469,7 @@ nmh::Config i_config() {
 // between them and PIC.
 struct ILayout { uint32_t listA, listB, span; };
 ILayout i_layout(const std::string& prog) {
-    if (prog == "prog_i_v") return {0x0A0000, 0x0A5000, 0x5000};
+    if (prog == "prog_i_v") return {0x0A0000, 0x0A6000, 0x6000};
     return {kI_LISTA, kI_LISTB, kI_LISTB - kI_LISTA};
 }
 
@@ -705,9 +707,9 @@ bool pi7_spr(const IAnalysis& a) { return move_pair_fetched_before(a, kSPR0PTH, 
 uint64_t m1_opening(const IAnalysis& a, size_t k) { return k == 0 ? a.startCycle : a.m1[k - 1].closeCycle; }
 
 // Vertical blanking lasts at least 25 lines in PAL (p219), counted from line 0.
-// The sample that opens an M1 field lies in line 0 and the write follows it by
-// less than a line, so a fetch less than kVblankLines after that write lies
-// before line 25.
+// The sample that opens an M1 field lies in line 0 and the write lies less than
+// one and a half lines after the start of line 0 (SPECIFICATION.md 3.6), so a
+// fetch less than kVblankLines after that write lies before line 24.5.
 constexpr int64_t kVblankLines = 23;
 constexpr int64_t kPalLineClk  = 227 * (int64_t)kClkSysPerColourClock;
 
@@ -950,7 +952,7 @@ IPre i_pre(const IAnalysis& a) {
     p.pi8 = graded(pi8_spr_fetched(a));
     p.pi7s = !frame ? not_graded(noFrame)
            : !a.hasSpr ? not_graded("the lists hold no SPR0PT MOVEs: not applicable")
-           : !every_field_has(a, false) ? not_graded("some field has no sprite-0 fetch to order the MOVEs against")
+           : !p.pi8.holds() ? not_graded("PI-8 did not hold: the run has no sprite-0 fetch to order the MOVEs against")
            : graded(pi7_spr(a));
     p.pi12b = p.pi7b.holds() ? graded(pi12_bpl(a)) : not_graded("PI-7(bpl) did not hold or was not graded in this run");
     p.pi12s = p.pi7s.holds() ? graded(pi12_spr(a)) : not_graded("PI-7(spr) did not hold or was not graded in this run");
@@ -1018,16 +1020,18 @@ void g_PI8(const Pv& v) {
     pre_line(v,
         "PI-8: the sprite-0 structure at SPR is fetched at least once during the run");
 }
-void g_PI12bpl(const Pv& v) {
-    pre_line(v,
-        "PI-12(bpl): in every field, the Copper fetch of the BPL1PT MOVEs lies in vertical blanking -- less than "
-        "23 lines after the write that opens the field, which is before line 25, the minimum PAL vertical blanking (p219)");
+// PI-12 is a gate, not a graded line: p25 leaves open whether the Copper
+// restarts at the start or at the end of vertical blanking (SPECIFICATION.md
+// section 6, item 3), and after a restart at the end the MOVEs are fetched
+// after line 25. The gate state is printed; when it is closed, P4 and P5
+// (bpl) or P6 (spr) are NOT GRADED.
+std::string pi12_gate_text(const char* id, const char* of, const Pv& v) {
+    return std::string(id) + " gate of " + of + " (in every field, the Copper fetch of the MOVEs lies less than 23 "
+        "lines after the write that opens the field, before line 25, the minimum PAL vertical blanking, p219): " +
+        (v.ng() ? "not measured, " + v.why : v.holds() ? "open" : "closed");
 }
-void g_PI12spr(const Pv& v) {
-    pre_line(v,
-        "PI-12(spr): in every field, the Copper fetch of the SPR0PT MOVEs lies in vertical blanking -- less than "
-        "23 lines after the write that opens the field, which is before line 25, the minimum PAL vertical blanking (p219)");
-}
+void g_PI12bpl(const Pv& v) { checks.note(pi12_gate_text("PI-12(bpl)", "P4 and P5", v)); }
+void g_PI12spr(const Pv& v) { checks.note(pi12_gate_text("PI-12(spr)", "P6", v)); }
 // Where the MOVE pair is fetched, in colour clocks after the write that opens the field.
 void note_pi12(const std::string& id, const IAnalysis& a, uint16_t regH, uint16_t regL) {
     std::vector<int64_t> d;
@@ -1267,9 +1271,10 @@ void pre_ctl(const std::string& label, const std::string& id, const Pv& v) {
 void i_dump(const std::string& label, const IPre& p, const std::set<std::string>& skip) {
     struct E { const char* id; const Pv* v; };
     const E es[] = {{"PI-1", &p.pi1}, {"PI-2", &p.pi2}, {"PI-3", &p.pi3}, {"PI-4", &p.pi4}, {"PI-5", &p.pi5},
-                    {"PI-6", &p.pi6}, {"PI-7(bpl)", &p.pi7b}, {"PI-7(spr)", &p.pi7s}, {"PI-8", &p.pi8},
-                    {"PI-12(bpl)", &p.pi12b}, {"PI-12(spr)", &p.pi12s}};
+                    {"PI-6", &p.pi6}, {"PI-7(bpl)", &p.pi7b}, {"PI-7(spr)", &p.pi7s}, {"PI-8", &p.pi8}};
     for (const auto& e : es) if (!skip.count(e.id)) pre_ctl(label, e.id, *e.v);
+    if (!skip.count("PI-12(bpl)")) g_PI12bpl(p.pi12b);
+    if (!skip.count("PI-12(spr)")) g_PI12spr(p.pi12s);
 }
 
 // The runs the downstream lines of a mutation run need besides the mutated
@@ -1507,11 +1512,13 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "PI-12(bpl)") {
         g_PI12bpl(p.pi12b);
         note_pi12(label, a, kBPL1PTH, kBPL1PTL);
+        ctl(label, "the gate PI-12(bpl) is closed", p.pi12b.s == Pv::Fails);
         i_dump(label, p, {"PI-12(bpl)"});
         i_downstream(cs, a, p, {});
     } else if (label == "PI-12(spr)") {
         g_PI12spr(p.pi12s);
         note_pi12(label, a, kSPR0PTH, kSPR0PTL);
+        ctl(label, "the gate PI-12(spr) is closed", p.pi12s.s == Pv::Fails);
         i_dump(label, p, {"PI-12(spr)"});
         i_downstream(cs, a, p, {});
     } else if (label == "PI-8") {
@@ -1538,9 +1545,9 @@ nmh::Config t_config(bool ntsc) {
 // Address of pair p's MOVE-opcode word. Pair 0 is followed by the one-time
 // BPL1PTH/BPL1PTL MOVE pair (2 words each, 8 bytes total, listt_body.i),
 // which shifts every later pair by a fixed +8 bytes.
-uint32_t listt_move_addr(int p) {
+uint32_t listt_move_addr(uint32_t listt, int p) {
     uint32_t off = (p == 0) ? 0u : (8u * (uint32_t)p + 8u);
-    return kT_LISTT + off + 4;
+    return listt + off + 4;
 }
 
 struct TField {
@@ -1553,6 +1560,7 @@ struct TField {
 
 struct TAnalysis {
     Run r;
+    uint32_t listt = kT_LISTT; // LISTT's address in this program (T-k relocates it)
     std::vector<M1Record> m1;
     uint64_t startCycle = 0;
     bool completed = false;
@@ -1565,11 +1573,14 @@ struct TAnalysis {
 
 TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) {
     TAnalysis a;
-    a.r = run_program(dir + "/" + prog + ".bin", t_config(ntsc), kRunBudgetT, {kT_LISTT});
+    const uint32_t listt = prog == "prog_t_k" ? kT_LISTT_LONG : kT_LISTT;
+    a.listt = listt;
+    const uint32_t span = prog == "prog_t_k" ? kT_LISTT_LONG_SPAN : kT_PLANE - kT_LISTT;
+    a.r = run_program(dir + "/" + prog + ".bin", t_config(ntsc), kRunBudgetT, {listt});
     a.m1 = read_m1(a.r, kT_M1_RECBASE, kT_K);
     a.startCycle = start_cycle_of(a.r, kT_M1_STARTW);
     a.completed = m1_completed(a.r, kT_M1_DONEW);
-    a.restarts = find_restarts(a.r, kT_LISTT, 0);
+    a.restarts = find_restarts(a.r, listt, 0);
     for (const auto& acc : a.r.log) if (!acc.is_write) a.readsByAddr[acc.word_addr].push_back(acc.cycle);
     for (auto& kv : a.readsByAddr) std::sort(kv.second.begin(), kv.second.end());
     auto idx = match_m1_to_restarts(a.m1, a.startCycle, a.restarts);
@@ -1588,7 +1599,7 @@ TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) 
     }
     std::vector<int> matched;
     for (const auto& f : a.fields) matched.push_back(f.restart);
-    a.anchor = measure_anchor(a.r, a.m1, a.startCycle, a.restarts, matched, {{kT_LISTT, kT_PLANE - kT_LISTT}});
+    a.anchor = measure_anchor(a.r, a.m1, a.startCycle, a.restarts, matched, {{listt, span}});
     return a;
 }
 
@@ -1606,7 +1617,7 @@ bool fix_t(const TAnalysis& a) {
 // (a.fields[k].begin/.end, from M2).
 std::optional<uint64_t> copper_mark(const TAnalysis& a, int k, int v) {
     if (k < 0 || k >= (int)a.fields.size()) return std::nullopt;
-    uint32_t addr = listt_move_addr(v) / 2;
+    uint32_t addr = listt_move_addr(a.listt, v) / 2;
     auto it = a.readsByAddr.find(addr);
     if (it == a.readsByAddr.end()) return std::nullopt;
     uint64_t begin = a.fields[(size_t)k].begin, end = a.fields[(size_t)k].end;

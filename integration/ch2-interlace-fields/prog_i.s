@@ -25,7 +25,7 @@
 ;   I_BADMOVE    I-s   both lists end, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
 ;   I_MIDPTR     I-t   the BPL1PT MOVEs placed after WAIT $2001,$FF00 (line 32)
 ;   I_MIDSPR     I-u   the SPR0PT MOVEs placed after WAIT $1901,$FF00 (line 25)
-;   I_LONGLIST   I-v   both lists, relocated, wait for line 255 and then hold 4,700 MOVEs before the terminal wait
+;   I_LONGLIST   I-v   both lists, relocated, wait for line 255 and then hold 5,200 MOVEs before the terminal wait
 
         include "nanomig.i"
         include "ch2.i"
@@ -36,7 +36,7 @@ SPR             equ     $087000         ; sprite 0 structure, 16 bytes
 NULLSPR         equ     $087010         ; $0000,$0000, for sprites 1-7
         ifd     I_LONGLIST
 LISTA           equ     $0A0000
-LISTB           equ     $0A5000
+LISTB           equ     $0A6000
         else
 LISTA           equ     $080800
 LISTB           equ     $080900
@@ -250,7 +250,7 @@ i_handler:
         endif
         ifd     I_LONGLIST
         dc.w    $FF01,$FFFE
-        rept    4700
+        rept    5200
         dc.w    COLOR00,$0000
         endr
         endif
@@ -331,7 +331,7 @@ i_handler:
         endif
         ifd     I_LONGLIST
         dc.w    $FF01,$FFFE
-        rept    4700
+        rept    5200
         dc.w    COLOR00,$0000
         endr
         endif
