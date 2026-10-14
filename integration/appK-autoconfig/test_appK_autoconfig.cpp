@@ -41,9 +41,10 @@
 // MUTATION P3-BASE stimulus green already red on the unmutated stimulus; the same "R2 != P2V" comparator, fed the same two control stimuli, prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
 // MUTATION GATE-G stimulus green already red on the unmutated stimulus; the same "differs from IMG0" comparator (after the completion marker), fed run R3 (the board configured by the byte write to register 48 in place of the write to the shut-up address 4C), prints PASS: P3-IMG2
 // MUTATION GATE-G-PRESENCE stimulus red R_G with the writes of $00 to register 4A and $20 to register 48 placed before its first read of $00E80000 (prog_rg_pre48), via NMH_MUTATE=GATE-G-PRESENCE: the reads are unchanged, but the write to 48 configures the board (p.436 "writing to register 48 actually configures the board") and the configuration registers "absolutely must move out of the $00E8xxxx space" (p.435 footnote 6), so no unconfigured PIC is left for them; the unchanged G1-G4 comparator goes red (G4: the image read again after the writes does not differ from the first); the run completes; GATE-G-PRECOND is recorded unavailable, and GATE-G, P3 and P6 not checkable
-// MUTATION P6-CHIPMEM none impossible unfalsifiable by a mutation that completes: the line is red exactly when R6 or R6m writes no completion marker after RESET, so every case that turns it red stops before the completion marker; p.223 says only that the overlay ROM copy responds starting at $00000000 and that software must assume memory is not available, so no page predicts a completing run in which Chip memory does not answer
+// MUTATION P6-CHIPMEM none impossible unfalsifiable by a mutation that completes: the line is red exactly when R6 or R6m writes no completion marker after RESET, so every case that turns it red stops before the completion marker; p.223 says that after RESET the ROM image appears at $00000000, that all memory and AUTOCONFIG cards disappear and that software must assume memory is not available, so no page predicts a completing run in which Chip memory does not answer
 //
-// APPARATUS CONTRASTS (not mutations, not page-predicted; the stimulus of each stops the instruction stream or fabricates a stored result, and no page predicts the outcome). Each is an apparatus check of the no-answer branch of SPECIFICATION.md section 2.2, run on both cores via NMH_MUTATE=<selector>; none carries a MUTATION record, because a mutation must be a case a page predicts. After the run ends at the end of the window, the branch grades nothing: the line prints RECORDED not graded, since no port of nanomig.v shows whether the access was issued.
+// APPARATUS CONTRASTS (not mutations, not page-predicted; the stimulus of each stops the instruction stream or fabricates a stored result, and no page predicts the outcome). Each is an apparatus check of the no-answer branch of SPECIFICATION.md section 2.2, run on both cores via NMH_MUTATE=<selector>; none carries a MUTATION record, because a mutation must be a case a page predicts. After the run ends at the end of the window, the line that grades the final access is never PASS: it prints RECORDED not graded where every provenance item of section 2.2 holds (no port of nanomig.v shows whether the access was issued), and FAIL where one does not (P3-CONTROL-IO-EQSTORE, P3-NOTOTHER-BOARD).
+// APPARATUS GATE-G-PRESENCE-NOANSWER R_G stops right after its pre-access marker, before the second image read (prog_rg_hang): GATE-G-PRESENCE prints RECORDED not graded, ended by expiry of the no-answer window, the gate does not pass, GATE-G-PRECOND is unavailable and GATE-G, P3 and P6 are not checkable
 // APPARATUS GATE-G-NOANSWER the shut-up run stops right after its pre-access marker (prog_rg_shutup_hang): GATE-G prints RECORDED not graded, ended by expiry of the no-answer window, with every provenance item holding
 // APPARATUS P3-IMG2-NOANSWER R3 stops right after its pre-access marker, before the IMG2 read (prog_r3_hang_img2): P3-IMG2 prints RECORDED not graded, ended by expiry of the no-answer window
 // APPARATUS P3-CONTROL-IO-NOANSWER the control stops after the write and the scratch write, before the readback at $00A00000 (prog_r3_io_hang): P3-CONTROL-IO prints RECORDED not graded, ended by expiry of the no-answer window
@@ -72,13 +73,13 @@
 // record; the P1a record names what it measured; FIXTURE-FDD prints whether
 // the port changed level at all (NM-HRM-046).
 //
-// Runs that end without the completion marker (GATE-G, P3-IMG2, P3-NOTOTHER,
+// Runs that end without the completion marker (GATE-G-PRESENCE, GATE-G, P3-IMG2, P3-NOTOTHER,
 // P3-BASE and the two controls): each program writes a distinct marker to the
 // word PRE immediately before its final risky access, and the window is two
 // vertical-sync leading edges counted from that marker. A completion marker
 // that appears first ends the run as DONE and the stored result decides; every
 // label and a MEASURED line name which of the two ended the run. A run that
-// ends at the window grades PASS on no line: where the provenance of
+// ends at the window grades PASS on no line that grades its final access: where the provenance of
 // SPECIFICATION.md section 2.2 holds, the line is RECORDED not graded, because
 // no page states what an unanswered access does and no port of nanomig.v shows
 // whether the access was issued; where it does not hold, the line is FAIL.
@@ -157,10 +158,10 @@ constexpr uint32_t kR3R2      = kMK_NEXT + 198;
 constexpr uint16_t kP0v = 0xA55A, kP1v = 0x3CC3, kP2v = 0x5AA5;
 
 // The pre-access marker word of the programs that end in an access that may be
-// unanswered (prog_r3*.s, prog_rg_shutup.s), and the value each kind of final
+// unanswered (prog_r3*.s, prog_rg.s, prog_rg_shutup.s), and the value each kind of final
 // access writes to it.
 constexpr uint32_t kPre = kMK_NEXT + 200;
-constexpr uint16_t kPreImg1 = 0xB1B1, kPreImg2 = 0xB2B2, kPreR2 = 0xB3B3, kPreShutup = 0xB4B4;
+constexpr uint16_t kPreImg1 = 0xB1B1, kPreImg2 = 0xB2B2, kPreR2 = 0xB3B3, kPreShutup = 0xB4B4, kPreRgImg = 0xB5B5;
 
 // R6-family (prog_r6*.s)
 constexpr uint32_t kR6Mk1  = kMK_NEXT + 0;
@@ -267,20 +268,16 @@ struct Window {
 };
 bool is_pre_marker(const nmh::RamAccess& a) {
     return a.is_write && a.word_addr == kPre / 2 &&
-           (a.data == kPreImg1 || a.data == kPreImg2 || a.data == kPreR2 || a.data == kPreShutup);
+           (a.data == kPreImg1 || a.data == kPreImg2 || a.data == kPreR2 || a.data == kPreShutup || a.data == kPreRgImg);
 }
-// `anchor_at_start`: the program has no pre-access marker (run R_G, which
-// must complete); the window then counts from the start of the run, and the
-// run is not cut short at its expiry.
-Window wait_done_or_window(nmh::NanomigHarness& h, uint64_t budget, bool anchor_at_start) {
+Window wait_done_or_window(nmh::NanomigHarness& h, uint64_t budget) {
     Window out;
     size_t seen = 0;
     int vs_edges = 0;
     bool prev_vs = h.video().empty() ? false : h.video().back().vs;
-    if (anchor_at_start) out.marker = 0;
-    for (uint64_t i = 0; i < budget && !out.done && (anchor_at_start || !out.expired); ++i) {
+    for (uint64_t i = 0; i < budget && !out.done && !out.expired; ++i) {
         h.run_cycles(1);
-        if (out.marker && !anchor_at_start && h.ports()->fastram_sel) out.board_access = true;
+        if (out.marker && h.ports()->fastram_sel) out.board_access = true;
         bool fresh_marker = false;
         for (; seen < h.ram_log().size(); ++seen) {
             const auto& a = h.ram_log()[seen];
@@ -304,12 +301,15 @@ struct NoAnswer {
     bool marker_once = false;   // the pre-access marker was written exactly once
     bool no_restart = false;    // the M0 marker was written exactly once
     bool no_exception = false;  // no write of V_E to MK_E and no pixel of C_E
-    bool quiet = false;         // after the marker, no Chip-port write but the scratch write
+    bool quiet = false;         // after the marker, no Chip-port write but the scratch write (run R_G: the stores of its second image)
     bool no_board_access = false; // after the marker, no access at the expansion board's port
     bool expired = false;       // the window expired
     bool proven() const { return marker_once && no_restart && no_exception && quiet && no_board_access && expired; }
 };
-NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w) {
+// `second_image`: the run is R_G, whose only Chip-port writes after the marker are
+// the stores of the words of its second image read (IMG_B, kMK_NEXT+64 ..
+// +127), and which has no scratch write.
+NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w, bool second_image = false) {
     NoAnswer n;
     if (!w.marker) return n;
     int markers = 0;
@@ -317,8 +317,12 @@ NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w) {
     for (const auto& a : h.ram_log()) {
         if (is_pre_marker(a)) ++markers;
         if (a.is_write && a.word_addr == kMK_E / 2 && a.data == kVE) exception = true;
-        if (a.is_write && a.cycle > *w.marker && !(a.word_addr == kR3Scratch / 2 && a.data == 0x0000))
-            quiet = false;
+        if (a.is_write && a.cycle > *w.marker) {
+            const bool allowed = second_image
+                ? (a.word_addr >= (kMK_NEXT + 64) / 2 && a.word_addr < (kMK_NEXT + 128) / 2)
+                : (a.word_addr == kR3Scratch / 2 && a.data == 0x0000);
+            if (!allowed) quiet = false;
+        }
     }
     Color ce = decode_color(kCE);
     for (const auto& s : h.video())
@@ -527,15 +531,15 @@ struct SimpleImgOut {
     bool live() const { return window_live(loaded, w); }
 };
 
-SimpleImgOut run_simple_img(const std::string& bin, uint32_t img_base, bool anchor_at_start) {
+SimpleImgOut run_simple_img(const std::string& bin, uint32_t img_base, bool second_image = false) {
     SimpleImgOut out;
     nmh::Config cfg = base_cfg();
     nmh::NanomigHarness h(cfg);
     out.loaded = h.load_program(bin) > 0;
     if (!out.loaded) return out;
     h.boot(kBootBudget);
-    out.w = wait_done_or_window(h, kSimpleBudget, anchor_at_start);
-    out.na = measure_no_answer(h, out.w);
+    out.w = wait_done_or_window(h, kSimpleBudget);
+    out.na = measure_no_answer(h, out.w, second_image);
     out.img = read_img(h, img_base);
     out.img_b = read_img(h, img_base + 64);
     return out;
@@ -561,7 +565,7 @@ R3Out run_r3(const std::string& bin) {
     out.loaded = h.load_program(bin) > 0;
     if (!out.loaded) return out;
     h.boot(kBootBudget);
-    out.w = wait_done_or_window(h, kSimpleBudget, false);
+    out.w = wait_done_or_window(h, kSimpleBudget);
     out.na = measure_no_answer(h, out.w);
     // Every slot is read from the harness's memory regardless of whether
     // this run's own DONE mark appeared: img0 (step a), img1 (step b) and
@@ -872,9 +876,11 @@ int main(int argc, char** argv) {
 
     // ================= Gate G =============================================
     const bool g_pre48 = mv == "GATE-G-PRESENCE";
-    SimpleImgOut g = run_simple_img(dir + (g_pre48 ? "/prog_rg_pre48.bin" : "/prog_rg.bin"), kImgAtMkNext, true);
-    if (g_pre48)
-        checks.note("NMH_MUTATE=" + mv + ": the mutated run (prog_rg_pre48) wrote the completion marker: " + yn(g.w.done.has_value()));
+    const bool g_rg_hang = mv == "GATE-G-PRESENCE-NOANSWER";
+    const char* g_prog = g_pre48 ? "prog_rg_pre48" : g_rg_hang ? "prog_rg_hang" : "prog_rg";
+    SimpleImgOut g = run_simple_img(dir + "/" + g_prog + ".bin", kImgAtMkNext, true);
+    if (g_pre48 || g_rg_hang)
+        checks.note("NMH_MUTATE=" + mv + ": the mutated run (" + g_prog + ") wrote the completion marker: " + yn(g.w.done.has_value()));
     bool g2 = false, g3 = false, g4 = false, reg08_can_shutup = false;
     if (g.w.done) {
         // register 00's physical byte (not complemented): bits7-4 from the
@@ -903,17 +909,30 @@ int main(int argc, char** argv) {
         g4 = !img_equal(g.img_b, g.img);
     }
     bool gate_g_pass = g.loaded && g.w.done.has_value() && g2 && g3 && g4;
+    // A run that ends at the window is recorded as not graded, and not as FAIL,
+    // only where every item of SPECIFICATION.md section 2.2 holds (no image
+    // equal to IMG0 stored); the gate does not pass then.
+    const bool gate_g_recorded = g.loaded && !g.w.done && g.na.proven() && !img_equal(g.img_b, g.img);
+    if (g.loaded && !g.w.done)
+        checks.note("GATE-G-PRESENCE run R_G: " + provenance_text(g.w, g.na) + ", second image differs from IMG0: " +
+                    yn(!img_equal(g.img_b, g.img)));
     checks.note("GATE-G-PRESENCE components: G1 (the run completes) " + yn(g.w.done.has_value()) +
                 ", G2 (type 10 or 11) " + yn(g2) + ", G3 (reserved registers read logical 0) " + yn(g3) +
                 ", G4 (the image read again differs from the first) " + yn(g4));
-    checks.expect(gate_g_pass,
-        "GATE-G-PRESENCE [p432,p434,p435,p436]: an unconfigured PIC answers in $00E8xxxx (the run completes, the "
-        "type field reads 10 or 11 (Zorro III or Zorro II), the reserved registers 0C/34/38/3C read logical 0, "
-        "and the image read again after the writes of $00 to register 4A and $20 to register 48 differs from the first)");
-    if (!gate_g_pass)
+    if (gate_g_recorded)
+        checks.record("GATE-G-PRESENCE [p432,p434,p435,p436]: not graded: no completion marker within the window" +
+                      ended_by(g.w) + "; the second image read is of configuration space the board has left, "
+                      "which no page says completes, and no port of nanomig.v shows whether the access was issued");
+    else
+        checks.expect(gate_g_pass,
+            "GATE-G-PRESENCE [p432,p434,p435,p436]: an unconfigured PIC answers in $00E8xxxx (the run completes, the "
+            "type field reads 10 or 11 (Zorro III or Zorro II), the reserved registers 0C/34/38/3C read logical 0, "
+            "and the image read again after the writes of $00 to register 4A and $20 to register 48 differs from the first)");
+    if (!gate_g_pass && !gate_g_recorded)
         checks.record("Gate G failed: no AUTOCONFIG device answers in $00E8xxxx (fastram_config offers "
-            "none, the harness's start-up had already configured it, or the image did not change after the "
-            "writes to 4A and 48)");
+            "none, the harness's start-up had already configured it, the image did not change after the "
+            "writes to 4A and 48, or the run did not complete after them)");
+    const char* const g_unmet = gate_g_recorded ? "gate G was not graded" : "gate G failed";
 
     // ---- Gate G precondition, then GATE-G's own check: the stimulus writes
     // $00 to the shut-up address 4C and reads the image again.
@@ -942,8 +961,11 @@ int main(int argc, char** argv) {
                 "completion marker nor the pre-access marker followed by the end of its no-answer window");
         }
     } else {
-        checks.record("GATE-G [p433,p436]: not graded: Gate G failed or register 08 bit 6 indicates the board "
-            "cannot be shut up");
+        if (gate_g_recorded)
+            checks.record("GATE-G [p433,p436]: not graded: Gate G was not graded");
+        else
+            checks.record("GATE-G [p433,p436]: not graded: Gate G failed or register 08 bit 6 indicates the board "
+                "cannot be shut up");
     }
 
     // ================= P3 (only if gate G passed) =========================
@@ -1104,8 +1126,8 @@ int main(int argc, char** argv) {
             checks.record("P3-CONTROL-UNCONF [p431]: not graded: precondition failed (P3-CONTROL-UNCONF-PRECOND)");
         }
     } else {
-        checks.record("P3 [p384,p391,p431,p435,p436]: not checkable: no AUTOCONFIG device answers in "
-            "$00E8xxxx (gate G failed)");
+        checks.record(std::string("P3 [p384,p391,p431,p435,p436]: not checkable: no AUTOCONFIG device answers in "
+            "$00E8xxxx (") + g_unmet + ")");
     }
 
     // opus:K-0014, sol:K-0008 (p.384): withdrawn whole.
@@ -1165,8 +1187,8 @@ int main(int argc, char** argv) {
             checks.record("P6 [p223,p394,p431]: not graded: precondition failed (" + why + ")");
         }
     } else {
-        checks.record("P6 [p223,p394,p431]: not checkable: no AUTOCONFIG device answers in $00E8xxxx "
-            "(gate G failed)");
+        checks.record(std::string("P6 [p223,p394,p431]: not checkable: no AUTOCONFIG device answers in $00E8xxxx (") +
+            g_unmet + ")");
     }
 
     // opus:K-0164, sol:K-0155 (p.394): withdrawn whole.
