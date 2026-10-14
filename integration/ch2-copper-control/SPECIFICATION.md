@@ -89,14 +89,17 @@ carries no claim id.
   proposition depends on the extra ECS address bits (p.273, p.309). Once a
   Copper list has been written, the 68000 never reads it and never writes it
   again, except where a proposition says so.
-- Overlay (P3 and P5–P12): the area below $80000 is not Chip RAM after
+- Overlay (every proposition): the area below $80000 is not Chip RAM after
   reset. p.223: "An additional copy of the system ROM responds starting at
   memory location $00000000. The system RAM that would normally be located
   at this address is not available … The OVL bit in one of the 8520 Chips
-  disables the overlay". So the common prologue of P3 and P5–P12 begins,
+  disables the overlay". So the common prologue of every proposition begins,
   before anything is written below $80000, with CIA-A DDRA ($BFE201) = $03
-  and then CIA-A PRA ($BFE001) with bit 0 (OVL) = 0. p.339: PRA bit 0 is
-  OVL, and DDRA is "Direction for port A (BFE001);1-output (set to 0x03)".
+  and then CIA-A PRA ($BFE001) with bit 0 (OVL) = 0 (P4 reads DMACONR first,
+  see its stimulus, and then does this). p.339: PRA bit 0 is
+  OVL, and DDRA is "Direction for port A (BFE001);1-output (set to 0x03)";
+  p.341: a port bit whose DDR bit is 0 is an input, so the PRA write alone
+  would not drive OVL.
   The 680x0 reads its interrupt vectors from the lowest kilobyte of this
   area, so no list or data region uses $000000–$0003FF, and a handler
   (2.6, and the contrasting cases of P8 and P10 that install one) is
@@ -136,12 +139,10 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
   requester, so both exclusions rest on something else:
   - 68000 accesses: once a list has been written, the 68000 never reads it
     (2.1), so no read inside a list region is the 68000's.
-  - Refresh in P1, P2 and P4: recognised by its address. Every refresh
-    access measures as a read of word address 0 and of no other address,
-    and no list region of those propositions contains word address 0 (5.1:
-    lists at $001000 and above).
-  - Refresh in P3 and P5–P12: a refresh access is one made while the
-    `refresh` output (port list: "ram refresh cycle") is asserted.
+  - Refresh, in every proposition: a refresh access is one made while the
+    `refresh` output (port list: "ram refresh cycle") is asserted. It is
+    left out of the accesses attributed to any channel. The address of an
+    access is never used to find refresh.
 
   The instruction word follows from the offset from the list start: IR1 at
   0 mod 4, IR2 at 2 mod 4.
@@ -162,7 +163,7 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
   writes a data region only to prepare it, before the window graded on
   that region opens, and makes no access there inside the window. A
   refresh access is recognised by the `refresh` output, as for Copper
-  fetches in P3 and P5–P12.
+  fetches.
 
 ### 2.4 Reference frame B: beam records (lines and frames)
 
@@ -339,7 +340,13 @@ a pair whose next read in the region is any other word is not a restart.
 6. **Contrasting cases.**
    - Main: DMACON = $8200 (SET/CLR and DMAEN only). Expected: no Copper
      fetch in L1's region from t(M2) on (which includes W1), and DMACONR
-     bit 7 = 0.
+     bit 7 = 0. The two clauses have a case each, graded in the main
+     contrast's place: the fetching clause alone fails when DMACON = $8280
+     is written at M1, M2 follows at once, and DMACON = $0080 is written
+     only after the next frame wrap (the Copper fetches L1's IR1 after
+     t(M2), and DMACONR bit 7 reads 0); the bit-7 clause alone fails with
+     DMACON = $8080 (no fetch, DMACONR bit 7 reads 1: bit 9 is clear,
+     p.222).
    - For (a): write DMACON = $8280 at the start of the program, before step
      3. Fetches then appear in W0.
    - For (b): DMACON = $8080 (COPEN without DMAEN). DMACONR bit 9 reads 0,
@@ -393,6 +400,13 @@ a pair whose next read in the region is any other word is not a restart.
      write". Expected: fetches continue in each frame, and bit 4 is 1 again
      after the next restart. This case clears no bit, so its line is a
      control and carries no claim id.
+   - The two clauses of the main assertion have a case each, graded in its
+     place. Fetching alone fails when phase 2 writes DMACON = $0000 and
+     L2's MOVE data word is rewritten to `$0010` before M1: the Copper keeps
+     fetching L2, and its MOVE clears bit 4, so bit 4 stays 0. Bit 4 alone
+     fails when phase 2 writes DMACON = $0080 and the program writes INTREQ =
+     $8010 after M2 instead of the clear: nothing is fetched, and bit 4
+     reads 1.
    - For (a): L2 with the MOVE replaced by `$0180,$0F00`. Bit 4 is never
      set in phase 1.
    - For (b): INTENA = $8010 (bit 4 set, the master enable bit 14 left at
@@ -422,6 +436,14 @@ a pair whose next read in the region is any other word is not a restart.
    Both claims are graded whole by one assertion that conjoins Base's
    coverage, the nine channel cases and case M. Those lines are components
    and carry no claim id.
+
+   The assertion is graded over the part of each channel that Base
+   measures, per DMACON enable bit (p.222: "all of the channels at bits
+   8-0"). Base shows one bitplane, the blitter's D channel only
+   (BLTCON0 = $01FF), and sprites 1-7 on one shared structure, where the
+   pages count eight sprite DMA channels (p.109) and four blitter DMA
+   channels (p.170). A channel or a sprite not shown in Base is not
+   covered.
 2. **Stimulus.** Nine disjoint data regions of 32 KB ($8000 bytes) each,
    in the order BPL, SPR, AUD0, AUD1, AUD2, AUD3, DSK, BLT, COP: region k
    (k = 0 … 8) starts at $10000 + k × $8000, so together they fill
@@ -620,8 +642,9 @@ a pair whose next read in the region is any other word is not a restart.
      DMAEN, p.222) and only then reads DMACONR. Bit 7 reads 1, with DMAEN
      left at 0 so Copper DMA does not actually start and the rest of the
      run is unaffected.
-   - For (b): run the whole sequence, DMACON write included, once before M1.
-     Fetches then appear before t(M1).
+   - For (b): run the whole sequence, DMACON write included, once before M1,
+     then write DMACON = $0080 (Copper DMA off again, as at the start,
+     p.30) before MS. Fetches then appear before t(M1).
    - For (c): write M1, wait for a frame wrap, then write DMACON. A wrap then
      lies between t(M1) and the first fetch.
 7. **Reference frames.** 2.3, 2.4.
@@ -934,7 +957,8 @@ a pair whose next read in the region is any other word is not a restart.
 6. **Contrasting cases.**
    - COP: replace the MOVE with `$0180,$0F00`. Bit 4 stays 0.
    - BLIT: omit the BLTSIZE write. Bit 6 stays 0.
-   - VB: poll only from V = $40 to V = $F0 of one frame. Bit 5 stays 0
+   - VB: write INTREQ = $0020 and MC as in the main case, then poll only
+     from V = $40 to V = $F0 of one frame. Bit 5 stays 0
      (p.219 places the event at line 0). This removes the event as well,
      so VB's (c) fails with it: no page gives an input that keeps line 0
      in the window and VERTB clear. The line that grades this contrast
@@ -955,9 +979,12 @@ a pair whose next read in the region is any other word is not a restart.
    - For (iii), COP case: once a poll record stored after t(MC) reads 1,
      the program writes INTREQ = $0010 again. p.280: the status
      bits "must be reset when desired by writing to this address". A later
-     record then reads 0, and (iii) fails.
-   - For (a): INTENA = $C020 with a level-3 handler that clears bit 5.
-     INTENAR is then non-zero.
+     record then reads 0, and (iii) fails. The capture is graded in P8-COP's
+     place (P8-COP fails through (iii) alone) and in the line P8-COP-III,
+     which states that (iii) fails in it.
+   - For (a): COP: INTENA = $C020 with a level-3 handler that clears bit 5;
+     VB: INTENA = $8020 (bit 5 set, master enable clear); BLIT: INTENA =
+     $8040 (bit 6 set, master enable clear). INTENAR is then non-zero.
    - For (b): skip the clear in the VB case. Line 0 has passed since the
      prologue's clear (VB step 1), so bit 5 reads 1 at once.
    - For (c), COP case: DMACON = $8200. No IR2 fetch occurs.
@@ -1395,8 +1422,8 @@ unchanged.
 
 ### 5.1 Memory layout
 
-Every program clears the overlay first (a write to $BFE001, the CIA-A
-port), so the low $000000-$07FFFF area used for Copper lists and
+Every program clears the overlay first (CIA-A DDRA, $BFE201, = $03, then a
+write of 0 to $BFE001, the CIA-A port; 2.1), so the low $000000-$07FFFF area used for Copper lists and
 DMA-channel data regions (2.1) is reachable for both CPU writes and
 channel fetches; without it, measured, the region answers no access at
 all. This package's own map: LIST1-LIST4 at $001000/$001200/$001400/
@@ -1468,17 +1495,20 @@ location-register value at the moment its strobe was written: the value
 that Run 3 held at the strobe was B, and the first fetch is A's. 
 `P4-Run3-reorder` alone cannot isolate "the value at the strobe" (COP2LC
 holds C both at the strobe and at DMA-on), so it repeats `P4-Run2`'s clause
-with C. `P4-Run3-PAIR` grades Run 3 and Run 3-reorder together, as the
-specification's own pair (P4 items 4 and 6). All five are red on both
+with C. `P4-Run3-PAIR` grades Run 3 and Run 3-reorder together; the
+specification groups Run 2, Run 3 and Run 3-reorder (P4 items 4 and 6),
+Run 2 is `P4-Run2`'s line, and the pair line repeats `P4-Run3` and
+`P4-Run3-reorder` in one conjunction. All five are red on both
 cores. The comparator contrasts `P4-CTRL` and `P4-CTRL-C` read B's and C's
 IR1 through the same comparator and are green on both cores.
 
 ### 5.4 The plain run
 
-Measured, on both cores: 125 passed, 5 failed, 13 MEASURED lines and no
+Measured, on both cores: 123 passed, 5 failed, 17 MEASURED lines and no
 RECORDED line. The five failures are `P4`, `P4-Run2`, `P4-Run3`,
 `P4-Run3-reorder` and `P4-Run3-PAIR`. Both cores print the same lines, except
-for the three counts of the `P8d` lines (5.6). A line whose
+for the three counts of the `P8d` lines and the count of the `P8-VB-DEV` line
+(5.6). A line whose
 preconditions did not hold prints `RECORDED: <label> NOT GRADED` and
 neither PASS nor FAIL; none does in the plain run.
 
@@ -1495,23 +1525,11 @@ $010000-$017FFF, SPR $018000-$01FFFF, AUD0 $020000-$027FFF, AUD1
 $028000-$02FFFF, AUD2 $030000-$037FFF, AUD3 $038000-$03FFFF, DSK
 $040000-$047FFF, BLT $048000-$04FFFF, COP $050000-$057FFF.
 
-Refresh recognition (2.3): measured, on prog_p1.bin's captured log, every
-RAM read where the refresh port reads asserted is at word address 0, and at
-least one such read exists, the same signature 5.1 measured for P1/P2/P4,
-checked directly against the port. Measured again on prog_p3_run_base.bin's
-captured log: at least one refresh-asserted read exists, and none of them
-falls inside any of the nine regions. Both lines carry no claim id. Since
-every one of those regions starts at $10000 or above, a word-address-0 read
-can never fall inside one; P3's region-bounded checks therefore exclude word
-address 0 directly, exactly as P1/P2/P4 do, rather than sampling the
-refresh port cycle by cycle for every access. p.282 lists REFPTR ($028) as
-"writeable for test purposes only, and should never be written by the
-microprocessor". Measured, on both cores: with REFPTR written ($8100, once,
-after the prologue) in prog_p1_refptr.bin and prog_p3_refptr.bin, each
-reaching DONE, every refresh-asserted read stays at word address 0 and no
-refresh-asserted access falls inside a region, so both lines stay PASS. A
-write of REFPTR has no observable effect at this boundary on either core,
-and neither line has a stimulus that reddens it; their records say so.
+Refresh recognition (2.3): every capture steps the simulation one clk_sys
+cycle at a time and drops the accesses logged while the `refresh` port reads
+asserted; P1, P2, P3 and P4 all use it. No line grades the recognition
+itself, and p.282's REFPTR ($028, "writeable for test purposes only")
+is not written by any program.
 
 Disk DMA (section 4 item 12; measured and not graded): the harness's `floppy_config`
 = 0 is one drive (DF0), write-enabled, with no disk image served; the
@@ -1551,9 +1569,9 @@ the next three measure 477,608 samples and 527 rows each, and P6c reads
 FAIL.
 
 P8: three device cases (COP, VB, BLIT) share one grading function applied
-to each device's own bit, marker and event. The BLIT case reuses the DATA1
-region ($002000) established for P3's BLT region; region D there measures
-2048 writes of $FFFF in the graded window on both cores. The COP event is
+to each device's own bit, marker and event. The BLIT case's region D is DATA1
+($002000), below the overlay boundary like the lists (P3's BLT region is at
+$048000); it measures 2048 writes of $FFFF in the graded window on both cores. The COP event is
 the first fetch of the MOVE's IR2 after t(MC); the VB event is the first
 frame wrap stored after t(MC). The wrap boundary measures a record on line
 312 followed by a record on line 0 on both cores; bit 5 reads 0 in the
@@ -1561,7 +1579,8 @@ record before the wrap and 1 in a record at V <= 1 from the wrap on, which
 is the boundary the assertion requires. The poll records stored after t(MC)
 and before the event (the `P8d` lines) number, on fx68k and TG68K: COP 388
 and 400, VB 443 and 456, BLIT 108 and 113. INTENAR bits 14-0 read 0 in all three
-cases.
+cases. The VB device contrast (`P8-VB-DEV`) stores 562 and 710 poll records
+after t(MC), the first at line $40.
 
 P10: list R reuses the LIST1 address ($001000). The five samples (lines
 $38, $48, $58, $68, $78) and the four MOVE executions are located from the
@@ -1585,14 +1604,17 @@ header names one selector and one line.
 | p1_c | P1 | P1-A, P1-B, P1-C, P1-OFFA, P1-OFFB, P1-OFFC | FAIL: P1a, P1b, P1c, P1-OFFa, P1-OFFb, P1-OFFc |
 | p1_d | P1 | P1-SWAP | FAIL: P1, P1-ON-OFF |
 | p1_e | P1 | P1OFF-SWAP | FAIL: P1-OFF, P1-ON-OFF |
+| p1_f | P1 | P1-OFF-FETCH | FAIL: P1-OFF, P1-ON-OFF (fetch clause only) |
+| p1_g | P1 | P1-OFF-BIT7 | FAIL: P1-OFF, P1-ON-OFF (bit-7 clause only) |
 | p2_a | P2 | P2-FIX-DONE-NODONE, P2-OFF-FIX-STRUCT-EMPTY | FAIL: P2-FIX-DONE, P2-OFF-FIX-STRUCT |
 | p2_b | P2 | P2-OFF-FIX-DONE-NODONE, P2-FIX-STRUCT-EMPTY | FAIL: P2-OFF-FIX-DONE, P2-FIX-STRUCT |
 | p2_c | P2 | P2-A, P2-B, P2-C | FAIL: P2a, P2b, P2c |
 | p2_d | P2 | P2-SWAP, P2OFF-SWAP | FAIL: P2, P2-OFF |
-| p3_refptr | P3 | P3-APP-I-REFPTR, P3-REFRESH-REFPTR | no line moves: PASS: P3-APP-I, P3-REFRESH |
+| p2_e | P2 | P2-FETCH | FAIL: P2 (fetch clause only) |
+| p2_f | P2 | P2-BIT4 | FAIL: P2 (bit-4 clause only) |
 | p3_fix | P3 | P3-FIX-Base-NODONE, P3-FIX-BPL-NODONE, P3-FIX-SPR-NODONE, P3-FIX-AUD0-NODONE, P3-FIX-AUD1-NODONE, P3-FIX-AUD2-NODONE, P3-FIX-AUD3-NODONE, P3-FIX-DSK-NODONE, P3-FIX-BLT-NODONE, P3-FIX-COP-NODONE, P3-FIX-M-NODONE | FAIL: P3-FIX-Base, P3-FIX-BPL, P3-FIX-SPR, P3-FIX-AUD0, P3-FIX-AUD1, P3-FIX-AUD2, P3-FIX-AUD3, P3-FIX-DSK, P3-FIX-BLT, P3-FIX-COP, P3-FIX-M |
 | p3_pre | P3 | P3-B, P3-C, P3-D | FAIL: P3b, P3c, P3d |
-| p3_dsk | P3 | P3-A | MEASURED: P3a reads "no access"; NOT GRADED: P3-DSK, P3-ALL |
+| p3_dsk | P3 | P3-A | MEASURED: P3a reads "no access"; NOT GRADED: P3-DSK; RECORDED: P3-ALL (ids withdrawn) |
 | p3_base | P3 | P3-BASE-SWAP | FAIL: P3-BASE, P3-ALL |
 | p3_bpl | P3 | P3-BPL-SWAP | FAIL: P3-BPL, P3-ALL |
 | p3_swaps | P3 | P3-SPR-SWAP, P3-AUD0-SWAP, P3-AUD1-SWAP, P3-AUD2-SWAP, P3-AUD3-SWAP, P3-DSK-SWAP, P3-BLT-SWAP, P3-COP-SWAP, P3-M-SWAP, P3-DSKBYTR-SWAP | FAIL: P3-SPR, P3-AUD0, P3-AUD1, P3-AUD2, P3-AUD3, P3-DSK, P3-BLT, P3-COP, P3-M, P3-DSKBYTR |
@@ -1613,6 +1635,7 @@ header names one selector and one line.
 | p8_bnd_b | P8 | P8-VB-BOUNDARY-B | FAIL: P8-VB-BOUNDARY; NOT GRADED: P8-VB, P8 |
 | p8_d | P8 | P8-COP-D, P8-VB-D, P8-BLIT-D | FAIL: P8d-COP, P8d-VB, P8d-BLIT; NOT GRADED: P8-COP, P8-VB, P8-BLIT, P8 |
 | p8_cop | P8 | P8-COP-SWAP | FAIL: P8-COP, P8 |
+| p8_cop3 | P8 | P8-COP-SWAP-III | FAIL: P8-COP, P8 (clause (iii) only) |
 | p8_vb | P8 | P8-VB-SWAP | FAIL: P8-VB, P8 |
 | p8_blit | P8 | P8-BLIT-SWAP | FAIL: P8-BLIT, P8 |
 | p8_dev | P8 | P8-COP-DEV-SWAP, P8-COP-III-SWAP, P8-VB-DEV-SWAP, P8-BLIT-DEV-SWAP | FAIL: P8-COP-DEV, P8-COP-III, P8-VB-DEV, P8-BLIT-DEV |
