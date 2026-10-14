@@ -13,7 +13,9 @@
 ;   P4_MUT_A             -- precondition (a) mutation: DMACON=$8080 written
 ;                           before the DMACONR read
 ;   P4_MUT_B             -- precondition (b) mutation: the whole Run 1
-;                           sequence, DMACON write included, run once early
+;                           sequence, DMACON write included, run once early,
+;                           then Copper DMA off again (DMACON = $0080)
+;                           before MS
 ;   P4_MUT_C             -- precondition (c) mutation: wait for a frame
 ;                           wrap between M1 and the DMACON write
 
@@ -34,7 +36,7 @@ start:
 
         move.w  DMACONR(a0),RESULTS+4   ; the program's very first action
 
-        CLEAR_OVL
+        CLEAR_OVL_DDR
         move.w  #$7FFF,INTENA(a0)
         move.w  #$3FFF,INTREQ(a0)
 
@@ -71,6 +73,11 @@ start:
         blt.s   .w1
         cmpi.w  #$C0,d1
         bgt.s   .w1
+
+        ifd     P4_MUT_B
+        move.w  #$0080,DMACON(a0)       ; precondition (b) mutation: Copper DMA
+                                         ; off again before MS (p.30: off at start)
+        endif
 
         move.w  #9,MARKBUF+4             ; MS: precedes the first
                                           ; location-register write

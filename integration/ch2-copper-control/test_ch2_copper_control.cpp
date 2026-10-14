@@ -37,10 +37,9 @@
 // compared video spans measure equal (SPECIFICATION.md 5.6), so LACE is
 // not an input that falsifies V1. P6c's own record uses BEAMCON0.
 // NMH_MUTATE=P3-A runs Base without its second DSKLEN write, so region DSK
-// is silent in Base: P3a prints that as a MEASURED line and P3-DSK and
-// P3-ALL are not graded; no line is graded on it, so it has no record.
-// NMH_MUTATE=P3-APP-I-REFPTR and NMH_MUTATE=P3-REFRESH-REFPTR run a program
-// that writes REFPTR ($028); see the two `none impossible` records.
+// is silent in Base: P3a prints that as a MEASURED line, P3-DSK prints
+// NOT GRADED and P3-ALL prints a RECORDED line (its ids withdrawn); no line
+// is graded on it, so it has no record.
 //
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: the program stores $DEAD instead of $BEEF -- measured FAIL on "FIXTURE", both cores
 // MUTATION P1-FIX-DONE stimulus red NMH_MUTATE=P1-FIX-DONE-NODONE: prog_nodone.bin, which never stores DONE, in place of prog_p1.bin -- measured FAIL on "P1-FIX-DONE", both cores
@@ -57,6 +56,10 @@
 // MUTATION P1-OFF stimulus red NMH_MUTATE=P1OFF-SWAP: prog_p1.bin's capture (COPEN set) graded in place of prog_p1_off.bin's -- measured FAIL on "P1-OFF", both cores
 // MUTATION P1-ON-OFF stimulus red NMH_MUTATE=P1-SWAP: prog_p1_off.bin's capture graded in place of prog_p1.bin's, so the COPEN-set half fails -- measured FAIL on "P1-ON-OFF", both cores
 // MUTATION P1-ON-OFF stimulus red NMH_MUTATE=P1OFF-SWAP: prog_p1.bin's capture graded in place of prog_p1_off.bin's, so the COPEN-clear half fails -- measured FAIL on "P1-ON-OFF", both cores
+// MUTATION P1-OFF stimulus red NMH_MUTATE=P1-OFF-FETCH: prog_p1_off_mut_late.bin (DMACON=$8280 at M1, M2 at once, the clear of bit 7 written after the next frame wrap) graded in place of prog_p1_off.bin's, so the fetch clause fails while DMACONR bit 7 reads 0 -- measured FAIL on "P1-OFF", both cores
+// MUTATION P1-OFF stimulus red NMH_MUTATE=P1-OFF-BIT7: prog_p1_mut_b.bin's capture (DMACON=$8080: no fetch, DMACONR bit 7 reads 1) graded in place of prog_p1_off.bin's, so the bit-7 clause fails alone -- measured FAIL on "P1-OFF", both cores
+// MUTATION P1-ON-OFF stimulus red NMH_MUTATE=P1-OFF-FETCH: prog_p1_off_mut_late.bin's capture graded in place of prog_p1_off.bin's, so the fetch clause of the COPEN-clear half fails -- measured FAIL on "P1-ON-OFF", both cores
+// MUTATION P1-ON-OFF stimulus red NMH_MUTATE=P1-OFF-BIT7: prog_p1_mut_b.bin's capture graded in place of prog_p1_off.bin's, so the bit-7 clause of the COPEN-clear half fails -- measured FAIL on "P1-ON-OFF", both cores
 // MUTATION P2-FIX-DONE stimulus red NMH_MUTATE=P2-FIX-DONE-NODONE: prog_nodone.bin in place of prog_p2.bin -- measured FAIL on "P2-FIX-DONE", both cores
 // MUTATION P2-OFF-FIX-DONE stimulus red NMH_MUTATE=P2-OFF-FIX-DONE-NODONE: prog_nodone.bin in place of prog_p2_off.bin -- measured FAIL on "P2-OFF-FIX-DONE", both cores
 // MUTATION P2-FIX-STRUCT stimulus red NMH_MUTATE=P2-FIX-STRUCT-EMPTY: prog_empty.bin in place of prog_p2.bin -- measured FAIL on "P2-FIX-STRUCT", both cores
@@ -66,10 +69,8 @@
 // MUTATION P2c stimulus red NMH_MUTATE=P2-C: a fixed delay inserted between phase-2 samples, sparse enough to fail the density anchor B2/B3 -- measured FAIL on "P2c", both cores
 // MUTATION P2 stimulus red NMH_MUTATE=P2-SWAP: prog_p2_off.bin's capture (DMACON=$0000, fetches continue) graded in place of prog_p2.bin's -- measured FAIL on "P2", both cores
 // MUTATION P2-OFF stimulus red NMH_MUTATE=P2OFF-SWAP: prog_p2.bin's capture (COPEN cleared, no fetch continues) graded in place of prog_p2_off.bin's -- measured FAIL on "P2-OFF", both cores
-// P3-APP-I and P3-REFRESH are apparatus lines: no claim uid, no page sentence. Their program runs
-// are the same ones P1 and P3 grade; the only input that reaches DONE and moves nothing is REFPTR:
-// MUTATION P3-APP-I none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-APP-I-REFPTR runs prog_p1_refptr.bin, which writes REFPTR=$8100 and reaches DONE, and every refresh-asserted read stays at word address 0 (the line stays PASS), measured on both cores
-// MUTATION P3-REFRESH none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-REFRESH-REFPTR runs prog_p3_refptr.bin, which writes REFPTR=$8100 (byte $10200, inside region BPL, if read as a word address) and reaches DONE, and no refresh-asserted access falls inside a region (the line stays PASS), measured on both cores
+// MUTATION P2 stimulus red NMH_MUTATE=P2-FETCH: prog_p2_mut_fetch.bin's capture (DMACON=$0000 in phase 2, L2's MOVE data rewritten to $0010 before M1: the Copper keeps fetching, INTREQR bit 4 stays 0) graded in place of prog_p2.bin's, so the fetch clause fails alone -- measured FAIL on "P2", both cores
+// MUTATION P2 stimulus red NMH_MUTATE=P2-BIT4: prog_p2_mut_bit4.bin's capture (DMACON=$0080 in phase 2, INTREQ=$8010 written by the program after M2: no fetch, bit 4 reads 1) graded in place of prog_p2.bin's, so the bit-4 clause fails alone -- measured FAIL on "P2", both cores
 // MUTATION P3-FIX-Base stimulus red NMH_MUTATE=P3-FIX-Base-NODONE: prog_nodone.bin in place of Case Base's program -- measured FAIL on "P3-FIX-Base", both cores
 // MUTATION P3-FIX-BPL stimulus red NMH_MUTATE=P3-FIX-BPL-NODONE: prog_nodone.bin in place of Case BPL's program -- measured FAIL on "P3-FIX-BPL", both cores
 // MUTATION P3-FIX-SPR stimulus red NMH_MUTATE=P3-FIX-SPR-NODONE: prog_nodone.bin in place of Case SPR's program -- measured FAIL on "P3-FIX-SPR", both cores
@@ -110,12 +111,12 @@
 // MUTATION P4a-Run3-reorder stimulus red NMH_MUTATE=P4-A-RUN3R: DMACON=$8080 written before the DMACONR read (prog_p4_run3_reorder_mut_a.bin) -- measured FAIL on "P4a-Run3-reorder", both cores
 // MUTATION P4a-CTRL stimulus red NMH_MUTATE=P4-A-CTRL: DMACON=$8080 written before the DMACONR read (prog_p4_ctrl_cop1b_mut_a.bin) -- measured FAIL on "P4a-CTRL", both cores
 // MUTATION P4a-CTRL-C stimulus red NMH_MUTATE=P4-A-CTRLC: DMACON=$8080 written before the DMACONR read (prog_p4_ctrl_cop1c_mut_a.bin) -- measured FAIL on "P4a-CTRL-C", both cores
-// MUTATION P4b-Run1 stimulus red NMH_MUTATE=P4-B-RUN1: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_run1_mut_b.bin) -- measured FAIL on "P4b-Run1", both cores
-// MUTATION P4b-Run2 stimulus red NMH_MUTATE=P4-B-RUN2: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_run2_mut_b.bin) -- measured FAIL on "P4b-Run2", both cores
-// MUTATION P4b-Run3 stimulus red NMH_MUTATE=P4-B-RUN3: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_run3_mut_b.bin) -- measured FAIL on "P4b-Run3", both cores
-// MUTATION P4b-Run3-reorder stimulus red NMH_MUTATE=P4-B-RUN3R: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_run3_reorder_mut_b.bin) -- measured FAIL on "P4b-Run3-reorder", both cores
-// MUTATION P4b-CTRL stimulus red NMH_MUTATE=P4-B-CTRL: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_ctrl_cop1b_mut_b.bin) -- measured FAIL on "P4b-CTRL", both cores
-// MUTATION P4b-CTRL-C stimulus red NMH_MUTATE=P4-B-CTRLC: the whole Run 1 sequence, DMACON write included, run once before M1 (prog_p4_ctrl_cop1c_mut_b.bin) -- measured FAIL on "P4b-CTRL-C", both cores
+// MUTATION P4b-Run1 stimulus red NMH_MUTATE=P4-B-RUN1: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_run1_mut_b.bin) -- measured FAIL on "P4b-Run1", both cores
+// MUTATION P4b-Run2 stimulus red NMH_MUTATE=P4-B-RUN2: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_run2_mut_b.bin) -- measured FAIL on "P4b-Run2", both cores
+// MUTATION P4b-Run3 stimulus red NMH_MUTATE=P4-B-RUN3: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_run3_mut_b.bin) -- measured FAIL on "P4b-Run3", both cores
+// MUTATION P4b-Run3-reorder stimulus red NMH_MUTATE=P4-B-RUN3R: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_run3_reorder_mut_b.bin) -- measured FAIL on "P4b-Run3-reorder", both cores
+// MUTATION P4b-CTRL stimulus red NMH_MUTATE=P4-B-CTRL: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_ctrl_cop1b_mut_b.bin) -- measured FAIL on "P4b-CTRL", both cores
+// MUTATION P4b-CTRL-C stimulus red NMH_MUTATE=P4-B-CTRLC: the whole Run 1 sequence, DMACON write included, run once before M1, then DMACON=$0080 before MS (prog_p4_ctrl_cop1c_mut_b.bin) -- measured FAIL on "P4b-CTRL-C", both cores
 // MUTATION P4c-Run1 stimulus red NMH_MUTATE=P4-C-RUN1: a frame wrap forced between M1 and the DMACON write (prog_p4_run1_mut_c.bin) -- measured FAIL on "P4c-Run1", both cores
 // MUTATION P4c-Run2 stimulus red NMH_MUTATE=P4-C-RUN2: a frame wrap forced between M1 and the DMACON write (prog_p4_run2_mut_c.bin) -- measured FAIL on "P4c-Run2", both cores
 // MUTATION P4c-Run3 stimulus red NMH_MUTATE=P4-C-RUN3: a frame wrap forced between M1 and the DMACON write (prog_p4_run3_mut_c.bin) -- measured FAIL on "P4c-Run3", both cores
@@ -159,9 +160,11 @@
 // MUTATION P8-VB-BOUNDARY stimulus red NMH_MUTATE=P8-VB-BOUNDARY-A: VERTB set from the program at V >= $130, before the wrap, so bit 5 reads 1 in the last record before the wrap (prog_p8_vb_mut_bnd_a.bin) -- measured FAIL on "P8-VB-BOUNDARY", both cores; P8-VB and P8 print NOT GRADED
 // MUTATION P8-VB-BOUNDARY stimulus red NMH_MUTATE=P8-VB-BOUNDARY-B: INTREQ=$0020 written before every poll record, so no record at line 0 or 1 reads bit 5 = 1 (prog_p8_vb_mut_bnd_b.bin) -- measured FAIL on "P8-VB-BOUNDARY", both cores; P8-VB and P8 print NOT GRADED
 // MUTATION P8-COP stimulus red NMH_MUTATE=P8-COP-SWAP: the capture of prog_p8_cop_nomove.bin (the MOVE replaced by COLOR00) graded in place of prog_p8_cop.bin's -- measured FAIL on "P8-COP", both cores
+// MUTATION P8-COP stimulus red NMH_MUTATE=P8-COP-SWAP-III: the capture of prog_p8_cop_mut_iii.bin (INTREQ=$0010 written again once a record reads bit 4 = 1; the MOVE is present) graded in place of prog_p8_cop.bin's, so clause (iii) fails alone -- measured FAIL on "P8-COP", both cores
 // MUTATION P8-VB stimulus red NMH_MUTATE=P8-VB-SWAP: the capture of prog_p8_vb_mut_iii.bin (INTREQ=$0020 written once a record reads bit 5 = 1; the wrap is present) graded in place of prog_p8_vb.bin's -- measured FAIL on "P8-VB", both cores
 // MUTATION P8-BLIT stimulus red NMH_MUTATE=P8-BLIT-SWAP: the capture of prog_p8_blit_mut_iii.bin (INTREQ=$0040 written once a record reads bit 6 = 1; the writes in region D are present) graded in place of prog_p8_blit.bin's -- measured FAIL on "P8-BLIT", both cores
 // MUTATION P8 stimulus red NMH_MUTATE=P8-COP-SWAP: the COP component fails (prog_p8_cop_nomove.bin's capture in its place) -- measured FAIL on "P8", both cores
+// MUTATION P8 stimulus red NMH_MUTATE=P8-COP-SWAP-III: the COP component fails through clause (iii) (prog_p8_cop_mut_iii.bin's capture in its place) -- measured FAIL on "P8", both cores
 // MUTATION P8 stimulus red NMH_MUTATE=P8-VB-SWAP: the VB component fails (prog_p8_vb_mut_iii.bin's capture in its place) -- measured FAIL on "P8", both cores
 // MUTATION P8 stimulus red NMH_MUTATE=P8-BLIT-SWAP: the BLIT component fails (prog_p8_blit_mut_iii.bin's capture in its place) -- measured FAIL on "P8", both cores
 // MUTATION P8-COP-DEV stimulus red NMH_MUTATE=P8-COP-DEV-SWAP: the capture of prog_p8_cop.bin (the MOVE present) graded in place of the contrast's -- measured FAIL on "P8-COP-DEV", both cores
@@ -176,7 +179,7 @@
 // MUTATION P6b stimulus red NMH_MUTATE=P6-B: DMACON=$8200 (COPEN clear) (prog_p6_mut_b.bin) -- measured FAIL on "P6b", both cores
 // MUTATION P6c stimulus red NMH_MUTATE=P6-C3: BEAMCON0 ($1DC, p.293) written with its PAL bit 5 ("Programmable pal mode enable", p.305) clear a frame and a half after MJ, so later frames have the NTSC length (262/263 lines against PAL 312/313, p.24) and the frames differ in length (prog_p6_mut_c3.bin) -- measured FAIL on "P6c", both cores
 // MUTATION P6-BELOW stimulus red NMH_MUTATE=P6-BELOW-SWAP: the values of C1 and C3 exchanged (prog_p6_mut_swap13.bin) -- measured FAIL on "P6-BELOW", both cores
-// MUTATION P6-ORDER stimulus red NMH_MUTATE=P6-ORDER-SWAP: the values of C0 and C1 exchanged (prog_p6_mut_swap01.bin) -- measured FAIL on "P6-ORDER", both cores
+// MUTATION P6-ORDER stimulus red NMH_MUTATE=P6-ORDER-SWAP: the values of C0 and C2 exchanged (prog_p6_mut_swap02.bin) -- measured FAIL on "P6-ORDER", both cores
 // MUTATION P6-i stimulus red NMH_MUTATE=P6-I-SWAP: prog_p6_main.bin (second WAIT unchanged) in place of prog_p6_wait2_c1.bin -- measured FAIL on "P6-i", both cores
 // MUTATION P6-ii stimulus red NMH_MUTATE=P6-II-SWAP: prog_p6_main.bin (third WAIT unchanged) in place of prog_p6_wait3_b0.bin -- measured FAIL on "P6-ii", both cores
 
@@ -208,7 +211,7 @@ constexpr uint32_t kDoneAddr  = 0x0C0FFE;
 constexpr uint16_t kDoneValue = 0x600D;
 constexpr uint64_t kBootBudget = 6'000'000;
 
-// copctl.i, restated: this package's own low-memory (post-CLEAR_OVL) and
+// copctl.i, restated: this package's own low-memory (post-CLEAR_OVL_DDR) and
 // scratch layout.
 constexpr uint32_t kList1   = 0x001000;
 constexpr uint32_t kList2   = 0x001200;
@@ -246,10 +249,15 @@ struct Capture {
     size_t   loaded = 0;
     bool     released = false;
     std::optional<uint64_t> done;
+    // Every RAM-port access from the release of the CPU to DONE, except the
+    // accesses made while the `refresh` output is asserted (SPECIFICATION.md
+    // 2.3): a refresh access is neither a channel's nor the 68000's.
     std::vector<nmh::RamAccess> log;
     std::vector<std::optional<uint16_t>> peeks;
 };
 
+// The simulation is stepped one clk_sys cycle at a time; the port's
+// `refresh` value after each cycle classifies the accesses that cycle logged.
 Capture run_capture(const std::string& bin, uint64_t run_budget, const std::vector<uint32_t>& peek_addrs) {
     Capture c;
     nmh::Config cfg;
@@ -257,8 +265,19 @@ Capture run_capture(const std::string& bin, uint64_t run_budget, const std::vect
     c.loaded = h.load_program(bin);
     if (!c.loaded) return c;
     c.released = h.boot(kBootBudget).cpu_released;
-    c.done = h.run_until_write(kDoneAddr, kDoneValue, run_budget);
-    c.log = h.ram_log();
+    const uint32_t done_w = kDoneAddr / 2;
+    size_t seen = h.ram_log().size();
+    const uint64_t start = h.cycles();
+    while (!c.done && h.cycles() - start < run_budget) {
+        h.run_cycles(1);
+        const bool refresh = h.ports()->refresh != 0;
+        const auto& log = h.ram_log();
+        for (; seen < log.size(); ++seen) {
+            const nmh::RamAccess& a = log[seen];
+            if (!refresh) c.log.push_back(a);
+            if (!c.done && a.is_write && a.word_addr == done_w && a.data == kDoneValue) c.done = a.cycle;
+        }
+    }
     for (uint32_t a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
     return c;
 }
@@ -284,15 +303,12 @@ FullRun run_full(const std::string& bin, uint64_t run_budget) {
 
 // ---- SPECIFICATION.md 2.3: channel-fetch classification ---------------
 //
-// A read at a non-zero word address that is not a 68000 access. Word
-// address 0 is memory refresh (measured: every refresh access reads word
-// address 0, never any other address), and none of this package's
-// list/data regions include word address 0. The 68000 never reads inside
-// a list or data region (only writes it once, to construct it), so any
-// read there, other than at word address 0, is unambiguously a channel
-// fetch.
+// A read inside a list or data region. Refresh accesses are not in
+// Capture::log (they are recognised by the `refresh` port, run_capture), and
+// the 68000 never reads inside a list or data region (only writes it once,
+// to construct it), so any read there is unambiguously a channel fetch.
 bool is_channel_read(const nmh::RamAccess& a, uint32_t byte_lo, uint32_t byte_hi) {
-    if (a.is_write || a.word_addr == 0) return false;
+    if (a.is_write) return false;
     uint32_t b = a.word_addr * 2;
     return b >= byte_lo && b < byte_hi;
 }
@@ -501,7 +517,7 @@ std::optional<TaggedFetch> first_fetch_among(const std::vector<nmh::RamAccess>& 
                                               const std::vector<std::pair<uint32_t, char>>& regions) {
     std::optional<TaggedFetch> best;
     for (const auto& a : log) {
-        if (a.is_write || a.word_addr == 0 || a.cycle <= t) continue;
+        if (a.is_write || a.cycle <= t) continue;
         uint32_t b = a.word_addr * 2;
         for (const auto& rb : regions) {
             if (b >= rb.first && b < rb.first + 8 && (!best || a.cycle < best->cycle)) {
@@ -579,53 +595,6 @@ P4Guards p4_guards(const P4Result& r) {
           !any_channel_read_in(r.cap.log, kList3, kList3 + 8, 0, *r.t_m1);
     g.c = r.ok && r.precond_c;
     return g;
-}
-
-// ---- SPECIFICATION.md 2.3: refresh recognised by the `refresh` port
-// (P3; P1/P2/P4 use the word-address-0 signature instead) ----------------
-//
-// The harness exposes the RAM-port group's `refresh` output beside
-// ram_address/ram_data, so it is read at the same point in the simulation
-// loop the harness samples the RAM port at. Capture here steps one clk_sys
-// cycle at a time through ports()/run_cycles(1) and records refresh's value
-// each cycle, indexed the same way RamAccess.cycle is (both come
-// from the same cycle counter), so refresh_at(cycle) can be asked about
-// any cycle a RamAccess names.
-struct CaptureR : Capture {
-    std::vector<uint8_t> refresh; // refresh[i] = the port's value at cycle (refresh_base + i)
-    uint64_t refresh_base = 0;
-    bool refresh_at(uint64_t cycle) const {
-        if (cycle < refresh_base) return false;
-        uint64_t i = cycle - refresh_base;
-        return i < refresh.size() && refresh[i] != 0;
-    }
-};
-
-CaptureR run_capture_refresh(const std::string& bin, uint64_t run_budget,
-                              const std::vector<uint32_t>& peek_addrs) {
-    CaptureR c;
-    nmh::Config cfg;
-    nmh::NanomigHarness h(cfg);
-    c.loaded = h.load_program(bin);
-    if (!c.loaded) return c;
-    c.released = h.boot(kBootBudget).cpu_released;
-    const uint32_t done_w = kDoneAddr / 2;
-    c.refresh_base = h.cycles();
-    size_t seen = h.ram_log().size();
-    uint64_t start = h.cycles();
-    while (h.cycles() - start < run_budget) {
-        h.run_cycles(1);
-        c.refresh.push_back(h.ports()->refresh ? 1 : 0);
-        const auto& log = h.ram_log();
-        bool found = false;
-        for (; seen < log.size(); ++seen)
-            if (log[seen].is_write && log[seen].word_addr == done_w && log[seen].data == kDoneValue)
-                { c.done = log[seen].cycle; found = true; break; }
-        if (found) break;
-    }
-    c.log = h.ram_log();
-    for (uint32_t a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
-    return c;
 }
 
 // ---- SPECIFICATION.md 2.8: restarts (P6) -------------------------------
@@ -892,15 +861,25 @@ int main(int argc, char** argv) {
         // ---- COPEN clear: no Copper fetch in L1's region from t(M2) on
         // (which covers the two complete frames after M2), and DMACONR
         // bit 7 reads 0. Own MUTATION: the capture of prog_p1.bin (bit 7
-        // set) graded in its place.
+        // set) graded in its place. The two clauses have a contrast each:
+        // P1-OFF-FETCH grades the capture whose clear of bit 7 comes a
+        // frame after M2 (prog_p1_off_mut_late.bin: the Copper fetches,
+        // DMACONR bit 7 reads 0), P1-OFF-BIT7 the capture of
+        // prog_p1_mut_b.bin ($8080: no fetch, DMACONR bit 7 reads 1).
         Timed swap_off;
-        const Timed& off_main = pick_timed("P1OFF-SWAP", "/prog_p1.bin", off, swap_off);
+        const char* off_alt = has("P1OFF-SWAP")   ? "/prog_p1.bin"
+                            : has("P1-OFF-FETCH") ? "/prog_p1_off_mut_late.bin"
+                            : has("P1-OFF-BIT7")  ? "/prog_p1_mut_b.bin" : nullptr;
+        if (off_alt) swap_off = make_timed(run_capture(dir + off_alt, kSamplerRunBudget, pk));
+        const Timed& off_main = off_alt ? swap_off : off;
         bool off_cond = false;
         if (off_main.done && off_main.t_m2.has_value()) {
             bool no_fetch = !any_channel_read_in(off_main.cap.log, kList1, kList1 + 8, *off_main.t_m2, UINT64_MAX);
             bool bit7_clear = !off_main.cap.peeks.empty() && off_main.cap.peeks[0] &&
                               (*off_main.cap.peeks[0] & 0x0080) == 0;
             off_cond = no_fetch && bit7_clear;
+            checks.note(std::string("P1-OFF clauses: no Copper fetch in L1's region from t(M2) on: ") +
+                        (no_fetch ? "yes" : "no") + "; DMACONR bit 7 reads " + (bit7_clear ? "0" : "1"));
         }
         if (off_guards) checks.expect(off_cond,
             "P1-OFF [p.30,p.222]: control with DMACON=$8200 (COPEN clear, DMAEN set), the Copper makes no "
@@ -932,8 +911,16 @@ int main(int argc, char** argv) {
         checks.expect(off.done, "P2-OFF-FIX-DONE: prog_p2_off.bin reaches DONE");
 
         // The main assertion's capture: prog_p2_off.bin's, in its place, under P2-SWAP.
+        // The two clauses have a contrast each: P2-FETCH grades the capture
+        // in which the Copper keeps fetching while INTREQR bit 4 stays 0
+        // (prog_p2_mut_fetch.bin), P2-BIT4 the capture in which nothing is
+        // fetched while the program sets bit 4 (prog_p2_mut_bit4.bin).
         Timed swap_main;
-        const Timed& main_t = pick_timed("P2-SWAP", "/prog_p2_off.bin", base, swap_main);
+        const char* main_alt = has("P2-SWAP")  ? "/prog_p2_off.bin"
+                             : has("P2-FETCH") ? "/prog_p2_mut_fetch.bin"
+                             : has("P2-BIT4")  ? "/prog_p2_mut_bit4.bin" : nullptr;
+        if (main_alt) swap_main = make_timed(run_capture(dir + main_alt, kSamplerRunBudget, pk));
+        const Timed& main_t = main_alt ? swap_main : base;
         bool base_struct = base.done && base.t_m2.has_value() && base.two_frames;
         bool off_struct = off.done && off.t_m2.has_value() && off.two_frames;
         if (base.done) checks.expect(base_struct,
@@ -1005,6 +992,9 @@ int main(int argc, char** argv) {
                 }
             }
             main_cond = no_fetch && have_post_m2 && bit4_always_zero;
+            checks.note(std::string("P2 clauses: no Copper fetch in L2's region from t(M2) to the end of the second "
+                                    "complete frame after M2: ") + (no_fetch ? "yes" : "no") +
+                        "; INTREQR bit 4 reads 0 in every record stored after M2: " + (bit4_always_zero ? "yes" : "no"));
         }
         if (base_struct && pre_a && pre_b && pre_c) checks.expect(main_cond,
             "P2 ch2-stopping-the-copper.c7.s2,COP2-stopping-the-copper.c10 [p.30]: after "
@@ -1199,18 +1189,20 @@ int main(int argc, char** argv) {
         // strobe": COP2LC holds C both at the strobe and at DMA-on, so its
         // own comparator repeats P4-Run2's clause with C rather than
         // contrasting an earlier value against a later one. Paired with
-        // P4-Run3 (which does hold an earlier value, B, at the strobe) as
-        // the specification's own pair (P4 items 4 and 6: "Run 2, Run 3 and
-        // Run 3-reorder are graded together against this rule"), the two
-        // runs together show the rule discriminating the two orderings.
+        // P4-Run3 (which does hold an earlier value, B, at the strobe), the
+        // two runs together show the rule discriminating the two orderings.
+        // The specification groups Run 2, Run 3 and Run 3-reorder (P4
+        // items 4 and 6: "graded together against this rule"); Run 2 is
+        // P4-Run2's line, so the pair line repeats P4-Run3 and
+        // P4-Run3-reorder in one conjunction.
         if (ok[3]) checks.expect(r[3].first_word_is(kList3),
             "P4-Run3-reorder [p.25]: COP2LC holds C both at the strobe and at DMA-on, so this line "
             "alone repeats P4-Run2's clause with C (see P4-Run3-PAIR for the ordering contrast with "
             "P4-Run3) -- COP1LC=A, COP2LC=B, then COP2LC=C moved before COPJMP2: expect C's IR1");
         else checks.skip("P4-Run3-reorder", "a Run 3-reorder fixture or guard failed");
 
-        // ---- P4-Run3-PAIR: Run 3 and Run 3-reorder graded together, as
-        // the specification's own pair. Its own green demonstration
+        // ---- P4-Run3-PAIR: Run 3 and Run 3-reorder graded together, the
+        // two orderings of the specification's group without Run 2. Its own green demonstration
         // substitutes P4-CTRL's and P4-CTRL-C's captures (B and C through
         // COP1LC/COPJMP1, not through the COP2LC/COPJMP2 path Run 3 and
         // Run 3-reorder use) for Run 3's and Run 3-reorder's own, showing
@@ -1222,8 +1214,9 @@ int main(int argc, char** argv) {
             : (r[2].first_word_is(kList2) && r[3].first_word_is(kList3));
         if (pair_guards) checks.expect(pair_ok,
             "P4-Run3-PAIR [p.25]: Run 3 (COP2LC rewritten to C after the strobe: expect B's IR1) and Run "
-            "3-reorder (COP2LC=C moved before the strobe: expect C's IR1), graded together as the "
-            "specification's own pair");
+            "3-reorder (COP2LC=C moved before the strobe: expect C's IR1), graded together in one "
+            "line; the specification's group Run 2, Run 3 and Run 3-reorder is graded by P4-Run2, "
+            "P4-Run3 and P4-Run3-reorder, and this line repeats the last two");
         else checks.skip("P4-Run3-PAIR", "a Run 3 or Run 3-reorder fixture or guard failed");
 
         // ---- Comparator contrasts, always run: COP1LC loaded with another
@@ -1263,64 +1256,6 @@ int main(int argc, char** argv) {
         };
         constexpr uint32_t kP3PtrOffset = 0x100;
 
-        // ---- Apparatus check, part (i): the refresh port is never
-        // asserted anywhere but word address 0 (SPECIFICATION.md 2.3: "a
-        // refresh access is one made while the `refresh` output ... is
-        // asserted", the recognition P3 uses, unlike P1/P2/P4's own
-        // word-address-0 signature). Checked here against prog_p1.bin's
-        // own captured log (captured for P1), requiring at least
-        // one refresh-asserted read to exist -- otherwise the check would
-        // pass vacuously on a log with no such read at all. The converse is
-        // not asserted: a word-address-0 read can be something other than
-        // refresh (measured: one such read, elsewhere in this same log,
-        // where the refresh port reads clear) -- the port is the finer
-        // signal, which is exactly why P3 uses it instead of the address
-        // alone.
-        CaptureR rc1 = run_capture_refresh(has("P3-APP-I-REFPTR") ? dir + "/prog_p1_refptr.bin"
-                                                                   : dir + "/prog_p1.bin",
-                                           kSamplerRunBudget, {});
-        bool refresh_ok = rc1.loaded && rc1.done.has_value();
-        bool any_read = false, any_refresh_read = false;
-        if (refresh_ok) {
-            for (const auto& a : rc1.log) {
-                if (a.is_write) continue;
-                any_read = true;
-                if (rc1.refresh_at(a.cycle)) {
-                    any_refresh_read = true;
-                    if (a.word_addr != 0) { refresh_ok = false; break; }
-                }
-            }
-        }
-        checks.expect(refresh_ok && any_read && any_refresh_read,
-            "P3-APP-I [SPECIFICATION.md 2.3]: every RAM read where the refresh port reads asserted is "
-            "at word address 0, and at least one such read exists, checked on prog_p1.bin's own "
-            "captured log [not graded against the page -- apparatus check, no claim uid]");
-
-        // ---- Apparatus check, part (ii): the same recognition checked
-        // directly on a P3 capture, inside P3's own regions, rather than
-        // inferred from part (i)'s different addresses. At least one
-        // refresh-asserted read exists, and none of them falls inside any
-        // of the nine regions.
-        CaptureR rc3 = run_capture_refresh(has("P3-REFRESH-REFPTR") ? dir + "/prog_p3_refptr.bin"
-                                                                     : dir + "/prog_p3_run_base.bin",
-                                           kSamplerRunBudget, {});
-        bool part2_ok = rc3.loaded && rc3.done.has_value();
-        bool part2_any_refresh_read = false, part2_none_in_region = true;
-        if (part2_ok) {
-            for (const auto& a : rc3.log) {
-                if (!rc3.refresh_at(a.cycle)) continue;
-                if (!a.is_write) part2_any_refresh_read = true;
-                uint32_t b = a.word_addr * 2;
-                for (int i = 0; i < R_N; ++i)
-                    if (b >= kP3Regions[i].lo && b < kP3Regions[i].hi) part2_none_in_region = false;
-            }
-        }
-        checks.expect(part2_ok && part2_any_refresh_read && part2_none_in_region,
-            "P3-REFRESH [SPECIFICATION.md 2.3]: on prog_p3_run_base.bin's own captured log, at "
-            "least one RAM access where the refresh port reads asserted exists, and none of them "
-            "falls inside any of the nine regions [not graded against the page -- apparatus check, "
-            "no claim uid]");
-
         struct P3CaseResult {
             Capture cap;
             bool ok = false;
@@ -1330,14 +1265,9 @@ int main(int argc, char** argv) {
             std::optional<uint32_t> region_lowest[R_N];
         };
 
-        // Region-bounded access, refresh excluded by word address 0 (as
-        // P1/P2/P4 already do): every one of this package's regions starts
-        // at $10000 or above, so a word-address-0 access -- refresh's own
-        // address, per the apparatus check just above, over a substantial
-        // captured log -- can never fall inside one. The port and the
-        // address method therefore agree on every region-bounded question
-        // this proposition asks; run_capture (the fast path P1/P2/P4 use)
-        // is used here rather than the slow, cycle-stepped refresh capture.
+        // Region-bounded access: Capture::log holds no refresh access (the
+        // `refresh` port, SPECIFICATION.md 2.3), so every read in a region is
+        // a channel's.
         auto run_p3_case = [&](const std::string& binname, uint64_t budget) -> P3CaseResult {
             P3CaseResult r;
             r.cap = run_capture(dir + binname, budget,
@@ -1359,7 +1289,6 @@ int main(int argc, char** argv) {
             uint64_t win_lo = *t_m2, win_hi = frame_range.second;
             for (const auto& a : r.cap.log) {
                 if (a.cycle < win_lo || a.cycle >= win_hi) continue;
-                if (a.word_addr == 0) continue; // refresh
                 uint32_t b = a.word_addr * 2;
                 for (int i = 0; i < R_N; ++i) {
                     if (b < kP3Regions[i].lo || b >= kP3Regions[i].hi) continue;
@@ -1563,7 +1492,9 @@ int main(int argc, char** argv) {
                 "P3-ALL ch2-stopping-the-copper.c8,COP2-stopping-the-copper.c11 [p.30,p.222,p.278]: "
                 "every region other than DSK has an access in Base, each of the nine channel cases "
                 "silences its own region while every other region live in Base stays live, and with "
-                "DMAEN clear no region has an access");
+                "DMAEN clear no region has an access; graded over the part of each channel that Base "
+                "measures (one bitplane, the blitter's D channel only, sprites 1-7 on one shared "
+                "structure), per DMACON enable bit (p.222)");
         } else if (p3_pre) {
             checks.record("P3-ALL [ids withdrawn: ch2-stopping-the-copper.c8,COP2-stopping-the-copper.c11 "
                           "[p.30,p.222,p.278]]: region DSK's own case is not graded this run (region DSK shows "
@@ -1980,13 +1911,17 @@ int main(int argc, char** argv) {
         bool cop_cond = false, vb_cond = false, blit_cond = false;
         bool cop_event_in = false, vb_event_in = false, blit_event_in = false;
         {
-            const Capture& cr = (has("P8-COP-SWAP")) ? nomove : cop;
+            const Capture& cr = (has("P8-COP-SWAP")) ? nomove
+                              : (has("P8-COP-SWAP-III")) ? iii : cop;
             auto t_mc = first_write_cycle(cr.log, kMarkBuf + 6);
             auto t_ev = cop_event(cr);
             if (done_of(cr) && t_mc && t_ev) {
                 cop_event_in = true;
                 auto g = grade_p8_bit(p8_recs(cr), *t_mc, *t_ev, 4);
                 cop_cond = g.zero_before && g.later_one && g.after_first_one;
+                checks.note(std::string("P8-COP clauses: (i) bit 4 reads 0 before the event: ") + (g.zero_before ? "yes" : "no") +
+                            "; (ii) a later record reads 1: " + (g.later_one ? "yes" : "no") +
+                            "; (iii) every record after the first 1 reads 1: " + (g.after_first_one ? "yes" : "no"));
             }
         }
         {
@@ -2082,6 +2017,12 @@ int main(int argc, char** argv) {
             auto t_mc = first_write_cycle(cr.log, kMarkBuf + 6);
             bool ok = done_of(cr) && t_mc.has_value();
             if (ok) for (const auto& r : p8_recs(cr)) if (r.t0 > *t_mc && (r.intreqr & 0x20)) ok = false;
+            if (done_of(cr) && t_mc) {
+                int n = 0, first_v = -1;
+                for (const auto& r : p8_recs(cr)) if (r.t0 > *t_mc) { if (!n) first_v = r.V; ++n; }
+                checks.note("P8-VB-DEV: " + std::to_string(n) + " poll record(s) stored after MC, the first at V=" +
+                            std::to_string(first_v));
+            }
             if (done_of(narrow)) checks.expect(ok, "P8-VB-DEV [p.219]: polling only from V=$40 to V=$F0, bit 5 "
                                                     "never reads 1");
             else checks.skip("P8-VB-DEV", "P8-VB-DEV-FIX-DONE failed");
@@ -2288,10 +2229,10 @@ int main(int argc, char** argv) {
         }
         // On row r1, reading left to right, a C0 (red) run comes first, then
         // the C1 (green) run, then a C2 (blue) run. Own MUTATION
-        // (P6-ORDER-SWAP): the values of C0 and C1 exchanged.
+        // (P6-ORDER-SWAP): the values of C0 and C2 exchanged.
         {
             P6Result sw;
-            if (has("P6-ORDER-SWAP")) sw = analyze_p6(dir + "/prog_p6_mut_swap01.bin");
+            if (has("P6-ORDER-SWAP")) sw = analyze_p6(dir + "/prog_p6_mut_swap02.bin");
             const P6Result& go = (has("P6-ORDER-SWAP")) ? sw : base;
             bool cond = go.ok && go.i0 && go.i1 && go.i2 && *go.i0 < *go.i1 && *go.i1 < *go.i2;
             if (p6_pre) checks.expect(cond,

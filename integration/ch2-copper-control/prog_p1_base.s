@@ -11,8 +11,9 @@
 ;                        without DMAEN) instead of $8280 at step 5
 ;   P1_MUT_SLOWSAMP   -- precondition (c) mutation: a delay inserted between
 ;                        samples (2.4's own contrasting case for B2/B3)
-;   P1_MUT_REFPTR     -- refresh-address stimulus: REFPTR ($028, p.282) is
-;                        written with $8100 right after the prologue
+;   P1_MUT_LATE_CLEAR -- (with P1_BIT7_OFF) the clear of bit 7 is written
+;                        a frame boundary after M2, not before it:
+;                        M1; DMACON = $8280; M2; ...; DMACON = $0080
 ;
 ; P1_BIT7_OFF together with P1_MUT_EARLY_ON or P1_MUT_SLOWSAMP applies that
 ; mutation to the contrasting case's own preconditions. P1_BIT7_OFF with
@@ -25,12 +26,9 @@
         org     PROGRAM_ORG
 
 start:
-        CLEAR_OVL
+        CLEAR_OVL_DDR
         lea     CUSTOM,a0
         CLEAR_DMA_INT
-        ifd     P1_MUT_REFPTR
-        move.w  #$8100,REFPTR(a0)      ; refresh-address stimulus: p.282 lists REFPTR as writeable
-        endif
 
         ; List L1 at LIST1: $0180,$0F00 (MOVE COLOR00) ; $FFFF,$FFFE
         move.l  #$01800F00,LIST1
@@ -64,6 +62,12 @@ start:
         move.w  #1,MARKBUF             ; M1
 
         ifd     P1_BIT7_OFF
+        ifd     P1_MUT_LATE_CLEAR
+        move.w  #$8280,DMACON(a0)      ; Copper DMA on; M2 follows at once
+        move.w  #2,MARKBUF+2           ; M2
+        WAIT_V_FAST $10,$30            ; past the next frame wrap
+        move.w  #$0080,DMACON(a0)      ; the clear of bit 7, a frame after M2
+        else
         ifd     P1_MUT_OFF_NO_DMAEN
         move.w  #$0000,DMACON(a0)      ; OFF precondition (b) mutation: no
                                         ; bit selected, so DMAEN stays clear
@@ -76,6 +80,7 @@ start:
         move.w  #$8200,DMACON(a0)      ; contrasting case: bit 7 clear
         endif
         endif
+        endif
         else
         ifd     P1_MUT_NO_DMAEN
         move.w  #$8080,DMACON(a0)      ; precondition (b) mutation
@@ -84,7 +89,9 @@ start:
         endif
         endif
 
+        ifnd    P1_MUT_LATE_CLEAR
         move.w  #2,MARKBUF+2           ; M2
+        endif
 
         move.w  DMACONR(a0),RESULTS+4   ; step 6: read DMACONR and store it
 

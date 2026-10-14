@@ -1,4 +1,4 @@
-; prog_p4_run3_mut_a.s -- P4 Run 3, precondition (a) mutation: DMACON=$8280 written before the DMACONR read. See prog_p4_base.s.
+; prog_p4_run3_mut_a.s -- P4 Run 3, precondition (a) mutation: DMACON=$8080 written before the DMACONR read. See prog_p4_base.s.
 P4_RUN2 equ 1
 P4_RUN3 equ 1
 P4_MUT_A equ 1

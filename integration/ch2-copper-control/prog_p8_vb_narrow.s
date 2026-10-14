@@ -26,7 +26,8 @@ start:
         cmpi.w  #$40,d1
         blt.s   .w1
 
-        move.w  #7,MARKBUF+6              ; MC (no INTREQ write in this contrast)
+        move.w  #$0020,INTREQ(a0)         ; clear bit 5, as the main VB case does
+        move.w  #7,MARKBUF+6              ; MC
 
         ; poll (SAMPLE) only until V reaches $F0, then stop.
 .w2:    SAMPLE

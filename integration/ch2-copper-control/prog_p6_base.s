@@ -9,7 +9,7 @@
 ;                     the final WAIT (never executes)
 ;   P6_MUT_B       -- precondition (b) mutation: DMACON = $8200 (COPEN clear)
 ;   P6_MUT_C       -- precondition (c) mutation: LACE set (2.5's own V1 contrast)
-;   P6_MUT_SWAP01  -- the values of C0 and C1 exchanged: the colour that
+;   P6_MUT_SWAP02  -- the values of C0 and C2 exchanged: the colour that
 ;                     comes first on the line is no longer red
 ;   P6_MUT_SWAP13  -- the values of C1 and C3 exchanged: the colour that
 ;                     appears lower on the screen is no longer yellow
@@ -45,27 +45,27 @@ start:
         endif
 
         ; step 3: List O at LIST1. C0-C3 = $0F00,$00F0,$000F,$0FF0.
-        ifd     P6_MUT_SWAP01
-        move.l  #$018000F0,LIST1          ; mutation: the first MOVE sets C1's value
+        ifd     P6_MUT_SWAP02
+        move.l  #$0180000F,LIST1          ; mutation: the first MOVE sets C2's value
         else
         move.l  #$01800F00,LIST1          ; MOVE COLOR00,C0
         endif
         move.l  #$6061FFFE,LIST1+4        ; WAIT1: unchanged by any case
-        ifd     P6_MUT_SWAP01
-        move.l  #$01800F00,LIST1+8        ; mutation: the second MOVE sets C0's value
-        else
         ifd     P6_MUT_SWAP13
         move.l  #$01800FF0,LIST1+8        ; mutation: the second MOVE sets C3's value
         else
         move.l  #$018000F0,LIST1+8        ; MOVE COLOR00,C1
-        endif
         endif
         ifd     P6_WAIT2_C1
         move.l  #$60C1FFFE,LIST1+12       ; contrast (i): second WAIT $60A1 -> $60C1
         else
         move.l  #$60A1FFFE,LIST1+12
         endif
+        ifd     P6_MUT_SWAP02
+        move.l  #$01800F00,LIST1+16       ; mutation: the third MOVE sets C0's value
+        else
         move.l  #$0180000F,LIST1+16       ; MOVE COLOR00,C2
+        endif
         ifd     P6_WAIT3_B0
         move.l  #$B061FFFE,LIST1+20       ; contrast (ii): third WAIT $A061 -> $B061
         else

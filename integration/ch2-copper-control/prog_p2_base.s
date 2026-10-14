@@ -12,6 +12,14 @@
 ;                      master enable bit 14 left clear)
 ;   P2_MUT_SLOWSAMP -- precondition (c) mutation: a delay inserted between
 ;                      phase-2 samples
+;   P2_MUT_FETCH    -- clause contrast (fetching): phase 2 writes DMACON =
+;                      $0000 (the Copper keeps fetching), and L2's MOVE data
+;                      word is rewritten to $0010 before M1, so the MOVE
+;                      clears INTREQ bit 4 instead of setting it
+;   P2_MUT_BIT4     -- clause contrast (data placement): phase 2 writes
+;                      DMACON = $0080 (no fetch), and the program sets INTREQ
+;                      bit 4 itself (INTREQ = $8010) after M2 instead of
+;                      clearing it
 
         include "nanomig.i"
         include "copctl.i"
@@ -19,7 +27,7 @@
         org     PROGRAM_ORG
 
 start:
-        CLEAR_OVL
+        CLEAR_OVL_DDR
         lea     CUSTOM,a0
         CLEAR_DMA_INT
 
@@ -86,15 +94,26 @@ start:
         cmpi.w  #$C0,d1
         bgt.s   .w2
 
+        ifd     P2_MUT_FETCH
+        move.w  #$0010,LIST1+2          ; clause contrast: L2's MOVE now clears bit 4
+        endif
         move.w  #1,MARKBUF              ; M1
         ifd     P2_MAIN_OFF
         move.w  #$0000,DMACON(a0)       ; contrasting case: no bit selected
         else
+        ifd     P2_MUT_FETCH
+        move.w  #$0000,DMACON(a0)       ; clause contrast: the Copper keeps fetching
+        else
         move.w  #$0080,DMACON(a0)       ; the main case: clear bit 7 (COPEN)
+        endif
         endif
         move.w  #2,MARKBUF+2            ; M2
 
+        ifd     P2_MUT_BIT4
+        move.w  #$8010,INTREQ(a0)       ; clause contrast: the program sets bit 4
+        else
         move.w  #$0010,INTREQ(a0)       ; clear bit 4 again
+        endif
 
         ; Phase-2 sampler: dense enough to keep the anchor-B2 density (>= 7
         ; records/line, SPECIFICATION.md 2.4) on both cores. The main/off

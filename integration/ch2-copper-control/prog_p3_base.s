@@ -25,9 +25,6 @@
 ;                    otherwise)
 ;   P3_MUT_D      -- precondition (d) mutation: 2.4's own sparse-sampler
 ;                    contrast for B2/B3 (Base pattern otherwise)
-;   P3_MUT_REFPTR -- refresh-address stimulus: REFPTR ($028, p.282) is
-;                    written with $8100 right after the prologue (Base
-;                    pattern otherwise)
 ;
 ; Every channel's own pointer or location register is written PTR_OFFSET
 ; (256 bytes, $100) above its region's own start, not at the region's first
@@ -62,9 +59,6 @@ start:
         CLEAR_OVL_DDR
         lea     CUSTOM,a0
         CLEAR_DMA_INT
-        ifd     P3_MUT_REFPTR
-        move.w  #$8100,REFPTR(a0)       ; refresh-address stimulus: p.282 lists REFPTR as writeable
-        endif
 
         ; step 2: bitplane registers (p.59, p.60, p.63, p.64).
         move.w  #$1200,BPLCON0(a0)

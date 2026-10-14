@@ -6,20 +6,21 @@
 ; is written as literal hex per SPECIFICATION.md 2.2 and never needs these
 ; symbols.
 COPCON          equ     $02E
-REFPTR          equ     $028
 COP1LCH         equ     $080
 COP2LCH         equ     $084
 COPJMP1         equ     $088
 COPJMP2         equ     $08A
 
-; DFF register not in nanomig.i (not a custom DMA register): any write here
-; clears the overlay, so the low $000000-$07FFFF region becomes reachable
-; for both CPU and DMA access. All this package's Copper lists and
-; DMA-channel data regions sit below $80000 (SPECIFICATION.md 2.1), so
+; CIA-A (SPECIFICATION.md 2.1, p.339, p.223): DDRA ($BFE201) = $03 makes
+; PRA bits 1-0 outputs, and PRA ($BFE001) bit 0 (OVL) = 0 disables the
+; overlay, so the low $000000-$07FFFF region is Chip RAM. All this
+; package's Copper lists and DMA-channel data regions sit below $80000, so
 ; every program clears the overlay first.
 CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
 
-CLEAR_OVL       macro
+CLEAR_OVL_DDR   macro
+                move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
                 endm
 
@@ -31,7 +32,7 @@ CLEAR_DMA_INT   macro
                 endm
 
 ; This package's own low-memory area ($000000-$07FFFF), reachable only
-; after CLEAR_OVL: Copper lists and DMA-channel data regions. Each program
+; after CLEAR_OVL_DDR: Copper lists and DMA-channel data regions. Each program
 ; uses only the labels it needs; a fresh NanomigHarness/mem_ instance is
 ; created per run, so the same addresses are reused safely across programs.
 LIST1           equ     $001000
@@ -78,21 +79,10 @@ SLOWDELAY       macro
 .sd\@:          dbra    d6,.sd\@
                 endm
 
-; ---- P3 and P5-P12's own additions (the lines above are still all
-; P1/P2/P4 use). --------------------------------------------------------
-
-; CIA-A DDRA (SPECIFICATION.md 2.1, p.339): P3 and P5-P12's own overlay
-; clear writes this before CIAAPRA, unlike CLEAR_OVL above, which P1/P2/P4
-; already use without it.
-CIAADDRA        equ     $BFE201
-
-CLEAR_OVL_DDR   macro
-                move.b  #$03,CIAADDRA
-                move.b  #0,CIAAPRA
-                endm
+; ---- Further custom registers --------------------------------------------
 
 ; Custom registers Appendix B gives but nanomig.i and the block above do
-; not define, needed by P3 and P5-P12's own CPU-side (a0-relative)
+; not define, needed by this package's own CPU-side (a0-relative)
 ; accesses. Copper-list *content* is written as literal hex or with these
 ; same symbols per SPECIFICATION.md 2.2; neither needs new symbols beyond
 ; this set.
