@@ -7,12 +7,12 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Question: when COPJMP2 (p. 26, "Restart Copper from address contained in COP2LC") is written after the start of a frame with Copper DMA off, and Copper DMA is then turned on in the same frame, must the Copper's first fetch be at COP2LC, so that NanoMig has to stop the frame start's standing COP1LC request from outranking the later strobe, where NanoMig fetches from COP1LC? Closes when the change is made and `P4`, `P4-Run2` and `P4-Run3-reorder` are green on both cores, or when an Amiga specialist records that the standing restart outranks the later strobe, in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
-| **Scope** | NanoMig's Copper (`agnus_copper.v`) on fx68k and on TG68K; Copper DMA off since the start of the frame, COPJMP2 written on line 64 of a PAL frame, Copper DMA turned on in the same frame, no Copper DMA cycle between the frame start and the strobe; chip revision unknown, hardware not measured |
+| **Scope** | NanoMig's Copper (`agnus_copper.v`) on fx68k and on TG68K; Copper DMA off since the start of the frame, COPJMP2 written on a line from $40 to $C0 of a PAL frame, Copper DMA turned on in the same frame, no Copper DMA cycle between the frame start and the strobe; chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 2 — Coprocessor Hardware, printed pp. 25, 26, 30, 32; 3 — Playfield Hardware, printed pp. 65 and 88 (examples); Appendix A, printed pp. 263 and 276; 7 — System Control Hardware, printed p. 219 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids by assertion: `P4`: `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (p. 30); `P4-Run2` [pp. 25, 26, 30, 276], `P4-Run3` [p. 25], `P4-Run3-reorder` [p. 25] and `P4-Run3-PAIR` [p. 25] carry no claim id, only their page tags |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L196-L199) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L196-L199); inherited (MiSTer has the same code; TC64's lines are identical) |
 | **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control): `make -k -C integration/ch2-copper-control test` (or `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
-| **Assertions** | 5 red on each core (125 passed, 5 failed; these five are the only reds), each observed at a first fetch at A, $001000: `P4` (expected A for Run 1 and B for Run 2), `P4-Run2` (B), `P4-Run3` (B), `P4-Run3-reorder` (C) and `P4-Run3-PAIR` (B and C). `P4-CTRL` and `P4-CTRL-C` are green, fetching $001200 and $001400, and so are the preconditions `P4a`, `P4b` and `P4c` |
+| **Assertions** | 5 red on each core (123 passed, 5 failed; these five are the only reds), each observed at a first fetch at A, $001000: `P4` (expected A for Run 1 and B for Run 2), `P4-Run2` (B), `P4-Run3` (B), `P4-Run3-reorder` (C) and `P4-Run3-PAIR` (B and C). `P4-CTRL` and `P4-CTRL-C` are green, fetching $001200 and $001400, and so are the preconditions `P4a`, `P4b` and `P4c` |
 | **Verdict of the four** | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B, where NanoMig starts Run 2 at A. Their mechanisms differ in a way the package's addresses do not separate: WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2; Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending while Copper DMA is off, but merges it with the COPJMP2 and starts at COP1LC \| COP2LC, which for the package's lists, $001000 and $001200, is B's address. Hardware: not measured |
 | **Effort** | S — two extra clear conditions on the `strobe1` and `strobe2` latches in `agnus_copper.v` lines 250-266, not run |
 
@@ -87,17 +87,17 @@ The assertions are graded in [`test_ch2_copper_control.cpp`](../../integration/c
 
 | assertion | grading call and label |
 |---|---|
-| **P4** | `test_ch2_copper_control.cpp:1169-1170` |
-| **P4-Run2** | `test_ch2_copper_control.cpp:1186-1187` |
-| **P4-Run3** | `test_ch2_copper_control.cpp:1191-1192` |
-| **P4-Run3-reorder** | `test_ch2_copper_control.cpp:1206-1207` |
-| **P4-Run3-PAIR** | `test_ch2_copper_control.cpp:1223-1224` |
-| **P4-CTRL** | `test_ch2_copper_control.cpp:1235-1236` |
-| **P4-CTRL-C** | `test_ch2_copper_control.cpp:1238-1239` |
+| **P4** | `test_ch2_copper_control.cpp:1159-1160` |
+| **P4-Run2** | `test_ch2_copper_control.cpp:1176-1177` |
+| **P4-Run3** | `test_ch2_copper_control.cpp:1181-1182` |
+| **P4-Run3-reorder** | `test_ch2_copper_control.cpp:1198-1199` |
+| **P4-Run3-PAIR** | `test_ch2_copper_control.cpp:1215-1216` |
+| **P4-CTRL** | `test_ch2_copper_control.cpp:1228-1229` |
+| **P4-CTRL-C** | `test_ch2_copper_control.cpp:1231-1232` |
 
-**No vertical blank lies between the strobe and the fetch.** `P4c`, the package's precondition (c) (no frame wrap and no record with V ≤ 25 between MS and the first fetch), holds on all six captures on both cores. In every run the last record stored before MS reads line 64, no record is stored between MS and the first fetch, and the fetch follows MS by 420 clk_sys (Runs 1 and 2, `P4-CTRL`) or 516 (Run 3 and its reorder) on fx68k, 428 or 524 on TG68K: 52½ to 65½ colour clocks of 8 clk_sys, in a PAL line of 227. The strobe, DMA-on and the first fetch all lie on line 64 or at the turn to line 65, and the last vertical blank before them is the one that began this frame. The two cores write the registers at different times and read the same list, so the Copper, not the CPU, decides the address.
+**No vertical blank lies between the strobe and the fetch.** `P4c`, the package's precondition (c), holds on all six captures on both cores: the last record stored before MS and the record following the first record stored after the first fetch lie in the same frame and both read V > 25 (p. 219). Each capture's first fetch is at the same address on fx68k and on TG68K, so the Copper, not the CPU, decides the address.
 
-**Where the start address comes from.** The same three programs, each with one change before MS (COP1LC pointed at a fourth list D, $001600, a WAIT that never ends; COPJMP1; Copper DMA on for three beam records and off again, DMACON = $0080), a measurement for this page, not a graded assertion:
+**Where the start address comes from.** The same three programs, each with one change before MS (COP1LC pointed at a fourth list D, $001600, a WAIT that never ends; COPJMP1; Copper DMA on for three beam records and off again, DMACON = $0080), a measurement that `make test` does not print and no assertion grades:
 
 | scratch variant | first fetch after DMA-on, fx68k and TG68K | the pages |
 |---|---|---|
