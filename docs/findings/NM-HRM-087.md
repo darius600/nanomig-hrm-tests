@@ -212,9 +212,8 @@ The nineteen reds are the same in both OCS configurations and on both cores:
 
 **Nothing latches, with or without a pulse.** `P1` records that neither port's
 pulse was captured. `P7` is red because the reads in lines 0 to 19 after a
-field with no pulse are not one value, and `P7(c)` is not evaluated: its
-population, the no-pulse fields whose next vertical blank reads one value, is
-empty. The ECS runs print it outright — *"every phase-B sample
+field with no pulse are not one value, and `P7(c)` is not evaluated because
+`P7(b)` failed for every field with a population (4 of 4, in OCS/PAL and in OCS/NTSC). The ECS runs print it outright — *"every phase-B sample
 measured current (no pen capture, no end-of-field latch)"* — and the RTL above
 reads the counter the same way in both chipsets. No choice of port, pin,
 polarity or pulse width reaches a counter that has no latch in front of it.
@@ -332,8 +331,7 @@ here and an LPEN of 1 would look like 0` in all four.
   stops it at 21 and 29. NanoMig's hardwired end of vertical blanking is
   line 25 in PAL and 20 in NTSC, WinUAE releases at the same lines, and
   Copperline does not release at all until the next latch.
-  `integration/ch8-light-pen-beam` grades the release only where every page agrees, from line 21 in NTSC and
-  29 in PAL, and reports the line.
+  `integration/ch8-light-pen-beam` grades the release at line 20 in both standards (`P8(release-at-20)`, `P9(boundary)` and `P9(release)`).
 
 ## Independent evidence
 
@@ -463,7 +461,7 @@ than NanoMig's `nanomig.v` does.
 
 What it would change:
 
-- all nineteen red lines would turn green on fx68k and on TG68K; a copy of the RTL with these four changes, in the form the diff above abridges, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; `make test` does not run that copy, so these counts are a reading of the change, not a result of the repository's RTL;
+- the change addresses the nineteen red lines on fx68k and on TG68K. The package's specification (§8, "Conforming implementation") describes a private copy of the RTL outside the repository that implements this reading of the latch; `make test` does not run it, and no result of it is stated here;
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
