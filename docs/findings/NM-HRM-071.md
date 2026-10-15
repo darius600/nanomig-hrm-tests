@@ -12,7 +12,7 @@
 | **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 296, 297, 300, 302 and 303; Appendix A, printed pp. 271 and 284; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: the red assertions `PC2w` and `C11` carry none; no assertion carries p. 101's `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`, `CH4-size.c6`, `CH4-size.c7`, `CH4-size.c8`, `CH4-size.c9`, p. 124's `CH4-hw.c10`, `CH4-p124.c6`, or p. 128's `CH4-p128.c3`, `CH4-res.c3` |
 | **Module** | `denise.v`, `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L391) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L361); MiSTer and TC64 carry the same statements: inherited |
 | **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b): `make -k -C integration/ch4-shres-sprite-b test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero. [`integration/ch4-shres-bitplane`](../../integration/ch4-shres-bitplane): `make -k -C integration/ch4-shres-bitplane test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
-| **Assertions** | 1 red on each core in `integration/ch4-shres-sprite-b`: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails. 1 red on each core in `integration/ch4-shres-bitplane`: `C11` (p. 101) — expected the run of every baseline sprite line that shows one to be 32 ± 1 hires periods long in F7, F8 and F10, observed 16 in F7 and F8 and 32 in F10; `86 passed, 46 failed` on fx68k and on TG68K. `C11` carries no claim id |
+| **Assertions** | 1 red on each core in `integration/ch4-shres-sprite-b`: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails. 1 red on each core in `integration/ch4-shres-bitplane`: `C11` (p. 101) — expected the run of every baseline sprite line that shows one to be 32 ± 1 hires periods long in F7, F8, F9 and F10, observed 16 in F7, F8 and F9 and 32 in F10; `86 passed, 49 failed` on fx68k and on TG68K. `C11` carries no claim id |
 | **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say*. Hardware: not measured |
 | **Effort** | none — no RTL change asked: what changes, if anything, is a printed sentence on p. 101 |
 | **See also** | [NM-HRM-016](NM-HRM-016.md) (SuperHires sprite colour encoding), [NM-HRM-019](NM-HRM-019.md) (SHSH1, SuperHires sprite positioning) |
@@ -185,22 +185,21 @@ SPR0POS = `$5060` (HSTART `$C0`, SHSH1 and SH0 clear), over a playfield of value
 its sixteen pixels. One sample of the video output is one hires period, 70 ns (`R0: w=1 phi=0`). The run of a sprite line is the
 longest stretch of samples that differ from the same positions on the playfield lines 31 to 35, just above the sprite, and
 `C11` requires it to be 32 ± 1 hires periods on every baseline line that shows one: p. 101's sixteen low-resolution pixels at two
-hires periods each. F9 is measured and is not in `C11`'s comparator.
+hires periods each. F9 is in `C11`'s comparator.
 
 ```text
 MEASURED: F7 baseline sprite lines: 21 graded, 21 show a run, ends [269,284], length 16..16 hires periods
 MEASURED: F8 sprite lines: 60 graded, 60 show a run, ends [269,284], length 16..16
 MEASURED: F9 sprite lines: 60 graded, 60 show a run, ends [269,284], length 16..16
 MEASURED: F10 baseline sprite lines: 12 graded, 12 show a run, ends [269,300], length 32..32
-FAIL: C11 p.101: the run of every baseline sprite line that shows one is 32 +- 1 hires periods long in F7, F8 and F10, lengths F7 16..16, F8 16..16, F10 32..32
+FAIL: C11 p.101: the run of every baseline sprite line that shows one is 32 +- 1 hires periods long in F7, F8, F9 and F10, lengths F7 16..16, F8 16..16, F9 16..16, F10 32..32
 ```
 
 fx68k and TG68K print these lines identically. In SuperHires the sprite's sixteen pixels cover 16 hires periods, 70 ns a pixel;
-in Hires the same sprite covers 32, 140 ns a pixel. Every run measured above starts at sample 269, so only the width changes with the mode. Two
-contrasts of the package are mutation builds, not run by `make test`
-(`test_ch4_shres_bitplane.cpp:161-162`, `C11`): with sprite 0's data words `$FF00` where they are `$FFFF`, the runs halve (8
-periods in F7, F8 and F9, 16 in F10) and `C11` stays red; with F7 and F8 run in Hires (BPLCON0 = `$A000`), all three graded frames
-show 32 periods and `C11` prints PASS. The sprites' colours in the same frames are [NM-HRM-016](NM-HRM-016.md)'s subject.
+in Hires the same sprite covers 32, 140 ns a pixel. Every run measured above starts at sample 269, so only the width changes with the mode. One
+contrast of the package is a mutation build, not run by `make test`
+(`test_ch4_shres_bitplane.cpp:180`, `C11`): with sprite 0's data words `$FF00` where they are `$FFFF`, the runs halve (8
+periods in F7, F8 and F9, 16 in F10) and `C11` stays red. The sprites' colours in the same frames are [NM-HRM-016](NM-HRM-016.md)'s subject.
 
 ## Risks and unknowns
 
