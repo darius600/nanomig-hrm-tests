@@ -44,7 +44,6 @@ part that is graded stays in the named proposition, without the id.
 | `APPB2-legend.er1`, `APPB2-legend.er2`, `CH4-APPB-LEGEND.c014`, `CH4-APPB-LEGEND.c015` | P11: the blitter's destination transfer is a DMA write into Chip memory | The disk half needs a disk image, which the harness does not provide yet (row `c016` above). |
 | `CH4-build.c11` | P7: sprite data is read by DMA from Chip memory | "like all other data accessed by the custom chips" covers every DMA channel. This package reads sprite data only. |
 | `APPC-pos.c14`, `CH4-appC-position.c22` | P2: in Lores, bit 4 gives no 70 ns position | "only available in SuperHires mode" covers Hires too. For Hires the page itself says "Attempting to use 70ns sprite positioning with Hires mode under the current system may lead to unpredictable results" (p.303), so it gives no expected value and no test grades it (2.9). |
-| `CH4-fig4-13.c9`, `CH4-fig413.f6` | P5: the 68000 loads each of SPRxPOS, SPRxCTL, SPRxDATA and SPRxDATB; P6: DMA loads each of them | The claims name two sources for every load, "68000 or DMA" (p.125). P5 grades the 68000 in the MANUAL run and P6 grades DMA in the AUTO run, so no single run and no single line holds both. Neither line carries the ids. |
 
 ---
 
@@ -721,7 +720,7 @@ p.123 and p.126 give d = 64 for it, and P5-NOPOS grades it.
 from the 68000. SPRxDATA and SPRxDATB, although normally loaded by DMA, lie in the
 processor's address space, and a processor write to them is displayed. Claim:
 `CH4-data.c1`. Its expected values are also the 68000 half of
-`CH4-fig4-13.c9` and `CH4-fig413.f6`, which are declined (section 1). Pages 125
+`CH4-fig4-13.c9` and `CH4-fig413.f6`, which P5-P6 carries. Pages 125
 (figure, checked in print), 129 and 123.
 
 **2. Stimulus.** Run MANUAL, ECS PAL.
@@ -832,7 +831,12 @@ assumed (section 4). Fields are delimited by markers.
 
 **1. Proposition.** A sprite armed by SPRxDATB and SPRxDATA is displayed "at the
 horizontal position given in the "H" portion of the position registers SPRxPOS
-and SPRxCTL" (p.123). SPR0POS keeps what the 68000 last wrote to it: in Figure 4-13 (p.125) the
+and SPRxCTL" (p.123). SPR0POS keeps what the 68000 last wrote to it, as long as nothing has read it
+since: SPR0POS and SPR0CTL are write-only (p.284, "W"), and the manual says "If a
+register is marked as a write-only register, do not attempt to read from it, as
+this may trash the register and crash the system" (pp.263-264) and "Do not read
+Write-only registers" (p.14), so a 68000 read of either register gives the
+page no value to promise. This run therefore reads neither. In Figure 4-13 (p.125) the
 horizontal position register SPRxPOS is loaded only through its own load decode
 ("68000 or DMA"), and the SPRxCTL load decode resets the "ARM" flip-flop that
 the SPRxDATA load decode sets. So a field whose writes leave SPR0POS alone shows the sprite at the position that value and
@@ -844,7 +848,11 @@ states it whole. Pages 123, 125 and 126.
 
 **2. Stimulus.** Run MANUAL (P5) with field B's SPR0POS write left out: field B
 writes SPR0CTL = $0000, SPR0DATB = $FF00 and SPR0DATA = $F0F0 only. SPR0POS holds
-$0060 from field A.
+$0060 from field A. The 68000 never reads SPR0POS or SPR0CTL in this run
+(pp.263-264, p.14): the reads of P4 that follow each field's writes are replaced by
+reads of a Chip-memory word that holds what was written (the stimulus of P4's
+read-half contrast), and the reads of DECOY stay. Nothing else of P5's run is
+changed.
 
 **3. Observation.** As in P5, for field B (between MB and RB) of this run.
 
@@ -866,6 +874,14 @@ cycles).
 - Proposition (stimulus green): the same field B with an explicit write of
   SPR0POS = $0060. The comparator, unchanged, then passes, since the page gives
   the same position.
+- Proposition, the retained value: field B writes SPR0POS = $0062, a value of its
+  own. The page predicts H = $C4, d = 72 (P4's write half), not the 64 the
+  retained $0060 gives, and the check goes red.
+- Proposition, the arming: field B writes SPR0CTL and SPR0DATB but not SPR0DATA.
+  The SPRxCTL load decode resets the "ARM" flip-flop that only the SPRxDATA load
+  decode sets (Figure 4-13, p.125), so the sprite is not armed and is not
+  displayed: no sprite-0 run follows the sprite-4 reference, and the check goes
+  red.
 - RUN-NOPOS: the program never writes DONE. FIXTURE-NOPOS: $DEAD instead of the
   constant.
 - P5-NOPOS-PRE1: DMACON = $83A0 (SPREN set) with all eight sprite pointers at the
@@ -885,7 +901,7 @@ cycles).
 from DMA. A second usage of one sprite channel, fetched by DMA, replaces all four
 registers, and the display follows the new contents. It is the DMA half of
 `CH4-fig4-13.c9` and `CH4-fig413.f6`, which name both sources of every load,
-"68000 or DMA" (p.125), and which are declined (section 1). Pages 125 (figure),
+"68000 or DMA" (p.125), and which P5-P6 carries. Pages 125 (figure),
 126 and 108.
 
 **2. Stimulus.** Run AUTO, ECS PAL.
@@ -975,6 +991,38 @@ first line).
 
 ---
 
+### P5-P6 — Each of the four load decodes of Figure 4-13 accepts a load from the 68000 and from DMA
+
+**1. Proposition.** Figure 4-13 (p.125, checked in print) labels the load decodes
+of SPRxPOS, SPRxCTL, SPRxDATA and SPRxDATB each "68000 or DMA". P5 shows that the
+68000 loads each of the four registers, and P6 shows that sprite DMA loads each of
+them. No page requires the two sources to be shown in one run or on one output line,
+so the claim holds when both lines pass. Claims: `CH4-fig4-13.c9`,
+`CH4-fig413.f6`. Page 125.
+
+**2. Stimulus.** None of its own: the MANUAL run of P5 and the AUTO run of P6.
+
+**3. Observation.** The verdicts of P5 and P6 in the same run of the test.
+
+**4. Expected.** P5 passes and P6 passes. If either is not graded, this line is
+not graded.
+
+**5. Preconditions.** Those of P5 and of P6.
+
+**6. Contrasting cases.**
+
+- The MANUAL run is P5's proposition contrast (P5 red) and the AUTO run is
+  unchanged: the line goes red with P5.
+- The AUTO run is P6's proposition contrast (P6 red) and the MANUAL run is
+  unchanged: the line goes red with P6.
+- No stimulus makes the line red while P5 and P6 both pass, since the line is the
+  conjunction of the two: the lines that move with it are P5 (and P4) in the
+  first case and P6 in the second.
+
+**7. Reference frame.** As in P5 and P6.
+
+---
+
 ### P7 — The sprite DMA channel takes the whole sprite data structure from Chip memory, at the pointer, in order, and only from Chip memory
 
 **1. Proposition.** The custom chips read a sprite's data structure from Chip
@@ -1060,11 +1108,15 @@ run:
 - Proposition, AUTO: the Copper list sets SPR0PT = `$27000` (S2). The page
   predicts the reads at `$27000`–`$27032` and none in `$25000`–`$25FFF`, so the
   check goes red.
-- Proposition, FAST: the structure at ALIAS is S1's, word for word. In
-  this run the channel reads the 26 words at ALIAS for the fast-RAM pointer
-  (5.3), so it then shows S1's colours and the check goes red. The pages do not
-  give which Chip address the channel reads (Open): this contrast shows that the
-  comparator sees S1's colours in this run, not a red the pages predict.
+- Proposition, FAST ("only from Chip memory"): none. The sprite DMA channel
+  reads Chip memory only (pp.104-105), so no program can make it read the copy in
+  fast RAM, and a stimulus that turns the check red through this clause does not
+  exist at this boundary. The one program that puts S1's colours on the screen
+  writes S1's structure into Chip memory at the address the pointer resolves to
+  (ALIAS, which the pages leave open, Open above); that is the page's own
+  Chip-memory case, it removes the difference between the two memories that the
+  check relies on, and so it shows only that the comparator counts S1's colours in
+  this run (S1-coloured lines 40 of 40), not a red the pages predict.
 - RUN-AUTOFAST: the FAST program never writes DONE.
 - FIXTURE-AUTOFAST: `$DEAD` instead of the constant in the FAST run.
 - P7-PRE1: DMACON = `$8380` (SPREN clear) in the FAST run.
@@ -1727,15 +1779,17 @@ writes only the PAL bit on ECS.
 - Proposition (ECS): write BEAMCON0 = $0000. The page predicts that PAL is not
   enabled, so N stays at the NTSC count, which no page gives as 625 (2.10). The
   "625 after" check goes red.
-- Proposition (OCS, outputs unchanged): at M1, write BPLCON0 = $0200 (LACE clear)
-  as well as the first BEAMCON0 value. Long and short fields are "interlace
-  only" (p.24). After M1 a frame is then two fields of equal length, an even
-  count. Before M1 it is two fields that differ by one, an odd count, and the
-  fields differ from those before M1. The outputs after M1 then differ from
-  those before it, and the "after = before" check goes red. The change is to the
-  stimulus: preconditions 1 to 4 stay green because they look at the frames
-  before M1, and precondition 5 stays green because clearing LACE changes no
-  population it counts.
+- Proposition (OCS, outputs unchanged): the page-opposite is an OCS chip set on
+  which BEAMCON0 acts. No program makes the harness's OCS chip set obey BEAMCON0,
+  so the contrast is a private copy of the chip set, outside the repository, built
+  from a patch file of the package, in which a write to BEAMCON0 takes effect on the
+  OCS chip set as on ECS. The OCS run of the normal program then writes the PAL bit
+  and the other bits to a chip set on which they act, the frame line count and
+  the fields after M1 differ from those before, and the "after = before" check goes
+  red. The program, the sampler and preconditions 1 to 5 are those of the normal
+  run and stay green: the identification of the OCS slot is unchanged, and
+  everything counted by the preconditions lies before M1 or is the number of
+  values written.
 - Precondition 1: the other chip set. The identification differs.
 - Precondition 2: in the ECS run, BEAMCON0 = $0020 written right after step 1,
   before M1. N = 625 before M1. The identification does not change with it.
@@ -1757,8 +1811,8 @@ the OCS run for the span of each value.
 
 ## 5. Recorded
 
-Final run of `make -k -B test` on both cores: fx68k 81 passed, 2 failed; TG68K 81 passed, 2 failed.
-The same two lines are red on both: P1 and P5-NOPOS. P2 is NOT GRADED on both. Every other graded line passes on both.
+Final run of `make -k -B test` on both cores: fx68k 83 passed, 1 failed; TG68K 83 passed, 1 failed.
+The same line is red on both: P1. P2 is NOT GRADED on both. Every other graded line passes on both.
 
 ### 5.1 Programs
 
@@ -1776,6 +1830,7 @@ and includes the program source; each wrapper is one contrasting case of its pro
 | MANUAL without field B's SPR0POS write | `prog_manual_p4nopos.s` (the graded run), `prog_manual_nopos_*.s` (its contrasts) | P5-NOPOS | RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2, R5-ANCHOR-NOPOS, P5-NOPOS |
 | AUTO, AUTO-ODD | `prog_auto.s`, `prog_autoodd.s` | P6, P7, P8 | RUN-AUTO, RUN-AUTOODD, FIXTURE-AUTO, P6-PRE1, P6-PRE2, P8-PRE1, P8-PRE2, R5-ANCHOR-AUTO, P6, P7, P8 |
 | FAST (P7's necessity clause) | `prog_autofast.s` and wrappers `prog_autofast_*.s` (`prog_auto.s` with `MUT_FASTPT`) | P7 | RUN-AUTOFAST, FIXTURE-AUTOFAST, P7-PRE1, P7-PRE2, P7-PRE3, and P7 |
+| (none) | the MANUAL and AUTO runs above | P5-P6 | P5-P6, printed after the lines of AUTO |
 | CPU-PTR | `prog_cpuptr.s` | P9 | RUN-CPUPTR, FIXTURE-CPUPTR, P9-PRE2, P9-PRE1, P9-PRE3, P9 |
 | JUMP | `prog_jump.s` | P10 | RUN-JUMP, FIXTURE-JUMP, P10-PRE2, P10-PRE1, P10-PRE3, P10 |
 | BLIT | `prog_blit.s` | P11 | RUN-BLIT, FIXTURE-BLIT, P11-PRE2, P11-PRE1, P11-PRE3, P11 |
@@ -1813,7 +1868,9 @@ R5-ANCHOR-MANUAL and R5-ANCHOR-AUTO; their contrast is the program whose VERTB w
 Chip word at a low address. MANUAL's field B without any SPR0POS write is the run
 `prog_manual_p4nopos`; its lines RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2 and
 R5-ANCHOR-NOPOS gate P5-NOPOS, and each has the contrast of its MANUAL counterpart.
-P5-NOPOS's own contrast is the same field B with an explicit SPR0POS = $0060 write, which passes.
+The run reads neither SPR0POS nor SPR0CTL (P5-NOPOS, 1). P5-NOPOS's own contrasts are the same field B with
+an explicit SPR0POS = $0060 write, which passes, with an explicit SPR0POS = $0062 write and without the
+SPR0DATA write, which are red (`prog_manual_nopos_green`, `prog_manual_nopos_new`, `prog_manual_nopos_dis`).
 P7's FAST run runs under every tag of the AUTO family; P7 is NOT GRADED when one of its lines fails.
 P13's SWEEP runs under every P13 tag; P13 is NOT GRADED when P13-CONTROL fails.
 The scan-line counts of BEAM and SHR use R5: the refresh-group spacing is measured from the
@@ -1834,8 +1891,9 @@ started).
 | P2 | NOT GRADED | the paired SHR-SWEEP run does not pass P1 (P1 is red), so the run prints `RECORDED: P2: NOT GRADED, depends on P1` |
 | P2-PRE1, P2-PRE2, P2-PRE4 | PASS | ruler period 32; even k show d = 80 + k; SREF and group 0 as in P1; the Lores groups show the same d sequence as the SuperHires run |
 | P3 and P3-PRE1 to P3-PRE5 | PASS | VPOSR identification $00; ruler period 32; five groups, d = 80 80 80 80 82, each four scan lines |
-| P5-NOPOS | FAIL | field B of the run without an SPR0POS write: 400 sprite-4 output lines and no sprite-0 run after any of them (first d = -1), where p.123 and p.126 give d = 64; the same field B with an explicit write of SPR0POS = $0060 shows d = 64 |
+| P5-NOPOS | PASS | field B of the run without an SPR0POS write and without any 68000 read of SPR0POS or SPR0CTL: 400 sprite-4 output lines, each followed by a sprite-0 run, 200 scan lines, d = 64, as p.123 and p.126 give; the same field B with an explicit write of SPR0POS = $0060 shows d = 64 too, with $0062 d = 72, and without the SPR0DATA write no sprite-0 run follows (d = -1) |
 | RUN-NOPOS, FIXTURE-NOPOS, P5-NOPOS-PRE1, P5-NOPOS-PRE2, R5-ANCHOR-NOPOS | PASS | DMACONR $0380; V(MB) < $2C and V(RB) = $F8; no malformed refresh group |
+| P5-P6 | PASS | P5 and P6 both pass |
 | P4, P5 and RUN-MANUAL, FIXTURE-MANUAL, P5-PRE1, P5-PRE2, P4-PRE2, P4-PRE1, R5-ANCHOR-MANUAL | PASS | field A d = 66 and field B d = 68, on 400 output lines each (200 scan lines), at one column, consecutive; SPR0POS and SPR0CTL read back $0000 after the writes |
 | P6, P7, P8 and RUN-AUTO, RUN-AUTOODD, RUN-AUTOFAST, FIXTURE-AUTO, FIXTURE-AUTOFAST, P6-PRE1, P6-PRE2, P7-PRE1 to P7-PRE3, P8-PRE1, P8-PRE2, R5-ANCHOR-AUTO | PASS | sprite 4 on 32 scan lines, sprite-0 groups of 4 and 6 scan lines 8 apart, d = 66 and 68, in the AUTO run and in the AUTO-ODD run; 26 reads at $25000-$25032 ascending in every graded field of both; in the FAST run no output line in S1's colours (0 of 40 lines with a sprite-0 run) |
 | P9 and RUN-CPUPTR, FIXTURE-CPUPTR, P9-PRE1 to P9-PRE3 | PASS | in each of fields 2-4 the 26 reads in order, no read in $27000-$27FFF, group 1 d = 66; no read of the sprite-0 data between a field's head read and P_f in any of the four fields |
@@ -1874,5 +1932,5 @@ started).
 ### 5.4 Not made
 
 The disk half of P11 and the claims of section 1 have no graded line. Each id of section 1 is
-printed on a `RECORDED` line of its own, with the reason of section 1 (27 ids). Every other
+printed on a `RECORDED` line of its own, with the reason of section 1 (25 ids). Every other
 proposition of section 4 has its lines above.
