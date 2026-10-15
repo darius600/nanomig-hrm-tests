@@ -12,7 +12,7 @@
 | **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 384, 386, 388, 391, 395, 431, 433, 434, 435, 436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `P3-NOTOTHER` (pp. 391, 433–435) and `P3-BASE` (pp. 388, 391, 433, 435) each carry `sol:K-0837` and `opus:K-0869` (both p. 435). No claim id: `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED` (pp. 391, 435), `P3-CONTENT` (p. 433), `P3-IMG2` (pp. 431, 435), `P3-CONTROL-IO` (p. 386), `P3-CONTROL-UNCONF` (p. 431) |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35); inherited (MiSTer has the same select; TC64 decodes the same range in its own file) |
 | **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig): `make -k -C integration/appK-autoconfig test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
-| **Assertions** | `P3-NOTOTHER` (`test_appK_autoconfig.cpp:999-1004`): the board configured at $200000 should not also answer at $400000; the word written there, P2 = $5AA5, reads back as $5AA5. `P3-BASE` (`:1023-1028`): with $40 written to register 48 (base $400000) the board should answer at $400000 and not at $200000; P2 reads back at $200000. Red on fx68k and on TG68K, 27 passed, 3 failed on each core; the third red, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. Green on both cores in the same run, the controls on the same comparator: `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` read $0000 where the reds read P2 |
+| **Assertions** | `P3-NOTOTHER` (`test_appK_autoconfig.cpp:1058-1063`): the board configured at $200000 should not also answer at $400000; the word written there, P2 = $5AA5, reads back as $5AA5. `P3-BASE` (`:1084-1088`): with $40 written to register 48 (base $400000) the board should answer at $400000 and not at $200000; P2 reads back at $200000. Red on fx68k and on TG68K, 27 passed, 3 failed on each core; the third red, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. Green on both cores in the same run, the controls on the same comparator: `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` read $0000 where the reds read P2 |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else. MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does. Hardware: not measured |
 | **Effort** | M — `cpu_wrapper.v` only — latch the byte written to 48 (`:639-642`), compare it in `sel_z2ram` (`:117`) for the size register 00 declares, and form the RAM address (`:216-217`) from the offset into the board; with `fastram_config` = 3 each of the three boards needs its own base |
 | **See also** | [NM-HRM-064](NM-HRM-064.md), the shut-up register, red in the same package as `GATE-G`; [NM-HRM-065](NM-HRM-065.md), register 48 and a Zorro III board |
@@ -183,17 +183,17 @@ The red lines print their claim ids and pages as
 `P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]`, and both quote
 p. 391's and p. 435's sentences. Each is an aggregate: `P3-NOTOTHER` passes
 when the board answers at the base it was given (graded alone by
-`P3-NOTOTHER-ASSIGNED`, `:996-998`, green on both cores) and the word read at the other base
-after the completion marker differs from P2, or the run shows a proven no-answer window, so the red is that
+`P3-NOTOTHER-ASSIGNED`, `:1053-1055`, green on both cores) and the word read at the other base
+after the completion marker differs from P2 (a run that ends without the completion marker is not graded), so the red is that
 R3n finishes and reads P2 back at a base the board was not given. The
 preconditions, register 00's memory flag and the $0000 chip-RAM write between
-the write of P2 and its read (`P3-NOTOTHER-PRECOND`, `:991-993`), hold on both
+the write of P2 and its read (`P3-NOTOTHER-PRECOND`, `:1048-1050`), hold on both
 cores. `P3-BASE` is the same aggregate over R3' and R3n'
-(`P3-BASE-ASSIGNED`, `:1020-1022`, grades P0 and P1 at $400000). The two
-controls run the red lines' own comparator, `R2 != P2` after the completion marker, or a proven no-answer window, where the board
-is not to answer: `P3-CONTROL-IO` (`:1042-1046`) at $A00000, Zorro II I/O
+(`P3-BASE-ASSIGNED`, `:1079-1081`, grades P0 and P1 at $400000). The two
+controls run the red lines' own comparator, `R2 != P2` after the completion marker, where the board
+is not to answer: `P3-CONTROL-IO` (`:1104-1107`) at $A00000, Zorro II I/O
 expansion space in Figure K-1 (p. 386), with the board configured at $200000;
-`P3-CONTROL-UNCONF` (`:1058-1061`) at $400000 with the board never configured.
+`P3-CONTROL-UNCONF` (`:1121-1124`) at $400000 with the board never configured.
 Both finish and read $0000, not P2, so the comparator goes green on a live
 input. The log prints R2 for each of the four runs, as
 `MEASURED: P3-NOTOTHER run R3n: ended by the completion marker, scratch write after the marker: yes, P2 stored in the R2 slot: yes, R2 = $5AA5 (P2 = $5AA5)`, the
