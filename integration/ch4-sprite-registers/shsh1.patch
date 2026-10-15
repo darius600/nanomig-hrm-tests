@@ -1,0 +1,207 @@
+Private chip-set copy "sh" of ch4-sprite-registers (make sh-test-fx68k, make sh-test-tg68k).
+
+SPRxCTL bit 4 (SHSH1, p.303: "Start horizontal (SHR mode) 70ns increment") acts while the
+sprite resolution is SuperHires: the sprite's serial output is taken two 28 MHz clocks (70 ns)
+earlier than with the bit clear. Without the bit, and in Lores and Hires, the output is taken
+at the delay the unmodified chip set uses throughout, so every sprite that has no SHSH1
+keeps its position relative to the others.
+
+The repository's chip set ignores bit 4. This copy is built from the pinned submodule's
+files; the two files below are used with LF line ends (the Makefile removes the CRs of
+those two files before applying the patch). The submodule is never modified.
+
+--- a/denise_sprites_shifter.v
++++ b/denise_sprites_shifter.v
+@@ -23,6 +23,7 @@
+   input  [1:0] address,         // register address input
+   input  [8:0] hpos,        // horizontal beam counter
+   input  shift,
++  input  shr,
+   input  [15:0] spr_dat,
+   input  [1:0] spr_bankwr_idx,
+   input  [1:0] spr_bankrd_num,
+@@ -59,6 +60,7 @@
+   input  [8:0] hpos,        // horizontal beam counter
+   input [15:0] fmode,
+   input shift,
++  input shr,
+   input [48-1:0] chip48,
+   input   [15:0] data_in,     // bus data in
+   output  [1:0] sprdata,      // serialized sprite data out
+@@ -130,6 +132,16 @@
+       hstart[8:1] <= data_in[7:0];
+   end
+ 
++// SHSH1
++reg shsh1;
++always @(posedge clk)
++  if (clk7_en) begin
++    if (reset)
++      shsh1 <= 1'b0;
++    else if (aen && address==CTL)
++      shsh1 <= data_in[4];
++  end
++
+ // CTL register
+ always @(posedge clk)
+   if (clk7_en) begin
+@@ -243,11 +255,11 @@
+ 
+ // assign serialized output data
+ // AMR - register the output data to delay it by one clk7, compensating for removing load_del
+-reg [7:0] sprdata_r;
++reg [11:0] sprdata_r;
+ always @(posedge clk)
+-  sprdata_r <= {shiftb[15],shifta[15],sprdata_r[7:2]}; // Ugly - are we masking a copper timing problem here?
++  sprdata_r <= {shiftb[15],shifta[15],sprdata_r[11:2]}; // Ugly - are we masking a copper timing problem here?
+ 
+-assign sprdata[1:0] = sprdata_r[1:0]; // {shiftb[63],shifta[63]};
++assign sprdata[1:0] = (shr && shsh1) ? sprdata_r[1:0] : sprdata_r[5:4]; // {shiftb[63],shifta[63]};
+ 
+ //--------------------------------------------------------------------------------------
+ 
+@@ -286,11 +298,11 @@
+ // assign serialized output data
+ // AMR - register the output data to delay it by one clk7, compensating for removing load_del
+ // Fixed highres sprites by pipelining shifter output.
+-reg [7:0] sprdata_r;
++reg [11:0] sprdata_r;
+ always @(posedge clk)
+-  sprdata_r <= {shiftb[63],shifta[63],sprdata_r[7:2]}; // Ugly - are we masking a copper timing problem here?
++  sprdata_r <= {shiftb[63],shifta[63],sprdata_r[11:2]}; // Ugly - are we masking a copper timing problem here?
+ 
+-assign sprdata[1:0] = sprdata_r[1:0]; // {shiftb[63],shifta[63]};
++assign sprdata[1:0] = (shr && shsh1) ? sprdata_r[1:0] : sprdata_r[5:4]; // {shiftb[63],shifta[63]};
+ //--------------------------------------------------------------------------------------
+ 
+ endmodule
+--- a/denise_sprites.v
++++ b/denise_sprites.v
+@@ -177,6 +177,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -196,6 +197,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -215,6 +217,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -234,6 +237,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -253,6 +257,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -272,6 +277,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -291,6 +297,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -310,6 +317,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .spr_dat(chip16_r),
+   .spr_bankwr_idx(spr_bankwr_idx),
+   .spr_bankrd_num(spr_bankrd_num),
+@@ -326,6 +334,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat0),
+@@ -343,6 +352,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat1),
+@@ -360,6 +370,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat2),
+@@ -377,6 +388,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat3),
+@@ -394,6 +406,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat4),
+@@ -411,6 +424,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat5),
+@@ -428,6 +442,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+   .data_in(data_in),
+   .sprdata(sprdat6),
+@@ -445,6 +460,7 @@
+   .hpos(hpos),
+   .fmode(fmode),
+   .shift(shift),
++  .shr(spres == 2'b10),
+   .chip48(chip48),
+ `endif
+   .data_in(data_in),

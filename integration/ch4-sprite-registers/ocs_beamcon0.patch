@@ -1,0 +1,27 @@
+Private chip-set copy "bc" of ch4-sprite-registers (make bc-test-fx68k, make bc-test-tg68k).
+
+A write to BEAMCON0 ($1DC) is accepted by the OCS Agnus as it is by the ECS one (the two
+register decodes lose their "ecs" condition). The ECS Agnus and every other register are
+unchanged, so the OCS slot of the BEAM run identifies itself as before (VPOSR $10) and the
+PAL bit and the other BEAMCON0 bits now act on it. The submodule is never modified.
+
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -120,7 +120,7 @@
+ 	if (clk7_en) begin
+ 		if (reset)
+ 			beamcon0_reg <= {10'b0, ~ntsc, 5'b0};
+-		else if ((reg_address_in[8:1] == BEAMCON0[8:1]) && ecs)
++		else if (reg_address_in[8:1] == BEAMCON0[8:1])
+ 			beamcon0_reg <= data_in[15:0];
+ 	end
+ end
+@@ -169,7 +169,7 @@
+ 	if (clk7_en) begin
+ 		if (reset)
+ 			pal <= ~ntsc;
+-		else if (reg_address_in[8:1]==BEAMCON0[8:1] && ecs)
++		else if (reg_address_in[8:1]==BEAMCON0[8:1])
+ 			pal <= data_in[5];
+ 	end
+ end

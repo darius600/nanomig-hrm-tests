@@ -11,8 +11,6 @@
 ;                   and two VERTB: each of bits 0-14 alone ($0001, $0002, ...
 ;                   $4000, the bits p.305 defines), then $7FFF; M2
 ;   MUT_B0       -- proposition contrast (ECS): BEAMCON0 = $0000
-;   MUT_LACE1    -- proposition contrast (OCS): BPLCON0 = $0200 (LACE clear)
-;                   is written at M1 as well
 ;   MUT_NOLACE   -- precondition 3 contrast: BPLCON0 = $0200 in step 1
 ;   MUT_SHORT    -- population contrast: 3 VERTB (3 writes with SWEEP) after M1
 ;                   instead of 8 (16)
@@ -61,10 +59,6 @@ start:
         dbra    d7,.pre2
 
         move.w  #1,MARK+0                       ; M1
-
-        ifd     MUT_LACE1
-        move.w  #$0200,BPLCON0(a0)              ; proposition contrast (OCS)
-        endif
 
         ifd     SWEEP
         lea     sweeptbl(pc),a3

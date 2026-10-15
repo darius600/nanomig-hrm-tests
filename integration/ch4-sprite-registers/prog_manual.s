@@ -10,9 +10,21 @@
 ;   MUT_P4WRITE -- P4's write-half contrast: field B's SPR0POS write carries
 ;                  $0062 instead of $0061 (p.123: d = 72 instead of 68)
 ;   MUT_P4NOPOS -- field B without any SPR0POS write (SPR0POS keeps $0060 from
-;                  field A): the run of the P5-NOPOS line
+;                  field A): the run of the P5-NOPOS line. SPR0POS and SPR0CTL are
+;                  write-only (p.284) and the manual says "If a register is marked
+;                  as a write-only register, do not attempt to read from it, as
+;                  this may trash the register and crash the system" (pp.263-264;
+;                  "Do not read Write-only registers", p.14), so this run never
+;                  reads them: it implies MUT_P4READ, whose reads go to a Chip
+;                  mirror word
 ;   MUT_NOPOSW  -- with MUT_P4NOPOS: field B writes SPR0POS = $0060, the value the
 ;                  other run keeps
+;   MUT_NOPOSN  -- with MUT_P4NOPOS: field B writes SPR0POS = $0062, a value of its
+;                  own (p.123: d = 72)
+;   MUT_NOPOSDIS-- with MUT_P4NOPOS: field B writes SPR0CTL and SPR0DATB but not
+;                  SPR0DATA, so nothing arms the sprite after the SPR0CTL write
+;                  (Figure 4-13, p.125: the SPRxCTL load decode resets the ARM
+;                  flip-flop, the SPRxDATA load decode sets it)
 ;   MUT_P4PRE1  -- P4 precondition 1 contrast: omit the DECOY reads
 ;   MUT_P4PRE2  -- P4 precondition 2 contrast: read at V7-0=$0080 (inside
 ;                  the display window) instead of $00F8
@@ -38,6 +50,12 @@
 
         include "nanomig.i"
         include "sprreg.i"
+
+        ifd     MUT_P4NOPOS
+        ifnd    MUT_P4READ
+MUT_P4READ      equ     1               ; no 68000 read of the write-only registers (pp.263-264, p.14)
+        endif
+        endif
 
 MEMTRACK        equ     RESULTS+$5000   ; MUT_P4READ only: +0 mirrors SPR0POS, +2 mirrors SPR0CTL
 VMARK_MA        equ     RESULTS+12
@@ -179,6 +197,9 @@ start:
         ifd     MUT_NOPOSW
         move.w  #$0060,SPR0POS(a0)
         endif
+        ifd     MUT_NOPOSN
+        move.w  #$0062,SPR0POS(a0)
+        endif
         else
         ifd     MUT_P4WRITE
         move.w  #$0062,SPR0POS(a0)             ; P4 write-half contrast
@@ -202,7 +223,11 @@ start:
         endif
         endif
         move.w  #$FF00,SPR0DATB(a0)
+        ifd     MUT_NOPOSDIS
+        ; no SPR0DATA write: the SPR0CTL write above leaves the sprite disarmed
+        else
         move.w  #$F0F0,SPR0DATA(a0)
+        endif
 
         bsr     store_vmark
         move.w  d0,VMARK_MB
