@@ -114,7 +114,6 @@ The extra 4 cycles are one `clk7_en` period, C/2, at every N sampled. Every chan
 - **Real Paula is not measured.** Two words written back to back on real hardware, the time between their start edges timed on TxD — 10(N+1) colour clocks, or half a colour clock more — would settle it.
 - **Three sampled N are not a formula.** `sol:8-serper.c8` and `sol:8-serper.c9` are printed on `RECORDED` lines, withdrawn from grading: three sampled N cannot establish a formula for every N, and the red at N=371 is their counterexample. `sol:8-serper.c10` is withdrawn because its 371 for 9600 baud gives 9622 bit/s by the page's own arithmetic. `opus:8-serper.c10` (p. 284) is not graded: it gives a constant for no named machine.
 - **The N=31 run and the two-word N=32396 run** are variants of the package's programs with those values, the second with a TBE poll bound that covers one word time; they are not committed assertions.
-- **The colour-clock measurement** (`1a`, `2a`, green) cannot be turned red by any stimulus the page describes, because none moves the refresh slots.
 - The suggested change has not been run here.
 
 ## Independent evidence
