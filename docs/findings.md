@@ -46,10 +46,6 @@ test is the thing being fixed there, not the finding. Telling the two apart is
 the whole discipline — the question is never "does this pass?" but "does the
 printed page require what this asserts?".
 
-> **An independent validation revised seven of chapter 3's findings.** The
-> round's own account is in
-> [`2026-09-11_ch3-validation.md`](https://github.com/darius600/hrm-testpipeline/blob/main/docs/2026-09-11_ch3-validation.md).
-
 ## The finding keys
 
 Findings are numbered **`NM-HRM-nnn`** -- `NM` for the implementation under test,
@@ -122,16 +118,16 @@ falsifiable statement quoted from a printed page of the manual and classified in
 is built from the three fields at the top of the page it links to, so the two can
 never disagree. Eight values occur:
 
-| status | what it asks of you |
-|---|---|
-| `open · RTL · **red**` | decide whether the RTL should change |
-| `open · RTL · **red**, contested` | the same, knowing the implementations split |
-| `open · RTL · **red**, inverted` | the manual documents a defect NanoMig does not reproduce |
-| `open · RTL · source observation` | nothing yet — read from the source and not measured, or measured only inside the module, where no pin shows it |
-| `open · page · **red**` | **no RTL change**; the printed page is the likely defect |
-| `open · page · none` | the same, with no test built against it yet |
-| `open · page · green with an inverse control` | **no RTL change**; the printed page is the likely defect, and the assertion that holds NanoMig's reading is green |
-| `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
+| status | what it asks of you | Evidence row of the page |
+|---|---|---|
+| `open · RTL · **red**` | decide whether the RTL should change | a test fails against the page |
+| `open · RTL · **red**, contested` | the same, knowing the implementations split | a test fails against the page; the implementations split |
+| `open · RTL · **red**, inverted` | the manual documents a defect NanoMig does not reproduce | a test fails because NanoMig lacks a documented bug |
+| `open · RTL · source observation` | nothing yet — read from the source and not measured, or measured only inside the module, where no pin shows it | seen in the RTL source; no test yet, or seen in the RTL source and measured inside the module; no assertion at the ports fails |
+| `open · page · **red**` | **no RTL change**; the printed page is the likely defect | a test fails against the page |
+| `open · page · none` | the same, with no test built against it yet | none |
+| `open · page · green with an inverse control` | **no RTL change**; the printed page is the likely defect, and the assertion that holds NanoMig's reading is green | a test passes; the page's other reading fails |
+| `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested | a test fails against the page |
 
 ### If you have one evening
 
