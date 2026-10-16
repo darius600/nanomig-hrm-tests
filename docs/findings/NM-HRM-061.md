@@ -10,7 +10,7 @@
 | **Scope** | NanoMig's `sysctrl.v` config values `id='T'` (`system_cpu`) and `id='Y'` (`system_chipmem`) at `4495f86`; no Amiga chip is involved |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 1 — Introduction, printed p. 1 (feature list) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: `sol:1-components.c7`, `opus:1-components.c7`, p. 1. `RAM-BASE-FLOOR-BELOW-256K-ABSENT` carries no claim id; the ids `sol:1-components.c12` and `opus:1-components.c12` (p. 1) sit on the package's `record()` line, which records that sentence as partially graded |
-| **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246); in neither MiSTer nor TC64; NanoMig's own |
+| **Module** | `sysctrl.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246); in neither MiSTer nor TC64; NanoMig's own |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options): `make -C hrm/ch1-cpu-options test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both measure correctly. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: expected 4 pairwise-distinct `system_cpu` states, observed 3. `RAM-BASE-FLOOR-BELOW-256K-ABSENT`: expected a `system_chipmem` state at 256K, observed floor raw 0 documented `"512k"`. The package reports `3 passed, 2 failed` |
 | **Verdict of the four** | **not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold. Hardware: not measured |

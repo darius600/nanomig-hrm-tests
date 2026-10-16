@@ -10,7 +10,7 @@
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: `opus:8-adkcon.c12`, p. 265 (no ch8 ledger; as the FAIL line prints it) |
-| **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer `rtl/paula.v:127`, `:193` and TC64 `rtl/minimig/paula.v:146`, `:212` carry the identical lines) |
+| **Module** | `paula.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer `rtl/paula.v:127`, `:193` and TC64 `rtl/minimig/paula.v:146`, `:212` carry the identical lines) |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: expected bit 15 of ADKCONR to follow the bit written, observed `0x7FFF`, bit 15 clear; the package reports `17 passed, 2 failed`; the other red, `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, is [NM-HRM-057](NM-HRM-057.md)'s |
 | **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not measured |
