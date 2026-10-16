@@ -870,6 +870,55 @@ std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt, uint16_t bplcon0 = 
     return per_sprite;
 }
 
+// Per sprite channel, the SPRxDATA/SPRxDATB fetch count over the same 90
+// lines and the same set-up as measure_sprite_data_fetch (which it repeats),
+// split by whether the bitplane data fetch runs on the line: `on_bpl_lines`
+// counts the channel's fetches on lines that contain at least one bitplane
+// data fetch (a granted cycle whose reg_address_out is BPL1DAT-BPL8DAT,
+// $88-$8F in the [8:1] word-address unit), `bpl_lines` is the number of such
+// lines.
+struct SpriteFetchSplit {
+    std::vector<int> total;
+    std::vector<int> on_bpl_lines;
+    int bpl_lines = 0;
+};
+
+SpriteFetchSplit measure_sprite_fetch_by_bitplane_line(uint16_t ddfstrt, uint16_t bplcon0 = 0x1200) {
+    Harness h;
+    h.write_reg(DMACON_ADDR, SET_CLR | DMAEN);
+    for (int i = 0; i < 35; ++i) h.sync_to_line_boundary();
+    for (int n = 0; n < 8; ++n) arm_sprite(h, n, 40, 220);
+    h.write_reg(DIWSTRT_ADDR, 0x2C81);
+    h.write_reg(DIWSTOP_ADDR, 0x2CC1);
+    h.write_reg(DDFSTRT_ADDR, ddfstrt);
+    h.write_reg(DDFSTOP_ADDR, 0x00D0);
+    h.write_reg(BPLCON0_ADDR, bplcon0);
+    h.write_reg(FMODE_ADDR, 0x0000);
+    h.write_reg(DMACON_ADDR, SET_CLR | SPREN | BPLEN);
+    SpriteFetchSplit r;
+    r.total.assign(8, 0);
+    r.on_bpl_lines.assign(8, 0);
+    for (int line = 0; line < 90; ++line) {
+        std::vector<int> this_line(8, 0);
+        bool bpl_on_line = false;
+        for (int t = 0; t < 1000; ++t) {
+            h.tick();
+            if (h.last_sol) break;
+            if (h.last_dbr && !h.last_refresh) {
+                uint16_t a = h.last_reg_address_out;
+                if ((a & 0xE0) == 0xA0 && (a & 0x3) >= 2) ++this_line[(a >> 2) & 0x7];
+                if ((a & 0xF8) == 0x88) bpl_on_line = true;
+            }
+        }
+        if (bpl_on_line) ++r.bpl_lines;
+        for (int n = 0; n < 8; ++n) {
+            r.total[n] += this_line[n];
+            if (bpl_on_line) r.on_bpl_lines[n] += this_line[n];
+        }
+    }
+    return r;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -1485,55 +1534,83 @@ int main(int argc, char** argv) {
     // =========================================================================
 
     // ---------------- DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES (p.80) ----------------
-    // The original form graded only DDFSTRT=$0018 against the $0038 baseline.
-    // p.80's claim
-    // is universal over the whole range below $38 ("using a data-fetch start
-    // earlier than ($38) will disable some sprites"), and a probe at $0030 -
-    // in this SAME one-bitplane fixture - found ALL EIGHT sprites unaffected
-    // (0 of 8 reduced), so the universal read literally is false at that one
-    // point in the range. This now sweeps $0030/$0028/$0020/$0018 and grades
-    // the conjunction, so the $0030 counterexample is not lost inside a
-    // single-point green.
+    // The page. p.80: "using a data-fetch start earlier than ($38) will
+    // disable some sprites". p.82 (horizontal scrolling, DDFSTRT = $0030):
+    // "Incidentally, this will disable sprite 7." Chapter 6, p.197: "bitplane
+    // DMA takes precedence over sprite DMA. ... larger displays may block out
+    // one or more of the highest-numbered sprites, especially with scrolling."
+    //
+    // The criterion, in the page's terms. A sprite is disabled when its
+    // channel gets no DMA: it makes no SPRxDATA/SPRxDATB fetch on the lines
+    // where the bitplane data fetch runs (the lines on which bitplane DMA
+    // takes precedence, p.197). A channel that still makes a fetch on those
+    // lines is not disabled by this criterion, however many fetches it has
+    // lost. The channel must be one that fetches there at the DDFSTRT=$0038
+    // baseline (an armed sprite, VSTART=40/VSTOP=220); a channel that makes no
+    // fetch there at the baseline is not evidence of anything. Bitplane lines
+    // are identified by a granted cycle whose reg_address_out is
+    // BPL1DAT-BPL8DAT, so no line number or fetch count is used as a cut-off.
+    //
+    // What is graded. At the baseline every channel fetches at the same rate
+    // (the eight are armed identically). At EACH of $0030/$0028/$0020/$0018
+    // (all earlier than $38) at least one channel is disabled ("some
+    // sprites"). Nothing else is graded here: p.82's statement about sprite 7
+    // at $0030 is graded by DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE and its
+    // multi-plane sibling below, and is not repeated. Whether "some" also
+    // means "not all" is a reading of the word, not a sentence of the page,
+    // and is not graded; neither is the state of the channels that are not
+    // disabled (the page does not say they are untouched, and it does not say
+    // they lose nothing). The plane count is the fixture's one bitplane
+    // (BPLCON0=$1200); the page names none.
     {
-        auto baseline = measure_sprite_data_fetch(0x0038);
-        bool baseline_uniform = true;
+        auto baseline = measure_sprite_fetch_by_bitplane_line(0x0038);
+        bool baseline_uniform = baseline.bpl_lines > 0;
         for (int n = 1; n < 8; ++n)
-            if (baseline[n] != baseline[0]) baseline_uniform = false;
+            if (baseline.total[n] != baseline.total[0]) baseline_uniform = false;
+        bool baseline_all_fetch_on_bpl_lines = true;
+        for (int n = 0; n < 8; ++n)
+            if (baseline.on_bpl_lines[n] <= 0) baseline_all_fetch_on_bpl_lines = false;
 
         const std::vector<uint16_t> sweep = {0x0030, 0x0028, 0x0020, 0x0018};
-        bool every_point_some_reduced = true;
+        bool every_point_some_disabled = true;
         std::string detail;
         for (uint16_t ddfstrt : sweep) {
-            auto m = measure_sprite_data_fetch(ddfstrt);
-            int reduced = 0, unaffected = 0, worst = 0;
+            auto m = measure_sprite_fetch_by_bitplane_line(ddfstrt);
+            std::string disabled_list;
+            int disabled = 0;
             for (int n = 0; n < 8; ++n) {
-                if (m[n] < baseline[n]) ++reduced;
-                if (m[n] == baseline[n]) ++unaffected;
-                if (n == 0 || m[n] < m[worst]) worst = n;
+                if (baseline.on_bpl_lines[n] > 0 && m.on_bpl_lines[n] == 0) {
+                    ++disabled;
+                    disabled_list += (disabled_list.empty() ? "" : ",") + std::to_string(n);
+                }
             }
-            bool some_reduced = (reduced > 0 && reduced < 8);
-            if (!some_reduced) every_point_some_reduced = false;
+            if (disabled == 0) every_point_some_disabled = false;
             char buf[16];
             snprintf(buf, sizeof buf, "$%04X", ddfstrt);
-            detail += std::string(buf) + ": " + std::to_string(reduced) +
-                      " of 8 reduced (worst ch" + std::to_string(worst) + " " +
-                      std::to_string(m[worst]) + "/" + std::to_string(baseline[worst]) + "); ";
+            detail += std::string(buf) + ": " + std::to_string(disabled) +
+                      " of 8 disabled (" + (disabled_list.empty() ? "none" : "ch" + disabled_list) +
+                      "), fetches on the " + std::to_string(m.bpl_lines) +
+                      " bitplane lines per channel";
+            for (int n = 0; n < 8; ++n)
+                detail += (n ? "/" : " ") + std::to_string(m.on_bpl_lines[n]);
+            detail += "; ";
         }
 
         checks.expect(
-            baseline_uniform && baseline[0] > 0 && every_point_some_reduced,
+            baseline_uniform && baseline_all_fetch_on_bpl_lines && every_point_some_disabled,
             "DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES: with all "
             "eight sprites armed identically (VSTART=40/VSTOP=220), SPREN|DMAEN "
             "held set and ONE BITPLANE (BPLCON0=$1200, the manual names no "
-            "plane count), every channel's own SPRxDATA/SPRxDATB fetch reaches "
-            "reg_address_out at the SAME rate (" + std::to_string(baseline[0]) +
-                " events/channel over 90 lines) at the DDFSTRT=$38 baseline. "
-                "Swept across $0030/$0028/$0020/$0018: " + detail +
-                "- the universal claim ('using a data-fetch start earlier than "
-                "($38) will disable some sprites', p.80) holds at $0028/$0020/"
-                "$0018 but is FALSE at $0030, one bitplane, where every one of "
-                "the eight channels reads the SAME count as the $0038 baseline. "
-                "3-max-window.c18, 3-max.c12.");
+            "plane count), every channel's SPRxDATA/SPRxDATB fetches reach "
+            "reg_address_out at the SAME rate (" + std::to_string(baseline.total[0]) +
+                " events/channel over 90 lines, " + std::to_string(baseline.on_bpl_lines[0]) +
+                " of them on the " + std::to_string(baseline.bpl_lines) +
+                " lines where the bitplane data fetch runs) at the DDFSTRT=$38 "
+                "baseline. A sprite is disabled when its channel makes no such fetch "
+                "on those bitplane lines. Swept across $0030/$0028/$0020/$0018: " +
+                detail + "- 'using a data-fetch start earlier than ($38) will "
+                "disable some sprites' (p.80) asks for at least one disabled "
+                "channel at every one of the four. 3-max-window.c18, 3-max.c12.");
     }
 
     // ---------------- DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE (p.82) ----------------
