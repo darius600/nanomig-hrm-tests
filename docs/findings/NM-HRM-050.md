@@ -80,12 +80,12 @@ line, and `$30` is the value it should carry; the entry at `:72` is right.
 
 | | |
 |---|---|
-| **WinUAE** | Both, named and distinct: `AK_LTGT 0x30` and `AK_NUMBERSIGN 0x2B` (`include/keyboard.h:119-120`) |
+| **WinUAE** | Both, named and distinct: `AK_LTGT 0x30` and `AK_NUMBERSIGN 0x2B` ([`include/keyboard.h:119-120`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/keyboard.h#L119-L120)) |
 | **vAmiga** | Both, named and distinct: `laceBrace = 0x30` and `hashtag = 0x2B` (`GUI/Input/AmigaKey.swift:97-98`) |
-| **Denise** | Both, adjacent in its key table: `0x2b, 0x30` (`emulation/libami/input/keyboard/keyboard.cpp:19`) |
-| **Copperline** | `0x30` sits in the A500 key matrix taken from the keyboard's own wiring (`src/chipset/keyboard.rs:133`) |
-| **MiSTer** | descendant — **no counterpart.** The pinned Minimig-AGA tree has no `amiga_keymap.v`, no `keymap` and no `hid.v`: `rtl/minimig.v:207` takes the already-decoded `kbd_mouse_data` as a top-level input, and the translation happens in software above the chipset |
-| **TC64** | descendant — no `amiga_keymap.v`, but a keymap of its own: builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`), among them the Chameleon boards, translate PS/2 scan codes in `rtl/minimig/ciaa_ps2keyboard_map.v`, which gives the two cutout keys two codes, `$2B` (`:506`) and `$30` (`:510`), as the page does. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
+| **Denise** | Both, adjacent in its key table: `0x2b, 0x30` ([`emulation/libami/input/keyboard/keyboard.cpp:19`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/input/keyboard/keyboard.cpp#L19)) |
+| **Copperline** | `0x30` sits in the A500 key matrix taken from the keyboard's own wiring ([`src/chipset/keyboard.rs:133`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/keyboard.rs#L133)) |
+| **MiSTer** | descendant — **no counterpart.** The pinned Minimig-AGA tree has no `amiga_keymap.v`, no `keymap` and no `hid.v`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes the already-decoded `kbd_mouse_data` as a top-level input, and the translation happens in software above the chipset |
+| **TC64** | descendant — no `amiga_keymap.v`, but a keymap of its own: builds with `MINIMIG_PS2_KEYBOARD` ([`rtl/minimig/amiga_keyboard.v:70`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/amiga_keyboard.v#L70)), among them the Chameleon boards, translate PS/2 scan codes in `rtl/minimig/ciaa_ps2keyboard_map.v`, which gives the two cutout keys two codes, `$2B` ([`:506`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa_ps2keyboard_map.v#L506)) and `$30` ([`:510`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa_ps2keyboard_map.v#L510)), as the page does. Its MiST builds take `kbd_mouse_data` already decoded ([`rtl/minimig/amiga_keyboard.v:156-202`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/amiga_keyboard.v#L156-L202)) |
 
 ### What other Commodore documents say
 

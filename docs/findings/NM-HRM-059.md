@@ -10,7 +10,7 @@
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: `opus:8-adkcon.c12`, p. 265 (no ch8 ledger; as the FAIL line prints it) |
-| **Module** | `paula.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer `rtl/paula.v:127`, `:193` and TC64 `rtl/minimig/paula.v:146`, `:212` carry the identical lines) |
+| **Module** | `paula.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer and TC64 carry the identical lines, cited in the witness table) |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: expected bit 15 of ADKCONR to follow the bit written, observed `0x7FFF`, bit 15 clear; the package reports `17 passed, 2 failed`; the other red, `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, is [NM-HRM-057](NM-HRM-057.md)'s |
 | **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not measured |
@@ -57,12 +57,12 @@ what was written, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`, red.
 
 | | | |
 |---|---|---|
-| **WinUAE** | bit 15 always 0 | masked **twice** — in `setclr` (`custom.cpp:835`, called at `:3321`) and again at the read, `return adkcon & 0x7fff;` (`:2270`) |
-| **vAmiga** | bit 15 always 0 in practice | read unmasked (`Core/Components/Paula/PaulaRegs.cpp:22`), write masks with `value & 0x7FFF` (`:47`) |
-| **Denise** | bit 15 always 0 in practice | read unmasked (`emulation/libami/paula/paula.cpp:80`), write masks with `value & 0x7fff` (`:87`) |
-| **Copperline** | bit 15 always 0 in practice | read unmasked (`src/bus/custom_regs.rs:41`), write masks (`src/chipset/paula.rs:1182-1184`) |
-| **MiSTer** | bit 15 always 0 | same observable, inherited (descendant) |
-| **TC64** | bit 15 always 0 | same observable, inherited (descendant) |
+| **WinUAE** | bit 15 always 0 | masked **twice** — in `setclr` ([`custom.cpp:835`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L835), called at [`:3321`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L3321)) and again at the read, `return adkcon & 0x7fff;` ([`:2270`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2270)) |
+| **vAmiga** | bit 15 always 0 in practice | read unmasked ([`Core/Components/Paula/PaulaRegs.cpp:22`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L22)), write masks with `value & 0x7FFF` ([`:47`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L47)) |
+| **Denise** | bit 15 always 0 in practice | read unmasked ([`emulation/libami/paula/paula.cpp:80`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/paula.cpp#L80)), write masks with `value & 0x7fff` ([`:87`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/paula.cpp#L87)) |
+| **Copperline** | bit 15 always 0 in practice | read unmasked ([`src/bus/custom_regs.rs:41`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L41)), write masks ([`src/chipset/paula.rs:1182-1184`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1182-L1184)) |
+| **MiSTer** | bit 15 always 0 | same observable, inherited (descendant): the identical lines, [`rtl/paula.v:127`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L127), [`:193`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L193) |
+| **TC64** | bit 15 always 0 | same observable, inherited (descendant): the identical lines, [`rtl/minimig/paula.v:146`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L146), [`:212`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L212) |
 
 ## Decision
 

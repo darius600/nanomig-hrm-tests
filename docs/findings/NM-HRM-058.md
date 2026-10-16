@@ -56,12 +56,12 @@ own starting point at 10 bit-cells and 11 (`B11`, red). Both reds come from the
 
 | | |
 |---|---|
-| **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host (`od-win32/serial_win32.cpp:464`, `:600`); its only 10/11 constant is on the *transmit* side (`:261`), and its loopback receive time is 9 or 10 bit times **plus half a bit** (`:799`), measured to a mid-bit sample rather than as a window bound |
-| **vAmiga** | **10 / 11.** `if (recCnt >= packetLength() + 2)` — `Core/Components/Paula/UART/UARTEvents.cpp:83`, with `packetLength()` returning 9 or 8 (`UART.h:172`); the +2 is start and stop |
-| **Denise** | **10 / 11.** `unsigned bits = (serPer & 0x8000) ? 11 : 10;` — `emulation/libami/paula/uart.cpp:78`, counted at `:80` |
-| **Copperline** | **10 / 11.** `total_bits: if long { 11 } else { 10 }` — `src/chipset/paula.rs:1557`, set at shift-load rather than counted against a constant |
+| **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host ([`od-win32/serial_win32.cpp:464`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/serial_win32.cpp#L464), [`:600`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/serial_win32.cpp#L600)); its only 10/11 constant is on the *transmit* side ([`:261`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/serial_win32.cpp#L261)), and its loopback receive time is 9 or 10 bit times **plus half a bit** ([`:799`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/serial_win32.cpp#L799)), measured to a mid-bit sample rather than as a window bound |
+| **vAmiga** | **10 / 11.** `if (recCnt >= packetLength() + 2)` — [`Core/Components/Paula/UART/UARTEvents.cpp:83`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UARTEvents.cpp#L83), with `packetLength()` returning 9 or 8 ([`UART.h:172`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.h#L172)); the +2 is start and stop |
+| **Denise** | **10 / 11.** `unsigned bits = (serPer & 0x8000) ? 11 : 10;` — [`emulation/libami/paula/uart.cpp:78`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L78), counted at [`:80`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L80) |
+| **Copperline** | **10 / 11.** `total_bits: if long { 11 } else { 10 }` — [`src/chipset/paula.rs:1557`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1557), set at shift-load rather than counted against a constant |
 | **MiSTer** | descendant — the same receiver lines |
-| **TC64** | descendant — `rtl/minimig/paula_uart.v:156-230`, byte-identical to NanoMig's, confirmed by a full-file comparison |
+| **TC64** | descendant — [`rtl/minimig/paula_uart.v:156-230`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L156-L230), byte-identical to NanoMig's, confirmed by a full-file comparison |
 
 ### What other Commodore documents say
 

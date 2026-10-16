@@ -52,12 +52,12 @@ Nothing is graded. `RIGHTALT-CONFLICT` in [`hrm/ch8-keycode-table`](../../hrm/ch
 
 | | code | |
 |---|---|---|
-| **WinUAE** | `include/keyboard.h:103-104` | `AK_LALT 0x64`, `AK_RALT 0x65` |
+| **WinUAE** | [`include/keyboard.h:103-104`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/keyboard.h#L103-L104) | `AK_LALT 0x64`, `AK_RALT 0x65` |
 | **vAmiga** | `GUI/Input/AmigaKey.swift:136-137` | `leftAlt = 0x64`, `rightAlt = 0x65` |
-| **Denise** | `emulation/libami/input/keyboard/keyboard.cpp:18` | `0x64, 0x65` adjacent in the modifier group of its key table |
-| **Copperline** | `src/video/window/host_input.rs:185-186` | `AltLeft => 0x64`, `AltRight => 0x65` |
+| **Denise** | [`emulation/libami/input/keyboard/keyboard.cpp:18`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/input/keyboard/keyboard.cpp#L18) | `0x64, 0x65` adjacent in the modifier group of its key table |
+| **Copperline** | [`src/video/window/host_input.rs:185-186`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/window/host_input.rs#L185-L186) | `AltLeft => 0x64`, `AltRight => 0x65` |
 | **MiSTer** | none | descendant — not applicable: `amiga_keymap.v` is absent from the pinned `rtl/`, so there is no keymap to consult |
-| **TC64** | `rtl/minimig/ciaa_ps2keyboard_map.v:430`, `:686` | descendant — no `amiga_keymap.v`, but the keymap its builds with `MINIMIG_PS2_KEYBOARD` use takes the table too: `$64` for the left Alt and `$65` for the right |
+| **TC64** | [`rtl/minimig/ciaa_ps2keyboard_map.v:430`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa_ps2keyboard_map.v#L430), [`:686`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa_ps2keyboard_map.v#L686) | descendant — no `amiga_keymap.v`, but the keymap its builds with `MINIMIG_PS2_KEYBOARD` use takes the table too: `$64` for the left Alt and `$65` for the right |
 
 ## Decision
 
