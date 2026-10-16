@@ -214,7 +214,7 @@ on the whole of `nanomig.v`, with the same lines on both cores:
   length (`P8.65-MODE11-WINPRE`, green); the key arrived in both
   (`P8.65-MODE11-WINDOW`, green).
 - **The controls** `P7.5-CIAB-GREENCTL` and `P8.65-MODE01-CIAB-GREENCTL`
-  (`:2602-2605`, `:2659-2662`), which `make test` does not run (they print only in a run selected with `NMH_MUTATE=P75-GREENCTL,P865M01-GREENCTL`, so their values are at most a reading), start CIA-A's timer A (CRA = $21) or timer B
+  (`:2602-2605`, `:2659-2662`), which `make test` does not run (they print only in a run selected with `NMH_MUTATE=P75-GREENCTL,P865M01-GREENCTL`, [how to run it](../../integration/README.md#mutation-builds), so their values are at most a reading), start CIA-A's timer A (CRA = $21) or timer B
   (CRB = $21) twice with the same code, and read after each start. No CNT edge
   occurs in the first interval: the ICR read after it has SP = 0
   (`P7.5-CIAB-GREENCTL-PRE` and `P8.65-MODE01-CIAB-GREENCTL-PRE`, green). One key

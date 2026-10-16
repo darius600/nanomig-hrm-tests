@@ -20,7 +20,7 @@
 ## Why it was withdrawn
 
 The withdrawn claim is that the next bus read of SERDATR after a SERDAT write
-with the transmitter idle must find bit 13, TBE, at 0. No page asks for that.
+with the transmitter idle must find bit 13, TBE, at 0. No page asks for that. The assertion that graded it was `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in `hrm/ch8-serdatr-read-word`, which wrote one word from idle and required the very next read to find TBE clear; it now writes a second word while the first is shifting and requires TBE to read 0 on every read until that frame ends, and is green.
 
 **p. 258 says when the word leaves SERDAT, and it is at once:**
 

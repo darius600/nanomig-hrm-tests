@@ -198,7 +198,7 @@ FAIL: C11 p.101: the run of every baseline sprite line that shows one is 32 +- 1
 fx68k and TG68K print these lines identically. In SuperHires the sprite's sixteen pixels cover 16 hires periods, 70 ns a pixel;
 in Hires the same sprite covers 32, 140 ns a pixel. Every run measured above starts at sample 269, so only the width changes with the mode. One
 contrast of the package is a mutation build, not run by `make test`
-(`test_ch4_shres_bitplane.cpp:180`, `C11`): with sprite 0's data words `$FF00` where they are `$FFFF`, the runs halve (8
+([how to run it](../../integration/README.md#mutation-builds); `test_ch4_shres_bitplane.cpp:180`, `C11`): with sprite 0's data words `$FF00` where they are `$FFFF`, the runs halve (8
 periods in F7, F8 and F9, 16 in F10) and `C11` stays red. The sprites' colours in the same frames are [NM-HRM-016](NM-HRM-016.md)'s subject.
 
 ## Risks and unknowns
