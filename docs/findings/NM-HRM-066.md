@@ -12,7 +12,7 @@
 | **Chapter** | 3 — Playfield, printed pp. 80, 82–83; 6 — Blitter, printed pp. 195–197 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, by assertion: `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` `opus:3-max.c12` / `sol:3-max-window.c18` (p. 80); `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` and `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` `opus:3-hscr.c10` / `sol:3-hscroll.c12` (p. 82); `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES` `opus:3-hscr.c17` / `sol:3-hscroll.c17` (p. 83); the chapter 6 passages (pp. 195–197) carry no claim id |
 | **Module** | `agnus.v`, `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L125) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L123); MiSTer has the same code; fixed in TC64 |
 | **Test** | [`hrm/ch7-dmacon-register-bits`](../../hrm/ch7-dmacon-register-bits): `make -C hrm/ch7-dmacon-register-bits test`; an expected red exits nonzero |
-| **Assertions** | 3 red, all with one lores bitplane (`BPLCON0 = $1200`): `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` (expected sprite 7 to lose fetches at $0030, observed 172 of 172), `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` (expected some of the eight channels reduced, observed none) and `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` (expected some channel reduced at every swept start below $0038, observed none at $0030). Their siblings at 2, 4 and 6 lores bitplanes, `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES`, are green in the same run; the package reports `30 passed, 3 failed` |
+| **Assertions** | 3 red, all with one lores bitplane (`BPLCON0 = $1200`): `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` (expected sprite 7 to lose fetches at $0030, observed 172 of 172), `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` (expected some of the eight channels reduced, observed none) and `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` (expected at least one channel disabled, with no SPRxDATA or SPRxDATB fetch on any line where the bitplane data fetch runs, at each of $0030, $0028, $0020 and $0018; observed 0 of 8 disabled at every one of the four). Their siblings at 2, 4 and 6 lores bitplanes, `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES`, are green in the same run; the package reports `30 passed, 3 failed` |
 | **Verdict of the four** | **3–1 for p. 82's sentence.** WinUAE, vAmiga and Denise stop sprite DMA once the bitplane fetch has started, at any plane count; Copperline keeps sprite 7 at $0030 at any plane count and asserts it in its own test. NanoMig is the one whose answer depends on the plane count — and Figure 6-9, read by plane with its own footnote, predicts NanoMig's counts slot for slot. Hardware: not measured |
 | **Effort** | S — two lines ported from TC64, one in `agnus_bitplanedma.v` and one in `agnus.v`; not run here |
 
@@ -106,13 +106,25 @@ counts **172** in every row below.
 | `$9200` | 1 hires | **90** | 172 each | measured only |
 | `$A200`, `$C200` | 2 or 4 hires | **8** | 172 each | measured only |
 
+The package prints, for the p. 80 assertion:
+
+```text
+FAIL: DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES: ... (172 events/channel over 90 lines, 164 of them on the 82 lines where the bitplane data fetch runs) at the DDFSTRT=$38 baseline. A sprite is disabled when its channel makes no such fetch on those bitplane lines. Swept across $0030/$0028/$0020/$0018: $0030: 0 of 8 disabled (none), fetches on the 82 bitplane lines per channel 164/164/164/164/164/164/164/164; $0028: 0 of 8 disabled (none), fetches on the 82 bitplane lines per channel 164/164/164/164/164/164/82/164; $0020: 0 of 8 disabled (none), fetches on the 82 bitplane lines per channel 164/164/164/164/82/164/82/164; $0018: 0 of 8 disabled (none), fetches on the 82 bitplane lines per channel 164/164/82/164/82/164/82/164; ...
+```
+
 The p. 80 assertion `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES`
-sweeps the fetch start with one lores plane, and it is red because its first
-point loses nothing: at $0030 no channel loses a fetch (172 of 172); at $0028
-channel 6 keeps 90 of 172; at $0020 channels 4 and 6 keep 90; at $0018 channels
-2, 4 and 6 keep 90. The package reports the number of channels reduced and the
-worst one at each point; which channels, and the rows it does not grade, come
-from the same harness
+sweeps the fetch start with one lores plane and grades a sprite as disabled
+when its channel makes no SPRxDATA or SPRxDATB fetch on any line where the
+bitplane data fetch runs; it asks for at least one disabled channel at each of
+$0030, $0028, $0020 and $0018. It is red at all four points, with 0 of 8
+channels disabled at each. At the $0038 baseline every channel makes 172
+fetches over the 90 lines, 164 of them on the 82 lines where the bitplane data
+fetch runs. On those 82 lines the channels keep 164 each at $0030; at $0028
+channel 6 keeps 82; at $0020 channels 4 and 6 keep 82; at $0018 channels 2, 4
+and 6 keep 82, and none keeps 0. A channel that loses half its fetches on those
+lines is reduced and not disabled by that criterion. The package prints the
+disabled channels and the fetches per channel on the bitplane lines at each
+point; the rows it does not grade come from the same harness
 printing all eight counts for every BPLCON0 above and every DDFSTRT in the sweep
 and at $0038, a measurement for this page, not a graded assertion. **Every one
 of those forty-five rows of eight counts is what Figure 6-9 predicts when its
