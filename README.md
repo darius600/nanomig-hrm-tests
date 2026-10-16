@@ -48,14 +48,20 @@ cd nanomig-hrm-tests
 
 `./run_all.sh --jobs 8` runs up to eight packages of each tree at a time and
 prints the same lines in the same order. A full run that way took 30 minutes on
-a 16-thread machine, most of it the integration packages.
+a 16-thread machine, most of it the integration packages. One package runs in
+seconds: `make -C hrm/<package> test` (each finding page's Test row gives its
+command).
 
-Requires Verilator (last verified with **5.052**) and `make`; the tests at
+Requires Verilator (last verified with **5.052**), a C++ compiler and `make`.
+On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020,
+with which the `hrm/` and `aa/` suites print the counts below. The tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
-with 2.0f) on the PATH. If *every* package reports a build error, the
+with 2.0f; `make CPU=m68k SYNTAX=mot` in the unpacked archive builds it) on the
+PATH. If *every* package reports a build error, the
 toolchain is missing rather than the tree broken; on Windows these usually
-live only inside WSL.
+live only inside WSL. A single package that reports a build error is rerun alone
+with `make -B -C hrm/<package>`.
 
 NanoMig comes in as a submodule, pinned to the commit the tests were verified
 against; nothing under `nanomig/` is modified. Cloned without `--recursive`?
@@ -67,6 +73,8 @@ name the RTL file on the command line, for example
 `make -B -C hrm/ch5-audio-location-pointer SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test`,
 after looking up the variable in the package's `Makefile` (most use `SRC`,
 `SRC_DIR` or `RTL`). A red against another core is not a finding here.
+File:line references printed in PASS and FAIL text are to NanoMig at the pinned
+commit.
 
 ## Where the suite stands
 
@@ -80,8 +88,8 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **34**, each run on both CPU cores: 10 green, 24 carrying a red; 26 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **3813** on fx68k — 3476 pass, **337 fail**; **3877** on TG68K — 3540 pass, **337 fail** |
-| registered findings | **78**, all open — 73 against the Hardware Reference Manual and 5 against the AA specification. **53 ask you to decide whether the RTL should change**; 69 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
-| AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
+| registered findings | **78**, all open — 73 against the Hardware Reference Manual and 5 against the AA specification. **53 ask you to decide whether the RTL should change** (51 HRM, 2 AA); 69 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
+| AA findings | **5** — two are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
 
@@ -135,7 +143,8 @@ never implied by a green.
 
 ```
 hrm/            217 packages against the manual, each at one module's ports;
-                chN-… or appX-… names the unit of the manual that judges it
+                chN-… or appX-… names the unit the package was built for; each
+                finding's Chapter row names the page that judges it
 aa/             33 packages against the AA specification
 integration/    whole-system tests at nanomig.v's ports, on both CPU cores;
                 integration/README.md lists them

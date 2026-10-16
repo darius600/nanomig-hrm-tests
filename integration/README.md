@@ -19,6 +19,10 @@ in the line format the root [`README.md`](../README.md#where-the-suite-stands)
 describes. `./run_all.sh --jobs 8` runs every package and prints one line per
 package and core.
 
+## Mutation builds
+
+A package whose test source records mutations (`NMH_MUTATE=<selector>` in its comments) runs one with `NMH_MUTATE=<selector> make -C integration/<package> test-fx68k` (or `test-tg68k`): a mutation build, not run by `make test`. For example, `NMH_MUTATE=C11 make -C integration/ch4-shres-bitplane test-fx68k` prints `86 passed, 49 failed` and exits nonzero, as the package's record for `C11` says.
+
 ## Graded against the manual
 
 | Package | What it grades |
