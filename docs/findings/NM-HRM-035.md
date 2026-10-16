@@ -91,7 +91,7 @@ follows PRA bit 0 otherwise, as pp. 341 and 354 say; `minimig.v` keeps only bits
 | configuration — `chipset_config` driven with 0 (`hrm/ch7-overlay-source/test_minimig.cpp:217`) | OCS, the **A500** mode |
 | precondition — `ovl` before the write | **1** |
 | after a byte write (lower data strobe) to CIA-A **timer A low** (`$BFE401`) | `ovl` reads **0** |
-| the same test built without the write (mutation build `MUT_2`, not run by `make test`) | `ovl` stays **1** |
+| the same test built without the write (mutation build `MUT_2`, `make -C hrm/ch7-overlay-source MUT=MUT_2 test`; a plain `make test` does not build it) | `ovl` stays **1** |
 | a write to **CIA-B** (the control) | `ovl` stays **1** |
 
 Timer A low has no relation to port A. The stimulus is not DDRA (`$BFE201`),

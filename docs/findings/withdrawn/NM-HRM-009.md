@@ -47,8 +47,8 @@ gave bit 15 a value to read; p. 273 does not.
 | **vAmiga** | **as NanoMig.** [`DeniseRegs.cpp:319`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/DeniseRegs.cpp#L319) `peekCLXDAT` returns `clxdat \| 0x8000` |
 | **Denise** | **as NanoMig.** [`denise.cpp:313`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L313) `getClxDat` returns `clxDat \| 0x8000` |
 | **Copperline** | **as NanoMig.** [`denise.rs:538`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/denise.rs#L538) `read_clxdat` returns the register `\| 0x8000` |
-| **MiSTer** | descendant — `rtl/denise_collision.v:117` is identical to NanoMig's |
-| **TC64** | descendant — `rtl/minimig/denise_collision.v:117` is identical to NanoMig's |
+| **MiSTer** | descendant — [`rtl/denise_collision.v:117`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L117) is identical to NanoMig's |
+| **TC64** | descendant — [`rtl/minimig/denise_collision.v:117`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_collision.v#L117) is identical to NanoMig's |
 
 ### What other Commodore documents say
 

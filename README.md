@@ -54,14 +54,15 @@ command).
 
 Requires Verilator (last verified with **5.052**), a C++ compiler and `make`.
 On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020,
-with which the `hrm/` and `aa/` suites print the counts below. The tests at
+with which the `hrm/` and `aa/` suites print the counts below after rerunning
+any single `BUILD` line, as described below. The tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
 with 2.0f; `make CPU=m68k SYNTAX=mot` in the unpacked archive builds it) on the
 PATH. If *every* package reports a build error, the
 toolchain is missing rather than the tree broken; on Windows these usually
 live only inside WSL. A single package that reports a build error is rerun alone
-with `make -B -C hrm/<package>`.
+with `make -B -C hrm/<package> test`.
 
 NanoMig comes in as a submodule, pinned to the commit the tests were verified
 against; nothing under `nanomig/` is modified. Cloned without `--recursive`?

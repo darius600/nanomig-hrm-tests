@@ -157,4 +157,4 @@ pattern in this file. The reds it addresses are `DSKBYT-NOT-CLEARED-ON-READ` and
 
 **DATA needs a byte-level model this design does not have.** NanoMig moves whole
 sectors from SD into a 16-bit FIFO; nothing observes a byte at a time. It is
-larger work than the other two and should be costed separately. The reds it addresses are `DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES`, `opus:8-dsk.c9`, `sol:8-dsk.c9`, `B4-DSKBYTR-DATA-BYTE-HALF` and `B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS`.
+larger work than the other two and should be costed separately. The reds it addresses are `DATA-FIELD-DOES-NOT-REFLECT-INCOMING-BYTES`, the two DATA reds of `hrm/ch8-disk-controller-overview`, `B4-DSKBYTR-DATA-BYTE-HALF` and `B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS`.

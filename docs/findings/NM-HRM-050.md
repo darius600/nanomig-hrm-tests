@@ -49,7 +49,7 @@ codes with the modifier keys mapped into the 0x68+ range"*; FPGA Companion's
 `core_map_key` returns the usage code unchanged for a non-legacy core
 (`src/core.c:60-82`), which NanoMig is: core id 0, *"Generic core"*
 (`src/misc/sysctrl.v:186`). The USB HID usage names, read from Denise's own
-HID-indexed table (`driver/input/iokit/keyNames.cpp:149` and `:199`), bind the
+HID-indexed table ([`driver/input/iokit/keyNames.cpp:149`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/driver/input/iokit/keyNames.cpp#L149) and [`:199`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/driver/input/iokit/keyNames.cpp#L199)), bind the
 two stimuli to the two keys:
 
 | HID usage | USB HID name | where the key sits | Amiga code | NanoMig gives |
