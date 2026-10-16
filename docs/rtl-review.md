@@ -34,7 +34,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a test fails against the page; the implementations split |
 | [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
-| [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a D-only blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
+| [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
 
 ## [`src/minimig-aga/agnus_audiodma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v) — 1
 
@@ -69,7 +69,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-020](findings/NM-HRM-020.md) | BLTSIZV is not gated on ECS, while its two siblings are | a test fails against the page |
 | [NM-HRM-021](findings/NM-HRM-021.md) | DOFF (BLTCON1 bit 7) has no observable effect | a test fails against the page |
 | [NM-HRM-022](findings/NM-HRM-022.md) | BLTxPTH carries five high bits in both chipsets | a test fails against the page |
-| [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a D-only blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
+| [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
 
 ## [`src/minimig-aga/agnus_copper.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v) — 4
 
