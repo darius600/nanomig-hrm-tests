@@ -22,7 +22,7 @@
 // MUTATION BBUSY-PREDICTS stimulus red the true 200-word blit substituted with the one-word build (already finished, BBUSY clear), via NMH_MUTATE=BBUSY-PREDICTS
 // MUTATION SLOT-UNIT stimulus red the refresh-pattern capture substituted with the four-lores-plane build, whose bitplane DMA adds reads to the refresh reads so that its groups are not four refresh slots per line, via NMH_MUTATE=SLOT-UNIT
 // MUTATION A4PRE stimulus red nasty-mode blit shrunk to a near-instant one-word transfer (prog_sharing_nasty_tiny.s), via NMH_MUTATE=A4PRE
-// MUTATION A4 none impossible NMH_MUTATE=-: already red at baseline, no stimulus is run through it: the line prints FAIL in every run because a CPU program fetch falls inside the nasty-mode blit's window; its comparator (is_cpu_access(), count zero over a window) is live on A4-CTRL, which runs the same helper over the four-high-resolution-bitplane display's fetch windows and reads green there
+// MUTATION A4 none impossible NMH_MUTATE=-: already red at baseline, no stimulus is run through it: the line prints FAIL in every run because CPU program fetches fall inside the nasty-mode blit's DMA run; its comparator (is_cpu_access(), count zero over a window) is live on A4-CTRL, which runs the same helper over the four-high-resolution-bitplane display's fetch windows and reads green there
 // MUTATION A4-CTRL-PRE stimulus red the four-high-resolution-bitplane capture substituted with the no-display run (no fetch windows), via NMH_MUTATE=A4-CTRL-PRE
 // MUTATION A4-CTRL stimulus red the four-high-resolution-bitplane capture substituted with the four-low-resolution-bitplane capture, in whose fetch windows the CPU is granted accesses; A4-CTRL-PRE still reads the high-resolution capture and stays green, via NMH_MUTATE=A4-CTRL
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
@@ -91,6 +91,8 @@ constexpr uint32_t kShareScratch = 0x0C0100;
 constexpr uint32_t kShareDstLo   = 0x0C4000;
 constexpr uint32_t kShareDstHi   = 0x0C4000 + 2 * 500; // 500 words
 constexpr uint64_t kShareRunBudget = 3'000'000;
+constexpr uint32_t kShareSrcLo   = 0x0C2000;            // the blit's A-channel source words
+constexpr uint32_t kShareSrcHi   = 0x0C2000 + 2 * 500;  // 500 words
 
 constexpr uint32_t kBpScratch = 0x0C0100;
 constexpr uint32_t kBpPtrLo   = 0x0C6000;
@@ -993,25 +995,38 @@ int main(int argc, char** argv) {
     // available Chip memory cycle." No claim id is carried: the claim ids of
     // the blitter's priority over the 68000 say "normally", which
     // A4-SHARE-WITHDRAWN below records for share mode.
+    // The interval graded is the blit's whole DMA run: from its first source
+    // read (the A channel's words, which only the blitter reads) to its last
+    // destination write.
     {
         const Capture& cap = (mv == "A4PRE" ? cap_nasty_tiny : cap_nasty);
-        auto [lo, hi] = dst_span(cap);
+        auto src_r = read_cycles_in_range(cap.log, word_addr(kShareSrcLo), word_addr(kShareSrcHi));
+        auto dst_w = dst_writes(cap);
+        uint64_t first_dst = dst_w.empty() ? 0 : *std::min_element(dst_w.begin(), dst_w.end());
+        uint64_t lo = src_r.empty() ? 0 : *std::min_element(src_r.begin(), src_r.end());
+        uint64_t hi = dst_w.empty() ? 0 : *std::max_element(dst_w.begin(), dst_w.end());
+        bool have_span = !src_r.empty() && !dst_w.empty() && lo < first_dst && first_dst <= hi;
         // Every CPU Chip-memory access, classified on the RAM-log basis of
         // is_cpu_access(): a program fetch or a write to the counter.
-        CpuHits hits = cpu_hits_in(cap.log, lo, hi, word_addr(kShareScratch), 8);
-        checks.note("A4: window " + std::to_string(lo) + ".." + std::to_string(hi) + ", " + std::to_string(hits.n) +
-                    " CPU Chip-memory access(es) inside it" + (hits.n ? ": " + hits.list : std::string("")) +
-                    " (offsets from the window's first destination write)");
-        bool nontrivial = lo != hi && (hi - lo) > 2000;
+        CpuHits hits = have_span ? cpu_hits_in(cap.log, lo, hi, word_addr(kShareScratch), 8) : CpuHits{};
+        size_t before_dst = have_span
+            ? cpu_hits_in(cap.log, lo, first_dst - 1, word_addr(kShareScratch), 0).n : 0;
+        checks.note("A4: blit DMA run " + std::to_string(lo) + ".." + std::to_string(hi) + " (first source read to last "
+                    "destination write; first destination write at +" + std::to_string(have_span ? first_dst - lo : 0) + "), " +
+                    std::to_string(hits.n) + " CPU Chip-memory access(es) inside it, " + std::to_string(before_dst) +
+                    " of them before the first destination write" + (hits.n ? ": " + hits.list : std::string("")) +
+                    " (offsets from the run's first source read)");
+        bool nontrivial = have_span && (hi - lo) > 2000;
         checks.expect(nontrivial,
-            "A4PRE: the nasty-mode blit's active window is long enough to have contained "
-            "several CPU-loop iterations had the CPU been let through (" + std::to_string(hi - lo) + " cycles)");
+            "A4PRE: the nasty-mode blit's DMA run, from its first source read to its last destination write, "
+            "is long enough to have contained several CPU-loop iterations had the CPU been let through (" +
+            std::to_string(hi > lo ? hi - lo : 0) + " cycles)");
         if (nontrivial) {
             checks.expect(hits.n == 0,
                 "A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available "
                 "Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter "
-                "write) during the blit's active window (" + std::to_string(hits.n) + " accesses, " +
-                std::to_string(hits.writes) + " of them counter writes)");
+                "write) from the blit's first source read to its last destination write (" + std::to_string(hits.n) +
+                " accesses, " + std::to_string(hits.writes) + " of them counter writes)");
         } else {
             not_graded(checks, "A4", "A4PRE");
         }
@@ -1810,7 +1825,7 @@ int main(int argc, char** argv) {
             kFastrunStepBudget, {kResults}, cfg_fr);
 
         // The blit's own active window, on the same yardstick (first to
-        // last destination write) A2/A4/ORDER use -- prog_fastrun.s uses
+        // last destination write) A2/ORDER use -- prog_fastrun.s uses
         // the same BLIT_DST ($0C4000, 500 words) as prog_sharing.s.
         auto blit_window = [&](const FastCapture& c) -> std::pair<uint64_t, uint64_t> {
             auto d = write_cycles_in_range(c.log, word_addr(kShareDstLo), word_addr(kShareDstHi));
