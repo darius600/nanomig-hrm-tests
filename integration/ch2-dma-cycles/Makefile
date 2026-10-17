@@ -9,7 +9,7 @@ PROGS    := prog_c0 prog_c0_htotal prog_c0_nofinish prog_c0_exit6 \
             prog_c5 prog_c6 prog_c6_stopself prog_c6_nospren prog_c6_prime prog_c6_skip50 prog_c6_endtrailer prog_c6_nofinish prog_c6_htotal prog_c6_norestart \
             prog_c7a prog_c7b \
             prog_s1 prog_s2 \
-            prog_s1_q2 prog_s1_end prog_s1_h prog_s1_s prog_s1_c prog_s1_nospren \
-            prog_s2_still prog_s2_noref prog_s2_col0 prog_s2_endv prog_s2_exit6
+            prog_s1_q2 prog_s1_end prog_s1_h prog_s1_s prog_s1_c prog_s1_nospren prog_s1_zcopy \
+            prog_s2_still prog_s2_swap prog_s2_refmove prog_s2_col0 prog_s2_endcol prog_s2_exit6
 
 include ../harness/nanomig.mk

@@ -42,6 +42,9 @@ start:
         move.w  #$FFFE,(a1)+
         ; structure Z (2.9) at CH_SPR0.
         CPY_TABLE CH_SPR0,structz_tbl,structz_tbl_end
+        ifd     S1_ZCOPY
+        CPY_TABLE CH_SPR0+$100,structz_tbl,structz_tbl_end
+        endc
         ; null block at CH_SPR_NULL.
         move.l  #CH_SPR_NULL,a1
         move.w  #$0000,(a1)+
@@ -82,7 +85,13 @@ start:
         S7_FINISH
         VBLANK_HANDLER
 
-s1_spr_tab:     dc.l    CH_SPR0,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
+s1_spr_tab:
+                ifd     S1_ZCOPY
+                dc.l    CH_SPR0+$100
+                else
+                dc.l    CH_SPR0
+                endc
+                dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
                 dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
 s1_bpl_tab:     dc.l    CH_BPL1
 

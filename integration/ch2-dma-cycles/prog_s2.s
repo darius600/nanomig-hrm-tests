@@ -20,12 +20,6 @@ start:
         move.l  #COP_MAIN,a1
         lea     s2_spr_tab_a,a5
         bsr     build_Vspr8
-        ifd     S2_ENDV
-        ; END placed after V_spr (P8's contrast for Q5): the rest of L_A is
-        ; written but never fetched.
-        move.w  #$FFFF,(a1)+
-        move.w  #$FFFE,(a1)+
-        endc
         lea     s2_bpl_tab,a6
         moveq   #1,d4
         bsr     build_Vbpln
@@ -45,6 +39,12 @@ start:
         move.w  #$00FF,(a1)+
         move.w  #COLOR23,(a1)+
         move.w  #$0F0F,(a1)+
+        ifd     S2_ENDCOL
+        ; END placed after the colour MOVEs and before the COP1LC pair (P8's
+        ; contrast for Q5): the pair is written but never fetched.
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFE,(a1)+
+        endc
         move.w  #COP1LCH,d1
         move.w  #COP1LCL,d2
         move.l  #COP_SECOND,d3
@@ -87,6 +87,9 @@ start:
         CPY_TABLE CH_SPR0,s2_data_a,s2_data_a_end
         CPY_TABLE CH_SPR0+$40,s2_data_b,s2_data_b_end
         CPY_TABLE CH_SPR0+$0800,s2_data_r,s2_data_r_end
+        ifd     S2_REFMOVE
+        CPY_TABLE CH_SPR0+$0880,s2_data_r2,s2_data_r2_end
+        endc
         move.l  #CH_SPR_NULL,a1
         move.w  #$0000,(a1)+
         move.w  #$0000,(a1)+
@@ -131,17 +134,27 @@ start:
         S7_FINISH
         VBLANK_HANDLER
 
-s2_spr_tab_a:   dc.l    CH_SPR0,CH_SPR_NULL,CH_SPR0+$0800,CH_SPR_NULL
+s2_spr_tab_a:
+                ifd     S2_SWAP
+                dc.l    CH_SPR0+$40
+                else
+                dc.l    CH_SPR0
+                endc
+                dc.l    CH_SPR_NULL,CH_SPR0+$0800,CH_SPR_NULL
                 dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
 s2_spr_tab_b:
                 ifd     S2_STILL
                 dc.l    CH_SPR0
                 else
+                ifd     S2_SWAP
+                dc.l    CH_SPR0
+                else
                 dc.l    CH_SPR0+$40
                 endc
+                endc
                 dc.l    CH_SPR_NULL
-                ifd     S2_NOREF
-                dc.l    CH_SPR_NULL
+                ifd     S2_REFMOVE
+                dc.l    CH_SPR0+$0880
                 else
                 dc.l    CH_SPR0+$0800
                 endc
@@ -171,5 +184,15 @@ s2_data_r:      dc.w    $4048,$4600
                 endr
                 dc.w    $0000,$0000
 s2_data_r_end:
+
+        ifd     S2_REFMOVE
+; a copy of R whose control word 1 has HSTART $98 instead of $90
+s2_data_r2:     dc.w    $404C,$4600
+                rept    6
+                dc.w    $FFFF,$0000
+                endr
+                dc.w    $0000,$0000
+s2_data_r2_end:
+        endc
 
         include "ch2build_code.i"

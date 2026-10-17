@@ -3,7 +3,7 @@
 //   not move when those channels run, and what one sprite DMA channel displays when it is
 //   moved or reused several times in one field (HRM p.27) as the video output shows it.
 // Test class: HRM_CONFORMANCE for P1-P5 and P7-P12; the preconditions F1-F3, F2-COUNT, A1,
-//   K2a-K6, T1-T3, FRAMES, Q2-Q5, Q-ref, K9 and IMG4 are INTEGRATION_SMOKE checks that the
+//   K2a-K6, T1-T3, FRAMES, Q2-Q5, Q-REF, K9 and IMG4 are INTEGRATION_SMOKE checks that the
 //   exercised path is live.
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, p.20, p.23, p.27, p.46, p.59,
 //   p.98, pp.101-110, pp.113-117, pp.194-197, Appendix A p.275 and p.277 (see SPECIFICATION.md).
@@ -1255,11 +1255,13 @@ uint64_t hs_period(const std::vector<nmh::VideoSample>& v) {
 
 long kv_from_periods(uint64_t beam, uint64_t out) { return (out > 0 && beam % out == 0) ? (long)(beam / out) : 0; }
 
-// Q3's comparator: every image top and every image height, in output lines, is a multiple of
-// k_v; the frame holds at least one image.
+// Q3's comparator: every image height, and every image top relative to the top of the frame's
+// first image, in output lines, is a multiple of k_v; the frame holds at least one image. The
+// output line at which a frame begins is not fixed by any page, so the absolute top is not
+// graded (it is printed as MEASURED by pre_q3).
 bool q3_images_ok(const std::vector<Image>& imgs, long kv) {
     if (kv <= 0 || imgs.empty()) return false;
-    for (const auto& im : imgs) if (im.top % kv != 0 || im.nlines % kv != 0) return false;
+    for (const auto& im : imgs) if ((im.top - imgs[0].top) % kv != 0 || im.nlines % kv != 0) return false;
     return true;
 }
 
@@ -1391,6 +1393,7 @@ bool pre_q3(const SRun& s, Checks& checks) {
         ok = ok && q3_images_ok(s.imgs[fi], s.kv);
         m << "f" << fi << ":";
         for (const auto& im : s.imgs[fi]) m << "(top " << im.top << ",lines " << im.nlines << ")";
+        if (!s.imgs[fi].empty() && s.kv > 0) m << " first top mod k_v=" << (s.imgs[fi][0].top % s.kv) << " (not graded)";
         m << ";";
     }
     checks.note("Q3 " + s.name + ": beam-line period=" + std::to_string(s.beam_period) + " hs period=" +
@@ -1398,7 +1401,7 @@ bool pre_q3(const SRun& s, Checks& checks) {
     return ok;
 }
 
-// The colour writes the Copper fetched from the run's list in a port frame: the list words in
+// The colour writes the Copper fetched from the run's list in a Copper frame: the list words in
 // order, a MOVE's register word at an even offset from the list start and its datum after it.
 std::vector<std::pair<uint16_t, uint16_t>> colour_writes(const SRun& s, const PortFrame& pf) {
     std::vector<int> d(s.list_words, -1);
@@ -1425,7 +1428,7 @@ bool pre_q4(const SRun& s, Checks& checks) {
     bool ok = !s.frames.empty();
     std::ostringstream m;
     for (size_t fi = 0; fi < s.pfs.size(); ++fi) {
-        if (!s.pfs[fi].ok) { ok = false; m << "f" << fi << ":no port frame;"; continue; }
+        if (!s.pfs[fi].ok) { ok = false; m << "f" << fi << ":no Copper frame;"; continue; }
         auto w = colour_writes(s, s.pfs[fi]);
         bool this_ok = true;
         for (auto reg : s.colour_regs) {
@@ -1440,7 +1443,7 @@ bool pre_q4(const SRun& s, Checks& checks) {
         ok = ok && this_ok;
         m << "f" << fi << ":" << w.size() << " writes" << (this_ok ? "" : "(FAIL)") << ";";
     }
-    checks.note("Q4 " + s.name + " (colour MOVEs fetched per port frame): " + m.str());
+    checks.note("Q4 " + s.name + " (colour MOVEs fetched per Copper frame): " + m.str());
     return ok;
 }
 
@@ -1451,7 +1454,7 @@ bool pre_q5(const SRun& s, Checks& checks) {
     std::ostringstream m;
     for (size_t fi = 0; fi < s.pfs.size(); ++fi) {
         const PortFrame& pf = s.pfs[fi];
-        if (!pf.ok) { ok = false; m << "f" << fi << ":no port frame;"; continue; }
+        if (!pf.ok) { ok = false; m << "f" << fi << ":no Copper frame;"; continue; }
         size_t cnt = 0;
         bool full = words_fully_read(s.v.run.log, pf.lo, pf.hi, pf.start, (int)s.list_words, &cnt);
         ok = ok && full;
@@ -1476,7 +1479,7 @@ bool pre_qref(const SRun& s, Checks& checks) {
         if (!r0 || r->top != r0->top || r->left != r0->left) ok = false;
         m << "f" << fi << ":(top " << r->top << ",left " << r->left << ");";
     }
-    checks.note("Q-ref " + s.name + ": " + m.str());
+    checks.note("Q-REF " + s.name + ": " + m.str());
     return ok;
 }
 
@@ -1495,7 +1498,7 @@ bool pre_k9(const SRun& s, Checks& checks) {
     bool ok = !s.frames.empty();
     std::ostringstream m;
     for (size_t fi = 0; fi < s.pfs.size(); ++fi) {
-        if (!s.pfs[fi].ok) { ok = false; m << "f" << fi << ":no port frame;"; continue; }
+        if (!s.pfs[fi].ok) { ok = false; m << "f" << fi << ":no Copper frame;"; continue; }
         auto r = block0_reads(s, s.pfs[fi]);
         const bool this_ok = !r.empty() && r.front() == 0;
         ok = ok && this_ok;
@@ -1533,7 +1536,8 @@ int z_value(int use, int j, int k) {
 }
 
 // P8: in every frame used the offset of sprite 0's image from sprite 2's is (16 sprite pixels,
-// 32 beam lines) or (40, 42), and consecutive frames differ by +-(24 pixels, 10 lines).
+// 32 beam lines) in a frame whose restart fetch read L_A and (40, 42) in one whose restart fetch
+// read L_B, and consecutive frames differ by +-(24 pixels, 10 lines).
 bool p8_check(const SRun& s, Checks& checks) {
     bool ok = s.frames.size() >= 1;
     std::ostringstream m;
@@ -1550,7 +1554,11 @@ bool p8_check(const SRun& s, Checks& checks) {
         }
         const long dx = s0->left - r->left, dy = s0->top - r->top, p = r->p;
         const bool is_a = dx == 16 * p && dy == 32 * s.kv, is_b = dx == 40 * p && dy == 42 * s.kv;
-        ok = ok && (is_a || is_b);
+        // The frame shows the structure its own restart fetch's list pointed sprite 0 at: A for
+        // L_A, B for L_B (p.113: the data is reread for each display field).
+        const bool from_a = s.pfs[fi].ok && s.pfs[fi].start == wordof(COP_MAIN);
+        const bool from_b = s.pfs[fi].ok && s.pfs[fi].start == wordof(COP_SECOND);
+        ok = ok && ((from_a && is_a) || (from_b && is_b));
         d.push_back({dx, dy}); pp.push_back(p);
         m << "f" << fi << ":(" << dx << " samples=" << (dx / p) << " px, " << dy << " lines=" << (dy / s.kv) << " beam lines) "
           << (is_a ? "A" : is_b ? "B" : "neither") << " list " << list_name(s.pfs[fi].start) << ";";
@@ -1565,7 +1573,7 @@ bool p8_check(const SRun& s, Checks& checks) {
 }
 
 // P9: four images in every frame used, at the tops and left edges of structure Z's uses, and in
-// every port frame the words of Z read in address order, each once.
+// every Copper frame the words of Z read in address order, each once.
 bool p9_check(const SRun& s, Checks& checks) {
     bool ok = !s.frames.empty();
     std::ostringstream m;
@@ -1718,31 +1726,90 @@ std::vector<nmh::VideoSample> synth_video(int nframes, const std::function<std::
 
 // ---- the video lines ------------------------------------------------------
 
-bool video_selector(const std::string& mv) {
-    for (const char* s : {"FRAMES", "Q2", "Q4", "Q5", "Q-ref", "K9", "IMG4", "P8", "P9", "P10", "P11", "P10-P11", "P12"})
-        if (mv == s) return true;
-    return false;
-}
+// The video modes (SPECIFICATION.md 2.10): 0 PAL/ECS (the default), 1 NTSC/ECS, 2 PAL/OCS, 3 NTSC/OCS.
+const char* const kVideoModeName[4] = {"", "ntsc-ecs", "pal-ocs", "ntsc-ocs"};
 
-nmh::Config video_config() { return nmh::Config{}; }
+// A video mutation selector is `<contrast>` or `<contrast>/<mode>`. The contrast names the line it
+// turns red (`line`) and the programs that replace S2 and S1 in the run.
+struct VideoSel {
+    std::string line, s2bin = "prog_s2.bin", s1bin = "prog_s1.bin";
+    uint32_t s1_words = kCopWordsS1;
+    int mode = 0;
+};
+
+bool video_selector(const std::string& mv, VideoSel* out = nullptr) {
+    VideoSel v;
+    std::string base = mv;
+    const size_t slash = mv.find('/');
+    if (slash != std::string::npos) {
+        base = mv.substr(0, slash);
+        const std::string m = mv.substr(slash + 1);
+        v.mode = -1;
+        for (int i = 1; i < 4; ++i) if (m == kVideoModeName[i]) v.mode = i;
+        if (v.mode < 0) return false;
+    }
+    bool known = false;
+    for (const char* s : {"FRAMES", "Q2", "Q4", "Q5", "Q-REF", "K9", "IMG4", "P8", "P9", "P10", "P11", "P10-P11", "P12"})
+        if (base == s) { known = true; v.line = base; }
+    if (base == "K9-START") { known = true; v.line = "K9"; }
+    if (base == "P8-SWAP") { known = true; v.line = "P8"; }
+    if (!known) return false;
+    if (base == "FRAMES") v.s2bin = "prog_s2_exit6.bin";
+    else if (base == "Q2") v.s1bin = "prog_s1_q2.bin";
+    else if (base == "Q4") v.s2bin = "prog_s2_col0.bin";
+    else if (base == "Q5") v.s2bin = "prog_s2_endcol.bin";
+    else if (base == "Q-REF") v.s2bin = "prog_s2_refmove.bin";
+    else if (base == "K9") v.s1bin = "prog_s1_nospren.bin";
+    else if (base == "K9-START") v.s1bin = "prog_s1_zcopy.bin";
+    else if (base == "IMG4" || base == "P9") v.s1bin = "prog_s1_end.bin";
+    else if (base == "P8") v.s2bin = "prog_s2_still.bin";
+    else if (base == "P8-SWAP") v.s2bin = "prog_s2_swap.bin";
+    else if (base == "P10" || base == "P10-P11") v.s1bin = "prog_s1_h.bin";
+    else if (base == "P11") v.s1bin = "prog_s1_s.bin";
+    else if (base == "P12") { v.s1bin = "prog_s1_c.bin"; v.s1_words = kCopWordsS1 + 8; }
+    if (out) *out = v;
+    return true;
+}
 
 // Builds S2 and S1 (normal runs, or the named variants in their place) and returns them.
 std::pair<SRun, SRun> make_video_runs(const std::string& dir, const std::string& s2bin, const std::string& s1bin,
-                                      uint32_t s1_words) {
-    SRun s2 = make_srun("S2", true, run_video(dir + "/" + s2bin), blocks_S2(), {wordof(COP_MAIN), wordof(COP_SECOND)},
+                                      uint32_t s1_words, int mode = 0) {
+    const std::string sfx = mode == 0 ? std::string() : std::string("-") + kVideoModeName[mode];
+    const nmh::Config cfg = mode == 0 ? nmh::Config{} : mode_config(mode);
+    SRun s2 = make_srun("S2" + sfx, true, run_video(dir + "/" + s2bin, cfg), blocks_S2(), {wordof(COP_MAIN), wordof(COP_SECOND)},
                         kCopWordsS2, {COLOR17, COLOR18, COLOR19, COLOR21, COLOR22, COLOR23});
-    SRun s1 = make_srun("S1", false, run_video(dir + "/" + s1bin), blocks_S1(), {wordof(COP_MAIN)}, s1_words,
+    SRun s1 = make_srun("S1" + sfx, false, run_video(dir + "/" + s1bin, cfg), blocks_S1(), {wordof(COP_MAIN)}, s1_words,
                         {COLOR17, COLOR18, COLOR19});
     return {std::move(s2), std::move(s1)};
+}
+
+// Measured, not graded: how many images of each output frame lie wholly inside the frame's Copper
+// frame (the interval between the restart fetch before its first image line and the next one).
+void note_images_in_copper_frames(const SRun& s, Checks& checks) {
+    std::ostringstream m;
+    for (size_t fi = 0; fi < s.frames.size(); ++fi) {
+        const PortFrame& pf = s.pfs[fi];
+        if (!pf.ok) { m << "f" << fi << ":no Copper frame;"; continue; }
+        size_t inside = 0;
+        for (const auto& im : s.imgs[fi]) {
+            const uint64_t b = im.first_line_abs, e = s.frames[fi].lines[(size_t)(im.top + im.nlines - 1)].end;
+            if (b >= pf.lo && e <= pf.hi) ++inside;
+        }
+        m << "f" << fi << ":" << inside << " of " << s.imgs[fi].size() << " images inside the Copper frame;";
+    }
+    checks.note("Copper frame " + s.name + " (measured, not graded): " + m.str());
 }
 
 // Evaluates and prints every video line. `only` empty: all of them are graded lines (the normal
 // run). `only` a line's id (a mutation run): that line is the graded line and the others print
 // as MEASURED, so that the lines a contrast leaves alone or moves are visible.
-void video_lines(Checks& checks, const SRun& s2, const SRun& s1, const std::string& only) {
+void video_lines(Checks& checks, const SRun& s2, const SRun& s1, const std::string& only,
+                 const std::string& mode = "") {
+    const std::string tg = mode.empty() ? std::string() : " " + mode;
+    const std::string msfx = mode.empty() ? std::string() : " [" + mode + "]"; // appended to the label of a line in another mode
     auto want = [&](const char* id) { return only.empty() || only == id; };
     auto verdict = [&](const char* id, bool ok, const std::string& unmet) {
-        checks.note(std::string("line ") + id + " (not the line under test): " + (unmet.empty() ? (ok ? "PASS" : "FAIL") : "NOT GRADED " + unmet));
+        checks.note(std::string("line ") + id + tg + " (not the line under test): " + (unmet.empty() ? (ok ? "PASS" : "FAIL") : "NOT GRADED " + unmet));
     };
     const std::string c1u = unmet_if(pre_c1(s2), "S2:C1") + unmet_if(pre_c1(s1), "S1:C1");
 
@@ -1750,8 +1817,8 @@ void video_lines(Checks& checks, const SRun& s2, const SRun& s1, const std::stri
     if (want("FRAMES")) {
         if (c1u.empty())
             checks.expect(fr2 && fr1, "FRAMES: at least three complete output frames lie from the third complete output frame after S4 "
-                          "up to the last complete output frame before S7, in S2 and in S1. SPECIFICATION.md 2.5 P8.4");
-        else not_graded(checks, "FRAMES", c1u);
+                          "up to the last complete output frame before S7, in S2 and in S1. SPECIFICATION.md 2.5 P8.4" + msfx);
+        else not_graded(checks, "FRAMES" + tg, c1u);
     } else verdict("FRAMES", fr2 && fr1, c1u);
 
     const bool q2_2 = pre_q2(s2, checks), q2_1 = pre_q2(s1, checks);
@@ -1759,70 +1826,74 @@ void video_lines(Checks& checks, const SRun& s2, const SRun& s1, const std::stri
         if (c1u.empty())
             checks.expect(q2_2 && q2_1, "Q2: on the first line of the reference image (S2: sprite 2's image; S1: use 1) all 16 sprite pixels "
                           "are set and that line's run of non-background output pixels has a length W that is greater than 0 and divisible by 16. "
-                          "p.98 p.101 p.108");
-        else not_graded(checks, "Q2", c1u);
+                          "p.98 p.101 p.108" + msfx);
+        else not_graded(checks, "Q2" + tg, c1u);
     } else verdict("Q2", q2_2 && q2_1, c1u);
 
     const bool q3_2 = pre_q3(s2, checks), q3_1 = pre_q3(s1, checks);
     if (want("Q3")) {
         if (c1u.empty())
-            checks.expect(q3_2 && q3_1, "Q3: every measured image top, and every image height, in output lines is a multiple of k_v, the "
-                          "output lines per beam line. p.107 SPECIFICATION.md 2.5");
-        else not_graded(checks, "Q3", c1u);
+            checks.expect(q3_2 && q3_1, "Q3: every image height, and every image top relative to the top of the first image of the same output frame, in "
+                          "output lines, is a multiple of k_v, the output lines per beam line. p.107 SPECIFICATION.md 2.5" + msfx);
+        else not_graded(checks, "Q3" + tg, c1u);
     } else verdict("Q3", q3_2 && q3_1, c1u);
 
     const bool q4_2 = pre_q4(s2, checks), q4_1 = pre_q4(s1, checks);
     if (want("Q4")) {
         if (c1u.empty())
             checks.expect(q4_2 && q4_1, "Q4: the colours the run's Copper list writes (COLOR17-19 in S1; COLOR17-19 and COLOR21-23 in S2) "
-                          "are pairwise distinct from each other and from COLOR00 ($000). p.46 p.108");
-        else not_graded(checks, "Q4", c1u);
+                          "are pairwise distinct from each other and from COLOR00 ($000). p.46 p.108" + msfx);
+        else not_graded(checks, "Q4" + tg, c1u);
     } else verdict("Q4", q4_2 && q4_1, c1u);
 
     const bool q5_2 = pre_q5(s2, checks), q5_1 = pre_q5(s1, checks);
     if (want("Q5")) {
         if (c1u.empty())
             checks.expect(q5_2 && q5_1, "Q5: every word of the Copper list a frame's restart fetch starts is fetched in that frame, and in S2 the "
-                          "restart fetches of consecutive frames alternate between L_A and L_B. p.25 p.26");
-        else not_graded(checks, "Q5", c1u);
+                          "restart fetches of consecutive frames alternate between L_A and L_B. p.25 p.26" + msfx);
+        else not_graded(checks, "Q5" + tg, c1u);
     } else verdict("Q5", q5_2 && q5_1, c1u);
 
     const bool qref = pre_qref(s2, checks);
     const std::string c1_2 = unmet_if(pre_c1(s2), "S2:C1");
-    if (want("Q-ref")) {
+    if (want("Q-REF")) {
         if (c1_2.empty())
-            checks.expect(qref, "Q-ref: sprite 2's image (the reference R) is at the same output position in every output frame used of S2. "
-                          "p.113");
-        else not_graded(checks, "Q-ref", c1_2);
-    } else verdict("Q-ref", qref, c1_2);
+            checks.expect(qref, "Q-REF: sprite 2's image (the reference R) is at the same output position in every output frame used of S2. "
+                          "p.113" + msfx);
+        else not_graded(checks, "Q-REF" + tg, c1_2);
+    } else verdict("Q-REF", qref, c1_2);
 
     const bool k9 = pre_k9(s1, checks);
     const std::string c1_1 = unmet_if(pre_c1(s1), "S1:C1");
     if (want("K9")) {
         if (c1_1.empty())
-            checks.expect(k9, "K9: in each observed frame of S1, sprite block 0 is read from use 1's first control word onward. p.109 p.116");
-        else not_graded(checks, "K9", c1_1);
+            checks.expect(k9, "K9: in the Copper frame of each output frame used of S1, sprite block 0 is read from use 1's first control word onward. p.109 p.116" + msfx);
+        else not_graded(checks, "K9" + tg, c1_1);
     } else verdict("K9", k9, c1_1);
 
     const bool img4 = pre_img4(s1, checks);
     if (want("IMG4")) {
         if (c1_1.empty())
-            checks.expect(img4, "IMG4: every output frame used of S1 shows exactly four images of sprite 0. p.116 p.117");
-        else not_graded(checks, "IMG4", c1_1);
+            checks.expect(img4, "IMG4: every output frame used of S1 shows exactly four images of sprite 0. p.116 p.117" + msfx);
+        else not_graded(checks, "IMG4" + tg, c1_1);
     } else verdict("IMG4", img4, c1_1);
+
+    note_images_in_copper_frames(s2, checks);
+    note_images_in_copper_frames(s1, checks);
 
     // P8 (S2)
     {
         const std::string u = c1_2 + unmet_if(fr2, "FRAMES") + unmet_if(q2_2, "Q2") + unmet_if(q3_2, "Q3") + unmet_if(q4_2, "Q4") +
-                              unmet_if(q5_2, "Q5") + unmet_if(qref, "Q-ref");
+                              unmet_if(q5_2, "Q5") + unmet_if(qref, "Q-REF");
         const bool ok = p8_check(s2, checks);
         if (want("P8")) {
             if (u.empty())
                 checks.expect(ok, "P8: the object sprite 0 displays is placed by the position in its data structure and moves by exactly the "
                               "change in that position from one field to the next: the offset of sprite 0's image from sprite 2's is "
                               "(+16 sprite pixels, +32 beam lines) or (+40, +42), consecutive frames alternate and differ by +-24 pixels and "
-                              "+-10 lines. COP2-putting-together-a-copper-instruction-list.c1 p.27 p.113");
-            else not_graded(checks, "P8", u);
+                              "+-10 lines, a frame whose restart fetch read L_A showing A and one whose restart fetch read L_B showing B; graded over sprite DMA channel 0. "
+                              "COP2-putting-together-a-copper-instruction-list.c1 p.27 p.113" + msfx);
+            else not_graded(checks, "P8" + tg, u);
         } else verdict("P8", ok, u);
     }
 
@@ -1836,40 +1907,40 @@ void video_lines(Checks& checks, const SRun& s2, const SRun& s1, const std::stri
             if (u9.empty())
                 checks.expect(ok, "P9: one sprite DMA channel following one chained data structure displays four separate images in the same "
                               "field (tops +0, +16, +40, +56 beam lines and left edges +0, +40, -16, +80 sprite pixels from use 1) and reads "
-                              "the 90 words of all four uses in address order, each once, between two consecutive restart fetches. "
-                              "COP2-putting-together-a-copper-instruction-list.c2 ch2-putting-together-a-copper-instruction-list.c5 p.27 p.110 p.116");
-            else not_graded(checks, "P9", u9);
+                              "the 90 words of all four uses in address order, each once, between two consecutive restart fetches; graded over sprite DMA channel 0. "
+                              "COP2-putting-together-a-copper-instruction-list.c2 ch2-putting-together-a-copper-instruction-list.c5 p.27 p.110 p.116" + msfx);
+            else not_graded(checks, "P9" + tg, u9);
         } else verdict("P9", ok, u9);
     }
     const bool ok10 = p10_check(s1, checks);
     if (want("P10")) {
         if (u10.empty())
             checks.expect(ok10, "P10: the four images of one reused sprite are 8, 16, 4 and 12 beam lines high, each its own VSTOP - VSTART. "
-                          "COP2-putting-together-a-copper-instruction-list.c3 p.27 p.107");
-        else not_graded(checks, "P10", u10);
+                          "graded over sprite DMA channel 0. COP2-putting-together-a-copper-instruction-list.c3 p.27 p.107" + msfx);
+        else not_graded(checks, "P10" + tg, u10);
     } else verdict("P10", ok10, u10);
     const bool ok11 = p11_check(s1, checks);
     if (want("P11")) {
         if (u10.empty())
             checks.expect(ok11, "P11: on every line of every use the pixels of value 0 show the background and the others do not, and "
                           "pixels of equal value show equal colours while pixels of different non-zero value show different colours. "
-                          "COP2-putting-together-a-copper-instruction-list.c4 p.27 p.101 p.107 p.108");
-        else not_graded(checks, "P11", u10);
+                          "graded over sprite DMA channel 0. COP2-putting-together-a-copper-instruction-list.c4 p.27 p.101 p.107 p.108" + msfx);
+        else not_graded(checks, "P11" + tg, u10);
     } else verdict("P11", ok11, u10);
     if (want("P10-P11")) {
         if (u10.empty())
             checks.expect(ok10 && ok11, "P10-P11: the size and the shape of the reuses of a sprite can be changed: both the heights (P10) and the "
                           "pixel patterns (P11) of the four reuses of one sprite show their own data structure. "
-                          "ch2-putting-together-a-copper-instruction-list.c6 p.27");
-        else not_graded(checks, "P10-P11", u10);
+                          "graded over sprite DMA channel 0. ch2-putting-together-a-copper-instruction-list.c6 p.27" + msfx);
+        else not_graded(checks, "P10-P11" + tg, u10);
     } else verdict("P10-P11", ok10 && ok11, u10);
     const bool ok12 = p12_check(s1, checks);
     if (want("P12")) {
         if (u10.empty())
             checks.expect(ok12, "P12: with no Copper write to COLOR17-19 between the uses, every non-transparent pixel of value 1, 2, 3 shows "
-                          "$F00, $0F0, $00F in all four uses of the sprite. "
-                          "ch2-putting-together-a-copper-instruction-list.c7 COP2-putting-together-a-copper-instruction-list.c5 p.27 p.46 p.108");
-        else not_graded(checks, "P12", u10);
+                          "$F00, $0F0, $00F in all four uses of the sprite; graded over sprite DMA channel 0. "
+                          "ch2-putting-together-a-copper-instruction-list.c7 COP2-putting-together-a-copper-instruction-list.c5 p.27 p.46 p.108" + msfx);
+        else not_graded(checks, "P12" + tg, u10);
     } else verdict("P12", ok12, u10);
 }
 
@@ -1937,10 +2008,13 @@ void video_selftests(Checks& checks) {
         const bool good = q3_of({{4, 6, 10, 2, 0xF00, true}, {14, 4, 30, 2, 0xFF0, false}});
         const bool shifted = q3_of({{4, 6, 10, 2, 0xF00, true}, {15, 4, 30, 2, 0xFF0, false}});
         const bool odd_height = q3_of({{4, 5, 10, 2, 0xF00, true}, {14, 4, 30, 2, 0xFF0, false}});
+        const bool phase_shifted = q3_of({{5, 6, 10, 2, 0xF00, true}, {15, 4, 30, 2, 0xFF0, false}});
         checks.note("SELFTEST-Q3: aligned=" + std::to_string(good) + ", one image moved by one output line=" + std::to_string(shifted) +
-                    ", a height of five output lines=" + std::to_string(odd_height));
-        checks.expect(good && !shifted && !odd_height,
-                      "SELFTEST-Q3: q3_images_ok passes a synthetic frame whose image tops and heights are multiples of k_v and fails the same frame "
+                    ", a height of five output lines=" + std::to_string(odd_height) +
+                    ", the whole frame one output line lower=" + std::to_string(phase_shifted));
+        checks.expect(good && !shifted && !odd_height && phase_shifted,
+                      "SELFTEST-Q3: q3_images_ok passes a synthetic frame whose image heights and image tops relative to the first image are multiples of k_v "
+                      "(also when the whole frame lies one output line lower) and fails the same frame "
                       "with one image moved by one output line and with an image of an odd number of output lines. p.107 SPECIFICATION.md 2.5");
     }
 }
@@ -2000,16 +2074,18 @@ void video_selftests(Checks& checks) {
 // MUTATION T3-NORESTART stimulus not graded C6-norestart (C6 with COP1LC pointing at L5b: the word the run declares as its list start is never fetched), NMH_MUTATE=T3-NORESTART; both cores: the line's other runs meet their observation preconditions, C6-norestart DONE=1 with no restart fetch found, T3 prints NOT GRADED (C6-norestart:restarts)
 // MUTATION HELD-CONTROL none impossible unfalsifiable at this boundary: two genuine adjacent identical Copper accesses cannot be told from one held bus cycle in the RAM-port log, which carries no requester, so no stimulus produces the case; the control is the synthetic trace of this check
 // MUTATION SELFTEST-VIDEO none impossible the check runs on synthetic captures built in the test (eight frames of 24 lines with two painted images, and the same capture with one pixel changed) and no module stimulus enters it; it is a self-test of used_output_frames, extract_images, hs_period and kv_from_periods, printed in every plain run
-// MUTATION SELFTEST-Q3 none impossible the check runs on synthetic captures built in the test (the aligned frame, a frame with one image moved by one output line, a frame with an image of five output lines) and no module stimulus enters it; it is a self-test of q3_images_ok, printed in every plain run
-// MUTATION FRAMES stimulus red S2-exit6 (S2 whose wait loop exits when FRAME_CTR reaches 6), NMH_MUTATE=FRAMES; both cores: DONE=1 in both runs, output frames used S2=2 and S1=3, FRAMES FAIL; Q2, Q3, Q4, Q5, Q-ref, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold, P8 prints NOT GRADED (FRAMES)
-// MUTATION Q2 stimulus red S1-q2 (S1 whose use 1 has the low data word of its first line at $7FFF, so the leftmost pixel is transparent), NMH_MUTATE=Q2; both cores: DONE=1, W=30 and p=0 on use 1's first line in each of the 3 frames used of S1, W=32 in S2, Q2 FAIL; FRAMES, Q3, Q4, Q5, Q-ref, K9 and IMG4 hold, P8 holds; P9, P10, P11, P10-P11 and P12 print NOT GRADED (Q2)
-// MUTATION Q3 none impossible unfalsifiable at this boundary: a sprite's vertical start and stop are counts of whole beam lines (p.107, VSTART and VSTOP), so no stimulus puts an image edge between beam lines, and k_v is a property of the harness's line doubler and not of the chip set; the check's sensitivity is shown by SELFTEST-Q3
-// MUTATION Q4 stimulus red S2-col0 (S2 with COLOR17 written as $0000 in both lists, equal to COLOR00), NMH_MUTATE=Q4; both cores: DONE=1, 6 colour writes fetched per port frame with COLOR17's equal to COLOR00 in each of the 3 frames, Q4 FAIL; FRAMES, Q2, Q3, Q5, Q-ref, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q4), and its own comparator finds no sprite 0 image because use 1's first line is black
-// MUTATION Q5 stimulus red S2-endv (S2 with END placed after V_spr in L_A), NMH_MUTATE=Q5; both cores: DONE=1, 35 of 54 words of L_A fetched in each of the 3 frames and no L_B frame, Q5 FAIL; Q2, Q3, Q4 and Q-ref FAIL with it because the colour MOVEs behind the END are never fetched, COLOR17-23 are never written and S2 shows no image (0 images in each frame); FRAMES, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q2 Q3 Q4 Q5 Q-ref)
-// MUTATION Q-ref stimulus red S2-noref (S2 whose list L_B points sprite 2 at the null block), NMH_MUTATE=Q-ref; both cores: DONE=1, sprite 2's image absent in the two L_B frames and at top 118, left 173 in the L_A frame, Q-ref FAIL; Q2 FAILs with it because the reference image whose first line it reads is absent in the same frames; FRAMES, Q3, Q4, Q5, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q2 Q-ref)
-// MUTATION K9 stimulus red S1-nospren (S1 without SPREN in the S4 write), NMH_MUTATE=K9; both cores: DONE=1, 0 reads in sprite block 0 in each of the 3 frames, K9 FAIL; Q2, Q3 and IMG4 FAIL with it because S1 shows no image (0 images in each frame); FRAMES, Q4, Q5, Q-ref hold and P8 holds; P9, P10, P11, P10-P11 and P12 print NOT GRADED (P9: Q2 Q3 K9; the others also IMG4)
-// MUTATION IMG4 stimulus red S1-end (S1 whose use 2 control words are $0000,$0000), NMH_MUTATE=IMG4; both cores: DONE=1, 1 image per frame (use 1 only), IMG4 FAIL; P9 FAILs with it (its (a) needs four images and its (b) 90 reads, 20 are read); FRAMES, Q2, Q3, Q4, Q5, Q-ref, K9 hold and P8 holds; P10, P11, P10-P11 and P12 print NOT GRADED (IMG4)
-// MUTATION P8 stimulus red S2-still (S2 whose list L_B also points sprite 0 at structure A), NMH_MUTATE=P8; both cores: DONE=1, offset (32 samples = 16 sprite pixels, 64 output lines = 32 beam lines) in each of the 3 frames, consecutive frames differ by (0, 0), P8 FAIL; FRAMES, Q2, Q3, Q4, Q5, Q-ref, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold
+// MUTATION SELFTEST-Q3 none impossible the check runs on synthetic captures built in the test (the aligned frame, the same frame one output line lower, a frame with one image moved by one output line, a frame with an image of five output lines) and no module stimulus enters it; it is a self-test of q3_images_ok, printed in every plain run
+// MUTATION FRAMES stimulus red S2-exit6 (S2 whose wait loop exits when FRAME_CTR reaches 6), NMH_MUTATE=FRAMES; both cores: DONE=1 in both runs, output frames used S2=2 and S1=3, FRAMES FAIL; Q2, Q3, Q4, Q5, Q-REF, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold, P8 prints NOT GRADED (FRAMES)
+// MUTATION Q2 stimulus red S1-q2 (S1 whose use 1 has the low data word of its first line at $7FFF, so the leftmost pixel is transparent), NMH_MUTATE=Q2; both cores: DONE=1, W=30 and p=0 on use 1's first line in each of the 3 frames used of S1, W=32 in S2, Q2 FAIL; FRAMES, Q3, Q4, Q5, Q-REF, K9 and IMG4 hold, P8 holds; P9, P10, P11, P10-P11 and P12 print NOT GRADED (Q2)
+// MUTATION Q3 none impossible unfalsifiable at this boundary: a sprite's vertical start and stop are counts of whole beam lines (p.107, VSTART and VSTOP), so no stimulus puts an image edge between beam lines, and k_v and the output line at which a frame begins are properties of the harness's line doubler and video output and not of the chip set; the check's sensitivity is shown by SELFTEST-Q3, which also passes the same frame one output line lower
+// MUTATION Q4 stimulus red S2-col0 (S2 with COLOR17 written as $0000 in both lists, equal to COLOR00), NMH_MUTATE=Q4; both cores: DONE=1, 6 colour writes fetched per Copper frame with COLOR17's equal to COLOR00 in each of the 3 frames, Q4 FAIL; FRAMES, Q2, Q3, Q5, Q-REF, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q4), and its own comparator finds no sprite 0 image because use 1's first line is black
+// MUTATION Q5 stimulus red S2-endcol (S2 with END placed in L_A after the colour MOVEs and before its COP1LC pair), NMH_MUTATE=Q5; both cores: DONE=1, 51 of 54 words of L_A fetched in each of the 3 frames and no L_B frame, Q5 FAIL; the bitplane and colour MOVEs are fetched (6 colour writes per frame, W=32 and p=2 in S2), so FRAMES, Q2, Q3, Q4, Q-REF, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q5)
+// MUTATION Q-REF stimulus red S2-refmove (S2 whose list L_B points sprite 2 at a copy of R whose control word 1 is $404C, HSTART $98 instead of $90), NMH_MUTATE=Q-REF; both cores: DONE=1, sprite 2's image at top 118 and left edge 189 in the two L_B frames and left edge 173 in the L_A frame, Q-REF FAIL; the image exists in every frame (W=32 and p=2), so FRAMES, Q2, Q3, Q4, Q5, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold; P8 prints NOT GRADED (Q-REF)
+// MUTATION K9 stimulus red S1-nospren (S1 without SPREN in the S4 write; the liveness half of K9), NMH_MUTATE=K9; both cores: DONE=1, 0 reads in sprite block 0 in each of the 3 frames, K9 FAIL; Q2, Q3 and IMG4 FAIL with it because S1 shows no image (0 images in each frame); FRAMES, Q4, Q5, Q-REF hold and P8 holds; P9, P10, P11, P10-P11 and P12 print NOT GRADED (P9: Q2 Q3 K9; the others also IMG4)
+// MUTATION K9 stimulus red S1-zcopy (S1 whose list points sprite 0 at a copy of Z placed $100 bytes higher in sprite block 0; the start-word half of K9), NMH_MUTATE=K9-START; both cores: DONE=1, 90 reads in sprite block 0 in each of the 3 frames and the first word read is 128 where 0 is required, K9 FAIL; the images are those of Z (4 images per frame, W=32 and p=2), so FRAMES, Q2, Q3, Q4, Q5, Q-REF and IMG4 hold and P8 holds; P9, P10, P11, P10-P11 and P12 print NOT GRADED (K9)
+// MUTATION IMG4 stimulus red S1-end (S1 whose use 2 control words are $0000,$0000), NMH_MUTATE=IMG4; both cores: DONE=1, 1 image per frame (use 1 only), IMG4 FAIL; P9 FAILs with it (its (a) needs four images and its (b) 90 reads, 20 are read); FRAMES, Q2, Q3, Q4, Q5, Q-REF, K9 hold and P8 holds; P10, P11, P10-P11 and P12 print NOT GRADED (IMG4)
+// MUTATION P8 stimulus red S2-still (S2 whose list L_B also points sprite 0 at structure A), NMH_MUTATE=P8; both cores: DONE=1, offset (32 samples = 16 sprite pixels, 64 output lines = 32 beam lines) in each of the 3 frames, consecutive frames differ by (0, 0), P8 FAIL; FRAMES, Q2, Q3, Q4, Q5, Q-REF, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold
+// MUTATION P8 stimulus red S2-swap (S2 whose list L_A points sprite 0 at structure B and L_B at structure A), NMH_MUTATE=P8-SWAP; both cores: DONE=1, the frame whose restart fetch read L_B shows offset (32 samples = 16 sprite pixels, 64 output lines = 32 beam lines) and the frame whose restart fetch read L_A shows (80 samples = 40 sprite pixels, 84 output lines = 42 beam lines), consecutive frames still alternate and differ by (24 sprite pixels, 10 beam lines), P8 FAIL through the list clause alone; FRAMES, Q2, Q3, Q4, Q5, Q-REF, K9, IMG4, P9, P10, P11, P10-P11 and P12 hold
 // MUTATION P9 stimulus red S1-end (S1 whose use 2 control words are $0000,$0000, p.127), NMH_MUTATE=P9; both cores: DONE=1, 1 image per frame and 20 reads in sprite block 0 in each of the 3 frames, P9 FAIL; K9, Q2, Q3, Q4, Q5 hold; IMG4 FAILs with it (the count P9's (a) needs); P10, P11, P10-P11 and P12 print NOT GRADED (IMG4); P8 holds
 // MUTATION P10 stimulus red S1-h (S1 whose use 2 has VSTOP $5C and four data pairs removed), NMH_MUTATE=P10; both cores: DONE=1, heights 16, 24, 8, 24 output lines (8, 12, 4, 12 beam lines) in each of the 3 frames, P10 FAIL; P11 holds (3456 cells, 0 off), P12 holds (2688 pixels, 0 off), IMG4 and the preconditions hold; P9 FAILs with it through its (b), which expects the 90 words of the specification's structure and reads 82, its (a) tops and left edges unchanged; P10-P11 FAILs with P10 (the aggregate)
 // MUTATION P11 stimulus red S1-s (S1 whose use 2 data line 5 is $F0F0,$FF00), NMH_MUTATE=P11; both cores: DONE=1, 96 of 3840 cells off in the 3 frames (two output lines of 16 pixels per frame), P11 FAIL; P9 and P10 hold; P10-P11 FAILs with P11 (the aggregate); P12 FAILs with it (72 of 2976 pixels off) because it grades value-to-colour against the specification's data words, which line 5 no longer matches; the preconditions hold
@@ -2357,24 +2433,13 @@ int main(int argc, char** argv) {
             // plain C0 run.
             RunResult base = run_C0(dir);
             set_gS(base.log, blocks_C0(), checks);
-            std::string s2bin = "prog_s2.bin", s1bin = "prog_s1.bin";
-            uint32_t s1_words = kCopWordsS1;
-            if (mv == "FRAMES") s2bin = "prog_s2_exit6.bin";
-            else if (mv == "Q2") s1bin = "prog_s1_q2.bin";
-            else if (mv == "Q4") s2bin = "prog_s2_col0.bin";
-            else if (mv == "Q5") s2bin = "prog_s2_endv.bin";
-            else if (mv == "Q-ref") s2bin = "prog_s2_noref.bin";
-            else if (mv == "K9") s1bin = "prog_s1_nospren.bin";
-            else if (mv == "IMG4" || mv == "P9") s1bin = "prog_s1_end.bin";
-            else if (mv == "P8") s2bin = "prog_s2_still.bin";
-            else if (mv == "P10" || mv == "P10-P11") s1bin = "prog_s1_h.bin";
-            else if (mv == "P11") s1bin = "prog_s1_s.bin";
-            else if (mv == "P12") { s1bin = "prog_s1_c.bin"; s1_words = kCopWordsS1 + 8; }
-            auto runs = make_video_runs(dir, s2bin, s1bin, s1_words);
-            checks.note("video mutation " + mv + ": S2 " + s2bin + " done=" + std::to_string(runs.first.v.run.done.has_value()) +
-                        ", S1 " + s1bin + " done=" + std::to_string(runs.second.v.run.done.has_value()) +
+            VideoSel vs;
+            video_selector(mv, &vs);
+            auto runs = make_video_runs(dir, vs.s2bin, vs.s1bin, vs.s1_words, vs.mode);
+            checks.note("video mutation " + mv + ": S2 " + vs.s2bin + " done=" + std::to_string(runs.first.v.run.done.has_value()) +
+                        ", S1 " + vs.s1bin + " done=" + std::to_string(runs.second.v.run.done.has_value()) +
                         ", S=" + std::to_string(gS));
-            video_lines(checks, runs.first, runs.second, mv);
+            video_lines(checks, runs.first, runs.second, vs.line, vs.mode == 0 ? std::string() : std::string(kVideoModeName[vs.mode]));
         } else {
             checks.expect(false, "unknown NMH_MUTATE value: " + mv);
         }
@@ -2864,12 +2929,21 @@ int main(int argc, char** argv) {
     {
         auto runs = make_video_runs(dir, "prog_s2.bin", "prog_s1.bin", kCopWordsS1);
         video_lines(checks, runs.first, runs.second, "");
-        checks.record("P8-P12 reading of the page: P8's \"at least 3\" is read as at least three output frames used (so at least two "
-                       "consecutive pairs); \"normally\" in P12 is read as the page's own exception, a Copper write "
-                       "between two uses (the next sentence of p.27), so the line grades the definite colour values of the registers "
-                       "with no such write and the contrast writes the colours between the uses; P8-P12 are graded in PAL/ECS, "
-                       "the mode variants of S1 are graded for P1 and P4 only.");
     }
+    // The same lines and preconditions in the three other modes (SPECIFICATION.md 2.10), each with its own S2 and S1 runs.
+    for (int mode = 1; mode < 4; ++mode) {
+        auto mruns = make_video_runs(dir, "prog_s2.bin", "prog_s1.bin", kCopWordsS1, mode);
+        video_lines(checks, mruns.first, mruns.second, "", kVideoModeName[mode]);
+    }
+    checks.record("P8-P12 reading of the page: P8's \"at least 3\" is read as at least three output frames used (so at least two "
+                   "consecutive pairs); \"normally\" in P12 is read as the page's own exception, a Copper write "
+                   "between two uses (the next sentence of p.27), so the line grades the definite colour values of the registers "
+                   "with no such write and the contrast writes the colours between the uses; P8-P12 are graded in PAL/ECS, "
+                   "NTSC/ECS, PAL/OCS and NTSC/OCS (the lines of the other three modes carry the mode in their label).");
+    checks.record("P8-P12 not graded over sprite DMA channels 1-7: every line grades sprite DMA channel 0 (in S2 channel 2 is only the fixed "
+                   "reference). p.116 says \"Each of the eight sprite DMA channels can produce more than one independently controllable "
+                   "image\" and p.115 (Table 4-3) gives each sprite pair its own colour registers, but no run here drives a structure through "
+                   "channels 1-7 (S1 and S2 point them at the null block), so nothing is measured for them.");
     checks.record("COP2-about-the-copper.c34 .c35 .c36 (the blitter DMA channel): not built, by a scope decision. "
                    "The parenthesis they come from names a use (animation, line drawing, polygon filling), not a "
                    "machine function this package's claims define an observable for; a check would need pp.184-186 "
