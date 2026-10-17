@@ -824,6 +824,17 @@ the old or the new location is used.
 - (a) M has at least 8 graded runs. C has at least 2 graded runs before marker W
   and at least 3 graded runs more than 2 lines after it.
 - (b) No channel-0 fetch occurs before marker 2.
+- (c) Every line the video shows between marker 2 and marker 3 is 227 colour
+  clocks long (p.23: "In PAL, they are all 227 long"). The unit is not taken
+  from this rule: a colour clock is half a period of the 7 MHz system clock
+  (p.393: "the 7.16 MHz system clock (7.09 MHz on PAL systems)", "a 3.58 MHz
+  clock (3.55 MHz on PAL systems)"), and that period is the smallest spacing of
+  two samples of the Chip-memory port (one per period, `nanomig_harness.h`).
+  The scan doubler shows each Amiga line as two rows (`nanomig_harness.h`,
+  `find_lines`), so a line is the span of two consecutive rows, from one HSYNC
+  leading edge to the one after the next; every such span between the markers
+  is compared with 227 colour clocks, and at least 100 spans must exist. The
+  2-line window after marker W above is 454 of these colour clocks.
 
 **Contrasting cases.**
 - Main (M): AUD0LEN ← 5. p.145 predicts runs of five words, $44000 ... $44008,
@@ -837,6 +848,11 @@ the old or the new location is used.
   enable comes first and the channel has its pointer, length and period.
   Fetches occur before marker 2 and (b) goes red. The contrast is applied to run
   M and, separately, to run C.
+- (c): the program writes HTOTAL ← $00C8 and BEAMCON0 ← $0080 (variable beam
+  counters enabled, ECS) right after marker 2, so the lines are shorter than 227
+  colour clocks. The contrast is applied to run M and, separately, to run C.
+  DONE is still written, (a) and (b) still hold, and the audio channel still
+  fetches; (c) goes red and the two results are not graded.
 - Attribution: a CPU read of $44000 stands behind the program's DONE write,
   where it is never executed. The listing check goes red and nothing else does.
   The contrast is applied to run M and, separately, to run C.
@@ -1067,19 +1083,23 @@ PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable 
 PASS: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [OCS]
 MEASURED: P7 [OCS] blitter writes in $48000-$480FF: 1 first at $48000 data $FFFF, result word $FFFF; extra reads (the word after the end WAIT, in no pass): 1 at $3A010, 2 at $3A104
 PASS: P7-BLIT: [p26 p269 p274] COP2-control-register.c11: with COPCON bit 1 set, a Copper MOVE to BLTSIZE ($058), a blitter control register in the range $40-$7E, starts the prepared blit: exactly one blitter write in $48000-$480FF, at $48000 with data $FFFF, after the Copper's read of $3A002, and the result word is $FFFF (ECS and OCS); of the blitter control registers this line exercises BLTSIZE only
-PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run M]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the port shows the 7 MHz system clock's period (a colour clock is 8 cycles) [run M]
 PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run M]
+PASS: P8-LINES: [p23] every line between marker 2 and marker 3 is 227 colour clocks long (816 of 816 spans of two consecutive rows are 1816 cycles) [run M]
+MEASURED: P8 [run M] row-pair spans between marker 2 and marker 3: 816, shortest 1816, longest 1816 cycles
 PASS: P8-PRE-A: (a) run M has at least 8 graded runs (46) [run M]
 PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run M]
 MEASURED: P8 [run M] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000]
-PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run C]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the port shows the 7 MHz system clock's period (a colour clock is 8 cycles) [run C]
 PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run C]
+PASS: P8-LINES: [p23] every line between marker 2 and marker 3 is 227 colour clocks long (816 of 816 spans of two consecutive rows are 1816 cycles) [run C]
+MEASURED: P8 [run C] row-pair spans between marker 2 and marker 3: 816, shortest 1816, longest 1816 cycles
 PASS: P8-PRE-A: (a) run C has at least 2 graded runs before marker W and at least 3 more than 2 lines after it (4, 42) [run C]
 PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run C]
 MEASURED: P8 [run C] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100]
 PASS: P8-CTRL: control on the same measurement basis as P8-RESTART: every run after the first of run M and of run C, graded by the same comparator, is the run of four words the AUD0LC in force prescribes
 FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the runs that start more than 2 lines later are $44100 $44102 $44104 $44106
-77 passed, 2 failed
+79 passed, 2 failed
 ```
 
 ### TG68K
@@ -1198,19 +1218,23 @@ PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable 
 PASS: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [OCS]
 MEASURED: P7 [OCS] blitter writes in $48000-$480FF: 1 first at $48000 data $FFFF, result word $FFFF; extra reads (the word after the end WAIT, in no pass): 1 at $3A010, 2 at $3A104
 PASS: P7-BLIT: [p26 p269 p274] COP2-control-register.c11: with COPCON bit 1 set, a Copper MOVE to BLTSIZE ($058), a blitter control register in the range $40-$7E, starts the prepared blit: exactly one blitter write in $48000-$480FF, at $48000 with data $FFFF, after the Copper's read of $3A002, and the result word is $FFFF (ECS and OCS); of the blitter control registers this line exercises BLTSIZE only
-PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run M]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the port shows the 7 MHz system clock's period (a colour clock is 8 cycles) [run M]
 PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run M]
+PASS: P8-LINES: [p23] every line between marker 2 and marker 3 is 227 colour clocks long (816 of 816 spans of two consecutive rows are 1816 cycles) [run M]
+MEASURED: P8 [run M] row-pair spans between marker 2 and marker 3: 816, shortest 1816, longest 1816 cycles
 PASS: P8-PRE-A: (a) run M has at least 8 graded runs (46) [run M]
 PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run M]
 MEASURED: P8 [run M] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000]
-PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run C]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the port shows the 7 MHz system clock's period (a colour clock is 8 cycles) [run C]
 PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run C]
+PASS: P8-LINES: [p23] every line between marker 2 and marker 3 is 227 colour clocks long (815 of 815 spans of two consecutive rows are 1816 cycles) [run C]
+MEASURED: P8 [run C] row-pair spans between marker 2 and marker 3: 815, shortest 1816, longest 1816 cycles
 PASS: P8-PRE-A: (a) run C has at least 2 graded runs before marker W and at least 3 more than 2 lines after it (4, 42) [run C]
 PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run C]
 MEASURED: P8 [run C] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100]
 PASS: P8-CTRL: control on the same measurement basis as P8-RESTART: every run after the first of run M and of run C, graded by the same comparator, is the run of four words the AUD0LC in force prescribes
 FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the runs that start more than 2 lines later are $44100 $44102 $44104 $44106
-85 passed, 2 failed
+87 passed, 2 failed
 ```
 
 **P5-LOCATION-R2, run R2.** COPJMP2 is strobed while Copper DMA is off, in the
