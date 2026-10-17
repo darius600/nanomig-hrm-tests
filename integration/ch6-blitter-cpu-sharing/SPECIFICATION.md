@@ -386,14 +386,48 @@ fetch does (`$8044C`, 4 `clk_sys` before the window's last destination write,
 the bus for every available Chip memory cycle and the window is the blit's own
 span, so the line reads red as printed on both cores and is not changed.
 
-Mutation (`prog_sharing_share.s`, `NMH_MUTATE=A4`): swaps in the
-share-mode capture for this same check; the unchanged "count is zero"
-check must go red (share mode lets CPU accesses through).
+Mutation: none exists for `A4` itself (`NMH_MUTATE=-`). The line is red in
+the unmutated run on both cores, so no stimulus can turn it newly red, and
+none is run through it. Its comparator -- the CPU accesses of `is_cpu_access()`
+counted over a window, through the helper `cpu_hits_in()`, zero required -- is
+live on `A4-CTRL` below, which runs the same helper over a window set in which
+the answer is zero.
 
 Precondition mutation (`prog_sharing_nasty_tiny.s`, `NASTY` and `TINY` set,
 `NMH_MUTATE=A4PRE`): the nasty-mode blit shrinks to a near-instant one-word
 transfer; the unchanged "window long enough" check must go red, and A4
 prints `NOT GRADED`.
+
+### A4-CTRL the comparator of A4 on a live zero-access input
+
+No claim id; an apparatus control for `A4`.
+
+Program: `prog_bitplane_hires.s` (four high-resolution bitplanes, the CPU
+scratch-counter loop running), the capture A10 uses.
+
+Observed (precondition, "A4-CTRL-PRE", no claim id): every one of the display's
+fetch windows holds 160 bitplane fetches and no free slot (A10PRE's population
+and criterion), and the CPU makes Chip-memory accesses outside the windows, so
+a zero inside them is not a silent CPU.
+
+Observed (control): the CPU Chip-memory accesses (program fetches in the
+program's address range and writes to the counter word) over the fetch windows,
+counted by the same helper `A4` uses.
+
+Expected value: the count is exactly zero, with at least one window. If the
+precondition fails the line prints `NOT GRADED`.
+
+Measured: green on both cores, 768 fetch windows and 0 accesses in them
+(41771 CPU accesses outside them on fx68k, 45984 on TG68K).
+
+Mutation (`NMH_MUTATE=A4-CTRL`): the fetch windows of the four-low-resolution-
+bitplane capture (`prog_bitplane.s`) stand in for the high-resolution ones, in
+which the CPU is granted accesses; `A4-CTRL-PRE` still reads the
+high-resolution capture and stays green, and the unchanged comparator goes red.
+
+Precondition mutation (`NMH_MUTATE=A4-CTRL-PRE`): the no-display baseline
+capture (`prog_sharing.s`) stands in for the high-resolution one, which has no
+fetch windows; the precondition goes red and `A4-CTRL` prints `NOT GRADED`.
 
 ### A4-SHARE [p194,p198] share mode costs the 68000 chip-bus accesses
 
@@ -431,19 +465,24 @@ Mutation of A4-SHARE itself (`prog_sharing_slow.s`, `SLOW` set,
 `NMH_MUTATE=A4-SHARE`): the live share-mode capture stays, and a slower
 no-DMA reference stands in for `BASELINE`. It is the same counting loop with
 two register-only `MULU.W` instructions (70 clocks each, no bus cycle of their
-own) between its counter writes, copied by the program into Chip memory at
-`$0C0200`, outside the program's own address range, and run from there. The
-accesses classed as the 68000's (a read in the program's address range, a write
-to the counter word) then come far less often than in the share window. The
-copy is needed because a program that only slows its instructions down in
-place keeps the TG68K core's program-fetch rate: with the two `MULU.W` in the
-loop in place the TG68K reference measured 45209 accesses in 726528 `clk_sys`,
-exactly the `BASELINE` run's count, so the core fetches at its bus-limited
-rate whatever the instructions do. A4-SHARE-PRE stays true (the window is
-nonempty and the reference holds accesses: the counter writes) and the
-unchanged comparator reads red. Measured: the reference holds 1155 accesses in
-725864 `clk_sys` (fx68k) and 6492 in 726480 (TG68K), against 243 in 10112 and
-254 in 10200 in the share window.
+own) between its counter writes, copied by the program into Zorro II fast RAM
+(bank 1, enabled by the same autoconfig write `prog_fastrun.s` uses; the run
+offers fast RAM as FASTRUN's runs do) and run from there, so that its
+instruction fetches are not Chip-memory accesses at all. The classifier of the
+68000's accesses (a read in the program's address range, a write to the counter
+word) is the one every other run uses and the population it counts is complete:
+the loop's only Chip-memory accesses are its counter writes. They come far
+less often than in the share window, and the unchanged comparator reads red.
+The copy runs from fast RAM and not from Chip memory because a slowed loop that
+stays on the Chip bus keeps the TG68K core's access count: with the two `MULU.W`
+in the loop in place the TG68K reference measured 45209 accesses in 726528
+`clk_sys`, exactly the `BASELINE` run's count, and with the copy in Chip memory
+and its reads counted 45204 in 726528, so the share window's rate (254 in
+10200) stayed below it and the comparator stayed green. A4-SHARE-PRE stays true
+(the window is nonempty and the reference holds accesses: the counter writes).
+Measured: the reference holds 1120 accesses in 726048 `clk_sys` (fx68k) and
+8278 in 726528 (TG68K), against 243 in 10112 and 254 in 10200 in the share
+window.
 
 Precondition mutation (`prog_sharing_tiny.s`, `NMH_MUTATE=A4-SHARE-PRE`): the
 share-mode blit shrinks to a near-instant one-word transfer, so its active
@@ -1369,7 +1408,7 @@ A10, A11, A6, OPEN50, PARITY, TAS-SPAN, BBUSY-LOCKOUT, FASTRUN,
 FASTRUN-LOCKOUT), 34 claim ids in full. Graded lines without a claim id: A1-A,
 A1-B, A1-C, A1-D, A4, A4-SHARE, A8, ORDER, BBUSY-PREDICTS. Apparatus and
 precondition checks without a claim id: FIXTURE, SLOT-UNIT, DESC-BASE, A3PRE,
-A4PRE, A4-SHARE-PRE, A8PRE, A9PRE, A10PRE, A11PRE, OPEN50PRE, PARITY-REF,
+A4PRE, A4-CTRL-PRE, A4-CTRL, A4-SHARE-PRE, A8PRE, A9PRE, A10PRE, A11PRE, OPEN50PRE, PARITY-REF,
 TAS-SPAN-PRE, FASTRUN-LOCKOUT-PRE, BBUSY-LOCKOUT-PRE. 13 claim ids are
 withdrawn or not graded by `checks.record()`: 2 as A5-WITHDRAWN, 1 as
 SLOTSPAN-WITHDRAWN, 1 as TAS-WITHDRAWN, 1 as `ch6-multi.c4`, 4 as
@@ -1379,7 +1418,7 @@ ids checked in total.
 
 ## RECORDED
 
-The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 35 passed, 3 failed; tg68k 35 passed, 3 failed.
+The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 37 passed, 3 failed; tg68k 37 passed, 3 failed.
 
 | line | fx68k | tg68k |
 |---|---|---|
@@ -1398,6 +1437,8 @@ The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines
 | `A2` | PASS | PASS |
 | `A4PRE` | PASS | PASS |
 | `A4` | FAIL | FAIL |
+| `A4-CTRL-PRE` | PASS | PASS |
+| `A4-CTRL` | PASS | PASS |
 | `A4-SHARE-PRE` | PASS | PASS |
 | `A4-SHARE` | PASS | PASS |
 | `A4-SHARE-WITHDRAWN` | RECORDED | RECORDED |
@@ -1447,6 +1488,7 @@ capture health: lores4.log.size=163218 hires4.log.size=173463 lores6.log.size=17
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274377..2284489, 48 scratch write(s) strictly inside it (excluding the window's own endpoints)
 A4: window 2274377..2282489, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
+A4-CTRL: 768 fetch window(s), 0 CPU Chip-memory access(es) inside them (0 counter writes)
 A4-SHARE: CPU accesses 243 in a share-mode window of 10112 clk_sys; reference 41007 in 726488 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (190 of 242 intervals)
 A5: of 124 missed even cycles in the share-mode run, 121 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
@@ -1479,6 +1521,7 @@ capture health: lores4.log.size=177677 hires4.log.size=177677 lores6.log.size=17
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
 A4: window 2274337..2282449, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
+A4-CTRL: 768 fetch window(s), 0 CPU Chip-memory access(es) inside them (0 counter writes)
 A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
 A5: of 125 missed even cycles in the share-mode run, 120 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
