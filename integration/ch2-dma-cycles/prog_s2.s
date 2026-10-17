@@ -20,11 +20,21 @@ start:
         move.l  #COP_MAIN,a1
         lea     s2_spr_tab_a,a5
         bsr     build_Vspr8
+        ifd     S2_ENDV
+        ; END placed after V_spr (P8's contrast for Q5): the rest of L_A is
+        ; written but never fetched.
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFE,(a1)+
+        endc
         lea     s2_bpl_tab,a6
         moveq   #1,d4
         bsr     build_Vbpln
         move.w  #COLOR17,(a1)+
+        ifd     S2_COL0
+        move.w  #$0000,(a1)+
+        else
         move.w  #$0F00,(a1)+
+        endc
         move.w  #COLOR18,(a1)+
         move.w  #$00F0,(a1)+
         move.w  #COLOR19,(a1)+
@@ -51,7 +61,11 @@ start:
         moveq   #1,d4
         bsr     build_Vbpln
         move.w  #COLOR17,(a1)+
+        ifd     S2_COL0
+        move.w  #$0000,(a1)+
+        else
         move.w  #$0F00,(a1)+
+        endc
         move.w  #COLOR18,(a1)+
         move.w  #$00F0,(a1)+
         move.w  #COLOR19,(a1)+
@@ -105,13 +119,33 @@ start:
         S3_COPPER COP_MAIN
         S4_DMAEN  SPREN|BPLEN
         S5_ARM_INT
+        ifd     S2_EXIT6
+        ; FRAMES' contrast: the wait loop exits when FRAME_CTR reaches 6.
+        lea     CUSTOM,a0
+.wait6  stop    #$2000
+        cmp.w   #6,FRAME_CTR
+        bne.s   .wait6
+        else
         S6_WAIT
+        endc
         S7_FINISH
         VBLANK_HANDLER
 
 s2_spr_tab_a:   dc.l    CH_SPR0,CH_SPR_NULL,CH_SPR0+$0800,CH_SPR_NULL
                 dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
-s2_spr_tab_b:   dc.l    CH_SPR0+$40,CH_SPR_NULL,CH_SPR0+$0800,CH_SPR_NULL
+s2_spr_tab_b:
+                ifd     S2_STILL
+                dc.l    CH_SPR0
+                else
+                dc.l    CH_SPR0+$40
+                endc
+                dc.l    CH_SPR_NULL
+                ifd     S2_NOREF
+                dc.l    CH_SPR_NULL
+                else
+                dc.l    CH_SPR0+$0800
+                endc
+                dc.l    CH_SPR_NULL
                 dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
 s2_bpl_tab:     dc.l    CH_BPL1
 

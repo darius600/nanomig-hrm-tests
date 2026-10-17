@@ -26,6 +26,18 @@ start:
         move.w  #$00F0,(a1)+
         move.w  #COLOR19,(a1)+
         move.w  #$000F,(a1)+
+        ifd     S1_C
+        ; L_S1c (2.8): WAIT VP=$48 (the line after the last line of use 1),
+        ; then COLOR17-19 <- $0FF0,$00FF,$0F0F.
+        move.w  #$4801,(a1)+
+        move.w  #$FFFE,(a1)+
+        move.w  #COLOR17,(a1)+
+        move.w  #$0FF0,(a1)+
+        move.w  #COLOR18,(a1)+
+        move.w  #$00FF,(a1)+
+        move.w  #COLOR19,(a1)+
+        move.w  #$0F0F,(a1)+
+        endc
         move.w  #$FFFF,(a1)+
         move.w  #$FFFE,(a1)+
         ; structure Z (2.9) at CH_SPR0.
@@ -60,7 +72,11 @@ start:
         move.w  #(CH_SPR_NULL)>>16,SPR7PTH(a0)
         move.w  #(CH_SPR_NULL)&$FFFF,SPR7PTL(a0)
         S3_COPPER COP_MAIN
+        ifd     S1_NOSPREN
+        S4_DMAEN  BPLEN
+        else
         S4_DMAEN  SPREN|BPLEN
+        endc
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
@@ -73,15 +89,43 @@ s1_bpl_tab:     dc.l    CH_BPL1
 ; structure Z (SPECIFICATION.md 2.9): four uses, U1 height 8, U2 height 16,
 ; U3 height 4, U4 height 12; each use's first data line is $FFFF,$0000.
 structz_tbl:    dc.w    $4050,$4800
+                ifd     S1_Q2
+                dc.w    $7FFF,$0000
+                else
                 dc.w    $FFFF,$0000
+                endc
                 rept    7
                 dc.w    $F0F0,$FF00
                 endr
+                ifd     S1_END
+                dc.w    $0000,$0000
+                else
+                ifd     S1_H
+                dc.w    $5064,$5C00
+                else
                 dc.w    $5064,$6000
+                endc
+                endc
                 dc.w    $FFFF,$0000
+                ifd     S1_S
+                rept    3
+                dc.w    $0F0F,$00FF
+                endr
+                dc.w    $F0F0,$FF00
+                rept    11
+                dc.w    $0F0F,$00FF
+                endr
+                else
+                ifd     S1_H
+                rept    11
+                dc.w    $0F0F,$00FF
+                endr
+                else
                 rept    15
                 dc.w    $0F0F,$00FF
                 endr
+                endc
+                endc
                 dc.w    $6848,$6C00
                 dc.w    $FFFF,$0000
                 rept    3
