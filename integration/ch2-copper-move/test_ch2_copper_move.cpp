@@ -58,17 +58,19 @@
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-MAIN: IR1 at $3A000 is $0180 (COLOR00) instead of $0058 so no blit starts; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-W2: the data of the BLTSIZE MOVE at $3A002 is $0042 (width 2) instead of $0041 so the blit writes $48000 and $48002; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-LF: BLTCON0 is $0100 (LF = $00) instead of $01FF (prog_p7_lf0) so the blit writes $0000 and the result word is $0000; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
-// MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART).
-// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_attr); TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-CATTR: the program of run C has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_c_attr); TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-CA: run C writes DMACON <- $8200, without AUD0EN (prog_p8_c_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-CB: run C writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_c_early) so the channel fetches before marker 2; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
-// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run after the first has five words; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
-// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
-// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words (the first run is graded, Section 8 A4), while the control P8-CTRL on runs after the first is green in the unmutated run and red here; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
-// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; the line is red in the unmutated run as well, and the control P8-CTRL is green in the unmutated run and red here; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-LINES P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-LINES P8-PRE-A P8-PRE-B P8-CTRL P8-RESTART).
+// MUTATION P8-LINES stimulus red NMH_MUTATE=P8-L: run M writes HTOTAL <- $00C8 and BEAMCON0 <- $0080 right after marker 2 (prog_p8_lines), so its lines are 201 colour clocks long; the program still writes DONE and every marker, and P8-RUN, P8-ATTR, P8-PRE-A (41 runs) and P8-PRE-B stay PASS; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-LINES stimulus red NMH_MUTATE=P8-CL: run C writes HTOTAL <- $00C8 and BEAMCON0 <- $0080 right after marker 2 (prog_p8_c_lines), so its lines are 201 colour clocks long; the program still writes DONE and every marker, and P8-RUN, P8-ATTR, P8-PRE-A (4 runs before marker W, 37 after the guard) and P8-PRE-B stay PASS; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_attr); TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-CATTR: the program of run C has a CPU read of $44000, a word of the audio data block, behind its DONE write (prog_p8_c_attr); TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-CA: run C writes DMACON <- $8200, without AUD0EN (prog_p8_c_noaud), so the channel fetches nothing; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-CB: run C writes DMACON <- $8201 after the AUD0PER write and before marker 1 (prog_p8_c_early) so the channel fetches before marker 2; TG68K FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART), fx68k FAIL (9 passed/1 failed; also NOT GRADED P8-CTRL P8-RESTART).
+// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run after the first has five words; TG68K FAIL (10 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (10 passed/2 failed; also FAIL P8-RESTART).
+// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; TG68K FAIL (10 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (10 passed/2 failed; also FAIL P8-RESTART).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words (the first run is graded, Section 8 A4), while the control P8-CTRL on runs after the first is green in the unmutated run and red here; TG68K FAIL (10 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (10 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-C: run C omits the AUD0LC write and keeps marker W (prog_p8_c_nolc) so the runs after marker W start at $44000 and not at $44100; the line is red in the unmutated run as well, and the control P8-CTRL is green in the unmutated run and red here; TG68K FAIL (10 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (10 passed/2 failed; also FAIL P8-CTRL).
 // MUTATION P3-MOVED none impossible clause (i) without clause (iii): from the enable marker on every write to $3600A that reaches the port is counted as a value write, whichever channel makes it, P3-RUN requires the four writes to carry the four values (whose two bytes differ, so none is a one-byte write), and a RAM word read returns the word last written at its address, so a read can differ from the value clause (i) expects only when $3600A holds another word than $0F0F at the enable marker, and that word is the first value clause (iii) grades (P3-I)
 // MUTATION P7-BLIT none impossible clause "after the Copper's read of $3A002": P7-PRE-A requires that no blitter access precedes that read, so the clause holds whenever the line is graded; a blit started before the read makes P7-PRE-A red and the line NOT GRADED (P7-A)
 
@@ -145,6 +147,7 @@ struct Run {
     std::vector<bool> held;
     std::vector<nmh::VideoSample> video;
     std::map<uint32_t, uint16_t> peeked;
+    uint64_t period = 0; // clk_sys cycles per 7 MHz bus period: the smallest spacing of two port samples
 };
 
 Run run_program(const Setup& s) {
@@ -163,6 +166,7 @@ Run run_program(const Setup& s) {
         uint64_t d = r.log[i].cycle - r.log[i - 1].cycle;
         if (d > 0 && (period == 0 || d < period)) period = d;
     }
+    r.period = period;
     r.held = nmh::held_continuations(r.log, period);
     for (uint32_t a : s.peeks) r.peeked[a] = h.peek_word(a / 2);
     return r;
@@ -325,26 +329,35 @@ std::string seq_text(const std::vector<uint16_t>& s) {
     return t;
 }
 
-// The length of a colour clock in clk_sys cycles, calibrated on the run's own video: the doubled
-// output has two rows per Amiga line, and a PAL line is 227 colour clocks long (p.23). 0 if the
-// spacing of the rows is not a whole number of cycles per colour clock.
-uint64_t cck_cycles(const Run& r) {
-    std::vector<uint64_t> gaps;
-    long prev = -1;
-    bool hs = false;
-    for (size_t i = 0; i < r.video.size(); ++i) {
+// The length of a colour clock in clk_sys cycles: the port is sampled once per period of the 7 MHz system clock
+// (nanomig_harness.h, RamAccess), and the colour clock is half that frequency (p.393: "the 7.16 MHz system clock
+// (7.09 MHz on PAL systems)", "a 3.58 MHz clock (3.55 MHz on PAL systems)"). The unit comes from the port samples
+// and from no rule about the length of a line. 0 if the port shows no period.
+uint64_t cck_cycles(const Run& r) { return 2 * r.period; }
+
+// The lengths of the Amiga lines in the video between cycle t0 and cycle t1 (the video sample index is the clk_sys
+// cycle). The scan doubler shows each Amiga line as two rows (nanomig_harness.h, find_lines), so an Amiga line
+// is the span of two consecutive rows, whichever of the two rows it starts with: every pair of consecutive rows
+// between two HSYNC leading edges inside [t0,t1) is one complete line.
+struct LineScan { uint64_t lines = 0, bad = 0, shortest = ~0ull, longest = 0; };
+
+LineScan scan_lines(const Run& r, uint64_t t0, uint64_t t1, uint64_t cck) {
+    LineScan s;
+    std::vector<uint64_t> edges;
+    bool hs = t0 < r.video.size() && r.video[t0].hs; // a pulse already high at t0 has its leading edge before the window
+    for (uint64_t i = t0; i < t1 && i < r.video.size(); ++i) {
         const bool now = r.video[i].hs;
-        if (now && !hs) {
-            if (prev >= 0) gaps.push_back(uint64_t(long(i) - prev));
-            prev = long(i);
-        }
+        if (now && !hs) edges.push_back(i);
         hs = now;
     }
-    if (gaps.size() < 100) return 0;
-    std::sort(gaps.begin(), gaps.end());
-    const uint64_t row = gaps[gaps.size() / 2];
-    const uint64_t line = 2 * row;
-    return line % 227 == 0 ? line / 227 : 0;
+    for (size_t k = 0; k + 2 < edges.size(); ++k) {
+        const uint64_t len = edges[k + 2] - edges[k];
+        ++s.lines;
+        if (len != 227 * cck) ++s.bad;
+        s.shortest = std::min(s.shortest, len);
+        s.longest = std::max(s.longest, len);
+    }
+    return s;
 }
 
 // ---- gating ------------------------------------------------------------------
@@ -1340,7 +1353,7 @@ Leg leg(Checks& checks, const std::string& bin, bool run_c, const std::string& m
     const uint64_t cck = cck_cycles(r);
     Gate g;
     g.run(checks, r.loaded && r.released && r.done && marks_ok && cck > 0,
-          "P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks "
+          "P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the port shows the 7 MHz system clock's period "
           "(a colour clock is " + num(cck) + " cycles)" + tag);
     std::string why;
     const bool attr_ok = listing_ok(bin, {{kA, kA + 0xFF, 0, 0}, {kB, kB + 0xFF, 0, 0}}, why);
@@ -1350,11 +1363,19 @@ Leg leg(Checks& checks, const std::string& bin, bool run_c, const std::string& m
     Leg out;
     if (!marks_ok) {
         // The run produced no capture to read: its preconditions are NOT GRADED.
+        g.pre(checks, false, "P8-LINES" + tag);
         g.pre(checks, false, "P8-PRE-A" + tag);
         g.pre(checks, false, "P8-PRE-B" + tag);
         return out;
     }
     const uint64_t m2 = uint64_t(mark_cycle(m, 2)), m3 = uint64_t(mark_cycle(m, 3));
+    // p.23: "In PAL, they are all 227 long". Every line the video shows between marker 2 and marker 3 is 227 colour clocks.
+    const LineScan ls = scan_lines(r, m2, m3, cck);
+    g.pre(checks, cck > 0 && ls.lines >= 100 && ls.bad == 0,
+          "P8-LINES: [p23] every line between marker 2 and marker 3 is 227 colour clocks long (" + num(ls.lines - ls.bad) + " of " + num(ls.lines) +
+          " spans of two consecutive rows are " + num(227 * cck) + " cycles)" + tag);
+    checks.note("P8" + tag + " row-pair spans between marker 2 and marker 3: " + num(ls.lines) + ", shortest " +
+                num(ls.lines ? ls.shortest : 0) + ", longest " + num(ls.longest) + " cycles");
     const uint64_t mw = run_c ? uint64_t(mark_cycle(m, 4)) : 0;
     auto before = reads_in(r, {{kA, kA + 0xFF}, {kB, kB + 0xFF}}, 0, m2);
     auto f = reads_in(r, {{kA, kA + 0xFF}, {kB, kB + 0xFF}}, m2, m3);
@@ -1413,6 +1434,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     if (mv == "P8-CA") bc = dir + "/prog_p8_c_noaud.bin";
     if (mv == "P8-CB") bc = dir + "/prog_p8_c_early.bin";
     if (mv == "P8-CATTR") bc = dir + "/prog_p8_c_attr.bin";
+    if (mv == "P8-L") bm = dir + "/prog_p8_lines.bin";
+    if (mv == "P8-CL") bc = dir + "/prog_p8_c_lines.bin";
     if (mv == "P8-RUN") { bm = dir + "/prog_nodone.bin"; bc = dir + "/prog_nodone.bin"; }
     Leg lm = leg(checks, bm, false, mv);
     Leg lc = leg(checks, bc, true, mv);

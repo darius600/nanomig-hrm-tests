@@ -41,6 +41,10 @@ start:
         move.w  #P8_EN,CUSTOM+DMACON
         endc
         MARK    2
+        ifd     P8_SHORT
+        move.w  #$00C8,CUSTOM+HTOTAL
+        move.w  #$0080,CUSTOM+BEAMCON0
+        endc
         ifd     P8_RUNC
 .wl     move.b  CUSTOM+VHPOSR,d0
         cmp.b   #$5F,d0

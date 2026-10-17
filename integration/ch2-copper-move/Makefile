@@ -20,7 +20,7 @@ PROGS    := prog_nodone \
             prog_p6 prog_p6_value prog_p6_nopre prog_p6_probe2 \
             prog_p7 prog_p7_a prog_p7_b prog_p7_c prog_p7_attr prog_p7_lf0 \
             prog_p8 prog_p8_c prog_p8_len prog_p8_c_nolc prog_p8_noaud prog_p8_early prog_p8_attr \
-            prog_p8_c_noaud prog_p8_c_early prog_p8_c_attr
+            prog_p8_c_noaud prog_p8_c_early prog_p8_c_attr prog_p8_lines prog_p8_c_lines
 
 include ../harness/nanomig.mk
 

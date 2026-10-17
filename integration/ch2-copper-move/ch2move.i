@@ -6,6 +6,8 @@
 ; access of the program (SPECIFICATION.md Section 6).
 
 COPCON          equ     $02E
+HTOTAL          equ     $1C0
+BEAMCON0        equ     $1DC
 DSKPTH          equ     $020
 ADKCON          equ     $09E
 COP1LCH         equ     $080
