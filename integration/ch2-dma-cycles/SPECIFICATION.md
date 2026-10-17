@@ -976,10 +976,11 @@ graded, the measurement that stands in its place and the reason are in one place
 
 ## 4. Build
 
-### Built: P1–P5 and P7
+### Built: P1–P5 and P7–P12
 
-P1–P5 and P7 (the memory-cycle-parity half of this specification) are built: `Makefile`,
-`test_ch2_dma_cycles.cpp`, 35 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
+P1–P5 and P7 (the memory-cycle-parity half of this specification) and P8–P12 (the sprite-channel
+reuse half, read from the video output; see "Video apparatus and P8–P12" below) are built:
+`Makefile`, `test_ch2_dma_cycles.cpp`, 46 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
 K2b, K3, K4, K5, K6, T1, T2, T3) is its own graded line, printed before the lines that depend on it
 and never part of their graded expression (§2.11). K2b, K3, K4, K5, K6, T1, T2 and T3 are gated by the
 observation preconditions of the runs they grade, as P2–P5 and P7 are; P1's gate leaves out F2 and
@@ -987,7 +988,8 @@ F2-COUNT (§2.11). F1, F2, F2-COUNT and F3 (§2.1, §2.3) are their own
 graded lines too, printed per run before P1, for every configuration §2.9 and §2.10 name (C0, C1a,
 C1b, C2a, C2b, C3, C4-1..6, C4-4w, C5, C6, C7a, C7b, S1, S2 in PAL/ECS; C0, C6 and S1 also in
 NTSC/ECS, PAL/OCS and NTSC/OCS). Four self-tests of the comparators, SELFTEST-F1, SELFTEST-F2,
-SELFTEST-P1 and HELD-CONTROL, run on synthetic traces. D9's own carve-out is exercised organically: C2b (read
+SELFTEST-P1 and HELD-CONTROL, run on synthetic traces; SELFTEST-VIDEO and SELFTEST-Q3 do the same
+for the video apparatus. D9's own carve-out is exercised organically: C2b (read
 direction, no drive) shows no disk-block access in any observed frame on both cores, so its read
 direction is recorded declined rather than graded; `ch2-about-the-copper.c23` and
 `COP2-about-the-copper.c28`, which say "only" over both directions, are recorded as not established
@@ -1011,8 +1013,13 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | K6, T1, T2, T3 | PASS (K6 gated by the observation preconditions of C5, C6, C7a and C7b, T1 and T2 by those of C5 and C6, T3 by those of C6); T1: 0 segments differ, 0 segments empty in C5; T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |
 | P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
 | Copper first fetch after S4 (MEASURED, not graded) | in a regular line of 227 memory cycles, at s = 165 (C0), 135 (C7a), 111 (S2) and 189 (C2a): odd in all four | s = 155 (C0), 125 (S2) and 179 (C2a), odd in all three; C7a dropped (the regular lines around the fetch are 454 memory cycles apart) |
+| SELFTEST-VIDEO, SELFTEST-Q3 | PASS | PASS |
+| FRAMES, Q2, Q3, Q4, Q5, Q-ref, K9, IMG4 | PASS; 3 output frames used in S2 and in S1; W = 32 sample periods on the first line of the reference image (p = 2); k_v = 2; Q4: 6 colour writes per frame in S2, 3 in S1; Q5: 54 of 54 words (S2, L_B and L_A alternating) and 44 of 44 (S1); K9: 90 reads per frame; IMG4: 4 images per frame | PASS, same values |
+| P8 | PASS; in the 3 frames used (B, A, B): (40 sprite pixels, 42 beam lines), (16, 32), (40, 42) | PASS, same |
+| P9 | PASS; tops 118, 150, 198, 230 output lines (+0, +16, +40, +56 beam lines), left edges 205, 285, 173, 365 samples (+0, +40, −16, +80 sprite pixels), 90 reads per frame | PASS, same |
+| P10, P11, P10-P11, P12 | PASS; heights 16, 32, 8, 24 output lines (8, 16, 4, 12 beam lines); 3840 pixel cells compared, 0 off; 2976 non-transparent pixels compared, 0 off | PASS, same |
 | NOT GRADED lines | none | none |
-| summary | 134 passed, 0 failed | 134 passed, 0 failed |
+| summary | 150 passed, 0 failed | 150 passed, 0 failed |
 
 Every mutation record of the header comment that has a selector was replayed on both cores from
 the built object directories (`NMH_MUTATE=<value>`). The stimulus records print FAIL through the
@@ -1031,14 +1038,105 @@ comparator.
 The NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1 (§2.10) are graded for P1,
 through the same `Config` the harness already exposes; no new program was needed.
 
+### Video apparatus and P8–P12
+
+**Capture.** The harness samples the video pins once per system-clock cycle, at the clock the
+Chip-memory log is stamped in, so a video sample's index and `RamAccess::cycle` are one time base.
+S2 and S1 are run once more for P8–P12 with their video captured (`run_video`); the runs of the
+parity lines are not changed.
+
+**Output frames and lines.** An output frame is the span from one rising edge of `vs` to the
+next. Its output lines are the spans between rising edges of `hs` inside it; the piece before the
+first rising edge is not a line and is not counted, so output line 0 is the first line that begins
+at an `hs` edge. The output frames used (§2.5) are the complete output frames that begin at or
+after S4 and end by S7, from the third to the last. S4 is the Copper's first fetch from the Copper
+block (the DMACON write itself is a custom-register write and does not reach the Chip-memory log)
+and S7 the write of the completion word. Measured, both cores: 3 output frames are used in S2 and in S1 (fx68k: S4 at system-clock
+cycle 2294305 in S2 and 2289657 in S1, S7 at 6253085; tg68k: S4 at 2294417 and 2290129, S7 at
+6253021). "(at least 3)" in P8.4 is read as at least three output frames (two consecutive pairs).
+The graded line FRAMES requires that count in both runs; its contrast S2-exit6 (the wait loop
+exits at FRAME_CTR 6) leaves 2 frames in S2.
+
+**k_v (Q3).** k_v, the output lines per beam line, is the modal beam-line period at the RAM port
+(the interval between the first accesses of consecutive refresh groups, §2.3) divided by the modal
+period of `hs` in the video, and must be an integer. Measured, both cores: 1816 system-clock
+cycles, 908 system-clock cycles, k_v = 2 (626 output lines in a frame of 313 beam lines). A
+sprite's top and height are counted in output lines; Q3 requires each to be a multiple of k_v.
+Q3 has no stimulus contrast: VSTART and VSTOP count whole beam lines (p.107), so no program puts
+an image edge between beam lines. SELFTEST-Q3 runs the comparator on synthetic frames: aligned
+passes; one image moved by one output line, and an image of five output lines, fail.
+
+**Images and Q2.** An image is a maximal run of consecutive output lines holding at least one
+non-zero sample (COLOR00 is `$000`). The left edge is the first non-zero sample of its first
+line, W the length of the run of non-zero samples from there, p = W/16 the samples per sprite
+pixel, and each of the 16 sprite pixels of each line is read as the p samples from the left edge
+(a pixel whose samples differ reads as mixed and matches nothing). The reference image is
+sprite 2's image in S2 (the image whose first line shows COLOR21, `$FF0`) and use 1 in S1. Measured,
+both cores: W = 32, p = 2. Q2's contrast S1-q2 (the low data word of use 1's first line at `$7FFF`)
+gives W = 30. SELFTEST-VIDEO runs the frame selection, the image extraction (tops, heights, left
+edges, widths, 16 pixel colours), a changed pixel and the k_v derivation on synthetic captures.
+
+**Port frames and Q4, Q5, K9.** The port frame of an output frame is the interval between the
+restart fetch that precedes the frame's first image line and the next restart fetch; it is the
+Copper frame that rewrote the sprite pointers for that display. Q4 reads the colour MOVEs the
+Copper fetched in the port frame (register word at an even offset from the list start, datum
+after it) and requires every colour register the run's images use to be written, with values
+pairwise distinct and distinct from `$000`. Q5 requires every word of the list the restart fetch
+started (44 words for L_S1, 54 for L_A and L_B) to be fetched in the port frame, and, in S2, the
+lists of consecutive frames to alternate between L_A and L_B. K9 requires the first read of sprite
+block 0 in the port frame to be use 1's first control word. P9(b) counts the reads of block 0
+in the port frame, set aside the samples that continue a held bus cycle (§P6 item 4), and requires
+the word offsets 0, 1, ..., 89 in that order. Q-ref requires sprite 2's image to exist once in every
+frame used of S2 and to have the same top and left edge in all of them.
+
+**Added preconditions.** FRAMES (above) and IMG4 (every frame used of S1 shows exactly four
+images) are graded lines of their own, printed before the lines they gate. IMG4 gates P10, P11,
+P10-P11 and P12 ("the four images as in P9(a)"); its contrast is S1-end. Every gate is evaluated
+for the run its line grades (S2 for P8; S1 for P9–P12), so a contrast on one run leaves the other
+run's lines graded.
+
+**Programs.** S1 and S2 are unchanged in the bytes they assemble to; `prog_s1.s` and `prog_s2.s`
+carry assembly conditionals the contrast programs select. Contrast programs, each a source that
+sets one symbol and includes the main program: `prog_s1_q2` (Q2), `prog_s1_end` (S1-end: P9, IMG4),
+`prog_s1_h` (S1-h: P10, P10-P11), `prog_s1_s` (S1-s: P11), `prog_s1_c` (S1-c: P12, list L_S1c),
+`prog_s1_nospren` (K9), `prog_s2_still` (S2-still: P8), `prog_s2_noref` (Q-ref), `prog_s2_col0` (Q4),
+`prog_s2_endv` (Q5), `prog_s2_exit6` (FRAMES).
+
+**Claim ids.** P10 carries `COP2-putting-together-a-copper-instruction-list.c3` (size) and P11
+`COP2-putting-together-a-copper-instruction-list.c4` (shape). `ch2-putting-together-a-copper-instruction-list.c6`
+says both together, so it sits on the graded line P10-P11, which requires P10 and P11, and on no
+component line. P11 compares the pixels of one use with each other (equal values show equal
+colours, different non-zero values different colours), so its verdict does not depend on which
+colours the list wrote; P12 compares them with the register values.
+
+**Readings.** "normally" in P12 is read as the page's own exception, a Copper write between two
+uses (the next sentence of p.27): the line grades the definite colours of the registers when no
+such write occurs, and S1-c (the page's own recipe, §2.8) shows the exception. P8–P12 are graded
+in PAL/ECS; the mode variants of S1 are graded for P1 and P4 only (a RECORDED line says so).
+
+**Contrasts, measured on both cores** (`NMH_MUTATE=<line>`; each prints FAIL through the unchanged
+comparator, with the program reaching DONE):
+
+| contrast | its line | lines that move with it, and why |
+|---|---|---|
+| S2-exit6 | FRAMES (2 frames in S2) | P8 NOT GRADED (FRAMES) |
+| S1-q2 | Q2 (W = 30, p = 0) | P9–P12 NOT GRADED (Q2) |
+| S2-col0 | Q4 (COLOR17 equals COLOR00) | P8 NOT GRADED (Q4) |
+| S2-endv | Q5 (35 of 54 words of L_A, no L_B frame) | Q2, Q3, Q4, Q-ref FAIL and P8 NOT GRADED: the colour MOVEs behind the END are never fetched, so S2 shows no image |
+| S2-noref | Q-ref (R absent in the two L_B frames) | Q2 FAIL (its reference image is absent in the same frames), P8 NOT GRADED |
+| S1-nospren | K9 (0 reads) | Q2, Q3, IMG4 FAIL (no image), P9–P12 NOT GRADED |
+| S1-end | IMG4 (1 image), P9 (1 image, 20 reads) | P10–P12 NOT GRADED (IMG4) |
+| S2-still | P8 (offset (16, 32) in every frame) | none |
+| S1-h | P10 (heights 8, 12, 4, 12 beam lines), P10-P11 | P9 FAIL through (b): 82 of the 90 words are read |
+| S1-s | P11 (96 of 3840 cells off) | P10-P11 FAIL (aggregate), P12 FAIL (72 pixels off: value-to-colour is graded against the data words of §2.9) |
+| S1-c | P12 (2376 of 2976 pixels off) | none |
+
+SELFTEST-VIDEO and SELFTEST-Q3 have no module stimulus; their perturbations are synthetic.
+
 ### Not built, by a scope decision
 
-- **P8–P12** (sprite channel reuse, the video half of this specification's title): not
-  implemented. They need a video-measurement apparatus this package does not have: frame
-  boundaries from `vs`, an output-line-to-beam-line calibration (k_v) with its own self-test
-  (Q3), a sprite-pixel-width self-test (Q2), and per-frame sprite-image edge and colour
-  extraction from the captured video trace, none of which exists in this package yet. S1 and S2
-  (§2.9) are built and already graded for P4 (sprite DMA parity).
+- **P8–P12 in the NTSC/ECS, PAL/OCS and NTSC/OCS modes** (§2.10): not run. P8–P12 are built and
+  graded in PAL/ECS (above); S1 in the other three modes is graded for P1 and P4 only.
 - **The blitter DMA channel** (`COP2-about-the-copper.c34`–`c36`): not built. §0 already
   withdraws these three ids: their own sentence names a use (animation, line drawing, polygon
   filling), not a machine function this package's claims give an observable for.
