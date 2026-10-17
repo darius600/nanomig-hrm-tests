@@ -22,9 +22,11 @@
 // MUTATION BBUSY-PREDICTS stimulus red the true 200-word blit substituted with the one-word build (already finished, BBUSY clear), via NMH_MUTATE=BBUSY-PREDICTS
 // MUTATION SLOT-UNIT stimulus red the refresh-pattern capture substituted with the four-lores-plane build, whose bitplane DMA adds reads to the refresh reads so that its groups are not four refresh slots per line, via NMH_MUTATE=SLOT-UNIT
 // MUTATION A4PRE stimulus red nasty-mode blit shrunk to a near-instant one-word transfer (prog_sharing_nasty_tiny.s), via NMH_MUTATE=A4PRE
-// MUTATION A4 stimulus red BLTPRI cleared (nasty -> share): the CPU then makes Chip-memory accesses inside the blit's active window, via NMH_MUTATE=A4
+// MUTATION A4 none impossible NMH_MUTATE=-: already red at baseline, no stimulus is run through it: the line prints FAIL in every run because a CPU program fetch falls inside the nasty-mode blit's window; its comparator (is_cpu_access(), count zero over a window) is live on A4-CTRL, which runs the same helper over the four-high-resolution-bitplane display's fetch windows and reads green there
+// MUTATION A4-CTRL-PRE stimulus red the four-high-resolution-bitplane capture substituted with the no-display run (no fetch windows), via NMH_MUTATE=A4-CTRL-PRE
+// MUTATION A4-CTRL stimulus red the four-high-resolution-bitplane capture substituted with the four-low-resolution-bitplane capture, in whose fetch windows the CPU is granted accesses; A4-CTRL-PRE still reads the high-resolution capture and stays green, via NMH_MUTATE=A4-CTRL
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
-// MUTATION A4-SHARE stimulus red the no-DMA reference loop substituted with a slower one (prog_sharing_slow.s: two register-only MULU.W between its counter writes, run from a copy in Chip memory outside the program's address range, so that the accesses classed as the 68000's come less often than the share-mode window's); the share-mode capture, A4-SHARE-PRE and the comparator are unchanged, via NMH_MUTATE=A4-SHARE
+// MUTATION A4-SHARE stimulus red the no-DMA reference loop substituted with a slower one (prog_sharing_slow.s: two register-only MULU.W between its counter writes, run from a copy in Zorro II fast RAM, so that its instruction fetches do not use the Chip-memory bus and only its counter writes are the 68000's Chip-memory accesses, which then come less often than the share-mode window's, on the classifier every other run uses); the share-mode capture, A4-SHARE-PRE and the comparator are unchanged, via NMH_MUTATE=A4-SHARE
 // MUTATION A8PRE stimulus red the no-DMA run (no blitter, so no DMA access takes a slot the 68000 was ready for) substituted for the share-mode run, via NMH_MUTATE=A8PRE
 // MUTATION A8 stimulus green the share-mode run substituted with the six-lores-plane display against the whole-4-clock-aligned counting loop, every bitplane pointer set to Chip memory (prog_bitplane_planes6_aligned_ptrs.s), where the display takes even-numbered slots from a 68000 that is ready only on even-numbered slots; the unchanged comparator is red on both cores unmutated and reads green on both with this input; every odd-numbered slot of the fetch window is the display's, so this input cannot show a grant before the first free even-numbered slot on any implementation and does not exercise the share-mode release behind the red, via NMH_MUTATE=A8
 // MUTATION A9PRE stimulus red the four-plane run substituted with the no-DMA aligned run (no display windows), via NMH_MUTATE=A9PRE
@@ -154,6 +156,30 @@ uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
 bool is_cpu_access(const nmh::RamAccess& a, uint32_t scratch_word) {
     return (!a.is_write && a.word_addr >= word_addr(kProgLo) && a.word_addr < word_addr(kProgHi)) ||
            (a.is_write && a.word_addr == scratch_word);
+}
+
+std::string hexs(uint32_t v) {
+    char b[16]; std::snprintf(b, sizeof b, "%X", v);
+    return std::string(b);
+}
+
+// The CPU Chip-memory accesses (is_cpu_access()) inside [lo,hi], inclusive:
+// their count, how many are counter writes, and a list of the first
+// `list_max` with their offsets from `lo`.
+struct CpuHits { size_t n = 0, writes = 0; std::string list; };
+
+CpuHits cpu_hits_in(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi,
+                    uint32_t scratch_word, size_t list_max) {
+    CpuHits h;
+    for (const auto& a : log) {
+        if (!is_cpu_access(a, scratch_word) || a.cycle < lo || a.cycle > hi) continue;
+        ++h.n;
+        if (a.is_write) ++h.writes;
+        if (h.n <= list_max)
+            h.list += std::string(h.list.empty() ? "" : ", ") + (a.is_write ? "write $" : "fetch $") +
+                      hexs(a.word_addr * 2) + " at +" + std::to_string(a.cycle - lo) + " clk_sys";
+    }
+    return h;
 }
 
 // ---- generic capture -------------------------------------------------
@@ -600,11 +626,6 @@ MissStats analyse_misses(const SlotMap& m, const std::map<PairKey, int64_t>& g0)
     return st;
 }
 
-std::string hexs(uint32_t v) {
-    char b[16]; std::snprintf(b, sizeof b, "%X", v);
-    return std::string(b);
-}
-
 std::string miss_note(const MissStats& st) {
     return std::to_string(st.pairs) + " access pairs, " + std::to_string(st.miss_even) + " missed even cycle(s), " +
            std::to_string(st.miss_odd) + " missed odd cycle(s), " + std::to_string(st.skipped) +
@@ -973,35 +994,70 @@ int main(int argc, char** argv) {
     // the blitter's priority over the 68000 say "normally", which
     // A4-SHARE-WITHDRAWN below records for share mode.
     {
-        const Capture& cap = (mv == "A4") ? cap_share : (mv == "A4PRE" ? cap_nasty_tiny : cap_nasty);
+        const Capture& cap = (mv == "A4PRE" ? cap_nasty_tiny : cap_nasty);
         auto [lo, hi] = dst_span(cap);
         // Every CPU Chip-memory access, classified on the RAM-log basis of
         // is_cpu_access(): a program fetch or a write to the counter.
-        size_t in_win = 0, in_win_writes = 0;
-        std::string in_win_list;
-        for (const auto& a : cap.log)
-            if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi) {
-                ++in_win;
-                if (a.is_write) ++in_win_writes;
-                if (in_win <= 8)
-                    in_win_list += std::string(in_win_list.empty() ? "" : ", ") + (a.is_write ? "write $" : "fetch $") +
-                                   hexs(a.word_addr * 2) + " at +" + std::to_string(a.cycle - lo) + " clk_sys";
-            }
-        checks.note("A4: window " + std::to_string(lo) + ".." + std::to_string(hi) + ", " + std::to_string(in_win) +
-                    " CPU Chip-memory access(es) inside it" + (in_win ? ": " + in_win_list : std::string("")) +
+        CpuHits hits = cpu_hits_in(cap.log, lo, hi, word_addr(kShareScratch), 8);
+        checks.note("A4: window " + std::to_string(lo) + ".." + std::to_string(hi) + ", " + std::to_string(hits.n) +
+                    " CPU Chip-memory access(es) inside it" + (hits.n ? ": " + hits.list : std::string("")) +
                     " (offsets from the window's first destination write)");
         bool nontrivial = lo != hi && (hi - lo) > 2000;
         checks.expect(nontrivial,
             "A4PRE: the nasty-mode blit's active window is long enough to have contained "
             "several CPU-loop iterations had the CPU been let through (" + std::to_string(hi - lo) + " cycles)");
         if (nontrivial) {
-            checks.expect(in_win == 0,
+            checks.expect(hits.n == 0,
                 "A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available "
                 "Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter "
-                "write) during the blit's active window (" + std::to_string(in_win) + " accesses, " +
-                std::to_string(in_win_writes) + " of them counter writes)");
+                "write) during the blit's active window (" + std::to_string(hits.n) + " accesses, " +
+                std::to_string(hits.writes) + " of them counter writes)");
         } else {
             not_graded(checks, "A4", "A4PRE");
+        }
+    }
+
+    // ---- A4-CTRL: the comparator of A4 (is_cpu_access(), count zero over a
+    // window, through cpu_hits_in()) on a live input whose answer is zero:
+    // the four-high-resolution-bitplane display's fetch windows, in which
+    // every one of the 160 slots is a bitplane fetch (A10PRE) while the CPU
+    // runs outside them.
+    if (gated("A4-CTRL")) {
+        const Capture& pre_cap = (mv == "A4-CTRL-PRE") ? cap_base : cap_hires4;
+        auto pre_wins = fetch_windows(bp_reads_of(pre_cap));
+        auto pre_cyc = cyc_of(pre_cap);
+        bool pre_full = !pre_wins.empty();
+        size_t pre_inside = 0;
+        for (auto& w : pre_wins) {
+            WinCounts wc = count_window(pre_cap.log, pre_cyc, w.lo, w.hi, word_addr(kShareScratch));
+            if (wc.dma != 160) pre_full = false;
+            pre_inside += wc.cpu;
+        }
+        size_t pre_total = 0;
+        for (const auto& a : pre_cap.log) if (is_cpu_access(a, word_addr(kShareScratch))) ++pre_total;
+        bool pre_live = pre_total > pre_inside;
+        checks.expect(pre_full && pre_live,
+            "A4-CTRL-PRE: every one of the four-high-resolution-bitplane display's fetch windows (" +
+            std::to_string(pre_wins.size()) + " window(s)) holds 160 bitplane fetches and no free slot, and the CPU "
+            "makes Chip-memory accesses outside them (" + std::to_string(pre_total - pre_inside) +
+            ") [not graded -- apparatus check, no claim uid]");
+        if (pre_full && pre_live) {
+            const Capture& cap = (mv == "A4-CTRL") ? cap_lores4 : cap_hires4;
+            auto wins = fetch_windows(bp_reads_of(cap));
+            size_t n = 0, writes = 0;
+            for (auto& w : wins) {
+                CpuHits h = cpu_hits_in(cap.log, w.lo, w.hi, word_addr(kShareScratch), 0);
+                n += h.n; writes += h.writes;
+            }
+            checks.note("A4-CTRL: " + std::to_string(wins.size()) + " fetch window(s), " + std::to_string(n) +
+                        " CPU Chip-memory access(es) inside them (" + std::to_string(writes) + " counter writes)");
+            checks.expect(!wins.empty() && n == 0,
+                "A4-CTRL: the comparator of A4 (program fetches and counter writes counted over a window, "
+                "zero required) finds no CPU Chip-memory access in any of the " + std::to_string(wins.size()) +
+                " fetch windows of the four-high-resolution-bitplane display (" + std::to_string(n) +
+                " accesses) [not graded -- apparatus control, no claim uid]");
+        } else {
+            not_graded(checks, "A4-CTRL", "A4-CTRL-PRE");
         }
     }
 
@@ -1039,7 +1095,11 @@ int main(int argc, char** argv) {
         // capture, first to last CPU access).
         // NMH_MUTATE=A4-SHARE substitutes a slower no-DMA loop for the reference.
         Capture cap_slow;
-        if (mv == "A4-SHARE") cap_slow = run_capture(dir + "/prog_sharing_slow.bin", kShareRunBudget, false, {});
+        if (mv == "A4-SHARE") {
+            nmh::Config cfg_slow;
+            cfg_slow.fastram_config = 0x01;   // Zorro II fast RAM offered, as in FASTRUN's runs
+            cap_slow = run_capture(dir + "/prog_sharing_slow.bin", kShareRunBudget, false, {}, cfg_slow);
+        }
         const Capture& cap_ref = (mv == "A4-SHARE") ? cap_slow : cap_base;
         std::pair<uint64_t, uint64_t> rw = cpu_span(cap_ref);
         Rate ref = cpu_rate(cap_ref, rw.first, rw.second);

@@ -14,10 +14,10 @@
 ; never straddles a slot boundary the way BRA.S's does (see SYSDMA-C29 in
 ; SPECIFICATION.md). prog_sharing_slow.s (SLOW set, A4-SHARE's mutation) runs
 ; the BASELINE build's loop with two register-only MULU.W instructions
-; between its counter writes, from a copy at SLOW_RAM in Chip memory outside
-; the program's own address range, so that the accesses the test classes as
-; the 68000's (a program fetch in that range, a write to the counter) come far
-; less often than the BASELINE loop's. All run forever; the test runs each for a fixed cycle
+; between its counter writes, from a copy at SLOW_RAM in Zorro II fast RAM, so
+; that its instruction fetches do not use the Chip-memory bus and the accesses
+; the test classes as the 68000's (a program fetch in the program's range, a
+; write to the counter) come far less often than the BASELINE loop's. All run forever; the test runs each for a fixed cycle
 ; budget and reads the RAM-port log, telling the CPU's own progress
 ; (writes to SHARE_SCRATCH) apart from the blitter's (writes to the
 ; SHARE_DST range) by address alone.
@@ -29,7 +29,8 @@ SHARE_SRC       equ     $0C2000
 SHARE_DST       equ     $0C4000
 
 LOOP_ORG        equ     PROGRAM_ORG+$100        ; every setup above is shorter than this
-SLOW_RAM        equ     $0C0200                 ; SLOW only: Chip memory outside kProgLo..kProgHi of the test
+SLOW_RAM        equ     $200000                 ; SLOW only: Zorro II fast RAM, bank 1 (as FR_CODE of prog_fastrun.s)
+FR_REG          equ     $E80048                 ; SLOW only: autoconfig "Register 0x48", the write that enables ZII RAM
 
         org     PROGRAM_ORG
 
@@ -76,6 +77,7 @@ start:
         lea     LOOP,a2
         endif
         ifd     SLOW
+        move.w  #0,FR_REG.l             ; the write that enables Zorro II fast RAM (not a manual register)
         move.w  #$FFFF,d2               ; MULU.W by $FFFF takes 70 clocks, no bus cycle of its own
         lea     LOOP,a3
         lea     SLOW_RAM,a4
