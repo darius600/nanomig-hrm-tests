@@ -363,28 +363,38 @@ for every available Chip memory cycle." The register bit is `BLTPRI` of
 Program (`prog_sharing.s`, `NASTY` build): the same CPU scratch-counter
 loop as A2, `BLTPRI`=1, a large continuously-demanding blit.
 
-Observed (precondition, its own id, "A4PRE"): the blit's active window
-spans enough cycles to have contained several CPU-loop iterations had the
-CPU been let through -- guards against a vacuously short window.
+Observed (precondition, its own id, "A4PRE"): the blit's DMA run -- from its
+first source read to its last destination write -- has a source read before the
+first destination write and spans enough cycles to have contained several
+CPU-loop iterations had the CPU been let through -- guards against a vacuously
+short run.
 
-Observed (proposition): every CPU Chip-memory access inside the active
-window, classified on the RAM-log basis the package's other CPU lines use (a
-read in the program's address range is a program fetch, a write to the counter
-word is a counter write), counted with how many of them are counter writes.
-The window is bounded by the blit's first and last destination write,
-inclusive.
+Observed (proposition): every CPU Chip-memory access inside the blit's DMA run,
+classified on the RAM-log basis the package's other CPU lines use (a read in the
+program's address range is a program fetch, a write to the counter word is a
+counter write), counted with how many of them are counter writes, how many fall
+before the first destination write, and the first eight with their offsets from
+the run's first source read. The run is bounded by the blit's first source read
+(the A channel's words, which only the blitter reads) and its last destination
+write, inclusive: p.198 and p.278 apply while blitter DMA is running, and the
+A-to-D sequence of p.188 has source cycles before its first destination write
+(`A0 - A1 D0`), which a window opening at the first destination write leaves out.
 
 Expected value: precondition holds, and the count of CPU Chip-memory accesses
-in the window is exactly zero -- the page's sentence is about every available
+in the run is exactly zero -- the page's sentence is about every available
 Chip memory cycle, so a program fetch counts as much as a counter write. If
 the precondition fails the line prints `NOT GRADED`.
 
-Measured: red on both cores. The nasty-mode blit's window is 8112 `clk_sys`
-long (precondition holds), no counter write falls in it, and one CPU program
-fetch does (`$8044C`, 4 `clk_sys` before the window's last destination write,
-8108 `clk_sys` after its first). The page's sentence says the blitter keeps
-the bus for every available Chip memory cycle and the window is the blit's own
-span, so the line reads red as printed on both cores and is not changed.
+Measured: red on both cores. The nasty-mode blit's DMA run is 8136 `clk_sys`
+long (precondition holds; its first destination write is 24 `clk_sys` after
+its first source read), no counter write falls in it, and two CPU program
+fetches do: `$8044A` at +12 `clk_sys` from the first source read (before the
+first destination write; with the slot unit of 8 `clk_sys` the second slot of
+the run, the slot between `A0` and `A1`), and `$8044C` at +8132 (4 `clk_sys`
+before the last destination write, the access the window opening at the first
+destination write counts alone). The page's sentence says the blitter keeps the
+bus for every available Chip memory cycle and the run is the blit's own, so the
+line reads red as printed on both cores and is not changed.
 
 Mutation: none exists for `A4` itself (`NMH_MUTATE=-`). The line is red in
 the unmutated run on both cores, so no stimulus can turn it newly red, and
@@ -1173,7 +1183,7 @@ harness one `clk_sys` cycle at a time through its own public
 harness's own comment on `ports()` permits.
 
 Observed: the blit's own active window (first to last destination write,
-the same yardstick A2/A4/ORDER use); the fast-RAM counter's own writes
+the same yardstick A2/ORDER use); the fast-RAM counter's own writes
 that fall strictly inside it; whether each capture reaches `DONE` with
 `RESULTS` holding its own iteration count; the modal (most frequent) gap
 between consecutive counter writes, taken separately strictly inside the
@@ -1487,7 +1497,7 @@ capture health: base.log.size=47619 share.log.size=48282 nasty.log.size=48154 ti
 capture health: lores4.log.size=163218 hires4.log.size=173463 lores6.log.size=173456 lores4_aligned.log.size=177674 lores6_aligned.log.size=177674
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274377..2284489, 48 scratch write(s) strictly inside it (excluding the window's own endpoints)
-A4: window 2274377..2282489, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
+A4: blit DMA run 2274353..2282489 (first source read to last destination write; first destination write at +24), 2 CPU Chip-memory access(es) inside it, 1 of them before the first destination write: fetch $8044A at +12 clk_sys, fetch $8044C at +8132 clk_sys (offsets from the run's first source read)
 A4-CTRL: 768 fetch window(s), 0 CPU Chip-memory access(es) inside them (0 counter writes)
 A4-SHARE: CPU accesses 243 in a share-mode window of 10112 clk_sys; reference 41007 in 726488 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (190 of 242 intervals)
@@ -1520,7 +1530,7 @@ capture health: base.log.size=51822 share.log.size=52429 nasty.log.size=52305 ti
 capture health: lores4.log.size=177677 hires4.log.size=177677 lores6.log.size=177677 lores4_aligned.log.size=177677 lores6_aligned.log.size=177677
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
-A4: window 2274337..2282449, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
+A4: blit DMA run 2274313..2282449 (first source read to last destination write; first destination write at +24), 2 CPU Chip-memory access(es) inside it, 1 of them before the first destination write: fetch $8044A at +12 clk_sys, fetch $8044C at +8132 clk_sys (offsets from the run's first source read)
 A4-CTRL: 768 fetch window(s), 0 CPU Chip-memory access(es) inside them (0 counter writes)
 A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
