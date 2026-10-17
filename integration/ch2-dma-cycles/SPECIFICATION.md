@@ -316,12 +316,28 @@ graded.
   means transparent"*), W becomes 15·p, and Q2 fails.
 - **Beam lines.** Output lines map to beam lines through the harness's line doubler, which
   produces k_v output lines per beam line (a fixed harness property). Vertical distances are
-  measured in output lines and divided by k_v. **Precondition Q3:** every measured image top,
-  and every image height, in output lines is a multiple of k_v. There is no stimulus contrast:
-  no page describes a stimulus that puts a sprite edge between beam lines. The checker is
-  verified by a self-test on a synthetic frame whose edge is shifted by one output line.
+  measured in output lines and divided by k_v. **Precondition Q3:** every image height in
+  output lines, and every image top relative to the top of the first image of the same output
+  frame, is a multiple of k_v. The output line at which a frame begins is a property of the
+  video output that no page fixes, so an absolute top is not graded; each frame's first
+  image's top modulo k_v is printed as MEASURED. There is no stimulus contrast: no page
+  describes a stimulus that puts a sprite edge between beam lines. The checker is verified by
+  a self-test on a synthetic frame whose edge is shifted by one output line.
 - **Output frames used.** From the third complete output frame after S4 up to the last
   complete output frame before S7.
+- **Copper frame of an output frame.** The interval between the restart fetch that precedes
+  the output frame's first image line and the next restart fetch (§2.4). It is the Copper
+  frame that rewrote the sprite pointers for that display. Port observations of P9 (K9 and
+  the reads of sprite block 0) are taken in the Copper frame of each output frame used, not
+  in §2.4's observed frames 3–5; the two differ only in which three consecutive frames are
+  taken. That every image of an output frame lies inside its Copper frame is measured and
+  printed.
+- **Channel scope.** Every line of P8–P12 is graded over sprite DMA channel 0 (in S2, channel
+  2 serves only as the fixed reference). p.116 speaks of each of the eight channels and
+  Table 4-3 (p.115) gives each sprite pair its own colour registers; channels 1–7 are not
+  graded, and a RECORDED line says so.
+- **Modes.** Every line of P8–P12 and its preconditions is graded in PAL/ECS and again, with
+  its own preconditions, in NTSC/ECS, PAL/OCS and NTSC/OCS (§2.10).
 
 ### 2.6 Common program skeleton
 
@@ -486,7 +502,8 @@ the usage of a sprite"*).
 
 The default mode is PAL with the Enhanced Chip Set. C0, C6 and S1 also run with NTSC/ECS,
 PAL/OCS and NTSC/OCS. The NTSC runs of C0 and C6 exercise the alternating 228/227-cycle lines
-of p.23. Every run is made on both CPU cores and graded per core.
+of p.23. S1 and S2 are run once more in each of the four modes for the video lines of
+P8–P12 (§2.5). Every run is made on both CPU cores and graded per core.
 
 ### 2.11 Preconditions gate their lines
 
@@ -839,9 +856,12 @@ graded, the measurement that stands in its place and the reason are in one place
    - In each output frame (§2.5): the top-left pixel of sprite 0's image (COLOR17 on its first
      line) and of sprite 2's image (COLOR21 on its first line).
    - At the port: which list's first word was the restart fetch of each frame.
-4. **Expected value.** In each output frame, the offset of sprite 0 from sprite 2 is either
-   (+16 sprite pixels, +32 lines) for A or (+40, +42) for B. Consecutive frames alternate, and
-   the difference between them is ±24 pixels horizontally and ±10 lines vertically. Sources:
+4. **Expected value.** In each output frame, the offset of sprite 0 from sprite 2 is
+   (+16 sprite pixels, +32 lines) for A in a frame whose restart fetch read L_A's first word,
+   and (+40, +42) for B in a frame whose restart fetch read L_B's first word (p.113: the data
+   is reread for each display field and the sprite redrawn from it). Consecutive frames
+   alternate, and the difference between them is ±24 pixels horizontally and ±10 lines
+   vertically. Sources:
    p.107, *"This word (SPR?POS) contains the vertical (VSTART) and horizontal (HSTART) starting
    position for the sprite"*; p.98, *"Sprite position is always defined as though the display
    modes were low resolution and non-interlaced"*. Graded over every pair of consecutive output
@@ -852,14 +872,22 @@ graded, the measurement that stands in its place and the reason are in one place
      COLOR00.
    - **Q5:** every word of L_A and L_B is fetched in its frames, and restart fetches alternate
      between L_A and L_B.
-   - **Q-ref:** sprite 2's image is at the same output position in every frame used.
+   - **Q-REF:** sprite 2's image is at the same output position in every frame used.
 6. **Contrasting case.** **S2-still:** L_B also points sprite 0 at A. p.113 then predicts no
-   movement, and the alternating-offset check goes red. Q-ref, Q4 and Q5 still hold.
-   - **Contrast for Q-ref:** L_B points sprite 2 at the null block. R is then absent in B
-     frames, and Q-ref fails.
+   movement, and the alternating-offset check goes red. Q-REF, Q4 and Q5 still hold.
+   - **Contrast for the list clause of P8.4 (S2-swap):** L_A points sprite 0 at B and L_B at
+     A. Restarts still alternate and every other precondition holds, but a frame whose
+     restart fetch read L_A now shows B's offset, and the check goes red.
+   - **Contrast for Q-REF (S2-refmove):** L_B points sprite 2 at a copy of R whose control
+     word 1 is `$404C` (HSTART `$98` instead of `$90`, p.107). R then appears at another left
+     edge in the L_B frames, and Q-REF fails. Q2 still holds, because R's first line is
+     unchanged.
    - **Contrast for Q4:** COLOR17 written as `$0000`. It then equals COLOR00, and Q4 fails.
-   - **Contrast for Q5:** END placed after V_spr in L_A. The rest of L_A (including the
-     COP1LC MOVEs) is not fetched, so restarts no longer alternate, and Q5 fails.
+   - **Contrast for Q5 (S2-endcol):** END placed in L_A after the colour MOVEs and before its
+     COP1LC pair (p.23: the Copper stops at END; p.26: the MOVEs to COP1LC are what point the
+     next restart at L_B). The bitplane and colour MOVEs are still fetched, so S2 still
+     shows its images, but the COP1LC pair is not fetched, so restarts no longer alternate
+     and Q5 fails.
 7. **Reference frame.** Positions are relative to sprite 2's image in the same output frame,
    in sprite pixels (p, §2.5) and beam lines (k_v, §2.5). No absolute screen position is
    graded.
@@ -878,27 +906,35 @@ graded, the measurement that stands in its place and the reason are in one place
    usages of the DMA channel."*
 3. **Observation.**
    - Video: the non-background images in the output frames used.
-   - Port: the accesses in sprite block 0 within each observed frame (§2.4).
+   - Port: the accesses in sprite block 0 within the Copper frame of each output frame used
+     (§2.5).
 4. **Expected value.**
    - (a) Every output frame used shows exactly four images of sprite 0. Their tops, relative
      to U1's top, are at 0, +16, +40 and +56 beam lines, and their left edges, relative to
      U1's, at 0, +40, −16 and +80 sprite pixels (the VSTART and HSTART differences of Z).
-   - (b) In each observed frame, the words of Z from U1's first control word through the end
-     words are read in increasing address order, each exactly once: 8 control words, 80 data
-     words and 2 end words. p.110: *"they are incremented by the sprite DMA channel to point
+   - (b) In the Copper frame of each output frame used, the words of Z from U1's first
+     control word through the end words are read in increasing address order, each exactly
+     once: 8 control words, 80 data words and 2 end words. p.110: *"they are incremented by the sprite DMA channel to point
      first to the control words, then to the data words, and finally to the end-of-data
      words"*.
-   - "Multiple times" is graded with three reuses (four uses), in every observed frame. "The
+   - "Multiple times" is graded with three reuses (four uses), in every output frame used. "The
      same display field": all four images and all 90 reads fall between two consecutive
      restart fetches.
-5. **Preconditions.** C1, Q2 (on U1's first line), Q3, Q4, Q5 (for L_S1). **K9:** in each
-   observed frame, sprite block 0 is read from U1's first control word onward.
+5. **Preconditions.** C1, Q2 (on U1's first line), Q3, Q4, Q5 (for L_S1). **K9:** in the
+   Copper frame of each output frame used, sprite block 0 is read from U1's first control word
+   onward.
 6. **Contrasting case.** **S1-end:** U2's control words replaced by `$0000,$0000`. p.127:
    *"To stop the sprite after that first data set, the pair of words should contain all
    zeros."* p.108: *"If the VSTART value contained in these words is lower than the current
    beam position, this sprite will not be reused in this display field."* Only U1 appears and
    the reads stop after that pair, so (a) and (b) go red. K9, Q2 and Q3 still hold.
-   - **Contrast for K9:** S1 without SPREN. Nothing is read, and K9 fails.
+   - **Contrast for K9, liveness (S1-nospren):** S1 without SPREN. Nothing is read, and K9
+     fails.
+   - **Contrast for K9, start word (S1-zcopy):** L_S1 points sprite 0 at a copy of Z placed
+     `$100` bytes higher in sprite block 0 (p.110: the channel starts at the address its
+     pointer holds). The channel reads the copy, so the first word read in the block is not
+     U1's first control word of Z, and K9 fails. The images are those of Z, so Q2, Q3 and
+     IMG4 hold.
    - The contrasts for Q2–Q5 are as in §2.5 and P8.
 7. **Reference frame.** Relative to U1's image in the same output frame, and at the port to
    the frame's restart fetches.
