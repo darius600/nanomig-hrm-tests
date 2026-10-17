@@ -5,14 +5,14 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should Agnus, with DMACON bit 10 (BLTPRI) set and a blit running, keep the 68000 off the chip bus in the cycles the blit does not use — the `-` between the destination writes of a D-only blit, `D0 - D1 - D2` in Table 6-2 on p. 188, and the `-` before the last destination write of an A-to-D blit, `D1 - D2` in that table's row for USE code 9 — as p. 278's "preventing micro from stealing any bus cycles while blitter DMA is running" says, where NanoMig grants the 68000 those cycles? The question stops at the unused cycles: in a blit of USE code E, which leaves none, NanoMig keeps the 68000 out (`P7-ON-E`, green). Closes when Agnus withholds the unused cycles from the 68000 while BLTPRI is set and `P7-ON` and `P7` of `integration/ch5-audio-registers-dma` and `A4` of `integration/ch6-blitter-cpu-sharing` are green on both cores, or when an Amiga specialist rejects this reading of pp. 278 and 198, in which case this page is refiled against the printed page. |
+| **What is asked of a reader** | Should Agnus, with DMACON bit 10 (BLTPRI) set and a blit running, keep the 68000 off the chip bus in the cycles the blit does not use — the `-` between the destination writes of a D-only blit, `D0 - D1 - D2` in Table 6-2 on p. 188, and, in an A-to-D blit, the `-` after the first source read and the `-` before the last destination write, `A0 - A1 D0 A2 D1 - D2` in that table's row for USE code 9 — as p. 278's "preventing micro from stealing any bus cycles while blitter DMA is running" says, where NanoMig grants the 68000 those cycles? The question stops at the unused cycles: in a blit of USE code E, which leaves none, NanoMig keeps the 68000 out (`P7-ON-E`, green). Closes when Agnus withholds the unused cycles from the 68000 while BLTPRI is set and `P7-ON` and `P7` of `integration/ch5-audio-registers-dma` and `A4` of `integration/ch6-blitter-cpu-sharing` are green on both cores, or when an Amiga specialist rejects this reading of pp. 278 and 198, in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
-| **Scope** | ECS Agnus, PAL, 2 MB Chip memory, both CPU cores (fx68k, TG68K) in 68000 mode, the CPU looping in Chip memory: a blit of USE code 1 (D only, BLTCON0 `$01FF`, BLTSIZE `$2020`, 4096 words) with BLTPRI set, counted from its first to its last destination write; and a blit of USE code 9 (A to D, BLTCON0 `$09F0`, BLTSIZE `$7D01`, 500 words) with BLTPRI set, the CPU in the program's code after the BLTSIZE write, counted the same way (`A4`). OCS and the cycles before the first destination write are not graded; chip revision: unknown |
+| **Scope** | ECS Agnus, PAL, 2 MB Chip memory, both CPU cores (fx68k, TG68K) in 68000 mode, the CPU looping in Chip memory: a blit of USE code 1 (D only, BLTCON0 `$01FF`, BLTSIZE `$2020`, 4096 words) with BLTPRI set, counted from its first to its last destination write; and a blit of USE code 9 (A to D, BLTCON0 `$09F0`, BLTSIZE `$7D01`, 500 words) with BLTPRI set, the CPU in the program's code after the BLTSIZE write, counted from its first source read to its last destination write (`A4`); OCS is not run; chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 6 — Blitter, printed pp. 186, 188 (Table 6-2), 189, 198; 7 — System Control, printed p. 222 (Table 7-6); Appendix A, printed p. 278 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P7`: `5-appA-p278.c15`, `A-dmacon.b10`, p. 278. `P7-ON`, `P7-OFF`, `P7-ON-E` and `P7-OFF-E` carry no claim id; `A4` of `integration/ch6-blitter-cpu-sharing` (p. 198) carries none either |
 | **Module** | `agnus.v`, `agnus_blitter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L402-L406); inherited (MiSTer has the same code; TC64 the same, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch5-audio-registers-dma`](../../integration/ch5-audio-registers-dma): `make -k -C integration/ch5-audio-registers-dma test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding. [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries `A4` |
-| **Assertions** | In `integration/ch5-audio-registers-dma`, `P7-ON` and `P7` are red on both cores, the package's only reds (87 passed, 2 failed each): expected zero CPU accesses between the first and last destination write of the D-only blit with BLTPRI set; observed 3429 on fx68k and 4095 on TG68K. With BLTPRI clear the same blit measures 3434 and 4095 (`P7-OFF`, green); a blit of USE code E, which leaves no cycle unused, measures 0 on both cores with BLTPRI set (`P7-ON-E`, green) and 2975 and 3106 with it clear (`P7-OFF-E`, green). In `integration/ch6-blitter-cpu-sharing`, `A4` is red on both cores (35 passed, 3 failed each; `A8` and `PARITY`, the other reds, are filed on [NM-HRM-069](NM-HRM-069.md)): expected no CPU Chip-memory access between the first and last destination write of an A-to-D blit with BLTPRI set; observed 1 on each core, a fetch of `$8044C` at +8108 `clk_sys` of a window of 8112, no counter write; `A4PRE` is green |
+| **Assertions** | In `integration/ch5-audio-registers-dma`, `P7-ON` and `P7` are red on both cores, the package's only reds (87 passed, 2 failed each): expected zero CPU accesses between the first and last destination write of the D-only blit with BLTPRI set; observed 3429 on fx68k and 4095 on TG68K. With BLTPRI clear the same blit measures 3434 and 4095 (`P7-OFF`, green); a blit of USE code E, which leaves no cycle unused, measures 0 on both cores with BLTPRI set (`P7-ON-E`, green) and 2975 and 3106 with it clear (`P7-OFF-E`, green). In `integration/ch6-blitter-cpu-sharing`, `A4` is red on both cores (37 passed, 3 failed each; `A8` and `PARITY`, the other reds, are filed on [NM-HRM-069](NM-HRM-069.md)): expected no CPU Chip-memory access from the first source read to the last destination write of an A-to-D blit with BLTPRI set; observed 2 on each core in a window of 8136 `clk_sys`, a fetch of `$8044A` at +12 (before the first destination write, which is at +24) and a fetch of `$8044C` at +8132, no counter write; `A4PRE` and `A4-CTRL` are green |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 278's *any***: WinUAE in its cycle-exact mode, vAmiga, Denise and Copperline give a waiting 68000 the cycle a blit does not use, the `-` of `D0 - D1 - D2`, whatever BLTPRI holds; WinUAE and Copperline say so in their comments. Copperline alone keeps the 68000 out of a BLTPRI blit's start-up, before its first destination write. Hardware: not measured |
 | **Effort** | S — one Agnus output, high while BLTPRI is set and the blitter has not yet written its last word (`blit_busy` is already low in the empty cycle before that write; see *Decision*), wired through `minimig.v` into the 68000 bridge's acknowledge (`minimig_m68k_bridge.v` line 131) beside `dbr`; not run here |
 | **See also** | [NM-HRM-069](NM-HRM-069.md) |
@@ -114,38 +114,51 @@ accesses: BLTPRI changes neither the count nor the blit's end there. `P7-ON`
 grades the zero count (`test_ch5_audio_registers_dma.cpp:1278-1282`);
 `P7` joins it to `P7-OFF` (`:1287-1292`).
 
-### The last cycle of an A-to-D blit
+### The unused cycles of an A-to-D blit
 
-**The `-` of `D1 - D2` in row 9 of Table 6-2 is a cycle NanoMig's blitter does
-not request, and the 68000 gets it.** An A-to-D blit asks for the bus in every
-cycle up to its last word, `BLT_A` with `dma_req = usea;` and `BLT_D` with
-`dma_req = used & pipeline_full;`, so the 68000 finds no free cycle between the
-destination writes. After the last `BLT_D` the state machine enters `BLT_E`,
-`dma_req = 1'b0;`
-([`agnus_blitter.v#L759-L775`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L759-L775)),
-and then `BLT_F`, which requests the last destination write
-([`#L777-L794`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L777-L794)). With no request the priority chain falls
-through to `dbr = 0;` as above, whatever BLTPRI holds. The first `BLT_D` is
-empty in the same way, because `pipeline_full` is not yet set, but it precedes
-the first destination write and lies outside the graded interval.
+**The two `-` of `A0 - A1 D0 A2 D1 - D2` in row 9 of Table 6-2 are cycles NanoMig's blitter does
+not request, and the 68000 gets both.** An A-to-D blit asks for the bus in
+`BLT_A` with `dma_req = usea;` and in `BLT_D` with `dma_req = used & pipeline_full;`.
+`pipeline_full` is cleared in `BLT_INIT` and set at the end of the first
+`BLT_D` ([`agnus_blitter.v#L564-L571`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L564-L571),
+[`#L889-L892`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L889-L892)),
+so the first `BLT_D`, between the first `BLT_A` and the second, requests
+nothing: that is the `-` after `A0`. Every later cycle up to the last word is
+requested. After the last `BLT_D` the state machine enters `BLT_E`, `dma_req = 1'b0;`
+([`#L759-L775`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L759-L775)),
+the `-` before `D2`, and then `BLT_F`, which requests the last destination write
+([`#L777-L794`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L777-L794)).
+In both cycles no DMA channel requests, and the priority chain falls
+through to `dbr = 0;` as above, whatever BLTPRI holds.
 
 [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing)
 writes DMACON = `$8640` (SET, BLTPRI, DMAEN, BLTEN), BLTCON0 `$09F0` (A and D)
-and BLTSIZE `$7D01` (`prog_sharing.s:55-74`), then runs the counting loop. `A4`
-counts the CPU's program fetches and its writes to the counter block between the
-first and last destination write (`test_blitter_cpu_sharing.cpp:970-1006`). The
-program reads no register, and the capture is its own run with its own blit.
-The window is 8112 `clk_sys` on both cores and holds one CPU access, a fetch of
-`$8044C`, the last word of the `lea` that follows the BLTSIZE write, 4 `clk_sys`
-before the last destination write; a slot is 8 `clk_sys` (`SLOT-UNIT`), the
-length of the `-` before that write:
+and BLTSIZE `$7D01` (`prog_sharing.s:56-72`), then runs `moveq #0,d0` and
+`lea SHARE_SCRATCH,a1` (`:74-75`) and jumps to the counting loop (`:89`). `A4`
+counts the CPU's program fetches and its writes to the counter block from the
+blit's first source read, a read of the A channel's words, which only the blitter
+reads, to its last destination write (`test_blitter_cpu_sharing.cpp:993-1033`,
+counting in `cpu_hits_in`, `:173-183`). `A4PRE` requires a source read before
+the first destination write and a run of more than 2000 `clk_sys`. The program
+reads no register, and the capture is its own run with its own blit. The run is 8136
+`clk_sys` on both cores, its first destination write is at +24, and it holds
+two CPU fetches, both in the `lea`: `$8044A`, its first address word, at +12,
+and `$8044C`, its last word, at +8132, 4 `clk_sys` before the last destination
+write. A slot is 8 `clk_sys` (`SLOT-UNIT`): the fetch at +12 falls in the slot
+after `A0`'s and the fetch at +8132 in the slot of `BLT_E`.
 
 ```text
-MEASURED: A4: window 2274377..2282489, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
-FAIL: A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter write) during the blit's active window (1 accesses, 0 of them counter writes)
+MEASURED: A4: blit DMA run 2274353..2282489 (first source read to last destination write; first destination write at +24), 2 CPU Chip-memory access(es) inside it, 1 of them before the first destination write: fetch $8044A at +12 clk_sys, fetch $8044C at +8132 clk_sys (offsets from the run's first source read)
+FAIL: A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter write) from the blit's first source read to its last destination write (2 accesses, 0 of them counter writes)
 ```
 
-TG68K prints the window `2274337..2282449` and the same fetch at +8108.
+TG68K prints the run `2274313..2282449` and the same two fetches at +12 and +8132.
+
+`A4-CTRL` runs `A4`'s comparator over the 768 fetch windows of a
+four-high-resolution-plane display (`test_blitter_cpu_sharing.cpp:1035-1077`),
+each holding 160 bitplane fetches and no free slot, with the CPU making Chip-memory
+accesses outside them (41771 on fx68k, 45984 on TG68K; `A4-CTRL-PRE`, green).
+It counts 0 CPU accesses in them on both cores (`A4-CTRL`, green).
 
 ## Risks and unknowns
 
@@ -162,10 +175,10 @@ TG68K prints the window `2274337..2282449` and the same fetch at +8108.
 - **Copperline is not independent here.** Its rule for the unused cycle cites
   the HRM and Minimig's `dma_req`, and its narrowing of the BLTPRI fence cites
   two programs and FS-UAE's and vAmiga's figures for one of its timing rows.
-- **`A4` is placed by the state sequence.** The test prints the fetch's offset, not the blitter's state; that the fetch lies in the cycle of `BLT_E` is read from the RTL and the slot length. `A4` cites p. 198 alone, the sentence the conflicting reading above applies to.
-- **Not graded.** The /BLS pin p. 278 names is inside the chips; the cycles
-  before the first destination write, the blit's start-up, lie outside the
-  graded interval; OCS is not run.
+- **`A4` is placed by the state sequence.** The test prints the fetches' offsets, not the blitter's state; that the fetch at +12 lies in the first `BLT_D` and the fetch at +8132 in `BLT_E` is read from the RTL and the slot length. `A4` cites p. 198 alone, the sentence the conflicting reading above applies to.
+- **Not graded.** The /BLS pin p. 278 names is inside the chips; the start-up
+  of the D-only blit of `P7`, before its first destination write, lies outside
+  `P7`'s interval; OCS is not run.
 - **The suggested change has not been run.**
 
 ## Independent evidence
@@ -189,7 +202,7 @@ destination writes, with BLTPRI set as with it clear.** WinUAE and Copperline
 say why in their own comments: the blitter's idle cycle is *"not "used" by
 blitter"*, and the `-` slots are *"available to the other DMA channels or the
 68000"*. Copperline alone keeps the 68000 out of a BLTPRI blit's start-up,
-before its first destination write, which `P7-ON` does not grade. On this
+before its first destination write, which `P7-ON` does not grade and `A4` does (the fetch at +12). On this
 point the four side with NanoMig and against p. 278's *any*. MiSTer and TC64,
 descendants, carry NanoMig's code, so the finding is inherited and fixed in
 neither line.
