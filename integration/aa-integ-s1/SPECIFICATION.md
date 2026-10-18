@@ -60,9 +60,9 @@ The package covers these subjects: BPLCON1 horizontal scroll, the BYPASS bit, th
 | Claim(s) | Page | How it is graded |
 |---|---|---|
 | `sol:AA-bplcon1.c7`, `sol:AA-fmode.c5` | 16, 23 | "W": the header assigns write access, and a write that takes effect grades it (P1, P7). |
-| `sol:AA-bplcon1.c9`, `sol:AA-bplcon1.c10` | 17 | Their "says" calls PFnHx a "three-bit" code. The quote ("x=0-7") and AA p.3 ("BPLCON1 now contains an 8 bit scroll value for each of the playfields") make it eight bits. P2 follows the quote. |
-| `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5` | 5, 17 | A bit's name is not observable. P2 checks the weight the name carries: bit 00 = PF1H2 = 140 ns, the weight it had before. |
-| `sol:AA-bplcon0.c19` | 17 | "bitplanes are scrolled and prioritized normally": P6 compares, at every pixel, the visible nibble of the address the BYPASS output carries with the one the colour table shows without BYPASS, under a 6 op scroll and with a sprite in front. The green and blue outputs under BYPASS are not stated and not checked. |
+| `sol:AA-bplcon1.c9`, `sol:AA-bplcon1.c10` | 3, 17 | Recorded, not graded. Their restatement calls PF2Hx and PF1Hx a "three-bit" code, where AA p.3 ("BPLCON1 now contains an 8 bit scroll value for each of the playfields") and the quote ("x=0-7") give eight bits. The restatement is not graded as written. P2's rows grade the eight bits of each playfield, and the run prints one RECORDED line naming both claims. |
+| `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5` | 5, 17 | A bit's name is not observable. P2 checks the weight the name carries: bit 00 = PF1H2 and bit 04 = PF2H2 = 140 ns, the weight each had before. `sol:AA-bplcon1.c12` ("old PFyH0 now PFyH2") names both playfields and is graded by P2-H2, the conjunction of the PF1H2 and PF2H2 rows. |
+| `sol:AA-bplcon0.c19` | 17 | "bitplanes are scrolled and prioritized normally": P6-I compares, at every pixel, the visible nibble of the address the BYPASS output carries with the one the colour table shows without BYPASS, under a 6 op scroll and with a sprite in front. The green and blue outputs under BYPASS are not stated and not checked. |
 | `sol:AA-mouse.c2` | 5 | "transparent to the programmer" is checked through the register values AA p.25-26 give (P11). Those values agree with HRM p.229-232, which describes the earlier chips. |
 
 ---
@@ -73,7 +73,7 @@ The package covers these subjects: BPLCON1 horizontal scroll, the BYPASS bit, th
 - **Column and line.** Column c of an output line is the number of video samples after the leading edge of that line's hsync, divided by the op length from "Scale" below. The output line index is the number of hsync leading edges after the leading edge of vsync.
 - **Doubled lines.** If a source line appears on more than one output line, every copy in the observed range is checked, and all copies must agree.
 - **Comparing runs.** Positions are compared only between runs or frames with identical beam timing.
-  - *Anchor check:* in each compared pair, the hsync period, the hsync width and the number of output lines per frame are equal, exactly. The pages give no tolerance, and none is applied.
+  - *Anchor check:* in each compared pair, the number of output lines per frame is equal and, line by line, the hsync period and the hsync width of every output line are equal: the two vectors of periods and the two vectors of widths compare element by element, and no average is compared. The pages give no tolerance, and none is applied.
   - *Contrast:* a run with NTSC selected (BEAMCON0 = $0000) gives a different line count, and the anchor check fails.
 - **Exact comparison.** A displacement is the difference of two sample positions divided by r_L/2. It is compared with the expected number of op exactly, or against the exact set of values the expectation names. The pages give no tolerance, and none is applied.
 - **Scale.** In LORES with plane 1 all $AAAA (S2, BPLCON0=$1000), the output alternates COLOR01 and COLOR00. On every window line of F3, the runs between the first and the last COLOR01 sample are complete, and all have one length, r_L video samples. Each run is one LORES pixel, 140 ns (AA p.17: "LORES(140nS)"), so **one op is r_L/2 samples**. Every column, width and displacement in this document is a sample count divided by r_L/2.
@@ -86,7 +86,8 @@ The package covers these subjects: BPLCON1 horizontal scroll, the BYPASS bit, th
 - **Time.** Port times are clk_sys cycles (`RamAccess.cycle`, nanomig_harness.h). The harness defines no clock constant, so K, the number of clk_sys cycles per CCK, is measured. Figure 6-9 (HRM p.195) draws the four refresh slots on alternate 280 ns cycles, so consecutive refresh accesses of one group are 2 CCK apart, and K is half their spacing.
 - **Line boundaries.** Each line has four refresh accesses (AA p.29: "There are 4 refresh time slots"). They lie at the start of the line, before the disk, audio and sprite slots (HRM p.195, Figure 6-9). A line boundary is the first refresh access of a group of four.
   - A refresh access is recognised by the port list's `refresh` output ("ram refresh cycle"), read through `ports()`. In the RAM-port log it is one of a group of four equally spaced reads at addresses that no buffer, list or program uses. The anchor check below applies either way.
-  - *Anchor check:* in runs with VARBEAMEN=0, refresh accesses come in groups of exactly four, and consecutive groups are between 226 and 229 CCK apart (HRM p.194: "there are 227.5 'color clocks', or memory access cycles" per line).
+  - *Anchor check:* in runs with VARBEAMEN=0, refresh accesses come in groups of exactly four, and consecutive groups are exactly 227 or exactly 228 CCK apart. The pages give a line of 227 CCK (HRM p.23: "In PAL, they are all 227 long") and a long line of 228 CCK (HRM p.23; AA p.29: "identification of long horz. line(228 CC)"); no other length is accepted.
+  - *Measured, not graded:* the number of line spacings of 227 CCK and of 228 CCK, whether the two alternate, and the average over all spacings. HRM p.194 gives 227.5 colour clocks per line on average and AA p.29 a 228 CC line "of every other line"; whether this system alternates is not asked here, and no line of this package depends on it.
 - **Slots.** The harness reports no slot. The slot of an access is its distance in CCK from its line boundary.
 - **Fetches.** The harness logs one entry per access: clk_sys cycle, one word address, the 16-bit word at it, direction and byte lanes (`RamAccess`). On every read it also drives `chip48` with the three words that follow the read address, wrapping inside the aligned 16-byte block (nanomig_harness.h). So the port shows where a fetch reads, not how many bytes it uses.
   - A fetch of a bit-plane or sprite channel is that channel's entries in one slot, and its address is the lowest word address among them.
@@ -113,9 +114,9 @@ A COLOR01 pixel then shows red A if the output carries R7-R4, or 5 if it carries
 
 ## 4. Common setup
 
-**Builds.** `make test` builds nanomig.v twice (nanomig.mk), once with each CPU core, fx68k and TG68K, each with the defines of NanoMig's own top for it. The AA chip set is selected by `chipset_config` = $10 (section 0), an input of nanomig.v that does not depend on the CPU core or on a build define, and `cpu_config` = 0 (68000 behaviour). Every proposition, precondition and anchor is graded on both cores, and every verdict is reported per core; where the cores differ, that is a result and is not reconciled.
+**Builds.** `make test` builds the system under test twice (nanomig.mk), once with each CPU core, fx68k and TG68K, each with the defines of the system's own top for that core. The AA chip set is selected by `chipset_config` = $10 (section 0), an input of the system boundary that does not depend on the CPU core or on a build define, and `cpu_config` = 0 (68000 behaviour). Every proposition, precondition and anchor is graded on both cores, and every verdict is reported per core; where the cores differ, that is a result and is not reconciled.
 
-**Programs (build).** P1-P5 share two 68000 programs: `prog_bars.s` (S1, S2, S3 and DMA enable, then idle) and `prog_bars_midrun.s` (the same, plus an R5 VERTB-edge counter that performs one deferred register write, for P4's reset-then-F5-reference shape). What differs between runs -- BPLCON0, BPLCON1 and whether it is written at all, BPLCON4, FMODE, DDFSTRT/DDFSTOP, DMACON, and the two line buffers -- is a configuration block the harness preloads into chip RAM before `boot()`, the same technique `ch3-playfield-system` uses for its Copper list and bitplane data (nanomig_harness.h's `poke_word`, never a register: registers are not memory and are always written by a genuine CPU MOVE the program executes). The per-line Copper pointer reload (S3) is generated by a loop in the program itself rather than written out as 196 literal instruction pairs. R1's "Scale" (the video samples per LORES pixel) is measured once, from a dedicated LORES all-$AAAA calibration run, before any proposition's Δ is computed from it. The configuration block also holds the BEAMCON0 value (PAL, $0020) and the low word of every Copper WAIT of the S3 reload ($0007: horizontal position $06), so that the contrasts of R1 (NTSC) and of S3a (position $40) change the stimulus alone. `prog_bars_nofix.s` and `prog_bars_midrun_nofix.s` are the same programs without the fixture store.
+**Programs (build).** P1-P5 share two 68000 programs: `prog_bars.s` (S1, S2, S3 and DMA enable, then DONE) and `prog_bars_midrun.s` (the same, plus an R5 VERTB-edge counter that performs one deferred register write, for P4's reset-then-F5-reference shape). What differs between runs -- BPLCON0, BPLCON1 and whether it is written at all, BPLCON4, FMODE, DDFSTRT/DDFSTOP, DMACON, and the two line buffers -- is a configuration block the harness preloads into chip RAM before `boot()`, the same technique `ch3-playfield-system` uses for its Copper list and bitplane data (nanomig_harness.h's `poke_word`, never a register: registers are not memory and are always written by a genuine CPU MOVE the program executes). The per-line Copper pointer reload (S3) is generated by a loop in the program itself rather than written out as 196 literal instruction pairs. R1's "Scale" (the video samples per LORES pixel) is measured once, from a dedicated LORES all-$AAAA calibration run, before any proposition's Δ is computed from it. The configuration block also holds the BEAMCON0 value (PAL, $0020) and the low word of every Copper WAIT of the S3 reload ($0007: horizontal position $06), so that the contrasts of R1 (NTSC) and of S3a (position $40) change the stimulus alone. `prog_bars_nofix.s` and `prog_bars_midrun_nofix.s` are the same programs without the fixture store.
 
 **Programs (P7-P9).** `prog_regs.s` takes a list of (register offset, value) word pairs that the harness preloads into chip RAM at $0B8000, ended by $FFFF, and writes each value to its register with one MOVE.W, in list order. The list carries S1's order: the clears first, then the proposition's registers, the Copper location register and its strobe, DMACON last. After the list it reads LISAID once and stores it at RESULTS+4. Copper lists (at $0B2000) and bit-plane data are preloaded as well. `prog_regs_nofix.s` is the same program without the $BEEF store.
 
@@ -125,14 +126,15 @@ A COLOR01 pixel then shows red A if the output carries R7-R4, or 5 if it carries
 - **Connectors.** JOY0DAT (the left controller pair, AA p.25) is driven through the input `joystick1` and JOY1DAT through `joystick0`; the port list wires the two inputs to the two connectors that way and no page names the mapping. P11's "port 0" is the connector of JOY0DAT.
 - **Mouse input.** A count is a signed 8-bit datum on `kbd_mouse_data`, taken when `kbd_mouse_level` toggles; `kbd_mouse_type` = 0 carries an X count and `kbd_mouse_type` = 1 a Y count. +1 is right and down, -1 is left and up (HRM p.229: the counters increment for right and "down", decrement for left and "up"). The input takes a Y count only after an X datum, so the build sends an X count of 0 before each Y count.
 - **Read times (P11).** Each loop iteration reads JOY0DAT and then JOY1DAT; a read precedes its store, so an iteration lies before a change when the store of its JOY1DAT value does.
+- **Completion.** Every program ends with DONE (nanomig.i) after a bounded number of steps, and every run's FIXTURE line asserts that the run loaded, booted, stored $BEEF and reached DONE. The register-list and bar programs store DONE when their last register is written; P13's program polls INTREQR for at most 7000 reads (about 50 ms) before it writes DSKLEN and stores DONE; P15's programs store DONE after the fifth VERTB (the pointer programs) or after a fixed number of reads (the live-input programs), and P15-DONE asserts it.
 - **Mutations.** `NMH_MUTATE=<selector>` runs one contrast and only the proposition the selector names, with the one changed stimulus the `// MUTATION` record in the test source describes, through the proposition's own comparators. A mutation never changes an expected value. The programs named `*_nofix`, `*_k`, `*_c`, `*_same`, `*_late`, `*_var`, `*_early`, `*_pad*`, `*_sync` and `prog_cpuuh_*` are the contrast builds.
 
 **Programs (P10-P12).**
-- `prog_lpen.s` (P10) performs P10's steps 1-4 with a wait of 13 dbra iterations (130 CPU clocks, 65 CCK) between the two reads; `prog_lpen_c.s` adds the BPLCON0 = $0008 write of contrast C, `prog_lpen_late.s` starts the reads about 110 lines after the marker, `prog_lpen_var.s` selects VARBEAMEN with HTOTAL = $00E8 and VTOTAL = $0138, `prog_lpen_same.s` stores one read as both w0 and w1, and `prog_lpen_nofix.s` has no fixture store.
+- `prog_lpen.s` (P10) first stores CIAA PRA bits 7-6 at RESULTS+6 (P10's precondition (iv)) and then performs P10's steps 1-4 with a wait of 13 dbra iterations (130 CPU clocks, 65 CCK) between the two reads; `prog_lpen_c.s` adds the BPLCON0 = $0008 write of contrast C, `prog_lpen_late.s` starts the reads about 110 lines after the marker, `prog_lpen_var.s` selects VARBEAMEN with HTOTAL = $00E8 and VTOTAL = $0138, `prog_lpen_same.s` stores one read as both w0 and w1, and `prog_lpen_nofix.s` has no fixture store.
 - `prog_joy.s` (P11) reads JOY0DAT and JOY1DAT 7200 times and stores each value to a buffer of its own (the store's port time is the read's time). `prog_joy_nofix.s` has no fixture store.
 - `prog_uart.s` (P12) follows P12's steps; `prog_uart_k.s` writes ADKCON = $0800 at step 5 (contrast K), `prog_uart_early.s` writes ADKCON = $8800 in place of $0800 at step 2, `prog_uart_nofix.s` has no fixture store.
 
-**Unit run (build).** A run with no DMA enabled, made before P10-P14 use time. It fixes K, the number of clk_sys cycles per CCK, from the `refresh` output: the four refresh accesses of a line are 2 CCK apart (R2), so K is half their spacing. P11 and P12 convert their durations through K (1 ms is 1,000,000 ns / 280 ns CCK = 3571.4 CCK; 280 ns is AA p.21's memory cycle) and P14 converts sample times through it. It also reads LISAID: its low byte is $F8 for the AA chip set (AA p.26, "LISA returns hex (F8)"; the ECS Denise returns $FC), which shows that `chipset_config` = $10 selected AA.
+**Unit run (build).** A run with no DMA enabled, made before P10-P14 use time. It fixes K, the number of clk_sys cycles per CCK, from the `refresh` output: the four refresh accesses of a line are 2 CCK apart (R2), so K is half their spacing. P11 and P12 convert their durations through K (1 ms is 1,000,000 ns / 280 ns CCK = 3571.4 CCK; 280 ns is AA p.21's memory cycle) and P14 converts sample times through it. Measured, TG68K and fx68k: K = 8 clk_sys cycles per CCK, and of 1401 line spacings 1401 are 227 CCK and none is 228 CCK, so the lines do not alternate and the average is 227 CCK. It also reads LISAID: its low byte is $F8 for the AA chip set (AA p.26, "LISA returns hex (F8)"; the ECS Denise returns $FC), which shows that `chipset_config` = $10 selected AA.
 
 **Programs (P13-P15).** `prog_disk.s` (P13) follows the register list with a poll of INTREQR bit 1 and then writes DSKLEN = $4000; the disk DMA accesses are the reads that are neither the program's own fetches, the register list, the reset vectors nor refresh accesses. `prog_dual.s` (P14) follows the list with the 1024 samples; `prog_dual_pad121.s` lengthens the loop body to 121 CCK, and `prog_dual_sync.s` takes one sample per line, after the main counter's H8-H1 (VHPOSR bits 7-0) lies in $20-$2F. `prog_uhres.s` (P15) follows it with the rewrite of BPLHPTH/BPLHPTL after each VERTB; `prog_cpuuh_line.s` and `prog_cpuuh_57.s` read the region U with the CPU once per 227 and once per 57 CCK instead. `prog_disk_nofix.s`, `prog_dual_nofix.s` and `prog_uhres_nofix.s` have no fixture store.
 
@@ -219,7 +221,7 @@ Every window line therefore shows the same data.
 ### P2 - weight and playfield of every BPLCON1 bit
 
 1. **Proposition.** Each BPLCON1 bit, set alone, delays one playfield by 2^k SHRES pixels, where the bit's name in the AA p.16 table is PF1Hk or PF2Hk. PF1 is the odd planes and PF2 the even planes. Bit 00, now named PF1H2, keeps its old 140 ns weight.
-   - Claims: `opus:AA-bplcon1.b00` to `opus:AA-bplcon1.b15`; `sol:AA-bplcon1.c23` to `sol:AA-bplcon1.c30`; `opus:AA-pf1h.c1`, `opus:AA-pf2h.c1`, `sol:AA-bplcon1.c9`, `sol:AA-bplcon1.c10`; `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5`. (`sol:AA-bplcon1.c15` to `c22` name bits 15-8 and also give their reset value; P5 carries them.)
+   - Claims: `opus:AA-bplcon1.b00` to `opus:AA-bplcon1.b15`; `sol:AA-bplcon1.c23` to `sol:AA-bplcon1.c30`; `opus:AA-pf1h.c1`, `opus:AA-pf2h.c1`; `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5`. (`sol:AA-bplcon1.c9` and `c10` are recorded, not graded, section 2. `sol:AA-bplcon1.c15` to `c22` name bits 15-8 and also give their reset value; P5 carries them.)
    - Pages: AA p.16, p.17, p.5, p.3.
 2. **Stimulus.** S1, S2, S3 with two planes; DMACON = $8380. BPLCON1 takes the value in the row's "value" column; the reference run writes BPLCON1 = $0000.
    - **(a1)** LORES (BPLCON0 = $2000), FMODE = $0000, bars. Used for rows 0-7, 9 and 13, whose delays lie within AA p.31's "1X Modes: LORES ... 0-63" SHRES pixels.
@@ -257,7 +259,7 @@ Every window line therefore shows the same data.
      - HRM p.85: "bits 3-0 for playfield 1 (bitplanes 1, 3, and 5) and bits 7-4 for playfield 2 (bitplanes 2, 4, and 6)".
      - Why the SHRES stripe works: a 35 ns shift moves the alternating pattern onto the other set of retained samples.
    - **Quantifiers:** every one of the 16 bits, every window line, and the "0" entries for the other playfield.
-   - **Claims.** The claims that name the whole x = 0-7 code of a playfield (`opus:AA-pf1h.c1` and `sol:AA-bplcon1.c10` for playfield 1, `opus:AA-pf2h.c1` and `sol:AA-bplcon1.c9` for playfield 2) sit on one aggregate line per playfield (P2-PF1-CODE, P2-PF2-CODE), which holds when every row of that playfield holds. The row lines carry only the claims of their own bit, and the lines that compare (a1) with (a2) carry none.
+   - **Claims.** The claims that name the whole x = 0-7 code of a playfield (`opus:AA-pf1h.c1` for playfield 1, `opus:AA-pf2h.c1` for playfield 2) sit on one aggregate line per playfield (P2-PF1-CODE, P2-PF2-CODE), which holds when every row of that playfield holds. `sol:AA-bplcon1.c12` sits on P2-H2, which holds when the PF1H2 row and the PF2H2 row (every (a1) and (a2) line of both) hold. The row lines carry only the claims of their own bit, and the lines that compare (a1) with (a2) carry none. The run prints `sol:AA-bplcon1.c9` and `sol:AA-bplcon1.c10` on one RECORDED line: their restatement calls the code three bits, where AA p.3 and AA p.17 give eight, so they are not graded as written.
 5. **Preconditions.** Each is one line over all the runs of its mode, and a row line rests on the lines of its own mode.
    - P2-FIXTURE and P2-F1: every reference and test run loaded, booted, stored the fixture, and located F1.
    - P2-R1: in every pair of a test run and its reference run, the R1 anchor holds.
@@ -269,7 +271,7 @@ Every window line therefore shows the same data.
    - Writing $0000 gives Δ = 0 and flips no stripe. Either way the row's check goes red. Rows 8-15 use the $0000 write.
    - Preconditions: one contrast per precondition line (selectors `P2-FIXTURE`, `P2-F1`, `P2-R1`, `P2-S3A`, `P2-S3B`, `P2-STEP8`, `P2-STRIPE`).
 7. **Reference frame.** R1, R2 and R3 (the window lines).
-8. **Measured (build), TG68K and fx68k.** The preconditions P2-FIXTURE, P2-F1, P2-R1, P2-S3A, P2-S3B, P2-STEP8 and P2-STRIPE PASS on both cores. Every row line, every line that compares (a1) with (a2) and the aggregates P2-PF1-CODE and P2-PF2-CODE PASS on both cores, so each measured Δ equals the table's expected value exactly. Rows 8 and 12: the stripe colour of the row's playfield is exchanged (1 to 0), the other playfield's colour is unchanged, and the solid edge moves by 1 op. The lines are (a1) for rows 0-7, 9 and 13, (a2) for rows 0-7, 9-11 and 13-15, (b) for rows 8 and 12, and the ten lines that compare (a1) with (a2).
+8. **Measured (build), TG68K and fx68k.** The preconditions P2-FIXTURE, P2-F1, P2-R1, P2-S3A, P2-S3B, P2-STEP8 and P2-STRIPE PASS on both cores. Every row line, every line that compares (a1) with (a2), P2-H2 and the aggregates P2-PF1-CODE and P2-PF2-CODE PASS on both cores, so each measured Δ equals the table's expected value exactly. Rows 8 and 12: the stripe colour of the row's playfield is exchanged (1 to 0), the other playfield's colour is unchanged, and the solid edge moves by 1 op. The lines are (a1) for rows 0-7, 9 and 13, (a2) for rows 0-7, 9-11 and 13-15, (b) for rows 8 and 12, and the ten lines that compare (a1) with (a2).
 
 | Row (bit) | Value | Name | Expected | Lines graded (both cores) |
 |---|---|---|---|---|
@@ -290,7 +292,7 @@ Every window line therefore shows the same data.
 | 14 | $4000 | PF2H6 | Δ1=0,Δ2=32 | PASS (a2) |
 | 15 | $8000 | PF2H7 | Δ1=0,Δ2=64 | PASS (a2) |
 
-Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in the test source): for rows 0-7 the neighbouring bit is written in place of the row's own; for rows 8-15 BPLCON1 = $0000 is written. Each contrast prints FAIL on its row's line on both cores. `P2-CODE` runs every row, with the neighbouring bit written in the (a1) runs of rows PF1H2 and PF2H2, and prints FAIL on both aggregates. Each precondition line has its contrast (selectors `P2-FIXTURE`, `P2-F1`, `P2-R1`, `P2-S3A`, `P2-S3B`, `P2-STEP8`, `P2-STRIPE`), which prints FAIL on its own line on both cores and NOT GRADED on the row lines of its mode.
+Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in the test source): for rows 0-7 the neighbouring bit is written in place of the row's own; for rows 8-15 BPLCON1 = $0000 is written. Each contrast prints FAIL on its row's line on both cores. `P2-CODE` runs every row, with the neighbouring bit written in the (a1) runs of rows PF1H2 and PF2H2, and prints FAIL on both aggregates and on P2-H2; `P2-H2` runs the rows PF1H2 and PF2H2 only, writes the neighbouring bit $0008 in place of $0010 in both runs of PF2H2, and prints FAIL on P2-H2 and on the two PF2H2 lines. Each precondition line has its contrast (selectors `P2-FIXTURE`, `P2-F1`, `P2-R1`, `P2-S3A`, `P2-S3B`, `P2-STEP8`, `P2-STRIPE`), which prints FAIL on its own line on both cores and NOT GRADED on the row lines of its mode.
 
 ### P3 - the scroll range is quadrupled
 
@@ -366,22 +368,24 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 
 ### P5 - BPLCON1 bits 15-8: the tabled name and the reset value together
 
-1. **Proposition.** Each of BPLCON1 bits 15-8 is the field the AA p.16 table names for it, with the weight P2 grades, and RST_ initialises it to 0. The assertion is the conjunction of P2's rows 8-15 and P4.
-   - Claims: `sol:AA-bplcon1.c15`, `sol:AA-bplcon1.c16`, `sol:AA-bplcon1.c17`, `sol:AA-bplcon1.c18`, `sol:AA-bplcon1.c19`, `sol:AA-bplcon1.c20`, `sol:AA-bplcon1.c21`, `sol:AA-bplcon1.c22`. Each states both the bit's name and its reset value, so it is carried by this assertion, which requires both.
+1. **Proposition.** Each of BPLCON1 bits 15-8 is the field the AA p.16 table names for it, with the weight P2 grades, and RST_ initialises it to 0. Bits 12 (PF2H0) and 8 (PF1H0) are graded together on the line P5, through P2's rows 12 and 8 and P4's run (b). Each of the other six bits (15, 14, 13, 11, 10, 9) has a line of its own, through its P2 row and the P4 run (a) result of its playfield.
+   - Claims: `sol:AA-bplcon1.c18` (bit 12) and `sol:AA-bplcon1.c22` (bit 8) on the line P5; `sol:AA-bplcon1.c15` (bit 15, PF2H7), `c16` (bit 14, PF2H6), `c17` (bit 13, PF2H1), `c19` (bit 11, PF1H7), `c20` (bit 10, PF1H6) and `c21` (bit 9, PF1H1) on the lines P5-PF2H7, P5-PF2H6, P5-PF2H1, P5-PF1H7, P5-PF1H6 and P5-PF1H1. Each claim states both the bit's name and its reset value, so its line requires both.
    - Page: AA p.16.
 2. **Stimulus.** None of its own: the runs of P2's rows 8-15 and the runs of P4.
 3. **Observation.** The verdicts of P2's rows 8-15 and of P4, from the same runs.
-4. **Expected value.** P2's rows 8-15 and P4 all hold.
+4. **Expected value.**
+   - P5: P2's rows 12 and 8 hold, and P4b-C2 and P4b-C1 hold.
+   - P5-PF2H7, P5-PF2H6, P5-PF2H1: P2's row of the bit holds and P4a-D2 holds. P5-PF1H7, P5-PF1H6, P5-PF1H1: P2's row of the bit holds and P4a-D1 holds. P4a-D1 and P4a-D2 each cover the three bits of their playfield in one delay result, so the three lines of a playfield rest on the same reset result.
    - **Source:** AA p.16, the BPLCON1 column from "15 … PF2H7=0" to "08 … PF1H0=0", and "=0/=1 bit values initialized by RST_ pin going low."
-5. **Preconditions.** Those of P2 for rows 8-15, and those of P4.
-6. **Contrasting case.** Each contrast of P2's rows 8-15 and of P4 turns this assertion red through the same clause. Examples: $0400 in place of $0800 in P2's row 11 (Δ1 = 32 instead of 64), and $0200 written before F3 in P4 (Δ1 = 1, odd).
+5. **Preconditions.** Those of P2 for the bit's row and those of P4. A line of the six is graded only where P4a-D1 (playfield 1) or P4a-D2 (playfield 2) is graded, which needs P4b-C1 or P4b-C2 to show PFnH0 = 0; otherwise it prints NOT GRADED. P5 needs P4's run (b) graded and P2's rows 8 and 12.
+6. **Contrasting case.** Each contrast of P2's rows and of P4 turns the lines that rest on it red through the same clause. Examples: $0200 written before F3 in P4 (Δ1 = 1, odd) turns P4a-D1 and the three PF1 lines red.
 7. **Reference frame.** R1, R2 and R3, as in P2 and P4.
-8. **Measured (build), TG68K and fx68k.** FAIL on both cores, through run (b): P2's rows 8-15 all PASS, the stripe colours of run (b) differ between F3 and F5, and run (a) is NOT GRADED. Live input (`NMH_MUTATE=P5`, the P4 runs write BPLCON1 = $0000 before F3): P5 prints PASS on both cores, with P4b-C1, P4b-C2, P4a-D1 and P4a-D2.
+8. **Measured (build), TG68K and fx68k.** P5: FAIL on both cores, through run (b): P2's rows 12 and 8 PASS, and the stripe colours of run (b) differ between F3 and F5 (P4b-C1 and P4b-C2 FAIL). The six lines of the other bits print NOT GRADED on both cores, because P4a-D1 and P4a-D2 do. Live input (`NMH_MUTATE=P5`, the P4 runs write BPLCON1 = $0000 before F3): P5 and all six lines print PASS on both cores, with P4b-C1, P4b-C2, P4a-D1 and P4a-D2. The contrasts `NMH_MUTATE=P4a-D1` (BPLCON1 = $0200 written before F3 in run (a), $0000 in run (b)) and `P4a-D2` ($2000) turn P5-PF1H7, P5-PF1H6 and P5-PF1H1 (respectively P5-PF2H7, P5-PF2H6 and P5-PF2H1) red together with the reset result they rest on, and leave P5 and the other playfield's three lines PASS.
 
 ### P6 - BYPASS sends the priority-selected colour address out on R(7:0)
 
 1. **Proposition.** With BYPASS set in BPLCON0, the colour address chosen by the priority logic leaves the chip on R(7:0) instead of the colour table's red value, while scrolling and priority stay as without BYPASS. The visible part is that the red output shows address bits 7-4.
-   - Claim: `sol:AA-bplcon0.c19`. (`opus:AA-bypass.c1` and `opus:AA-bypass.c2` put all 8 address bits on R(7:0), and the 4-bit red output shows only one nibble; they are declined in section 1.)
+   - Claim: `sol:AA-bplcon0.c19`, on the line P6-I (scrolling and priority unchanged). (`opus:AA-bypass.c1` and `opus:AA-bypass.c2` put all 8 address bits on R(7:0), and the 4-bit red output shows only one nibble; they are declined in section 1.)
    - Pages: AA p.4, p.17.
 2. **Stimulus.** S1, S2 with these values:
    - LORES, eight planes, FMODE = $0000.
@@ -398,7 +402,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 4. **Expected value.**
    - (ii) red(B1/T_x) = red(B1/T_id) at every observed pixel: the table is not used.
    - (i) red(B1/T_id) = red(B0/T_id) at every observed pixel. T_id maps address i to red i>>4, so the B0 image shows the high nibble of the address that scrolling and priority selected. (i) is graded only where (ii) holds: with a BYPASS that leaves the red output to the colour table, B1/T_id and B0/T_id are the same run and (i) holds without showing anything about scrolling or priority. Where (ii) does not hold, P6-I prints NOT GRADED.
-   - P6-AGG holds when (i) and (ii) hold.
+   - P6-AGG holds when (i) and (ii) hold; it carries no claim id. P6-I carries `sol:AA-bplcon0.c19`, whose content (scrolling and priority as without BYPASS) it grades; it is graded only where P6-II holds.
    - **Sources:**
      - AA p.17: "BYPASS= bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)."
      - AA p.4: "BYPASS bit in BPLCON0 allows prioritized color address to bypass the color table and exit LISA on R(7:0) bus."
@@ -419,7 +423,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - A B1 run with BPLCON1 = $0000, compared with B0/T_id at $0033, differs at the group boundaries, so (i) goes red through the scroll clause. The B1/T_x run is run as B0/T_id with the same BPLCON1, so that (ii) holds and (i) is graded.
    - A B1/T_id run with BPLCON2 = $0000, compared with B0/T_id at $0024, differs on the sprite's columns wherever the group's high nibble is not 1, so (i) goes red through the priority clause. The B1/T_x run is run as B0/T_id with the same BPLCON2, so that (ii) holds and (i) is graded. PF2P = 000 puts the playfield in front of all sprites (HRM p.210, Table 7-2), and v is never 0, so the playfield covers the sprite.
 7. **Reference frame.** R1 and R4.
-8. **Measured (build), TG68K and fx68k.** Preconditions: the five R1 lines, P6-R4, P6-FIXTURE, P6-F3, P6-R1, P6-POP, P6-TBL, P6-RED16, P6-SPR and P6-SCROLL PASS. R4: a COLOR01 pixel shows red $A. Population: 392 lines of F3 with 634 window columns a line on TG68K and 633 on fx68k. Table: 248528 of 248528 observed pixels differ between B0/T_x and B0/T_id (fx68k 248136 of 248136). Sprite: 32 output lines carry sprite columns. Scroll: 19 group boundaries, each 6 samples (6 op) right of its unscrolled position. (ii): 248528 of 248528 pixels differ between B1/T_x and B1/T_id on TG68K (fx68k 248136 of 248136), so P6-II and the aggregate P6-AGG are FAIL on both cores: with BYPASS set the red output follows the colour table and not the address. (i) prints NOT GRADED on both cores, because (ii) does not hold; the comparison would find 0 of 248528 pixels differing between B1/T_id and B0/T_id on TG68K (fx68k 0 of 248136), the two runs being alike. Contrasts: `P6-I` (BPLCON1 = $0000 in the B1/T_id run) and `P6-I-PRIO` (BPLCON2 = $0000), each with the B1/T_x run run as B0/T_id with the same register so that (ii) holds, print FAIL on P6-I on both cores. The red lines have a live input through the same comparators (`P6-II`, `P6-AGG`: the B1/T_x run is run as B0/T_id): P6-II, P6-I and P6-AGG print PASS on both cores.
+8. **Measured (build), TG68K and fx68k.** Preconditions: the five R1 lines, P6-R4, P6-FIXTURE, P6-F3, P6-R1, P6-POP, P6-TBL, P6-RED16, P6-SPR and P6-SCROLL PASS. R4: a COLOR01 pixel shows red $A. Population: 392 lines of F3 with 634 window columns a line on TG68K and 633 on fx68k. Table: 248528 of 248528 observed pixels differ between B0/T_x and B0/T_id (fx68k 248136 of 248136). Sprite: 32 output lines carry sprite columns. Scroll: 19 group boundaries, each 6 samples (6 op) right of its unscrolled position. (ii): 248528 of 248528 pixels differ between B1/T_x and B1/T_id on TG68K (fx68k 248136 of 248136), so P6-II and the aggregate P6-AGG are FAIL on both cores: with BYPASS set the red output follows the colour table and not the address. (i) prints NOT GRADED on both cores, because (ii) does not hold, so `sol:AA-bplcon0.c19` (on P6-I) is not asserted on either core; the comparison would find 0 of 248528 pixels differing between B1/T_id and B0/T_id on TG68K (fx68k 0 of 248136), the two runs being alike. Contrasts: `P6-I` (BPLCON1 = $0000 in the B1/T_id run) and `P6-I-PRIO` (BPLCON2 = $0000), each with the B1/T_x run run as B0/T_id with the same register so that (ii) holds, print FAIL on P6-I on both cores. The red lines have a live input through the same comparators (`P6-II`, `P6-AGG`: the B1/T_x run is run as B0/T_id): P6-II, P6-I and P6-AGG print PASS on both cores.
 
 ### P7 - bit-plane fetch increment from FMODE bits 1-0
 
@@ -490,7 +494,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 ### P9 - one modulus per line with bit-plane scan-doubling
 
 1. **Proposition.** With BSCAN2 set in FMODE, every plane, odd and even, takes the same modulus on a given line. The modulus is BPL1MOD on a line whose vertical-counter bit V0 equals DIWSTRT's V0, and BPL2MOD on the other lines.
-   - Claims: `opus:AA-bpl1mod.c7`, `opus:AA-bpl1mod.c8`, `sol:AA-bplmod.c5`, `c6`, `c7`, `c8`, `opus:AA-bitplanes.c6`, `sol:AA-dual-playfield.c3`.
+   - Claims: `opus:AA-bpl1mod.c7`, `opus:AA-bpl1mod.c8`, `sol:AA-bplmod.c5`, `c6`, `c7`, `c8` on P9-AGG; `opus:AA-bitplanes.c6` and `sol:AA-dual-playfield.c3` (both playfields share the modulus under scan-doubling) on P9-DP.
    - Pages: AA p.16, p.3, p.23.
 2. **Stimulus.** As P8 run M, with FMODE = $4000. Bit 14 is BSCAN2, which "enables use of 2nd P/F modulus on an alternate line basis to support bitplane scan-doubling" (AA p.23). Copper markers (R3) sit at lines $30 and $80. Runs:
 
@@ -499,6 +503,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 | D0 | $2C81 | $4000 | none |
 | D1 | $2D81 | $4000 | none |
 | D2 | $2C81 | $4000 | The list starts with MOVE DIWSTRT,$2C81 (vertical blank) and contains WAIT($60,$06) followed by MOVE DIWSTRT,$2D81. |
+| DP | $2C81 | $4000 | none; BPLCON0 = $0410: DPF (bit 10) set, so the odd planes are playfield 1 and the even planes playfield 2 (AA p.16: "DPF=Double playfield (PF1=odd PF2=even bit planes)") |
 | N | $2C81 | $0000 | none (contrast) |
 
 3. **Observation.** step(k, n) = first(k, n+1) - last(k, n) for every plane k and every pair of consecutive window lines, with absolute line numbers from R3.
@@ -509,24 +514,25 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 | D0 | even n | odd n | - |
 | D1 (lines $2D-$EE) | odd n | even n | - |
 | D2 | even n for n ≤ $5F; odd n for n ≥ $61 | odd n for n ≤ $5F; even n for n ≥ $61 | n = $60 |
+| DP | even n | odd n | - |
 
    These hold for all k.
    - **Also graded:**
-     - On every line, all eight planes have the same step.
+     - On every line, all eight planes have the same step; in run DP, the odd planes (playfield 1) and the even planes (playfield 2) alike. P9-DP carries `opus:AA-bitplanes.c6` and `sol:AA-dual-playfield.c3`: with DPF set and BSCAN2 set, both playfields take the same modulus on every line.
      - Consecutive steps alternate between 10 and 26, except that in D2 two consecutive lines around $60 share a step.
    - **Sources:**
      - AA p.16: "If bitplane scan-doubling is enabled, BPL1MOD serves as the primary bitplane modulus and BPL2MOD serves as the alternate. Lines whose LSBs of beam counter and DIWSTRT match are designated primary, whereas lines whose LSBs don't match are designated alternate."
      - AA p.3: "When V0 bit of DIWSTRT matches V0 of vertical beam counter, BPL1MOD contains the modulus for the display line, else BPL2MOD is used. When scan-doubled both odd and even bitplanes use the same modulus on a given line, whereas in normal mode odd bitplanes used BPL1MOD and even bitplanes used BPL2MOD."
      - AA p.3: "scan-doubling is enabled, in which case both playfields share the same bitplane modulus register."
-   - **Not graded:** "As a result Dual Playfield screens will probably not display correctly when scan-doubled" (AA p.3) says "probably" and gives no value.
+   - **Not graded:** "As a result Dual Playfield screens will probably not display correctly when scan-doubled" (AA p.3) says "probably" and gives no value. Whether DPF takes effect on the display is not observed in this proposition: bit-plane DMA does not show it, so P9-DP grades the modulus the planes of both playfields take with the bit written.
 5. **Preconditions.**
    - R3 anchor.
    - All eight planes are fetched on every window line in every run, including across the DIWSTRT write in D2.
-   - The first fetch line is $2C in D0 and D2 and $2D in D1. AA p.21: "The vertical Bit Plane DMA timing is identical to the Display windows".
+   - The first fetch line is $2C in D0, D2 and DP and $2D in D1. AA p.21: "The vertical Bit Plane DMA timing is identical to the Display windows".
    - *Contrast:* DIWSTRT = $2E81 moves the first fetch line to $2E, and the "first line" precondition of D0 fails.
 6. **Contrasting case.** Evaluate run N against D0's expectation. There, odd planes step 10 and even planes step 26 on every line, so the check goes red.
 7. **Reference frame.** R2 and R3. The anchor is the beam counter's V0, obtained through R3 line numbers.
-8. **Measured (build), TG68K and fx68k (identical).** D0: 196 window lines, 1560 graded plane-line pairs, step 10 bytes in 784 and 26 bytes in 776. D1: 195 lines, 1552 pairs, 776 and 776. D2: 196 lines, 1552 pairs (n = $60 excluded), 776 and 776. The three run lines and the aggregate PASS. Contrasts: `P9-D0`, `P9-D1` and `P9-D2` write FMODE = $0000 (BSCAN2 clear) in the run and print FAIL on its line; `P9-AGG` exchanges D1's two modulos and prints FAIL on the aggregate.
+8. **Measured (build), TG68K and fx68k (identical).** D0: 196 window lines, 1560 graded plane-line pairs, step 10 bytes in 784 and 26 bytes in 776. D1: 195 lines, 1552 pairs, 776 and 776. D2: 196 lines, 1552 pairs (n = $60 excluded), 776 and 776. DP (BPLCON0 = $0410): 196 lines, 1560 graded plane-line pairs, step 10 bytes in 784 and 26 bytes in 776, as D0. The three run lines, P9-DP and the aggregate PASS. Contrasts: `P9-D0`, `P9-D1`, `P9-D2` and `P9-DP` write FMODE = $0000 (BSCAN2 clear) in the run and print FAIL on its line; `P9-AGG` exchanges D1's two modulos and prints FAIL on the aggregate.
 
 ### P10 - LPEN is off after power-up
 
@@ -546,7 +552,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
       6. Read again, giving w1.
       7. Store w0 and w1.
 
-   The test holds the fire bit (pin 6) of both `joystick0` and `joystick1` at the level `nanomig.v` gives an open switch, so no light-pen trigger occurs. Pin 6 is the light pen's "Beam trigger" (HRM p.228, Table 8-1). The page's "shorted to ground" (HRM p.232) is the connector's level, not the port's.
+   The test leaves the fire bit (pin 6) of both `joystick0` and `joystick1` at the harness's reset level, 0, so that no light-pen trigger should occur. Pin 6 is the light pen's "Beam trigger" (HRM p.228, Table 8-1). Which input level is an open switch is a property of the system boundary that the pages do not give for the port (HRM p.232's "shorted to ground" is the connector's level), so precondition (iv) measures it: each run begins by reading CIAA PRA ($BFE001) and storing bits 7-6, /FIR1 and /FIR0 (HRM p.339, CIAA address map, "pra /FIR1 /FIR0"), which read 1 when no fire button is closed.
 3. **Observation.** The three stored pairs.
 4. **Expected value.**
    - w1 ≠ w0 in every pair: the counter advanced.
@@ -557,10 +563,11 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - (i) The reads fall within vertical blank before line 20: fewer than 19 R2 line boundaries lie between t_V and the store of w1. VERTB is "Start of Vertical blank" (AA p.25), and the internal vertical blanking period is "0 < V < 20" (HRM p.239: "the internal vertical blanking period of 0 < V20"). This is measured from port times, not from w0, because a latched counter (the clause failing) would make w0 show the latched position.
    - (ii) In this harness, with the same BEAMCON0, the latch does freeze the counter; contrast C below shows it. If C does not freeze, the proposition cannot be graded: either the latch is absent or LPENDIS does not act as written, and the pages do not say which.
    - (iii) Nothing writes BPLCON0 before the reads, as the program text shows.
+   - (iv) Boundary precondition (P10-FIRE): CIAA PRA bits 7 and 6 read 1 at the start of both runs, so neither fire button is closed. *Contrast:* both fire inputs (bit 4 of `joystick0` and `joystick1`) driven to 1 from the start make bits 7 and 6 read 0 and the precondition fails.
    - *Contrast for (i):* in run C, place the reads about 110 R2 line boundaries after t_V. Precondition (i) fails there. The freeze has been released at line 20, so w1 ≠ w0, which shows the window below 20 matters.
 6. **Contrasting case C.** The same program with BPLCON0 = $0008 (LPEN = 1, no planes) written before step 4. The page predicts w1 = w0 in every pair, so the main check goes red.
 7. **Reference frame.** R5, R2 (line boundaries after t_V) and the vertical-position field of AA p.29.
-8. **Measured (build), TG68K and fx68k.** P10-FIXTURE PASS, P10-R2 PASS, P10-WIN PASS (0 line boundaries between the marker and the store of w1 in every pair). P10-LATCH is FAIL: with BPLCON0 = $0008 written before the reads, w1 differs from w0 in every pair on both cores (TG68K: w0 = $A3000018, w1 = $A300006E; fx68k: w0 = $A300001B, w1 = $A3000068), so precondition (ii) does not hold and P10-MAIN prints NOT GRADED: the light-pen latch does not freeze the counters in this system. The main run's reads (TG68K: w0 = $A300001E, w1 = $A3000074; fx68k: w0 = $A3000023, w1 = $A3000070) show a vertical position of 0 in w0. Contrasts: `P10-MAIN` (both runs load `prog_lpen_same.bin`, which reads once and stores the value as w0 and w1) prints FAIL on P10-MAIN and PASS on P10-LATCH; `P10-FIXTURE`, `P10-R2` and `P10-WIN` print FAIL on their own lines. The red precondition has a live input through its comparator (`P10-LATCH`: the contrast run loads `prog_lpen_same.bin`): P10-LATCH prints PASS on both cores and P10-MAIN, now graded, PASS.
+8. **Measured (build), TG68K and fx68k.** P10-FIXTURE PASS, P10-R2 PASS, P10-FIRE PASS (CIAA PRA bits 7-6 read $C0 in both runs), P10-WIN PASS (0 line boundaries between the marker and the store of w1 in every pair). P10-LATCH is FAIL: with BPLCON0 = $0008 written before the reads, w1 differs from w0 in every pair on both cores (TG68K: w0 = $A3000018, w1 = $A300006E; fx68k: w0 = $A300001B, w1 = $A3000068), so precondition (ii) does not hold and P10-MAIN prints NOT GRADED: the light-pen latch does not freeze the counters in this system. The main run's reads (TG68K: w0 = $A300001E, w1 = $A3000074; fx68k: w0 = $A3000023, w1 = $A3000070) show a vertical position of 0 in w0. Contrasts: `P10-MAIN` (both runs load `prog_lpen_same.bin`, which reads once and stores the value as w0 and w1) prints FAIL on P10-MAIN and PASS on P10-LATCH; `P10-FIXTURE`, `P10-R2`, `P10-FIRE` (both fire inputs driven to 1 in the main run, which also prints NOT GRADED on P10-MAIN) and `P10-WIN` print FAIL on their own lines. The red precondition has a live input through its comparator (`P10-LATCH`: the contrast run loads `prog_lpen_same.bin`): P10-LATCH prints PASS on both cores and P10-MAIN, now graded, PASS.
 
 ### P11 - the joystick and mouse registers read as before
 
@@ -569,7 +576,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - Pages: AA p.5, p.25, p.26.
 2. **Stimulus.** The program reads JOY0DAT and JOY1DAT in a loop and stores each value. Each store's port time gives the read's time.
    - **(a) Joystick.** For each port in turn, the test holds each of nine states for 2 ms on the port list's `joystick0`/`joystick1` inputs: none, up, down, left, right, up+left, up+right, down+left, down+right.
-     - A closed switch is the level `nanomig.v` gives a closed switch on that input bit. HRM p.232 ("When the switches are pressed, the input line is shorted to ground") gives the connector pin's level, which is not a port of this system.
+     - A closed switch is the input bit at 1: the port list gives one bit per switch (bit 3 up, bit 2 down, bit 1 left, bit 0 right), and no page gives the level or the bit order of that input. HRM p.232 ("When the switches are pressed, the input line is shorted to ground") gives the connector pin's level, which is not a port of this system. The convention is a boundary precondition (P11-POL): with every input bit at 0, the first hold of each connector, F, L, B and R of both registers read 0; when they do not, the nine-state decode is not graded.
      - All other switches are open, and there is no mouse movement.
    - **(b) Mouse.** Through the mouse inputs of the port list (`kbd_mouse_type`, `kbd_mouse_data`, `kbd_mouse_level`), with the direction switches open, the test makes four movements in turn, 2 ms apart: 40 counts right, then 40 left, then 40 down, then 40 up. Within a movement the counts go in one at a time, 50 µs apart, so that consecutive reads see the change of a single count. The register graded is the one those inputs feed.
 3. **Observation.**
@@ -597,10 +604,11 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 5. **Preconditions.**
    - While nothing changes, consecutive reads are equal.
    - *Contrast:* injecting movement during a hold breaks it.
-   - The "none" state is graded as one of the nine states in (a), not used as a precondition: a wrong decode at rest must go red, not turn the check off.
+   - The "none" state is graded as one of the nine states in (a). P11-POL reads the same two holds as the boundary convention: a decode at rest that differs from all-open prints FAIL on P11-POL, and the nine-state decode and the aggregate then print NOT GRADED.
+   - *Contrast for P11-POL:* the first hold of each connector ("none") drives the up switch (bit 3).
 6. **Contrasting case.** Each state is the others' contrast. For example, the "right" data evaluated against the "left" expectation goes red. For the mouse, the "left" data evaluated against the "right" expectation has the opposite sign. With 39 counts left after 40 right, bits 7-0 end one count away from the start, and the return check goes red.
 7. **Reference frame.** R2, for the read times.
-8. **Measured (build), TG68K and fx68k.** Preconditions: P11-UNIT PASS, P11-FIXTURE PASS, P11-POP PASS, P11-STILL PASS. The register values in each of the nine states on connector 0 (JOY0DAT) and on connector 1 (JOY1DAT) are the same on both cores: none $0000, up $0100, down $0001, left $0300, right $04FF, up+left $06FC, up+right $05FF, down+left $07FD, down+right $08FE on connector 0; none $0000, up $0100, down $0001, left $FF00, right $FC03, up+left $FE00, up+right $FD03, down+left $FF05, down+right $FC06 on connector 1. Each decodes to the expected F, L, B and R (PASS). Mouse: 40 counts right moved bits 7-0 from $00 to $28 and 40 left back to $00; 40 down moved bits 15-8 from $00 to $28 and 40 up back to $00 (PASS). Aggregate PASS. Contrasts: `P11-JOY` (the state "right" drives the left switch), `P11-MOUSE` (the first movement is -1 counts), `P11-MOUSE-RET` (39 counts in the second movement), `P11-AGG` (the third movement is -1 counts), `P11-STILL` (one X count during a hold), `P11-POP` (holds of 0.15 ms), `P11-FIXTURE` and `P11-UNIT` each print FAIL on their own line on both cores.
+8. **Measured (build), TG68K and fx68k.** Preconditions: P11-UNIT PASS, P11-FIXTURE PASS, P11-POP PASS, P11-STILL PASS, P11-POL PASS (every switch of both registers reads open with every input bit at 0). The register values in each of the nine states on connector 0 (JOY0DAT) and on connector 1 (JOY1DAT) are the same on both cores: none $0000, up $0100, down $0001, left $0300, right $04FF, up+left $06FC, up+right $05FF, down+left $07FD, down+right $08FE on connector 0; none $0000, up $0100, down $0001, left $FF00, right $FC03, up+left $FE00, up+right $FD03, down+left $FF05, down+right $FC06 on connector 1. Each decodes to the expected F, L, B and R (PASS). Mouse: 40 counts right moved bits 7-0 from $00 to $28 and 40 left back to $00; 40 down moved bits 15-8 from $00 to $28 and 40 up back to $00 (PASS). Aggregate PASS. Contrasts: `P11-JOY` (the state "right" drives the left switch), `P11-MOUSE` (the first movement is -1 counts), `P11-MOUSE-RET` (39 counts in the second movement), `P11-AGG` (the third movement is -1 counts), `P11-STILL` (one X count during a hold), `P11-POP` (holds of 0.15 ms), `P11-POL` (the first hold of each connector drives the up switch; P11-JOY and P11-AGG print NOT GRADED), `P11-FIXTURE` and `P11-UNIT` each print FAIL on their own line on both cores.
 
 ### P12 - UARTBRK holds TxD at 0
 
@@ -640,9 +648,11 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 1. **Proposition.** Disk DMA transfers words at the address held in DSKPTH/DSKPTL. The pair is a 20-bit word address (A20-A1), covering all of 2 MB.
    - Claims: `opus:AA-dskpth.c9`, `sol:AA-disk-pointer.c1`. The stimulus also follows `opus:AA-dskpth.c10` and `sol:AA-disk-pointer.c2`.
    - Pages: AA p.23, p.6.
-2. **Stimulus.** The write direction, RAM to disk, needs no disk data (AA p.23: "14 WRITE Disk Write(RAM to Disk ) if 1"). Two runs; together, each of A20-A16 takes both values:
+2. **Stimulus.** The write direction, RAM to disk, needs no disk data (AA p.23: "14 WRITE Disk Write(RAM to Disk ) if 1"). Four runs; X and Y give each of A20-A16 both values, and Z and Zc give each of A20-A1 both values:
    - Run X: A = $0A5432, so A20-A16 = 01010.
    - Run Y: A = $154320, so A20-A16 = 10101.
+   - Run Z: A = $0B4B50, the word address $5A5A8.
+   - Run Zc: A = $14B4AE, the word address $A5A57, the complement of run Z's in all twenty bits A20-A1. The eight reads of a run step A3-A1 through all their values as well.
    - Both addresses lie in $080000-$1FFFFF, where the program can write the data and the port's word address is the program's address (section 0, Addresses). In that range A20 and A19 are never both 0, so X takes 01 and Y takes 10 there.
 
    The eight words at A hold $D0D0 + i. The program then:
@@ -657,15 +667,15 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 3. **Observation.** Disk DMA accesses at the port, in the disk slots (R2), from the second $C008 write until DSKBLK is set.
 4. **Expected value.**
    - The first disk DMA access is a read at exactly A.
-   - All disk DMA accesses are reads at A, A+2, …, A+14, in increasing order.
+   - All disk DMA accesses are reads at A, A+2, …, A+14, in increasing order, in each of the four runs.
    - **Sources:** AA p.23: "This pair of registers contains the 20 bit address of Disk DMA data." AA p.6: "PTL,PTH=20 bit Pointer that addresses DMA data." HRM p.247: "After each transfer occurs, the value of the pointer is incremented."
 5. **Preconditions.**
-   - In both runs, at least one disk DMA access occurs and DSKBLK is set.
+   - In all four runs, at least one disk DMA access occurs and DSKBLK is set.
    - The harness description leaves open whether disk write DMA runs without a disk image. If no disk DMA access occurs, this proposition cannot be checked in this harness.
    - *Contrast:* DMACON without DSKEN gives no access (AA p.23: "DMAON DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)").
-6. **Contrasting case.** Run Y is run X's contrast: each of A20-A16 is 1 in one of the two runs. If DSKPTH held only 3 bits (AA p.23: "(old-3 bits)"), run X's first access would appear at $025432 instead of $0A5432 and run Y's at $054320 instead of $154320. If A20 alone were dropped, run Y's would appear at $054320. Either way the check goes red.
+6. **Contrasting case.** Run Y is run X's contrast: each of A20-A16 is 1 in one of the two runs, and run Zc is run Z's, each of A20-A1 being 1 in one of them. A pointer that holds or decodes only some of the bits A20-A1 (a stuck or dropped bit) puts one of the four first accesses at another address. The contrast `P13-MAIN-LOW` writes run Zc's DSKPTL with bit 5 flipped. If DSKPTH held only 3 bits (AA p.23: "(old-3 bits)"), run X's first access would appear at $025432 instead of $0A5432 and run Y's at $054320 instead of $154320. If A20 alone were dropped, run Y's would appear at $054320. Either way the check goes red.
 7. **Reference frame.** R2.
-8. **Measured (build), TG68K and fx68k.** Disk DMA runs without a disk: each run shows 8 disk DMA reads and DSKBLK set. The first reads are at $0A5432, $0A5434, $0A5436 (run X) and $154320, $154322, $154324 (run Y), and every read is at the run's address plus 2 per access, so P13-RUN and P13-MAIN PASS on both cores. Contrasts: `P13-MAIN` (run Y writes DSKPTH = $0005, three of the five high bits), `P13-RUN` (run X without DSKEN) and `P13-FIXTURE` print FAIL on their own line on both cores.
+8. **Measured (build), TG68K and fx68k.** Disk DMA runs without a disk: each run shows 8 disk DMA reads and DSKBLK set. The first reads are at $0A5432, $0A5434, $0A5436 (run X), $154320, $154322, $154324 (run Y), $0B4B50, $0B4B52, $0B4B54 (run Z) and $14B4AE, $14B4B0, $14B4B2 (run Zc), and every read is at the run's address plus 2 per access, so P13-RUN and P13-MAIN PASS on both cores. Contrasts: `P13-MAIN` (run Y writes DSKPTH = $0005, three of the five high bits), `P13-MAIN-LOW` (run Zc writes DSKPTL with bit 5 flipped), `P13-RUN` (run X without DSKEN) and `P13-FIXTURE` print FAIL on their own line on both cores.
 
 ### P14 - DUAL: a second horizontal counter that wraps at HTOTAL
 
@@ -704,7 +714,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 5. **Preconditions.** All are properties of the sample times and the refresh accesses alone. None uses h_i or m_i, the values under test. Each graded line has its own preconditions and no others.
    - **PHASE** (U1, U2). The t_i in CCK (R2) taken modulo HTOTAL+1 take every value 0…HTOTAL. A counter with the page's period then shows every one of its values, $40 or $70 included.
    - **STEP** (U1, U2). Every distance between two consecutive samples is shorter than HTOTAL+1 CCK. A counter that restarts at HTOTAL then restarts between some two consecutive samples, and the first restart is observed.
-   - **POS** (MAIN). U0, U1 and U2 sample the same set of R2-relative positions: the sample time modulo the R2 line, in CCK. The main counter's maximum is then sampled alike in the three runs. A 68000 reads only in the even-numbered memory access cycles (HRM p.195: "The 68000 uses only the even-numbered memory access cycles"), so no sampling loop of a CPU reaches every one of the 227 positions of the line; the number of positions each run reaches and the positions U1 does not reach are printed as measured.
+   - **POS** (MAIN). U0, U1 and U2 sample the same set of R2-relative positions: the sample time modulo the R2 line, in CCK. The main counter's maximum is then sampled alike in the three runs. A 68000 reads only in the even-numbered memory access cycles (HRM p.196: "The 68000 uses only the even-numbered memory access cycles"), so no sampling loop of a CPU reaches every one of the 227 positions of the line; the number of positions each run reaches and the positions U1 does not reach are printed as measured.
    - **PAIRS** (REL). In U1 and U2 qualifying pairs exist, and for each of them t_{i+1} - t_i is a whole number of CCK (a multiple of K).
    - **R2** (U1, U2, REL, MAIN), **U3** (MAIN): see below and the contrasting cases.
    - Which lines rest on which: U1 and U2 on R2, PHASE and STEP; REL on R2, PAIRS and STEP; MAIN on R2, POS and U3; AGG on those of the four lines before it. A line whose precondition does not hold prints NOT GRADED.
@@ -748,9 +758,10 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - V0 shows the one-per-line pattern. V0 is printed as a measured line: it is the condition under which P15 can be checked, not a graded line.
    - If V0 shows no access in [U, U+$8000), the proposition cannot be checked, and V1 is NOT GRADED. The access may be missing because the UHRES cycle does not reach the Chip-memory port (AA p.15 describes it as an address for "external detectors ... to do the special cycle for the VRAMs"), or because it needs DMACON bits the pages do not name. Whether UHRES works is graded in other packages.
    - *Contrast:* BPLCON0 = $0000 gives no accesses.
+   - P15-DONE: both runs reach DONE (the pointer program after its fifth VERTB, the live-input programs after a fixed number of reads); P15-V1 rests on it.
 6. **Contrasting case.** Evaluate V0 against V1's "at least 3 per line": it goes red.
 7. **Reference frame.** R2 and R3.
-8. **Measured (build), TG68K and fx68k.** P15-FIXTURE, P15-R2, P15-F3 and P15-R3 PASS. P15-V0 is a measured line: run V0 (DUAL clear) shows 0 accesses in [U, U+$8000) on 0 lines between the markers, so the one-per-line pattern is not shown on either core, and P15-V1 prints NOT GRADED. Contrasts: `P15-FIXTURE`, `P15-R2` and `P15-R3` print FAIL on their own line, and `P15-F3` (run V0 ends 3,300,000 cycles after boot) prints FAIL, on both cores. Live inputs through the comparators (`P15-V1`: run V0 loads `prog_cpuuh_line.bin`, one CPU read of the region per line in place of the UHRES pointer, and run V1 loads `prog_cpuuh_57.bin`, one per 57 CCK): P15-V0 shows the pattern and P15-V1 prints PASS on both cores.
+8. **Measured (build), TG68K and fx68k.** P15-FIXTURE, P15-DONE, P15-R2, P15-F3 and P15-R3 PASS. P15-V0 is a measured line: run V0 (DUAL clear) shows 0 accesses in [U, U+$8000) on 0 lines between the markers, so the one-per-line pattern is not shown on either core, and P15-V1 prints NOT GRADED. Contrasts: `P15-FIXTURE`, `P15-R2` and `P15-R3` print FAIL on their own line, and `P15-F3` (run V0 ends 3,300,000 cycles after boot, before the fifth VERTB) prints FAIL together with `P15-DONE`, on both cores. Live inputs through the comparators (`P15-V1`: run V0 loads `prog_cpuuh_line.bin`, one CPU read of the region per line in place of the UHRES pointer, and run V1 loads `prog_cpuuh_57.bin`, one per 57 CCK): P15-V0 shows the pattern and P15-V1 prints PASS on both cores.
 
 ---
 
@@ -774,13 +785,15 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 | `opus:AA-bplcon1.h2` | none (section 1) |
 | `opus:AA-bplcon1.b00`, `opus:AA-bplcon1.b01`, `opus:AA-bplcon1.b02`, `opus:AA-bplcon1.b03`, `opus:AA-bplcon1.b04`, `opus:AA-bplcon1.b05`, `opus:AA-bplcon1.b06`, `opus:AA-bplcon1.b07`, `opus:AA-bplcon1.b08`, `opus:AA-bplcon1.b09`, `opus:AA-bplcon1.b10`, `opus:AA-bplcon1.b11`, `opus:AA-bplcon1.b12`, `opus:AA-bplcon1.b13`, `opus:AA-bplcon1.b14`, `opus:AA-bplcon1.b15` | P2 |
 | `sol:AA-bplcon1.c23`, `sol:AA-bplcon1.c24`, `sol:AA-bplcon1.c25`, `sol:AA-bplcon1.c26`, `sol:AA-bplcon1.c27`, `sol:AA-bplcon1.c28`, `sol:AA-bplcon1.c29`, `sol:AA-bplcon1.c30` | P2 |
-| `sol:AA-bplcon1.c15`, `sol:AA-bplcon1.c16`, `sol:AA-bplcon1.c17`, `sol:AA-bplcon1.c18`, `sol:AA-bplcon1.c19`, `sol:AA-bplcon1.c20`, `sol:AA-bplcon1.c21`, `sol:AA-bplcon1.c22` | P5 |
+| `sol:AA-bplcon1.c18`, `sol:AA-bplcon1.c22` | P5 (line P5) |
+| `sol:AA-bplcon1.c15`, `sol:AA-bplcon1.c16`, `sol:AA-bplcon1.c17`, `sol:AA-bplcon1.c19`, `sol:AA-bplcon1.c20`, `sol:AA-bplcon1.c21` | P5 (lines P5-PF2H7, P5-PF2H6, P5-PF2H1, P5-PF1H7, P5-PF1H6, P5-PF1H1) |
 | `opus:AA-bplcon1.b08.rst`, `opus:AA-bplcon1.b09.rst`, `opus:AA-bplcon1.b10.rst`, `opus:AA-bplcon1.b11.rst`, `opus:AA-bplcon1.b12.rst`, `opus:AA-bplcon1.b13.rst`, `opus:AA-bplcon1.b14.rst`, `opus:AA-bplcon1.b15.rst` | P4 |
-| `opus:AA-pf1h.c1`, `opus:AA-pf2h.c1`, `sol:AA-bplcon1.c9`, `sol:AA-bplcon1.c10`, `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5` | P2 |
+| `opus:AA-pf1h.c1`, `opus:AA-pf2h.c1`, `sol:AA-bplcon1.c12`, `opus:AA-bplcon1.c6`, `sol:AA-bplcon1.c5` | P2 |
+| `sol:AA-bplcon1.c9`, `sol:AA-bplcon1.c10` | recorded in P2, not graded (section 2) |
 | `opus:AA-bplcon1.c5`, `sol:AA-horizontal-comparators.c1` | none (section 1) |
 | `opus:AA-pf1h.c3`, `sol:AA-bplcon1.c13` | P3 |
 | `sol:AA-position-resolution.c1` | none (section 1) |
-| `sol:AA-bplcon0.c19` | P6 |
+| `sol:AA-bplcon0.c19` | P6 (line P6-I) |
 | `opus:AA-bypass.c1`, `opus:AA-bypass.c2` | none (section 1) |
 | `sol:AA-fmode-bitplane-fetch.c1`, `sol:AA-fmode-bitplane-fetch.c4`, `sol:AA-fmode-bitplane-fetch.c7`, `sol:AA-fmode-bitplane-fetch.c10` | P7 |
 | `sol:AA-fmode-bitplane-fetch.c2`, `sol:AA-fmode-bitplane-fetch.c3`, `sol:AA-fmode-bitplane-fetch.c5`, `sol:AA-fmode-bitplane-fetch.c6`, `sol:AA-fmode-bitplane-fetch.c8`, `sol:AA-fmode-bitplane-fetch.c9`, `sol:AA-fmode-bitplane-fetch.c11`, `sol:AA-fmode-bitplane-fetch.c12` | none (section 1) |
@@ -790,7 +803,8 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
 | `sol:AA-fmode-sprite-fetch.c2`, `sol:AA-fmode-sprite-fetch.c3`, `sol:AA-fmode-sprite-fetch.c5`, `sol:AA-fmode-sprite-fetch.c6`, `sol:AA-fmode-sprite-fetch.c8`, `sol:AA-fmode-sprite-fetch.c9`, `sol:AA-fmode-sprite-fetch.c11`, `sol:AA-fmode-sprite-fetch.c12` | none (section 1) |
 | `opus:AA-bpl1mod.c5`, `sol:AA-bplmod.c1`, `sol:AA-bplmod.c2` | P8 |
 | `opus:AA-bpl1mod.c6`, `sol:AA-bplmod.c3`, `sol:AA-bplmod.c4` | none (section 1) |
-| `opus:AA-bpl1mod.c7`, `opus:AA-bpl1mod.c8`, `sol:AA-bplmod.c5`, `sol:AA-bplmod.c6`, `sol:AA-bplmod.c7`, `sol:AA-bplmod.c8`, `opus:AA-bitplanes.c6`, `sol:AA-dual-playfield.c3` | P9 |
+| `opus:AA-bpl1mod.c7`, `opus:AA-bpl1mod.c8`, `sol:AA-bplmod.c5`, `sol:AA-bplmod.c6`, `sol:AA-bplmod.c7`, `sol:AA-bplmod.c8` | P9 (line P9-AGG) |
+| `opus:AA-bitplanes.c6`, `sol:AA-dual-playfield.c3` | P9 (line P9-DP) |
 | `opus:AA-lpen.c1` | P10 |
 | `sol:AA-mouse.c2` | P11 |
 | `opus:AA-adkcon.c11` | P12 |
