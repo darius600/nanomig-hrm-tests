@@ -73,7 +73,7 @@
 // MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
 // MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN.
 // MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by about 110 lines; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-MAIN.
+// MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10 main check.
 // MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS. Also printing PASS: P10-MAIN.
 // MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
@@ -82,7 +82,7 @@
 // MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL, fx68k FAIL.
 // MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
 // MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL, fx68k FAIL.
-// MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P11-JOY, P11-AGG.
+// MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P11 joystick decode, P11 aggregate.
 // MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-MAIN stimulus red NMH_MUTATE=P12-MAIN: the main run loads prog_uart_k.bin: ADKCON = $0800 at step 5; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the main run loads prog_uart_early.bin: ADKCON = $8800 in place of $0800 at step 2, so UARTBRK is set before M1; TG68K FAIL, fx68k FAIL.
@@ -177,8 +177,8 @@
 // MUTATION P1-S3B-TEST stimulus red NMH_MUTATE=P1-S3B-TEST: the test run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-D1, P1-D2.
 // MUTATION P1-D1 stimulus red NMH_MUTATE=P1: the test run writes $0000 to BPLCON1 ($DFF102) and $0033 to BPLCON4 ($DFF10C) in place of $0033 to BPLCON1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-D2.
 // MUTATION P1-D2 stimulus red NMH_MUTATE=P1: the test run writes $0000 to BPLCON1 ($DFF102) and $0033 to BPLCON4 ($DFF10C) in place of $0033 to BPLCON1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-D1.
-// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the (a1) reference run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. TG68K: Also NOT GRADED: P2-F1, P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2. fx68k: Also NOT GRADED: P2-F1, P2-R1, P2-S3A, P2-S3B, P2-STEP8, P2-STRIPE, P2A1-PF1H2.
-// MUTATION P2-F1 stimulus red NMH_MUTATE=P2-F1: the (a1) reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. TG68K: Also NOT GRADED: P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2. fx68k: Also NOT GRADED: P2-R1, P2-S3A, P2-S3B, P2-STEP8, P2-STRIPE, P2A1-PF1H2.
+// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the (a1) reference run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2-F1, P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2.
+// MUTATION P2-F1 stimulus red NMH_MUTATE=P2-F1: the (a1) reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2.
 // MUTATION P2-R1 stimulus red NMH_MUTATE=P2-R1: the (a1) test run of row PF1H2 writes BEAMCON0 = $0000 (NTSC): a different line count; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
 // MUTATION P2-S3A stimulus red NMH_MUTATE=P2-S3A: the Copper WAITs of the (a1) reference run are at horizontal position $40 in place of $06; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
 // MUTATION P2-S3B stimulus red NMH_MUTATE=P2-S3B: the (a1) reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
