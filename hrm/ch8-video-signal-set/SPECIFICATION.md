@@ -186,8 +186,11 @@ belong in the test source, not here.
 
 ## Outcome
 
-`make -B test`: 6 passed, 0 failed — the two controls
-(CONTROL-RESET-RELEASES, CONTROL-VIDEO-BASELINE) and the four graded
+`make -B test`: 9 passed, 0 failed — the two controls
+(CONTROL-RESET-RELEASES, CONTROL-VIDEO-BASELINE), the three sampling
+preconditions (RED/GREEN/BLUE-SAMPLED-OUTSIDE-BLANKING: the colour outputs
+are read only with the beam outside blanking, since HRM p.79 says no data
+can be displayed in the vertical blanking area) and the four graded
 propositions (RED/GREEN/BLUE-OUTPUT-CARRIES-COLOR00, SYNC-OUTPUT-TOGGLES);
 PROP-COUNT recorded.
 

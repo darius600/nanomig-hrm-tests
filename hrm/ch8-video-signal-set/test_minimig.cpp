@@ -62,11 +62,17 @@
 //   no bitplane DMA and no sprites configured, denise.v:491-497's
 //   priority mux (`clut_data = ... plfdata ^ bplxor` when no sprite and
 //   window disabled forces `clut_data = 0`) selects colour-table index 0
-//   (COLOR00) for every sampled pixel, and denise.v:515-518's `t_blank =
-//   ecs & ecsena & brdrblnk & (...)` is unconditionally false whenever
-//   ecs=0 -- so with chipset_config held at 0, red/green/blue continuously
-//   present whatever is written to COLOR00, with no display-window or
-//   DMA setup required to observe it.
+//   (COLOR00) for every sampled pixel. Denise forces red/green/blue to 0
+//   while its `blank` input is high (minimig.v feeds it `~_hsync |
+//   vblank`) and, with ecs=1, while the border is blanked; HRM p.79 says
+//   no data can be displayed in the vertical blanking area and that
+//   horizontal blanking limits the displayable video, and the glossary
+//   (p.442) defines the blanking interval as the time the beam is outside
+//   the display area. The three colour assertions therefore wait, after
+//   the COLOR00 write, until _hsync is high and vblank is low, assert that
+//   as their own precondition (X-SAMPLED-OUTSIDE-BLANKING) and only then
+//   read the colour. With chipset_config held at 0 (ecs=0) the border term
+//   is false, so no display-window or DMA setup is required.
 //
 //   For SYNC-OUTPUT-TOGGLES's mutation: agnus_beamcounter.v:388-395
 //   registers `_hsync` -- cleared to 0 at `hpos==hsstrt`, set to 1 at
@@ -143,14 +149,14 @@
 // itself the demonstration that the fixture can tell a live signal from
 // a stuck one, on the same measurement basis its mutation then flips.
 //
-// RESULTS: baseline (no MUT flag) is 6 passed, 0 failed. No claim in this
+// RESULTS: baseline (no MUT flag) is 9 passed, 0 failed. No claim in this
 // package is red on this RTL -- unlike ch7-overlay-source, there
 // is no known S4 finding-candidate against any of these ten claims (the
 // four/five naming defect the finding-candidates file records for p.260,
 // S4-C11, is the DIGITAL-RGB bullet's sentence, not the ANALOG-RGB
 // sentence this package's ten claims all cite).
 //
-// PER-ASSERTION MUTATION RECORD. Six variants, each its own full
+// PER-ASSERTION MUTATION RECORD. Seven variants, each its own full
 // build+run (`make MUT=<switch>`), confirmed and reverted. Format
 // (tools/check_gates.py):
 // // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
@@ -159,6 +165,9 @@
 //
 // MUTATION CONTROL-RESET-RELEASES stimulus red MUT_RESET holds rst_ext (master reset) asserted forever, so minimig_syscontrol.v's rst_cnt never advances and _cpu_reset never rises within the 3,000,000-tick budget; baseline PASS (measured tick, printed at run time) goes red.
 // MUTATION CONTROL-VIDEO-BASELINE stimulus red MUT_BASELINE issues an extra COLOR00 write of $FFF immediately after reset releases, before the baseline check -- red/green/blue read $FF/$FF/$FF instead of the expected $00/$00/$00; baseline PASS goes red.
+// MUTATION RED-SAMPLED-OUTSIDE-BLANKING stimulus red MUT_INBLANK waits for the middle of the _hsync pulse instead of for _hsync high and vblank low, and reads there; baseline PASS goes red.
+// MUTATION GREEN-SAMPLED-OUTSIDE-BLANKING stimulus red MUT_INBLANK as for red: reads inside the _hsync pulse; baseline PASS goes red.
+// MUTATION BLUE-SAMPLED-OUTSIDE-BLANKING stimulus red MUT_INBLANK as for red: reads inside the _hsync pulse; baseline PASS goes red.
 // MUTATION RED-OUTPUT-CARRIES-COLOR00 stimulus red MUT_RED writes COLOR00=$000 instead of $F00 (the red nibble is never set); baseline PASS (red==$FF) goes red (red stays $00).
 // MUTATION GREEN-OUTPUT-CARRIES-COLOR00 stimulus red MUT_GREEN writes COLOR00=$000 instead of $0F0; baseline PASS (green==$FF) goes red (green stays $00).
 // MUTATION BLUE-OUTPUT-CARRIES-COLOR00 stimulus red MUT_BLUE writes COLOR00=$000 instead of $00F; baseline PASS (blue==$FF) goes red (blue stays $00).
@@ -188,6 +197,9 @@
 #endif
 #ifndef MUT_SYNC
 #define MUT_SYNC 0
+#endif
+#ifndef MUT_INBLANK
+#define MUT_INBLANK 0
 #endif
 
 namespace {
@@ -334,6 +346,29 @@ public:
         dut->_cpu_as = 1; dut->_cpu_uds = 1; dut->_cpu_lds = 1; dut->cpu_r_w = 1;
         for (int i = 0; i < 16; ++i) tick(); // let the colour-table RAM's registered read settle
     }
+
+    // True while the beam is outside both the horizontal sync pulse and the
+    // vertical blanking interval, as seen on minimig's own pins: _hsync high
+    // and vblank low. minimig.v feeds Denise `blank = ~_hsync | vblank`.
+    bool outside_blanking() const { return dut->_hsync != 0 && dut->vblank == 0; }
+
+    // Ticks until the beam is outside blanking (the condition the three
+    // colour assertions need before they read red/green/blue) and returns
+    // whether it got there within `limit` ticks (a PAL frame is ~570,000
+    // clk28 ticks). Under MUT_INBLANK it waits for the opposite instead --
+    // the middle of the _hsync pulse -- so the reading is taken inside
+    // blanking.
+    bool wait_for_sampling_point(long long limit = 1500000) {
+        for (long long i = 0; i < limit; ++i) {
+#if MUT_INBLANK
+            if (dut->_hsync == 0) return true;
+#else
+            if (outside_blanking()) return true;
+#endif
+            tick();
+        }
+        return false;
+    }
 };
 
 // The fixed assertion harness: expect() grades, note()
@@ -418,6 +453,13 @@ int main(int argc, char** argv) {
 #else
         h.write_word(COLOR00_ADDR, 0xF00);
 #endif
+        h.wait_for_sampling_point();
+        checks.expect(h.outside_blanking(),
+            "RED-SAMPLED-OUTSIDE-BLANKING (precondition of the next line, "
+            "HRM p.79 and the glossary p.442): `red` is read with the beam "
+            "outside blanking (_hsync high, vblank low). "
+            "MUTATION: read inside the _hsync pulse instead -- this line "
+            "must go red.");
         checks.expect(h.dut->red == 0xFF,
             "RED-OUTPUT-CARRIES-COLOR00 (p.260): writing COLOR00 ($DFF180) "
             "with its red nibble set (bits [11:8]) drives minimig's `red` "
@@ -437,6 +479,13 @@ int main(int argc, char** argv) {
 #else
         h.write_word(COLOR00_ADDR, 0x0F0);
 #endif
+        h.wait_for_sampling_point();
+        checks.expect(h.outside_blanking(),
+            "GREEN-SAMPLED-OUTSIDE-BLANKING (precondition of the next line, "
+            "HRM p.79 and the glossary p.442): `green` is read with the beam "
+            "outside blanking (_hsync high, vblank low). "
+            "MUTATION: read inside the _hsync pulse instead -- this line "
+            "must go red.");
         checks.expect(h.dut->green == 0xFF,
             "GREEN-OUTPUT-CARRIES-COLOR00 (p.260): writing COLOR00 with its "
             "green nibble set (bits [7:4]) drives minimig's `green` output "
@@ -456,6 +505,13 @@ int main(int argc, char** argv) {
 #else
         h.write_word(COLOR00_ADDR, 0x00F);
 #endif
+        h.wait_for_sampling_point();
+        checks.expect(h.outside_blanking(),
+            "BLUE-SAMPLED-OUTSIDE-BLANKING (precondition of the next line, "
+            "HRM p.79 and the glossary p.442): `blue` is read with the beam "
+            "outside blanking (_hsync high, vblank low). "
+            "MUTATION: read inside the _hsync pulse instead -- this line "
+            "must go red.");
         checks.expect(h.dut->blue == 0xFF,
             "BLUE-OUTPUT-CARRIES-COLOR00 (p.260): writing COLOR00 with its "
             "blue nibble set (bits [3:0]) drives minimig's `blue` output "
