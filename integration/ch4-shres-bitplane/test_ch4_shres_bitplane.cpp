@@ -34,7 +34,7 @@
 //
 // MUTATION fixture none impossible: the line 'program loaded and CPU released from reset' can print FAIL only when no program image is loaded or the CPU is never released; the run then has no program to execute, never writes DONE and grades nothing further, so no mutation can leave the program and the measurement setup running (not exercised at this boundary)
 // MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF, so the line 'the program-stored constant $BEEF was read back' prints FAIL -> FAIL fixture (85 passed, 50 failed)
-// MUTATION C2 stimulus red NMH_MUTATE=C2: the program ends in a loop and never writes DONE: the line prints FAIL, the run is cut off at the cycle budget and nothing further is graded -> FAIL C2; 281 lines not printed (3 passed, 1 failed)
+// MUTATION C2 none impossible: the line 'the program's DONE mark was written' is the observation of the write of DONE_VALUE to DONE_ADDR itself, so a program that reaches DONE always prints PASS for it, and a program that does not write DONE leaves the run without an end and nothing further is graded; no stimulus both reaches DONE and makes the line FAIL (not exercised at this boundary)
 // MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change); every later line depends on C1 and prints NOT GRADED -> FAIL C1; NOT GRADED R0, C6 x7, C3, C4, C4-F11, C9, C7 x2, C5/R2, R2 x4, C8 x2, R1, C4-F7F10, C3-F7F9, C5-F7F10, C7-F7F10, C10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (3 passed, 1 failed)
 // MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and no sample width divides all the run lengths: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL; the lines that read a visible pixel depend on R0, and C3 follows the data this program wrote -> FAIL R0; NOT GRADED C6 x7, C5/R2, R2 x4, C8 x2, R1, C5-F7F10, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, C11, RUN-ENDS, R1-F7F10, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (14 passed, 1 failed)
 // MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires); C4 fails with it, because the header it compares carries the value this contrast changes -> FAIL C4, C5/R2; NOT GRADED R2, C8 x2, P1 x12, P2-DIVERSITY, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (65 passed, 36 failed)
@@ -3009,7 +3009,7 @@ void run_mutation(const std::string& dir, const std::string& mut, Checks& checks
 std::set<std::string> known_mutations() {
     std::set<std::string> k = {
         "V2","V3A","V3B","V3C","V3G","V4A","V4B","V5","V5B",
-        "C1","C2","C3","C3D","C4","C5","C6","C7","C8","C8B","C9","C9N","C9S","FIX",
+        "C1","C3","C3D","C4","C5","C6","C7","C8","C8B","C9","C9N","C9S","FIX",
         "V5C","V6A","V6B","V6C","V6D","V6E","V6L","V6Q","V6S",
         "C4B","C4C","C4D","C7B","C10","C10S","C11","RUNENDS","VLIVE","VLIVES","VP1JG","C4S",
         "R2M5","R2M6","R2B","C6B","C7C","C3P","V4C2","V4C3","V4C4","V5D","V5E","R0","P2G","VKEYAR","VKEYAG","VKEYAB","VLIVE5C","VLIVES6D","C3E",

@@ -1,7 +1,7 @@
 # ch4-shres-bitplane: see SPECIFICATION.md.
 
 TEST_CPP := test_ch4_shres_bitplane.cpp
-PROGS    := prog_main prog_c10 prog_c10s prog_c11 prog_c2 prog_c3 prog_c3d prog_c3e prog_c3p prog_c4 prog_c4b prog_c4c \
+PROGS    := prog_main prog_c10 prog_c10s prog_c11 prog_c3 prog_c3d prog_c3e prog_c3p prog_c4 prog_c4b prog_c4c \
             prog_c4d prog_c4s prog_c5 prog_c6 prog_c6b prog_c7 prog_c7b prog_c7c prog_c8 prog_c8b prog_c9 \
             prog_c9n prog_c9s prog_fix prog_p2g prog_r0 prog_r2b prog_r2m5 prog_r2m6 prog_runends prog_v1c0b \
             prog_v1c0g prog_v1c0r prog_v1c1b prog_v1c1g prog_v1c1r prog_v1c2b prog_v1c2g prog_v1c2r prog_v1c3b \

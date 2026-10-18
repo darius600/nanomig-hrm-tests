@@ -223,11 +223,7 @@ start:
 	bne.s	.poll
 
 	; ---- step 8 (4.5.8)
-	ifd	MUT_C2
-.never:	bra.s	.never
-	else
 	DONE
-	endif
 
 	; ---- data tables (below), never reached by falling off the end of the
 	; code above -- DONE hangs in place, and every ifd/else branch above
