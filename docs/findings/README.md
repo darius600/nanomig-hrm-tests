@@ -3,8 +3,8 @@
 A reference for developers, not a narrative.
 
 **Seventy-three of these pages are filed against the Hardware Reference
-Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
-NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
+Manual, 3rd edition (1991), and eight against the AA specification (1991).** The AA group (NM-AA-001 to
+NM-AA-008) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The fourteen
 withdrawn findings are kept apart, with their own list, in
 [`withdrawn/`](withdrawn/README.md).

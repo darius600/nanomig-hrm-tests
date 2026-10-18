@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**53 findings ask for a review, in 28 modules.** They are listed by the
+**56 findings ask for a review, in 29 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -42,12 +42,13 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 7
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 8
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23, where the AA list gives an Alice $22 | a test fails against the page |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | a test fails against the page |
+| [NM-AA-008](findings/NM-AA-008.md) | HHPOSR reads $0000 with DUAL set: the secondary beam counter of AA p. 24 is not there | a test fails against the page; the implementations split |
 | [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | a test fails against the page |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a test fails against the page |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
@@ -141,11 +142,18 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-064](findings/NM-HRM-064.md) | the board advertises that it can be shut up, and register 4C has no handler | a test fails against the page |
 | [NM-HRM-085](findings/NM-HRM-085.md) | a configured Zorro II memory board answers across the whole 8 MB Zorro II space, not only at the base software wrote to it | a test fails against the page |
 
-## [`src/minimig-aga/denise.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) — 1
+## [`src/minimig-aga/denise.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
+| [NM-AA-007](findings/NM-AA-007.md) | BPLCON0's BYPASS bit has no effect: the red output still follows the colour table, where AA p. 17 puts the colour address on R(7:0) | a test fails against the page; the implementations split |
 | [NM-HRM-017](findings/NM-HRM-017.md) | SuperHires bitplane colour encoding is not implemented | a test fails against the page; the implementations split |
+
+## [`src/minimig-aga/denise_bitplanes.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_bitplanes.v) — 1
+
+| finding | subject | evidence |
+|---|---|---|
+| [NM-AA-006](findings/NM-AA-006.md) | BPLCON1 resets to $3300, where the AA bit table marks bits 15-8 `=0` | a test fails against the page |
 
 ## [`src/minimig-aga/denise_colortable.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v) — 2
 
