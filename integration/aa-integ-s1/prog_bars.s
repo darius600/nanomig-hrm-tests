@@ -146,4 +146,4 @@ start:
         move.w  CFG_DMACON,d0
         move.w  d0,DMACON(a0)
 
-.idle:  bra.s   .idle
+        DONE

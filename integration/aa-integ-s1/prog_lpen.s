@@ -8,6 +8,7 @@
 ;   VAR    VARBEAMEN with HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK
 ;   SAME   w1 is a copy of w0 (one read of VPOSR): a live input for the comparators
 ;   NOFIX  no fixture store
+; Before the S1 writes the program stores CIAA PRA bits 7-6 at RESULTS+6.
         include "nanomig.i"
 
 OUT     equ     $0B9000                 ; w0 and w1 as long words, three times
@@ -21,6 +22,10 @@ start:
         ifnd    NOFIX
         move.w  #$BEEF,RESULTS
         endc
+        moveq   #0,d5
+        move.b  $BFE001,d5              ; CIAA PRA: bits 7-6 are /FIR1 /FIR0
+        and.w   #$00C0,d5
+        move.w  d5,RESULTS+6
         lea     CUSTOM,a0
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)

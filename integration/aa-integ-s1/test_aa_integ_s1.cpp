@@ -20,11 +20,11 @@
 // MUTATION P3-E0F0 stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-F0F0, P3-AGG.
 // MUTATION P3-F0F0 stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-E0F0, P3-AGG.
 // MUTATION P3-AGG stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0.
-// MUTATION P4a-D1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C1 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing PASS: P4b-C1, P4b-C2, P4a-D2.
-// MUTATION P4a-D2 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C2 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing PASS: P4b-C1, P4b-C2, P4a-D1.
+// MUTATION P4a-D1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C1 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-PF1H7, P5-PF1H6, P5-PF1H1. Also printing PASS: P4b-C1, P4b-C2, P4a-D2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
+// MUTATION P4a-D2 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C2 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-PF2H7, P5-PF2H6, P5-PF2H1. Also printing PASS: P4b-C1, P4b-C2, P4a-D1, P5, P5-PF1H7, P5-PF1H6, P5-PF1H1.
 // MUTATION P4b-C1 stimulus green NMH_MUTATE=P4b-C1: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C2.
 // MUTATION P4b-C2 stimulus green NMH_MUTATE=P4b-C2: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C1.
-// MUTATION P5 stimulus green NMH_MUTATE=P5: live input through the same line: P4 runs (a) and (b) write BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C1, P4b-C2, P4a-D1, P4a-D2.
+// MUTATION P5 stimulus green NMH_MUTATE=P5: live input through the same line: P4 runs (a) and (b) write BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C1, P4b-C2, P4a-D1, P4a-D2, P5-PF2H7, P5-PF2H6, P5-PF2H1, P5-PF1H7, P5-PF1H6, P5-PF1H1.
 // MUTATION UNIT-FIXTURE stimulus red NMH_MUTATE=UNIT-FIXTURE: the unit run loads prog_regs_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION UNIT-AA stimulus red NMH_MUTATE=UNIT-AA: chipset_config = $08 (the ECS chip set) in the unit run; TG68K FAIL, fx68k FAIL.
 // MUTATION UNIT-R2 stimulus red NMH_MUTATE=UNIT-R2: the unit run writes BEAMCON0 = $00A0 (VARBEAMEN) and HTOTAL = $0040: lines of 65 CCK; TG68K FAIL, fx68k FAIL.
@@ -62,6 +62,7 @@
 // MUTATION P9-D1 stimulus red NMH_MUTATE=P9-D1: run D1 writes FMODE = $0000 (BSCAN2 clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-D2 stimulus red NMH_MUTATE=P9-D2: run D2 writes FMODE = $0000 (BSCAN2 clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-AGG stimulus red NMH_MUTATE=P9-AGG: run D1 writes BPL1MOD = $0018 and BPL2MOD = $0008 in place of $0008 and $0018; TG68K FAIL, fx68k FAIL. Also printing FAIL: P9-D1.
+// MUTATION P9-DP stimulus red NMH_MUTATE=P9-DP: run DP (BPLCON0 = $0410, DPF set) writes FMODE = $0000 (BSCAN2 clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-FIXTURE stimulus red NMH_MUTATE=P9-FIXTURE: run D0 loads prog_regs_nofix.bin; TG68K FAIL, fx68k FAIL.
 // MUTATION P9-R2 stimulus red NMH_MUTATE=P9-R2: run D0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL.
 // MUTATION P9-F3 stimulus red NMH_MUTATE=P9-F3: run D0 ends 3,300,000 cycles after boot(); TG68K FAIL, fx68k FAIL.
@@ -72,6 +73,7 @@
 // MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
 // MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN.
 // MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by about 110 lines; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-MAIN.
 // MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS. Also printing PASS: P10-MAIN.
 // MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
@@ -80,6 +82,7 @@
 // MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL, fx68k FAIL.
 // MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
 // MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P11-JOY, P11-AGG.
 // MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-MAIN stimulus red NMH_MUTATE=P12-MAIN: the main run loads prog_uart_k.bin: ADKCON = $0800 at step 5; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the main run loads prog_uart_early.bin: ADKCON = $8800 in place of $0800 at step 2, so UARTBRK is set before M1; TG68K FAIL, fx68k FAIL.
@@ -87,6 +90,7 @@
 // MUTATION P12-FIXTURE stimulus red NMH_MUTATE=P12-FIXTURE: the main run loads prog_uart_nofix.bin; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-UNIT stimulus red NMH_MUTATE=P12-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
 // MUTATION P13-MAIN stimulus red NMH_MUTATE=P13-MAIN: run Y writes DSKPTH = $0005 (3 bits of A20-A16) in place of $0015; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-MAIN stimulus red NMH_MUTATE=P13-MAIN-LOW: run Zc writes DSKPTL = $B48E in place of $B4AE (bit 5 of the low word flipped); TG68K FAIL, fx68k FAIL.
 // MUTATION P13-RUN stimulus red NMH_MUTATE=P13-RUN: run X writes DMACON = $8200 (DSKEN clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: run X loads prog_disk_nofix.bin; TG68K FAIL, fx68k FAIL.
 // MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-STEP. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-STEP, P14-POS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
@@ -97,7 +101,8 @@
 // MUTATION P15-V1 stimulus green NMH_MUTATE=P15-V1: live inputs through the same comparators: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer) and run V1 loads prog_cpuuh_57.bin (one per 57 CCK); TG68K PASS, fx68k PASS.
 // MUTATION P15-FIXTURE stimulus red NMH_MUTATE=P15-FIXTURE: run V0 loads prog_uhres_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15.
 // MUTATION P15-R2 stimulus red NMH_MUTATE=P15-R2: run V0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15-R3, P15.
-// MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15-R3, P15.
+// MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(), before the program's fifth VERTB and so before DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P15-DONE. Also NOT GRADED: P15-R3, P15.
+// MUTATION P15-DONE stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(), before the program's fifth VERTB and so before DONE; P15-F3 prints FAIL with it, the same short run ending before F3 is complete; TG68K FAIL, fx68k FAIL. Also printing FAIL: P15-F3. Also NOT GRADED: P15-R3, P15.
 // MUTATION P15-R3 stimulus red NMH_MUTATE=P15-R3: run V0 places the second marker at line $99 instead of $98; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15.
 // MUTATION P2A1-PF1H2 stimulus red NMH_MUTATE=P2A1-PF1H2: the FMODE = $0000 (a1) test run writes the neighbouring bit $0002 in place of $0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H3 stimulus red NMH_MUTATE=P2A1-PF1H3: the FMODE = $0000 (a1) test run writes the neighbouring bit $0001 in place of $0002; TG68K FAIL, fx68k FAIL.
@@ -138,6 +143,19 @@
 // MUTATION P4b-C1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P4b-C2 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P5 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF2H7 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF2H6 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF2H1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF1H7 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF1H6 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF1H1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P5-PF2H7 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C2 holds, the precondition of the reset result; the reset result of playfield 2 is red, and the three lines of its bits move together because one delay result (P4a-D2) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D2, P5-PF2H6, P5-PF2H1. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF1H7, P5-PF1H6, P5-PF1H1.
+// MUTATION P5-PF2H6 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C2 holds, the precondition of the reset result; the reset result of playfield 2 is red, and the three lines of its bits move together because one delay result (P4a-D2) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D2, P5-PF2H7, P5-PF2H1. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF1H7, P5-PF1H6, P5-PF1H1.
+// MUTATION P5-PF2H1 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C2 holds, the precondition of the reset result; the reset result of playfield 2 is red, and the three lines of its bits move together because one delay result (P4a-D2) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D2, P5-PF2H7, P5-PF2H6. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF1H7, P5-PF1H6, P5-PF1H1.
+// MUTATION P5-PF1H7 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C1 holds, the precondition of the reset result; the reset result of playfield 1 is red, and the three lines of its bits move together because one delay result (P4a-D1) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P5-PF1H6, P5-PF1H1. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
+// MUTATION P5-PF1H6 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C1 holds, the precondition of the reset result; the reset result of playfield 1 is red, and the three lines of its bits move together because one delay result (P4a-D1) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P5-PF1H7, P5-PF1H1. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
+// MUTATION P5-PF1H1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C1 holds, the precondition of the reset result; the reset result of playfield 1 is red, and the three lines of its bits move together because one delay result (P4a-D1) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P5-PF1H7, P5-PF1H6. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
+// MUTATION P2-H2 stimulus red NMH_MUTATE=P2-H2: only the rows PF1H2 and PF2H2 run, and the FMODE = $0000 (a1) and FMODE = $0003 (a2) test runs of PF2H2 write the neighbouring bit $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF2H2, P2A2-PF2H2.
 // MUTATION P14-PHASE stimulus red NMH_MUTATE=P14-PHASE: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added): the lines are as long as the secondary counter's period and the sample times no longer take every phase; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-R2. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
 // MUTATION P14-STEP stimulus red NMH_MUTATE=P14-STEP: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK, longer than HTOTAL+1; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-POS, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
 // MUTATION P14-POS stimulus red NMH_MUTATE=P14-POS: run U1 loads prog_dual_sync.bin, which waits for the main counter's H8-H1 to lie in $20-$2F before each sample: one sample per line, so U1 samples a few R2-relative positions and not those of U2 and U0; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-STEP, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
@@ -168,8 +186,8 @@
 // MUTATION P2-STRIPE stimulus red NMH_MUTATE=P2-STRIPE: the (b) reference run's alternating parts hold $CC in place of $AA: the stripe colour is not uniform; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2B-PF1H0.
 // MUTATION P2B-PF1H0 stimulus red NMH_MUTATE=P2B-PF1H0: the SHRES stripe (b) test run writes BPLCON1 = $0000 in place of $0100: no delay and no flip; TG68K FAIL, fx68k FAIL.
 // MUTATION P2B-PF2H0 stimulus red NMH_MUTATE=P2B-PF2H0: the SHRES stripe (b) test run writes BPLCON1 = $0000 in place of $1000: no delay and no flip; TG68K FAIL, fx68k FAIL.
-// MUTATION P2-PF1-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-PF2-CODE.
-// MUTATION P2-PF2-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-PF1-CODE.
+// MUTATION P2-PF1-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-H2, P2-PF2-CODE.
+// MUTATION P2-PF2-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-H2, P2-PF1-CODE.
 // MUTATION P3-FIXTURE stimulus red NMH_MUTATE=P3-FIXTURE: the reference run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-F1, P3-R1, P3-S3A, P3-S3B, P3-STEP8, P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
 // MUTATION P3-F1 stimulus red NMH_MUTATE=P3-F1: the reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-R1, P3-S3A, P3-S3B, P3-STEP8, P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
 // MUTATION P3-R1 stimulus red NMH_MUTATE=P3-R1: the first test run writes BEAMCON0 = $0000 (NTSC): a different line count; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
@@ -255,6 +273,7 @@ constexpr uint32_t kBuf1 = 0x0B1000; // plane-1 line buffer, 192 bytes
 constexpr uint32_t kBuf2 = 0x0B1100; // plane-2 line buffer, 192 bytes
 
 constexpr uint32_t kResults = 0x0C0000;
+constexpr uint32_t kDoneAddr = 0x0C0FFE;   // DONE_ADDR (nanomig.i): the program's last store, $600D
 
 constexpr uint64_t kBootBudget = 4'000'000;
 // Cycles run after boot(). The internal reset takes about four frames before the CPU runs and F1 (located from the
@@ -328,6 +347,7 @@ struct RunOut {
     bool loaded = false;
     bool released = false;
     bool fixture_ok = false;
+    bool done = false;             // the program stored $600D at DONE_ADDR
     std::vector<nmh::VideoSample> video;
     std::vector<nmh::RamAccess> ram;
     std::vector<uint8_t> refresh;  // `refresh` output, one entry per clk_sys cycle from `base`
@@ -364,6 +384,8 @@ RunOut run_bars(const BarsConfig& c, uint64_t run_budget = kBarsBudget) {
     }
     auto fx = h.peek_logical(kResults);
     r.fixture_ok = fx.has_value() && *fx == 0xBEEF;
+    auto dn = h.peek_logical(kDoneAddr);
+    r.done = dn.has_value() && *dn == 0x600D;
     r.video = h.video();
     r.ram = h.ram_log();
     return r;
@@ -418,6 +440,8 @@ RunOut run_midrun(const MidrunConfig& c, uint64_t run_budget) {
     }
     auto fx = h.peek_logical(kResults);
     r.fixture_ok = fx.has_value() && *fx == 0xBEEF;
+    auto dn = h.peek_logical(kDoneAddr);
+    r.done = dn.has_value() && *dn == 0x600D;
     r.video = h.video();
     r.ram = h.ram_log();
     return r;
@@ -473,27 +497,42 @@ EdgeMeasure measure_edge_all_lines(const std::vector<VideoSample>& v, size_t fra
     return m;
 }
 
-struct HsyncShape { size_t line_count; double avg_period; double avg_width; };
+// The hsync period and width of every output line of a frame, in video samples, in line order. R1's anchor
+// compares the two vectors of two runs element by element, never their averages.
+struct HsyncShape {
+    size_t line_count = 0;
+    std::vector<size_t> periods, widths;
+    size_t min_period() const { return periods.empty() ? 0 : *std::min_element(periods.begin(), periods.end()); }
+    size_t max_period() const { return periods.empty() ? 0 : *std::max_element(periods.begin(), periods.end()); }
+    size_t min_width() const { return widths.empty() ? 0 : *std::min_element(widths.begin(), widths.end()); }
+    size_t max_width() const { return widths.empty() ? 0 : *std::max_element(widths.begin(), widths.end()); }
+};
 
 HsyncShape hsync_shape(const std::vector<VideoSample>& v, size_t frame_idx) {
     auto frames = nmh::find_frames(v);
-    HsyncShape s{0, 0, 0};
+    HsyncShape s;
     if (frame_idx >= frames.size()) return s;
     Span fr = frames[frame_idx];
     std::vector<Span> lines;
     for (auto& ln : nmh::find_lines(v)) if (ln.begin >= fr.begin && ln.end <= fr.end) lines.push_back(ln);
     s.line_count = lines.size();
-    if (lines.empty()) return s;
-    double period_sum = 0; for (auto& ln : lines) period_sum += double(ln.end - ln.begin);
-    s.avg_period = period_sum / lines.size();
-    double width_sum = 0; size_t width_n = 0;
     for (auto& ln : lines) {
+        s.periods.push_back(ln.end - ln.begin);
         size_t w = 0;
         for (size_t i = ln.begin; i < ln.end && i < v.size() && v[i].hs; ++i) ++w;
-        if (w > 0) { width_sum += w; ++width_n; }
+        s.widths.push_back(w);
     }
-    if (width_n) s.avg_width = width_sum / width_n;
     return s;
+}
+
+// "N lines, hsync period P (or P1 to P2) and width W (or W1 to W2) samples"
+std::string shape_text(const HsyncShape& h) {
+    auto rng = [](size_t lo, size_t hi) { return lo == hi ? std::to_string(lo) : std::to_string(lo) + " to " + std::to_string(hi); };
+    return std::to_string(h.line_count) + " lines, hsync period " + rng(h.min_period(), h.max_period()) + ", width " + rng(h.min_width(), h.max_width());
+}
+
+bool same_hsync(const HsyncShape& a, const HsyncShape& b) {
+    return a.line_count > 0 && a.line_count == b.line_count && a.periods == b.periods && a.widths == b.widths;
 }
 
 int classify_offset(const std::vector<VideoSample>& v, Span ln, double offset_samples,
@@ -580,7 +619,6 @@ struct RegList {
 };
 
 constexpr uint32_t kRList = 0x0B8000;
-constexpr uint32_t kDoneAddr = 0x0C0FFE;
 
 struct Poke { uint32_t byte_addr; uint16_t value; };
 
@@ -593,6 +631,7 @@ struct Cap {
     uint64_t base = 0;             // harness cycle of refresh[0]; video[base + i] is the same cycle
     uint16_t results2 = 0;         // word at RESULTS+2 at the end of the run
     uint16_t results4 = 0;         // word at RESULTS+4 at the end of the run
+    uint16_t results6 = 0;         // word at RESULTS+6 at the end of the run
 };
 
 struct RunSpec {
@@ -628,6 +667,7 @@ Cap run_spec(const RunSpec& s) {
     c.fixture_ok = fx.has_value() && *fx == 0xBEEF;
     c.results2 = h.peek_logical(kResults + 2).value_or(0);
     c.results4 = h.peek_logical(kResults + 4).value_or(0);
+    c.results6 = h.peek_logical(kResults + 6).value_or(0);
     auto dn = h.peek_logical(kDoneAddr);
     c.done = dn.has_value() && *dn == 0x600D;
     c.video = h.video();
@@ -682,11 +722,14 @@ constexpr uint32_t kCopList = 0x0B2000;
 
 // R2 reference frame: line boundaries and the CCK unit from the `refresh` output.
 struct R2 {
-    bool ok = false;              // groups of exactly four equally spaced edges, 226..229 CCK apart
+    bool ok = false;              // groups of exactly four equally spaced edges, consecutive groups exactly 227 or 228 CCK apart
     uint64_t K = 0;               // clk_sys cycles per CCK (half the spacing within a group)
     std::vector<uint64_t> start;  // cycle of the first refresh access of each line
     size_t groups = 0;
     double gap_min = 0, gap_max = 0;  // consecutive line starts, in CCK
+    size_t n227 = 0, n228 = 0;    // line lengths seen: 227 CCK and 228 CCK (MEASURED, no more is graded)
+    bool alternates = false;      // every line is of the other length than its predecessor
+    double gap_avg = 0;           // average line length in CCK over all consecutive line starts
 };
 
 R2 analyse_r2(const std::vector<uint8_t>& refresh, uint64_t base) {
@@ -711,16 +754,32 @@ R2 analyse_r2(const std::vector<uint8_t>& refresh, uint64_t base) {
         r.start.push_back(g[0]);
     }
     r.gap_min = 1e9; r.gap_max = 0;
+    double gap_sum = 0; uint64_t prev = 0; bool alt = r.start.size() > 2;
     for (size_t i = 1; ok && i < r.start.size(); ++i) {
-        double gap = double(r.start[i] - r.start[i - 1]) / double(r.K);
+        uint64_t d = r.start[i] - r.start[i - 1];
+        double gap = double(d) / double(r.K);
         r.gap_min = std::min(r.gap_min, gap); r.gap_max = std::max(r.gap_max, gap);
-        if (gap < 226.0 || gap > 229.0) ok = false;
+        gap_sum += gap;
+        if (d == 227 * r.K) ++r.n227;
+        else if (d == 228 * r.K) ++r.n228;
+        else ok = false;
+        if (i > 1 && d == prev) alt = false;
+        prev = d;
     }
+    r.gap_avg = r.start.size() > 1 ? gap_sum / double(r.start.size() - 1) : 0;
+    r.alternates = ok && alt;
     r.ok = ok;
     return r;
 }
 
 R2 analyse_r2(const Cap& c) { return analyse_r2(c.refresh, c.base); }
+
+// MEASURED, not graded: the line lengths the anchor accepted. HRM p.194 gives 227.5 colour clocks per line on average, AA p.29 a
+// 228 CC long line "of every other line"; whether this system alternates is not asked here.
+std::string r2_lengths(const R2& r) {
+    return std::to_string(r.n227) + " line spacings of 227 CCK and " + std::to_string(r.n228) + " of 228 CCK, " + (r.alternates ? "alternating" : "not alternating") +
+           ", average " + num(r.gap_avg) + " CCK";
+}
 
 // Index of the R2 line holding cycle t (-1 before the first boundary).
 int64_t line_of(const R2& r, uint64_t t) {
@@ -885,7 +944,7 @@ void prop_p7(Checks& checks, Grader& g) {
     std::vector<Fetch> p1[N], p2[N];
     for (size_t i = 0; i < N; ++i) {
         if (!ran[i]) continue;
-        fixture = fixture && fr[i].cap.loaded && fr[i].cap.released && fr[i].cap.fixture_ok;
+        fixture = fixture && fr[i].cap.loaded && fr[i].cap.released && fr[i].cap.fixture_ok && fr[i].cap.done;
         r2ok = r2ok && fr[i].r2.ok;
         f3ok = f3ok && fr[i].f3_ok;
         if (fr[i].f3_ok && fr[i].r2.ok) {
@@ -894,10 +953,10 @@ void prop_p7(Checks& checks, Grader& g) {
         }
         pop = pop && lines_with(p1[i], 2) >= 10 && lines_with(p2[i], 2) >= 10;
     }
-    g.expect(fixture, "P7-FIXTURE: every run loaded, booted and stored the $BEEF fixture before any observation");
-    g.expect(r2ok, "P7-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    g.expect(fixture, "P7-FIXTURE: every run loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
+    g.expect(r2ok, "P7-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart");
     if (ran[0]) checks.note("P7 R2: K = " + dec((long long)fr[0].r2.K) + " clk_sys cycles per CCK, " + dec((long long)fr[0].r2.groups) +
-                " lines, line spacing " + num(fr[0].r2.gap_min) + " to " + num(fr[0].r2.gap_max) + " CCK");
+                " lines, line spacing " + num(fr[0].r2.gap_min) + " to " + num(fr[0].r2.gap_max) + " CCK; " + r2_lengths(fr[0].r2));
     g.expect(f3ok, "P7-F3: precondition frame F3: in every run the frame holding the first Copper-list fetch is found and its third successor F3 is complete");
     dep_expect(checks, r2ok && f3ok, pop, "P7-POP: precondition population: in every run both planes are fetched on at least 10 lines of F3 with at least 2 fetches per line", "R2 anchor or F3");
     bool pre = fixture && r2ok && f3ok && pop;
@@ -1079,7 +1138,7 @@ void prop_p8(Checks& checks, Grader& g) {
 
     bool fixture = true, r2ok = true, f3ok = true, r3ok = true, pop = true;
     for (Run89* r : runs) {
-        fixture = fixture && r->fr.cap.loaded && r->fr.cap.released && r->fr.cap.fixture_ok;
+        fixture = fixture && r->fr.cap.loaded && r->fr.cap.released && r->fr.cap.fixture_ok && r->fr.cap.done;
         r2ok = r2ok && r->fr.r2.ok;
         f3ok = f3ok && r->fr.f3_ok;
         bool r3 = r->idx_a && r->idx_b && (*r->idx_b - *r->idx_a) == (0x80 - 0x30);
@@ -1090,8 +1149,8 @@ void prop_p8(Checks& checks, Grader& g) {
         pop = pop && first_ok;
         checks.note("P8 population: " + dec((long long)p.lines) + " lines, " + dec((long long)p.per_line) + " fetches per line per plane");
     }
-    g.expect(fixture, "P8-FIXTURE: every run loaded, booted and stored the $BEEF fixture before any observation");
-    g.expect(r2ok, "P8-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    g.expect(fixture, "P8-FIXTURE: every run loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
+    g.expect(r2ok, "P8-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart");
     g.expect(f3ok, "P8-F3: precondition frame F3: in every run the frame holding the first Copper-list fetch is found and its third successor F3 is complete");
     dep_expect(checks, r2ok && f3ok, r3ok, "P8-R3: precondition R3 anchor: the markers at lines $30 and $80 fall 80 line boundaries apart in every run", "R2 anchor or F3");
     dep_expect(checks, r2ok && f3ok, pop, "P8-POP: precondition population: in every run all eight planes are fetched on the same 196 consecutive lines of F3, with the same number of at least 2 fetches on each line, the first of them 4 lines before the marker of line $30", "R2 anchor or F3");
@@ -1126,15 +1185,16 @@ void prop_p8(Checks& checks, Grader& g) {
 }
 
 void prop_p9(Checks& checks, Grader& g) {
-    struct Run { const char* name; uint16_t diwstrt; uint16_t fmode; bool copper; int first_line; };
-    // D0, D1, D2 and the contrast N
-    Cfg89 cfg[3];
+    // D0, D1, D2 and DP (D0 with DPF set, BPLCON0 = $0410)
+    Cfg89 cfg[4];
     cfg[0].fmode = 0x4000;
     cfg[1].fmode = 0x4000; cfg[1].diwstrt = 0x2D81;
     cfg[2].fmode = 0x4000; cfg[2].diw_copper = true;
+    cfg[3].fmode = 0x4000; cfg[3].bplcon0 = 0x0410;
     if (mutating("P9-D0")) cfg[0].fmode = 0x0000;
     if (mutating("P9-D1")) cfg[1].fmode = 0x0000;
     if (mutating("P9-D2")) cfg[2].fmode = 0x0000;
+    if (mutating("P9-DP")) cfg[3].fmode = 0x0000;
     if (mutating("P9-FIRST")) cfg[0].diwstrt = 0x2E81;
     if (mutating("P9-POP")) cfg[0].bplcon0 = 0x4000;
     if (mutating("P9-R2")) { cfg[0].beamcon0 = 0x00A0; cfg[0].htotal = true; }
@@ -1145,24 +1205,25 @@ void prop_p9(Checks& checks, Grader& g) {
     // A mutation names the runs it changes; only the runs it needs are made.
     const std::string ms = g_mutate ? g_mutate : "";
     const bool dev = ms.empty() || ms == "P9-NONE";
-    bool ran[3] = {true, true, true};
+    bool ran[4] = {true, true, true, true};
     if (!dev) {
-        ran[0] = ran[1] = ran[2] = false;
+        ran[0] = ran[1] = ran[2] = ran[3] = false;
         if (ms == "P9-D1") ran[1] = true;
         else if (ms == "P9-D2") ran[2] = true;
         else if (ms == "P9-D0") ran[0] = true;
+        else if (ms == "P9-DP") ran[3] = true;
         else if (ms == "P9-AGG") ran[0] = ran[1] = ran[2] = true;
         else ran[0] = true;
     }
-    Run89 r[3];
-    for (int i = 0; i < 3; ++i) if (ran[i]) r[i] = run_89(cfg[i]);
-    const char* names[3] = {"D0", "D1", "D2"};
-    const int first_line[3] = {0x2C, 0x2D, 0x2C};
+    Run89 r[4];
+    for (int i = 0; i < 4; ++i) if (ran[i]) r[i] = run_89(cfg[i]);
+    const char* names[4] = {"D0", "D1", "D2", "DP"};
+    const int first_line[4] = {0x2C, 0x2D, 0x2C, 0x2C};
 
     bool fixture = true, r2ok = true, f3ok = true, r3ok = true, pop = true, firstok = true;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
         if (!ran[i]) continue;
-        fixture = fixture && r[i].fr.cap.loaded && r[i].fr.cap.released && r[i].fr.cap.fixture_ok;
+        fixture = fixture && r[i].fr.cap.loaded && r[i].fr.cap.released && r[i].fr.cap.fixture_ok && r[i].fr.cap.done;
         r2ok = r2ok && r[i].fr.r2.ok;
         f3ok = f3ok && r[i].fr.f3_ok;
         bool r3 = r[i].idx_a && r[i].idx_b && (*r[i].idx_b - *r[i].idx_a) == (0x80 - 0x30);
@@ -1173,20 +1234,22 @@ void prop_p9(Checks& checks, Grader& g) {
         firstok = firstok && pp && p.lines == size_t(kLastWindowLine - first_line[i] + 1) && p.first == *r[i].idx_a + (first_line[i] - 0x30);
         checks.note(std::string("P9 ") + names[i] + " population: " + dec((long long)p.lines) + " lines, " + dec((long long)p.per_line) + " fetches per line per plane");
     }
-    g.expect(fixture, "P9-FIXTURE: every run loaded, booted and stored the $BEEF fixture before any observation");
-    g.expect(r2ok, "P9-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    g.expect(fixture, "P9-FIXTURE: every run loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
+    g.expect(r2ok, "P9-R2: precondition R2 anchor: in every run the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart");
     g.expect(f3ok, "P9-F3: precondition frame F3: in every run the frame holding the first Copper-list fetch is found and its third successor F3 is complete");
     dep_expect(checks, r2ok && f3ok, r3ok, "P9-R3: precondition R3 anchor: the markers at lines $30 and $80 fall 80 line boundaries apart in every run", "R2 anchor or F3");
     dep_expect(checks, r2ok && f3ok, pop, "P9-POP: precondition population: in every run all eight planes are fetched on the same consecutive lines of F3, with the same number of at least 2 fetches on each line", "R2 anchor or F3");
     dep_expect(checks, r2ok && f3ok && pop, firstok, "P9-FIRST: precondition first fetch line (AA p.21 'The vertical Bit Plane DMA timing is identical to the Display windows'): the first fetch line is $2C in D0 and D2 and $2D in D1, and the fetches run through line $EF", "R2 anchor, F3 or population");
     bool pre = fixture && r2ok && f3ok && r3ok && pop && firstok;
 
-    bool comp[3] = {false, false, false};
-    for (int i = 0; i < 3; ++i) {
+    bool comp[4] = {false, false, false, false};
+    for (int i = 0; i < 4; ++i) {
         if (!ran[i]) continue;
-        std::string label = std::string("P9-") + names[i] + " run " + names[i] +
-            (i == 0 ? " (DIWSTRT=$2C81, FMODE=$4000)" : i == 1 ? " (DIWSTRT=$2D81, FMODE=$4000)" : " (DIWSTRT=$2C81 then $2D81 from line $60 on, FMODE=$4000)") +
-            ": with BSCAN2 set, on every window line n every plane steps by the same modulus, 10 bytes (BPL1MOD) when n and the DIWSTRT start line agree in bit 0 and 26 bytes (BPL2MOD) when they differ, the steps alternating between the two";
+        std::string label = std::string("P9-") + names[i] + (i == 3 ? " opus:AA-bitplanes.c6 sol:AA-dual-playfield.c3" : "") + " run " + names[i] +
+            (i == 0 ? " (DIWSTRT=$2C81, FMODE=$4000)" : i == 1 ? " (DIWSTRT=$2D81, FMODE=$4000)" : i == 2 ? " (DIWSTRT=$2C81 then $2D81 from line $60 on, FMODE=$4000)" :
+             " (DIWSTRT=$2C81, FMODE=$4000, BPLCON0 = $0410: DPF set, so the odd planes are playfield 1 and the even planes playfield 2, AA p.16 'DPF=Double playfield (PF1=odd PF2=even bit planes)')") +
+            ": with BSCAN2 set, on every window line n every plane" + (i == 3 ? ", those of playfield 1 and those of playfield 2 alike," : "") +
+            " steps by the same modulus, 10 bytes (BPL1MOD) when n and the DIWSTRT start line agree in bit 0 and 26 bytes (BPL2MOD) when they differ, the steps alternating between the two";
         if (!pre) { not_graded(checks, std::string("P9 run ") + names[i], "fixture, R2, F3, R3 anchor, population or first fetch line"); continue; }
         bool ok = true; size_t graded = 0; std::map<long long, size_t> seen;
         int diw_lsb0 = 0;   // DIWSTRT start line $2C: bit 0 = 0
@@ -1195,7 +1258,7 @@ void prop_p9(Checks& checks, Grader& g) {
             for (int64_t idx = r[i].pl[k].first.begin()->first; idx < r[i].pl[k].first.rbegin()->first; ++idx) {
                 long long n = abs_line(r[i], idx);
                 int lsb;
-                if (i == 0) lsb = diw_lsb0; else if (i == 1) lsb = 1;
+                if (i == 0 || i == 3) lsb = diw_lsb0; else if (i == 1) lsb = 1;
                 else { if (n == 0x60) continue; lsb = (n <= 0x5F) ? 0 : 1; }
                 bool primary = ((n & 1) == lsb);
                 long long want = primary ? 10 : 26;
@@ -1213,7 +1276,7 @@ void prop_p9(Checks& checks, Grader& g) {
     if (!(ran[0] && ran[1] && ran[2])) return;
     if (pre) {
         g.expect(comp[0] && comp[1] && comp[2],
-            "P9-AGG opus:AA-bpl1mod.c7 opus:AA-bpl1mod.c8 sol:AA-bplmod.c5 sol:AA-bplmod.c6 sol:AA-bplmod.c7 sol:AA-bplmod.c8 opus:AA-bitplanes.c6 sol:AA-dual-playfield.c3: "
+            "P9-AGG opus:AA-bpl1mod.c7 opus:AA-bpl1mod.c8 sol:AA-bplmod.c5 sol:AA-bplmod.c6 sol:AA-bplmod.c7 sol:AA-bplmod.c8: "
             "with scan-doubling enabled the modulus of every plane on a line is BPL1MOD on a line whose beam-counter bit 0 equals DIWSTRT's and BPL2MOD on the others, in runs D0, D1 and D2 (AA p.16 and p.3)");
     } else {
         not_graded(checks, "P9 aggregate", "fixture, R2, F3, R3 anchor, population or first fetch line");
@@ -1338,7 +1401,7 @@ struct P6Run {
     bool f3_ok = false;
     Span f3{0, 0};
     Img img;
-    size_t shape_lines = 0; double shape_period = 0, shape_width = 0;
+    HsyncShape hs;
 };
 
 P6Run run_p6(const RunSpec& s, uint32_t plane_lo, uint32_t plane_hi) {
@@ -1349,16 +1412,14 @@ P6Run run_p6(const RunSpec& s, uint32_t plane_lo, uint32_t plane_hi) {
     if (r.x && *r.x + 3 + 1 < frames.size()) {
         r.f3_ok = true; r.f3 = frames[*r.x + 3];
         r.img = frame_img(r.cap, r.f3);
-        HsyncShape h = hsync_shape(r.cap.video, *r.x + 3);
-        r.shape_lines = h.line_count; r.shape_period = h.avg_period; r.shape_width = h.avg_width;
+        r.hs = hsync_shape(r.cap.video, *r.x + 3);
     }
     std::vector<VideoSample>().swap(r.cap.video);   // the frame's lines are kept in img
     return r;
 }
 
 bool same_shape(const P6Run& a, const P6Run& b) {
-    return a.f3_ok && b.f3_ok && a.shape_lines > 0 && a.shape_lines == b.shape_lines &&
-           exact(a.shape_period, b.shape_period) && exact(a.shape_width, b.shape_width);
+    return a.f3_ok && b.f3_ok && same_hsync(a.hs, b.hs);
 }
 
 // Compares the red channel of two images at the pixels of `mask`; returns the
@@ -1434,8 +1495,8 @@ void prop_p6(Checks& checks, Grader& g, const Scale& sc) {
     }
 
     bool fixture = true, f3ok = !nr4 || r4.f3_ok;
-    for (P6Run* r : all) { fixture = fixture && r->cap.loaded && r->cap.released && r->cap.fixture_ok; f3ok = f3ok && r->f3_ok; }
-    g.expect(fixture, "P6-FIXTURE: all runs loaded, booted and stored the $BEEF fixture before any observation");
+    for (P6Run* r : all) { fixture = fixture && r->cap.loaded && r->cap.released && r->cap.fixture_ok && r->cap.done; f3ok = f3ok && r->f3_ok; }
+    g.expect(fixture, "P6-FIXTURE: all runs loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     g.expect(f3ok, "P6-F3: precondition frame F3: in every run the frame holding the first Copper-list fetch is found and its third successor F3 is complete");
     bool r1ok = f3ok;
     for (P6Run* r : all) r1ok = r1ok && same_shape(rid0, *r);
@@ -1524,9 +1585,9 @@ void prop_p6(Checks& checks, Grader& g, const Scale& sc) {
     checks.note("P6 (ii): " + dec((long long)ii.differ) + " of " + dec((long long)ii.compared) + " pixels differ between B1/T_x and B1/T_id");
     RedCmp i = compare_red(rid1.img, rid0.img, rid0.img);
     bool i_ok = i.rows_ok && i.compared > 0 && i.differ == 0;
-    dep_expect(checks, ii_ok, i_ok, "P6-I: with BYPASS set (BPLCON0 = $0030) and table T_id the red of every observed pixel equals that of the run without BYPASS (BPLCON0 = $0010), at BPLCON1 = $0033 and with sprite 0 in front", "P6-II: BYPASS has an effect on the red output (otherwise this comparison holds vacuously)");
+    dep_expect(checks, ii_ok, i_ok, "P6-I sol:AA-bplcon0.c19: with BYPASS set (BPLCON0 = $0030) and table T_id the red of every observed pixel equals that of the run without BYPASS (BPLCON0 = $0010), at BPLCON1 = $0033 and with sprite 0 in front, so the bit planes are scrolled and prioritized normally (AA p.17 'bitplanes are scrolled and prioritized normally')", "P6-II: BYPASS has an effect on the red output (otherwise this comparison holds vacuously)");
     checks.note("P6 (i): " + dec((long long)i.differ) + " of " + dec((long long)i.compared) + " pixels differ between B1/T_id and B0/T_id");
-    g.expect(i_ok && ii_ok, "P6-AGG sol:AA-bplcon0.c19: with BYPASS set the bit planes are scrolled and prioritized as without BYPASS (the red of every observed pixel equals the run without BYPASS, P6-I) and the colour table is bypassed, the red output not following the table (P6-II) (AA p.17 'bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)')");
+    g.expect(i_ok && ii_ok, "P6-AGG: with BYPASS set the bit planes are scrolled and prioritized as without BYPASS (the red of every observed pixel equals the run without BYPASS, P6-I) and the colour table is bypassed, the red output not following the table (P6-II) (AA p.17 'bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)')");
 }
 
 // ---- P10-P15 helpers -------------------------------------------------------
@@ -1563,12 +1624,13 @@ void prop_unit(Checks& checks, Grader& g) {
     if (mutating("UNIT-FIXTURE")) s.bin = "prog_regs_nofix.bin";
     Cap c = run_spec(s);
     R2 r = analyse_r2(c);
-    bool fixture = c.loaded && c.released && c.fixture_ok;
-    g.expect(fixture, "UNIT-FIXTURE: the unit run loaded, booted and stored the $BEEF fixture before any observation");
+    bool fixture = c.loaded && c.released && c.fixture_ok && c.done;
+    g.expect(fixture, "UNIT-FIXTURE: the unit run loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     dep_expect(checks, fixture, (c.results4 & 0xFF) == 0xF8, "UNIT-AA: LISAID ($DFF07C) reads $F8 in its low byte, which AA p.26 gives for the AA chip set ('LISA returns hex (F8)'; the ECS Denise returns $FC), so the AA chip set is selected", "fixture");
     checks.note("UNIT: LISAID reads $" + hexw(c.results4));
-    dep_expect(checks, fixture, r.ok, "UNIT-R2: the refresh output of a run with no DMA enabled comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart (HRM p.194: 227.5 colour clocks per line; Figure 6-9)", "fixture");
+    dep_expect(checks, fixture, r.ok, "UNIT-R2: the refresh output of a run with no DMA enabled comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart (HRM p.23: 227 colour clocks per line, AA p.29: 228 colour clocks on the long line; Figure 6-9)", "fixture");
     checks.note("UNIT: K = " + dec((long long)r.K) + " clk_sys cycles per CCK; " + dec((long long)r.groups) + " lines; line spacing " + num(r.gap_min) + " to " + num(r.gap_max) + " CCK");
+    checks.note("UNIT: " + r2_lengths(r));
     g_K = (fixture && r.ok) ? r.K : 0;
 }
 
@@ -1584,10 +1646,12 @@ struct LpRun {
     bool have = false;
 };
 
-LpRun run_lpen(const std::string& bin, uint64_t cycles = 4'700'000) {
+LpRun run_lpen(const std::string& bin, uint64_t cycles = 4'700'000, bool fire_closed = false) {
     LpRun l;
     RunSpec s;
     s.bin = bin; s.cycles = cycles;
+    // fire_closed: the contrast of the boundary precondition, both fire inputs (bit 4 of `joystick0` and `joystick1`) driven to 1 from the start
+    if (fire_closed) s.drive = [](nmh::NanomigHarness& h, uint64_t) { h.ports()->joystick0 = 0x10; h.ports()->joystick1 = 0x10; };
     l.cap = run_spec(s);        // no register list: the program writes its own registers; the list area is left empty
     l.r2 = analyse_r2(l.cap);
     l.have = true;
@@ -1610,12 +1674,12 @@ void prop_p10(Checks& checks, Grader& g) {
     // P10-MAIN: both runs read once and store the value twice, so the check goes red while the latch precondition holds;
     // P10-LATCH: the contrast run is that same program, a live input through the latch comparator
     LpRun m = run_lpen(mutating("P10-MAIN") ? "prog_lpen_same.bin" : mutating("P10-FIXTURE") ? "prog_lpen_nofix.bin" :
-                       mutating("P10-R2") ? "prog_lpen_var.bin" : mutating("P10-WIN") ? "prog_lpen_late.bin" : "prog_lpen.bin");
+                       mutating("P10-R2") ? "prog_lpen_var.bin" : mutating("P10-WIN") ? "prog_lpen_late.bin" : "prog_lpen.bin", 4'700'000, mutating("P10-FIRE"));
     LpRun c = run_lpen(mutating("P10-LATCH") || mutating("P10-MAIN") ? "prog_lpen_same.bin" : "prog_lpen_c.bin");
     bool fixture = m.cap.loaded && m.cap.released && m.cap.fixture_ok && m.cap.done && m.have &&
                    c.cap.loaded && c.cap.released && c.cap.fixture_ok && c.cap.done && c.have;
     g.expect(fixture, "P10-FIXTURE: both runs loaded, booted, stored the $BEEF fixture, read the registers three times and reached DONE");
-    g.expect(m.r2.ok && c.r2.ok, "P10-R2: precondition R2 anchor: in both runs the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    g.expect(m.r2.ok && c.r2.ok, "P10-R2: precondition R2 anchor: in both runs the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart");
     bool win = fixture && m.r2.ok;
     for (int i = 0; win && i < 3; ++i) {
         int64_t a = line_of(m.r2, m.t_v[i]), b = line_of(m.r2, m.t_w1[i]);
@@ -1623,6 +1687,10 @@ void prop_p10(Checks& checks, Grader& g) {
         if (!(b - a < 19)) win = false;
     }
     dep_expect(checks, fixture && m.r2.ok, win, "P10-WIN: precondition (i): in every pair fewer than 19 R2 line boundaries lie between the marker store (the start of vertical blank, AA p.25 VERTB) and the store of w1", "fixture or R2 anchor");
+    // boundary precondition: no fire button closed, read from CIAA PRA bits 7-6 (/FIR1 /FIR0, HRM p.339: low when the button is closed), once at the start of each run
+    bool fire = fixture && (m.cap.results6 & 0xC0) == 0xC0 && (c.cap.results6 & 0xC0) == 0xC0;
+    checks.note("P10 CIAA PRA bits 7-6 (fire buttons): main run $" + hexw(m.cap.results6 & 0xC0, 2) + ", contrast run $" + hexw(c.cap.results6 & 0xC0, 2));
+    dep_expect(checks, fixture, fire, "P10-FIRE: boundary precondition: CIAA PRA ($BFE001) bits 7 and 6 read 1 in both runs, so neither fire button (light pen trigger, pin 6 of the controller ports) is closed while the registers are read (HRM p.339 'pra /FIR1 /FIR0'; HRM p.228 Table 8-1: pin 6 is the light pen's beam trigger)", "fixture");
     bool latch = fixture && c.r2.ok;
     for (int i = 0; latch && i < 3; ++i) if (c.w1[i] != c.w0[i]) latch = false;
     dep_expect(checks, fixture, latch, "P10-LATCH: precondition (ii): with BPLCON0 = $0008 (LPEN = 1) and LPENDIS = 0 (BEAMCON0 = $0020) written before the reads, w1 equals w0 in every pair, so the latch freezes the counter (HRM p.239 'Once the light pen input is enabled and the light pen issues a trigger signal, the value in VPOSR is frozen. If no trigger is seen, the counters latch at the end of the display field'; AA p.12 LPENDIS 'When this bit is a low and LPE (BPLCON0,BIT 3) is enabled, the light-pen latched value (beam hit position) will be read by VHPOSR, VPOSR and HHPOSR')", "fixture");
@@ -1630,7 +1698,7 @@ void prop_p10(Checks& checks, Grader& g) {
     for (int i = 0; fixture && i < 3; ++i)
         checks.note("P10 main pair " + dec(i) + ": w0=$" + hexw(m.w0[i], 8) + " (V=" + dec(lp_v(m.w0[i])) + ") w1=$" + hexw(m.w1[i], 8) +
                     "; LPEN run: w0=$" + hexw(c.w0[i], 8) + " w1=$" + hexw(c.w1[i], 8));
-    if (!(fixture && m.r2.ok && win && latch)) { not_graded(checks, "P10 main check", "fixture, R2 anchor, vertical-blank window or latch precondition"); return; }
+    if (!(fixture && m.r2.ok && win && fire && latch)) { not_graded(checks, "P10 main check", "fixture, R2 anchor, vertical-blank window, fire-button or latch precondition"); return; }
     bool ok = true;
     for (int i = 0; i < 3; ++i) ok = ok && m.w1[i] != m.w0[i] && lp_v(m.w0[i]) < 20;
     g.expect(ok, "P10-MAIN opus:AA-lpen.c1: after power-on and before any write to BPLCON0, in every one of three reads within vertical blank, VPOSR:VHPOSR reads differently 40 CCK later and its vertical position is below 20 (AA p.17 'LPEN =Light pen enable(reset on power up)')");
@@ -1709,6 +1777,7 @@ void prop_p11(Checks& checks, Grader& g) {
             const JoyState& st = kJoyStates[k % 9];
             uint8_t bits = st.bits;
             if (mutating("P11-JOY") && std::string(st.name) == "right") bits = 0x02;
+            if (mutating("P11-POL") && std::string(st.name) == "none") bits = 0x08;
             // connector 0 (JOY0DAT, the left controller pair, AA p.25) is fed through `joystick1`, connector 1 (JOY1DAT) through `joystick0`
             h.ports()->joystick1 = (k < 9) ? bits : 0;
             h.ports()->joystick0 = (k >= 9) ? bits : 0;
@@ -1747,9 +1816,20 @@ void prop_p11(Checks& checks, Grader& g) {
     }
     dep_expect(checks, fixture, pop, "P11-POP: precondition population: each of the 18 holds has at least 10 reads of both registers between 0.2 ms after its change and the next change", "fixture");
     dep_expect(checks, fixture, still, "P11-STILL: precondition: while nothing changes, consecutive reads of both registers are equal within every hold", "fixture");
-    if (!(fixture && pop && still)) { not_graded(checks, "P11 joystick decode", "fixture, population or stillness precondition"); }
-    bool joy_ok = false;
+    bool joy_ok = false, pol = false;
     if (fixture && pop && still) {
+        // boundary precondition: the input convention. The port list gives one bit per switch (bit 3 up, bit 2 down, bit 1 left, bit 0 right) and the
+        // test closes a switch by driving its bit to 1; no page names the level. With every bit at 0 (the first hold of each connector) both
+        // registers must decode every switch open, otherwise the convention differs and the nine-state decode below is not graded.
+        pol = true;
+        for (int k : {0, 9}) {
+            Decoded d0 = decode_joy(ja.rd.v0[win[k].first]), d1 = decode_joy(ja.rd.v1[win[k].first]);
+            pol = pol && d0.f == 0 && d0.l == 0 && d0.b == 0 && d0.r == 0 && d1.f == 0 && d1.l == 0 && d1.b == 0 && d1.r == 0;
+        }
+    }
+    dep_expect(checks, fixture && pop && still, pol, "P11-POL: boundary precondition: with every joystick input bit at 0 (the first hold of each connector) F, L, B and R of both registers read 0, so a closed switch is the input bit at 1, the convention the nine holds assume (no page names the port list's level; HRM p.232 gives the connector's)", "fixture, population or stillness precondition");
+    if (!(fixture && pop && still && pol)) { not_graded(checks, "P11 joystick decode", "fixture, population, stillness or input-convention precondition"); }
+    if (fixture && pop && still && pol) {
         joy_ok = true;
         for (int k = 0; k < 18; ++k) {
             const JoyState& st = kJoyStates[k % 9];
@@ -1834,9 +1914,9 @@ void prop_p11(Checks& checks, Grader& g) {
         }
         g.expect(mouse_ok, "P11-MOUSE: through the mouse inputs, 40 counts right and then left change bits 7-0 of the mouse register upward and then downward, and 40 down and up change bits 15-8 upward and downward, the other axis unchanged, each pair returning the counter to its start (AA p.25 JOY0DAT, HRM p.229)");
     }
-    if (fixture && pop && still && mfix)
+    if (fixture && pop && still && pol && mfix)
         g.expect(joy_ok && mouse_ok, "P11-AGG sol:AA-mouse.c2: the joystick switches decode through bits 9, 8, 1 and 0 and the mouse counters count right, left, down and up through bits 7-0 and 15-8, as AA p.25-26 tabulates for the registers (AA p.5: the serial mouse interface is 'transparent to the programmer')");
-    else not_graded(checks, "P11 aggregate", "fixture, population or stillness precondition");
+    else not_graded(checks, "P11 aggregate", "fixture, population, stillness or input-convention precondition");
 }
 
 // ---- P12: UARTBRK ------------------------------------------------------------
@@ -1918,7 +1998,7 @@ struct DiskRun {
     bool dskblk = false;
 };
 
-DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFFFF, const char* bin = "prog_disk.bin") {
+DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFFFF, const char* bin = "prog_disk.bin", uint16_t dskptl_xor = 0) {
     DiskRun d;
     RunSpec s;
     s.bin = bin;
@@ -1926,7 +2006,7 @@ DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFF
     for (int i = 0; i < 8; ++i) s.pokes.push_back({a + 2 * i, uint16_t(0xD0D0 + i)});
     s1_step1(s.rl);
     s.rl.add(0x020, dskpth_override_hi != 0xFFFF ? dskpth_override_hi : uint16_t(a >> 16));
-    s.rl.add(0x022, uint16_t(a & 0xFFFF));
+    s.rl.add(0x022, uint16_t((a & 0xFFFF) ^ dskptl_xor));
     s.rl.add(0x09C, 0x0002);
     s.rl.add(0x096, dmacon);
     s.rl.add(0x024, 0x4000);
@@ -1948,30 +2028,39 @@ DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFF
 }
 
 void prop_p13(Checks& checks, Grader& g) {
-    const uint32_t ax = 0x0A5432, ay = 0x154320;
+    // X and Y: A20-A16 take both values. Z and Zc: A20-A1 are complementary (the word addresses $5A5A8 and $A5A57), so that every bit of the
+    // pair takes both values; the eight reads of a run step A3-A1 through all their values as well.
+    const uint32_t ax = 0x0A5432, ay = 0x154320, az = 0x0B4B50, azc = 0x14B4AE;
     uint16_t dmacon_x = mutating("P13-RUN") ? 0x8200 : 0x8210;
     DiskRun x = run_disk(ax, dmacon_x, 0xFFFF, mutating("P13-FIXTURE") ? "prog_disk_nofix.bin" : "prog_disk.bin"), y = run_disk(ay, 0x8210);
+    DiskRun z = run_disk(az, 0x8210), zc = run_disk(azc, 0x8210);
     if (mutating("P13-MAIN")) y = run_disk(ay, 0x8210, uint16_t(((ay >> 16) & 7) ));   // DSKPTH held as only 3 bits
-    bool fixture = x.cap.loaded && x.cap.released && x.cap.fixture_ok && y.cap.loaded && y.cap.released && y.cap.fixture_ok;
-    g.expect(fixture, "P13-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
-    bool occurs = fixture && !x.dma.empty() && !y.dma.empty() && x.dskblk && y.dskblk;
+    if (mutating("P13-MAIN-LOW")) zc = run_disk(azc, 0x8210, 0xFFFF, "prog_disk.bin", uint16_t(0x0020));   // DSKPTL written with bit 5 flipped
+    DiskRun* all[4] = {&x, &y, &z, &zc};
+    bool fixture = true;
+    for (DiskRun* d : all) fixture = fixture && d->cap.loaded && d->cap.released && d->cap.fixture_ok && d->cap.done;
+    g.expect(fixture, "P13-FIXTURE: all four runs loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
+    bool occurs = fixture;
+    for (DiskRun* d : all) occurs = occurs && !d->dma.empty() && d->dskblk;
     checks.note("P13 run X (A=$" + hexw(ax, 6) + "): " + dec((long long)x.dma.size()) + " disk DMA reads, DSKBLK " + (x.dskblk ? "set" : "not set") +
-                "; run Y (A=$" + hexw(ay, 6) + "): " + dec((long long)y.dma.size()) + " disk DMA reads, DSKBLK " + (y.dskblk ? "set" : "not set"));
-    dep_expect(checks, fixture, occurs, "P13-RUN: precondition: in both runs at least one disk DMA access occurs after the second $C008 write to DSKLEN and DSKBLK (INTREQR bit 1) is set", "fixture");
+                "; run Y (A=$" + hexw(ay, 6) + "): " + dec((long long)y.dma.size()) + " disk DMA reads, DSKBLK " + (y.dskblk ? "set" : "not set") +
+                "; run Z (A=$" + hexw(az, 6) + "): " + dec((long long)z.dma.size()) + " disk DMA reads, DSKBLK " + (z.dskblk ? "set" : "not set") +
+                "; run Zc (A=$" + hexw(azc, 6) + "): " + dec((long long)zc.dma.size()) + " disk DMA reads, DSKBLK " + (zc.dskblk ? "set" : "not set"));
+    dep_expect(checks, fixture, occurs, "P13-RUN: precondition: in all four runs at least one disk DMA access occurs after the second $C008 write to DSKLEN and DSKBLK (INTREQR bit 1) is set", "fixture");
     if (!occurs) { not_graded(checks, "P13-MAIN", "disk DMA does not run in this harness or the fixture failed"); return; }
     std::string seq;
     bool ok = true;
-    const DiskRun* rs[2] = {&x, &y};
-    const uint32_t as[2] = {ax, ay};
-    for (int r = 0; r < 2; ++r) {
-        const DiskRun& d = *rs[r];
+    const char* names[4] = {"X", "Y", "Z", "Zc"};
+    const uint32_t as[4] = {ax, ay, az, azc};
+    for (int r = 0; r < 4; ++r) {
+        const DiskRun& d = *all[r];
         ok = ok && d.dma.size() <= 8 && d.dma[0].word_addr * 2 == as[r];
         for (size_t i = 0; i < d.dma.size(); ++i) ok = ok && d.dma[i].word_addr * 2 == as[r] + 2 * i;
-        seq += std::string(r ? "; Y:" : "X:");
+        seq += std::string(r ? "; " : "") + names[r] + ":";
         for (size_t i = 0; i < d.dma.size() && i < 3; ++i) seq += " $" + hexw(d.dma[i].word_addr * 2, 6);
     }
     checks.note("P13 first disk DMA addresses " + seq);
-    g.expect(ok, "P13-MAIN opus:AA-dskpth.c9 sol:AA-disk-pointer.c1: with DSKPTH/DSKPTL written $0A5432 (run X) and $154320 (run Y), the first disk DMA access of each run is a read at exactly that address and all its disk DMA accesses are reads at A, A+2, ... in increasing order, so the pair holds a 20-bit word address covering A20-A16 both ways (AA p.23 'This pair of registers contains the 20 bit address of Disk DMA data')");
+    g.expect(ok, "P13-MAIN opus:AA-dskpth.c9 sol:AA-disk-pointer.c1: with DSKPTH/DSKPTL written $0A5432 (run X), $154320 (run Y), $0B4B50 (run Z) and $14B4AE (run Zc, whose word address A20-A1 is the complement of run Z's), the first disk DMA access of each run is a read at exactly that address and all its disk DMA accesses are reads at A, A+2, ... in increasing order, so the pair holds a 20-bit word address and every bit A20-A1 takes both values (AA p.23 'This pair of registers contains the 20 bit address of Disk DMA data')");
 }
 
 // ---- P14: DUAL, the secondary beam counter -----------------------------------
@@ -2031,8 +2120,8 @@ void prop_p14(Checks& checks, Grader& g) {
     if (!fixture || g_K == 0) { not_graded(checks, "P14 checks", "fixture or unit"); return; }
     bool r2ok = true;
     for (DualRun* d : {&u1, &u2, &u0}) r2ok = r2ok && d->r2.ok;
-    g.expect(r2ok, "P14-R2: precondition R2 anchor: in runs U1, U2 and U0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
-    checks.note("P14 U3 (VARBEAMEN, HTOTAL=$0040): " + std::string(u3.r2.ok ? "line spacing still 226 to 229 CCK" : "line spacing differs from 226 to 229 CCK") + " (" + num(u3.r2.gap_min) + " to " + num(u3.r2.gap_max) + ")");
+    g.expect(r2ok, "P14-R2: precondition R2 anchor: in runs U1, U2 and U0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart");
+    checks.note("P14 U3 (VARBEAMEN, HTOTAL=$0040): " + std::string(u3.r2.ok ? "line spacing still 227 or 228 CCK" : "line spacing differs from 227 or 228 CCK") + " (" + num(u3.r2.gap_min) + " to " + num(u3.r2.gap_max) + ")");
 
     // preconditions from times alone
     auto phase_ok = [&](const DualRun& d, unsigned htotal) {
@@ -2169,7 +2258,7 @@ struct UhRun {
 };
 
 UhRun run_uhres(uint16_t beamcon0, uint16_t htotal, uint16_t bplcon0, const char* bin = "prog_uhres.bin",
-                int marker_b = 0x98, uint64_t cycles = 4'700'000) {
+                int marker_b = 0x98, uint64_t cycles = 5'400'000) {
     UhRun u;
     RunSpec s;
     CopList& cl = u.cl;
@@ -2212,7 +2301,7 @@ void prop_p15(Checks& checks, Grader& g) {
     // of the UHRES pointer, one read per line in V0 (V0) and one per 57 CCK in V0 and V1 (V1)
     UhRun v0 = run_uhres(mutating("P15-R2") ? 0x00A0 : 0x0820, mutating("P15-R2") ? 0x00E8 : 0, 0x0080,
                          mutating("P15-FIXTURE") ? "prog_uhres_nofix.bin" : (mutating("P15-V0") || mutating("P15-V1")) ? "prog_cpuuh_line.bin" : "prog_uhres.bin", mutating("P15-R3") ? 0x99 : 0x98,
-                         mutating("P15-F3") ? 3'300'000 : 4'700'000);
+                         mutating("P15-F3") ? 3'300'000 : 5'400'000);
     UhRun v1 = run_uhres(v1_beam, 0x0038, 0x0080, mutating("P15-V1") ? "prog_cpuuh_57.bin" : "prog_uhres.bin");
     UhRun* all[2] = {&v0, &v1};
     bool fixture = true, r2ok = true, f3ok = true, r3ok = true;
@@ -2222,10 +2311,12 @@ void prop_p15(Checks& checks, Grader& g) {
         r3ok = r3ok && u->idx_a && u->idx_b && (*u->idx_b - *u->idx_a) == (0x98 - 0x68);
     }
     g.expect(fixture, "P15-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
-    g.expect(r2ok, "P15-R2: precondition R2 anchor: in V0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart; V1 runs with a 57 CCK secondary period and keeps the main line");
+    bool done = v0.fr.cap.done && v1.fr.cap.done;
+    g.expect(done, "P15-DONE: both runs reached DONE, the program's last store, after its fifth VERTB (the bounded program) or after its fixed number of reads (the live-input programs)");
+    g.expect(r2ok, "P15-R2: precondition R2 anchor: in V0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart; V1 runs with a 57 CCK secondary period and keeps the main line");
     g.expect(f3ok, "P15-F3: precondition frame F3: the frame holding the first Copper-list fetch is found and its third successor F3 is complete in both runs");
     dep_expect(checks, r2ok && f3ok, r3ok, "P15-R3: precondition R3 anchor: the markers at lines $68 and $98 fall 48 line boundaries apart in both runs", "R2 anchor or F3");
-    if (!(fixture && r2ok && f3ok && r3ok)) { not_graded(checks, "P15 checks", "fixture, R2, F3 or R3 anchor"); return; }
+    if (!(fixture && done && r2ok && f3ok && r3ok)) { not_graded(checks, "P15 checks", "fixture, DONE, R2, F3 or R3 anchor"); return; }
     auto per_line = [](const UhRun& u) { std::map<int64_t, std::vector<Fetch>> m; for (auto& f : u.acc) m[f.line].push_back(f); return m; };
     auto m0 = per_line(v0), m1 = per_line(v1);
     bool v0pat = v0.idx_a && v0.idx_b && m0.size() == size_t(*v0.idx_b - *v0.idx_a + 1) && m0.size() >= 40;
@@ -2286,7 +2377,7 @@ FetchInfo fetch_info(const RunOut& r, Span fr) {
 // relative to the frame's own solid edge (S3b).
 struct FrameInfo {
     bool valid = false;
-    HsyncShape hs{0, 0, 0};
+    HsyncShape hs;
     EdgeMeasure e1{false, std::nullopt, 0}, e2{false, std::nullopt, 0};
     FetchInfo fi;
     std::optional<std::vector<int>> sig1, sig2;
@@ -2319,7 +2410,7 @@ struct RunInfo {
 
 RunInfo analyse_run(const RunOut& r, double op, bool stripes, bool want_f5) {
     RunInfo i;
-    i.fixture = r.loaded && r.released && r.fixture_ok;
+    i.fixture = r.loaded && r.released && r.fixture_ok && r.done;
     i.f1 = find_f1(r.video);
     if (!i.f1) return i;
     auto frames = nmh::find_frames(r.video);
@@ -2330,8 +2421,7 @@ RunInfo analyse_run(const RunOut& r, double op, bool stripes, bool want_f5) {
 
 // R1 anchor between two frames: hsync period, hsync width and output-line count per frame equal.
 bool anchor_equal(const FrameInfo& a, const FrameInfo& b) {
-    return a.valid && b.valid && a.hs.line_count > 0 && a.hs.line_count == b.hs.line_count &&
-           exact(a.hs.avg_period, b.hs.avg_period) && exact(a.hs.avg_width, b.hs.avg_width);
+    return a.valid && b.valid && same_hsync(a.hs, b.hs);
 }
 
 std::optional<double> delta_op(std::optional<size_t> cfg, std::optional<size_t> ref, double op) {
@@ -2393,7 +2483,7 @@ struct CalRun { bool fixture = false; std::optional<size_t> f1; RunLen rl; };
 CalRun run_cal(const BarsConfig& c) {
     CalRun k;
     RunOut r = run_bars(c);
-    k.fixture = r.loaded && r.released && r.fixture_ok;
+    k.fixture = r.loaded && r.released && r.fixture_ok && r.done;
     k.f1 = find_f1(r.video);
     if (k.f1) k.rl = measure_run_len(r.video, *k.f1 + 2);
     return k;
@@ -2410,7 +2500,7 @@ Scale prop_r1(Checks& checks) {
     if (run_mutation("R1-HIRES")) { hi.bplcon0 = 0x1000; hi.ddfstrt = kDdfstrtLores; hi.ddfstop = kDdfstopLores; }
     CalRun a = run_cal(lo), b = run_cal(hi);
     bool fixture = a.fixture && b.fixture;
-    checks.expect(fixture, "R1-FIXTURE: the LORES and the HIRES calibration run loaded, booted and stored the $BEEF fixture before any measurement is trusted");
+    checks.expect(fixture, "R1-FIXTURE: the LORES and the HIRES calibration run loaded, booted, stored the $BEEF fixture and reached DONE before any measurement is trusted");
     bool f1 = a.f1.has_value() && b.f1.has_value();
     dep_expect(checks, fixture, f1, "R1-F1: F1 (the first steady frame after the DMA enable) was located from the video trace in both calibration runs", "fixture");
     bool d1 = fixture && f1;
@@ -2445,13 +2535,12 @@ void prop_p1(Checks& checks, const Scale& sc) {
     { RunOut r = run_bars(ref); a = analyse_run(r, sc.op, false, false); }
     { RunOut r = run_bars(tst); b = analyse_run(r, sc.op, false, false); }
     bool fixture = a.fixture && b.fixture;
-    checks.expect(fixture, "P1-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
+    checks.expect(fixture, "P1-FIXTURE: both runs loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     bool f1 = a.f1 && b.f1;
     dep_expect(checks, fixture, f1, "P1-F1: F1 (first steady frame after DMA enable) located in both runs", "fixture");
     bool d = fixture && f1;
     dep_expect(checks, d, anchor_equal(a.f3, b.f3), "P1-R1: precondition R1 anchor: hsync period, hsync width and output-line count per frame equal between the reference and test runs", "fixture or F1");
-    checks.note("P1 R1 anchor: reference lines=" + std::to_string(a.f3.hs.line_count) + " period=" + num(a.f3.hs.avg_period) + " width=" + num(a.f3.hs.avg_width) +
-                "; test lines=" + std::to_string(b.f3.hs.line_count) + " period=" + num(b.f3.hs.avg_period) + " width=" + num(b.f3.hs.avg_width));
+    checks.note("P1 R1 anchor: reference " + shape_text(a.f3.hs) + "; test " + shape_text(b.f3.hs));
     dep_expect(checks, d, a.f3.fi.first_ok && b.f3.fi.first_ok, "P1-S3A: precondition S3a: on every one of the 196 window lines of F3 of both runs the first plane-1 and the first plane-2 fetch read the first bytes of their line buffers", "fixture or F1");
     dep_expect(checks, d, a.f3.e1.ok && a.f3.e2.ok, "P1-S3B-REF: precondition S3b (reference run): E1 and E2 exist on every window line of F3 and are equal on all of them", "fixture or F1");
     dep_expect(checks, d, b.f3.e1.ok && b.f3.e2.ok, "P1-S3B-TEST: precondition S3b (test run): E1 and E2 exist on every window line of F3 and are equal on all of them", "fixture or F1");
@@ -2476,7 +2565,7 @@ struct P2Res { RunInfo a1, a2, b; bool have_a1 = false, have_a2 = false, have_b 
 
 void prop_p2(Checks& checks, const Scale& sc) {
     const P2Row rows[] = {
-        {0,0x0001,"PF1H2",true, 2, true, true, false, "opus:AA-bplcon1.b00 sol:AA-bplcon1.c30 sol:AA-bplcon1.c12 opus:AA-bplcon1.c6 sol:AA-bplcon1.c5"},
+        {0,0x0001,"PF1H2",true, 2, true, true, false, "opus:AA-bplcon1.b00 sol:AA-bplcon1.c30 opus:AA-bplcon1.c6 sol:AA-bplcon1.c5"},
         {1,0x0002,"PF1H3",true, 4, true, true, false, "opus:AA-bplcon1.b01 sol:AA-bplcon1.c29"},
         {2,0x0004,"PF1H4",true, 8, true, true, false, "opus:AA-bplcon1.b02 sol:AA-bplcon1.c28"},
         {3,0x0008,"PF1H5",true,16, true, true, false, "opus:AA-bplcon1.b03 sol:AA-bplcon1.c27"},
@@ -2500,9 +2589,11 @@ void prop_p2(Checks& checks, const Scale& sc) {
     const bool pre_a1 = msel == "P2-FIXTURE" || msel == "P2-F1" || msel == "P2-R1" || msel == "P2-S3A" || msel == "P2-S3B";
     const bool pre_a2 = msel == "P2-STEP8", pre_b = msel == "P2-STRIPE";
     const bool p2_full = !g_mutate || msel == "P2-CODE";   // P2-CODE: every row runs, rows PF1H2 and PF2H2 in (a1) with their neighbouring bit written
-    const bool need_a1 = p2_full || selp == "P5" || msel_has("P2A1-") || msel_has("P2S-") || pre_a1;
-    const bool need_a2 = p2_full || selp == "P5" || msel_has("P2A2-") || msel_has("P2S-") || pre_a2;
-    const bool need_b  = p2_full || selp == "P5" || msel_has("P2B-") || pre_b;
+    const bool h2_only = msel == "P2-H2";                  // P2-H2: rows PF1H2 and PF2H2 only, PF2H2 with its neighbouring bit written in (a1) and (a2)
+    const bool p5_rows = selp == "P5" || msel == "P4a-D1" || msel == "P4a-D2";   // the P5 selectors and the P4a contrasts run rows 8-15 for the P5 lines
+    const bool need_a1 = p2_full || h2_only || p5_rows || msel_has("P2A1-") || msel_has("P2S-") || pre_a1;
+    const bool need_a2 = p2_full || h2_only || p5_rows || msel_has("P2A2-") || msel_has("P2S-") || pre_a2;
+    const bool need_b  = p2_full || p5_rows || msel_has("P2B-") || pre_b;
 
     BarsConfig a1_ref; a1_ref.bplcon0 = 0x2000; a1_ref.fmode = 0x0000; a1_ref.buf1 = bars_buf(8); a1_ref.buf2 = bars_buf(24);
     BarsConfig a2_ref; a2_ref.bplcon0 = 0x2000; a2_ref.fmode = 0x0003; a2_ref.buf1 = bars_buf(8); a2_ref.buf2 = bars_buf(24);
@@ -2525,9 +2616,10 @@ void prop_p2(Checks& checks, const Scale& sc) {
     // ---- test runs, one per row and mode ----
     std::vector<P2Res> res(16);
     for (auto& row : rows) {
-        if (g_mutate && selp == "P5" && row.bit < 8) continue;
+        if (g_mutate && p5_rows && row.bit < 8) continue;
         if (g_mutate && selp == "P2" && !p2_full) {
-            if (pre_a1 || pre_a2) { if (std::string(row.name) != "PF1H2") continue; }
+            if (h2_only) { if (std::string(row.name) != "PF1H2" && std::string(row.name) != "PF2H2") continue; }
+            else if (pre_a1 || pre_a2) { if (std::string(row.name) != "PF1H2") continue; }
             else if (pre_b) { if (std::string(row.name) != "PF1H0") continue; }
             else if (msel.find(row.name) == std::string::npos) continue;   // a mutation names one row
         }
@@ -2545,14 +2637,14 @@ void prop_p2(Checks& checks, const Scale& sc) {
             BarsConfig c = a1_ref; c.bplcon1 = row.value;
             if (msel == "P2-FIXTURE" || msel == "P2-F1" || msel == "P2-S3A" || msel == "P2-S3B") { c.bin = "prog_bars.bin"; c.dmacon = 0x8380; c.waitlo = 0x0007; c.buf2 = bars_buf(24); }
             if (msel == "P2-R1") c.beamcon0 = 0x0000;
-            contrast(c, run_mutation(tok_a1) || (msel == "P2-CODE" && (std::string(row.name) == "PF1H2" || std::string(row.name) == "PF2H2")));
+            contrast(c, run_mutation(tok_a1) || (msel == "P2-CODE" && (std::string(row.name) == "PF1H2" || std::string(row.name) == "PF2H2")) || (h2_only && std::string(row.name) == "PF2H2"));
             RunOut r = run_bars(c);
             pr.a1 = analyse_run(r, sc.op, false, false); pr.have_a1 = true;
         }
         if (row.a2 && need_a2) {
             BarsConfig c = a2_ref; c.bplcon1 = row.value;
             if (msel == "P2-STEP8") c.fmode = 0x0003;
-            contrast(c, run_mutation(tok_a2) || run_mutation(tok_s));
+            contrast(c, run_mutation(tok_a2) || run_mutation(tok_s) || (h2_only && std::string(row.name) == "PF2H2"));
             RunOut r = run_bars(c);
             pr.a2 = analyse_run(r, sc.op, false, false); pr.have_a2 = true;
         }
@@ -2588,7 +2680,7 @@ void prop_p2(Checks& checks, const Scale& sc) {
     }
     Agg* modes[3] = {&A1, &A2, &B};
     auto all_modes = [&](bool Agg::*m) { bool v = true; for (Agg* x : modes) if (x->any) v = v && x->*m; return v; };
-    checks.expect(all_modes(&Agg::fixture), "P2-FIXTURE: every reference and test run loaded, booted and stored the $BEEF fixture before any observation");
+    checks.expect(all_modes(&Agg::fixture), "P2-FIXTURE: every reference and test run loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     bool fix_all = all_modes(&Agg::fixture);
     dep_expect(checks, fix_all, all_modes(&Agg::f1), "P2-F1: F1 located in every reference and test run", "fixture");
     bool f1_all = fix_all && all_modes(&Agg::f1);
@@ -2648,12 +2740,21 @@ void prop_p2(Checks& checks, const Scale& sc) {
         g_p2_ok[row.bit] = row_ok; g_p2_graded[row.bit] = row_graded;
     }
 
+    // ---- the former PFyH0 bit, renamed PFyH2 in both playfields: the rows of PF1H2 and PF2H2 together ----
+    if (p2_full || h2_only) {
+        dep_expect(checks, g_p2_graded[0] && g_p2_graded[4], g_p2_ok[0] && g_p2_ok[4],
+                   "P2-H2 sol:AA-bplcon1.c12: the bit that was PFyH0 is PFyH2 in both playfields: BPLCON1 bit 0 (PF1H2) delays playfield 1 and bit 4 (PF2H2) playfield 2 by 4 SHRES pixels, 140 ns, the weight bit 0 and bit 4 had before (AA p.17 'old PFyH0 now PFyH2')",
+                   "a PF1H2 or PF2H2 row line");
+    }
+
     // ---- one aggregate line per playfield for the claims that cover its whole x = 0-7 code ----
     if (p2_full) {
         bool g_pf[2] = {true, true}, ok_pf[2] = {true, true};
         for (auto& row : rows) { int k = row.pf1 ? 0 : 1; g_pf[k] = g_pf[k] && g_p2_graded[row.bit]; ok_pf[k] = ok_pf[k] && g_p2_ok[row.bit]; }
-        dep_expect(checks, g_pf[0], ok_pf[0], "P2-PF1-CODE opus:AA-pf1h.c1 sol:AA-bplcon1.c10: each of the eight bits PF1H7..PF1H0 (BPLCON1 bits 11-8 and 3-0) delays playfield 1 by its own weight, 2^k SHRES pixels for PF1Hk, as the rows of this proposition show (AA p.17 'PF1Hx= Playfield 1 horizontal scroll code,x=0-7')", "a PF1 row line");
-        dep_expect(checks, g_pf[1], ok_pf[1], "P2-PF2-CODE opus:AA-pf2h.c1 sol:AA-bplcon1.c9: each of the eight bits PF2H7..PF2H0 (BPLCON1 bits 15-12 and 7-4) delays playfield 2 by its own weight, 2^k SHRES pixels for PF2Hk, as the rows of this proposition show (AA p.17 'PF2Hx= Playfield 2 horizontal scroll code,x=0-7')", "a PF2 row line");
+        dep_expect(checks, g_pf[0], ok_pf[0], "P2-PF1-CODE opus:AA-pf1h.c1: each of the eight bits PF1H7..PF1H0 (BPLCON1 bits 11-8 and 3-0) delays playfield 1 by its own weight, 2^k SHRES pixels for PF1Hk, as the rows of this proposition show (AA p.17 'PF1Hx= Playfield 1 horizontal scroll code,x=0-7')", "a PF1 row line");
+        dep_expect(checks, g_pf[1], ok_pf[1], "P2-PF2-CODE opus:AA-pf2h.c1: each of the eight bits PF2H7..PF2H0 (BPLCON1 bits 15-12 and 7-4) delays playfield 2 by its own weight, 2^k SHRES pixels for PF2Hk, as the rows of this proposition show (AA p.17 'PF2Hx= Playfield 2 horizontal scroll code,x=0-7')", "a PF2 row line");
+        // the claims' own restatement is wrong against the page: recorded, not graded
+        checks.record("sol:AA-bplcon1.c9 sol:AA-bplcon1.c10: the claim restatements call PF2Hx and PF1Hx a three-bit code; AA p.3 ('BPLCON1 now contains an 8 bit scroll value for each of the playfields') and AA p.17 ('x=0-7') give eight bits; the restatement is not graded as written, and the rows of this proposition grade the eight bits of each playfield (P2-PF1-CODE, P2-PF2-CODE)");
     }
 }
 
@@ -2687,7 +2788,7 @@ void prop_p3(Checks& checks, const Scale& sc) {
     }
     bool fixture = rr.fixture, f1 = rr.f1.has_value(), r1 = true, s3b = rr.f3.e1.ok && rr.f3.e2.ok, step8 = rr.f3.fi.step_uniform && rr.f3.fi.step == 8;
     for (auto& t : tr) { fixture = fixture && t.fixture; f1 = f1 && t.f1.has_value(); r1 = r1 && anchor_equal(t.f3, rr.f3); s3b = s3b && t.f3.e1.ok && t.f3.e2.ok; step8 = step8 && t.f3.fi.step_uniform && t.f3.fi.step == 8; }
-    checks.expect(fixture, "P3-FIXTURE: the reference run and the four test runs loaded, booted and stored the $BEEF fixture before any observation");
+    checks.expect(fixture, "P3-FIXTURE: the reference run and the four test runs loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     dep_expect(checks, fixture, f1, "P3-F1: F1 located in the reference run and in the four test runs", "fixture");
     bool d = fixture && f1;
     dep_expect(checks, d, r1, "P3-R1: precondition R1 anchor: in each pair of a test run and the reference run hsync period, hsync width and output-line count per frame are equal", "fixture or F1");
@@ -2762,7 +2863,7 @@ P4Res prop_p4(Checks& checks, const Scale& sc) {
     const RunInfo& bo = B.mut ? B.obs : B.ref;
 
     bool fixture = (!a_runs || (A.ref.fixture && (!A.mut || A.obs.fixture))) && (!b_runs || (B.ref.fixture && (!B.mut || B.obs.fixture)));
-    checks.expect(fixture, "P4-FIXTURE: every run (the reference runs and the runs that write BPLCON1 before F3) loaded, booted and stored the $BEEF fixture before any observation");
+    checks.expect(fixture, "P4-FIXTURE: every run (the reference runs and the runs that write BPLCON1 before F3) loaded, booted, stored the $BEEF fixture and reached DONE before any observation");
     bool f1 = (!a_runs || (A.ref.f1 && (!A.mut || A.obs.f1))) && (!b_runs || (B.ref.f1 && (!B.mut || B.obs.f1)));
     dep_expect(checks, fixture, f1, "P4-F1: F1 (first steady frame after DMA enable) located in every run", "fixture");
     bool d = fixture && f1;
@@ -2827,17 +2928,31 @@ P4Res prop_p4(Checks& checks, const Scale& sc) {
 // ---- P5 ----
 
 void prop_p5(Checks& checks, const P4Res& p4) {
-    bool rows_graded = true, rows_ok = true;
-    for (int b = 8; b <= 15; ++b) { rows_graded = rows_graded && g_p2_graded[b]; rows_ok = rows_ok && g_p2_ok[b]; }
-    bool p4_graded = p4.c_graded[0] && p4.c_graded[1];
-    bool p4a_ok = (!p4.a_graded[0] || p4.a_ok[0]) && (!p4.a_graded[1] || p4.a_ok[1]);
-    bool p5_ok = rows_ok && p4.c_ok[0] && p4.c_ok[1] && p4a_ok;
-    dep_expect(checks, rows_graded && p4_graded, p5_ok,
-        "P5 sol:AA-bplcon1.c15 sol:AA-bplcon1.c16 sol:AA-bplcon1.c17 sol:AA-bplcon1.c18 sol:AA-bplcon1.c19 sol:AA-bplcon1.c20 "
-        "sol:AA-bplcon1.c21 sol:AA-bplcon1.c22: each of BPLCON1 bits 15-8 is the field AA p.16 names for it (P2's rows 8-15) "
-        "and RST_ initialises it to 0 (P4: run (b), and run (a) where it is graded)", "a precondition of P2's rows 8-15 or of P4's run (b)");
-    checks.note("P5 conjuncts: P2 rows 8-15 all-ok=" + std::to_string(rows_ok) + "; P4 run(b) stripe colours equal=" + std::to_string(p4.c_ok[0] && p4.c_ok[1]) +
-                "; P4 run(a) graded=" + std::to_string(p4.a_graded[0] && p4.a_graded[1]) + " even/0-30=" + std::to_string(p4a_ok));
+    // The two bits whose reset value P4 grades through the stripe colours (run (b)): PF2H0 (bit 12, c18) and PF1H0 (bit 8, c22).
+    {
+        const bool graded = g_p2_graded[8] && g_p2_graded[12] && p4.c_graded[0] && p4.c_graded[1];
+        const bool ok = g_p2_ok[8] && g_p2_ok[12] && p4.c_ok[0] && p4.c_ok[1];
+        dep_expect(checks, graded, ok,
+            "P5 sol:AA-bplcon1.c18 sol:AA-bplcon1.c22: BPLCON1 bit 12 is PF2H0 and bit 8 is PF1H0, as AA p.16 names them (P2's rows 12 and 8), and RST_ initialises both to 0 "
+            "(P4's run (b): P4b-C2 and P4b-C1)", "a precondition of P2's rows 8 and 12 or of P4's run (b)");
+    }
+    // The six other bits: the field name through P2's row, the reset value through P4's run (a) of the bit's playfield, graded only where run (a) is.
+    struct Bit { int bit; const char* name; const char* id; int pf; const char* d; };
+    const Bit bits[] = {
+        {15, "PF2H7", "sol:AA-bplcon1.c15", 1, "P4a-D2"}, {14, "PF2H6", "sol:AA-bplcon1.c16", 1, "P4a-D2"}, {13, "PF2H1", "sol:AA-bplcon1.c17", 1, "P4a-D2"},
+        {11, "PF1H7", "sol:AA-bplcon1.c19", 0, "P4a-D1"}, {10, "PF1H6", "sol:AA-bplcon1.c20", 0, "P4a-D1"}, {9, "PF1H1", "sol:AA-bplcon1.c21", 0, "P4a-D1"},
+    };
+    for (const Bit& b : bits) {
+        const bool graded = g_p2_graded[b.bit] && p4.a_graded[b.pf];
+        const bool ok = g_p2_ok[b.bit] && p4.a_ok[b.pf];
+        dep_expect(checks, graded, ok,
+            std::string("P5-") + b.name + " " + b.id + ": BPLCON1 bit " + std::to_string(b.bit) + " is " + b.name + ", as AA p.16 names it (P2's row for " + b.name +
+            "), and RST_ initialises it to 0 (" + b.d + ": the delay of playfield " + (b.pf ? "2" : "1") + " after reset is one of 0, 2, ..., 30 op)",
+            std::string("a precondition of P2's row for ") + b.name + " or of " + b.d + " (graded only where P4's run (b) shows PF" + (b.pf ? "2" : "1") + "H0 = 0)");
+    }
+    checks.note("P5 conjuncts: P2 rows 8-15 all-ok=" + std::to_string(g_p2_ok[8] && g_p2_ok[9] && g_p2_ok[10] && g_p2_ok[11] && g_p2_ok[12] && g_p2_ok[13] && g_p2_ok[14] && g_p2_ok[15]) +
+                "; P4 run(b) stripe colours equal=" + std::to_string(p4.c_ok[0] && p4.c_ok[1]) +
+                "; P4 run(a) graded=" + std::to_string(p4.a_graded[0] && p4.a_graded[1]));
 }
 } // namespace
 
@@ -2860,10 +2975,11 @@ int main(int argc, char** argv) {
         Scale sc = prop_r1(checks);
         P4Res p4;
         if (all_runs || selp == "P1") prop_p1(checks, sc);
-        if (all_runs || selp == "P2" || selp == "P5") prop_p2(checks, sc);
+        const bool p5_sel = selp == "P5" || std::string(g_mutate ? g_mutate : "") == "P4a-D1" || std::string(g_mutate ? g_mutate : "") == "P4a-D2";
+        if (all_runs || selp == "P2" || p5_sel) prop_p2(checks, sc);
         if (all_runs || selp == "P3") prop_p3(checks, sc);
         if (all_runs || selp == "P4" || selp == "P5") p4 = prop_p4(checks, sc);
-        if (all_runs || selp == "P5") prop_p5(checks, p4);
+        if (all_runs || p5_sel) prop_p5(checks, p4);
     }
     if (want("UNIT") || want("P11") || want("P12") || want("P14")) prop_unit(checks, g);
     if (want("P6")) { Scale sc6 = prop_r1(checks); prop_p6(checks, g, sc6); }

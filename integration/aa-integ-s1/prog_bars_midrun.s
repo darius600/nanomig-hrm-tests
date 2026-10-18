@@ -3,7 +3,7 @@
 ; edges (R5: clear INTREQ bit 5, poll INTREQR bit 5) and, on reaching the
 ; configured edge (the VERTB that starts F5 -- AA p.25 "Start of Vertical
 ; blank"), writes BPLCON1 once, then keeps counting a few more edges
-; before idling, so the observed frame (F5) fully elapses before the
+; before DONE, so the observed frame (F5) fully elapses before the
 ; simulation is stopped from the harness side. Shares CFG's field layout
 ; with prog_bars.s for the common S1/S2 setup; BPLCON1 is deliberately
 ; left out of that block's write (CFG_BPLCON1_WR is not read here at all).
@@ -136,4 +136,4 @@ start:
         cmp.w   CFG2_STOPEDGE,d3
         bne.s   .edgeloop
 
-.idle:  bra.s   .idle
+        DONE
