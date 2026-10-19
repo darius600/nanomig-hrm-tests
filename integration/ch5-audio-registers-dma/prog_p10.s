@@ -15,6 +15,7 @@
 ;   prog_p10_g2w.s     (G2W_BREAK) -- DMAEN cleared before, and left out of, channel 0's enable
 ;   prog_p10_g3.s      (G3_BREAK)  -- one extra CPU write into B_0 inside W_0
 ;   prog_p10_g3l.s     (G3L_BREAK) -- one extra CPU write into L inside [K_O,K_C]
+;   prog_p10_g3x.s     (G3X_BREAK) -- one extra CPU write into B_0 inside W_1
 ;   prog_p10_g4.s      (DELAY_N=0) -- the per-channel delay collapses to nothing
 ;   prog_p10_g5.s      (G5_BREAK)  -- SPREN also set before the windows
 ;   prog_p10_g_nolist.s (G_NOLIST) -- COP1LC points at LST2, an end-of-list pair,
@@ -138,6 +139,9 @@ start:
         move.w  #O1M,(a2)
         move.w  #$8202,DMACON(a0)
         move.w  DMACONR(a0),(a3)+
+        ifd     G3X_BREAK
+        move.w  #$DEAD,($70800).l       ; G3X's mutation: a CPU write into B_0, inside W_1
+        endif
         move.l  #DELAY_N,d0
         beq.s   .sk1
 .d1:    subq.l  #1,d0

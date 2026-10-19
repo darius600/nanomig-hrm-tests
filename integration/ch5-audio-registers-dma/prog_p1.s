@@ -13,6 +13,7 @@
 ;   prog_p1_g4.s (DELAY_N=0) -- the per-channel delay collapses to nothing
 ;   prog_p1_g5.s (G5_BREAK)  -- SPREN also set before the windows
 ;   prog_p1_g3.s (G3_BREAK)  -- one extra CPU write into A0 inside W_0
+;   prog_p1_g3x.s (G3X_BREAK) -- one extra CPU write into A0 inside W_1
 
         include "ch5.i"
 
@@ -107,6 +108,9 @@ start:
         move.w  #O1M,(a2)
         move.w  #$8202,DMACON(a0)
         move.w  DMACONR(a0),(a3)+
+        ifd     G3X_BREAK
+        move.w  #$DEAD,($60000).l ; G3X's mutation: a CPU write into A_0, inside W_1 (absolute: A0 would name the register)
+        endif
         move.l  #DELAY_N,d0
         beq.s   .sk1
 .d1:    subq.l  #1,d0

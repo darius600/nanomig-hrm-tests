@@ -12,6 +12,7 @@
 ;   prog_p11_g4.s      (DELAY_N=0) -- the delay collapses to nothing
 ;   prog_p11_g5.s      (G5_BREAK)  -- SPREN also set in the enabling write
 ;   prog_p11_g3q.s     (G3Q_BREAK) -- one extra CPU write of $1234 into Q2 inside the window
+;   prog_p11_g3f.s     (G3F_BREAK) -- one extra CPU write of $FFFF into Q2 inside the window
 ;   prog_p11_g_nolist.s (G_NOLIST) -- COP1LC points at LST2, an end-of-list pair,
 ;                                     with COPEN still set: the Copper never reads L
 
@@ -68,6 +69,9 @@ start:
         endif
         ifd     G3Q_BREAK
         move.w  #$1234,($75000).l        ; G3's second mutation: a CPU write into Q2, inside the window
+        endif
+        ifd     G3F_BREAK
+        move.w  #$FFFF,($75000).l        ; G3's third mutation: a CPU write of $FFFF into Q2, inside the window
         endif
 
         move.l  #DELAY_N,d0

@@ -17,6 +17,7 @@
 // MUTATION P1-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G2 stimulus red channel 0's enabling write leaves DMAEN out, via NMH_MUTATE=G2 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_0, via NMH_MUTATE=G3 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_1, via NMH_MUTATE=G3X -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1a stimulus red channels 0-3's locations changed to A_x^H (the high-word contrast), via NMH_MUTATE=C1
@@ -82,7 +83,7 @@
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI -- P8 is NOT GRADED
 // MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P8-G4 moves with it (no blit runs, so no read precedes T_last); P8 is NOT GRADED
 // MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4 -- P8 is NOT GRADED
-// MUTATION P8 implementation red private copy of the design outside the repository in which DMACONR bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still running; the unchanged comparator finds a graded poll read made while the blit is in progress showing bit 14 = 0 (the binary is built from that copy by private_copy.patch, NMH_ONLY=P8 make priv-test-<core>, NMH_MUTATE unset); no stimulus can make a DMACONR read taken during a running blit show 0 on a system that follows p.186, so P8-NOBLIT is its control on the same comparator
+// MUTATION P8 none impossible unfalsifiable at this boundary: the main assertion grades bit 14 of DMACONR reads taken while the blit runs, and no stimulus at the ports makes the blitter busy flag read wrong while the blit runs (p.186 sets it whenever a blit is in progress), so no input of this package turns it red through the clause under test; P8-NOBLIT runs the same comparator on a program in which no blit runs and is its same-comparator control
 // MUTATION P8-NOBLIT stimulus red the main program (a blit runs) through the unchanged no-blit comparator, via NMH_MUTATE=INVNOBLIT
 // MUTATION P9-G(writes) stimulus red blit 1 has BLTSIZE $0103 (12 words) instead of $0104, its logic output still zero, via NMH_MUTATE=GWRITES -- P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE -- P9-MAIN and P9 are NOT GRADED
@@ -95,11 +96,12 @@
 // MUTATION P9 stimulus red the main program through the unchanged exchanged table of the aggregate line, via NMH_MUTATE=INV
 // MUTATION DMACONR stimulus red the program without one SET write through the unchanged table of P2 (the DMA-control half), via NMH_MUTATE=OMIT
 // MUTATION DMACONR stimulus red the exchanged program through the unchanged main table of P9 (the blitter-zero half), via NMH_MUTATE=C1
-// MUTATION DMACONR implementation red the private copy of the P8 record (bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still running; built by private_copy.patch, NMH_ONLY=P2,P8,P9 make priv-test-<core>, NMH_MUTATE unset): the busy-bit half of the unchanged table finds a graded poll read showing bit 14 = 0 while P9-G(after-completion) passes, so the aggregate is graded and fails together with P8
+// MUTATION DMACONR none impossible the busy-bit half (P8) has no stimulus red: unfalsifiable at this boundary, for the reason recorded at the P8 mutation line; the DMA-control half and the blitter-zero half keep their stimulus mutations above (NMH_MUTATE=OMIT through P2, NMH_MUTATE=C1 through P9)
 // MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P10 is NOT GRADED
 // MUTATION P10-G2 stimulus red DMAEN (bit 9) left out of the Copper enable, via NMH_MUTATE=G2K -- P10-G(list-ran) moves with it (without DMAEN the Copper does not run); P10 is NOT GRADED
 // MUTATION P10-G2 stimulus red DMAEN cleared after the Copper window and left out of channel 0's enable, via NMH_MUTATE=G2W -- P10 is NOT GRADED
 // MUTATION P10-G3 stimulus red one extra CPU write into B_0 inside W_0, via NMH_MUTATE=G3 -- P10 is NOT GRADED
+// MUTATION P10-G3 stimulus red one extra CPU write into B_0 inside W_1, via NMH_MUTATE=G3X -- P10 is NOT GRADED
 // MUTATION P10-G3 stimulus red one extra CPU write into the last word of L inside [K_O,K_C], via NMH_MUTATE=G3L -- P10 is NOT GRADED
 // MUTATION P10-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4 -- P10 is NOT GRADED
 // MUTATION P10-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5 -- P10 is NOT GRADED
@@ -110,6 +112,7 @@
 // MUTATION P11-G2 stimulus red DMAEN (bit 9) left out of the enabling write, via NMH_MUTATE=G2 -- P11-G(list-ran) moves with it (without DMAEN the Copper does not run); P11 is NOT GRADED
 // MUTATION P11-G3 stimulus red one extra CPU write into L, past its own content, inside the window, via NMH_MUTATE=G3 -- P11 is NOT GRADED
 // MUTATION P11-G3 stimulus red one extra CPU write of $1234 into Q2 inside the window, via NMH_MUTATE=G3Q -- P11 is NOT GRADED
+// MUTATION P11-G3 stimulus red one extra CPU write of $FFFF into Q2 inside the window, via NMH_MUTATE=G3F -- P11 is NOT GRADED
 // MUTATION P11-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P11 is NOT GRADED
 // MUTATION P11-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P11 is NOT GRADED
 // MUTATION P11-G(list-ran) stimulus red COP1LC points at an end-of-list pair away from L, COPEN still set, via NMH_MUTATE=G_NOLIST -- P11 is NOT GRADED
@@ -235,6 +238,12 @@ std::string hex16(uint16_t v) {
 
 std::string num(long long v) { return std::to_string(v); }
 
+std::string hex24(uint32_t v) {
+    char buf[12];
+    std::snprintf(buf, sizeof buf, "%06X", v);
+    return std::string(buf);
+}
+
 // ---- capture ------------------------------------------------------------
 
 struct Capture {
@@ -348,17 +357,6 @@ size_t writes_in_range(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte,
     for (const auto& a : log)
         if (a.is_write && a.word_addr >= wlo && a.word_addr < whi && a.cycle >= lo && a.cycle <= hi) ++n;
     return n;
-}
-
-// Every write in [lo_byte,hi_byte) inside [lo,hi] carries `data`.
-bool writes_carry(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte, uint32_t hi_byte,
-                  uint64_t lo, uint64_t hi, uint16_t data) {
-    uint32_t wlo = word_addr(lo_byte), whi = word_addr(hi_byte);
-    for (const auto& a : log)
-        if (a.is_write && a.word_addr >= wlo && a.word_addr < whi && a.cycle >= lo && a.cycle <= hi &&
-            a.data != data)
-            return false;
-    return true;
 }
 
 size_t reads_in_range(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte, uint32_t hi_byte,
@@ -542,12 +540,14 @@ Eval evaluate(const Capture& cap, const char* cfg_name) {
     if (e.pre.g4) for (int x = 0; x < 3; ++x)
         if (count_window(vs, w.c[x], w.o[x + 1]) < 1) e.pre.g4 = false;
 
-    // G3: no CPU write falls into any DMA block during any window.
+    // G3: no CPU write falls into any DMA block during any window -- each
+    // of the twelve ranges (A_y, A_y^L, A_y^H for y = 0..3) against each of
+    // the four windows W_x.
     e.pre.g3 = cap.loaded && w.ok;
-    if (e.pre.g3) for (int x = 0; x < 4 && e.pre.g3; ++x) {
-        if (writes_in_range(cap.log, kA[x], kA[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
-        if (writes_in_range(cap.log, kAL[x], kAL[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
-        if (writes_in_range(cap.log, kAH[x], kAH[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+    if (e.pre.g3) for (int x = 0; x < 4 && e.pre.g3; ++x) for (int y = 0; y < 4; ++y) {
+        if (writes_in_range(cap.log, kA[y], kA[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+        if (writes_in_range(cap.log, kAL[y], kAL[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+        if (writes_in_range(cap.log, kAH[y], kAH[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
     }
 
     e.a = cap.loaded && check_a(cap, w, 2);
@@ -580,6 +580,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     std::string mutant;
     if (mv == "G1" || mv == "G2" || mv == "G3" || mv == "G4" || mv == "G5")
         mutant = "/prog_p1_" + std::string(1, char(mv[0] + ('a' - 'A'))) + mv.substr(1) + ".bin";
+    else if (mv == "G3X") mutant = "/prog_p1_g3x.bin";
 
     Eval ev_main[2], ev_mut[2], ev_c1[2], ev_c2[2], ev_c3[2];
     for (int i = 0; i < 2; ++i) {
@@ -626,7 +627,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P1-G5: of DMACON bits 8-0 in each stored readback, only the channel x being enabled is set "
         "(OCS and ECS)");
     checks.expect(all_pre(&Pre::g3),
-        "P1-G3: zero writes observed in any A_x/A_x^L/A_x^H range across all four windows (OCS and ECS)");
+        "P1-G3: zero writes observed in any of the twelve A_y/A_y^L/A_y^H ranges in any of the four windows W_x (OCS and ECS)");
 
     // ---- the graded lines ---------------------------------------------------
     auto deps_of = [&](const Eval* const (&in)[2], const Eval* const (&in2)[2]) {
@@ -1826,13 +1827,14 @@ Eval evaluate(const Capture& cap) {
     if (e.have) for (int x = 0; x < 4; ++x)
         if (count_window(vsync_starts(cap.video), w.o[x], w.c[x]) < 2) e.g4 = false;
 
-    // G3: no CPU write falls into a DMA block during a window (A_x/B_x in
-    // each W_x, L in [K_O,K_C]).
+    // G3: no CPU write falls into a DMA block during a window -- each of
+    // the eight ranges (A_y, B_y for y = 0..3) against each of the four
+    // windows W_x, and L in [K_O,K_C].
     e.g3 = e.have;
     if (e.have) {
-        for (int x = 0; x < 4; ++x) {
-            if (writes_in_range(cap.log, kA[x], kA[x] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
-            if (writes_in_range(cap.log, kB[x], kB[x] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
+        for (int x = 0; x < 4; ++x) for (int y = 0; y < 4; ++y) {
+            if (writes_in_range(cap.log, kA[y], kA[y] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
+            if (writes_in_range(cap.log, kB[y], kB[y] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
         }
         if (writes_in_range(cap.log, kList, kList + 0x24, *ko, *kc) != 0) e.g3 = false;
     }
@@ -1864,6 +1866,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     else if (mv == "G2W") mutant = "/prog_p10_g2w.bin";
     else if (mv == "G3") mutant = "/prog_p10_g3.bin";
     else if (mv == "G3L") mutant = "/prog_p10_g3l.bin";
+    else if (mv == "G3X") mutant = "/prog_p10_g3x.bin";
     else if (mv == "G4") mutant = "/prog_p10_g4.bin";
     else if (mv == "G5") mutant = "/prog_p10_g5.bin";
     else if (mv == "G_NOLIST") mutant = "/prog_p10_g_nolist.bin";
@@ -1902,8 +1905,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "show DMAEN (bit 9) set and the enabled COPEN (bit 7), respectively channel x's bit, set (every run)");
     checks.expect(all(&Eval::g4), "P10-G4: V >= 2 in [K_O,K_C] and in each W_x (every run)");
     checks.expect(all(&Eval::g3),
-        "P10-G3: zero writes observed in any A_x/B_x range across all four windows, and in [L,L+$24) in "
-        "[K_O,K_C] (every run)");
+        "P10-G3: zero writes observed in any A_y/B_y range (eight ranges) in any of the four windows W_x, and in "
+        "[L,L+$24) in [K_O,K_C] (every run)");
     checks.expect(all(&Eval::g5),
         "P10-G5: of DMACON bits 8-0 in each stored readback, only COPEN (Copper window) respectively the channel "
         "x being enabled is set (every run)");
@@ -1976,8 +1979,12 @@ struct Seen { size_t q2 = 0, q = 0; };
 bool main_cmp(const Seen& s) { return s.q2 >= 1 && s.q == 0; }
 bool nobltsize_cmp(const Seen& s) { return s.q2 == 0 && s.q == 0; }
 bool noptr_cmp(const Seen& s) { return s.q >= 1 && s.q2 == 0; }
+// The program image's byte range that holds the code from the opening
+// marker's store to the closing marker's store (prog_p11.s).
+constexpr uint32_t kWinCodeLo = 0x080466, kWinCodeHi = 0x080482;
 struct Eval {
     bool have = false;   // the window's markers were found
+    size_t fetches = 0; uint32_t fetch_lo = 0, fetch_hi = 0;   // the program-image reads inside the window
     Seen seen;
     bool g1 = false, g2 = false, g3 = false, g4 = false, g5 = false, lst = false;
 };
@@ -1995,12 +2002,28 @@ Eval evaluate(const Capture& cap) {
     e.g2 = stored && (r[0] & 0x0200) && (r[0] & 0x0080) && (r[0] & 0x0040);
     e.g5 = stored && (r[0] & 0x01FF) == 0x00C0;
     e.g4 = count_window(vsync_starts(cap.video), w->lo, w->hi) >= 3;
-    // G3: no CPU write falls into L during the window, and every write into
-    // Q2 or Q in it carries $FFFF, as a blitter write does (BLTCON0 $01FF is
-    // USED with LF $FF), so none is a CPU write.
+    // G3: no CPU write falls into L during the window, and the CPU executes
+    // nothing in the window but the program's own straight-line code between
+    // the two markers, which stores only to DMACON, R and MK (prog_p11.s).
+    // The port cannot tell a CPU write from a blitter write, so the second
+    // half is shown on the CPU's instruction fetches: every read from the
+    // program image inside the window lies in [kWinCodeLo, kWinCodeHi), the
+    // words of that code. An extra instruction adds words to the image and
+    // moves the closing marker's store beyond kWinCodeHi.
+    uint32_t fetch_lo = 0xFFFFFFFFu, fetch_hi = 0;
+    size_t fetches = 0;
+    {
+        uint32_t wlo = word_addr(kProgLo), whi = word_addr(kProgHi);
+        for (const auto& a : cap.log)
+            if (!a.is_write && a.word_addr >= wlo && a.word_addr < whi && a.cycle >= w->lo && a.cycle <= w->hi) {
+                ++fetches;
+                fetch_lo = std::min(fetch_lo, a.word_addr * 2);
+                fetch_hi = std::max(fetch_hi, a.word_addr * 2);
+            }
+    }
+    e.fetches = fetches; e.fetch_lo = fetch_lo; e.fetch_hi = fetch_hi;
     e.g3 = writes_in_range(cap.log, kList, kList + 64, w->lo, w->hi) == 0 &&
-           writes_carry(cap.log, kQ2, kQ2 + 0x20, w->lo, w->hi, 0xFFFF) &&
-           writes_carry(cap.log, kQ, kQ + 0x20, w->lo, w->hi, 0xFFFF);
+           fetches > 0 && fetch_lo >= kWinCodeLo && fetch_hi < kWinCodeHi;
     e.lst = true;
     for (uint32_t off = 0; off < 12; off += 2)
         if (reads_at(cap.log, kList + off, w->lo, w->hi) < 1) { e.lst = false; break; }
@@ -2017,6 +2040,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     else if (mv == "G2") mutant = "/prog_p11_g2.bin";
     else if (mv == "G3") mutant = "/prog_p11_g3.bin";
     else if (mv == "G3Q") mutant = "/prog_p11_g3q.bin";
+    else if (mv == "G3F") mutant = "/prog_p11_g3f.bin";
     else if (mv == "G4") mutant = "/prog_p11_g4.bin";
     else if (mv == "G5") mutant = "/prog_p11_g5.bin";
     else if (mv == "G_NOLIST") mutant = "/prog_p11_g_nolist.bin";
@@ -2033,6 +2057,9 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
                     num((long long)ev_nobltsize[i].seen.q2) + "/" + num((long long)ev_nobltsize[i].seen.q) +
                     " (no BLTSIZE); " + num((long long)ev_noptr[i].seen.q2) + "/" +
                     num((long long)ev_noptr[i].seen.q) + " (no pointer)");
+        checks.note(std::string("P11 ") + cfgs[i].name + ": program-image reads in the window " +
+                    num((long long)ev_main[i].fetches) + ", lowest address $" + hex24(ev_main[i].fetch_lo) +
+                    ", highest $" + hex24(ev_main[i].fetch_hi));
     }
 
     // NOBLTSIZE and NOPTR put the contrasting lists through the main
@@ -2056,8 +2083,9 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P11-G2 [p.144]: the stored DMACONR readback shows DMAEN, COPEN and BLTEN set (every run)");
     checks.expect(all(&Eval::g4), "P11-G4: V(W) >= 3 (every run)");
     checks.expect(all(&Eval::g3),
-        "P11-G3: zero writes observed in [L,L+64) in the window, and every write in [Q2,Q2+$20) and [Q,Q+$20) in "
-        "it carries $FFFF, as a blitter write does (BLTCON0 $01FF is USED with LF $FF) (every run)");
+        "P11-G3: zero writes observed in [L,L+64) in the window, and every read from the program image in it lies "
+        "in the code between the two markers, which stores only to DMACON, R and MK, so no CPU write falls into "
+        "[Q2,Q2+$20) or [Q,Q+$20) (every run)");
     checks.expect(all(&Eval::g5),
         "P11-G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set (every run)");
     checks.expect(all(&Eval::lst),
@@ -2111,8 +2139,8 @@ static void record_declined(Checks& checks) {
         "does not say what happens when the instruction is broken; every stimulus obeys it");
     checks.record(
         "5-appA-p263.c1 A-pre.c1: not graded. p.263, '680x0 address = (chip address) + $DFF000', is stated for "
-        "every custom register; the package reaches AUDxLCH, AUDxLCL, DMACON and DMACONR through it and no other "
-        "register");
+        "every custom register; P1 and P2 cover AUDxLCH, AUDxLCL, DMACON and DMACONR; other propositions cover "
+        "further, still non-exhaustive subsets of the registers, so the address formula stays ungraded");
     checks.record(
         "5-appB-p287.c5: not graded. p.287, 'Must be an even address pointing to chip memory', is the same kind of "
         "instruction; every location and pointer written is even and lies in Chip memory");
