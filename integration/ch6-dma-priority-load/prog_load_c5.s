@@ -1,2 +1,2 @@
-C5POLL equ 1
+C5STOP equ 1
         include "prog_load.s"

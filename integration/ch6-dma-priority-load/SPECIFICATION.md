@@ -343,7 +343,12 @@ Each conjunction line has a stimulus contrast: one part's contrast, with every p
 - P4-a: 38 display lines inside the blit; P4-b: 1637 blitter accesses in BLT-NOFIX in the memory cycles of REF's fixed-channel fetches; P4 compares 3932 fetches of the 17 channels.
 - P5a compares 467 fetches, P5b 4756 fetches of disk, audio and sprites; the four planes' fetches in P5b are equal (4080 each).
 - P6-a: 73 display lines inside the interval; P6-b: 14 gaps in the span in which both are pending; P6-c: 2560 blitter accesses in BLT-NOFIX in the memory cycles of HIRES-REF's bitplane fetches; P6a compares 11680 bitplane fetches; P6b: each of the 14 gaps holds item-6 fetches and blitter accesses. Reported, not graded: 0 item-6 fetches and 0 blitter accesses lie strictly inside the fetch interval of a display line, which lasts 1272 clk_sys in every line.
-- All assertions read PASS on both cores.
+- P6-d: 351 of NOFIX's 512 item-6 fetches lie in the memory cycles of HIRES-REF's bitplane fetches over W_stream(HIRES-LOAD). BASIS: 0 memory cycles holding two accesses in each of the five uses (P1-b, P2-b, P4-b, P6-c, P6-d).
+- P3r: over the 10 runs, 0 of 5762 Copper fetches of field F lie in a refresh cycle (993 refresh cycles in field F in each run); in NOFIX the 512 item-6 fetches lie 16 clk_sys apart (507 times) or 24 clk_sys apart (4 times).
+- SETUP-ORDER (NM-HRM-073): fx68k, first Copper fetch $10100 at cycle 2336377, the CPU variant word read at cycle 2336709; TG68K, $10100 at cycle 2336265, the variant word read at cycle 2336597; 0 sprite fetches in field F on both.
+- NTSC-LINES (NM-HRM-010): in NOFIX with NTSC selected the 246 distances between consecutive refresh line groups of field F are all 1816 clk_sys, where p.23 prints alternating lines of 228 and 227 colour clocks (1824 and 1816 clk_sys). Measured, not graded.
+- FIG69 contrast (HTOTAL = $E4): 246 distances of 1832 clk_sys; the program reaches DONE and field F is found.
+- All 38 lines (the fixture, FIG69, the preconditions, the assertions and the conjunction lines) read PASS on both cores.
 
 ### 4.5 Mutations
 

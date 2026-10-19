@@ -7,7 +7,8 @@
 ;   FIXTURE_MUTANT  the stored fixture constant is $DEAD instead of $BEEF
 ;   LITERAL        COP1LC = L1 is written at S4.7, before Copper DMA is on
 ;   C1NOP          one NOP before S3
-;   C5POLL          a poll for two vertical blanks between S4.10 and S4.11
+;   C5STOP         a STOP before S5's read of the CPU variant word, ended by field F's Copper interrupt
+;   HTOT           HTOTAL = $E4 and BEAMCON0 = $00A0 written at S1
 
         include "nanomig.i"
 
@@ -18,6 +19,8 @@ COPCON          equ $02E
 COP1LCH         equ $080
 COP2LCH         equ $084
 COPJMP2         equ $08A
+HTOTAL          equ $1C0
+BEAMCON0        equ $1DC
 DIWSTRT         equ $08E
 DIWSTOP         equ $090
 DDFSTRT         equ $092
@@ -69,6 +72,10 @@ start:
                 move.b  #0,$BFE001              ; OVL low: Chip memory at $000000
                 lea     CUSTOM,a6
                 move.w  #$2700,sr
+                ifd     HTOT
+                move.w  #$00E4,HTOTAL(a6)
+                move.w  #$00A0,BEAMCON0(a6)     ; VARBEAMEN, PAL
+                endif
                 move.w  #$7FFF,INTENA(a6)
                 move.w  #$7FFF,INTREQ(a6)
                 move.w  #$7FFF,DMACON(a6)
@@ -161,35 +168,21 @@ start:
                 move.w  VT_DMACON,DMACON(a6)
 ; ---- S4.10 DMACONR
                 move.w  DMACONR(a6),R_DMA
-                ifd     C5POLL
-                moveq   #1,d3
-.p1:            move.w  VPOSR(a6),d0
-                and.w   #1,d0
-                move.w  VHPOSR(a6),d1
-                lsr.w   #8,d1
-                or.w    d1,d0
-                beq.s   .p1                     ; leave line 0
-.p2:            move.w  VPOSR(a6),d0
-                and.w   #1,d0
-                move.w  VHPOSR(a6),d1
-                lsr.w   #8,d1
-                or.w    d1,d0
-                bne.s   .p2                     ; wait for line 0
-                dbra    d3,.p1
-                endif
 ; ---- S4.11 disk start
                 move.w  #$4000,DSKLEN(a6)
                 move.w  #$DF40,DSKLEN(a6)
                 move.w  #$DF40,DSKLEN(a6)
+; ---- S4.12
                 ifnd    LITERAL
                 move.l  #L1,COP1LCH(a6)         ; the next vertical blank starts L1
+                endif
+                ifd     C5STOP
+                stop    #$2000                  ; field F's item 8 raises COPER
+                move.w  #$2700,sr
                 endif
 ; ---- S5
                 move.w  VT_CPU,d0
                 bne.s   .loop
-                ifd     C5POLL
-                move.w  #$0010,INTREQ(a6)       ; COPER from field F's item 8 is cleared
-                endif
                 stop    #$2000
                 bra.s   .s6
 .loop:          lea     A2WORD,a2

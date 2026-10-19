@@ -3,37 +3,47 @@
 //
 // NMH_MUTATE=<label> replaces one run by its contrasting case (a different loaded image or program) and
 // evaluates the group of that label with the unchanged comparators; the normal run never runs a mutant.
-// Both cores gave the same result for every record below.
+// Both cores gave the same result for every record below (the numbers in a record are the same on both cores unless two are given).
 //
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: prog_load_fixture_mut.s stores $DEAD instead of $BEEF; FIXTURE reads FAIL
-// MUTATION FIG69 none impossible NMH_MUTATE=-: unfalsifiable at this boundary: the four refresh cycles per line, 16 clk_sys apart and 1816 clk_sys per line, do not depend on anything the program or the loaded image sets (the NTSC run measured the same pattern)
+// MUTATION FIG69 stimulus red NMH_MUTATE=FIG69: NOFIX assembled with HTOTAL = $E4 and BEAMCON0 = $00A0 written at S1 (prog_load_htotal.s; p.304-305); FIG69 reads FAIL (line period 1832 clk_sys, not 1816; the program reaches DONE and field F is found); P1, C7 read NOT GRADED; every other line PASS
 // MUTATION C1 stimulus red NMH_MUTATE=C1: prog_load_nop.s has one NOP before S3 in the BLT run; C1 reads FAIL (first difference at a program fetch, before the named access); P1 not graded; C2, C3, C4, C6, C7 stay PASS
 // MUTATION C2 stimulus red NMH_MUTATE=C2: the BLT program writes DMACON $83FF while $87FF is declared; C2 reads FAIL; P1 not graded; C1, C3, C4, C6, C7 stay PASS
 // MUTATION C3 stimulus red NMH_MUTATE=C3: the BLT run with CPU = LOOP; C3 reads FAIL; P1 not graded; the other C lines stay PASS
-// MUTATION C4 stimulus red NMH_MUTATE=C4: the last stream MOVE of the BLT run replaced by the WAIT $F801,$FF00; C4 reads FAIL (C3 reads FAIL as well); P1 not graded
-// MUTATION C5 stimulus red NMH_MUTATE=C5: prog_load_c5.s (a poll for two vertical blanks between S4.10 and S4.11, INTREQ <- $0010 before STOP) for REF and CPU; C5 reads FAIL; C3 and P2-b read FAIL as well (REF's own polling accesses fall in field F); P2 not graded
-// MUTATION C6 stimulus red NMH_MUTATE=C6: the CPU run writes the handler address to $6E; C6 reads FAIL (C1 reads FAIL as well: the write to $6E differs from the reference run's write to $6C before the named access); P2 not graded
-// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with NTSC selected; C7 reads FAIL (C1 and C3 read FAIL as well); P1 not graded
+// MUTATION C4 stimulus red NMH_MUTATE=C4: the last stream MOVE of the BLT run replaced by the WAIT $F801,$FF00; C4 reads FAIL (C3 stays PASS); P1 not graded
+// MUTATION C5 stimulus red NMH_MUTATE=C5: prog_load_c5.s (a STOP before S5, ended by field F's Copper interrupt) for REF and CPU; C5 reads FAIL; P2-a reads FAIL as well (no loop access lies in field F when the CPU variant word is read after it); P2 not graded; C1, C2, C3, C4, C6, C7 stay PASS
+// MUTATION C6 stimulus red NMH_MUTATE=C6: the CPU run writes the handler address to $6E; C6 reads FAIL; C1 stays PASS (it ends at the read of the vector address); P2 not graded
+// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with NTSC selected; C7 reads FAIL (C1 reads FAIL as well: the refresh accesses and the end of the S3 poll move); C3 stays PASS; P1 not graded
+// MUTATION BASIS none impossible NMH_MUTATE=-: unfalsifiable at this boundary: no register, list or data the program can write makes two requesters share one memory cycle on the port; BASIS counts 0 memory cycles with two accesses in every use on both cores
 // MUTATION P1 stimulus red NMH_MUTATE=P1: BLT with item 5 = $5101,$FF00; P1 reads FAIL through the Copper's fetch times (first mismatch: element 0, cycle 2988969 against 2987153 on both cores; item 5's first word is exempt from the data comparison); P1-a, P1-b and every C line stay PASS
 // MUTATION P1-a stimulus red NMH_MUTATE=P1-a: BLT with item 4 data $0100 (4 rows); P1-a reads FAIL; P1 not graded
 // MUTATION P1-b stimulus red NMH_MUTATE=P1-b: BLT-NOCOP with BLIT = NO-OP (no blit in the unopposed run); P1-b reads FAIL; P1 not graded
 // MUTATION P2 stimulus red NMH_MUTATE=P2: CPU with item 5 = $5101,$FF00; P2 reads FAIL through the fetch times (first mismatch: element 54, cycle 2988969 against 2987153); P2-a, P2-b and every C line stay PASS
 // MUTATION P2-a stimulus red NMH_MUTATE=P2-a: CPU with CPU = STOP (REF itself); P2-a reads FAIL; P2 not graded
 // MUTATION P2-b stimulus red NMH_MUTATE=P2-b: CPU-NOCOP with CPU = STOP; P2-b reads FAIL; P2 not graded
-// MUTATION P3 stimulus red NMH_MUTATE=P3: REF with item 5 = $5101,$FF00 against NOFIX; P3 reads FAIL through the fetch times (first mismatch: element 54, cycle 2988969 against 2987153); P3-a, P3-b and every C line stay PASS
-// MUTATION P3-a stimulus red NMH_MUTATE=P3-a: REF with FIX = none; P3-a reads FAIL; P3 not graded
-// MUTATION P3-b stimulus red NMH_MUTATE=P3-b: NOFIX with FIX = lowres; P3-b reads FAIL; P3 not graded
+// MUTATION P3 stimulus red NMH_MUTATE=P3: REF with item 5 = $5101,$FF00 against NOFIX; P3 reads FAIL through the fetch times (first mismatch: element 54, cycle 2988969 against 2987153), and CJ-NO-COLLISION with it; P3r, P3-a, P3-b and every C line stay PASS
+// MUTATION P3-a stimulus red NMH_MUTATE=P3-a: REF with FIX = none; P3-a reads FAIL; P3 and CJ-NO-COLLISION not graded
+// MUTATION P3-b stimulus red NMH_MUTATE=P3-b: NOFIX with FIX = lowres; P3-b reads FAIL; P3 and CJ-NO-COLLISION not graded
+// MUTATION P3r none impossible NMH_MUTATE=-: unfalsifiable at this boundary: the Copper requests on a fixed cadence (four memory cycle times per instruction, p.20, p.275) and refresh is fixed per line (FIG69), and no register, list or data the program can write moves a Copper fetch onto a refresh cycle; measured on both cores in 10 runs: 0 of 5762 Copper fetches in field F lie in a refresh cycle, and the item-6 fetches of NOFIX lie 16 clk_sys apart (507 times) or 24 clk_sys apart (4 times)
 // MUTATION P4 stimulus red NMH_MUTATE=P4: BLT with AUD0PER = 200; P4 reads FAIL for audio channel 0 only (22 fetches against 34, first at cycle 2960001 against 2961817); this shows the comparator's sensitivity, no page predicts the delay; P4-a, P4-b and every C line stay PASS
 // MUTATION P4-a stimulus red NMH_MUTATE=P4-a: BLT and REF with DDFSTRT = $0030; P4-a reads FAIL; P4 not graded
 // MUTATION P4-b stimulus red NMH_MUTATE=P4-b: BLT-NOFIX with BLIT = NO-OP; P4-b reads FAIL; P4 not graded
 // MUTATION P5a stimulus red NMH_MUTATE=P5a: REF with AUD0PER = 200 against NOCOP; P5a reads FAIL for audio channel 0 only (3 fetches against 5); P5b reads FAIL as well since REF is also its reference; sensitivity only, no page predicts the delay
 // MUTATION P5b stimulus red NMH_MUTATE=P5b: CPU with AUD0PER = 200 against REF; P5b reads FAIL for audio channel 0 only (141 fetches against 227); sensitivity only, no page predicts the delay
-// MUTATION P5-a stimulus red NMH_MUTATE=P5-a: REF and CPU with FIX = none; P5-a reads FAIL; P5a and P5b not graded
-// MUTATION P6a stimulus red NMH_MUTATE=P6a: HIRES-LOAD with BPL1MOD = 2; P6a reads FAIL (first mismatch: element 2, address $4A668 against $4A640); P6-a, P6-b, P6-c and every C line stay PASS
-// MUTATION P6b stimulus red NMH_MUTATE=P6b: HIRES-LOAD with item 5 = $E001,$FF00 and item 4 data $0040; P6-b reads FAIL (necessarily, as nothing is then pending across a gap) and so does P6-a; P6a and P6b not graded
-// MUTATION P6-a stimulus red NMH_MUTATE=P6-a: HIRES-REF with BPLCON0 = $8200 (no planes); P6-a reads FAIL (P6-c reads FAIL as well: HIRES-REF has no bitplane fetches); P6a not graded
-// MUTATION P6-b stimulus red NMH_MUTATE=P6-b: the contrast of P6b (HIRES-LOAD with item 5 = $E001,$FF00 and item 4 data $0040); P6-b reads FAIL, P6-a reads FAIL as well
+// MUTATION P5-a stimulus red NMH_MUTATE=P5-a: REF and CPU with DMACON $87FE (AUD0EN clear); P5-a reads FAIL (audio channel 0 has no fetches, in both runs); P2-a stays PASS; P5a and P5b not graded
+// MUTATION P6a stimulus red NMH_MUTATE=P6a: HIRES-LOAD with BPL1MOD = 2; P6a reads FAIL (first mismatch: element 2, address $4A668 against $4A640); P6-a, P6-b, P6-c, P6-d and every C line stay PASS
+// MUTATION P6b none impossible NMH_MUTATE=-: unfalsifiable at this boundary: P6b can fail only when a requester is pending across a gap and is kept out of the gap's free slots, which no page supports; the one stimulus that leaves a gap without an item-6 fetch or a blitter access has nothing pending there, fails P6-b first, and P6b then reads NOT GRADED (see NMH_MUTATE=P6-b)
+// MUTATION P6-a stimulus red NMH_MUTATE=P6-a: HIRES-REF with item 5 = $5001,$FF00 (the stream inside W_H); P6-a reads FAIL (512 item-6, BA or BD accesses in HIRES-REF); P6-c and P6-d stay PASS; P6a not graded
+// MUTATION P6-a stimulus red NMH_MUTATE=P6-a-planes: HIRES-REF with BPLCON0 = $8200 (no planes), the first clause of P6-a; P6-a reads FAIL, and P6-c and P6-d read FAIL as well (they count against HIRES-REF's bitplane fetches); P6a not graded
+// MUTATION P6-b stimulus red NMH_MUTATE=P6-b: HIRES-LOAD with item 4 data $0040 alone (one row); P6-b reads FAIL (the stream and the blit are never pending together); P6-a stays PASS; P6a and P6b not graded
 // MUTATION P6-c stimulus red NMH_MUTATE=P6-c: BLT-NOFIX with BLIT = NO-OP; P6-c reads FAIL; P6a not graded
+// MUTATION P6-d stimulus red NMH_MUTATE=P6-d: NOFIX with item 5 = $E001,$FF00; P6-d reads FAIL (0 of 0 item-6 fetches in W_stream(HIRES-LOAD)); P6a not graded
+// MUTATION CJ-HIGHEST stimulus red NMH_MUTATE=CJ-HIGHEST: CPU with AUD0PER = 200 (P5b's contrast), P4, P5a, P5b evaluated; P5b reads FAIL and CJ-HIGHEST with it; P4 and P5a stay PASS
+// MUTATION CJ-OVER-BLITTER stimulus red NMH_MUTATE=CJ-OVER-BLITTER: BLT with AUD0PER = 200 (P4's contrast), P4 and P6a evaluated; P4 reads FAIL and CJ-OVER-BLITTER with it; P6a stays PASS
+// MUTATION CJ-BELOW-FOUR stimulus red NMH_MUTATE=CJ-BELOW-FOUR: HIRES-LOAD with BPL1MOD = 2 (P6a's contrast), P5a, P5b and P6a evaluated; P6a reads FAIL and CJ-BELOW-FOUR with it; P5a stays PASS
+// MUTATION CJ-NEXT stimulus red NMH_MUTATE=CJ-NEXT: BLT with item 5 = $5101,$FF00 (P1's contrast), P1, P2, P5a, P6a evaluated; P1 reads FAIL and CJ-NEXT with it (CJ-STEALS as well); P2, P5a, P6a stay PASS
+// MUTATION CJ-STEALS stimulus red NMH_MUTATE=CJ-STEALS: CPU with item 5 = $5101,$FF00 (P2's contrast), P1 and P2 evaluated; P2 reads FAIL and CJ-STEALS with it; P1 stays PASS
+// MUTATION CJ-NO-COLLISION stimulus red NMH_MUTATE=CJ-NO-COLLISION: REF with item 5 = $5101,$FF00 (P3's contrast), P3 and P3r evaluated; P3 reads FAIL and CJ-NO-COLLISION with it; P3r stays PASS
 
 #include <algorithm>
 #include <cstdint>
@@ -221,6 +231,7 @@ struct Run {
     std::vector<nmh::RamAccess> raw;   // the whole port log
     std::vector<nmh::RamAccess> acc;   // after removing R
     std::vector<uint8_t> ch;           // channel of each acc
+    std::vector<bool> held;            // raw entry is the continuation of a held access
     uint16_t r_vec_hi = 0, r_vec_lo = 0, r_dma = 0, r_fix = 0, r_mark = 0;
     bool hasF = false;
     uint64_t fs = 0, fe = 0;           // field F
@@ -263,7 +274,7 @@ Run execute(const Spec& s) {
     return r;
 }
 
-// refresh: (cycle, word address) pairs of NOFIX's field-F accesses outside K
+// R: (cycle, word address) pairs of NOFIX's field-F accesses in a bus cycle in which `refresh` is high
 using RSet = std::vector<std::pair<uint64_t, uint32_t>>;   // sorted
 
 void find_field(Run& r) {
@@ -277,7 +288,8 @@ void find_field(Run& r) {
     }
 }
 
-void analyze(Run& r, const RSet* R) {
+// every run has its own refresh accesses removed: those in a bus cycle in which that run's `refresh` is high
+void analyze(Run& r) {
     find_field(r);
     if (r.keys.empty()) {
         for (const auto& a : r.raw) r.keys.push_back({a.cycle, a.word_addr});
@@ -285,11 +297,11 @@ void analyze(Run& r, const RSet* R) {
     }
     r.acc.clear(); r.ch.clear();
     // an access held over several bus periods (identical entries 8 clk_sys apart) is one access
-    std::vector<bool> held = nmh::held_continuations(r.raw, 8);
+    r.held = nmh::held_continuations(r.raw, 8);
     for (size_t ri = 0; ri < r.raw.size(); ++ri) {
         const auto& a = r.raw[ri];
-        if (held[ri]) continue;
-        if (R && std::binary_search(R->begin(), R->end(), std::make_pair(a.cycle, a.word_addr))) continue;
+        if (r.held[ri]) continue;
+        if (r.refresh_at(a.cycle)) continue;
         r.acc.push_back(a);
         r.ch.push_back(uint8_t(chan_of(a.word_addr, r.spec.hires())));
     }
@@ -438,7 +450,7 @@ Lines display_lines(const Run& r) {
         int c = r.ch[i];
         if (!(kMaskPlanes & (1u << c))) continue;
         const auto& a = r.acc[i];
-        if (a.cycle < r.fs) continue;
+        if (a.cycle < r.fs || a.cycle > r.fe) continue;
         int p = c - PL1;
         uint32_t off = a.word_addr * 2 - plane_base(s, p);
         uint32_t mod = (p % 2 == 0) ? s.bpl1mod : 0;
@@ -513,6 +525,45 @@ public:
 std::string hx(uint32_t v) { char b[16]; std::snprintf(b, sizeof b, "%X", v); return b; }
 std::string num(uint64_t v) { return std::to_string(v); }
 
+// the distances between the first refresh cycles of consecutive line groups inside field F, with their counts
+std::string line_periods(const Run& r, size_t& groups) {
+    auto g = refresh_groups(r);
+    std::vector<std::vector<uint64_t>> in;
+    for (auto& x : g) if (x.front() >= r.fs && x.back() <= r.fe) in.push_back(x);
+    groups = in.size();
+    std::map<uint64_t, size_t> h;
+    for (size_t i = 1; i < in.size(); ++i) ++h[in[i][0] - in[i - 1][0]];
+    std::string t;
+    for (auto& kv : h) t += (t.empty() ? "" : ", ") + num(kv.first) + " clk_sys x " + num(kv.second);
+    return t;
+}
+
+// verdicts of the assertions, for the conjunction lines
+struct Verdict { bool graded = false, pass = false; };
+std::map<std::string, Verdict> g_verdict;
+void verdict(const std::string& id, bool graded, bool pass) { g_verdict[id] = Verdict{graded, graded && pass}; }
+
+// measurement basis (SPECIFICATION.md 4.3): inside the interval no memory cycle (8 clk_sys) of either run holds two accesses
+struct Basis { size_t cycles = 0, doubles = 0; bool ok() const { return cycles > 0 && doubles == 0; } };
+Basis basis_of(const Run& a, const Run& b, Iv w) {
+    Basis bs;
+    for (const Run* r : {&a, &b}) {
+        std::map<uint64_t, int> m;
+        for (size_t i = 0; i < r->raw.size(); ++i) {
+            if (r->held[i]) continue;
+            uint64_t c = r->raw[i].cycle;
+            if (c < w.lo || c > w.hi) continue;
+            ++m[c / 8];
+        }
+        bs.cycles += m.size();
+        for (auto& kv : m) if (kv.second > 1) ++bs.doubles;
+    }
+    return bs;
+}
+std::string basis_text(const Basis& b) {
+    return " (measurement basis: " + num(b.cycles) + " memory cycles of the two runs, " + num(b.doubles) + " holding two accesses)";
+}
+
 // ---- the runs of one process ----------------------------------------------------
 struct Ctx {
     std::map<std::string, Spec> specs;
@@ -524,10 +575,9 @@ struct Ctx {
     void ensureR() {
         if (haveR) return;
         Run r = execute(specs.at("NOFIX"));
-        analyze(r, nullptr);
+        analyze(r);
         R = make_R(r);
         anchor = fig69(r);
-        analyze(r, &R);
         runs["NOFIX"] = std::move(r);
         haveR = true;
     }
@@ -538,7 +588,7 @@ struct Ctx {
         it = runs.find(n);
         if (it != runs.end()) return it->second;
         Run r = execute(specs.at(n));
-        analyze(r, &R);
+        analyze(r);
         return runs[n] = std::move(r);
     }
 };
@@ -604,6 +654,7 @@ std::vector<uint32_t> diff_reads(const Spec& a, const Spec& b) {
     if (a.ddfstop_v() != b.ddfstop_v()) v.push_back(kVT + 8);
     if (a.bpl1mod != b.bpl1mod) v.push_back(kVT + 10);
     if (a.aud0per != b.aud0per) v.push_back(kVT + 14);
+    if (a.vec_wrong != b.vec_wrong) v.push_back(kVT + 18);
     if (a.blit != b.blit) v.push_back(kL1 + kItem4);
     if (a.blt_data != b.blt_data) v.push_back(kL1 + kItem4 + 2);
     if (a.item5 != b.item5) v.push_back(kL1 + kItem5);
@@ -718,12 +769,18 @@ void not_graded(Checks& chk, const std::string& id, const std::string& unmet) {
     chk.record("NOT GRADED " + id + ": precondition(s) not met: " + unmet);
 }
 
+// a precondition that uses the refresh line groups: not graded while FIG69 fails
+void pre(Checks& chk, bool fig, const std::string& id, bool cond, const std::string& label) {
+    if (!fig) not_graded(chk, id, "FIG69=0");
+    else chk.expect(cond, label);
+}
+
 // aggregate of the common preconditions over the comparisons evaluated in this process
 struct CAgg {
-    bool ok[8];
-    int n[8];
-    std::string bad[8];
-    CAgg() { for (int i = 0; i < 8; ++i) { ok[i] = true; n[i] = 0; } }
+    bool ok[9];
+    int n[9];
+    std::string bad[9];
+    CAgg() { for (int i = 0; i < 9; ++i) { ok[i] = true; n[i] = 0; } }
     void add(int c, bool v, const std::string& what) {
         ++n[c];
         if (!v) { ok[c] = false; bad[c] += (bad[c].empty() ? "" : "; ") + what; }
@@ -731,13 +788,10 @@ struct CAgg {
 };
 CAgg g_c;
 
-const char* kClaimsP1 = "sol:COP2-copins-arbitration.c12,opus:ch2-appa-copins.c131,opus:ch2-about-the-copper.c28,opus:ch2-about-the-copper.c17.s2";
-const char* kClaimsP2 = "sol:COP2-copins-arbitration.c14,opus:ch2-appa-copins.c132,opus:ch2-about-the-copper.c27,opus:ch2-about-the-copper.c17.s2";
-const char* kClaimsP3 = "opus:ch2-about-the-copper.c29,opus:ch2-appa-copins.c133,sol:COP2-copins-arbitration.c12,sol:COP2-copins-arbitration.c14,opus:ch2-appa-copins.c131,opus:ch2-appa-copins.c132";
-const char* kClaimsP4 = "sol:6-blitter-priority.c4,sol:6-blitter-priority.c5,opus:ch6-sysdma.c55,sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5";
-const char* kClaimsP5a = "sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,sol:6-system-dma.c11,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5,opus:ch6-sysdma.c9";
-const char* kClaimsP5b = "sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5";
-const char* kClaimsP6a = "sol:6-system-dma.c11,opus:ch6-sysdma.c9,opus:ch6-sysdma.c55";
+// ids that only one line grades stay on that line; an id whose clause is graded by several lines is on a conjunction line
+const char* kClaimsP1 = "sol:COP2-copins-arbitration.c12,opus:ch2-appa-copins.c131,opus:ch2-about-the-copper.c28";
+const char* kClaimsP2 = "sol:COP2-copins-arbitration.c14,opus:ch2-appa-copins.c132,opus:ch2-about-the-copper.c27";
+const char* kClaimsP4 = "sol:6-blitter-priority.c4,sol:6-blitter-priority.c5";
 
 
 // ====================================================================================
@@ -754,13 +808,16 @@ void gP1(Ctx& cx, Checks& chk) {
     bool c4 = c4_run(blt) && c4_run(ref); g_c.add(4, c4, "P1");
     bool c6 = c6_run(blt) && c6_run(ref); g_c.add(6, c6, "P1");
     bool c7 = c7_run(blt, cx.R) && c7_run(ref, cx.R); g_c.add(7, c7, "P1");
+    bool fig = cx.anchor.ok;
     Iv wb = blit_span(blt), ws = stream_span(blt), wr = stream_span(ref);
     bool p1a = wb.ok && ws.ok && wb.lo < ws.lo && wb.hi > ws.hi;
     size_t n_dem = 0;
     if (wr.ok) n_dem = demand_count(nc, [](const Run& q, size_t i) { return (kMaskBlit & (1u << q.ch[i])) != 0; },
                                     ref, [](const Run& q, size_t i) { return is_item6(q.acc[i]); }, wr);
-    bool p1b = wr.ok && n_dem > 0;
-    std::string a_dem = num(n_dem);
+    Basis bs = wr.ok ? basis_of(nc, ref, wr) : Basis();
+    g_c.add(8, bs.ok(), "P1-b");
+    bool p1b = wr.ok && bs.ok() && n_dem > 0;
+    std::string a_dem = num(n_dem) + basis_text(bs);
     std::string sa = num(wb.lo), sb = num(wb.hi), sc = num(ws.lo), sd = num(ws.hi);
     chk.expect(p1a,
         "P1-a [p19,p20,p198]: the blit covers the stream -- the first access to BA or BD (cycle " + sa +
@@ -769,21 +826,22 @@ void gP1(Ctx& cx, Checks& chk) {
     chk.expect(p1b,
         "P1-b [p19,p198]: the blitter demanded the Copper's slots -- in BLT-NOCOP (the Copper waiting) " + a_dem +
         " accesses to BA and BD lie at the times of REF's item-6 fetches [not graded -- precondition, no claim uid]");
-    bool gate = c1 && c2 && c3 && c4 && c6 && c7 && p1a && p1b;
+    bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p1a && p1b;
     auto ta = trace(blt, kMaskK, wb), tb = trace(ref, kMaskK, wb);
     CmpRes r = cmp_traces(ta, tb, {kL1 + kItem4, kL1 + kItem5});
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
-            std::string("P1 [p275,p20,p19] ") + kClaimsP1 + ": while a blit with the blitter-nasty bit set runs, every one of the " + na +
+            std::string("P1 [p275,p20] ") + kClaimsP1 + ": while a blit with the blitter-nasty bit set runs, every one of the " + na +
             " Copper fetches in the blit's span happens at the same time, from the same address, with the same data as in the run without the blit (" +
-            nb + " fetches there)");
+            nb + " fetches there; the blitter half of CJ-STEALS, the \"above\" part of CJ-NEXT)");
         if (!r.eq) chk.note("P1 first mismatch: " + r.first);
     } else {
-        not_graded(chk, "P1", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+        not_graded(chk, "P1", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
                    " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P1-a=" + (p1a ? "1" : "0") + " P1-b=" + (p1b ? "1" : "0"));
         chk.note(std::string("P1 comparator, not graded: ") + (r.eq ? "equal" : "different") + " (" + na + " against " + nb + " fetches) " + r.first);
     }
+    verdict("P1", gate, r.eq);
 }
 
 // ====================================================================================
@@ -801,34 +859,40 @@ void gP2(Ctx& cx, Checks& chk) {
     bool c5 = c5_run(cpu); g_c.add(5, c5, "P2");
     bool c6 = c6_run(ref) && c6_run(cpu); g_c.add(6, c6, "P2");
     bool c7 = c7_run(cpu, cx.R) && c7_run(ref, cx.R); g_c.add(7, c7, "P2");
-    bool p2a = p2a_run(cpu, why2);
+    bool fig = cx.anchor.ok;
+    bool p2a = fig && p2a_run(cpu, why2);
+    if (!fig) why2 = "FIG69";
     Iv wr = stream_span(ref);
     size_t n_dem = 0;
     if (wr.ok) n_dem = demand_count(nc, [](const Run& q, size_t i) { return is_loop_access(q, i); },
                                     ref, [](const Run& q, size_t i) { return is_item6(q.acc[i]); }, wr);
-    bool p2b = wr.ok && n_dem > 0;
-    std::string a_dem = num(n_dem);
-    chk.expect(p2a,
+    Basis bs = wr.ok ? basis_of(nc, ref, wr) : Basis();
+    g_c.add(8, bs.ok(), "P2-b");
+    bool p2b = wr.ok && bs.ok() && n_dem > 0;
+    std::string a_dem = num(n_dem) + basis_text(bs);
+    pre(chk, fig, "P2-a", p2a,
         "P2-a [p19,p20,p196]: the 68000 is busy -- loop accesses before the first bitplane fetch, in every display line outside the stream, in the lines just before and after it, and the loop-exit marker follows field F" +
         std::string(p2a ? "" : " (unmet: " + why2 + ")") + " [not graded -- precondition, no claim uid]");
     chk.expect(p2b,
         "P2-b [p19,p20]: the 68000 demanded the Copper's slots -- in CPU-NOCOP (the Copper waiting) " + a_dem +
         " loop accesses lie at the times of REF's item-6 fetches [not graded -- precondition, no claim uid]");
-    bool gate = c1 && c2 && c3 && c4 && c5 && c6 && c7 && p2a && p2b;
+    bool gate = fig && c1 && c2 && c3 && c4 && c5 && c6 && c7 && p2a && p2b;
     Iv wf = field_span(cpu);
     auto ta = trace(cpu, kMaskK, wf), tb = trace(ref, kMaskK, wf);
     CmpRes r = cmp_traces(ta, tb, {kL1 + kItem5});
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
-            std::string("P2 [p275,p20,p19] ") + kClaimsP2 + ": while the 68000 runs a loop of Chip-memory accesses, every one of the " + na +
-            " Copper fetches of field F happens at the same time, from the same address, with the same data as when the 68000 is stopped (" + nb + " fetches there)");
+            std::string("P2 [p275,p20] ") + kClaimsP2 + ": while the 68000 runs a loop of Chip-memory accesses, every one of the " + na +
+            " Copper fetches of field F happens at the same time, from the same address, with the same data as when the 68000 is stopped (" + nb +
+            " fetches there; the 680x0 half of CJ-STEALS, the \"above\" part of CJ-NEXT)");
         if (!r.eq) chk.note("P2 first mismatch: " + r.first);
     } else {
-        not_graded(chk, "P2", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+        not_graded(chk, "P2", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
                    " C5=" + (c5 ? "1" : "0") + " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P2-a=" + (p2a ? "1" : "0") + " P2-b=" + (p2b ? "1" : "0"));
         chk.note(std::string("P2 comparator, not graded: ") + (r.eq ? "equal" : "different") + " (" + na + " against " + nb + " fetches) " + r.first);
     }
+    verdict("P2", gate, r.eq);
 }
 
 // ====================================================================================
@@ -844,11 +908,12 @@ void gP3(Ctx& cx, Checks& chk) {
     bool c4 = c4_run(ref) && c4_run(nof); g_c.add(4, c4, "P3");
     bool c6 = c6_run(ref) && c6_run(nof); g_c.add(6, c6, "P3");
     bool c7 = c7_run(ref, cx.R) && c7_run(nof, cx.R); g_c.add(7, c7, "P3");
+    bool fig = cx.anchor.ok;
     // P3-a
     Iv ws = stream_span(ref);
     std::string missing, why3;
-    bool p3a = ws.ok && fixed_all(ref, ws, missing);
-    if (!p3a) why3 = "channels without fetches: " + missing;
+    bool p3a = fig && ws.ok && fixed_all(ref, ws, missing);
+    if (!p3a) why3 = fig ? "channels without fetches: " + missing : "FIG69";
     if (p3a) {
         Lines L = display_lines(ref);
         if (!L.ok) { p3a = false; why3 = "display-line frame: " + L.why; }
@@ -884,26 +949,28 @@ void gP3(Ctx& cx, Checks& chk) {
     }
     bool p3b = run_ok(nof) && quiet == 0;
     std::string qn = num(quiet);
-    chk.expect(p3a,
+    pre(chk, fig, "P3-a", p3a,
         std::string("P3-a [p20,p196,p275]: the channels ran while the Copper fetched -- over the stream's interval in REF each of the 17 fixed channels has fetches at consecutive addresses and every display line that the stream overlaps has a bitplane fetch between two stream fetches") +
         (p3a ? "" : " (unmet: " + why3 + ")") + " [not graded -- precondition, no claim uid]");
     chk.expect(p3b,
         "P3-b [p20,p275]: the reference is quiet -- NOFIX has " + qn + " accesses to bitplane, sprite, audio or disk data in field F [not graded -- precondition, no claim uid]");
-    bool gate = c1 && c2 && c3 && c4 && c6 && c7 && p3a && p3b;
+    bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p3a && p3b;
     Iv wf = field_span(ref);
     auto ta = trace(ref, kMaskK, wf), tb = trace(nof, kMaskK, wf);
     CmpRes r = cmp_traces(ta, tb, {kL1 + kItem5});
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
-            std::string("P3 [p20,p275,p196] ") + kClaimsP3 + ": disk, audio and sprite DMA and a four-plane low-resolution display never delay the Copper -- all " + na +
-            " Copper fetches of field F happen at the same time, from the same address, with the same data as without them (" + nb + " fetches there)");
+            "P3 [p20,p275,p196]: disk, audio and sprite DMA and a four-plane low-resolution display never delay the Copper -- all " + na +
+            " Copper fetches of field F happen at the same time, from the same address, with the same data as without them (" + nb +
+            " fetches there; the delay half of CJ-NO-COLLISION) [carries no claim uid]");
         if (!r.eq) chk.note("P3 first mismatch: " + r.first);
     } else {
-        not_graded(chk, "P3", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+        not_graded(chk, "P3", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
                    " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P3-a=" + (p3a ? "1" : "0") + " P3-b=" + (p3b ? "1" : "0"));
         chk.note(std::string("P3 comparator, not graded: ") + (r.eq ? "equal" : "different") + " (" + na + " against " + nb + " fetches) " + r.first);
     }
+    verdict("P3", gate, r.eq);
 }
 
 // ====================================================================================
@@ -920,11 +987,12 @@ void gP4(Ctx& cx, Checks& chk) {
     bool c4 = c4_run(blt) && c4_run(ref); g_c.add(4, c4, "P4");
     bool c6 = c6_run(blt) && c6_run(ref); g_c.add(6, c6, "P4");
     bool c7 = c7_run(blt, cx.R) && c7_run(ref, cx.R); g_c.add(7, c7, "P4");
+    bool fig = cx.anchor.ok;
     Iv wb = blit_span(blt);
     // P4-a
     std::string missing, why4;
-    bool p4a = wb.ok && fixed_all(ref, wb, missing);
-    if (!p4a) why4 = wb.ok ? "channels without fetches: " + missing : "no blit span";
+    bool p4a = fig && wb.ok && fixed_all(ref, wb, missing);
+    if (!p4a) why4 = !fig ? "FIG69" : wb.ok ? "channels without fetches: " + missing : "no blit span";
     int lines_in = 0;
     if (p4a) {
         Lines L = display_lines(ref);
@@ -948,16 +1016,18 @@ void gP4(Ctx& cx, Checks& chk) {
     size_t n_dem = 0;
     if (sp.ok) n_dem = demand_count(nf, [](const Run& q, size_t i) { return (kMaskBlit & (1u << q.ch[i])) != 0; },
                                     ref, [](const Run& q, size_t i) { return (kMaskFixed & (1u << q.ch[i])) != 0; }, sp);
-    bool p4b = sp.ok && n_dem > 0;
-    std::string a_dem = num(n_dem), li = num(uint64_t(lines_in));
-    chk.expect(p4a,
+    Basis bs = sp.ok ? basis_of(nf, ref, sp) : Basis();
+    g_c.add(8, bs.ok(), "P4-b");
+    bool p4b = sp.ok && bs.ok() && n_dem > 0;
+    std::string a_dem = num(n_dem) + basis_text(bs), li = num(uint64_t(lines_in));
+    pre(chk, fig, "P4-a", p4a,
         "P4-a [p194,p198,p80,p82]: the channels ran during the blit -- in REF over the blit's span each of the 17 fixed channels has fetches at consecutive addresses and in each of the " + li +
         " display lines inside it every plane and every sprite (sprite 7 among them) has fetches" + (p4a ? "" : " (unmet: " + why4 + ")") +
         " [not graded -- precondition, no claim uid]");
     chk.expect(p4b,
         "P4-b [p198]: the blitter demanded their slots -- over lines $40 to $4F, in BLT-NOFIX " + a_dem +
         " accesses to BA and BD lie at the times of REF's fixed-channel fetches [not graded -- precondition, no claim uid]");
-    bool gate = c1 && c2 && c3 && c4 && c6 && c7 && p4a && p4b;
+    bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p4a && p4b;
     bool all = true;
     std::string bad;
     size_t total = 0;
@@ -971,13 +1041,14 @@ void gP4(Ctx& cx, Checks& chk) {
     if (gate) {
         chk.expect(all,
             std::string("P4 [p198,p194] ") + kClaimsP4 + ": while a blit with the blitter-nasty bit set runs, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tn +
-            " fetches of the 17 channels in the blit's span happen at the same time, from the same address, with the same data as without the blit");
+            " fetches of the 17 channels in the blit's span happen at the same time, from the same address, with the same data as without the blit (the blitter part of CJ-HIGHEST and of CJ-OVER-BLITTER)");
         if (!all) chk.note("P4 mismatches: " + bad);
     } else {
-        not_graded(chk, "P4", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+        not_graded(chk, "P4", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
                    " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P4-a=" + (p4a ? "1" : "0") + " P4-b=" + (p4b ? "1" : "0"));
         chk.note(std::string("P4 comparator, not graded: ") + (all ? "all channels equal" : "different: " + bad));
     }
+    verdict("P4", gate, all);
 }
 
 // ====================================================================================
@@ -1003,7 +1074,8 @@ void gP5(Ctx& cx, Checks& chk) {
     bool bc3 = c3_run(ref); g_c.add(3, bc3, "P5b");
     bool bc6 = c6_run(ref); g_c.add(6, bc6, "P5b");
     bool bc5 = c5_run(cpu); g_c.add(5, bc5, "P5b");
-    bool p2a = p2a_run(cpu, why3);
+    bool fig = cx.anchor.ok;
+    bool p2a = fig && p2a_run(cpu, why3);
     Iv ws = stream_span(ref);
     Iv wf = field_span(cpu);
     std::string miss_a, miss_b;
@@ -1029,28 +1101,38 @@ void gP5(Ctx& cx, Checks& chk) {
     }
     std::string ta = num(tot_a), tb = num(tot_b);
     chk.note("P5b bitplanes, measured and not graded: " + planes_note);
-    bool gate_a = ac1 && ac2 && ac3 && ac4 && ac6 && ac7 && p5a_a;
-    bool gate_b = bc1 && bc2 && bc3 && bc5 && bc6 && bc7 && p2a && p5a_b;
+    bool gate_a = fig && ac1 && ac2 && ac3 && ac4 && ac6 && ac7 && p5a_a;
+    bool gate_b = fig && bc1 && bc2 && bc3 && bc5 && bc6 && bc7 && p2a && p5a_b;
     if (gate_a) {
         chk.expect(all_a,
-            std::string("P5a [p194] ") + kClaimsP5a + ": while the Copper runs a stream of MOVEs, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + ta +
-            " fetches of the 17 channels in the stream's interval happen at the same time, from the same address, with the same data as with the Copper waiting");
+            "P5a [p194]: while the Copper runs a stream of MOVEs, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + ta +
+            " fetches of the 17 channels in the stream's interval happen at the same time, from the same address, with the same data as with the Copper waiting"
+            " (the Copper part of CJ-HIGHEST, a \"below\" part of CJ-BELOW-FOUR and of CJ-NEXT) [carries no claim uid]");
         if (!all_a) chk.note("P5a mismatches: " + bad_a);
     } else {
-        not_graded(chk, "P5a", std::string("C1=") + (ac1 ? "1" : "0") + " C2=" + (ac2 ? "1" : "0") + " C3=" + (ac3 ? "1" : "0") + " C4=" + (ac4 ? "1" : "0") +
+        not_graded(chk, "P5a", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (ac1 ? "1" : "0") + " C2=" + (ac2 ? "1" : "0") + " C3=" + (ac3 ? "1" : "0") + " C4=" + (ac4 ? "1" : "0") +
                    " C6=" + (ac6 ? "1" : "0") + " C7=" + (ac7 ? "1" : "0") + " P5-a(a)=" + (p5a_a ? "1" : "0"));
         chk.note(std::string("P5a comparator, not graded: ") + (all_a ? "all channels equal" : "different: " + bad_a));
     }
+    verdict("P5a", gate_a, all_a);
     if (gate_b) {
         chk.expect(all_b,
-            std::string("P5b [p194] ") + kClaimsP5b + ": while the 68000 runs a loop of Chip-memory accesses, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tb +
-            " fetches of disk, audio and sprite DMA in field F happen at the same time, from the same address, with the same data as with the 68000 stopped");
+            "P5b [p194]: while the 68000 runs a loop of Chip-memory accesses, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tb +
+            " fetches of disk, audio and sprite DMA in field F happen at the same time, from the same address, with the same data as with the 68000 stopped"
+            " (the 68000 part of CJ-HIGHEST) [carries no claim uid]");
         if (!all_b) chk.note("P5b mismatches: " + bad_b);
     } else {
-        not_graded(chk, "P5b", std::string("C1=") + (bc1 ? "1" : "0") + " C2=" + (bc2 ? "1" : "0") + " C3=" + (bc3 ? "1" : "0") + " C5=" + (bc5 ? "1" : "0") +
+        not_graded(chk, "P5b", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (bc1 ? "1" : "0") + " C2=" + (bc2 ? "1" : "0") + " C3=" + (bc3 ? "1" : "0") + " C5=" + (bc5 ? "1" : "0") +
                    " C6=" + (bc6 ? "1" : "0") + " C7=" + (bc7 ? "1" : "0") + " P2-a=" + (p2a ? "1" : "0") + " P5-a(b)=" + (p5a_b ? "1" : "0"));
         chk.note(std::string("P5b comparator, not graded: ") + (all_b ? "all channels equal" : "different: " + bad_b));
     }
+    verdict("P5b", gate_b, all_b);
+    chk.record(
+        "P5-READING [p194,p20,p275,p196] sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5 (CJ-HIGHEST), "
+        "sol:6-system-dma.c11 (CJ-BELOW-FOUR), opus:ch6-sysdma.c9 (CJ-NEXT): the pages leave no slot contested between these channels and the Copper or the 68000 "
+        "(p.20 and p.275 put the Copper on the cycles disk, audio, refresh and sprite DMA do not use; p.196 and Figure 6-10 put the 68000 on cycles that leave them free). "
+        "The lines read \"highest priority level\", and \"the Copper has the next priority\" below it, as this: with a blitter-nasty blit, a Copper MOVE stream and a 68000 loop "
+        "all wanting every cycle, no other requester takes a slot of disk, audio, sprite or bitplane DMA. A green result shows that; it does not show that a contested slot was won");
 }
 
 // ====================================================================================
@@ -1060,6 +1142,7 @@ void gP6(Ctx& cx, Checks& chk) {
     Run& h0 = cx.get("HIRES-REF");
     Run& h1 = cx.get("HIRES-LOAD");
     Run& nf = cx.get("BLT-NOFIX");
+    Run& unf = cx.get("NOFIX");
     std::string why;
     bool c1 = c1_pair(h1, h0, why); g_c.add(1, c1, "P6 " + why);
     bool c2 = c2_run(h1) && c2_run(h0); g_c.add(2, c2, "P6");
@@ -1067,13 +1150,14 @@ void gP6(Ctx& cx, Checks& chk) {
     bool c4 = c4_run(h1); g_c.add(4, c4, "P6");
     bool c6 = c6_run(h1) && c6_run(h0); g_c.add(6, c6, "P6");
     bool c7 = c7_run(h1, cx.R) && c7_run(h0, cx.R); g_c.add(7, c7, "P6");
+    bool fig = cx.anchor.ok;
     Iv ss = stream_span(h1), bs = blit_span(h1);
     Iv wh;
     if (ss.ok && bs.ok) { wh.lo = std::min(ss.lo, bs.lo); wh.hi = std::max(ss.hi, bs.hi); wh.ok = true; }
     Lines L0 = display_lines(h0), L1 = display_lines(h1);
     // P6-a
-    bool p6a = wh.ok && L0.ok;
-    std::string why6a = !wh.ok ? "no stream or blit in HIRES-LOAD" : !L0.ok ? "display-line frame: " + L0.why : "";
+    bool p6a = fig && wh.ok && L0.ok;
+    std::string why6a = !fig ? "FIG69" : !wh.ok ? "no stream or blit in HIRES-LOAD" : !L0.ok ? "display-line frame: " + L0.why : "";
     int lines_in = 0;
     if (p6a) {
         for (int k = 0; k <= L0.kmax; ++k)
@@ -1094,42 +1178,58 @@ void gP6(Ctx& cx, Checks& chk) {
     if (pend.ok && L1.ok)
         for (int k = 0; k <= L1.kmax; ++k)
             if (L1.hi[size_t(k)] > pend.lo && L1.lo[size_t(k + 1)] < pend.hi) gaps.push_back(k);
-    bool p6b = pend.ok && L1.ok && gaps.size() >= 3;
-    std::string why6b = !wh.ok ? "no stream or blit" : !L1.ok ? "display-line frame: " + L1.why : !pend.ok ? "the stream and the blit are never pending together" : gaps.size() < 3 ? "fewer than three gaps in the pending span" : "";
+    bool p6b = fig && pend.ok && L1.ok && gaps.size() >= 3;
+    std::string why6b = !fig ? "FIG69" : !wh.ok ? "no stream or blit" : !L1.ok ? "display-line frame: " + L1.why : !pend.ok ? "the stream and the blit are never pending together" : gaps.size() < 3 ? "fewer than three gaps in the pending span" : "";
     // P6-c
     Iv sp = pre_span(h1);
     size_t n_dem = 0;
     if (sp.ok) n_dem = demand_count(nf, [](const Run& q, size_t i) { return (kMaskBlit & (1u << q.ch[i])) != 0; },
                                     h0, [](const Run& q, size_t i) { return (kMaskPlanes & (1u << q.ch[i])) != 0; }, sp);
-    bool p6c = sp.ok && n_dem > 0;
-    std::string a_dem = num(n_dem), li = num(uint64_t(lines_in));
-    chk.expect(p6a,
+    Basis bs_c = sp.ok ? basis_of(nf, h0, sp) : Basis();
+    g_c.add(8, bs_c.ok(), "P6-c");
+    bool p6c = sp.ok && bs_c.ok() && n_dem > 0;
+    // P6-d: the Copper wanted slots the display used -- measured in the unopposed run (NOFIX), over the stream's interval in HIRES-LOAD
+    size_t n_d = 0;
+    if (ss.ok) n_d = demand_count(unf, [](const Run& q, size_t i) { return is_item6(q.acc[i]); },
+                                  h0, [](const Run& q, size_t i) { return (kMaskPlanes & (1u << q.ch[i])) != 0; }, ss);
+    Basis bs_d = ss.ok ? basis_of(unf, h0, ss) : Basis();
+    g_c.add(8, bs_d.ok(), "P6-d");
+    bool p6d = ss.ok && bs_d.ok() && n_d > 0;
+    size_t n_item6 = 0;
+    for (const auto& a : unf.acc) if (a.cycle >= ss.lo && a.cycle <= ss.hi && is_item6(a)) ++n_item6;
+    std::string a_dem = num(n_dem) + basis_text(bs_c), li = num(uint64_t(lines_in));
+    pre(chk, fig, "P6-a", p6a,
         "P6-a [p197,p60]: the display ran and the reference shows it alone -- in HIRES-REF the " + li +
         " display lines inside the interval have fetches from each of the four planes at their addresses and no access there is attributed to item 6, BA or BD" +
         (p6a ? "" : " (unmet: " + why6a + ")") + " [not graded -- precondition, no claim uid]");
-    chk.expect(p6b,
+    pre(chk, fig, "P6-b", p6b,
         std::string("P6-b [p20,p197,p275]: the Copper and the blitter are pending together across at least three gaps between display lines (" + num(uint64_t(gaps.size())) + " gaps in the span)") +
         (p6b ? "" : " (unmet: " + why6b + ")") + " [not graded -- precondition, no claim uid]");
     chk.expect(p6c,
         "P6-c [p198]: the blitter demanded the display's slots -- over lines $40 to $4F, in BLT-NOFIX " + a_dem +
         " accesses to BA and BD lie at the times of HIRES-REF's bitplane fetches [not graded -- precondition, no claim uid]");
+    chk.expect(p6d,
+        "P6-d [p19,p20,p197,p275]: the Copper wanted slots the display used -- in NOFIX (the Copper alone), over the stream's interval in HIRES-LOAD, " + num(n_d) +
+        " of the " + num(n_item6) + " item-6 fetches lie in the memory cycles of HIRES-REF's bitplane fetches" + basis_text(bs_d) + " [not graded -- precondition, no claim uid]");
     // (a)
     auto ta = trace(h1, kMaskPlanes, wh), tb = trace(h0, kMaskPlanes, wh);
     CmpRes ra = cmp_traces(ta, tb);
     std::string na = num(ra.na), nb = num(ra.nb);
-    bool gate_a = c1 && c2 && c3 && c4 && c6 && c7 && p6a && p6b && p6c;
+    bool gate_a = fig && c1 && c2 && c3 && c4 && c6 && c7 && p6a && p6b && p6c && p6d;
     if (gate_a) {
         chk.expect(ra.eq,
-            std::string("P6a [p194,p275,p198,p197,p186] ") + kClaimsP6a + ": in a four-plane high-resolution display neither the Copper nor a blitter-nasty blit takes a slot from bitplane DMA -- all " + na +
-            " bitplane fetches while the stream and the blit run happen at the same time, from the same address, with the same data as without them (" + nb + " fetches there)");
+            "P6a [p194,p275,p198,p197,p186]: in a four-plane high-resolution display neither the Copper nor a blitter-nasty blit takes a slot from bitplane DMA -- all " + na +
+            " bitplane fetches while the stream and the blit run happen at the same time, from the same address, with the same data as without them (" + nb +
+            " fetches there; a \"below\" part of CJ-BELOW-FOUR and of CJ-NEXT, the display part of CJ-OVER-BLITTER) [carries no claim uid]");
         if (!ra.eq) chk.note("P6a first mismatch: " + ra.first);
     } else {
-        not_graded(chk, "P6a", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
-                   " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P6-a=" + (p6a ? "1" : "0") + " P6-b=" + (p6b ? "1" : "0") + " P6-c=" + (p6c ? "1" : "0"));
+        not_graded(chk, "P6a", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+                   " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P6-a=" + (p6a ? "1" : "0") + " P6-b=" + (p6b ? "1" : "0") + " P6-c=" + (p6c ? "1" : "0") + " P6-d=" + (p6d ? "1" : "0"));
         chk.note(std::string("P6a comparator, not graded: ") + (ra.eq ? "equal" : "different") + " (" + na + " against " + nb + " fetches) " + ra.first);
     }
+    verdict("P6a", gate_a, ra.eq);
     // (b)
-    bool gate_b = c1 && c2 && c3 && c4 && c6 && c7 && p6b;
+    bool gate_b = fig && c1 && c2 && c3 && c4 && c6 && c7 && p6b;
     bool gaps_ok = p6b;
     std::string gapdesc;
     if (p6b) {
@@ -1149,12 +1249,13 @@ void gP6(Ctx& cx, Checks& chk) {
     if (gate_b) {
         chk.expect(gaps_ok,
             "P6b [p197,p275,p23]: in a four-plane high-resolution display both the Copper and the blitter still get slots between the lines' data fetches -- every gap inside the span in which both are pending holds at least one item-6 fetch and one blitter access (" +
-            gapdesc + ") [not graded -- no claim uid]");
+            gapdesc + ") [graded, counts in the summary -- carries no claim uid]");
     } else {
-        not_graded(chk, "P6b", std::string("C1=") + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
+        not_graded(chk, "P6b", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
                    " C6=" + (c6 ? "1" : "0") + " C7=" + (c7 ? "1" : "0") + " P6-b=" + (p6b ? "1" : "0") + " frame=" + (L1.ok ? "1" : "0"));
         chk.note(std::string("P6b comparator, not graded: ") + (gaps_ok ? "every gap holds both" : "a gap lacks one or the gaps are undefined") + " " + gapdesc);
     }
+    verdict("P6b", gate_b, gaps_ok);
     // reported, not graded
     if (wh.ok && L0.ok) {
         size_t in_c = 0, in_b = 0;
@@ -1178,6 +1279,88 @@ void gP6(Ctx& cx, Checks& chk) {
     }
 }
 
+
+// ====================================================================================
+// P3r -- no Copper fetch lies in a refresh cycle
+// ====================================================================================
+// A bus cycle is a memory cycle of 8 clk_sys (SPECIFICATION.md 4.3): an access is sampled once in it. The refresh cycles are
+// the ones in which this run's own `refresh` output is high at an access's sample, or which hold a refresh access.
+std::set<uint64_t> refresh_cycles(const Run& r) {
+    std::set<uint64_t> b;
+    for (size_t i = 0; i < r.raw.size(); ++i)
+        if (!r.held[i] && r.refresh_at(r.raw[i].cycle)) b.insert(r.raw[i].cycle / 8);
+    return b;
+}
+bool refresh_in_cycle(const Run& r, const std::set<uint64_t>& rb, uint64_t cycle) {
+    return r.refresh_at(cycle) || rb.count(cycle / 8) != 0;
+}
+
+void gP3r(Ctx& cx, Checks& chk) {
+    bool fig = cx.anchor.ok;
+    size_t nruns = 0, tf = 0, tr = 0, th = 0;
+    bool pre_ok = fig;
+    std::string unmet = fig ? "" : "FIG69";
+    std::string per;
+    for (auto& kv : cx.runs) {
+        const Run& r = kv.second;
+        if (!run_ok(r)) { pre_ok = false; unmet += (unmet.empty() ? "" : "; ") + kv.first + " did not finish"; continue; }
+        size_t f = 0, h = 0, e = 0;
+        std::set<uint64_t> rb = refresh_cycles(r);
+        for (const auto& a : r.raw) {
+            if (a.cycle < r.fs || a.cycle > r.fe || chan_of(a.word_addr, r.spec.hires()) != K) continue;
+            ++f;
+            if (refresh_in_cycle(r, rb, a.cycle)) ++h;
+        }
+        for (uint64_t x : r.redges) if (x >= r.fs && x <= r.fe) ++e;
+        if (f == 0 || e == 0) { pre_ok = false; unmet += (unmet.empty() ? "" : "; ") + kv.first + ": no Copper fetch or no refresh cycle in field F"; }
+        ++nruns; tf += f; tr += e; th += h;
+        per += (per.empty() ? "" : ", ") + kv.first + " " + num(f) + "/" + num(e) + "/" + num(h);
+    }
+    pre_ok = pre_ok && nruns > 0;
+    if (cx.runs.count("NOFIX")) {
+        const Run& nf = cx.runs.at("NOFIX");
+        std::map<uint64_t, size_t> h;
+        uint64_t prev = 0;
+        bool have = false;
+        for (const auto& a : nf.acc) {
+            if (a.cycle < nf.fs || a.cycle > nf.fe || !is_item6(a)) continue;
+            if (have) ++h[a.cycle - prev];
+            prev = a.cycle; have = true;
+        }
+        std::string t;
+        for (auto& kv : h) t += (t.empty() ? "" : ", ") + num(kv.first) + " clk_sys x " + num(kv.second);
+        chk.note("P3r NOFIX, distances between consecutive item-6 fetches: " + t);
+    }
+    chk.note("P3r per run, Copper fetches / refresh cycles / Copper fetches in a refresh cycle (field F): " + per);
+    if (pre_ok) {
+        chk.expect(th == 0,
+            "P3r [p20,p275]: in every load run no Copper fetch lies in a refresh cycle -- over " + num(nruns) + " runs, " + num(th) + " of " + num(tf) +
+            " Copper fetches of field F lie in a bus cycle in which that run's own `refresh` output is high (" + num(tr) +
+            " refresh cycles there; the refresh half of CJ-NO-COLLISION) [carries no claim uid]");
+    } else {
+        not_graded(chk, "P3r", unmet);
+    }
+    verdict("P3r", pre_ok, th == 0);
+}
+
+// ---- conjunction lines: an id whose clause is graded by several lines is asserted only if every one of them holds
+void conj(Checks& chk, const std::string& id, const std::string& pages, const std::string& claims, const std::string& what,
+          const std::vector<std::string>& parts) {
+    for (const auto& p : parts) if (!g_verdict.count(p)) return;   // a part is not evaluated in this process
+    bool fail = false, ng = false;
+    std::string st, ngs;
+    for (const auto& p : parts) {
+        const Verdict& v = g_verdict[p];
+        st += (st.empty() ? "" : ", ") + p + (v.graded ? (v.pass ? " PASS" : " FAIL") : " not graded");
+        if (!v.graded) { ng = true; ngs += (ngs.empty() ? "" : ", ") + p; }
+        else if (!v.pass) fail = true;
+    }
+    if (!fail && ng) {
+        chk.record("NOT GRADED " + id + ": part(s) not graded: " + ngs);
+        return;
+    }
+    chk.expect(!fail, id + " [" + pages + "] " + claims + ": " + what + " -- conjunction of " + st);
+}
 
 int real_main(int argc, char** argv) {
     g_dir = argc > 1 ? argv[1] : ".";
@@ -1205,6 +1388,7 @@ int real_main(int argc, char** argv) {
         Spec& REF = cx.specs["REF"]; Spec& BLT = cx.specs["BLT"]; Spec& CPU = cx.specs["CPU"];
         Spec& NOFIX = cx.specs["NOFIX"]; Spec& H0 = cx.specs["HIRES-REF"]; Spec& H1 = cx.specs["HIRES-LOAD"];
         if (mv == "FIXTURE") { fixture = true; REF.bin = "prog_load_fixture_mut.bin"; }
+        else if (mv == "FIG69") { g1 = true; NOFIX.bin = "prog_load_htotal.bin"; }
         else if (mv == "C1") { g1 = true; BLT.bin = "prog_load_nop.bin"; }
         else if (mv == "C7") { g1 = true; BLT.ntsc = true; }
         else if (mv == "C2") { g1 = true; BLT.dmacon = 0x83FF; BLT.dmacon_decl = 0x87FF; }
@@ -1226,11 +1410,20 @@ int real_main(int argc, char** argv) {
         else if (mv == "P4-b") { g4 = true; cx.specs["BLT-NOFIX"].blit = false; }
         else if (mv == "P5a") { g5 = true; REF.aud0per = 200; }
         else if (mv == "P5b") { g5 = true; CPU.aud0per = 200; }
-        else if (mv == "P5-a") { g5 = true; REF.fix = 1; CPU.fix = 1; }
+        else if (mv == "P5-a") { g5 = true; REF.dmacon = 0x87FE; CPU.dmacon = 0x87FE; }
         else if (mv == "P6a") { g6 = true; H1.bpl1mod = 2; }
-        else if (mv == "P6b" || mv == "P6-b") { g6 = true; H1.item5 = 0xE001; H1.blt_data = 0x0040; }
-        else if (mv == "P6-a") { g6 = true; H0.bplcon0 = 0x8200; }
+        else if (mv == "P6-a") { g6 = true; H0.item5 = 0x5001; }
+        else if (mv == "P6-a-planes") { g6 = true; H0.bplcon0 = 0x8200; }
+        else if (mv == "P6-b") { g6 = true; H1.blt_data = 0x0040; }
         else if (mv == "P6-c") { g6 = true; cx.specs["BLT-NOFIX"].blit = false; }
+        else if (mv == "P6-d") { g6 = true; NOFIX.item5 = 0xE001; }
+        // conjunction lines: one part's contrast, with every part evaluated
+        else if (mv == "CJ-HIGHEST") { g4 = g5 = true; CPU.aud0per = 200; }
+        else if (mv == "CJ-OVER-BLITTER") { g4 = g6 = true; BLT.aud0per = 200; }
+        else if (mv == "CJ-BELOW-FOUR") { g5 = g6 = true; H1.bpl1mod = 2; }
+        else if (mv == "CJ-NEXT") { g1 = g2 = g5 = g6 = true; BLT.item5 = 0x5101; }
+        else if (mv == "CJ-STEALS") { g1 = g2 = true; CPU.item5 = 0x5101; }
+        else if (mv == "CJ-NO-COLLISION") { g3 = true; REF.item5 = 0x5101; }
         else { std::printf("unknown NMH_MUTATE %s\n", mv.c_str()); return 2; }
     }
 
@@ -1245,6 +1438,11 @@ int real_main(int argc, char** argv) {
         checks.expect(cx.anchor.ok,
             "FIG69 [p194,p195,p23]: the Figure 6-9 anchor -- in each of the " + ln + " full lines of NOFIX's field F the `refresh` output is high in four bus cycles, 16 clk_sys apart (every other memory cycle), and the lines are 1816 clk_sys (227 colour clocks) apart" +
             (cx.anchor.ok ? "" : " (unmet: " + cx.anchor.text + ")") + " [not graded -- precondition, no claim uid]");
+        const Run& nf = cx.runs.at("NOFIX");
+        size_t groups = 0;
+        std::string lp = line_periods(nf, groups);
+        checks.note("FIG69 run NOFIX: reached DONE at cycle " + (nf.done ? num(*nf.done) : std::string("-")) + ", field F from cycle " + num(nf.fs) + " to " + num(nf.fe) +
+                    ", " + num(groups) + " refresh line groups in it; distances between consecutive groups: " + lp);
     }
     if (g1) gP1(cx, checks);
     if (g2) gP2(cx, checks);
@@ -1252,20 +1450,37 @@ int real_main(int argc, char** argv) {
     if (g4) gP4(cx, checks);
     if (g5) gP5(cx, checks);
     if (g6) gP6(cx, checks);
+    if (g3) gP3r(cx, checks);
+
+    // ---- the conjunction lines
+    conj(checks, "CJ-HIGHEST", "p194,p198", "sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5",
+         "disk, audio and sprite DMA (and the display) have the highest priority level: neither the blitter, nor the Copper, nor the 68000 takes one of their slots", {"P4", "P5a", "P5b"});
+    conj(checks, "CJ-OVER-BLITTER", "p198,p194", "opus:ch6-sysdma.c55",
+         "display, disk and audio DMA take precedence over the blitter: the blitter takes none of their slots, with a low-resolution display and with a high-resolution one", {"P4", "P6a"});
+    conj(checks, "CJ-BELOW-FOUR", "p194,p275", "sol:6-system-dma.c11",
+         "the Copper's priority is below the four highest-priority DMA classes: it takes no slot of disk, audio, sprite or bitplane DMA, with a low-resolution and with a high-resolution display", {"P5a", "P6a"});
+    conj(checks, "CJ-NEXT", "p194,p275,p20", "opus:ch6-sysdma.c9",
+         "the Copper has the next priority after the four devices: below them (it takes no slot of theirs) and above the blitter and the 68000 (neither delays a Copper fetch)", {"P5a", "P6a", "P1", "P2"});
+    conj(checks, "CJ-STEALS", "p19,p20,p275", "opus:ch2-about-the-copper.c17.s2",
+         "when the WAIT condition is satisfied the Copper steals its memory cycles from either the blitter or the 680x0: neither delays a Copper fetch", {"P1", "P2"});
+    conj(checks, "CJ-NO-COLLISION", "p20,p275,p196", "opus:ch2-about-the-copper.c29,opus:ch2-appa-copins.c133",
+         "the Copper needs priority over nothing other than the 680x0 and the blitter: disk, audio, sprite and four-plane low-resolution display DMA do not delay it, and no Copper fetch lies in a refresh cycle", {"P3", "P3r"});
 
     // ---- the common preconditions, over the comparisons evaluated above
     if (!(mv == "FIXTURE")) {
-        const char* names[8] = {"", "C1", "C2", "C3", "C4", "C5", "C6", "C7"};
-        const char* texts[8] = {"",
+        const char* names[9] = {"", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "BASIS"};
+        const char* texts[9] = {"",
             "alignment -- the two runs of each comparison have identical port traces up to the first access at which they differ by construction",
             "DMA settings took -- DMACONR bits 10-0 read back as written, and BLTPRI reads 1 in every run that blits",
             "the 68000 is quiet -- in a STOP run no 68000 access lies within field F",
             "the stream is complete -- all 512 item-6 words are fetched in field F with the placed data, in ascending address order",
             "setup over -- the 68000 reads the CPU variant word before field F starts",
             "vector in place -- the vector word read back equals the handler address",
-            "refresh unchanged -- every refresh access of NOFIX appears at the same time and address"};
-        for (int c = 1; c <= 7; ++c) {
+            "refresh unchanged -- every refresh access of NOFIX appears at the same time and address",
+            "measurement basis -- in the intervals of the demand counts no memory cycle (8 clk_sys) of the compared runs holds two accesses"};
+        for (int c = 1; c <= 8; ++c) {
             if (g_c.n[c] == 0) continue;
+            if (c == 7 && !cx.anchor.ok) { not_graded(checks, "C7", "FIG69=0"); continue; }
             std::string cn = num(uint64_t(g_c.n[c]));
             std::string bad = g_c.bad[c];
             checks.expect(g_c.ok[c],
@@ -1274,12 +1489,12 @@ int real_main(int argc, char** argv) {
         }
     }
 
-    // ---- the setup as the specification orders it (COP1LC = L1 written at S4.7), measured, not graded
+    // ---- the setup as the specification's first order would have it (COP1LC = L1 written at S4.7), measured, not graded
     if (mv.empty()) {
         Spec ls = mk(0, false, 0x50, false);
         ls.bin = "prog_load_literal.bin";
         Run lr = execute(ls);
-        analyze(lr, nullptr);
+        analyze(lr);
         uint64_t dm = 0, firstk = 0, firstv = 0;
         uint32_t kaddr = 0;
         for (const auto& a : lr.raw) {
@@ -1290,10 +1505,21 @@ int real_main(int argc, char** argv) {
         size_t sprites = 0;
         for (size_t i = 0; i < lr.acc.size(); ++i)
             if (lr.hasF && lr.ch[i] >= SP0 && lr.ch[i] <= SP7 && lr.acc[i].cycle >= lr.fs && lr.acc[i].cycle <= lr.fe) ++sprites;
-        checks.note("SETUP-ORDER, COP1LC = L1 written at S4.7 (prog_load_literal.s): the first Copper fetch after the CPU's read of the DMACON value is at address $" + hx(kaddr) +
+        checks.note("SETUP-ORDER (NM-HRM-073), COP1LC = L1 written at S4.7, then COP2LC = L0 and COPJMP2, before Copper DMA is on (prog_load_literal.s): the first Copper fetch after the CPU's read of the DMACON value is at address $" + hx(kaddr) +
                     " at cycle " + num(firstk) + " (" + num(firstk - dm) + " clk_sys after that read; L0 is $" + hx(kL1 - 0x100) + ", L1 is $" + hx(kL1) +
                     "); field F starts at cycle " + num(lr.fs) + ", the CPU variant word is read at cycle " + num(firstv) + ", sprite DMA has " + num(sprites) +
                     " fetches in field F");
+
+        // NTSC line lengths, measured and not graded (NM-HRM-010)
+        Spec ns = mk(1, false, 0x50, false);
+        ns.ntsc = true;
+        Run nr = execute(ns);
+        analyze(nr);
+        size_t ng = 0;
+        std::string lp = nr.hasF ? line_periods(nr, ng) : std::string("no field F");
+        checks.note("NTSC-LINES (NM-HRM-010), NOFIX with NTSC selected: " + std::string(nr.ok() ? "reached DONE" : "did not finish") + ", " + num(ng) +
+                    " refresh line groups in field F; distances between consecutive groups: " + lp +
+                    "; p.23 prints alternating lines of 228 and 227 colour clocks (1824 and 1816 clk_sys)");
     }
 
     // ---- claims not graded
