@@ -16,7 +16,7 @@ differs from the scan, the scan is quoted and the difference is named.
 | `5-appA-p264.c2` | 263-264 | "If a register is marked as a write-only register, do not attempt to read from it, as this may trash the register and crash the system." The consequence is only possible ("may"), so there is no expected value. The page also forbids the read, and a read that did trash a register would spoil every other check of the run. No program in this package reads a write-only register. |
 | `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8` | 263 | "The custom chips can only access Chip memory; using a non-Chip address will fail". "Fail" names no observable outcome. The system under test has no memory besides Chip memory, so a "non-Chip address" could only be an address above the selected Chip-memory size, and no page says what the port, the video or the audio output then show (p.169 says of the blitter only that such use "may result in destruction of the contents of Chip memory", again a possibility). No expected value. |
 | `5-appA-p263.c9`, `A-pre.c9` | 263 | "Disk data, sprite data, bitplane data, audio data, copper lists and anything that will be blitted or accessed by custom chip DMA must be located in chip memory." This is an instruction to the programmer. Every stimulus below obeys it, and P1 checks its positive side: audio DMA fetches its data from the Chip-memory location written. The page does not say what happens when the instruction is broken. |
-| `5-appA-p263.c1`, `A-pre.c1` | 263 | "680x0 address = (chip address) + $DFF000". The formula is stated for every custom register. Grading it would need an access through every register's address; P1 and P2 reach AUDxLCH, AUDxLCL, DMACON and DMACONR only, and use the formula to name them. |
+| `5-appA-p263.c1`, `A-pre.c1` | 263 | "680x0 address = (chip address) + $DFF000". The formula is stated for every custom register. Grading it would need an access through every register's address; P1 and P2 cover AUDxLCH, AUDxLCL, DMACON and DMACONR, and other propositions cover further registers, a subset that is still not exhaustive, so the formula stays ungraded. |
 | `5-appB-p287.c5` | 287 | "+ Address register pair. Must be an even address pointing to chip memory." Same kind of claim: every location and pointer written below is even and lies in Chip memory, and the page does not say what happens otherwise. |
 | `5-appB-p290.c3` | 290 | "DMACON is assigned to Denise." The chip column says which chip decodes a register, and no output of the system shows that. The claim also comes from a text-layer error: the printed row on p.290 reads `DMACON 096 W A D P`, as p.278 does, but the text layer lost "A" and "P". |
 | `C-interp.copcon`, `C-interp.copcon.ecs` | 310 | The claims name a whole range: "the Copper can access the address range from $DFF03E through $DFF07E" (standard chip set) and "all of the Amiga chip registers" (ECS). Grading them would need an observation of the Copper's write to every register of the range. P10 and P11 observe the eight audio location registers and `$054`, `$056`, `$058`; `$07E` (DSKSYNC) and the unassigned addresses have no output at the RAM port. The two ids are declined, and P10 and P11 carry none. |
@@ -137,7 +137,7 @@ Every audio, sprite, bitplane, Copper and blitter-source area above is a
 |---|---|---|
 | G1 | The program finished: the final marker `END` was written, and every result word the proposition names was stored. | Insert a branch-to-self before `END`: G1 goes red. |
 | G2 | The DMACONR value that the program reads and stores right after each enabling DMACON write shows the intended bits among bits 10 and 8-0, and DMAEN (bit 9) set (the readback is P2). | Leave bit 9 out of the enabling write: the stored value shows bit 9 = 0, G2 goes red. p.144, "For any audio DMA to occur (or any other DMA, for that matter), the DMAEN bit in DMACON must be set", also predicts that the effect is absent. |
-| G3 | No CPU write falls into any DMA block during any window. | Add one `MOVE.W` into the block under test inside the window: G3 goes red. |
+| G3 | No CPU write falls into any DMA block during any window. Where a run has several windows (P1, P10), every block is checked against every window, not only against its own. | Add one `MOVE.W` into the block under test inside the window: G3 goes red. For P1 and P10 also add it into a block inside a window that is not the block's own: G3 goes red. |
 | G4 | V(W) is at least the value the proposition names. | Set the delay count to 0: V(W) falls short, G4 goes red. |
 | G5 | Of DMACON bits 8-0, only the channels the proposition names are set during the window (from the same stored DMACONR value). | Also set SPREN (`$8020`) before the window: G5 goes red. |
 
@@ -237,8 +237,9 @@ contrasting cases name.
   claims' "x".
 
 **Preconditions.**
-- G1, G2 (bits 9 and x set), G3, G5 (no audio bit other than x, no other
-  channel).
+- G1, G2 (bits 9 and x set), G3 (each of the twelve ranges A_y, A_y^L and
+  A_y^H against each of the four windows W_x), G5 (no audio bit other than x,
+  no other channel).
 - G4 with V(W_x) ≥ 2, and at least one vertical-sync pulse start between
   `C_x` and `O_(x+1)`.
 
@@ -770,12 +771,12 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
   finishes, because the poll stops at read 2, and G1 and the DMACONR
   precondition still hold. The main run's own G3 and G4 are preconditions of
   P8-NOBLIT, since the indices come from it.
-- For (b): no program that still makes the DMACONR read of the graded index,
-  with the blit running and every precondition live, can show bit 14 = 0 on
-  a system that follows the pages: p.186 sets the flag whenever a blit is in
-  progress. (b) is therefore contrasted by P8-NOBLIT, which runs the same
-  comparator on reads where no blit runs, and (b) goes red on a system whose
-  DMACONR reads bit 14 as 0 while a blit runs.
+- For (b): unfalsifiable at this boundary. No stimulus at the ports makes
+  the blitter busy flag read wrong while the blit runs: a program that still
+  makes the DMACONR read of the graded index with the blit running and every
+  precondition live reads bit 14 = 1, because p.186 sets the flag whenever a
+  blit is in progress, and no input changes that. P8-NOBLIT runs the same
+  comparator on reads where no blit runs and is the same-comparator control.
 - For the "the blit ran" precondition: the program without a blit, as above.
 - For the "at least 2 reads inside the blit" precondition: delay the first poll
   read until the blit has ended, with a delay loop between the BLTSIZE write
@@ -902,10 +903,9 @@ its inputs; otherwise it is `NOT GRADED` and names the unmet precondition.
 
 **Contrasting cases.** Each component has its own: the program without one
 SET write through the table of P2, and the exchanged program through the
-table of P9, turn the aggregate red through their component. A system whose
-DMACONR reads bit 14 as 0 while a blit is still running turns P8 and the
-aggregate red with P9-G(after-completion) green (section 6, implementation
-copy).
+table of P9, turn the aggregate red through their component. The busy-bit
+half (P8) has no stimulus red, for the reason given at P8: it is unfalsifiable
+at this boundary.
 
 ### P10: The Copper writes AUDxLCH and AUDxLCL whatever the danger bit, under OCS and ECS
 
@@ -964,8 +964,9 @@ the DMA channel before audio output begins.").
 **Preconditions.** Every one is graded on every run: the four combinations of
 OCS or ECS and CDANG clear or set, each with the list L and with the list L'
 of the contrasting case.
-- G1, G3, G5. G5 holds for the Copper window (only COPEN among bits 8-0) and for
-  each audio window (only channel x).
+- G1, G3 (each of the eight ranges A_y and B_y against each of the four windows
+  W_x, and L inside [`K_O`, `K_C`]), G5. G5 holds for the Copper window (only
+  COPEN among bits 8-0) and for each audio window (only channel x).
 - G2 for the Copper enable (bits 9 and 7) and for each audio window (bits 9
   and x), from the five stored readbacks.
 - G4: V ≥ 2 in [`K_O`, `K_C`] and in each W_x.
@@ -981,8 +982,9 @@ of the contrasting case.
 - For G2: leave DMAEN out of the Copper enable; and, separately, clear DMAEN
   with the Copper-off write and leave it out of channel 0's enabling write. The
   stored readbacks lack bit 9.
-- For G3: one extra CPU write into B_0 inside W_0; and, separately, one extra
-  CPU write into the last word of L inside [`K_O`, `K_C`].
+- For G3: one extra CPU write into B_0 inside W_0; separately, one extra CPU
+  write into B_0 inside W_1; and, separately, one extra CPU write into the last
+  word of L inside [`K_O`, `K_C`].
 - For G4: a delay count of 0, so V(W_x) falls short of 2.
 - For G5: also set SPREN before the windows.
 - For the "Copper ran the list" precondition: point COP1LC at an end-of-list
@@ -1053,9 +1055,19 @@ the blitter registers should be written").
 **Preconditions.** Every one is graded on every run: OCS and ECS, each with
 the real list and with both lists of the contrasting cases.
 - G1, G2 (bits 9, 7 and 6 set), G4 with V ≥ 3, and G3: no CPU write falls
-  into L inside the window, and every write into Q2 or Q inside it carries
-  `$FFFF`, as a blitter write does (BLTCON0 `$01FF` is USED with LF `$FF`,
-  p.177), so no write there is a CPU write.
+  into L inside the window, and none falls into Q or Q2 inside it. The port
+  record does not name the requester of a write, and the write data does not
+  identify it: a CPU `MOVE.W #$FFFF` and a blitter write with BLTCON0 `$01FF`
+  (USED with LF `$FF`, p.177) carry the same word. The second half is
+  therefore shown on the CPU's instruction fetches (section 2.4). Between the
+  stores of the two markers the program holds only the instructions that store
+  to DMACON, to R and to MK, and the test requires every read from the program
+  image inside the window to lie in the words of those instructions,
+  `$080466` up to but not including `$080482`; an extra instruction adds words
+  to the image and moves the closing marker's store beyond that range.
+  Measured, on each of fx68k and TG68K, under OCS and under ECS: 150010
+  program-image reads in the window, lowest address `$080468`, highest
+  `$080480`.
 - G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set.
 - The list's first 12 bytes were read at least once.
 
@@ -1068,7 +1080,9 @@ the real list and with both lists of the contrasting cases.
 - For G1: a branch-to-self before `END`.
 - For G2: leave DMAEN out of the enabling write.
 - For G3: one extra CPU write into L, past its own content, inside the window;
-  and, separately, one extra CPU write of `$1234` into Q2 inside the window.
+  separately, one extra CPU write of `$1234` into Q2 inside the window; and,
+  separately, one extra CPU write of `$FFFF` into Q2 inside the window, the
+  word a blitter write there carries.
 - For G4: a delay count of 0.
 - For G5: also set SPREN in the enabling write.
 - For the list precondition: point COP1LC at an end-of-list pair elsewhere
@@ -1178,23 +1192,6 @@ section 2.3, and the mechanism items below.
   of Zb, P and SA-SC). Content is immaterial where section 2.3
   says so ("any values"; the sprite and Copper-list content follow the
   pages P1/P6/P10/P11 cite).
-- **Implementation copy.** No stimulus can make a DMACONR read taken during
-  a running blit show bit 14 = 0 on a system that follows p.186, so the red of
-  P8 (b) on such a system is shown on a private copy of the design in which
-  bit 14 reads 0 once a blit has run for 1500 clocks, while the blit is still
-  running. `private_copy.patch` makes that copy from the pinned design; the
-  pinned design is never modified. `NMH_ONLY=P8 make priv-test-fx68k` and
-  `NMH_ONLY=P8 make priv-test-tg68k` (or `make priv-test` for both) copy the
-  design to `obj_dir_priv/`, apply the patch there and build the test against
-  the copy, each core in its own object directory (`obj_dir_priv_fx68k/`,
-  `obj_dir_priv_tg68k/`) and each writing its own output (`out_priv_fx68k.txt`,
-  `out_priv_tg68k.txt`); `obj_dir_fx68k/`, `obj_dir_tg68k/` and `out_fx68k.txt`,
-  `out_tg68k.txt` are those of the unmodified build and are not touched.
-  Measured, with `NMH_MUTATE` unset: `NMH_ONLY=P8` gives 7 passed, 1 failed on
-  each core (P8 fails, P8-G1 to P8-G4 and P8-NOBLIT pass; the poll holds 5
-  graded reads on fx68k and 6 on tg68k, and (b) fails over them);
-  `NMH_ONLY=P2,P8,P9` gives 18 passed, 2 failed on each core (P8 and DMACONR
-  fail; P9-G(after-completion) passes, so the aggregate is graded).
 - **R's stored values are read from the RAM port's own log** of the CPU's
   store instructions (the write's data field), not peeked from memory
   content: a value the program never actually stored is then absent, not
@@ -1219,7 +1216,9 @@ section 2.3, and the mechanism items below.
   (an absolute `MOVE.W`), P for P3, L for P4, Q for P5 (outside the blit's
   destination footprint and, separately, onto its first word), S0 for P6,
   B_0 and, separately, L for P10, L and, separately, Q2 for P11 (a write of
-  `$1234`, where a blitter write carries `$FFFF`). Every other precondition of
+  `$1234`, and a write of `$FFFF`, the word a blitter write carries). P1 and
+  P10 are also mutated across windows: a write into A_0 inside W_1 (P1) and a
+  write into B_0 inside W_1 (P10). Every other precondition of
   every proposition has a mutation of its own as well.
 - **Markers.** P1 and P10 write `END`; P7, P9 and P11 write `END` after their
   last step. P3-P6 and P8 close with the window's closing marker and then
