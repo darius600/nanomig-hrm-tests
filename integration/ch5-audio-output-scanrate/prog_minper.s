@@ -11,7 +11,8 @@
 ;   MUT_MC4LEN   AUD0LEN <- 65, bytes 0 and 2 at T+128 (3.7 MC4)
 ;   MUT_MC4CPU   one CPU read of the word at T+64 in the middle of the wait (3.7 MC4)
 ;   MUT_MC5MARK  the done marker is not stored (3.7 MC5)
-;   MUT_MC5STOP  DMACON <- $0001 after 100 lines of the wait (3.7 MC5)
+;   MUT_MC5STOP  DMACON <- $0001 after 200 lines of the wait (3.7 MC5)
+;   MUT_MP6LEN   AUD0LEN <- 32 written after N_run / 2 lines of the wait, while the channel runs (4 MP6)
 ;   MUT_MP5CH1   channel 1 set up on the same table, period 64; DMACON $8203 (4 MP5)
 ;   MUT_FIXTURE  the fixture constant is $DEAD instead of $BEEF
 
@@ -153,7 +154,7 @@ start:
         move.w  d1,d5
 .nomax
         ifd     MUT_MC5STOP
-        cmp.w   #100,d6
+        cmp.w   #200,d6
         bne.s   .nostop
         move.w  #$0001,DMACON(a0)
 .nostop
@@ -163,6 +164,12 @@ start:
         bne.s   .nocpu
         move.w  T+64,d0
 .nocpu
+        endc
+        ifd     MUT_MP6LEN
+        cmp.w   a3,d6
+        bne.s   .nolen
+        move.w  #32,AUD0LEN(a0)
+.nolen
         endc
         cmp.w   d7,d6
         bne.s   .wl
