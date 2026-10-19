@@ -686,3 +686,114 @@ declared. The level changes drift by one tick per sample period against the
    the per-word reading, and only as a cross-check of the time base.
 10. **Figure 5-8** (p.166, the audio state diagram) is not used for any
     expected value. The claims do not rest on it.
+
+## 6. What the build adds
+
+Everything in this section is a program, a stimulus placement, a mutation or a
+measured value of the build; none of it changes a proposition or an expected
+value above. Measured values are from `make -k -B test` on fx68k and on
+TG68K; where the two cores differ the section says so, and where it does not,
+both cores printed the same.
+
+### 6.1 Programs and placement
+
+- `prog_minper.s` is the program of section 3.3. `T` = $002000, `T3` =
+  $002200, the result block `R` = $0C0100 (`R+0` ... `R+8`), the fixture
+  constant $BEEF at $0C0120, and the two parameter words (`P` at $0C0200,
+  `N_run` at $0C0202) that the test pokes before the boot. Step 0 writes
+  `DDRA` <- $03 and `PRA` <- $02 with byte writes. The fixture constant is
+  stored after step 4 and read back first (`FIXTURE-CONST`).
+- The contrasts are assembly-time symbols, each set by a source of its own
+  that includes `prog_minper.s`: `prog_minper_mc2dma.s`,
+  `prog_minper_mc2adk.s`, `prog_minper_mc3vol.s`, `prog_minper_mc4len.s`,
+  `prog_minper_mc4cpu.s`, `prog_minper_mc5mark.s`, `prog_minper_mc5stop.s`,
+  `prog_minper_mp5ch1.s` and `prog_minper_fixmp.s`. The period contrasts
+  (MP1-MP4, MC3 time scale, MC6) change only the poked parameter, the
+  standard contrast (MC1) only the harness standard. The vasm listings of
+  the normal program and of the MC2, MC4 and MP5 variants show
+  `MOVE.W #$0002,(A1)` for the word at `T+128` and `MOVE.W T+64,D0` for the
+  CPU read; the program is assembled for the 68000.
+- One test binary runs `SPECIFICATION.md`'s test, then NTSC and PAL of this
+  addendum at the same time in two processes, and prints one summary line.
+- The standard is selected by the harness's `chipset_config` (ECS, bit 1
+  set for NTSC). The harness runs 2 MB of Chip memory.
+
+### 6.2 Reference frames, measured
+
+Reference run `P_ref = 447`, NTSC and PAL, fx68k and TG68K:
+
+- The channel-0 output is `audio_left`; `audio_right` does not change (394
+  changes after the first fetch on TG68K, 393 on fx68k). Not graded.
+- `D_ref` = 3576 cycles in both standards on both cores, the largest
+  deviation of a level run from it 0, so one tick = 8.0000 cycles and `s` =
+  0.125 tick.
+- The mean spacing of table fetches over 64 fetches is 7150.5 cycles, 0.021
+  % from `2 * D_ref`.
+- The 503 complete lines of the port window are all 227.000 ticks long in
+  NTSC and in PAL; none is 228 ticks and none differs from its predecessor.
+  The NTSC alternation of p.23 is therefore not present at the port; it is
+  printed and not graded (section 3.5, F1 (c)).
+- 770 refresh clusters were checked in each reference run; every one holds
+  four edges of `refresh` two slots apart. The cross-check "reads below word
+  $1000" counts 3084 on fx68k and 3088 on TG68K against 4 * 770 = 3080.
+- Channel 0's fetch lies 114 cycles (14.25 ticks) after the first refresh
+  edge of a line, in every run, with the channel on its own.
+
+### 6.3 Results
+
+Period values below the minimum, fx68k and TG68K identical:
+
+| Standard | P | Next-sample periods in the window | Verdict |
+|---|---|---|---|
+| NTSC | 1 | 529 of 59999 classified | MP2 (a), (b) green; MP5 green (1 read per line) |
+| NTSC | 114-119 | 1 to 6 reuse periods in the window | MP2 green, except 116 (below) |
+| NTSC | 120-123 | all next, no reuse | MP2 (a) and (b) red: "no reuse within W = 60000 ticks" |
+| PAL | 1-119 | as NTSC | MP4 (a) green, except 116 (below) |
+| PAL | 120-122 | all next | MP4 (a) red |
+
+- `P` = 116 in both standards: MC5 fails (the last table fetch is not after
+  the end of the output window; 5 fetches off the address order, 6 skips and
+  7 unmapped periods are measured in the window), so MP2 and MP4 are not
+  graded at 116.
+- MP1: 14 of 14 values of `S_hi` green. MP3: 15 of 15 (`P` = 123 and `S_hi`)
+  green, MP3-123 included. MP5: `P` = 1-113 green, at most one table read in
+  a line, 263 reads in 263 lines (31,381 samples/second by the reported
+  formula).
+- `P` = 114-119 are above the page's theoretical maximum period of 113.75
+  ticks and the reuse there is present but rare (1 to 6 periods in a window).
+- Totals, `make -k -B test`: both cores print `2309 passed, 13 failed`, of
+  which the earlier test contributes 126 passed, 0 failed. The 13 failures
+  are the MC5 line of NTSC 116 and PAL 116, the eight MP2 lines (a) and (b)
+  for `P` = 120-123, and the three MP4 (a) lines for `P` = 120-122.
+- Wall time of a normal run, the two standards in two processes at once
+  while other simulations ran on the machine: fx68k 2196 s, TG68K 3702 s.
+
+### 6.4 Mutations
+
+Each selector runs only the periods its contrast needs and runs the package's
+own comparator.
+
+| `NMH_MUTATE` | Assertion or precondition | Stimulus | Result on both cores |
+|---|---|---|---|
+| `MP1` | MP1 | `P` = 123, `P` = 64 | 123 green, 64 red |
+| `MP2` | MP2 | `P` = 124, `P` = 64 | 124 red ((a), (b)), 64 green |
+| `MP3` | MP3 | `P` = 122, `P` = 64 | 122 green, 64 red |
+| `MP4` | MP4 | `P` = 124, `P` = 64 | 124 red ((a)), 64 green |
+| `MP5CH1` | MP5 | NTSC 64, channel 1 on `T` | red, 2 reads in a line |
+| `MC1STD` | MC1 | declared and harness standard swapped | red in both |
+| `MC2DMA`, `MC2ADK` | MC2 | channel 3 enabled, USE3PN set | red, other preconditions green |
+| `MC3VOL`, `MC3TIME` | MC3 | volume 0, `AUD0PER` 894 declared 447 | item 2 red, anchor F1 (c) red |
+| `MC4LEN`, `MC4CPU` | MC4 | length 65, CPU read at `T+64` | red, other preconditions green |
+| `MC5MARK`, `MC5STOP` | MC5 | marker left out, stop after 100 lines at `P` = 64 | red |
+| `MC6PER` | MC6 | `AUD0PER` 129 declared 128 | red, 64 ticks from the grid |
+| `FIXMP` | FIXTURE-CONST | constant $DEAD | red |
+
+- The specification's contrast for MP3 (`P` = 122) does not turn MP3 red,
+  because the pages' PAL consequence (MP4 (a)) does not occur at 122 on this
+  implementation (every period is next at 120-122). `P` = 64 is added as the
+  input for which the page predicts the failure by the same argument (3,546,895
+  / 64 exceeds the PAL maximum); it goes red. The same two inputs are run
+  through MP4 so that its comparator is shown live at 64 and red at 124.
+- `MC5STOP`: at `P` = 64 the port window starts after the stop and holds no
+  wrap, so MC4 also fails there, besides MC5.
+- The contrast runs reuse the reference runs of the standards they need.
