@@ -34,6 +34,14 @@ start:
         POLLBIT INTREQR,5,BND_VERTB
         move.w  #$0020,INTREQ(a0)
 
+        ifd MUT_R1READ
+; ---- R1 contrast: clear the ROM overlay, then one CPU read of Chip word
+; $000100 (word address $80, below $1000) ----
+        move.b  #$03,$BFE201
+        move.b  #$00,$BFE001
+        move.w  $000100,d5
+        endif
+
         ifd MUT_BRK
 ; ---- precondition 1c contrast: force TxD low then high before MARK=0 ----
         move.w  #$8800,ADKCON(a0)      ; UARTBRK set (p.257)

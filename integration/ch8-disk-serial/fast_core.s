@@ -95,8 +95,8 @@ start:
         ifd MUT_MIDSTOP4D
 ; ---- precondition 4d contrast: once the poll count first drops to or below
 ; MIDSTOP4D_DELAY, clear DSKEN (DMACON bit 4) and keep sampling DSKBYTR into
-; PROBE_D for PAUSE4D iterations (so the paused DMAON/DISKWRITE=0 state is
-; itself captured, not only the state right before and after the pause),
+; PROBE_D for PAUSE4D iterations (so the paused DMAON=0 state is itself
+; captured, not only the state right before and after the pause),
 ; then set DMAEN+DSKEN again. The internal DMA-armed state and the pointer
 ; are untouched by a DMACON-only write, so the same transfer resumes. d4
 ; latches so this fires once. MIDSTOP4D_DELAY and PAUSE4D are tuned against
@@ -123,6 +123,11 @@ start:
         bpl.s   .poll
         ori.w   #1,POLL_TIMEOUT
 .polldone:
+        ifd MUT_R1READ
+; ---- R1 contrast: one CPU read of Chip word $000100 (word address $80,
+; below $1000), after the transfer ----
+        move.w  $000100,d5
+        endif
         ifd MUT_ONCE
 ; ---- precondition 4e contrast: the CPU reads word 10 of the buffer, which
 ; the disk DMA fetched long before, so that word is read twice ----

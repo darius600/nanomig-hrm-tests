@@ -34,6 +34,14 @@ start:
         POLLBIT INTREQR,5,BND_VERTB
         move.w  #$0020,INTREQ(a0)
 
+        ifd MUT_R1READ
+; ---- R1 contrast: clear the ROM overlay, then one CPU read of Chip word
+; $000100 (word address $80, below $1000) ----
+        move.b  #$03,$BFE201
+        move.b  #$00,$BFE001
+        move.w  $000100,d5
+        endif
+
 ; ---- step 2: R4 line-level anchor ----
         ifnd MUT_NOBRK
         move.w  #$8800,ADKCON(a0)      ; UARTBRK set
@@ -76,13 +84,7 @@ start:
         subq.l  #1,d2
         bpl.s   .poll0
         ori.w   #1,POLL_TIMEOUT
-.rbf0:
-        ifd MUT_5C
-; ---- precondition 5c contrast: read and clear character 0 only after s_2 ----
-        move.w  #C5DELAY-1,d3
-.c5dly: dbra    d3,.c5dly
-        endif
-        move.w  SERDATR(a0),d1
+.rbf0:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+0
         ifnd MUT_NOCLEAR
         move.w  #$0800,INTREQ(a0)
@@ -215,7 +217,14 @@ start:
         subq.l  #1,d2
         bpl.s   .poll7
         ori.w   #1,POLL_TIMEOUT
-.rbf7:  move.w  SERDATR(a0),d1
+.rbf7:
+        ifd MUT_5C
+; ---- precondition 5c contrast: the read of character 7 is delayed until
+; after the driver's ninth character has been received ----
+        move.w  #C5DELAY-1,d3
+.c5dly: dbra    d3,.c5dly
+        endif
+        move.w  SERDATR(a0),d1
         move.w  d1,RESULT+14
         ifnd MUT_NOCLEAR
         move.w  #$0800,INTREQ(a0)
