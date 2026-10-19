@@ -440,9 +440,16 @@ converter"). It sits at a period well above both minimums, where no claim of
 this addendum is at stake.
 *Contrast (levels):* the reference run with `AUD0VOL` <- 0. p.266:
 "000000=no output". No level cycle appears, so MC3 fails.
-*Contrast (time scale):* the reference run with `AUD0PER` <- 894 and the
-declaration left at 447. The tick comes out twice as long, so F1 (c) measures
-lines of about 113.75 ticks (NTSC) or 113.5 ticks (PAL), and MC3 fails.
+*Contrast (time scale):* the reference run with `AUD0PER` <- 448 and the
+declaration left at 447. The tick comes out 448/447 times as long, so F1 (c)
+measures lines of about 227 * 447 / 448 = 226.5 ticks, below the band's lower
+limit of 226.8 in both standards, and F1 (c) fails through its own
+mean-line-length clause. The mismatch is small enough that the other anchors
+hold: the 0.5-cycle tolerance of the F4 cluster check (spacings of
+`2 * k` ticks, k up to 3) is not exceeded, so F4 stays green and the line set
+is not empty; anchors (a) and (b) are ratios of the same measurement and hold
+too. 448 is the smallest written period that leaves the band: 446 gives
+227.5 ticks, inside both bands.
 
 **MC4. The channel plays the table, and nothing else touches it.** Inside
 the port window:
