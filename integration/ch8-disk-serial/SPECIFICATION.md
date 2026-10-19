@@ -504,7 +504,7 @@ The RxD driver behaves the same in both runs:
 - **5d. Every RBF event is observed, on run A and on run B.**
   - MARK=READY comes before s_0.
   - No PROBE_I value stored before s_0 has bit 11 = 1.
-  - For every j, at least one value with bit 11 = 0, stored after s_j, comes before the first value with bit 11 = 1.
+  - For every j, at least one value with bit 11 = 0, stored since the previous marker (MARK=READY for j = 0, MARK=j otherwise), comes before the first value with bit 11 = 1. The values are not required to be stored after s_j: that stricter reading turns 5d red under the contrasts of (b) and 5f, which grade their own clauses.
   - Contrast: leave out the INTREQ clear in step 5. The poll for the next character then sees 1 at once, and 5d fails.
 - **5e. Resolution, on run A and on run B.** Every G5 bracket is narrower than T/4, so the half-bit grading in (c) is not decided by the polling. 5e is graded only when 5d holds on the same run: a character whose poll never sees RBF = 0 has no bracket.
   - Contrast: add a delay of T/4 or more to every poll iteration, and 5e fails.
