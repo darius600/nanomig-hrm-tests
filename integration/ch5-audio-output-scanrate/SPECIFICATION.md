@@ -11,6 +11,11 @@ The package has 16 claims. Seven propositions are specified (P1-P6, plus
 P3B alongside P3). Ten claims give no proposition. Six are used only in
 part. None are used in full.
 
+Twelve further claims, all printed on p.141, are specified in
+[`SPECIFICATION-min-period.md`](SPECIFICATION-min-period.md): propositions MP1-MP5 on audio DMA at,
+above and below the minimum sampling period. That document is self-contained; its section numbers,
+reference frames, preconditions and contrasts are its own.
+
 ---
 
 ## 1. Claims not turned into a proposition
