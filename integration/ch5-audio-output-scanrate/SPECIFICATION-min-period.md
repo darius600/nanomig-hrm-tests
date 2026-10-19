@@ -37,9 +37,11 @@ Parts of these claims that no check here covers, and why:
   the bound is checked (MP5), and only in NTSC, because the claim's figure is
   built from NTSC numbers (262.5 lines/frame, 59.94 frames/second). The page
   gives no PAL figure.
-- **Periods 429 to 65535** inside "at least 124" (c9, c14) and "at least 123"
-  (c12, c18): the propositions cover them, but they are not in the required
-  set (section 3.2). One run there, with its settling time and a window of
+- **Periods inside "at least 124" (c9, c14) and "at least 123" (c12, c18)
+  that are not in the tested set `S_hi`:** 132-139, 141-159, 161-199,
+  201-255, 257-319, 321-427 and 429 to 65535 (and, in PAL, none below 123).
+  The propositions cover them, but they are not in the required set
+  (section 3.2); `S_hi` is the tested set, chosen for the cost of a run. One run there, with its settling time and a window of
   256 sample periods, costs from about 0.05 s of simulated time (at 429) to
   about 7 s (at 65535). The check establishes "at least" on the tested
   values only.
@@ -61,7 +63,7 @@ Parts of these claims that no check here covers, and why:
 | MP1 | NTSC | the set S_hi (124 and up) | every sample period carries the next data sample |
 | MP2 | NTSC | every value 1-123 | at least one sample period does not carry the next sample, and at least one reuses a sample already played |
 | MP3 | PAL | 123 and the set S_hi | as MP1 |
-| MP4 | PAL | every value 1-122 | as MP2 |
+| MP4 | PAL | every value 1-122 | at least one sample period does not carry the next sample; reuse is reported, not graded |
 | MP5 | NTSC | every value 1-113 | no line holds more than one data fetch of the channel |
 
 ## 3. Common setup
@@ -124,6 +126,21 @@ Appendix A.
 `CUSTOM` = $DFF000. The steps follow the order of the audio summary on
 p.145 (location, length, volume, period, then start the DMA).
 
+0. Boot overlay. `DDRA` ($BFE201) <- $03, then `PRA` ($BFE001) <- $02 (byte
+   writes). p.223: "An additional copy of the system ROM responds starting
+   at memory location $00000000. The system RAM that would normally be
+   located at this address is not available." and "Software must assume that
+   memory is not available. The OVL bit in one of the 8520 Chips disables
+   the overlay (See Appendix F for the bit location)." p.339 (Appendix F,
+   CIAA address map) gives `BFE001 pra ... /LED OVL` and `BFE201 ddra
+   Direction for port A (BFE001);1-output (set to 0x03)`: bit 0 is OVL, bit
+   1 is /LED. `PRA` <- $02 clears OVL and sets /LED. p.157: "there is a
+   control bit that allows the audio output to bypass the low pass filter.
+   This control bit is the same output bit of the 8520 CIA that controls the
+   brightness of the red "power" LED (CIA A $BFE001 - Bit 1: /LED)."; MC3
+   stays the check that the output is unfiltered. `T` stays below $80000
+   (3.1); the result block `R` and every parameter or data word of the
+   program that the test reads lie at $80000 or above.
 1. `INTENA` ($09A) <- $7FFF and `INTREQ` ($09C) <- $7FFF: clears every
    interrupt enable and request (p.280: bit 15 SET/CLR "Determines if bits
    written with a 1 get set or cleared").
@@ -161,8 +178,9 @@ p.145 (location, length, volume, period, then start the DMA).
     writing a 0 into the AUDxEN bit at any time.").
 14. Store the done marker $A5C3 at `R+8`. Then loop on itself.
 
-Run length. With `W(P) = max(60 000, 256 * P)` ticks (the window, section
-3.5) and `T_settle(P) = max(128 * P, 14 600)` ticks:
+Run length. The window `W(P) = max(60 000, 256 * P)` ticks (section 3.5) is a
+stimulus choice that no page gives: 60 000 ticks is a length chosen so that
+the window holds many sample periods at every tested `P`. With it and `T_settle(P) = max(128 * P, 14 600)` ticks:
 
 `N_run = max(330, ceil((T_settle(P) + W(P)) / 227) + 16)` lines.
 
@@ -176,8 +194,13 @@ graded on a shorter window.
 ### 3.4 What the test records
 
 - **Chip-memory port:** every access with its time in system clock cycles,
-  its word address, read or write, and whether it was a DMA fetch (refresh
-  told apart from the other DMA) or a CPU access.
+  its word address, and read or write.
+- **Refresh:** the `refresh` output of `nanomig.v` ("current bus cycle is
+  refresh"), a system-boundary port, sampled once per system clock cycle on
+  the same time base as the Chip-memory port. A refresh access is a rising
+  edge of that output. The criterion "reads below word address $1000" is an
+  observation of the implementation, not of a page; the test prints it as a
+  MEASURED cross-check and never grades with it.
 - **Audio output:** the channel-0 output is whichever of the two outputs
   carries channel 0; the other output carries the other pair of channels.
   The pages disagree on which named
@@ -227,14 +250,19 @@ holds two samples (p.138: "the audio DMA retrieves one word (16 bits) at a
 time and uses the sample it reads as two bytes of data"), and each word is
 fetched once per pass (p.139, p.165: "AUDxDR Audio DMA request to Agnus for
 one word of data");
-(c) the line length of F4, in ticks: NTSC lines alternate between 228 and
-227 ticks to within 0.2 tick, and their mean is 227.5 to within 0.2 tick
-(p.23: "Every other line is a long line (228 color clocks, 0-$E3), with the
-others being 227 color clocks long."; p.194: 227.5). PAL: the mean line
-length lies between 226.8 and 227.7 ticks. The two pages that state it
-give different values, and this range takes in both: p.23 says "In PAL,
-they are all 227 long", and p.304 lists "PAL (625 lines, 227.5 colorclocks
-per scan line)".
+(c) the mean line length of F4, in ticks, over the complete lines of the
+port window. NTSC: the mean lies between 226.8 and 228.2 ticks. p.23: "Every
+other line is a long line (228 color clocks, 0-$E3), with the others being
+227 color clocks long."; p.194: "there are 227.5 "color clocks"". The range
+takes in both lengths the page names, with a slack of 0.2 tick. PAL: the
+mean lies between 226.8 and 227.7 ticks. The two pages that state it give
+different values, and this range takes in both: p.23 says "In PAL, they are
+all 227 long", and p.304 lists "PAL (625 lines, 227.5 colorclocks per scan
+line)". Only the mean is graded, because the tick calibration needs only
+the mean. Whether NTSC lines alternate between 228 and 227 ticks is printed
+as a MEASURED line and not graded. The tolerances of this section (0.2 tick,
+0.5 %, the PAL band 226.8-227.7) are choices of this specification, not
+values a page gives.
 
 **F2. Level cycle.** In the reference run, the channel-0 output shows the table
 played in order. The 128 distinct levels that appear, in the order in which
@@ -261,9 +289,9 @@ the output shows in it.
 **F4. Line.** Figure 6-9 (p.195) draws each horizontal line beginning with
 the memory refresh slots, followed by the disk, audio and sprite slots, with
 one audio slot per channel in a fixed position. p.194: "4 cycles for memory
-refresh" per line. At the port, a refresh cluster is a run of refresh
-accesses with gaps of no more than 4 ticks. The start of a line is the first
-access of a cluster. A line runs from one cluster start to the next.
+refresh" per line. A refresh cluster is a run of refresh
+accesses (rising edges of `refresh`, section 3.4) with gaps of no more than
+4 ticks. The start of a line is the first access of a cluster. A line runs from one cluster start to the next.
 *Anchor checks* (part of MC4): every cluster holds 4 refresh accesses; every
 channel-0 table fetch lies at the same offset, in ticks, from the start of
 its line (Figure 6-9: a fixed slot per channel).
@@ -300,21 +328,21 @@ period.) For `j = 2 ... N`:
 |---|---|---|
 | `c_j = u` | unmapped | unchanged |
 | `c_j = m + 1` | **next** | `c_j` |
-| `c_j = m` or `c_j = m - 1` | **reuse** | unchanged |
+| `c_j = m` | **reuse** | unchanged |
+| `c_j = m - 1` | **repeat** (reported, not graded) | unchanged |
 | `c_j = m + k`, 2 <= k <= 63 | skip | `c_j` |
 | anything else | other | unchanged |
 
-The definition of **reuse** is what both pages that describe the effect
-agree on. p.141 says "the previous sample will be reused", which is the
-sample just played (`c_j = m`). p.164 says "If the sampling rate is set much
-higher than the normal maximum sampling rate (approximately 29 KHz), the two
-samples in the buffer register will be repeated", which are the two samples
-of the last word (`m - 1`, `m`). Both describe a sample period that carries
-one of the two samples played last instead of the next one. The table has
-128 different values (section 3.1), so such a repeat cannot be taken for a
-new sample.
+The definition of **reuse** is what p.141 says: "the previous sample will be
+reused", which is the sample just played (`c_j = m`). p.164 says "If the
+sampling rate is set much higher than the normal maximum sampling rate
+(approximately 29 KHz), the two samples in the buffer register will be
+repeated", which would also allow a sample period that carries the other
+sample of the last word (`m - 1`). That is reported as **repeat**,
+separately, and never graded. The table has 128 different values (section
+3.1), so a repeat cannot be taken for a new sample.
 
-Each run reports `N` and the number of sample periods in each class.
+Each run reports `N` and the number of sample periods in each class, repeats included.
 
 ### 3.7 Preconditions
 
@@ -324,6 +352,13 @@ proposition. Each precondition has a contrast: a change of the stimulus for
 which the pages predict that this precondition fails while the program still
 finishes and the other preconditions hold. A contrast run is graded only for
 the precondition it is the contrast for.
+
+In the runs below the minimum (MP2, MP4 and MP5) MC6, and the "without a
+gap" clause of MC4, are printed as MEASURED results and are not
+preconditions there: they encode how the late sample is handled, which is the
+clause under test. The other parts of MC4 (the fixed slot offset, no CPU
+access, the anchor, at least one wrap) and MC1, MC2, MC3 and MC5 stay
+preconditions in those runs.
 
 **MC1. Standard.** The largest vertical position the program recorded
 (`R+4`) is 261 or 262 in NTSC runs and 311 or 312 in PAL runs. p.24: "There
@@ -379,7 +414,8 @@ the port window:
   data word to fetch"; p.147: "Each time the length
   counter reaches zero, both the location and length registers are reloaded
   with the same values to continue the audio output."
-- there is no CPU access to that range after step 5;
+- there is no CPU access to that range after step 5. A CPU access inside
+  `T` is an access off channel 0's slot offset, or one out of address order;
 - the anchor checks of F4 hold.
 
 Channel 0's slot offset is the constant offset of the reads in the range
@@ -401,9 +437,10 @@ DMA, and sprite DMA all have the highest priority level."
 table fetches occur in the first and in the last tenth of the port window's
 lines. The last table fetch comes after the end of the output window.
 *Contrast (marker):* a variant leaves out step 14's store. MC5 fails.
-*Contrast (channel stopped early):* a variant writes `DMACON` <- $0001
-after 100 lines of the wait and then completes the full wait of `N_run`
-lines. No table fetch occurs in the last tenth of the port window, so MC5
+*Contrast (channel stopped early):* a variant, run at a small period (for
+example `P = 64`; at `P = 428`, `T_settle` is 241 lines, so a stop at 100
+lines would leave no port window), writes `DMACON` <- $0001 after 100 lines
+of the wait and then completes the full wait of `N_run` lines. No table fetch occurs in the last tenth of the port window, so MC5
 fails. The wait still crosses a field end (MC1). In this variant, MC6 is
 judged only up to the last table fetch.
 
@@ -460,13 +497,17 @@ declared. The level changes drift by one tick per sample period against the
 4. **Expected.** For every `P` from 1 to 123, separately:
    (a) at least one classified sample period is not **next**
    (opus:5-rate.c15 and sol:5-p141.c10); and
-   (b) at least one is **reuse** (sol:5-p141.c10).
+   (b) at least one is **reuse**, `c_j = m` (sol:5-p141.c10).
    From p.141: "If the period value is below 124, by the time the cycle
    count has reached 0, the audio DMA will not have had enough time to
    retrieve the next data sample and the previous sample will be reused."
    Quantifiers: "below 124" is graded on every value 1-123. The page gives
-   no rate, so only "at least one in the window" is graded. The numbers of
-   next, reuse, skip, unmapped and other periods are reported. Skips are not
+   no rate, so only "at least one in the window" is graded. The window
+   `W = 60,000` ticks is a stimulus choice of this specification (section
+   3.3). A line that is red reads "no reuse within W = 60,000 ticks" (or
+   "every sample period carries the next sample within W = 60,000 ticks" for
+   (a)), with the window named in its label. The numbers of next, reuse,
+   repeat, skip, unmapped and other periods are reported. Skips are not
    graded (section 1).
    *Sub-results*, reported separately with the same expected value:
    **MP2-lo**, `P` = 1-113: a channel at these periods needs more than the
@@ -518,8 +559,8 @@ declared. The level changes drift by one tick per sample period against the
    stands. But a red result at 123 alone falls on the one value where the
    pages state different minimums (section 5).
 5. **Preconditions.** MC1-MC6 (MC3 from the PAL reference run).
-6. **Contrast.** The same run with `P = 122`. MP4 predicts reuse there, so
-   the MP3 check goes red.
+6. **Contrast.** The same run with `P = 122`. MP4 (a) predicts that not every
+   next sample is retrieved there, so the MP3 check goes red.
 7. **Reference frames.** As MP1. For PAL, F1 (c) uses the range of mean line
    length that takes in both p.23's value and p.304's.
 
@@ -532,20 +573,23 @@ declared. The level changes drift by one tick per sample period against the
 2. **Stimulus.** The program of section 3.3, PAL, once for each `P` from 1
    to 122.
 3. **Observation.** As MP2, with the PAL reference run.
-4. **Expected.** For every `P` from 1 to 122, separately: (a) at least one
-   classified sample period is not **next**; (b) at least one is **reuse**.
-   Basis: p.141 makes 28,867 samples/second "also the maximum sampling rate
-   for PAL systems" and requires "at least 123 ticks/sample" (3,546,895 /
-   122 = 29,073 samples/second, above that maximum). The page prints the
-   consequence of a lower value only in the NTSC paragraph, the sentence
-   quoted under MP2. It carries that consequence to PAL by "also" and
-   "Thus". p.164's statement about rates "much higher than the normal
-   maximum sampling rate (approximately 29 KHz)" names no standard.
-   Quantifiers and reporting as MP2. No sub-results: the claims give no
-   theoretical PAL figure.
+4. **Expected.** For every `P` from 1 to 122: (a) at least one classified
+   sample period is not **next**, within the window `W = 60,000` ticks
+   (a stimulus choice). Basis: p.141 makes 28,867 samples/second "also the
+   maximum sampling rate for PAL systems" and requires "at least 123
+   ticks/sample" (3,546,895 / 122 = 29,073 samples/second, above that
+   maximum), so the audio DMA cannot retrieve every next sample in time.
+   (b) The page prints the consequence "the previous sample will be reused"
+   only in the NTSC paragraph, the sentence quoted under MP2; applied
+   literally to PAL it would predict reuse at 123 as well, which the same
+   page's PAL minimum of 123 excludes. So the number of **reuse** periods in
+   PAL is MEASURED and not graded. p.164's statement about rates "much
+   higher than the normal maximum sampling rate (approximately 29 KHz)"
+   names no standard. No sub-results: the claims give no theoretical PAL
+   figure.
 5. **Preconditions.** MC1-MC6 (PAL reference run).
 6. **Contrast.** The same run with `P = 124`. Every page puts PAL 124 at or
-   above the minimum (p.140, p.141, p.266), so the MP4 check goes red. 123
+   above the minimum (p.140, p.141, p.266), so the MP4 (a) check goes red. 123
    is not used as the contrast, because it is the disputed value (MP3-123).
 7. **Reference frames.** As MP3.
 
@@ -586,7 +630,10 @@ declared. The level changes drift by one tick per sample period against the
    lines hold two reads in the range, and the MP5 check goes red. In this
    variant MC4 is judged per slot offset: two constant offsets, each with
    its own sequence in address order. Channel 1's output is on the other output, at
-   volume 0, so it is "no output" (p.266).
+   volume 0, so it is "no output" (p.266). This contrast shows that the
+   per-line count works: it counts two reads when two channels fetch in a
+   line. It does not show that one channel can exceed its slot; no page
+   stimulus makes one channel take two slots in a line.
 7. **Reference frames.** F4 (line), checked by MC4's anchor checks and by
    F1 (c). F5 (port window), checked by MC5.
 
@@ -606,8 +653,9 @@ declared. The level changes drift by one tick per sample period against the
    means is left open. No expected value rests on it.
 3. **What is reused.** p.141 says "the previous sample will be reused".
    p.164 says that well above about 29 kHz "the two samples in the buffer
-   register will be repeated". Only what both agree on is graded: a repeat
-   of one of the two samples played last (section 3.6).
+   register will be repeated". Only what p.141 says is graded as reuse: the
+   sample just played (`c_j = m`). A period that carries the other sample of
+   the last word (`m - 1`) is reported as a repeat (section 3.6).
 4. **Theoretical against designed rate.** p.141 derives 31,469
    samples/second from the slot allocation (a period of 113.75 ticks), yet
    puts the minimum at 124 because "In order to save buffers, the hardware
@@ -619,13 +667,17 @@ declared. The level changes drift by one tick per sample period against the
    arrives late. Only "at least once" is graded; skips are recorded, not
    graded.
 6. **PAL consequence.** The consequence of a period below the minimum is
-   printed only in the NTSC paragraph. For PAL it is carried by "also" and
-   "Thus" (MP4).
+   printed only in the NTSC paragraph. Applied literally to PAL it would
+   predict reuse at 123 as well, which the page's PAL minimum of 123
+   excludes. So MP4 grades only that not every next sample is retrieved
+   (from "also the maximum sampling rate for PAL systems"), and the PAL
+   reuse count is MEASURED.
 7. **Period 0.** p.140 "the maximum is 65535" against p.159 "its full range
    124-65536". What the value 0 does is not stated. It is excluded.
 8. **PAL line length.** p.23: "In PAL, they are all 227 long." p.304: "PAL
    (625 lines, 227.5 colorclocks per scan line)". It affects only the
-   anchor check F1 (c), which accepts the range between the two.
+   anchor check F1 (c), which accepts the range between the two; for NTSC the mean line length is
+   graded against the range between the two lengths p.23 names.
 9. **"Each allocated DMA time slot".** p.148 d: "Start retrieving audio data
    each allocated DMA time slot." Read literally, this would fetch in every
    line whatever the period. p.165 describes one request per word ("AUDxDR
