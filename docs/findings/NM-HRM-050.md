@@ -81,7 +81,7 @@ line, and `$30` is the value it should carry; the entry at `:72` is right.
 | | |
 |---|---|
 | **WinUAE** | Both, named and distinct: `AK_LTGT 0x30` and `AK_NUMBERSIGN 0x2B` ([`include/keyboard.h:119-120`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/keyboard.h#L119-L120)) |
-| **vAmiga** | Both, named and distinct: `laceBrace = 0x30` and `hashtag = 0x2B` (`GUI/Input/AmigaKey.swift:97-98`) |
+| **vAmiga** | Both, named and distinct: `laceBrace = 0x30` and `hashtag = 0x2B` ([`GUI/Input/AmigaKey.swift:97-98`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/GUI/Input/AmigaKey.swift#L97-L98)) |
 | **Denise** | Both, adjacent in its key table: `0x2b, 0x30` ([`emulation/libami/input/keyboard/keyboard.cpp:19`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/input/keyboard/keyboard.cpp#L19)) |
 | **Copperline** | `0x30` sits in the A500 key matrix taken from the keyboard's own wiring ([`src/chipset/keyboard.rs:133`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/keyboard.rs#L133)) |
 | **MiSTer** | descendant — **no counterpart.** The pinned Minimig-AGA tree has no `amiga_keymap.v`, no `keymap` and no `hid.v`: [`rtl/minimig.v:207`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L207) takes the already-decoded `kbd_mouse_data` as a top-level input, and the translation happens in software above the chipset |
