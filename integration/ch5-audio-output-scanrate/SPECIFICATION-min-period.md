@@ -178,11 +178,14 @@ graded on a shorter window.
 - **Chip-memory port:** every access with its time in system clock cycles,
   its word address, read or write, and whether it was a DMA fetch (refresh
   told apart from the other DMA) or a CPU access.
-- **Audio output:** the right output, which carries channels 0 and 3 (p.137:
-  "Channels 0 and 3 are connected to the right-side output jack."), and the
-  left output, which carries channels 1 and 2. The test needs every output
-  sample's time on the same system-clock time base as the Chip-memory port:
-  either as a time stamp or as a fixed number of system clock cycles per
+- **Audio output:** the channel-0 output is whichever of the two outputs
+  carries channel 0; the other output carries the other pair of channels.
+  The pages disagree on which named
+  jack that is: p.137 says "Channels 0 and 3 are connected to the
+  right-side output jack.", and Appendix E (p.326) pairs "left (channels 0,
+  3)". The side is measured at runtime, recorded per core and standard, and
+  never graded. The test needs every output sample's time on the same
+  system-clock time base as the Chip-memory port: either as a time stamp or as a fixed number of system clock cycles per
   output sample, counted from a known start. If the harness gives one mixed
   output instead of two, the same rules apply to it, because channels 1-3
   are at volume 0. The test reads the levels as the harness delivers them.
@@ -190,7 +193,10 @@ graded on a shorter window.
   a low-pass filter"). MC3 shows whether that holds.
 - **Result block** `R+0` ... `R+9`, read after the run.
 - **Output resolution `s`:** the spacing of output samples, in ticks
-  (section 3.5, F1). A period `P` can be graded at the output only if
+  (section 3.5, F1). The harness delivers one audio sample per system clock
+  cycle, so `s` is one system clock cycle expressed in ticks: `s` = 1 /
+  (cycles per tick), with the cycles per tick measured in the reference run
+  (F1, `D_ref / 447`). A period `P` can be graded at the output only if
   `s <= P/2`. If it is not, MP1-MP4 report that value as "not checkable:
   output resolution", never as green. MP5 does not use the output.
 
@@ -208,7 +214,7 @@ color clock.
   cycle is approximately 280 ns in duration."
 
 *Measurement.* In the reference run (`P_ref = 447`) of each standard, `D_ref`
-is the mean duration of the right output's level runs over 256 consecutive
+is the mean duration of the channel-0 output's level runs over 256 consecutive
 runs inside the window (section 3.5, F5). One tick = `D_ref / 447` system
 clock cycles.
 
@@ -230,7 +236,7 @@ give different values, and this range takes in both: p.23 says "In PAL,
 they are all 227 long", and p.304 lists "PAL (625 lines, 227.5 colorclocks
 per scan line)".
 
-**F2. Level cycle.** In the reference run, the right output shows the table
+**F2. Level cycle.** In the reference run, the channel-0 output shows the table
 played in order. The 128 distinct levels that appear, in the order in which
 they follow one another, form the level cycle. Give the first level of the
 reference window index 0 and number the others along the cycle (0 ... 127).
@@ -244,7 +250,7 @@ is not in the cycle is "unmapped".
 another sample is retrieved from the waveform data set for output". p.164:
 "Transitions such as 010->011->010 occur whenever the period counter counts
 down to one. The period counter is reloaded at these transitions." So in a
-run at period `P`, the right output can change level only on a grid of
+run at period `P`, the channel-0 output can change level only on a grid of
 spacing `P` ticks. The grid is `t0 + k * P` (k = 0, 1, 2, ...), with `t0` =
 `t_start`, the first level change of the window (F5). MC6 requires every
 level change inside the window to lie within one output-sample spacing `s`
@@ -264,10 +270,10 @@ its line (Figure 6-9: a fixed slot per channel).
 
 **F5. Windows.**
 
-- *Output window:* `t_first` is the time of the first right-output sample
+- *Output window:* `t_first` is the time of the first channel-0-output sample
   whose level is in the level cycle. In the reference run, which defines
-  the level cycle, `t_first` is the first change of the right output after
-  step 10. `t_start` is the first right-output
+  the level cycle, `t_first` is the first change of the channel-0 output after
+  step 10. `t_start` is the first channel-0-output
   level change at or after `t_first + T_settle(P)`. The output window is
   `[t_start, t_start + W(P))`, which holds `N = floor(W(P) / P)` sample
   periods, at least 256. Waiting `T_settle` keeps the start of the DMA out
@@ -346,8 +352,8 @@ sets USE3PN, "Use audio channel 3 to modulate nothing" (p.265). Bit 7 reads
 **MC3. Measurement calibrated (reference run, per standard).** In the
 `P_ref = 447` run:
 
-1. the left output is constant throughout the window;
-2. the right output shows exactly 128 distinct levels, which repeat with a
+1. the output that does not carry channel 0 is constant throughout the window;
+2. the channel-0 output shows exactly 128 distinct levels, which repeat with a
    period of 128 level runs, each level once per period (F2);
 3. the anchor checks F1 (a), (b) and (c) hold;
 4. `s` is known (F1).
@@ -418,7 +424,7 @@ declared. The level changes drift by one tick per sample period against the
    p.141.
 2. **Stimulus.** The program of section 3.3, NTSC, once for each `P` in
    `S_hi`.
-3. **Observation.** The right output in the output window (F5), cut into
+3. **Observation.** The channel-0 output in the output window (F5), cut into
    sample periods (F3) and classified (section 3.6). The claim concerns a
    channel that is playing its data at period `P`. The test knows that this
    holds in the window from MC4 (the fetches run through the table), MC6
@@ -579,7 +585,7 @@ declared. The level changes drift by one tick per sample period against the
    at this period both channels fetch from `T` in the same lines, those
    lines hold two reads in the range, and the MP5 check goes red. In this
    variant MC4 is judged per slot offset: two constant offsets, each with
-   its own sequence in address order. Channel 1's output is on the left at
+   its own sequence in address order. Channel 1's output is on the other output, at
    volume 0, so it is "no output" (p.266).
 7. **Reference frames.** F4 (line), checked by MC4's anchor checks and by
    F1 (c). F5 (port window), checked by MC5.
