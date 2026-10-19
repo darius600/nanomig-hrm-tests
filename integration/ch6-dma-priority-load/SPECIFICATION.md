@@ -138,11 +138,11 @@ Contrasting runs are named in each proposition as a base run plus one change.
 - **Stream span** W_stream(r): from the first to the last fetch of an item-6 word in field F.
 - **Blit span** W_blit(r): from the first to the last access to BA or BD in field F.
 - **Pre-stream interval** S_pre(r): from the fetch of item 4's second word to the first item-6 fetch, in field F.
-- **Display lines.** Display line k (k = 0..255) is the line the beam draws at $2C + k (VSTART $2C, p.58-59). Its fetches are the bitplane fetches whose address lies within line k's words of any of the four planes (base_p + w·k to base_p + w·k + w - 2, w = 40 for lowres and 80 for hires, plus k times the plane's modulo when a contrasting case sets one). Its fetch interval I_k runs from the earliest to the latest of them; the gap g_k is the open interval between the end of I_k and the start of I_(k+1). I_k is tied to beam line $2C+k: the beam position (VPOSR/VHPOSR, p.216) read by the program at the start of field F and the line count of `refresh` cycles (four per line) place the first fetch of line k on beam line $2C+k, and the test asserts it.
+- **Display lines.** Display line k (k = 0..255) is the line the beam draws at $2C + k (VSTART $2C, p.58-59). Its fetches are the bitplane fetches whose address lies within line k's words of any of the four planes (base_p + w·k to base_p + w·k + w - 2, w = 40 for lowres and 80 for hires, plus k times the plane's modulo when a contrasting case sets one). Its fetch interval I_k runs from the earliest to the latest of them; the gap g_k is the open interval between the end of I_k and the start of I_(k+1). I_k is tied to beam line $2C+k: line n of the field is the n-th group of four `refresh` cycles counted from the group at the start of field F (line 0), and the first fetch of line k lies in the group of line $2C+k; the test asserts it.
 - **Fixed channels**: planes 1-4, sprites 0-7, audio 0-3, disk; 17 channels in all.
 - **"At least one fetch" of a fixed channel in an interval** counts only if the channel has at least two fetches there at consecutive word addresses of its data, so that a stray access cannot satisfy it.
 - **Interval borrowing.** When a precondition counts accesses of two runs "over the same interval", the interval is taken from the run named first and applied to both as absolute times. The two runs must then satisfy C1 (up to their first difference by construction) and C7.
-- **Display-line frame check.** Wherever display lines are used, the test first checks the frame on the run it takes them from: for each plane, each of the line's words (20 in low resolution, 40 in high resolution; p.60, "DDFSTRT = DDFSTOP - (8 * (word count - 1)) for low resolution", "DDFSTRT = DDFSTOP - (4 * (word count - 2)) for high resolution") is fetched, all of them inside I_k, and I_k ends before I_(k+1) starts. The frame check also asserts that I_k lies on beam line $2C+k, counted from the start of field F in lines of four `refresh` cycles. If the check fails, the lines are undefined and the proposition reports that instead of a result.
+- **Display-line frame check.** Wherever display lines are used, the test first checks the frame on the run it takes them from: for each plane, each of the line's words (20 in low resolution, 40 in high resolution; p.60, "DDFSTRT = DDFSTOP - (8 * (word count - 1)) for low resolution", "DDFSTRT = DDFSTOP - (4 * (word count - 2)) for high resolution") is fetched, all of them inside I_k, and I_k ends before I_(k+1) starts. The frame check also asserts that I_k lies on beam line $2C+k, counted in groups of four `refresh` cycles from the start of field F. If the check fails, the lines are undefined and the proposition reports that instead of a result.
 
 ### 1.9 Common preconditions
 
@@ -282,3 +282,36 @@ Each proposition lists which of these it asserts. Each has its contrasting case.
 4. **The blitter-nasty bit.** The printed p.198 names it "DMAF_BLITHOG" and gives no bit number; p.222 gives bit 10 of DMACON as BLTPRI: "Also known as 'blitter-nasty.'" (p.278 words it differently). The identification rests on the shared name. p.198 also says that with the bit set "the blitter will keep the bus for every available Chip memory cycle"; this package does not grade that. It uses it only to explain why the contention preconditions P1-b, P4-b and P6-c hold, and they test only that the blitter lost some slots, not all.
 5. **Values the pages leave open.** How many cycles after a WAIT the Copper's first fetch comes; how many disk and audio fetches a line carries (that depends on the bit-cell time, p.249, and the audio period, p.141, not on these pages); and the absolute slot of any channel (Figure 6-9 is "adjusted"). No proposition gives an expected value for any of these; each compares two runs.
 6. **Figure 6-9 and the start of the line.** The figure's footnote "This cycle 0 appears to exclude one of the memory refresh cycles. This is not the case" leaves the fourth refresh slot's position unstated; this package does not need it, because refresh is identified from the `refresh` port (1.8).
+
+## 4 Build
+
+### 4.1 Programs and files
+
+- `prog_load.s` is the program of 1.5 and the stimulus of every run; the data of 1.4, the Copper lists of 1.6 and the variant table of 1.7 (at $0C1000) are loaded image words placed by the test before the reset. `prog_load_fixture_mut.s`, `prog_load_c5.s` and `prog_load_nop.s` assemble `prog_load.s` with one symbol set (the fixture constant $DEAD; the poll of C5 and `INTREQ <- $0010` before STOP; one NOP before S3). `prog_load_literal.s` assembles it with the order of S4.7 as written in 1.5.
+- The program is assembled for the 68000 (vasm default). It is loaded at $080400 with the stack at $0FFF00; the results are at $0C0000 (R_VEC at +0, R_DMA at +4, the fixture word at +6, the loop-exit marker at +8) and the loop word A2 at $0C0200. The handler is at $080800. The 68000's accesses are those outside the regions of 1.3.
+- S2 is carried by the image: the program only writes the handler address to $6C (after releasing the overlay in S1) and reads it back.
+
+### 4.2 Departure from S4.7
+
+With COP1LC = L1 written at S4.7, before Copper DMA is on, the first Copper fetch after the DMACON write is at L1, not at L0: field F then begins at that write, while the 68000 is still in S4.10 to S5 (the CPU variant word is read after field F has started), and sprite DMA has no fetches in field F. The test prints this as a measurement for both cores (`SETUP-ORDER`, run `prog_load_literal.s`): fx68k, first Copper fetch $10100 at cycle 2336377, 60 clk_sys after the read of the DMACON value, the CPU variant word read at cycle 2336709, 0 sprite fetches; TG68K, $10100 at cycle 2336265, the variant word read at cycle 2336597, 0 sprite fetches. The programs therefore write COP1LC = L0 at S4.7 (COP2LC = L0 and the COPJMP2 strobe as in 1.5, before Copper DMA is on, p.30) and write COP1LC = L1 after the DSKLEN writes of S4.11 and before S5. L0 then runs until the next vertical blank, which starts L1 from COP1LC (p.25). Nothing else in 1.5 changes.
+
+### 4.3 Observations of the port
+
+- The port log has one entry per bus period; an access held over several periods appears as identical entries 8 clk_sys apart. The test counts such a run of entries as one access. The traces of C1 and C7 compare the entries as logged.
+- The samples of 68000 accesses lie 4 clk_sys after the samples of DMA accesses within the same memory cycle (loop accesses at cycle mod 16 = 5 and 13, Copper fetches at 1 and 9 on both cores). The demand preconditions (P1-b, P2-b, P4-b, P6-c) therefore compare memory cycles of 8 clk_sys (cycle divided by 8), not cycle values.
+- Item 6 is fetched as 512 words in ascending order (C4) on both cores.
+
+### 4.4 Measured values (identical on fx68k and TG68K unless two values are given)
+
+- FIG69: 245 full lines of NOFIX's field F, each with four `refresh` cycles 16 clk_sys apart, lines 1816 clk_sys apart.
+- P1-a: blit from cycle 2958193 to 3027777, stream from 2987153 to 2995361. P1-b: 512 blitter accesses in BLT-NOCOP in the memory cycles of REF's item-6 fetches. P1 compares 514 Copper fetches.
+- P2: 570 Copper fetches compared. P2-b: loop accesses in the memory cycles of REF's item-6 fetches in CPU-NOCOP: 486 (fx68k), 499 (TG68K).
+- P3: 570 Copper fetches compared; P3-b: 0 accesses to bitplane, sprite, audio or disk data in NOFIX's field F.
+- P4-a: 38 display lines inside the blit; P4-b: 1637 blitter accesses in BLT-NOFIX in the memory cycles of REF's fixed-channel fetches; P4 compares 3932 fetches of the 17 channels.
+- P5a compares 467 fetches, P5b 4756 fetches of disk, audio and sprites; the four planes' fetches in P5b are equal (4080 each).
+- P6-a: 73 display lines inside the interval; P6-b: 14 gaps in the span in which both are pending; P6-c: 2560 blitter accesses in BLT-NOFIX in the memory cycles of HIRES-REF's bitplane fetches; P6a compares 11680 bitplane fetches; P6b: each of the 14 gaps holds item-6 fetches and blitter accesses. Reported, not graded: 0 item-6 fetches and 0 blitter accesses lie strictly inside the fetch interval of a display line, which lasts 1272 clk_sys in every line.
+- All assertions read PASS on both cores.
+
+### 4.5 Mutations
+
+NMH_MUTATE=<label> runs the contrasting case of that label (1.9 and section 2) with the unchanged comparators. The records are the `// MUTATION` lines at the head of `test_ch6_dma_priority_load.cpp`; both cores gave the same lines red. FIG69 has no mutation: the refresh pattern does not depend on the program or the image. The C5 mutation replaces REF and CPU by `prog_load_c5.s`; the C6 mutation writes the handler address to $6E, which also moves the first difference of C1 before the named access.
