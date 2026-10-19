@@ -1,8 +1,9 @@
 # Audio DMA at and below the minimum period: specification addendum
 
-This addendum specifies five propositions about audio DMA at, above and below
+This addendum specifies six propositions about audio DMA at, above and below
 the minimum sampling period that p.141 gives, in NTSC and in PAL. Its inputs
-are the twelve claims in `claims-spec-stage.jsonl` (all printed on p.141) and
+are the twelve claims in `claims-spec-stage.jsonl` (all printed on p.141; MP1-MP5
+rest on them, and MP6 rests on pp.139 and 147 and carries no claim id) and
 these pages of the *Amiga Hardware Reference Manual*, 3rd edition: pp.23, 24,
 34 and 40 (beam position and field length), pp.137-145, 147-148, 156-159 and
 164-166 (Chapter 5, audio), pp.194-195 (Chapter 6, DMA time slots and
@@ -20,16 +21,29 @@ None. Every claim is used:
 | Claim | Proposition |
 |---|---|
 | sol:5-p141.c9, opus:5-rate.c14 | MP1 |
-| sol:5-p141.c4, opus:5-rate.c8 | MP1; the MP2 sub-results |
+| sol:5-p141.c4, opus:5-rate.c8 | MP1 |
 | sol:5-p141.c10, opus:5-rate.c15 | MP2 |
 | sol:5-p141.c11, opus:5-rate.c17 | MP3, MP4 |
 | sol:5-p141.c12, opus:5-rate.c18 | MP3, MP4 |
-| sol:5-p141.c3, opus:5-rate.c6 | MP5; the MP2 sub-results |
+| sol:5-p141.c3, opus:5-rate.c6 | MP5 |
 
 Parts of these claims that no check here covers, and why:
 
 - **"In order to save buffers"** (c4, c8): the page's reason for the design
   rate. No output shows a reason.
+- **The design rate of 28,867 samples/second as a result of the MP2 runs**
+  (c4, c8): "the hardware is designed to handle 28,867 samples/second" is not
+  what the MP2 sub-result at P = 114-119 measures. A delivered rate above
+  28,867 samples/second does not contradict a design rate of 28,867, so a late
+  word at these periods does not establish the figure. c4 and c8 are carried
+  by MP1 only, which grades that every next sample arrives at 124 and above.
+- **"At least one sample period not next" at P <= 113** (c3, c6): any maximum
+  below the requested rate predicts it. It does not establish the figure
+  31,469. c3 and c6 are carried by MP5 only, which grades the per-line bound
+  that the figure is derived from.
+- **Periods 120-123 (NTSC) and 120-122 (PAL) inside "below 124" (c10, c15) and
+  "below 123" (c11, c17, c12, c18):** reported, not graded: p.141 and p.164
+  disagree there (section 5, item 11).
 - **31,469 as a rate that is reached** (c3, c6): the page calls it "a
   theoretical maximum" and says in the next sentence that "the hardware is
   designed to handle 28,867 samples/second". No page predicts that any output
@@ -42,8 +56,8 @@ Parts of these claims that no check here covers, and why:
   201-255, 257-319, 321-427 and 429 to 65535 (and, in PAL, none below 123).
   The propositions cover them, but they are not in the required set
   (section 3.2); `S_hi` is the tested set, chosen for the cost of a run. One run there, with its settling time and a window of
-  256 sample periods, costs from about 0.05 s of simulated time (at 429) to
-  about 7 s (at 65535). The check establishes "at least" on the tested
+  at least 454 sample periods, costs from about 0.07 s of simulated time (at 429) to
+  about 11 s (at 65535). The check establishes "at least" on the tested
   values only.
 - **Period 0** inside "below 124" (c10, c15): excluded. The pages do not say
   what the value 0 does. p.140 gives "the maximum is 65535"; p.159 speaks of
@@ -61,10 +75,11 @@ Parts of these claims that no check here covers, and why:
 | Id | Standard | Periods (AUD0PER) | Expected in the window |
 |---|---|---|---|
 | MP1 | NTSC | the set S_hi (124 and up) | every sample period carries the next data sample |
-| MP2 | NTSC | every value 1-123 | at least one sample period does not carry the next sample, and at least one reuses a sample already played |
+| MP2 | NTSC | every value 1-119 graded; 120-123 run and reported (section 5, item 11) | at least one sample period does not carry the next sample, and at least one reuses a sample already played |
 | MP3 | PAL | 123 and the set S_hi | as MP1 |
-| MP4 | PAL | every value 1-122 | at least one sample period does not carry the next sample; reuse is reported, not graded |
+| MP4 | PAL | every value 1-119 graded; 120-122 run and reported (section 5, item 11) | at least one sample period does not carry the next sample; reuse is reported, not graded |
 | MP5 | NTSC | every value 1-113 | no line holds more than one data fetch of the channel |
+| MP6 | both | every run of MP1-MP5 | channel 0's reads at its slot offset form passes of exactly 64 words, T to T+126 in order, each followed by T |
 
 ## 3. Common setup
 
@@ -178,9 +193,10 @@ p.145 (location, length, volume, period, then start the DMA).
     writing a 0 into the AUDxEN bit at any time.").
 14. Store the done marker $A5C3 at `R+8`. Then loop on itself.
 
-Run length. The window `W(P) = max(60 000, 256 * P)` ticks (section 3.5) is a
+Run length. The window `W(P) = max(60 000, 454 * P)` ticks (section 3.5) is a
 stimulus choice that no page gives: 60 000 ticks is a length chosen so that
-the window holds many sample periods at every tested `P`. With it and `T_settle(P) = max(128 * P, 14 600)` ticks:
+the window holds many sample periods at every tested `P`, and `454 * P` ticks
+holds 227 words at period `P` (a word every `2 * P` ticks). With it and `T_settle(P) = max(128 * P, 14 600)` ticks:
 
 `N_run = max(330, ceil((T_settle(P) + W(P)) / 227) + 16)` lines.
 
@@ -190,6 +206,19 @@ line. 330 lines is more than the longest field (313 lines, p.24), so the wait
 always crosses at least one field end (MC1). These numbers only size the run.
 If a run turns out too short, MC5 reports it as incomplete; it is never
 graded on a shorter window.
+
+What W covers. The window holds at least 227 words of the channel at every
+tested `P` (`W / (2 * P) >= 227`), and 227 is the number of different phases a
+word can have against a line of 227 ticks. So every line phase of an ordinary
+word falls in the window. W does not cover every phase at which the restart of
+the table can meet the line: that phase steps by `64 * 2 * P` ticks modulo
+227 from one pass to the next, and because 227 is prime all 227 restart phases
+need 227 table passes, that is `227 * 128 * P` ticks, which is 3.49 million
+ticks at `P` = 120. At `P` = 114-123 the window holds 3 to 4 passes. A
+proposition that asks for "at least one" event in the window (MP2 (a) and (b),
+MP4 (a)) is therefore graded on the words and the restart phases that the
+window holds, and a red line says so in its label ("within W"). The window is
+not widened to cover every restart phase.
 
 ### 3.4 What the test records
 
@@ -292,9 +321,10 @@ one audio slot per channel in a fixed position. p.194: "4 cycles for memory
 refresh" per line. A refresh cluster is a run of refresh
 accesses (rising edges of `refresh`, section 3.4) with gaps of no more than
 4 ticks. The start of a line is the first access of a cluster. A line runs from one cluster start to the next.
-*Anchor checks* (part of MC4): every cluster holds 4 refresh accesses; every
-channel-0 table fetch lies at the same offset, in ticks, from the start of
-its line (Figure 6-9: a fixed slot per channel).
+*Anchor checks* (part of MC4, and asserted in each reference run before F1 (c),
+which measures lines with this frame): every cluster holds 4 refresh accesses;
+every channel-0 table fetch lies at the same offset, in ticks, from the start
+of its line (Figure 6-9: a fixed slot per channel).
 
 **F5. Windows.**
 
@@ -304,7 +334,7 @@ its line (Figure 6-9: a fixed slot per channel).
   step 10. `t_start` is the first channel-0-output
   level change at or after `t_first + T_settle(P)`. The output window is
   `[t_start, t_start + W(P))`, which holds `N = floor(W(P) / P)` sample
-  periods, at least 256. Waiting `T_settle` keeps the start of the DMA out
+  periods, at least 454. Waiting `T_settle` keeps the start of the DMA out
   of the window. p.164 says that at the start "Because of pipelining in
   Agnus, the first data word must be thrown away"; none of these claims
   speaks to the start.
@@ -358,7 +388,17 @@ gap" clause of MC4, are printed as MEASURED results and are not
 preconditions there: they encode how the late sample is handled, which is the
 clause under test. The other parts of MC4 (the fixed slot offset, no CPU
 access, the anchor, at least one wrap) and MC1, MC2, MC3 and MC5 stay
-preconditions in those runs.
+preconditions in those runs. Below the minimum address order is a result, so
+MC5's clause "table fetches in the first and in the last tenth" and its clause
+"the last table fetch comes after the end of the output window" use channel
+0's DMA reads at its slot offset (F4), at any address, in those runs.
+
+Above the minimum MP1 and MP3 are graded and reported even when only MC4's
+address-order clause ("in address order without a gap") or MC5's table clauses
+(the tenths and the last fetch) fail, with the line of the failing
+precondition printed next to the verdict: a late word can come with a break in
+the address order, as it does below the minimum, and the precondition must not
+hide that red.
 
 **MC1. Standard.** The largest vertical position the program recorded
 (`R+4`) is 261 or 262 in NTSC runs and 311 or 312 in PAL runs. p.24: "There
@@ -435,14 +475,21 @@ DMA, and sprite DMA all have the highest priority level."
 
 **MC5. Complete run.** `R+8` holds $A5C3. `R+6` equals `N_run`. Channel-0
 table fetches occur in the first and in the last tenth of the port window's
-lines. The last table fetch comes after the end of the output window.
+lines. The last table fetch comes after the end of the output window. (Below
+the minimum the last two clauses use channel 0's DMA reads at its slot
+offset, at any address; section 3.7.)
 *Contrast (marker):* a variant leaves out step 14's store. MC5 fails.
 *Contrast (channel stopped early):* a variant, run at a small period (for
-example `P = 64`; at `P = 428`, `T_settle` is 241 lines, so a stop at 100
-lines would leave no port window), writes `DMACON` <- $0001 after 100 lines
-of the wait and then completes the full wait of `N_run` lines. No table fetch occurs in the last tenth of the port window, so MC5
-fails. The wait still crosses a field end (MC1). In this variant, MC6 is
-judged only up to the last table fetch.
+example `P = 64`; at `P = 428`, `T_settle` is 241 lines, so a stop at 200
+lines would leave no port window), writes `DMACON` <- $0001 after 200 lines
+of the wait and then completes the full wait of `N_run` lines. `T_settle(P)`
+is at least 14 600 ticks (64.3 lines) and the channel gets at most one word
+per line, so at most 36 words lie between the port window's start and line
+100, fewer than the 64 words of one pass, and MC4's "at least one wrap" would
+fail as well. A stop after 200 lines leaves more than 130 lines of the port
+window, which hold more than one pass at one word per line. No table fetch occurs in the last
+tenth of the port window, so MC5 fails. The wait still crosses a field end
+(MC1). In this variant, MC6 is judged only up to the last table fetch.
 
 **MC6. Period in effect, and output resolved.** `s <= P/2`, and every level
 change inside the window lies within `s` of the grid of F3.
@@ -477,48 +524,58 @@ declared. The level changes drift by one tick per sample period against the
    Quantifiers: "at least 124" is graded on every value of `S_hi`, each on
    its own; "the next data sample" is graded on every sample period of the
    window, not on one.
-5. **Preconditions.** MC1-MC6 (MC3 from the NTSC reference run).
-6. **Contrast.** The same run with `P = 123`. p.141 predicts reuse there
-   (MP2), so the MP1 check goes red. A second contrast is `P = 64`. Both runs
-   are already in the required set, and the setup and preconditions are
-   unchanged.
+5. **Preconditions.** MC1-MC6 (MC3 from the NTSC reference run). If only
+   MC4's address-order clause or MC5's table clauses fail, MP1 is graded and
+   reported all the same, next to the verdict of that precondition (section
+   3.7).
+6. **Contrast.** The same run with `P = 119`. p.141 and p.164 both predict a
+   late word there (section 5, item 11) and MP2 grades it, so the MP1 check
+   goes red. A second contrast is `P = 64`. Both runs are already in the
+   required set, and the setup and preconditions are unchanged. (`P` = 120-123
+   are not used: the pages disagree there.)
 7. **Reference frames.** F1, F2, F3, F5. F1 and F2 are checked by MC3, F3 by
    MC6, the window start by MC4 and MC5.
 
 ### MP2. NTSC: below 124, the next sample is not retrieved in time and the previous sample is reused
 
-1. **Proposition.** In NTSC, with any period value from 1 to 123, the audio
+1. **Proposition.** In NTSC, with any period value from 1 to 119, the audio
    DMA does not always retrieve the next data sample before the count
    reaches 0, and a sample already played is output again. Claims
-   sol:5-p141.c10, opus:5-rate.c15; p.141.
+   sol:5-p141.c10, opus:5-rate.c15; p.141, and p.164 for the mechanism
+   (section 5, item 11). The periods 120-123, which p.141 puts below its
+   minimum but p.164 does not predict a late word for, are run and reported,
+   not graded.
 2. **Stimulus.** The program of section 3.3, NTSC, once for each `P` from 1
    to 123.
 3. **Observation.** As MP1.
-4. **Expected.** For every `P` from 1 to 123, separately:
+4. **Expected.** For every `P` from 1 to 119, separately:
    (a) at least one classified sample period is not **next**
    (opus:5-rate.c15 and sol:5-p141.c10); and
    (b) at least one is **reuse**, `c_j = m` (sol:5-p141.c10).
    From p.141: "If the period value is below 124, by the time the cycle
    count has reached 0, the audio DMA will not have had enough time to
    retrieve the next data sample and the previous sample will be reused."
-   Quantifiers: "below 124" is graded on every value 1-123. The page gives
+   Quantifiers: "below 124" is graded on every value 1-119, and both pages
+   predict a late word there (section 5, item 11). The page gives
    no rate, so only "at least one in the window" is graded. The window
    `W = 60,000` ticks is a stimulus choice of this specification (section
-   3.3). A line that is red reads "no reuse within W = 60,000 ticks" (or
-   "every sample period carries the next sample within W = 60,000 ticks" for
-   (a)), with the window named in its label. The numbers of next, reuse,
-   repeat, skip, unmapped and other periods are reported. Skips are not
-   graded (section 1).
-   *Sub-results*, reported separately with the same expected value:
+   3.3, which says what it covers). A line that is red reads "no reuse within
+   W = 60,000 ticks" (or "every sample period carries the next sample within
+   W = 60,000 ticks" for (a)), with the window named in its label. The numbers
+   of next, reuse, repeat, skip, unmapped and other periods are reported.
+   Skips are not graded (section 1).
+   For `P` = 120-123 the same numbers are printed as MEASURED, with a
+   RECORDED line "p.141 and p.164 disagree at these periods" that names both
+   sentences (section 5, item 11); (a) and (b) are not graded there.
+   *Sub-results*, reported separately with the same expected value and the
+   same claim ids:
    **MP2-lo**, `P` = 1-113: a channel at these periods needs more than the
-   "theoretical maximum" of 31,469 samples/second (sol:5-p141.c3,
-   opus:5-rate.c6; 3,579,545 / 31,469 = 113.75 ticks per sample). p.164
-   points the same way for very high rates.
-   **MP2-hi**, `P` = 114-123: these lie between that theoretical figure and
-   the designed rate of 28,867 samples/second (sol:5-p141.c4,
-   opus:5-rate.c8). Here the expected reuse rests on the quoted sentence
-   alone. A red result only in MP2-hi touches "the hardware is designed to
-   handle 28,867 samples/second" specifically.
+   "theoretical maximum" of 31,469 samples/second (3,579,545 / 31,469 =
+   113.75 ticks per sample). p.164 points the same way for very high rates.
+   **MP2-hi**, `P` = 114-119: these lie between that theoretical figure and
+   the designed rate of 28,867 samples/second. Here the expected reuse rests
+   on the quoted sentence and on p.164's timing alone. c3, c6, c4 and c8 are
+   not on these lines (section 1).
 5. **Preconditions.** MC1-MC6. MC6 matters most here. If the written period
    does not take effect, the sample periods are not those of `P`, and a
    channel running slower could look like reuse. MC6 catches that whenever
@@ -558,27 +615,36 @@ declared. The level changes drift by one tick per sample period against the
    the value. So no page predicts reuse at PAL 123, and the expected value
    stands. But a red result at 123 alone falls on the one value where the
    pages state different minimums (section 5).
-5. **Preconditions.** MC1-MC6 (MC3 from the PAL reference run).
-6. **Contrast.** The same run with `P = 122`. MP4 (a) predicts that not every
-   next sample is retrieved there, so the MP3 check goes red.
+5. **Preconditions.** MC1-MC6 (MC3 from the PAL reference run); as for MP1,
+   MP3 is graded and reported even when only MC4's address-order clause or
+   MC5's table clauses fail (section 3.7).
+6. **Contrast.** The same run with `P = 119`. MP4 (a) predicts that not every
+   next sample is retrieved there (both pages, section 5, item 11), so the MP3
+   check goes red. A second contrast is `P = 64`. (`P` = 120-122 are not used:
+   the pages disagree there.)
 7. **Reference frames.** As MP1. For PAL, F1 (c) uses the range of mean line
    length that takes in both p.23's value and p.304's.
 
 ### MP4. PAL: below 123, the next sample is not retrieved in time and the previous sample is reused
 
-1. **Proposition.** In PAL, with any period value from 1 to 122, the audio
+1. **Proposition.** In PAL, with any period value from 1 to 119, the audio
    DMA does not always retrieve the next data sample in time, and a sample
    already played is output again. Claims sol:5-p141.c11, opus:5-rate.c17,
-   sol:5-p141.c12, opus:5-rate.c18; p.141.
+   sol:5-p141.c12, opus:5-rate.c18; p.141, and p.164 for the mechanism
+   (section 5, item 11). The periods 120-122 are run and reported, not
+   graded.
 2. **Stimulus.** The program of section 3.3, PAL, once for each `P` from 1
    to 122.
 3. **Observation.** As MP2, with the PAL reference run.
-4. **Expected.** For every `P` from 1 to 122: (a) at least one classified
+4. **Expected.** For every `P` from 1 to 119: (a) at least one classified
    sample period is not **next**, within the window `W = 60,000` ticks
-   (a stimulus choice). Basis: p.141 makes 28,867 samples/second "also the
-   maximum sampling rate for PAL systems" and requires "at least 123
-   ticks/sample" (3,546,895 / 122 = 29,073 samples/second, above that
-   maximum), so the audio DMA cannot retrieve every next sample in time.
+   (a stimulus choice, section 3.3). Basis: p.141 makes 28,867
+   samples/second "also the maximum sampling rate for PAL systems" and
+   requires "at least 123 ticks/sample" (3,546,895 / 119 = 29,805
+   samples/second, above that maximum), so the audio DMA cannot retrieve
+   every next sample in time; p.164's timing predicts the same (section 5,
+   item 11). For `P` = 120-122 the counts are printed as MEASURED with the
+   RECORDED line of section 5, item 11, and (a) is not graded.
    (b) The page prints the consequence "the previous sample will be reused"
    only in the NTSC paragraph, the sentence quoted under MP2; applied
    literally to PAL it would predict reuse at 123 as well, which the same
@@ -591,6 +657,8 @@ declared. The level changes drift by one tick per sample period against the
 6. **Contrast.** The same run with `P = 124`. Every page puts PAL 124 at or
    above the minimum (p.140, p.141, p.266), so the MP4 (a) check goes red. 123
    is not used as the contrast, because it is the disputed value (MP3-123).
+   The MP3 contrast at `P` = 119 is the same measurement seen from the other
+   side.
 7. **Reference frames.** As MP3.
 
 ### MP5. NTSC: no channel retrieves more than two samples per line (theoretical maximum 31,469 samples/second)
@@ -615,7 +683,13 @@ declared. The level changes drift by one tick per sample period against the
    each horizontal scan line." Quantifier: a maximum holds in every line, so
    every line is graded. The per-second figure follows from the per-line
    bound (262.5 * 59.94 = 15,734 lines/second) and is reported as
-   2 * (fetches) / (window length in seconds), not graded on its own.
+   2 * (reads in the complete lines) / (duration of those complete lines in
+   seconds), not graded on its own. The duration is that of the complete lines
+   the reads were counted in, never the length of the whole window. With
+   lines of 227 ticks the figure is 2 * 3,579,545 / 227 = 31,538
+   samples/second, 0.2 % above p.141's 31,469, which rests on 227.5-tick lines
+   (262.5 lines/frame); the record says that the figure follows from the
+   227-tick lines of the NTSC runs.
 5. **Preconditions.** MC1-MC5. MC5's requirement that fetches appear in the
    first and last tenth of the window keeps a channel that stopped fetching
    from passing as "at most one per line".
@@ -636,6 +710,63 @@ declared. The level changes drift by one tick per sample period against the
    stimulus makes one channel take two slots in a line.
 7. **Reference frames.** F4 (line), checked by MC4's anchor checks and by
    F1 (c). F5 (port window), checked by MC5.
+
+### MP6. Both standards: every pass restarts at the start of the data
+
+1. **Proposition.** In both standards, at every period value of a run of
+   MP1-MP5, audio channel 0's DMA reads at its slot offset form passes of
+   exactly 64 words: `T`, `T+2`, ..., `T+126` in order, each pass followed by
+   a pass that starts at `T`. No read lies outside `T ... T+126`, no word is
+   fetched twice in a row (in particular none at a restart), and no pass is
+   shorter or longer than 64 words. Pages p.139 and p.147; no claim id (the
+   reload claims belong to other packages).
+   p.139: "Each time the system retrieves the last audio word from the data
+   area, it uses the contents of these location registers to again find the
+   start of the data." p.147: "Each time the length counter reaches zero,
+   both the location and length registers are reloaded with the same values
+   to continue the audio output." The pages give no exception for the period
+   value, so the proposition is graded at every period, above and below the
+   minimum.
+2. **Stimulus.** None of its own: the runs of MP1-MP5 (both standards, every
+   `P` of section 3.2), graded for MP6 as they run.
+3. **Observation.** The Chip-memory port, in the port window (F5). Channel 0's
+   reads are the DMA reads at the slot offset of MC4 (F4), at any address,
+   in the order of their time; the CPU's own accesses are not among them. In
+   a run with two channels on `T` (the MP5 contrast) each slot offset is read
+   on its own.
+4. **Expected.** In each run, for the reads of the window:
+   (a) no read lies outside `T ... T+126`;
+   (b) no read repeats the address of the read before it;
+   (c) every read after the first follows the one before it: `T+2i` is
+   followed by `T+2(i+1)`, and `T+126` by `T`. A `T` that follows a word other
+   than `T+126` is a short pass, a word other than `T` after `T+126` is a long
+   pass, any other step is a gap.
+   The first and the last pass of the window are partial, and only their
+   order is checked. MP6 is graded per run and printed as one line per
+   standard that names the periods whose run fails it. For each failing
+   period the evidence is printed as MEASURED: the first off-table read, the
+   first double fetch, the first short pass (address, and time in ticks after
+   the start of the port window). Quantifier: "each time" and "every pass"
+   are graded on every pass of the window, and "all periods" on every run of
+   MP1-MP5 of both standards.
+5. **Preconditions.** MC1, MC2, MC3, and MC4's clauses on the slot offset, on
+   no CPU access to `T` and on the anchor; MC5's marker and line count. Not
+   MC4's address-order and wrap clauses and not MC5's table clauses: they
+   test the same passes as MP6 and would hide its red. MC6 is not a
+   precondition either: the output is not used.
+6. **Contrast.** NTSC and PAL, `P = 64` (a period at which both standards run
+   with the preconditions of MP5 holding), with `AUD0LEN` <- 32 written once
+   after `N_run / 2` lines of the wait, while the channel runs. p.147: "Once
+   the original registers have been read by the DMA channel, you can change
+   their values without disturbing the operation you started with the
+   original register contents" and "Each time the length counter reaches
+   zero, both the location and length registers are reloaded"; p.145 step 4:
+   the length register holds "the number of data words to be retrieved before
+   starting at the address currently in AUDxLC". So the pass in progress
+   finishes with 64 words and every later pass has 32: `T+62` is followed by
+   `T`, a short pass in (c), and MP6 fails. MC1, MC2, MC4's slot-offset, CPU
+   and anchor clauses and MC5's marker and line count still hold.
+7. **Reference frames.** As MP1 (F4, F5).
 
 ## 5. What the pages leave open or state differently
 
@@ -660,8 +791,8 @@ declared. The level changes drift by one tick per sample period against the
    samples/second from the slot allocation (a period of 113.75 ticks), yet
    puts the minimum at 124 because "In order to save buffers, the hardware
    is designed to handle 28,867 samples/second". It does not describe the
-   mechanism that makes 114-123 fail. Handling: the MP2-hi and MP2-lo
-   sub-results.
+   mechanism that makes 114-123 fail; p.164 does (item 11). Handling: the
+   MP2-hi and MP2-lo sub-results, graded to 119 (item 11).
 5. **How often, and what happens to the late sample.** Below the minimum the
    page gives neither the rate of reuse nor what happens to the data that
    arrives late. Only "at least once" is graded; skips are recorded, not
@@ -685,7 +816,34 @@ declared. The level changes drift by one tick per sample period against the
    reading under which a table plays in order at long periods. F1 (b) uses
    the per-word reading, and only as a cross-check of the time base.
 10. **Figure 5-8** (p.166, the audio state diagram) is not used for any
-    expected value. The claims do not rest on it.
+    expected value beyond item 11. The claims do not rest on it.
+11. **Where p.141 and p.164 predict a late word.** p.141: "If the period
+    value is below 124, by the time the cycle count has reached 0, the audio
+    DMA will not have had enough time to retrieve the next data sample and
+    the previous sample will be reused." (PAL: "a value of at least 123
+    ticks/sample must be written into the period register.") So p.141
+    predicts a late word at every period below 124 (NTSC) and below 123
+    (PAL). p.164 gives the mechanism: "DMA requests and restart requests are
+    transferred to Agnus once each horizontal line, and the data comes back
+    about 14 clock cycles later (the duration of a clock cycle is 280 ns)."
+    The request goes out on the 011->010 transition (p.164: "requests occur
+    as they do in normal operation (on the 011->010 transition)"; Figure 5-8,
+    p.166), and the next 011->010 transition comes `2 * P` ticks later
+    (p.164: "Transitions such as 010->011->010 occur whenever the period
+    counter counts down to one"). A word requested just after a line's
+    transfer waits one line, `L` ticks, and then about 14 ticks for the
+    data, so it can be late when `2 * P < L + 14`. `L` is 227 ticks, or 228
+    on a long NTSC line (p.23: "Every other line is a long line (228 color
+    clocks, 0-$E3), with the others being 227 color clocks long. In PAL, they
+    are all 227 long."). The page says "about 14", and this specification
+    allows two ticks for it, a choice of the specification: both pages
+    predict a late word where `2 * P < L + 12`. With `L` = 228 (NTSC) that is
+    `P` <= 119, and with `L` = 227 (PAL) it is also `P` <= 119. Handling:
+    MP2 (NTSC) and MP4 (PAL) are graded at `P` = 1-119. At `P` = 120-123
+    (NTSC) and 120-122 (PAL) p.141 predicts reuse and p.164 predicts none, or
+    none for certain, so these periods are run, their counts are printed as
+    MEASURED, and a RECORDED line says "p.141 and p.164 disagree at these
+    periods" and names both sentences. They are not graded.
 
 ## 6. What the build adds
 
