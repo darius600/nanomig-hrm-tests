@@ -980,7 +980,7 @@ are identical on both.
 | `MP6LEN` | MP6 | NTSC and PAL 64, `AUD0LEN` <- 32 after `N_run / 2` lines | MP6 red in both (4 short passes: T follows T+62); MC1, MC2, MC4, MC5 green |
 | `MC1STD` | MC1 | declared and harness standard swapped | red in both |
 | `MC2DMA`, `MC2ADK` | MC2 | channel 3 enabled, USE3PN set | red, other preconditions green |
-| `MC3VOL`, `MC3TIME` | MC3 | volume 0, `AUD0PER` 894 declared 447 | item 2 red; anchor F4 and anchor F1 (c) red |
+| `MC3VOL`, `MC3TIME` | MC3 | volume 0, `AUD0PER` 448 declared 447 | item 2 red; anchor F1 (c) red, F4 green |
 | `MC4LEN`, `MC4CPU` | MC4 | length 65, CPU read at `T+64` | red, other preconditions green |
 | `MC5MARK`, `MC5STOP` | MC5 | marker left out, stop after 200 lines at `P` = 64 | red; MC5STOP: both clauses red, MC1, MC2, MC4 green |
 | `MC6PER` | MC6 | `AUD0PER` 129 declared 128 | red, 64 ticks from the grid |
@@ -997,10 +997,12 @@ are identical on both.
   order up to the stop, so MC4 is green; MC5 is red through both clauses (no
   read at the channel offset in the first and last tenth of the window, the
   last such read before the output window ends).
-- `MC3TIME`: with the tick measured as 16 cycles, 2306 of 2306 refresh
-  clusters fail the F4 shape check (four accesses two slots apart), so the F4
-  anchor is red and F1 (c) finds no complete line; the mean line length of
-  113.5 or 113.75 ticks is not measured in this contrast.
+- `MC3TIME`: with `AUD0PER` 448 the tick is measured as 8.0179 cycles. The
+  port window holds 895 complete lines of mean length 226.493 ticks, below the
+  band's 226.8, in both standards on both cores, so F1 (c) is red through its
+  own clause. The F4 anchor is green (0 of 1162 clusters on fx68k, 0 of 1163
+  on TG68K fail the shape check), and items 1 and 2 and anchors (a) and (b)
+  are green.
 - `MC4LEN` and `MC4CPU` print no proposition line: MP3 is not graded behind
   a failing MC4 clause that section 3.7 does not release (MC4LEN: no wrap in
   the window; MC4CPU: a read off the channel offset).

@@ -51,9 +51,10 @@
 //   measured: fx68k and TG68K: MC2 red (ADKCONR bits 7-0 = 128); MC1, MC4, MC5, MC6 green; 15 passed, 1 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3VOL: both reference runs with AUD0VOL <- 0
 //   measured: fx68k and TG68K: MC3 item 2 red in PAL and NTSC (no level change in the run); items 3 and 4 not graded; 6 passed, 2 failed
-// MUTATION MC3 stimulus red NMH_MUTATE=MC3TIME: both reference runs with AUD0PER 894 and the declaration left at 447
-//   measured: fx68k and TG68K: MC3 anchor F4 and anchor F1 (c) red in PAL and NTSC (tick 16 cycles; 2306 of 2306 refresh clusters are not four accesses
-//   two slots apart at that tick, so F1 (c) finds no complete line); items 1, 2 and anchors (a), (b) green; 14 passed, 4 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3TIME: both reference runs with AUD0PER 448 and the declaration left at 447
+//   measured: fx68k and TG68K: MC3 anchor F1 (c) red in PAL and NTSC through its mean-line-length clause (tick 8.0179 cycles, 895 complete
+//   lines of mean length 226.493 ticks, below 226.8); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1163 on TG68K, not four accesses two
+//   slots apart); items 1, 2 and anchors (a), (b) green; 16 passed, 2 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4LEN: PAL P = 124 with AUD0LEN 65 and the bytes 0 and 2 at T+128
 //   measured: fx68k and TG68K: MC4 red (fetches off the table); MC1, MC2, MC5, MC6 green; 15 passed, 1 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4CPU: PAL P = 124 with one CPU read of the word at T+64 in the middle of the wait
@@ -912,8 +913,8 @@ bool run_mutation(Checks& ck, const std::string& dir, const std::string& mv) {
         do_ref(ck, dir, false, "prog_minper_mc3vol", kPref, " (AUD0VOL 0)");
         do_ref(ck, dir, true, "prog_minper_mc3vol", kPref, " (AUD0VOL 0)");
     } else if (mv == "MC3TIME") {
-        do_ref(ck, dir, false, "prog_minper", 894, " (AUD0PER 894, declared 447)");
-        do_ref(ck, dir, true, "prog_minper", 894, " (AUD0PER 894, declared 447)");
+        do_ref(ck, dir, false, "prog_minper", 448, " (AUD0PER 448, declared 447)");
+        do_ref(ck, dir, true, "prog_minper", 448, " (AUD0PER 448, declared 447)");
     } else if (mv == "MP6LEN") {
         for (bool ntsc : {true, false}) {
             Ref ref = do_ref(ck, dir, ntsc);
