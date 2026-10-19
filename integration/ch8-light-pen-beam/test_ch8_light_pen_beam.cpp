@@ -18,42 +18,45 @@
 // precondition, NMH_MUTATE value): the label passed to expect(), the kind,
 // the value that selects it, what changes, and the lines that go from PASS
 // to FAIL on each core. Those lines are compared with the same core's main
-// run on the pinned RTL in the same configuration, raw lines with raw
-// lines and PAGE-MODEL lines ([PM]) with PAGE-MODEL lines. The pinned RTL
-// has no light-pen latch, so a label that is red in its main run is shown to
-// go red through its [PM] line, where the page's latch is applied to the
-// mutated run's samples. Where more than one mutation targets the same
-// label, each gets its own line. A mutation of kind `implementation`
-// changes the model of the latch that the PAGE-MODEL lines apply, or a
-// private copy of the RTL outside the repository, never the stimulus or the
-// comparator.
+// run on the unpatched build in the same configuration, raw lines with raw
+// lines and PAGE-MODEL lines ([PM]) with PAGE-MODEL lines. In the unpatched
+// build P1 records captured=no on both ports in every OCS main run, so a label
+// that is red in its main run is shown to go red through its [PM] line,
+// where the page's latch is applied to the mutated run's samples. Where
+// more than one mutation targets the same label, each gets its own line. A
+// mutation of kind `implementation` changes the model of the latch that the
+// PAGE-MODEL lines apply, or runs the package against latch.patch or
+// late.patch (the make targets named in the record), never the stimulus or
+// the comparator. A patched run is an implementation demonstration, not a
+// stimulus mutation.
 //
 // MUTATION FIXTURE(M0) stimulus red NMH_MUTATE=FIXTURE: prog_fixture.bin stores a different value where M0 belongs and continues through M1-M4 and DONE; the mutant prints through the same label; PASS->FAIL, both cores: FIXTURE(M0)
-// MUTATION FIXTURE(DONE) stimulus red NMH_MUTATE=FIXTURE-DONE: prog_nodone.bin hangs after M4 without storing DONE_VALUE; the mutant prints through the same label; PASS->FAIL, both cores: FIXTURE(DONE)
-// MUTATION CP1 stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC (phase D timed in NTSC microseconds) while CP1 is graded with the PAL run's own expectations; PASS->FAIL, both cores: CP1, CP1(A2)
-// MUTATION CP1 stimulus red NMH_MUTATE=K17: a pin-6 pulse (both ports) at (200,100) in every phase-A field, each delivered when its cycle is reached (positions from the model of a first pass without input changes), graded through a PAGE-MODEL contrast on the delivered onsets; PASS->FAIL, both cores: CP1, CP1(A2)
-// MUTATION CP1(A1) stimulus red NMH_MUTATE=K18: a pin-6 pulse (both ports) at (200,100) in the third phase-A field only, delivered when its cycle is reached, graded through a PAGE-MODEL contrast on the delivered onset; PASS->FAIL, both cores: CP1, CP1(A1), CP1(A2)
-// MUTATION CP1(A2) stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC (phase D timed in NTSC microseconds) while CP1 is graded with the PAL run's own expectations; PASS->FAIL, both cores: CP1, CP1(A2)
-// MUTATION CP1(A2) stimulus red NMH_MUTATE=K17: a pin-6 pulse (both ports) at (200,100) in every phase-A field, each delivered when its cycle is reached; the contrast requires the fitted L to be 200 (the largest V read in each field); PASS->FAIL, both cores: CP1, CP1(A2)
+// MUTATION FIXTURE(DONE) stimulus red NMH_MUTATE=FIXTURE-DONE: prog_nodone.bin hangs after M4 without storing DONE_VALUE; the mutant runs through the main run's path (run_config) and prints through the same label, then records that CP1-CP6 and P1-P13 are not evaluated; PASS->FAIL, both cores: FIXTURE(DONE)
+// MUTATION CP1 stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC (phase D timed in NTSC microseconds), CP1 is graded as PAL and the other preconditions as NTSC, and P1-P13 are graded under the CP1 result (12 not-evaluated records); PASS->FAIL, both cores: CP1, CP1(A2)
+// MUTATION CP1 stimulus red NMH_MUTATE=K17: OCS/PAL; a pin-6 pulse (both ports) at (200,100) in every phase-A field, each delivered when its cycle is reached (positions from the model of a first pass without input changes), graded through a PAGE-MODEL contrast on the delivered onsets; PASS->FAIL, both cores: CP1 [PM], CP1(A2) [PM]
+// MUTATION CP1(A1) stimulus red NMH_MUTATE=K18: OCS/PAL; a pin-6 pulse (both ports) at (29,100), the first fitted line, in the third phase-A field only, delivered when its cycle is reached, graded through a PAGE-MODEL contrast on the delivered onset; PASS->FAIL, both cores: CP1 [PM], CP1(A1) [PM]; CP1(A2) [PM] stays PASS
+// MUTATION CP1(A2) stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC (phase D timed in NTSC microseconds), CP1 is graded as PAL; PASS->FAIL, both cores: CP1, CP1(A2)
+// MUTATION CP1(A2) stimulus red NMH_MUTATE=K17: OCS/PAL; a pin-6 pulse (both ports) at (200,100) in every phase-A field, each delivered when its cycle is reached; the contrast requires the fitted L to be 200 (the largest V read in each field; measured 201 lines); PASS->FAIL, both cores: CP1 [PM], CP1(A2) [PM]
 // MUTATION CP2 stimulus red NMH_MUTATE=K5: the phase-B sampling loop gets a delay of at least 300 colour clocks per sample; PASS->FAIL, both cores: CP2
-// MUTATION CP3 stimulus red NMH_MUTATE=K11: pin 6 of both ports held closed from before boot through one field after M0, then released; PASS->FAIL, both cores: CP3
+// MUTATION CP3 stimulus red NMH_MUTATE=K11: pin 6 of both ports held closed from before boot through one field after M0, then released; CP3 (b) is graded from the record of every write to the input ports (this run's direct writes included); P1-P13 are graded under the CP3 result (12 not-evaluated records); PASS->FAIL, both cores: CP3 (FIRE=$3F); CP4 stays PASS
 // MUTATION CP4 stimulus red NMH_MUTATE=K12: every pulse (and B18's port-1 pin-5 pulse and C1's pulse) placed one line later; CP4 compares the delivered cycles with the SPECIFICATION.md section 6 cycles; PASS->FAIL, both cores: CP4
-// MUTATION CP5 stimulus red NMH_MUTATE=K13: the phase-B buffer shortened so phase B ends within field B19; PASS->FAIL, both cores: CP5
+// MUTATION CP5 stimulus red NMH_MUTATE=K13: the phase-B buffer shortened so that phase B ends before the schedule has run out; M2 is written in field B19, line 150 on fx68k and in field B17, line 150 on TG68K (M2 appeared while events were still being injected on TG68K, so its phase B ended before B19c); PASS->FAIL, both cores: CP5
 // MUTATION CP6 stimulus red NMH_MUTATE=K14: VHPOSW written once (line 100, H 0) directly after the wait150 that ends phase B; PASS->FAIL, both cores: CP6
 // MUTATION P1 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (bit 3 never set); PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P1 stimulus red NMH_MUTATE=K9b: B4's, B5's and B18's pin-6 pulses moved to pin 9 of the same ports; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P8 [PM], P9 [PM], P10(a) [PM], P11 [PM], P12 [PM]
+// MUTATION P1 stimulus red NMH_MUTATE=K19: B4's and B5's pin-6 pulses placed at (100,80) instead of (100,100), graded with the main onsets (the position clause of P1); PASS->FAIL, both cores: P1 [PM], P8 [PM]
 // MUTATION P2 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P2 stimulus red NMH_MUTATE=K9b: B4's, B5's and B18's pin-6 pulses moved to pin 9 of the same ports; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P8 [PM], P9 [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P2(i) implementation red NMH_MUTATE=K9: the stimulus is the main schedule; the page-model implementation also treats B18's pin-1 pulse (line 40) as a trigger (pin 1 wired as the trigger); PASS->FAIL, both cores: P2 [PM], P2(i) [PM], P3 [PM], P3(a) [PM], P8 [PM], P10(a) [PM], P11 [PM]
+// MUTATION P2(i) implementation red NMH_MUTATE=K9: the stimulus is the main schedule; the page-model implementation also treats B18's pin-1 pulse (line 40) as a trigger (pin 1 wired as the trigger); PASS->FAIL, both cores: P2 [PM], P2(i) [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P2(ii) stimulus red NMH_MUTATE=K9b: B18's pin-6 pulse moved to pin 9; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P8 [PM], P9 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P2(ii) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P3 stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82) instead of (100,102), and the B11 pulse to (39,100) instead of (40,100); PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM]
+// MUTATION P3 stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82) instead of (100,102), and the B11 pulse to (39,100) instead of (40,100); PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P3 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P3(a) stimulus red NMH_MUTATE=K16: the B11 pulse moved to (39,100) instead of (40,100); POST(B11) holds the moved capture throughout; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM]
+// MUTATION P3(a) stimulus red NMH_MUTATE=K16: the B11 pulse moved to (39,100) instead of (40,100); POST(B11) holds the moved capture throughout; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P3(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P3(b) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82) instead of (100,102): the captured H is 20 colour clocks below H_ref, outside [H_ref, H_ref+4+u]; POST(B7) holds the moved capture throughout; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM]
+// MUTATION P3(b) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82) instead of (100,102): the captured H is 20 colour clocks below H_ref, outside [H_ref, H_ref+4+u]; POST(B7) holds the moved capture throughout; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P3(b) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P3(c) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82): its offset differs by 20 from the others; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM]
+// MUTATION P3(c) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,82): its offset differs by 20 from the others; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P3(c) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P4 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (no validated P3(c) offset either, so H8-H1 fails rather than being skipped); PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P5 stimulus red NMH_MUTATE=K8: B14's first pulse (line 80) removed; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P8 [PM], P9 [PM], P10(a) [PM], P11 [PM], P12 [PM]
@@ -64,16 +67,18 @@
 // MUTATION P8 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P8 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3; PASS->FAIL, both cores: P7 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P8(release-at-20) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (nothing is held before line 20: the held-value half is red); PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P9 stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM]
+// MUTATION P9 stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P9 stimulus red NMH_MUTATE=K7: the line-32 pulses of B15 and B17 moved to line 12; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P8 [PM], P9 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P9 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P9(a) stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30: RUN(B15) and RUN(B17) are latched from there; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM]
+// MUTATION P9(a) stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30: RUN(B15) and RUN(B17) are latched from there; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P9(boundary) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (B19c is never captured); PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P9(release) stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM]
+// MUTATION P9(boundary) stimulus red NMH_MUTATE=K20: B19c placed at (19,150) instead of (20,150), graded with the main onset; PASS->FAIL, both cores: P8 [PM], P9(boundary) [PM], P9(release) [PM]
+// MUTATION P9(release) stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30; PASS->FAIL, both cores: P3 [PM], P3(a) [PM], P8 [PM], P9 [PM], P9(a) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P9(release) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
+// MUTATION P9(release) stimulus red NMH_MUTATE=K20: B19c placed at (19,150) instead of (20,150), graded with the main onset; PASS->FAIL, both cores: P8 [PM], P9(boundary) [PM], P9(release) [PM]
 // MUTATION P10(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
-// MUTATION P10(b) stimulus red NMH_MUTATE=K3: OCS, phase C's BPLCON0 write uses $0008 instead of $0000, graded through a PAGE-MODEL contrast (the raw run's own RTL defect leaves phase C unaffected); PASS->FAIL, both cores: P10(b) [PM]
-// MUTATION P10(b) stimulus red NMH_MUTATE=K4: OCS, phase A's BPLCON0 write uses $0008 instead of $0000, graded through a PAGE-MODEL contrast; PASS->FAIL, both cores: P10(b) [PM]
+// MUTATION P10(b) stimulus red NMH_MUTATE=K3: OCS, phase C's BPLCON0 write uses $0008 instead of $0000; the run's own phase-C samples stay current (the raw P10(b) line stays PASS), so the red is graded by calling grade_p10b, the one function that grades the main run's P10(b), on the page's latch applied to this run's phase-C samples; PASS->FAIL, both cores: P10(b) [PM]
+// MUTATION P10(b) stimulus red NMH_MUTATE=K4: OCS, phase A's BPLCON0 write uses $0008 instead of $0000; grade_p10b is called on the page's latch applied to this run's phase-A samples; PASS->FAIL, both cores: P10(b) [PM]
 // MUTATION P11 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P11 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3; PASS->FAIL, both cores: P7 [PM], P8 [PM], P10(a) [PM], P11 [PM], P12 [PM]
 // MUTATION P12 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000; PASS->FAIL, both cores: P1 [PM], P2 [PM], P2(ii) [PM], P3 [PM], P3(a) [PM], P3(b) [PM], P3(c) [PM], P4 [PM], P5 [PM], P6 [PM], P7 [PM], P8 [PM], P8(release-at-20) [PM], P9 [PM], P9(boundary) [PM], P9(release) [PM], P10(a) [PM], P11 [PM], P12 [PM]
@@ -82,9 +87,10 @@
 // MUTATION P13(port1) stimulus red NMH_MUTATE=K10b: phase D holds port-1 pin 5 low throughout instead of only 2-4ms; PASS->FAIL, both cores: P13(port1)
 // MUTATION P13(pin9-control) stimulus red NMH_MUTATE=PIN9CTRL: phase D omits the 8-10ms pin-9 low drive (pin 9 of both ports stays released); POTGOR bits 10 and 14 then stay 1 where the unchanged comparator expects 0; PASS->FAIL, both cores: P13(pin9-control)
 // MUTATION P7(c) none impossible: unfalsifiable at this boundary: every latch the pages describe comes after the last current read of its field, so no input makes the pages predict m(F_k) < m(R_k) (SPECIFICATION.md section 9, P7)
-// MUTATION P8(release-at-20) implementation red private RTL copy: the freeze is released one line late (the counter entering V = 21, not V = 20), run on the main schedule, raw lines of the four configurations; RED, both cores: P8, P8(release-at-20), P9(boundary), P9(release), P11
-// MUTATION P9(boundary) implementation red private RTL copy: capture is armed one line late (the counter entering V = 21), so the pulse at (20,150) is missed; RED, both cores: P8, P8(release-at-20), P9(boundary), P9(release), P11
-// MUTATION P9(release) implementation red private RTL copy: capture is armed one line late (the counter entering V = 21), so the pulse at (20,150) is missed; RED, both cores: P8, P8(release-at-20), P9(boundary), P9(release), P11
+// MUTATION P8(release-at-20) implementation red late.patch (make late-test-fx68k, late-test-tg68k): the freeze is released one line late (the counter entering V = 21, not V = 20), run on the main schedule; RED, both cores, 182 passed, 14 failed: P8, P8(release-at-20), P9(boundary), P9(release), P11 in OCS/PAL and OCS/NTSC, and the page-model line P8(release-at-20) in the four configurations (ECS: the propositions that need a latch are recorded)
+// MUTATION P9(boundary) implementation red late.patch (make late-test-fx68k, late-test-tg68k): capture is armed one line late (the counter entering V = 21), so the pulse at (20,150) is missed; RED, both cores, 182 passed, 14 failed: P8, P8(release-at-20), P9(boundary), P9(release), P11 in OCS/PAL and OCS/NTSC, and the page-model line P8(release-at-20) in the four configurations
+// MUTATION P9(release) implementation red late.patch (make late-test-fx68k, late-test-tg68k): capture is armed one line late (the counter entering V = 21), so the pulse at (20,150) is missed; RED, both cores, 182 passed, 14 failed: P8, P8(release-at-20), P9(boundary), P9(release), P11 in OCS/PAL and OCS/NTSC, and the page-model line P8(release-at-20) in the four configurations
+// IMPLEMENTATION latch.patch (make latch-test-fx68k, latch-test-tg68k): a latch that follows pp.238-239; GREEN, both cores, 196 passed, 0 failed (OCS/PAL and OCS/NTSC 35 passed each, ECS/PAL and ECS/NTSC 13 passed each with the propositions that need a latch recorded, the page-model lines 25 passed in each of the four configurations)
 
 #include <cstdio>
 #include <cstdint>
@@ -151,6 +157,7 @@ constexpr uint8_t kBitUp    = 0x08; // pin 1
 constexpr uint8_t kBitDown  = 0x04; // pin 2
 constexpr uint8_t kBitLeft  = 0x02; // pin 3
 constexpr uint8_t kBitRight = 0x01; // pin 4
+constexpr uint8_t kMousePin6 = 0x01; // mouse_buttons bit 0: port-1 pin 6 as well (SPECIFICATION.md section 3)
 constexpr uint8_t kMouseMid = 0x04; // mouse_buttons bit 2: port-1 pin 5 pot line
 
 // ---- Config ------------------------------------------------------------
@@ -491,13 +498,31 @@ BeamModel fit_model(const std::vector<Sample>& phaseA, const std::vector<nmh::Ra
 // ---- event-driven stimulus injection ------------------------------------
 struct Event { int64_t cycle; std::function<void()> apply; };
 
+// One delivered input change, for CP4's own record: the cycle it was
+// scheduled for and the cycle at which it was actually applied (the
+// harness is stepped cycle-exactly to the scheduled cycle before the
+// port word changes, so these are expected to be equal; the record
+// exists so CP4 can assert that, not assume it).
+struct AppliedEvent { int64_t sched, applied; uint8_t j0, j1, mb; };
+std::vector<AppliedEvent> g_applied;  // the schedule's changes (CP4)
+std::vector<AppliedEvent> g_portlog;  // every write to the input ports (CP3 (b))
+void clear_logs() { g_applied.clear(); g_portlog.clear(); }
+
+// Every write to the harness's input ports goes through here and is logged,
+// whether it is one of the schedule's changes or a direct write. `sched` is
+// the cycle the write was scheduled for, or -1 for a write made when it was
+// decided.
+void write_ports(nmh::NanomigHarness& h, uint8_t j0, uint8_t j1, uint8_t mb, int64_t sched) {
+    h.ports()->joystick0 = j0;
+    h.ports()->joystick1 = j1;
+    h.ports()->mouse_buttons = mb;
+    int64_t now = (int64_t)h.cycles();
+    g_portlog.push_back({sched < 0 ? now : sched, now, j0, j1, mb});
+}
+
 struct PortState {
     uint8_t joy0 = 0, joy1 = 0, mbtn = 0;
-    void push(nmh::NanomigHarness& h) {
-        h.ports()->joystick0 = joy0;
-        h.ports()->joystick1 = joy1;
-        h.ports()->mouse_buttons = mbtn;
-    }
+    void push(nmh::NanomigHarness& h, int64_t sched) { write_ports(h, joy0, joy1, mbtn, sched); }
 };
 
 // ---- microsecond -> colour clock (SPECIFICATION.md 5.7) -----------------
@@ -538,14 +563,6 @@ void add_mouse_pulse_events(std::vector<Event>& ev, const BeamModel& m, int64_t 
     ev.push_back({t_off, [state]() { state->mbtn &= (uint8_t)~kMouseMid; }});
 }
 
-// One delivered input change, for CP4's own record: the cycle it was
-// scheduled for and the cycle at which it was actually applied (the
-// harness is stepped cycle-exactly to the scheduled cycle before the
-// port word changes, so these are expected to be equal; the record
-// exists so CP4 can assert that, not assume it).
-struct AppliedEvent { int64_t sched, applied; uint8_t j0, j1, mb; };
-std::vector<AppliedEvent> g_applied;
-
 // A run's full result: log, model, field anchors, per-phase samples.
 struct RunResult {
     bool loaded = false, released = false, done_ok = false;
@@ -558,6 +575,7 @@ struct RunResult {
     uint8_t fire_byte = 0xFF;
     int64_t m0cyc = -1, m1cyc = -1, m2cyc = -1, m3cyc = -1, m4cyc = -1;
     std::vector<AppliedEvent> applied; // this run's own delivery record (CP4)
+    std::vector<AppliedEvent> portlog; // every write this run made to the input ports (CP3 (b))
 };
 
 constexpr uint32_t kFireWordAddr = 0x100004 / 2;
@@ -580,7 +598,7 @@ void run_phase_events(nmh::NanomigHarness& h, std::vector<Event>& events, PortSt
         int64_t delta = e.cycle - now;
         if (delta > 0) h.run_cycles((uint64_t)delta);
         e.apply();
-        state.push(h);
+        state.push(h, e.cycle);
         g_applied.push_back({e.cycle, (int64_t)h.cycles(), state.joy0, state.joy1, state.mbtn});
     }
 }
@@ -589,7 +607,7 @@ RunResult run_one(const std::string& bin, bool ecs, bool ntsc, uint32_t bufBcoun
                    const ScheduleBFn& schedB, const ScheduleCFn& schedC, const ScheduleDFn& schedD) {
     RunResult r;
     r.ntsc = ntsc;
-    g_applied.clear();
+    clear_logs();
     nmh::Config cfg = make_config(ecs, ntsc);
     auto h = std::make_unique<nmh::NanomigHarness>(cfg);
     size_t loaded = h->load_program(bin);
@@ -661,6 +679,7 @@ RunResult run_one(const std::string& bin, bool ecs, bool ntsc, uint32_t bufBcoun
     r.m3cyc = find_mark_cycle(r.log, kM3);
     r.m4cyc = find_mark_cycle(r.log, kM4);
     r.applied = g_applied;
+    r.portlog = g_portlog;
     return r;
 }
 

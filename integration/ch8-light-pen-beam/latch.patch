@@ -1,0 +1,114 @@
+--- a/agnus.v
++++ b/agnus.v
+@@ -96,7 +96,8 @@
+ 	input         a1k,             // enable A1000 OCS features
+ 	input         ecs,             // enable ECS features
+ 	input         aga,             // enables AGA features
+-	input         floppy_speed     // allocates refresh slots for disk DMA
++	input         floppy_speed,    // allocates refresh slots for disk DMA
++	input         _lpen            // light pen trigger (pin 6, active low)
+ );
+ 
+ //register names and adresses
+@@ -486,7 +487,8 @@
+ 	.vbl_int(vbl_int),
+ 	.htotal_out(htotal),
+ 	.harddis_out(harddis),
+-	.varbeamen_out(varbeamen)
++	.varbeamen_out(varbeamen),
++	._lpen(_lpen)
+ );
+ 
+ //horizontal strobe for Denise
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -53,7 +53,8 @@
+ 	output reg        vbl_int,        // vertical interrupt request (for Paula)
+ 	output      [8:0] htotal_out,     // video line length
+ 	output            harddis_out,
+-	output            varbeamen_out
++	output            varbeamen_out,
++	input             _lpen           // light pen trigger (pin 6, active low)
+ );
+ 
+ //register names and adresses		
+@@ -104,12 +105,19 @@
+ reg long_frame; // 1 : long frame (313 lines); 0 : normal frame (312 lines)
+ reg long_line;	 // long line signal for NTSC compatibility (actually long lines are not supported yet)
+ 
++// light pen latch, one reading of HRM pp.238-239
++reg        lp_latched;
++reg [15:0] lp_vposr;
++reg [15:0] lp_vhposr;
++wire [15:0] live_vposr  = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++wire [15:0] live_vhposr = {vpos[7:0],hpos[8:1]};
++
+ //beamcounter read registers VPOSR and VHPOSR
+ always @(*) begin
+ 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
+-		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++		data_out[15:0] = lp_latched ? lp_vposr : live_vposr;
+ 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
+-		data_out[15:0] = {vpos[7:0],hpos[8:1]};
++		data_out[15:0] = lp_latched ? lp_vhposr : live_vhposr;
+ 	else
+ 		data_out[15:0] = 0;
+ end
+@@ -376,6 +384,45 @@
+ //external signal assigment
+ assign eof = end_of_frame;
+ 
++// Light pen latch.
++// BPLCON0 bit 3 enables it. The counter entering line 20 releases any
++// freeze and arms the capture; a falling edge on _lpen while armed
++// captures VPOSR/VHPOSR; a field end with no capture latches the counters.
++reg lpen_en;
++reg lp_armed;
++reg lp_prev;
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reset)
++			lpen_en <= 1'b0;
++		else if (reg_address_in[8:1]==BPLCON0[8:1])
++			lpen_en <= data_in[3];
++	end
++end
++wire lp_release = vpos_inc && (vpos == 11'd19);
++always @(posedge clk) begin
++	if (clk7_en) begin
++		lp_prev <= _lpen;
++		if (reset || !lpen_en) begin
++			lp_latched <= 1'b0;
++			lp_armed   <= 1'b0;
++		end else if (lp_release) begin
++			lp_latched <= 1'b0;
++			lp_armed   <= 1'b1;
++		end else if (!lp_latched && lp_armed && lp_prev && !_lpen) begin
++			lp_latched <= 1'b1;
++			lp_armed   <= 1'b0;
++			lp_vposr   <= live_vposr;
++			lp_vhposr  <= live_vhposr;
++		end else if (!lp_latched && end_of_frame) begin
++			lp_latched <= 1'b1;
++			lp_armed   <= 1'b0;
++			lp_vposr   <= live_vposr;
++			lp_vhposr  <= live_vhposr;
++		end
++	end
++end
++
+ always @(posedge clk) if (clk7_en) vbl_int <= hpos==8 && vpos==(a1k ? 1 : 0); // OCS AGNUS CHIPS 8361/8367 assert vbl int in line #1
+ 
+ //--------------------------------------------------------------------------------------//
+--- a/minimig.v
++++ b/minimig.v
+@@ -482,7 +482,8 @@
+ 	.a1k(chipset_config[2]),
+ 	.ecs(|chipset_config[4:3]),
+ 	.aga(chipset_config[4]),
+-	.floppy_speed(floppy_config[0])
++	.floppy_speed(floppy_config[0]),
++	._lpen(_fire0 & _fire1)
+ );
+ 
+ //instantiate paula
