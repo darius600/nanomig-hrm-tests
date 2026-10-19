@@ -617,6 +617,8 @@ cases built to reach one.
 - The R1 population (refresh_population) found zero malformed groups on
   every capture this package builds, both cores: every candidate low-
   address read group is the full four-read, 2C-apart shape.
+- P5's 5b: TxD changes once between the MARK=BRK write and the MARK=UNBRK
+  write, back to 1, 74 cycles before the MARK=UNBRK write, on both cores.
 - The run-A ninth-bit-zero variant's own RESULT bit 8 measured 0 for every
   character (j=0..7), on both cores -- matching p.257's reading, not
   p.283's.
