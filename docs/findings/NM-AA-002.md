@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test passes; the page's other reading fails |
 | **What is asked of a reader** | No RTL change follows. Is the missing `~` on SPRHDAT's row (`&h 078`, PDF p. 7) a printing omission, as the other 58 `~` rows in the range suggest, so that a Coprocessor MOVE to $078 needs COPCON bit 1 (CDANG) set, or a statement that the Coprocessor reaches $078 with CDANG clear? NanoMig blocks it, as it blocks every address below $080. Closes when an Amiga specialist records the mark as dropped in print, or confirms the exemption, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — AA documentation: whoever keeps errata for Commodore's AA specification |
+| **Report to** | `no RTL action` — AA documentation: an issue on this repository whose title begins with NM-AA-002 |
 | **Scope** | a Coprocessor MOVE to $078 (SPRHDAT) with CDANG clear and with CDANG set, measured with the Copper's `ecs` input high; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 6 (the `~` legend) and p. 7 (the SPRHDAT row), the address-ordered register list · claim id: `SPRHDAT-078-IS-RESTRICTED`, the one assertion this page names, carries `opus:AA-sprhdat-tilde.c1` (PDF p. 7) |

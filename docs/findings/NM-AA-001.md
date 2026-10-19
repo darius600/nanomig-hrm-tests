@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test passes; the page's other reading fails |
 | **What is asked of a reader** | Should a claim about CLXCON2's address rest on the AA specification's p. 8 address-list entry (`$10E`) and not on its p. 18 alphabetical entry (`$10C`, which pp. 8 and 16 give to BPLCON4)? Nothing in the RTL changes: NanoMig already decodes CLXCON2 at `$10E`. Closes when an Amiga specialist records the p. 18 entry's `$10C` as an erratum to the AA specification, or confirms it as intended, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — AA documentation: whoever keeps errata for Commodore's AA specification |
+| **Report to** | `no RTL action` — AA documentation: an issue on this repository whose title begins with NM-AA-001 |
 | **Scope** | CLXCON2 and BPLCON4 addresses in the AA chip set, as the PRELIMINARY AA specification of 06/07/91 prints them; chip revision unknown; isolated to the CLXCON2 address, with CLXDAT at `$00E` and CLXCON at `$098` measured alongside |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF pp. 4, 6, 7, 8, 16, 18. Claim ids by assertion: `CLXCON2-AT-10E`: `opus:AA-clxcon2.c1`, `sol:AA-clxcon2.c1`, address list p. 8; `CLXCON2-NOT-AT-10C`: `opus:AA-clxcon2.c2`, p. 18; `CLXCON2-CLEARED-BY-CLXCON`: `opus:AA-clxcon2.c3`, p. 4; `CLXDAT-AT-00E`: `opus:AA-clxdat.c1`, `sol:AA-clxdat.c1`, p. 6; `CLXCON-AT-098`: `opus:AA-clxcon.c1`, `sol:AA-clxcon.c1`, p. 7. Every assertion carries a claim id |

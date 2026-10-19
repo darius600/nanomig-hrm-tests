@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect. Question: in the Zorro II configuration block (`$E8xxxx`), does a write to register 48 configure a Zorro III board, as printed p. 436 says, or does register 44 configure it, so that a board that keeps answering at register 00 (raw 0xA) after a write to 48 is correct? Closes when an Amiga specialist records that register 44 configures a Zorro III board in the Zorro II block, or confirms that register 48 does, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix K of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-065 |
 | **Scope** | `cpu_wrapper`'s AUTOCONFIG write path with `cfg_z3` set, in the Zorro II configuration block `$E8xxxx`; the package builds with `ENABLE_RAM32` and drives `cpucfg` and `fastramcfg` at the module's ports; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 435 and 436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `sol:K-0844` and `opus:K-0881` (p. 436, register 48 configures in the Zorro II block); both graded assertions carry a claim id, and the package's other six reds are register 4C and carry none of this page's |

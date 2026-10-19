@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect; the red is against p.265, not against the RTL. Question: does p.265's ADKCON/ADKCONR bit-15 row describe a write-only SET/CLR control, so that a read of 0 is correct? Closes when an Amiga specialist records p.265's bit-15 row as write-only (a read of 0 is correct), or confirms that ADKCONR returns it, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-059 |
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: `opus:8-adkcon.c12`, p. 265 (no ch8 ledger; as the FAIL line prints it) |

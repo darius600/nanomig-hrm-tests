@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this; the red is against the printed page. Question: does the `P` in the chip column of DMACONR (`$002`), printed on p. 278 and p. 289, mean that Paula answers a read of `$002`, or only that Paula holds a copy of DMACON, so that the Agnus-only answer NanoMig gives is correct? Closes when an Amiga specialist records the `P` as "holds the register" (a read answered by Agnus alone is correct), or confirms that Paula answers the read, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendices A and B of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-030 |
 | **Scope** | Paula's read of `$002` in `paula.v`; the one dissected Paula is the 8364R7; no other revision and no hardware read measured here |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 278, and Appendix B, printed p. 289 (key on p. 287), DMACONR chip column; test chapter 5 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `DMACONR-NOT-DECODED-BY-PAULA`: `5-appA-p278.c7`, `5-appB-p289.c3`, `A-dmaconr.chip`, pp. 278 and 289; no other assertion of the package is part of this finding |

@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect. Question: should the footnotes to Table 8-2 rows 3 and 4 on p.231 (200 → 45 and 45 → 200, each printed as a true count of 100) read 101 on a counter that has 256 states? Closes when an Amiga specialist records that the footnotes' 100 is an approximation or a printed error, or confirms that the counter wraps at 255, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-039 |
 | **Scope** | unknown: the page names no chip revision; measured on NanoMig's `userio.v` mouse counter read through JOY0DAT, the two wrapping rows of Table 8-2 against the two non-wrapping rows; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.231, Table 8-2 and its footnotes `*` and `**` · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, each with the assertion that carries it: `opus:8-limits.c15` (all four rows are "100 pulses"), `opus:8-limits.c20` / `sol:8-mouse-limit.c17` (footnote `*`), `opus:8-limits.c21` / `sol:8-mouse-limit.c18` (footnote `**`); the green controls are `opus:8-limits.c16` / `sol:8-mouse-limit.c13` (row 1) and `opus:8-limits.c17` / `sol:8-mouse-limit.c14` (row 2). Every assertion named here carries a claim id |

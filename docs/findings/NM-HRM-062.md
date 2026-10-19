@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | none |
 | **What is asked of a reader** | No RTL change follows from this. Are the two binary patterns on p.353 (CIAA `101x xxxx xx01 rrrr xxxx xxx0`, CIAB `101x xxxx xx10 rrrr xxxx xxx1`) exchanged, so that the page's prose and its chosen addresses `$BFEr01` and `$BFDr00` stand? Closes when an Amiga specialist records the two patterns as exchanged, or confirms them as printed, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix F of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-062 |
 | **Scope** | unknown; p.353 names no chip revision or mode. The isolated case is the choice between CIAA and CIAB by A13, A12 and A0 |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, *Hardware Connection Details* · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.353 · claims `sol:F-signals.c64`, `sol:F-signals.c65`, `opus:F-conn.c7`, `opus:F-conn.c8` (all four marked `conflict` at classification); no assertion grades them |

@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. Question: does any PAL configuration alternate its line lengths, so that p. 304's "227.5 colorclocks per scan line" on the PAL row is right and NanoMig's constant 227 is not? Closes when an Amiga specialist records p. 304's PAL row as a misprint for p. 23's 227, or confirms that a PAL configuration alternates line lengths, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix C of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-068 |
 | **Scope** | NanoMig's `agnus_beamcounter` on its hardwired default (VARBEAMEN=0), PAL, the line length averaged over four consecutive lines; chip revision unknown; PAL hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C, printed p. 304, the V36 graphics library scan-rate list; 2 — Coprocessor, printed p. 23; 6 — Blitter, printed p. 194, quoted for context · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: `opus:C-scan.c04`, p. 304; `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: `opus:7-appC-beam.c3`, p. 304. The green control carries no claim id, and neither PAL assertion carries one for p. 23 or p. 194 |

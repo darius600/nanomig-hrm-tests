@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The red is against pp. 303 and 126, not against the RTL. Question: do pp. 303 and 126 correctly place all sixteen sprite control-word fetches inside horizontal blanking ($0F to $35, p. 23), given that NanoMig's `hblank` falls before the last three (sprite 6's SPRxCTL and both control words of sprite 7)? Closes when an Amiga specialist records that real Agnus ends blanking before the last sprite slots, so that pp. 303 and 126 describe the early channels only, or confirms that all sixteen fetches fall inside real blanking, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix C and Chapter 4 of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-067 |
 | **Scope** | NanoMig's `agnus` at the pinned revision, all eight sprites armed and SPREN set, `hblank` sampled on the tick of every SPRxPOS and SPRxCTL fetch; chip revision unknown; real Agnus's blanking against its sprite slots not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C — ECS, printed p. 303; Appendix A, printed p. 284; 4 — Sprites, printed p. 126; 2 — Coprocessor, printed p. 23; 6 — Blitter, printed p. 195 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK`: `opus:APPC-pos.c5`, `sol:CH4-appC-position.c8` (p. 303); the other seven graded assertions carry neither |

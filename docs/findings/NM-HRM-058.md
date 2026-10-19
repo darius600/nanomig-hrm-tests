@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect; the red is against p.256, not against the RTL. Question: does p.256's "up to one full character-receive time (8 to 10 bit times)" describe a window that a nine-data-bit frame, which takes 11 bit times, does not fit in? Closes when an Amiga specialist records that "8 to 10" counts differently or covers only the eight-data-bit frame, or confirms that the nine-data-bit frame fits in it, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-058 |
 | **Scope** | Paula's serial receiver with nine data bits (SERPER bit 15 set), measured on NanoMig's `paula_uart.v` at the pinned revision; chip revision unknown; hardware not measured. The eight-data-bit frame lies inside the printed range (9.68 and 10 bit times) |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8, printed p.256 (receive-time sentence and SERPER bit-15 sentence) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: `sol:8-serdatr.c9`, `sol:8-serdatr.c10`, p.256; `B11`: `opus:8-serial.c54`, p.256. Both assertions carry a claim id |

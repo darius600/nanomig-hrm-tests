@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | none |
 | **What is asked of a reader** | No RTL change follows from this. Is the right Alt key code `$65`, as p.252's keycode table and p.363's table of independently readable keys print, rather than `64`, as both keyboard drawings on p.254 print? NanoMig returns `$65` and so do all four implementations; the drawings are the likely defect. Closes when an Amiga specialist records the `64` on the right Alt in Figures 8-9 and 8-10 as a misprint, or confirms that a real keyboard sends `$64` for it, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 and Appendix G of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-052 |
 | **Scope** | the right Alt key code in `amiga_keymap.v` (HID `$6E` to `$65`) against p.252, p.363 and the keyboard drawings of the A1000 (Figure 8-9) and the A500/2000/3000 (Figure 8-10); which code a real keyboard sends is unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · keycode table printed p.252, Figures 8-9 and 8-10 printed p.254, Appendix G printed p.363 · `RIGHTALT-CONFLICT` (a `record()` line, not an assertion) carries six claim ids: `opus:8-fig.c75`, `sol:8-layout.c77`, `opus:8-fig.c164`, `sol:8-layout.c168` (the p.254 drawings) and `opus:8-keycode.c42`, `sol:8-keycode.c67` (p.252); p.363 carries no claim id |

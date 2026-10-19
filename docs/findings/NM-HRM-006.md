@@ -6,7 +6,7 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect: all four independent implementations do what NanoMig does. Question: does real Agnus ignore DDFSTRT/DDFSTOP bit H3 (register bit 2) in lores, as p.91 prints, so that $0038 and $003C fetch alike in lores? Closes when an Amiga specialist records p.91's "only respected in Hires Mode" as an erratum, or confirms that real Agnus ignores H3 in lores, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 3 of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-006 |
 | **Scope** | the position compare of DDFSTRT as NanoMig's `agnus_bitplanedma` implements it (DDFSTOP's identical compare, line 349, is read, not measured), one bitplane, lores and hires with the `ecs` strap off and on; isolated to register bit 2 alone ($0038 against $003C); chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed p. 91 (DDFSTRT, DDFSTOP), and Appendix A, printed p. 277 (bit table) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims carried by `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`: `opus:3-rddf.c02`, `opus:3-rddf.c03`, `sol:3-regsum-ddfstrt.c4`, `sol:3-regsum-ddfstop.c4` (p. 91), `sol:A-ddf-bits.c14` (p. 277); the register-bit-1 measurement is a recorded note and carries no claim id |
