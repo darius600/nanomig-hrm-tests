@@ -634,12 +634,13 @@ failed", not graded.
 2. **Stimulus.** The program of section 3.3, NTSC, once for each `P` from 1
    to 123.
 3. **Observation.** As MP1.
-4. **Expected.** For every `P` from 1 to 123, one line that grades both
-   clauses, so that the claim ids stand on a line that establishes all of
-   them:
-   (a) at least one classified sample period is not **next**; and
+4. **Expected.** For every `P` from 1 to 123, three lines, each on its own:
+   (a) at least one classified sample period is not **next**;
    (b) at least one is **reuse**, `c_j = c_{j-1}`, the sample just played
-   (section 3.6).
+   (section 3.6); and
+   (a) and (b) together, the line that carries the claim ids, because it is
+   the one that establishes all of what the two claims say. (a) and (b) carry
+   no id.
    From p.141: "If the period value is below 124, by the time the cycle
    count has reached 0, the audio DMA will not have had enough time to
    retrieve the next data sample and the previous sample will be reused."
