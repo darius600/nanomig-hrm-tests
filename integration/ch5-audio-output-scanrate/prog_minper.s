@@ -7,11 +7,15 @@
 ; (each is set by a source of its own that includes this one):
 ;   MUT_MC2DMA   channel 3 set up on a second table; DMACON $8209 (3.7 MC2)
 ;   MUT_MC2ADK   ADKCON $8080 written after step 3 (3.7 MC2)
-;   MUT_MC3VOL   AUD0VOL <- 0 (3.7 MC3)
+;   MUT_MC3LEN   AUD0LEN <- 32: the channel plays 32 words and repeats (3.7 MC3)
+;   MUT_MC3OTH   channel 1 on a copy of the table at T3, period 1000, volume 64; DMACON $8203 (3.7 MC3)
+;   MUT_MC3A     AUD0PER <- 448 written after MUT_LINE lines of the wait (3.7 MC3, F1 (a))
+;   MUT_MC3B     AUD0PER <- 224 written after MUT_LINE lines of the wait (3.7 MC3, F1 (b))
+;   MUT_MC3F4    one CPU read of the word at T+64 after MUT_LINE lines of the wait (3.7 MC3, F4)
 ;   MUT_MC4LEN   AUD0LEN <- 65, bytes 0 and 2 at T+128 (3.7 MC4)
 ;   MUT_MC4CPU   one CPU read of the word at T+64 in the middle of the wait (3.7 MC4)
 ;   MUT_MC5MARK  the done marker is not stored (3.7 MC5)
-;   MUT_MC5STOP  DMACON <- $0001 after 200 lines of the wait (3.7 MC5)
+;   MUT_MC5STOP  DMACON <- $0001 after 200 lines of the wait and a delay of MUT_DELAY loop passes (3.7 MC5)
 ;   MUT_MP6LEN   AUD0LEN <- 32 written after N_run / 2 lines of the wait, while the channel runs (4 MP6)
 ;   MUT_MP5CH1   channel 1 set up on the same table, period 64; DMACON $8203 (4 MP5)
 ;   MUT_FIXTURE  the fixture constant is $DEAD instead of $BEEF
@@ -95,19 +99,26 @@ start:
         ifd     MUT_MC4LEN
         move.w  #$0002,(a1)             ; bytes 0 and 2 at T+128
         endc
+        ifd     MUT_MC3OTH
+        lea     T,a2
+        lea     T3,a1
+        move.w  #63,d3
+.cp     move.w  (a2)+,(a1)+
+        dbra    d3,.cp
+        endc
 
         ; ---- steps 6-9 ----
         move.l  #T,AUD0LCH(a0)
         ifd     MUT_MC4LEN
         move.w  #65,AUD0LEN(a0)
         else
+        ifd     MUT_MC3LEN
+        move.w  #32,AUD0LEN(a0)
+        else
         move.w  #64,AUD0LEN(a0)
         endc
-        ifd     MUT_MC3VOL
-        move.w  #0,AUD0VOL(a0)
-        else
-        move.w  #64,AUD0VOL(a0)
         endc
+        move.w  #64,AUD0VOL(a0)
         move.w  MP_P,AUD0PER(a0)
         ifd     MUT_MC2DMA
         move.l  #T3,AUD3LCH(a0)
@@ -119,6 +130,12 @@ start:
         move.w  #64,AUD1LEN(a0)
         move.w  #64,AUD1PER(a0)
         endc
+        ifd     MUT_MC3OTH
+        move.l  #T3,AUD1LCH(a0)
+        move.w  #64,AUD1LEN(a0)
+        move.w  #1000,AUD1PER(a0)
+        move.w  #64,AUD1VOL(a0)
+        endc
 
         ; ---- step 10 ----
         ifd     MUT_MC2DMA
@@ -127,7 +144,11 @@ start:
         ifd     MUT_MP5CH1
         move.w  #$8203,DMACON(a0)
         else
+        ifd     MUT_MC3OTH
+        move.w  #$8203,DMACON(a0)
+        else
         move.w  #$8201,DMACON(a0)
+        endc
         endc
         endc
 
@@ -156,6 +177,8 @@ start:
         ifd     MUT_MC5STOP
         cmp.w   #200,d6
         bne.s   .nostop
+        move.w  #MUT_DELAY,d0           ; delay in the line before the stop: a tuned value (specification 6.1)
+.sd     dbra    d0,.sd
         move.w  #$0001,DMACON(a0)
 .nostop
         endc
@@ -170,6 +193,24 @@ start:
         bne.s   .nolen
         move.w  #32,AUD0LEN(a0)
 .nolen
+        endc
+        ifd     MUT_MC3A
+        cmp.w   #MUT_LINE,d6
+        bne.s   .noper
+        move.w  #448,AUD0PER(a0)
+.noper
+        endc
+        ifd     MUT_MC3B
+        cmp.w   #MUT_LINE,d6
+        bne.s   .noper
+        move.w  #224,AUD0PER(a0)
+.noper
+        endc
+        ifd     MUT_MC3F4
+        cmp.w   #MUT_LINE,d6
+        bne.s   .nof4
+        move.w  T+64,d0
+.nof4
         endc
         cmp.w   d7,d6
         bne.s   .wl

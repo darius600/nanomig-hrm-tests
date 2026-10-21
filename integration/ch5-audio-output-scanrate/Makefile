@@ -9,7 +9,7 @@ PROGS    := prog_audio \
             prog_diskrate prog_diskrate_fastf0 prog_diskrate_fasts1 \
             prog_diskrate_b2 prog_diskrate_b3 prog_diskrate_f1mut \
             prog_diskrate_f1mut_ntsc prog_diskrate_fixturemut prog_diskrate_fixwritemut \
-            prog_minper prog_minper_mc2dma prog_minper_mc2adk prog_minper_mc3vol prog_minper_mc4len \
+            prog_minper prog_minper_mc2dma prog_minper_mc2adk prog_minper_mc3len prog_minper_mc3oth prog_minper_mc3a prog_minper_mc3b prog_minper_mc3f4 prog_minper_mc4len \
             prog_minper_mc4cpu prog_minper_mc5mark prog_minper_mc5stop prog_minper_mp5ch1 prog_minper_mp6len prog_minper_fixmp
 
 include ../harness/nanomig.mk

@@ -21,53 +21,81 @@
 //
 // NMH_MUTATE selects the contrasting case of one assertion or precondition.
 // Unset, every section runs its normal programs. Selectors:
-//   MP1 MP2 MP3 MP4 MP5CH1 MP6LEN MC1STD MC2DMA MC2ADK MC3VOL MC3TIME MC4LEN MC4CPU
-//   MC5MARK MC5STOP MC6PER FIXMP
+//   MP1 MP2 MP3 MP4 MP5CH1 MP6LEN MP6GREEN MC1STD MC2DMA MC2ADK MC3LEN MC3OTH MC3A MC3B MC3F4 MC3TIME
+//   MC4LEN MC4CPU MC5MARK MC5STOP MC6PER MC6BELOW FIXMP FIXDONE
 // A selector changes only the stimulus (the period value, the harness standard,
 // the program); the comparator of the line it turns red is the normal one.
 //
-// Every selector below reached DONE on both cores; each MUTATION line states
-// the result measured on fx68k and on TG68K (identical on both unless said).
+// Every selector below reached DONE on both cores (FIXDONE excepted: its program has no DONE); each
+// MUTATION line states the result measured on fx68k and on TG68K (identical on both unless said).
 //
 // MUTATION MP1 stimulus red NMH_MUTATE=MP1: the NTSC MP1 comparator run at P = 119 and P = 64 in place of the S_hi values
-//   measured: fx68k and TG68K: P = 119 red (next 497 of 503 classified, reuse 2, skip 2); P = 64 red (next 528 of 936 classified,
-//   reuse 204, repeat 204); 21 passed, 2 failed
+//   measured: fx68k and TG68K: P = 119 red (next 499 of 503 classified, reuse 0, repeat 2, skip 2); P = 64 red (next 732 of 936 classified,
+//   reuse 0, repeat 204); 22 passed, 2 failed
 // MUTATION MP2 stimulus red NMH_MUTATE=MP2: the NTSC MP2 comparator run at P = 124 and P = 64
-//   measured: fx68k and TG68K: P = 124 red in (a) and (b) (next 482 of 482, no reuse); P = 64 green; 24 passed, 2 failed
+//   measured: fx68k and TG68K: P = 124 red in (a), (b) and (a) and (b) together (next 482 of 482, no reuse); P = 64: (a) green, (b) and
+//   (a) and (b) red (reuse 0, repeat 204); 23 passed, 5 failed. (b) is red at every period of the normal run (reuse 0), so no run
+//   shows (b) green; (a) is shown live by the P = 64 run (green) against the P = 124 run (red).
 // MUTATION MP3 stimulus red NMH_MUTATE=MP3: the PAL MP3 comparator run at P = 119 and P = 64
-//   measured: fx68k and TG68K: P = 119 red (next 497 of 503, reuse 2, skip 2); P = 64 red (next 528 of 936, reuse 204); 21 passed, 2 failed
+//   measured: fx68k and TG68K: P = 119 red (next 499 of 503, repeat 2, skip 2); P = 64 red (next 732 of 936, repeat 204); 22 passed, 2 failed
 // MUTATION MP4 stimulus red NMH_MUTATE=MP4: the PAL MP4 comparator run at P = 124 and P = 64
-//   measured: fx68k and TG68K: P = 124 red in (a) (next 482 of 482); P = 64 green (next 528 of 936); 23 passed, 1 failed
-// MUTATION MP5 stimulus red NMH_MUTATE=MP5CH1: NTSC P = 64 with channel 1 also set up on the same table, period 64, DMACON $8203
-//   measured: fx68k and TG68K: MP5 red (most table reads in one line 2; MC1, MC2, MC4 with two slot offsets, MC5 green); 15 passed, 1 failed
-// MUTATION MP6 stimulus red NMH_MUTATE=MP6LEN: NTSC and PAL P = 64 with AUD0LEN <- 32 written once after N_run / 2 lines of the wait
+//   measured: fx68k and TG68K: P = 124 red (next 482 of 482); P = 64 green (next 732 of 936); 23 passed, 1 failed
+// MP5 (unfalsifiable at this boundary): no stimulus the pages permit makes one channel take a second slot in a line, so no contrast can
+//   violate a channel's bound. NMH_MUTATE=MP5CH1 is a control, not a mutation: NTSC P = 64 with channel 1 also set up on the same table,
+//   period 64, DMACON $8203
+//   measured: fx68k and TG68K: MP5 green, one read per channel in every line (114 cycles: 1; 130 cycles: 1; 526 reads in 263 lines);
+//   MC1, MC2, MC4 with two slot offsets, MC5 green; 15 passed, 0 failed
+// MUTATION MP6 stimulus green NMH_MUTATE=MP6GREEN: MP6 is red in the normal run (P = 110, 116, 118), so the same comparator is run on two periods
+//   that are green in the normal run: NTSC and PAL, P = 64 and P = 124
+//   measured: fx68k and TG68K: MP6 green in both standards (2 runs graded, 7 complete passes in their windows); 42 passed, 0 failed
+// MUTATION MP6 stimulus red NMH_MUTATE=MP6LEN: NTSC and PAL P = 64 (green under MP6GREEN) with AUD0LEN <- 32 written once after N_run / 2 lines of the wait
 //   measured: fx68k and TG68K: MP6 red in both standards (4 short passes, the first a T that follows T+62 at 35866.0 ticks after the start of the
-//   port window; no read off the table, none twice in a row); MC1, MC2, MC4, MC5 green; 30 passed, 2 failed
+//   port window; no read off the table, none twice in a row); MC1, MC2, MC4, MC5 green; 28 passed, 2 failed
 // MUTATION MC1 stimulus red NMH_MUTATE=MC1STD: P = 124 declared NTSC with the harness PAL, and declared PAL with the harness NTSC
-//   measured: fx68k and TG68K: MC1 red in both (R+4 = 312 and 262); the other preconditions of both runs green; 30 passed, 2 failed
+//   measured: fx68k and TG68K: MC1 red in both (R+4 = 312 and 262); the other preconditions of both runs green; 28 passed, 2 failed
 // MUTATION MC2 stimulus red NMH_MUTATE=MC2DMA: PAL P = 124 with channel 3 on a second table and DMACON $8209
-//   measured: fx68k and TG68K: MC2 red (DMACONR bits 9-0 = 521); MC1, MC4, MC5, MC6 green; the proposition not graded; 15 passed, 1 failed
+//   measured: fx68k and TG68K: MC2 red (DMACONR bits 9-0 = 521); MC1, MC4, MC5, MC6 green; the proposition not graded; 14 passed, 1 failed
 // MUTATION MC2 stimulus red NMH_MUTATE=MC2ADK: PAL P = 124 with ADKCON $8080 written after step 3
-//   measured: fx68k and TG68K: MC2 red (ADKCONR bits 7-0 = 128); MC1, MC4, MC5, MC6 green; 15 passed, 1 failed
-// MUTATION MC3 stimulus red NMH_MUTATE=MC3VOL: both reference runs with AUD0VOL <- 0
-//   measured: fx68k and TG68K: MC3 item 2 red in PAL and NTSC (no level change in the run); items 3 and 4 not graded; 6 passed, 2 failed
+//   measured: fx68k and TG68K: MC2 red (ADKCONR bits 7-0 = 128); MC1, MC4, MC5, MC6 green; 14 passed, 1 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3LEN: both reference runs with AUD0LEN <- 32
+//   measured: fx68k and TG68K: MC3 item 2 red in PAL and NTSC (the 256 level runs show 64 distinct levels, the output is live); item 1 green;
+//   item 3 not graded; 6 passed, 2 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3OTH: both reference runs with channel 1 playing a copy of the table at T3, volume 64, period 1000, DMACON $8203
+//   measured: fx68k and TG68K: MC3 item 1 red in PAL and NTSC (264 level changes of the other output in the run); item 2 and anchors F1 (a), (b), (c) and F4
+//   green; 14 passed, 2 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3A: both reference runs with AUD0PER <- 448 written after 753 lines of the wait
+//   measured: fx68k and TG68K: MC3 anchor F1 (a) red in PAL and NTSC (largest deviation of a level run from D_ref 7.938 cycles on fx68k,
+//   7.969 cycles on TG68K); items 1 and 2 and anchors F1 (b), F1 (c) and F4 green; 14 passed, 2 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3B: both reference runs with AUD0PER <- 224 written after 800 lines of the wait
+//   measured: fx68k and TG68K: MC3 anchor F1 (b) red in PAL and NTSC (mean spacing of table fetches over 192 fetches 5012.917 cycles against
+//   2 * D_ref = 7152.000, tolerance 9.466 cycles); items 1 and 2 and anchors F1 (a), F1 (c) and F4 green; 14 passed, 2 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3F4: both reference runs with one CPU read of the word at T+64 after 1140 lines of the wait
+//   measured: fx68k and TG68K: MC3 anchor F4 red in PAL and NTSC (228 table accesses in the port window at 2 different offsets from the line
+//   start; 0 refresh clusters of 1160 on fx68k and of 1161 on TG68K fail the shape check); items 1 and 2 and anchors F1 (a), (b) and (c) green;
+//   14 passed, 2 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3TIME: both reference runs with AUD0PER 448 and the declaration left at 447
-//   measured: fx68k and TG68K: MC3 anchor F1 (c) red in PAL and NTSC through its mean-line-length clause (tick 8.0179 cycles, 895 complete
-//   lines of mean length 226.493 ticks, below 226.8); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1163 on TG68K, not four accesses two
-//   slots apart); items 1, 2 and anchors (a), (b) green; 16 passed, 2 failed
+//   measured: fx68k and TG68K: MC3 anchor F1 (c) red in PAL and NTSC (tick 8.0179 cycles, 895 complete lines of length 226.493 ticks, all outside
+//   226.875 ...); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1163 on TG68K, not four accesses two slots apart); items 1, 2 and anchors
+//   (a), (b) green; 14 passed, 2 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4LEN: PAL P = 124 with AUD0LEN 65 and the bytes 0 and 2 at T+128
-//   measured: fx68k and TG68K: MC4 red (fetches off the table); MC1, MC2, MC5, MC6 green; 15 passed, 1 failed
+//   measured: fx68k and TG68K: MC4 red (fetches off the table); MC1, MC2, MC5, MC6 green; 14 passed, 1 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4CPU: PAL P = 124 with one CPU read of the word at T+64 in the middle of the wait
-//   measured: fx68k and TG68K: MC4 red (a read off the channel offset); MC1, MC2, MC5, MC6 green; 15 passed, 1 failed
+//   measured: fx68k and TG68K: MC4 red (a read off the channel offset); MC1, MC2, MC5, MC6 green; 14 passed, 1 failed
 // MUTATION MC5 stimulus red NMH_MUTATE=MC5MARK: PAL P = 124 without the done-marker store
-//   measured: fx68k and TG68K: MC5 red (marker absent); MC1, MC2, MC4, MC6 green; 15 passed, 1 failed
-// MUTATION MC5 stimulus red NMH_MUTATE=MC5STOP: PAL P = 64 with DMACON <- $0001 after 200 lines of the wait
+//   measured: fx68k and TG68K: MC5 red (marker absent); MC1, MC2, MC4, MC6 green; 14 passed, 1 failed
+// MUTATION MC5 stimulus red NMH_MUTATE=MC5STOP: PAL P = 64 with DMACON <- $0001 after 200 lines of the wait and a delay of 30 loop passes
 //   measured: fx68k and TG68K: MC5 red through both of its clauses (no read at the channel offset in the first and last tenth of the port window,
-//   the last such read before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of order); 14 passed, 1 failed
+//   the last such read before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of order), MC6 green
+//   (largest distance from the grid 0.0000 ticks); 14 passed, 1 failed
 // MUTATION MC6 stimulus red NMH_MUTATE=MC6PER: PAL with AUD0PER 129 written while 128 is declared
-//   measured: fx68k and TG68K: MC6 red (largest distance from the 128-tick grid 64 ticks); MC1, MC2, MC4, MC5 green; 15 passed, 1 failed
+//   measured: fx68k and TG68K: MC6 red (largest distance from the 128-tick grid 64 ticks); MC1, MC2, MC4, MC5 green; 14 passed, 1 failed
+// MUTATION MC6 stimulus red NMH_MUTATE=MC6BELOW: PAL with AUD0PER 101 written while 100 is declared, below the minimum
+//   measured: fx68k and TG68K: MC6 red (largest distance from the 100-tick grid 50 ticks); MC1, MC2, MC4, MC5 green; MP4 not graded (precondition
+//   failed); 14 passed, 1 failed
 // MUTATION FIXTURE-CONST stimulus red NMH_MUTATE=FIXMP: PAL P = 124 with the fixture constant $DEAD in place of $BEEF
-//   measured: fx68k and TG68K: FIXTURE-CONST red; behind it MC1-MC6 and the proposition not graded (RECORDED); 10 passed, 1 failed
+//   measured: fx68k and TG68K: FIXTURE-CONST red; behind it MC1-MC6 and the proposition not graded (RECORDED); 9 passed, 1 failed
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXDONE: PAL P = 124 run with prog_nodone, a program that never writes the done marker
+//   measured: fx68k and TG68K: "reached DONE" red; behind it MC1-MC6 and the proposition not graded (RECORDED); 8 passed, 1 failed
 
 #include <cstdio>
 #include <cstdlib>
@@ -284,7 +312,7 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
     long f0l = first_fetch(c);
     if (f0l < 0) {
         ck.expect(false, "MC3 " + tag + " item 2: the channel-0 output shows exactly 128 distinct levels (no table fetch in the run)");
-        ck.record("MC3 " + tag + ": items 1, 3 and 4 not graded, the run holds no table fetch");
+        ck.record("MC3 " + tag + ": items 1 and 3 not graded, the run holds no table fetch");
         return r;
     }
     uint64_t f0 = (uint64_t)f0l;
@@ -299,7 +327,7 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
         ck.expect(false, "MC3 " + tag + " item 2: the channel-0 output shows exactly 128 distinct levels, repeating every 128 level runs "
                          "(p.140; " + S((long)chg.size()) + " level changes in the run, too few for a window)");
         ck.expect(oth.empty(), "MC3 " + tag + " item 1: the output that does not carry channel 0 is constant throughout the window");
-        ck.record("MC3 " + tag + ": items 3 and 4 not graded, no level cycle appears");
+        ck.record("MC3 " + tag + ": item 3 not graded, no level cycle appears");
         return r;
     }
     // Preliminary tick: median spacing of the changes after the start-up, over 447 ticks.
@@ -316,9 +344,11 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
     // 256 runs from i0.
     bool enough = i0 + 256 < chg.size();
     bool item2 = false;
+    size_t ndist = 0;
     if (enough) {
         std::set<uint16_t> dist;
         for (size_t i = 0; i < 256; ++i) dist.insert(chg[i0 + i].v);
+        ndist = dist.size();
         bool per = dist.size() == 128;
         for (size_t i = 0; per && i + 128 < 256; ++i) if (chg[i0 + i].v != chg[i0 + i + 128].v) per = false;
         std::set<uint16_t> first128;
@@ -326,10 +356,11 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
         item2 = per && first128.size() == 128;
         for (size_t i = 0; i < 128; ++i) r.cyc.push_back(chg[i0 + i].v);
     }
+    if (enough) ck.note("MC3 " + tag + ": the first 256 level runs of the window show " + S((long)ndist) + " distinct levels");
     ck.expect(item1, "MC3 " + tag + " item 1: the output that does not carry channel 0 is constant throughout the window");
     ck.expect(item2, "MC3 " + tag + " item 2: the channel-0 output shows exactly 128 distinct levels, repeating every 128 level runs, each level once per period (p.140)");
     if (!item2) {
-        ck.record("MC3 " + tag + ": items 3 and 4 not graded, no level cycle appears");
+        ck.record("MC3 " + tag + ": item 3 not graded, no level cycle appears");
         return r;
     }
     for (size_t i = 0; i < r.cyc.size(); ++i) r.idx[r.cyc[i]] = (int)i;
@@ -365,15 +396,25 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
             size_t cnt = 0;
             for (uint64_t t : fet) if (t >= wraps.front() && t < wraps.back()) ++cnt;
             double mean = double(wraps.back() - wraps.front()) / double(cnt);
-            double rel = std::fabs(mean - 2.0 * r.D) / (2.0 * r.D);
-            b_ok = rel <= 0.005;
+            // The tolerance is the resolution of the measurement. A table fetch lies in the one slot per line
+            // that its channel owns (p.141), so the time of a fetch is known to one line, and the time between
+            // the first and the last wrap to one line over the cnt fetches between them. D_ref is the span of
+            // 256 level runs, each end known to one cycle: 2 / 256 cycles on 2 * D_ref.
+            double lmax = 0;
+            for (size_t i = 0; i + 1 < L.start.size(); ++i)
+                if (L.start[i] >= pw.pw0 && L.start[i + 1] <= pw.pw1) lmax = std::max(lmax, double(L.start[i + 1] - L.start[i]));
+            double tol = lmax / double(cnt) + 2.0 / 256.0;
+            double diff = std::fabs(mean - 2.0 * r.D);
+            b_ok = lmax > 0 && diff <= tol;
             ck.note("MC3 " + tag + ": mean spacing of table fetches over " + S((long)cnt) + " fetches = " + F(mean) + " cycles, 2 * D_ref = " +
-                    F(2.0 * r.D) + " cycles, difference " + F(rel * 100.0, 3) + " %");
+                    F(2.0 * r.D) + " cycles, difference " + F(diff) + " cycles, tolerance " + F(tol) + " cycles (longest complete line " + F(lmax, 0) +
+                    " cycles over " + S((long)cnt) + " fetches, plus 2 / 256)");
         } else {
             ck.note("MC3 " + tag + ": the port window holds " + S((long)wraps.size()) + " wraps, fewer than the 2 that give a whole pass");
         }
     }
-    ck.expect(b_ok, "MC3 " + tag + " anchor F1 (b): the mean spacing of consecutive table fetches over whole passes is 2 * D_ref to within 0.5 % (p.138, p.139, p.165; band chosen by the specification)");
+    ck.expect(b_ok, "MC3 " + tag + " anchor F1 (b): the mean spacing of consecutive table fetches over whole passes is 2 * D_ref to within the resolution of the measurement, "
+                    "one line over the number of fetches plus 2 / 256 cycle (p.138, p.139, p.165; p.141: one DMA slot per line)");
     // F4: the line frame that F1 (c) measures with is asserted before it is used.
     bool f4_ok = false;
     {
@@ -399,20 +440,26 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
     }
     if (!ll.empty()) {
         double m = 0; for (double x : ll) m += x; m /= double(ll.size());
-        c_ok = ntsc ? (m >= 226.8 && m <= 228.2) : (m >= 226.8 && m <= 227.7);
-        size_t n227 = 0, n228 = 0, nalt = 0;
+        // Every complete line lies between the lengths the pages name, to within the output resolution s
+        // (one system cycle in ticks): NTSC 227 and 228 (p.23), PAL 227 (p.23) and 227.5 (p.304).
+        const double lo = 227.0 - r.s, hi = (ntsc ? 228.0 : 227.5) + r.s;
+        size_t n227 = 0, n228 = 0, nalt = 0, nbad = 0;
         for (size_t i = 0; i < ll.size(); ++i) {
-            if (std::fabs(ll[i] - 227.0) <= 0.2) ++n227;
-            else if (std::fabs(ll[i] - 228.0) <= 0.2) ++n228;
-            if (i > 0 && std::fabs(ll[i] - ll[i - 1]) >= 0.5) ++nalt;
+            if (ll[i] < lo || ll[i] > hi) ++nbad;
+            if (std::fabs(ll[i] - 227.0) <= r.s) ++n227;
+            else if (std::fabs(ll[i] - 228.0) <= r.s) ++n228;
+            if (i > 0 && std::fabs(ll[i] - ll[i - 1]) > r.s) ++nalt;
         }
-        ck.note("MC3 " + tag + ": " + S((long)ll.size()) + " complete lines in the port window, mean length " + F(m) + " ticks; lines of 227 ticks " + S((long)n227) +
-                ", of 228 ticks " + S((long)n228) + ", lines whose length differs from the line before " + S((long)nalt) + " (the alternation is reported, not graded); "
+        c_ok = nbad == 0;
+        ck.note("MC3 " + tag + ": " + S((long)ll.size()) + " complete lines in the port window, mean length " + F(m) + " ticks, " + S((long)nbad) + " outside " + F(lo) + " ... " + F(hi) +
+                " ticks; lines of 227 ticks " + S((long)n227) +
+                ", of 228 ticks " + S((long)n228) + ", lines whose length differs from the line before " + S((long)nalt) +
+                (ntsc ? " (p.23's alternation of 228 and 227 and p.194's 227.5 mean are measured here, not graded; NM-HRM-010 grades them)" : " (reported, not graded)") + "; "
                 "refresh clusters checked " + S((long)L.groups) + ", not four accesses two slots apart " + S((long)L.bad) + "; reads below word $1000 from the first fetch on: " +
                 S((long)low_reads(c, f0)) + " (cross-check only)");
     }
-    ck.expect(c_ok, "MC3 " + tag + " anchor F1 (c): the mean line length is " + std::string(ntsc ? "between 226.8 and 228.2 ticks (p.23, p.194; band chosen by the specification)" : "between 226.8 and 227.7 ticks (p.23, p.304; band chosen by the specification)"));
-    ck.expect(r.tickc > 0, "MC3 " + tag + " item 4: the output resolution s is known");
+    ck.expect(c_ok, "MC3 " + tag + " anchor F1 (c): every complete line of the port window is " +
+                    std::string(ntsc ? "227 or 228 ticks long (p.23), to within the output resolution s" : "between 227 (p.23) and 227.5 (p.304) ticks long, to within the output resolution s"));
     r.cal = true;
     r.ok = item1 && item2 && a_ok && b_ok && f4_ok && c_ok;
     return r;
@@ -500,35 +547,38 @@ struct RunSpec {
     int nch = 1;
     Kind kind = NONE;
     bool mp5 = false;
-    bool stop_early = false;
     std::string tag;
     std::vector<Mp6>* mp6out = nullptr;   // where the MP6 result of the run goes
 };
 
-struct Cls { int n = 0, next = 0, reuse = 0, repeat = 0, skip = 0, unm = 0, other = 0; bool ok = false; };
+struct Cls { int n = 0, next = 0, reuse = 0, repeat = 0, skip = 0, unm = 0, after_unm = 0, other = 0; bool ok = false; };
 
+// Each sample period is compared with the sample period immediately before it (section 3.6).
 Cls classify(const Cap& c, const Ref& r, bool right, uint64_t t_start, int P, double tickc, int N) {
     Cls k;
-    long m = -1;
-    bool have = false;
+    long q = -1;                // the index the immediately preceding sample period carried
+    bool have = false;          // q is valid: the preceding sample period was mapped
+    bool first = true;          // no sample period has been mapped yet
     for (int j = 0; j < N; ++j) {
         size_t at = (size_t)(double(t_start) + (double(j) + 0.5) * double(P) * tickc);
         if (at >= c.audio.size()) return k;
         auto it = r.idx.find(side_val(c.audio[at], right));
         int cj = it == r.idx.end() ? -1 : it->second;
-        if (!have) {                          // c_1 is not classified; an unmapped one is counted
-            if (cj >= 0) { m = cj; have = true; }
+        if (first) {                          // c_1 is not classified; an unmapped one is counted
+            if (cj >= 0) { q = cj; have = true; first = false; }
             else { ++k.n; ++k.unm; }
             continue;
         }
         ++k.n;
-        if (cj < 0) { ++k.unm; continue; }
-        int d = ((cj - (int)m) % 128 + 128) % 128;
-        if (d == 1) { ++k.next; m = cj; }
+        if (cj < 0) { ++k.unm; have = false; continue; }
+        if (!have) { ++k.after_unm; q = cj; have = true; continue; }
+        int d = ((cj - (int)q) % 128 + 128) % 128;
+        if (d == 1) ++k.next;
         else if (d == 0) ++k.reuse;
         else if (d == 127) ++k.repeat;
-        else if (d >= 2 && d <= 63) { ++k.skip; m = cj; }
+        else if (d >= 2 && d <= 63) ++k.skip;
         else ++k.other;
+        q = cj;
     }
     k.ok = true;
     return k;
@@ -709,22 +759,29 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
 
     // ---- MP5 (port based, MC1-MC5)
     if (rs.mp5) {
-        const std::string ids = "sol:5-p141.c3, opus:5-rate.c6";
+        // Per channel: a channel is a slot offset of MC4; the reads at that offset are counted per line.
         long maxl = 0, nl = 0, tot = 0;
+        std::map<long, long> chmax;          // per slot offset, the most reads in one line
         uint64_t dur = 0;                    // cycles of the complete lines the reads were counted in
         if (pw.ok) {
             for (size_t i = 0; i + 1 < L.start.size(); ++i) {
                 if (!(L.start[i] >= pw.pw0 && L.start[i + 1] <= pw.pw1)) continue;
-                long cnt = 0;
+                std::map<long, long> cnt;
                 for (const auto& a : c.log)
-                    if (!a.is_write && in_t(a.word_addr) && a.cycle >= L.start[i] && a.cycle < L.start[i + 1]) ++cnt;
-                maxl = std::max(maxl, cnt); ++nl; tot += cnt;
+                    if (!a.is_write && in_t(a.word_addr) && a.cycle >= L.start[i] && a.cycle < L.start[i + 1])
+                        ++cnt[(long)(a.cycle - L.start[i])];
+                long lt = 0, ex = 0;       // ex: reads at an offset that is no channel's (counted against the one channel when only one is set up)
+                for (auto& kv : cnt) { lt += kv.second; if (!allowed.count(kv.first)) ex += kv.second; }
+                for (long o : allowed) chmax[o] = std::max(chmax[o], (cnt.count(o) ? cnt[o] : 0) + (rs.nch == 1 ? ex : 0));
+                ++nl; tot += lt;
                 dur += L.start[i + 1] - L.start[i];
             }
         }
+        std::string per;
+        for (auto& kv : chmax) { maxl = std::max(maxl, kv.second); per += " " + S(kv.first) + " cycles: " + S(kv.second) + ";"; }
         const double lticks = nl > 0 ? double(dur) / tk / double(nl) : 0.0;     // mean length of those lines, ticks
         double secs = nl > 0 ? double(dur) / tk * 0.279365e-6 : 1.0;
-        ck.note("MP5 " + tag + ": " + S(nl) + " complete lines, most table reads in one line " + S(maxl) + ", " + S(tot) +
+        ck.note("MP5 " + tag + ": " + S(nl) + " complete lines, most table reads of one channel in one line (per slot offset)" + per + " " + S(tot) +
                 " reads in them, 2 * reads / duration of the complete lines = " + F(2.0 * double(tot) / secs, 0) +
                 " samples/second (reported, not graded; the figure follows from the " + F(lticks, 1) + "-tick lines of this run: one word per line of 227 ticks is 2 * 3,579,545 / 227 = 31,538, "
                 "p.141's 31,469 rests on 227.5-tick lines)");
@@ -732,7 +789,7 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
             ck.record("MP5 " + tag + ": precondition failed (" + std::string(ref.ok ? "" : "MC3 ") + (mc1 ? "" : "MC1 ") + (mc2 ? "" : "MC2 ") +
                       (mc4 ? "" : "MC4 ") + (mc5 ? "" : "MC5 ") + "), not graded; the counts above are information only");
         } else {
-            ck.expect(maxl <= 1 && nl > 0, "MP5 " + tag + " (p.141; " + ids + "): no line holds more than one data fetch of the channel");
+            ck.expect(maxl <= 1 && nl > 0, "MP5 " + tag + " (p.141): no channel holds more than one data fetch in a line");
         }
     }
 
@@ -740,31 +797,24 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
     const std::string id = rs.declNtsc ? (rs.kind == ALLNEXT ? "MP1" : "MP2") : (rs.kind == ALLNEXT ? "MP3" : "MP4");
     // ---- MC6
     bool mc6 = false;
-    double mc6dmax = 0;
     double s = ref.s;
     if (ow) {
         bool res = s <= double(rs.declP) / 2.0;
-        double dmax = 0; long n = 0;
+        double dmax = 0, dat = 0; long n = 0;
         for (const auto& x : chg) {
-            if (x.t < t_start || x.t >= t_end) continue;
-            if (rs.stop_early && x.t > pw.last_fetch) continue;
+            if (x.t < t_start || x.t >= t_end || x.t > last_fetch) continue;   // after its last fetch the channel has no data to play
             double xt = double(x.t - t_start) / tk;
             double r = std::fmod(xt, double(rs.declP));
-            dmax = std::max(dmax, std::min(r, double(rs.declP) - r));
+            double dd = std::min(r, double(rs.declP) - r);
+            if (dd > dmax) { dmax = dd; dat = xt; }
             ++n;
         }
         mc6 = res && dmax <= s + 1e-9;
-        mc6dmax = dmax;
         ck.note("MC6 " + tag + ": s = " + F(s, 4) + " ticks (P/2 = " + F(double(rs.declP) / 2.0, 1) + "), " + S(n) + " level changes in the window, largest distance from the grid " +
-                F(dmax, 4) + " ticks");
+                F(dmax, 4) + " ticks" + (dmax > 0 ? " (at " + F(dat, 1) + " ticks after the start of the output window; last channel fetch at " +
+                F(double(last_fetch - t_start) / tk, 1) + " ticks)" : std::string()));
     }
-    if (below) {
-        ck.note("MC6 " + tag + ": below the minimum the P grid is a result, not a precondition; s <= P/2: " + std::string(s <= double(rs.declP) / 2.0 ? "yes" : "no") +
-                ", largest distance of a level change from the grid " + F(mc6dmax, 4) + " ticks");
-        mc6 = ow;
-    } else {
-        ck.expect(mc6, "MC6 " + tag + ": the period is in effect and the output resolved: s <= P/2 and every level change lies within s of the P grid (p.140, p.164)");
-    }
+    ck.expect(mc6, "MC6 " + tag + ": the period is in effect and the output resolved: s <= P/2 and every level change lies within s of the P grid (p.140, p.164)");
     const bool pre = ref.ok && mc1 && mc2 && mc4 && mc5 && mc6;
     // Above the minimum MP1 and MP3 are graded when only MC4's address-order clause or MC5's table clauses fail.
     const bool pre_rest = ref.ok && mc1 && mc2 && mc4_core && mc4_wrap && mc5_run && mc6;
@@ -779,36 +829,23 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
     if (!ow) return;
     const int Np = (int)std::floor(double(window(rs.declP)) / double(rs.declP));
     Cls k = classify(c, ref, ref.right, t_start, rs.declP, tk, Np);
-    ck.note(id + " " + tag + ": " + S(Np) + " sample periods, classified " + S(k.n) + ": next " + S(k.next) + ", reuse " + S(k.reuse) + ", repeat (m-1) " +
-            S(k.repeat) + ", skip " + S(k.skip) + ", unmapped " + S(k.unm) + ", other " + S(k.other));
+    ck.note(id + " " + tag + ": " + S(Np) + " sample periods, classified " + S(k.n) + ": next " + S(k.next) + ", reuse " + S(k.reuse) + ", repeat (back one) " +
+            S(k.repeat) + ", skip " + S(k.skip) + ", unmapped " + S(k.unm) + ", after an unmapped period " + S(k.after_unm) + ", other " + S(k.other));
     if (!k.ok) { ck.record(id + " " + tag + ": not graded, the window ran past the capture"); return; }
     if (!graded) return;
-    // p.141 and p.164 disagree at these periods (SPECIFICATION-min-period.md section 5, item 11): measured, not graded.
-    if (rs.kind == REUSE && below && rs.P >= 120) {
-        ck.record(id + " " + tag + ": p.141 and p.164 disagree at these periods, not graded: p.141 'If the period value is below " +
-                  std::string(rs.declNtsc ? "124" : "123") + ", by the time the cycle count has reached 0, the audio DMA will not have had enough time to retrieve the next data sample "
-                  "and the previous sample will be reused' predicts a late word; p.164 'DMA requests and restart requests are transferred to Agnus once each horizontal line, and the "
-                  "data comes back about 14 clock cycles later' predicts none for certain when 2 * P >= L + 12; next " + S(k.next) + " of " + S(k.n) + ", reuse " + S(k.reuse) +
-                  " (MEASURED above)");
-        return;
-    }
     const std::string win = " within W = " + S(window(rs.declP)) + " ticks (a stimulus choice)";
     if (rs.kind == ALLNEXT) {
-        std::string ids = rs.declNtsc ? "sol:5-p141.c9, opus:5-rate.c14, sol:5-p141.c4, opus:5-rate.c8"
-                                      : "sol:5-p141.c12, opus:5-rate.c18, sol:5-p141.c11, opus:5-rate.c17";
         std::string sub = (!rs.declNtsc && rs.P == 123) ? " [MP3-123]" : "";
-        ck.expect(k.next == k.n && k.n > 0, id + " " + tag + sub + " (p.141; " + ids + "): every classified sample period carries the next sample" + win);
+        ck.expect(k.next == k.n && k.n > 0, id + " " + tag + sub + " (p.141): every classified sample period carries the next sample" + win);
     } else if (rs.declNtsc) {
-        std::string ids_a = "sol:5-p141.c10, opus:5-rate.c15";
-        std::string ids_b = "sol:5-p141.c10";
-        std::string sub;
-        if (rs.P <= 113) sub = " [MP2-lo]";
-        else if (rs.P <= 119) sub = " [MP2-hi]";
-        ck.expect(k.next < k.n, id + " " + tag + sub + " (a) (p.141; " + ids_a + "): at least one sample period does not carry the next sample" + win);
-        ck.expect(k.reuse >= 1, id + " " + tag + sub + " (b) (p.141; " + ids_b + "): at least one sample period reuses the sample just played" + win);
+        std::string sub = rs.P <= 113 ? " [MP2-lo]" : " [MP2-hi]";
+        ck.expect(k.next < k.n, id + " " + tag + sub + " (a) (p.141): at least one sample period does not carry the next sample" + win);
+        ck.expect(k.reuse >= 1, id + " " + tag + sub + " (b) (p.141): at least one sample period reuses the sample just played, the one in the sample period before it" + win);
+        ck.expect(k.next < k.n && k.reuse >= 1, id + " " + tag + sub + " (a) and (b) (p.141; sol:5-p141.c10, opus:5-rate.c15): at least one sample period does not carry the next sample "
+                  "and at least one sample period reuses the sample just played" + win);
     } else {
-        ck.expect(k.next < k.n, id + " " + tag + " (a) (p.141; sol:5-p141.c11, opus:5-rate.c17, sol:5-p141.c12, opus:5-rate.c18): at least one sample period does not carry the next sample" + win);
-        ck.note(id + " " + tag + " (b): reuse periods " + S(k.reuse) + " (PAL reuse is reported, not graded)");
+        ck.expect(k.next < k.n, id + " " + tag + " (p.141): at least one sample period does not carry the next sample" + win);
+        ck.note(id + " " + tag + ": reuse periods " + S(k.reuse) + " (PAL reuse is reported, not graded)");
     }
 }
 
@@ -832,25 +869,31 @@ const int kShi[] = {124, 125, 126, 127, 128, 129, 130, 131, 140, 160, 200, 256, 
 
 void records(Checks& ck, bool ntsc) {
     const std::string sn = ntsc ? "NTSC" : "PAL";
+    const std::string gaps = "132-139, 141-159, 161-199, 201-255, 257-319, 321-427 and 429-65535";
     if (ntsc) {
-        ck.record("p.141 (the reason clause 'In order to save buffers', sol:5-p141.c4, opus:5-rate.c8): no output shows a reason; the rate of 28,867 samples/second is graded by MP1, the reason is not");
-        ck.record("p.141 (the design rate of 28,867 samples/second as a result of the MP2 runs at 114-119, sol:5-p141.c4, opus:5-rate.c8): a delivered rate above 28,867 does not contradict a design rate of 28,867; "
-                  "these ids are on MP1 only");
-        ck.record("p.141 (31,469 as a rate that is reached, sol:5-p141.c3, opus:5-rate.c6): the page calls it a theoretical maximum and designs for 28,867; only the bound is graded (MP5), nothing checks that 31,469 is reached; "
-                  "a late word at 113 and below is predicted by any maximum below the requested rate and does not establish the figure, so these ids are on MP5 only");
-        ck.record("p.141 (periods 132-139, 141-159, 161-199, 201-255, 257-319, 321-427 and 429-65535 inside 'at least 124', sol:5-p141.c9, opus:5-rate.c14): covered by the proposition, "
-                  "not in the required set; graded on the tested values only");
+        ck.record("p.141 (sol:5-p141.c9, opus:5-rate.c14: 'Therefore, a value of at least 124 must be written into the period register to assure that the audio system DMA will be able to retrieve the next data sample'): "
+                  "withdrawn; MP1 grades the fourteen values of S_hi, and the periods " + gaps + " inside 'at least 124' are not tested, so the interval is not established; MP1 is graded without these ids");
+        ck.record("p.141 (sol:5-p141.c4, opus:5-rate.c8: 'In order to save buffers, the hardware is designed to handle 28,867 samples/second'): withdrawn; no output shows the reason, "
+                  "and no one assertion grades the design maximum on both sides of the threshold; MP1 and MP2 grade the periods at and below it without these ids");
+        ck.record("p.141 (sol:5-p141.c3, opus:5-rate.c6: 'The figure of 31,469 is a theoretical maximum', '2 samples/line * 262.5 lines/frame * 59.94 frames/second = 31,469 samples/second'): withdrawn; "
+                  "MP5 grades only that no channel holds more than one data fetch in a line, without these ids; the figure itself is not graded: the runs measure 31,538 samples/second on lines of 227 ticks "
+                  "(MEASURED in the MP5 lines), because the NTSC lines of the runs are all 227 ticks and the 228-tick lines of p.23, which make the 227.5-tick mean of the 262.5 lines, do not occur (NM-HRM-010)");
         ck.record("p.141 (how often the previous sample is reused below the minimum): the page does not say; only 'at least once' is graded, the counts are reported");
         ck.record("p.141 (what happens to the sample that arrives too late): the page does not say; skips are counted, not graded");
         ck.record("p.141 (the PAL figure of the theoretical maximum): the page gives none; MP5 is NTSC only");
+        ck.record("MP5: unfalsifiable at this boundary; p.141 allocates one DMA slot per line to each channel and no stimulus the pages permit makes one channel take a second slot in a line, "
+                  "so no contrast can violate a channel's bound; the control run (NMH_MUTATE=MP5CH1) shows that the count is per channel: two channels on one table stay at one read per line each");
     } else {
-        ck.record("p.141 (periods 132-139, 141-159, 161-199, 201-255, 257-319, 321-427 and 429-65535 inside 'at least 123', sol:5-p141.c12, opus:5-rate.c18): covered by the proposition, "
-                  "not in the required set; graded on the tested values only");
+        ck.record("p.141 (sol:5-p141.c12, opus:5-rate.c18: 'Thus, for PAL systems, a value of at least 123 ticks/sample must be written into the period register'): withdrawn; "
+                  "MP4 grades every period 1-122, MP3 grades 123 and S_hi, and the periods " + gaps + " inside 'at least 123' are not tested, so the interval is not established; MP3 is graded without these ids");
+        ck.record("p.141 (sol:5-p141.c11, opus:5-rate.c17: '28,867 samples/second is also the maximum sampling rate for PAL systems'): withdrawn; "
+                  "the rates above the maximum are graded at every period 1-122 (MP4), the rates at and below it only at 123 and S_hi (MP3); MP3 and MP4 are graded without these ids");
+        ck.record("p.141 (PAL): the page prints the limit in the two sentences '28,867 samples/second is also the maximum sampling rate for PAL systems.' and "
+                  "'Thus, for PAL systems, a value of at least 123 ticks/sample must be written into the period register.'; the consequence 'the previous sample will be reused' is printed in the NTSC paragraph only, "
+                  "so MP4 grades that not every next sample is retrieved in time and the PAL reuse count is MEASURED");
     }
-    ck.record(std::string("p.141 and p.164 (") + (ntsc ? "NTSC periods 120-123, sol:5-p141.c10, opus:5-rate.c15" : "PAL periods 120-122, sol:5-p141.c11, opus:5-rate.c17, sol:5-p141.c12, opus:5-rate.c18") +
-              "): p.141 'If the period value is below 124, by the time the cycle count has reached 0, the audio DMA will not have had enough time to retrieve the next data sample and the previous sample will be reused' "
-              "predicts a late word; p.164 'DMA requests and restart requests are transferred to Agnus once each horizontal line, and the data comes back about 14 clock cycles later' predicts one only where 2 * P < L + 14 "
-              "(L = 227 ticks, 228 on a long NTSC line, p.23); allowing two ticks for 'about', both pages predict a late word at P = 1-119 only; these periods are run and printed as MEASURED, not graded");
+    ck.record("p.164 (the mechanism, not graded): 'DMA requests and restart requests are transferred to Agnus once each horizontal line, and the data comes back about 14 clock cycles later' explains what is measured "
+              "below the minimum; it prints no bound that predicts a word in time at " + std::string(ntsc ? "NTSC periods 120-123" : "PAL periods 120-122") + ", so p.141's statement for those periods is graded");
     ck.record(sn + " period 0: the pages do not say what the value 0 does (p.140 'the maximum is 65535', p.159 'its full range 124-65536'); excluded");
 }
 
@@ -907,14 +950,32 @@ bool run_mutation(Checks& ck, const std::string& dir, const std::string& mv) {
         std::string p = "prog_minper_";
         for (char ch : mv) p += (char)std::tolower(ch);
         r.prog = mv == "FIXMP" ? "prog_minper_fixmp" : p;
-        if (mv == "MC5STOP") { r.stop_early = true; r.P = r.declP = 64; r.kind = REUSE; }
+        if (mv == "MC5STOP") { r.P = r.declP = 64; r.kind = REUSE; }
         run_one(ck, dir, r, ref);
-    } else if (mv == "MC3VOL") {
-        do_ref(ck, dir, false, "prog_minper_mc3vol", kPref, " (AUD0VOL 0)");
-        do_ref(ck, dir, true, "prog_minper_mc3vol", kPref, " (AUD0VOL 0)");
+    } else if (mv == "FIXDONE") {
+        Ref ref = do_ref(ck, dir, false);
+        RunSpec r = spec(false, 124, ALLNEXT);
+        r.prog = "prog_nodone";
+        run_one(ck, dir, r, ref);
+    } else if (mv == "MC3LEN" || mv == "MC3OTH" || mv == "MC3A" || mv == "MC3B" || mv == "MC3F4") {
+        std::string p = "prog_minper_";
+        for (char ch : mv) p += (char)std::tolower(ch);
+        do_ref(ck, dir, false, p, kPref, " (" + mv + ")");
+        do_ref(ck, dir, true, p, kPref, " (" + mv + ")");
     } else if (mv == "MC3TIME") {
         do_ref(ck, dir, false, "prog_minper", 448, " (AUD0PER 448, declared 447)");
         do_ref(ck, dir, true, "prog_minper", 448, " (AUD0PER 448, declared 447)");
+    } else if (mv == "MP6GREEN") {
+        for (bool ntsc : {true, false}) {
+            Ref ref = do_ref(ck, dir, ntsc);
+            std::vector<Mp6> rows;
+            for (int p : {64, 124}) {
+                RunSpec r = spec(ntsc, p, NONE);
+                r.mp6out = &rows;
+                run_one(ck, dir, r, ref);
+            }
+            mp6_summary(ck, ntsc ? "NTSC" : "PAL", rows);
+        }
     } else if (mv == "MP6LEN") {
         for (bool ntsc : {true, false}) {
             Ref ref = do_ref(ck, dir, ntsc);
@@ -924,6 +985,11 @@ bool run_mutation(Checks& ck, const std::string& dir, const std::string& mv) {
             run_one(ck, dir, r, ref);
             mp6_summary(ck, ntsc ? "NTSC" : "PAL", rows);
         }
+    } else if (mv == "MC6BELOW") {
+        Ref ref = do_ref(ck, dir, false);
+        RunSpec r = spec(false, 101, REUSE); r.declP = 100;
+        r.tag = "PAL AUD0PER 101, declared 100";
+        run_one(ck, dir, r, ref);
     } else if (mv == "MC6PER") {
         Ref ref = do_ref(ck, dir, false);
         RunSpec r = spec(false, 129, ALLNEXT); r.declP = 128;

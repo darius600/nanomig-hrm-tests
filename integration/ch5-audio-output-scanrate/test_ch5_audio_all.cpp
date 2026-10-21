@@ -59,8 +59,8 @@ bool split_summary(std::string& text, int& p, int& f) {
     return true;
 }
 
-const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MC1STD", "MC2DMA", "MC2ADK", "MC3VOL", "MC3TIME",
-                                      "MC4LEN", "MC4CPU", "MC5MARK", "MC5STOP", "MC6PER", "MP6LEN", "FIXMP"};
+const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MC1STD", "MC2DMA", "MC2ADK", "MC3LEN", "MC3OTH", "MC3A", "MC3B", "MC3F4", "MC3TIME",
+                                      "MC4LEN", "MC4CPU", "MC5MARK", "MC5STOP", "MC6PER", "MC6BELOW", "MP6LEN", "MP6GREEN", "FIXMP", "FIXDONE"};
 
 }  // namespace
 
