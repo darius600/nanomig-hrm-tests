@@ -10,11 +10,11 @@
 | **Scope** | Paula's serial transmitter: words of $0155 (start bit, eight data bits, one stop bit) written back to back, so each next word waits in SERDAT while the previous one is shifted; N=371, four words, NTSC and PAL, in the package; N=31 and two-word N=32396 (NTSC) only in runs outside `make test`. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed pp. 255, 257, 258, 259, with Figure 8-11 on p. 258; Appendix A, printed pp. 283, 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `P1`, `P2`, `P3` and the controls `P1-CTRL-N0`, `P1-CTRL-N32396`, `P1-CTRL-WITHIN`, `P2-CTRL-PAIR`, `1d`, `2d` carry no claim id. Recorded, not graded: beside `P1` `sol:8-serper.c8`, p. 255; beside `P2` `sol:8-serper.c9`, p. 255; beside `P3` `sol:8-serper.c10`, p. 255; `opus:8-serper.c10`, p. 284 |
-| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L121-L127) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117); TC64's file is the same, line for line; `inherited` |
+| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L121-L127) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117); TC64's file is MiSTer's, line for line, and NanoMig's adds the AT-modem bridge's `tx_hold`; `inherited` |
 | **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial): `make -k -C integration/ch8-disk-serial test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
 | **Assertions** | `P1`, `P2`, `P3`, red on fx68k and on TG68K (75 passed, 3 failed on each core; these three are the package's only reds). `P1`: expected every TxD change within ±C/2 of t0 + k·(N+1)·C, observed 20 of 40 at N=371. `P2` (ii): expected U_N equal for every N, observed U_371 = 8.000827 against U_32396 = 8.000000, beyond a tolerance of 0.000579. `P3`: expected 40 of 40 at N=371, observed 20 of 40 |
 | **Verdict of the four** | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows the stop bit after N+1 colour clocks, as p. 255 says. WinUAE has no TxD pin; in its cycle-exact mode with no serial device it starts the waiting word's frame 10(N+1) colour clocks after the previous frame began, and in its loopback mode 3 colour clocks later. None adds half a colour clock. Hardware: not measured |
-| **Effort** | S — `paula_uart.v` only — the `tx_shift == 16'd0` branch of lines 111–117 and line 139, which has to set `tx_tbe` on the load |
+| **Effort** | S — `paula_uart.v` only — the `tx_shift == 16'd0` branch of lines 121–127 and line 149, which has to set `tx_tbe` on the load |
 
 ---
 
@@ -72,7 +72,10 @@ if (tx_cnt == 16'd0) begin
 ```
 
 and only `TX_IDLE`, on the next `clk7_en` edge, loads the word, drives its start bit and reloads the count —
-[`#L87-L104`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L87-L104).
+[`#L97-L114`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L97-L114),
+`if (!tx_tbe && !tx_hold) begin`, where `tx_hold`, the AT-modem bridge's FIFO-full input, is the constant 0 of
+[`#L40-L42`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L40-L42)
+in the package's build, which does not define `ENABLE_AT_MODEM`.
 Every other bit is counted as
 [`#L128-L134`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L128-L134)
 does it: reload `tx_cnt <= #1 {serper[14:0], 1'b1};`, count down to 0, and drive the next bit on the edge that finds 0 — 2N+1 edges counting down and one that changes the pin, 2N+2 `clk7_en` edges. The module runs on `clk7_en`
@@ -128,29 +131,29 @@ The question put to each: when a word is waiting in SERDAT, how long after the s
 | **vAmiga** | [`Core/Components/Paula/UART/UARTEvents.cpp:27-65`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UARTEvents.cpp#L27-L65), [`Core/Components/Paula/UART/UART.cpp:176-181`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.cpp#L176-L181), [`Core/Components/Paula/UART/UART.h:164`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.h#L164) | **the start bit goes out in the event that shifts the stop bit out.** Each `TXD_BIT` event shifts one bit, `transmitShiftReg >>= 1;`, and schedules the next one `pulseWidth()` later, `agnus.scheduleRel<SLOT_TXD>(pulseWidth(), TXD_BIT);`, where `pulseWidth()` is `DMA_CYCLES((serper & 0x7FFF) + 1)`, N+1 DMA cycles. When the shift leaves the register empty and a word is waiting, the same event copies it in with its start bit prefixed, `transmitShiftReg <<= 1;`, and drives it, `outBit = transmitShiftReg & 1;`. The stop bit lasts one `pulseWidth()` |
 | **Denise** | [`emulation/libami/paula/uart.cpp:55-70`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L55-L70), [`:107-117`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L107-L117), [`:2`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L2), [`emulation/libami/agnus/agnus.cpp:495-500`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L495-L500), [`:626`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L626) | **the same: the stop bit's event loads the waiting word.** After `serShifter >>= 1;`, `if (!serShifter) { if (serDat) { prepareTransfer();`: `prepareTransfer` moves `serDat` into the shifter with a start bit, `serShifter <<= 1; // one start bit is mandatory`, `updateTxd()` drives it, and the next event is set `serialTransferEvent = agnus.clock + PULSE_WIDTH;` with `#define PULSE_WIDTH ((serPer & 0x7fff) + 1)`. `agnus.clock` counts colour clocks: `dmaCycle()` advances it once, `if (++clock == nextClock)`, as it advances the beam by one, `switch(++hPos) {`. The stop bit lasts N+1 colour clocks |
 | **Copperline** | [`src/chipset/paula.rs:1372-1390`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1372-L1390), [`:1520-1541`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1520-L1541), [`:1335-1338`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1335-L1338), [`:1567-1569`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1567-L1569) | **the same, within one colour-clock step.** `tick_serial` advances the port *"by `cck` color clocks"*; each bit holds `remaining_cck: bit_cck`, with `u32::from(self.serper & 0x7FFF).saturating_add(1).max(1)`. When the stop bit's count ends, `shift.bit_index >= shift.total_bits` leads to `irq \|= self.load_serial_shift_if_idle();`, which takes the waiting word from `serial_tx_buffer`, starts it at `bit_index: 0`, the start bit, and drives the pin from it, `self.serial_tx_pin_high = Self::serial_tx_bit(&shift);`; the remainder of the same span then counts the start bit. The stop bit lasts N+1 colour clocks |
-| **MiSTer** | [`rtl/paula_uart.v:111-117`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117), [`:87-104`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L87-L104) | descendant — identical to NanoMig, same lines: the stop bit's count ends in `tx_state <= #1 TX_IDLE;` and the waiting word is loaded from `TX_IDLE` one `clk7_en` edge later, `if (!tx_tbe) begin` … `tx_shift <= #1 serdat;` |
-| **TC64** | [`rtl/minimig/paula_uart.v:111-117`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L111-L117), [`:87-104`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L87-L104) | descendant — the same file, line for line: `tx_state <= #1 TX_IDLE;` after the stop bit, `tx_txd <= #1 1'b0;` from `TX_IDLE` on the next edge. `paula_uart.v` is identical in all three trees, so the extra edge is inherited by both lines and fixed in neither |
+| **MiSTer** | [`rtl/paula_uart.v:111-117`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117), [`:87-104`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L87-L104) | descendant — NanoMig's transmitter without its two `tx_hold` terms, ten lines earlier: the stop bit's count ends in `tx_state <= #1 TX_IDLE;` and the waiting word is loaded from `TX_IDLE` one `clk7_en` edge later, `if (!tx_tbe) begin` … `tx_shift <= #1 serdat;` |
+| **TC64** | [`rtl/minimig/paula_uart.v:111-117`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L111-L117), [`:87-104`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L87-L104) | descendant — MiSTer's file, line for line: `tx_state <= #1 TX_IDLE;` after the stop bit, `tx_txd <= #1 1'b0;` from `TX_IDLE` on the next edge. The three trees have the same transmitter, NanoMig's with the `tx_hold` terms added, so the extra edge is inherited by both lines and fixed in neither |
 
 ## Decision
 
-**One option: load a waiting word in the edge that ends the stop bit, as `TX_IDLE` does.** In the `tx_shift == 16'd0` branch of lines 111–117:
+**One option: load a waiting word in the edge that ends the stop bit, as `TX_IDLE` does.** In the `tx_shift == 16'd0` branch of lines 121–127, with the start condition of `TX_IDLE` (line 101):
 
 ```verilog
 if (tx_shift == 16'd0) begin
-  if (!tx_tbe) begin
+  if (!tx_tbe && !tx_hold) begin
     // a word is waiting: its start bit follows the stop bit
     tx_irq   <= #1 1'b1;
     tx_txd   <= #1 1'b0;
     tx_shift <= #1 serdat;
     tx_cnt   <= #1 {serper[14:0], 1'b1};
   end else begin
-    tx_tsre  <= #1 1'b1;
+    if (tx_tbe) tx_tsre <= #1 1'b1;
     tx_state <= #1 TX_IDLE;
   end
 end
 ```
 
-and line 139 has to set `tx_tbe` on that load as it does in `TX_IDLE`, since the state no longer passes through it. What it would change:
+and line 149 has to set `tx_tbe` on that load as it does in `TX_IDLE`, since the state no longer passes through it. What it would change:
 
 - a stop bit with a word waiting behind it would last 2N+2 `clk7_en` edges, N+1 colour clocks, and `P1`, `P2` and `P3` would read the grid p. 255 gives;
 - the waiting word's transfer into the shift register and its TBE interrupt would come one `clk7_en` edge, half a colour clock, earlier;
