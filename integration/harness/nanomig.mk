@@ -7,8 +7,12 @@
 #
 # and then `include ../harness/nanomig.mk`. `make test` assembles every
 # program with vasm into <name>.bin, builds nanomig.v once per CPU core -- the
-# defines of nano20k/top.sv (fx68k) and of nano20k/top_020.sv (TG68K), plus
-# the simulation-only INFER_DPRAM -- and runs the test on each, from its object
+# defines of nano20k/top.sv (fx68k) and of nano20k/top_020.sv (TG68K) as they
+# stood at NanoMig 4495f86, plus the simulation-only INFER_DPRAM -- and runs the
+# test on each, from its object directory. At the pinned 4315acba both board
+# files also define DISABLE_ROM_LOADER and ENABLE_AT_MODEM, and top_020.sv no
+# longer defines NO_WS2812; this build passes neither of the first two and still
+# passes NO_WS2812 for TG68K. Each run starts from its object
 # directory: fx68k reads its microcode from the working directory, and a
 # binary started anywhere else runs without it. The test gets the directory
 # holding the .bin files as its first argument, and writes out_<core>.txt.
