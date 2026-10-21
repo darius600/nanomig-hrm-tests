@@ -24,7 +24,7 @@ on both.
 
 | Claim | Where |
 |---|---|
-| sol:5-p141.c10, opus:5-rate.c15 | MP2: the one line of each period 1-123 that grades both of its clauses |
+| sol:5-p141.c10, opus:5-rate.c15 | MP2: the one line of each period 1-123 that grades both of its clauses, the common clause of p.141 and p.164 |
 | sol:5-p141.c9, opus:5-rate.c14 | withdrawn: MP1 covers a sample of the values of "at least 124" |
 | sol:5-p141.c12, opus:5-rate.c18 | withdrawn: MP3 covers a sample of the values of "at least 123" |
 | sol:5-p141.c11, opus:5-rate.c17 | withdrawn: the PAL maximum, graded on one side exhaustively and on the other side on a sample |
@@ -101,7 +101,7 @@ Other parts of the claims that no check here covers, and why:
 | Id | Standard | Periods (AUD0PER) | Expected in the window |
 |---|---|---|---|
 | MP1 | NTSC | the set S_hi (124 and up) | every sample period carries the next data sample |
-| MP2 | NTSC | every value 1-123 | at least one sample period does not carry the next sample, and at least one reuses the sample just played |
+| MP2 | NTSC | every value 1-123 | at least one sample period does not carry the next sample, and at least one plays a sample already played again |
 | MP3 | PAL | 123 and the set S_hi | as MP1 |
 | MP4 | PAL | every value 1-122 | at least one sample period does not carry the next sample; reuse is measured, not graded |
 | MP5 | NTSC | every value 1-113 | no line holds more than one data fetch of the channel |
@@ -393,21 +393,26 @@ the sample period immediately before it, `c_{j-1}`, indices mod 128:
 | `c_j = u` | unmapped |
 | `c_{j-1} = u`, `c_j` mapped | after an unmapped period (reported, not graded; the sample just played is not known) |
 | `c_j = c_{j-1} + 1` | **next** |
-| `c_j = c_{j-1}` | **reuse** |
-| `c_j = c_{j-1} - 1` | **repeat** (reported, not graded) |
+| `c_j = c_{j-1}` | **reuse** (the previous sample again, p.141's form) |
+| `c_j = c_{j-1} - 1` | **repeat** (both buffered samples again, p.164's form) |
 | `c_j = c_{j-1} + k`, 2 <= k <= 63 | skip |
 | anything else | other |
 
-The definition of **reuse** is what p.141 says: "the previous sample will be
-reused", which is the sample just played, the one in the sample period
-immediately before (`c_j = c_{j-1}`). A sample period that returns to a sample
-after a step back (`m-1`, then `m`) is a **next**, not a reuse: it is not the
-sample just played. p.164 says "If the sampling rate is set much higher than
-the normal maximum sampling rate (approximately 29 KHz), the two samples in
-the buffer register will be repeated", which would also allow a sample period
-that carries the other sample of the last word (`c_{j-1} - 1`). That is
-reported as **repeat**, separately, and never graded. The table has 128
-different values (section 3.1), so a repeat cannot be taken for a new sample.
+Two printed sentences say what the output does when the next sample is late.
+p.141: "the previous sample will be reused", which is the sample just played,
+the one in the sample period immediately before (`c_j = c_{j-1}`): **reuse**.
+p.164: "If the sampling rate is set much higher than the normal maximum
+sampling rate (approximately 29 KHz), the two samples in the buffer register
+will be repeated", which carries the other sample of the last word
+(`c_{j-1} - 1`) after the sample just played: **repeat**. They differ on which
+earlier sample comes back; they agree that a sample already played is played
+again where the next one was due. That common clause is **played again**: a
+sample period that is a reuse or a repeat. It is what MP2 (b) grades. Reuse
+and repeat are each printed as MEASURED with their counts and are not graded
+on their own. A sample period that returns to a sample after a step back
+(`m-1`, then `m`) is a **next**. The table has 128 different values (section
+3.1), so a played-again period cannot be taken for a new sample. The period
+after an unmapped period is in no class that counts as played again.
 
 Each run reports `N` and the number of sample periods in each class, repeats
 included.
@@ -636,8 +641,9 @@ failed", not graded.
 3. **Observation.** As MP1.
 4. **Expected.** For every `P` from 1 to 123, three lines, each on its own:
    (a) at least one classified sample period is not **next**;
-   (b) at least one is **reuse**, `c_j = c_{j-1}`, the sample just played
-   (section 3.6); and
+   (b) at least one is **played again**, a reuse or a repeat (section 3.6):
+   where the next sample was due, a sample already played is played again;
+   and
    (a) and (b) together, the line that carries the claim ids, because it is
    the one that establishes all of what the two claims say. (a) and (b) carry
    no id.
@@ -661,14 +667,16 @@ failed", not graded.
    the reuse for every period below 124.
 5. **Preconditions.** MC1-MC6. MC6 matters most here. If the written period
    does not take effect, the sample periods are not those of `P`, and a
-   channel running slower could look like reuse. MC6 catches that whenever
-   the slower period's level changes leave the `P` grid. If they stay on the
-   grid (a whole multiple of `P`), the output shows a sample output again
-   for the next period, which is what the page calls reuse, and it is graded
-   as reuse. Periods with `s > P/2` are reported as not checkable
+   channel running slower could look like a sample played again. MC6 catches
+   that whenever the slower period's level changes leave the `P` grid. If they
+   stay on the grid (a whole multiple of `P`), the output shows a sample
+   output again for the next period, which is what the page calls reuse, and
+   it is graded as played again. Periods with `s > P/2` are reported as not checkable
    (section 3.4).
 6. **Contrast.** The same run with `P = 124`. p.141 predicts every next
-   sample retrieved (MP1), so the MP2 check goes red.
+   sample retrieved (MP1), so no sample is played again and the MP2 checks go
+   red, (b) included. The `P = 64` run is the green input of the same
+   comparators.
 7. **Reference frames.** As MP1.
 
 ### MP3. PAL: at the minimum period of 123 and above, every next sample is retrieved in time
@@ -865,12 +873,15 @@ failed", not graded.
 2. **"These limits apply to both PAL and NTSC machines"** (p.140) directly
    follows two different minimums for the two standards. Which limits it
    means is left open. No expected value rests on it.
-3. **What is reused.** p.141 says "the previous sample will be reused".
-   p.164 says that well above about 29 kHz "the two samples in the buffer
-   register will be repeated". Only what p.141 says is graded as reuse: the
-   sample just played, the one in the sample period immediately before
-   (`c_j = c_{j-1}`). A period that carries the other sample of the last word
-   (`c_{j-1} - 1`) is reported as a repeat (section 3.6).
+3. **What is played again.** p.141 says "the previous sample will be
+   reused". p.164 says that well above about 29 kHz "the two samples in the
+   buffer register will be repeated". The two sentences differ on which
+   earlier sample comes back and agree that a sample already played is played
+   again instead of the next one. The package grades that common clause
+   (MP2 (b), "played again") and measures the rest: the previous sample
+   again (`c_j = c_{j-1}`, p.141's form) and both buffered samples again
+   (`c_j = c_{j-1} - 1`, p.164's form) are printed with their counts
+   (section 3.6).
 4. **Theoretical against designed rate.** p.141 derives 31,469
    samples/second from the slot allocation (a period of 113.75 ticks), yet
    puts the minimum at 124 because "In order to save buffers, the hardware
