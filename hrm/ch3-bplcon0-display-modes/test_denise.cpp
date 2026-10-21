@@ -176,7 +176,7 @@ static const int A_BPL5DAT = 0x118;
 static const int A_BPL6DAT = 0x11a;
 static const int A_COLORBASE = 0x180;
 
-// BPLCON0 field builder (denise.v:180-192)
+// BPLCON0 field builder (denise.v:182-194)
 static uint16_t mkBplcon0(bool hires, int bpu3, bool homod, bool dblpf,
                            bool colorOn = false, bool shres = false,
                            bool lace = false, bool lpen = false,

@@ -231,7 +231,7 @@ int measure_tx_cell_now(Rig& rig) {
     // a separate write_reg() call before monitoring starts would consume
     // the address-write edge (which only clears tx_tbe) AND the following
     // edge (TX_IDLE->TX_SHIFT, txd's actual 1->0 transition,
-    // paula_uart.v:91-104 -- tx_tbe is checked with its PRE-edge value, so
+    // paula_uart.v:101-114 -- tx_tbe is checked with its PRE-edge value, so
     // the state transition lags the write by one qualifying edge) inside
     // its own settle_edges() bookkeeping, before last_txd could be
     // initialised from the true pre-transition value -- silently

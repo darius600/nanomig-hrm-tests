@@ -34,7 +34,7 @@
 //   denise_collision.v + denise_hamgenerator.v + denise_colortable.v +
 //   denise_colortable_ram_mf.v + denise_spritepriority.v + bitplane_ram.v),
 //   per PACKAGE.md. Ports used, exactly as PACKAGE.md's own evidence names
-//   them (module header, denise.v:31-52): clk, clk7_en, c1, c3, cck, reset,
+//   them (module header, denise.v:31-53): clk, clk7_en, c1, c3, cck, reset,
 //   strhor, reg_address_in[8:1], data_in[16-1:0], chip48[48-1:0],
 //   data_out[16-1:0], blank, red/green/blue[8-1:0], a1k, ecs, aga,
 //   hires (out), shres (out).
@@ -77,7 +77,7 @@
 //   bpldata[8:1]` (no dual-playfield, no Swiv exception when bplcon2's
 //   pf2p<=5, which holds because this file never writes BPLCON2). With
 //   l_bpu (denise.v:196-205, latched off BPLCON0.bpu the moment BPL1DAT is
-//   written) set to 5, denise.v:367-374 forces bpldata[6..8]=0, so the
+//   written) set to 5, denise.v:402-409 forces bpldata[6..8]=0, so the
 //   colour-table select index actually presented is exactly
 //     index = 16*bpldata[5] + 8*bpldata[4] + 4*bpldata[3] + 2*bpldata[2] + bpldata[1]
 //   one bit per bitplane, each held at a constant 0 or 1 by writing its
@@ -164,7 +164,7 @@
 //     -- ADDR (BPLCON3): with BPLCON0's ECSENA bit (bit 0, denise.v:194)
 //        set and a display window open, BPLCON3's own BRDRBLNK bit (bit 5,
 //        denise.v:253) forces the border area to a fixed value
-//        (denise.v:513-518's `t_blank` forces $000000, though no manual
+//        (denise.v:560-565's `t_blank` forces $000000, though no manual
 //        page prints that RGB value); with BRDRBLNK clear the border
 //        instead reads COLOR00's own content. Toggling only BPLCON3
 //        changes the border colour, which requires BPLCON3's write to
@@ -416,7 +416,7 @@ public:
 
     // Presents `addr` on reg_address_in and returns data_out after it has
     // had a full 4-phase cycle to settle (data_out is a combinational mux
-    // of three sources in denise.v:130/102, but giving it a full cycle
+    // of three sources in denise.v:97, but giving it a full cycle
     // costs nothing and keeps every read on the same measurement basis).
     uint16_t read_reg(uint16_t addr) {
         dut->reg_address_in = addr;
@@ -628,7 +628,7 @@ int main(int argc, char** argv) {
         h.pulse_strhor();
         h.advance_hpos(0x2C - 2);
         // bpu=1 (BPLCON0 already written above) means only plane 1 matters
-        // (denise.v:367-374 forces bpldata[2..8]=0 whenever l_bpu<=1), so
+        // (denise.v:402-409 forces bpldata[2..8]=0 whenever l_bpu<=1), so
         // only BPL1DAT needs repeated refreshing here -- each write_reg
         // call is ~1.25 hpos, and 8 calls carries hpos from $02C to about
         // $036, comfortably inside [$030,$050).
@@ -741,7 +741,7 @@ int main(int argc, char** argv) {
     // BPLCON3-ADDR (p.271/291) -- with BPLCON0's ECSENA
     // bit (bit 0, denise.v:194) set and a display window open, BPLCON3's
     // own BRDRBLNK bit (bit 5, denise.v:253) changes the border area's
-    // colour (denise.v:513-518, `t_blank`, forces $000000 when set; no
+    // colour (denise.v:560-565, `t_blank`, forces $000000 when set; no
     // manual page prints that RGB value, so this assertion requires only
     // that the border colour changes, not what it changes to); with
     // BRDRBLNK clear the border instead reads COLOR00's own content.

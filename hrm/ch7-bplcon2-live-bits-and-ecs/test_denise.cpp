@@ -43,7 +43,7 @@
 //   BPLCON0=$6000 (bpu=6, ham=0, dpf=0, denise.v:183-185), BPL1..5DAT held
 //   at $0000 and BPL6DAT refreshed at $FFFF -- so the colour-table select
 //   index presented is fixed at 32 (denise_playfields.v:100 plfdata=
-//   bpldata[8:1], denise.v:367-372 gate bpldata[7:1] on l_bpu, giving index
+//   bpldata[8:1], denise.v:402-407 gate bpldata[7:1] on l_bpu, giving index
 //   bit 5 = bitplane 6's data, bits 4-0 = 0). This is deliberate, not
 //   incidental: the SAME rig that measures bits
 //   15, 14, 13, 12, 11, 10, 8 and 7 changing nothing also carries bit 9

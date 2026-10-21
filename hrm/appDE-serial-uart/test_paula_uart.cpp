@@ -81,10 +81,11 @@
 // (d6f7df957fad655bc07f6a381e5094a9edff0be0, confirmed via `git submodule
 // status` before writing this file) for this package, not copied from the
 // claims file's classify.evidence field:
-//   - paula_uart.v:4-17's full port list: clk, clk7_en, reset, rga_i,
-//     data_i, data_o (output), uartbrk, rbfmirror, txint (output), rxint
-//     (output), txd (output), rxd (input). Twelve names; none is
-//     cts/rts/dtr/dsr/cd/ri.
+//   - paula_uart.v:4-22's full port list with ENABLE_AT_MODEM undefined, as
+//     in this build (its `ifdef at :17-21 adds serper_o and tx_hold): clk,
+//     clk7_en, reset, rga_i, data_i, data_o (output), uartbrk, rbfmirror,
+//     txint (output), rxint (output), txd (output), rxd (input). Twelve
+//     names; none is cts/rts/dtr/dsr/cd/ri.
 //   - paula_uart.v:265 `assign txd = tx_txd;` -- txd is a continuous,
 //     unconditional read of an internal register the testbench never
 //     writes to.
@@ -96,8 +97,8 @@
 //     data_o[15:11], rx_rxd is its low bit, so data_o[11]).
 //   - paula.v (the module that instantiates paula_uart as `pu1`,
 //     paula.v:208-220) carries the same absence: its own port list
-//     (paula.v:60-90) names txd/rxd and nothing modem-control at all.
-//   - minimig.v:189-197 is the first place cts/rts/dtr/dsr/cd/ri and
+//     (paula.v:60-95) names txd/rxd and nothing modem-control at all.
+//   - minimig.v:189-202 is the first place cts/rts/dtr/dsr/cd/ri and
 //     txd/rxd coexist as names in one module. minimig.v:658-659 wires
 //     cts/rts/dtr/dsr/cd/ri exclusively into the ciab instance's
 //     porta_in/porta_out (CIA-B port A: `.porta_in({cd,cts,dsr,
@@ -320,7 +321,8 @@ int main(int argc, char** argv) {
     {
         checks.note(
             "MODEM-CONTROL-PORTS: paula_uart.v's full port list "
-            "(paula_uart.v:4-17) is clk, clk7_en, reset, rga_i, data_i, "
+            "(paula_uart.v:4-22, with ENABLE_AT_MODEM undefined as in this "
+            "build) is clk, clk7_en, reset, rga_i, data_i, "
             "data_o, uartbrk, rbfmirror, txint, rxint, txd, rxd -- twelve "
             "names, none of them cts, rts, dtr, dsr, cd or ri. paula.v "
             "(paula_uart's own instantiator, as pu1) carries the same "

@@ -304,7 +304,7 @@ public:
     int failed = 0;
 };
 
-// paula_uart has no read/write strobe and no chip select (paula_uart.v:4-17):
+// paula_uart has no read/write strobe and no chip select (paula_uart.v:4-22):
 // a clk7_en cycle presenting rga_i alongside data_i always writes serper or
 // serdat if the address matches. write_reg() therefore only ever calls
 // tick() (a real posedge) with the target address asserted; read_reg_comb()

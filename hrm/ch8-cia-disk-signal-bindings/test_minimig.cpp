@@ -38,7 +38,7 @@
 //   minimig.v:643-661   ciab CIAB1 (...
 //                        .portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
 //                        );
-//   minimig.v:489-548   paula PAULA1 (... ._step(_step), .direc(direc),
+//   minimig.v:494-558   paula PAULA1 (... ._step(_step), .direc(direc),
 //                        ._sel({_sel3,_sel2,_sel1,_sel0}), .side(side),
 //                        ._motor(_motor), ._track0(_track0), ._change(_change),
 //                        ._ready(_ready), ._wprot(_wprot), ...

@@ -578,9 +578,11 @@ practice already recorded by sibling packages `ch8-keyboard-serial-register`,
 facts it contributed to this document's scope decisions are named here
 rather than left implicit:
 
-- `paula_uart.v:4-17`'s port list (`clk`, `clk7_en`, `reset`, `rga_i`,
+- `paula_uart.v:4-22`'s port list (`clk`, `clk7_en`, `reset`, `rga_i`,
   `data_i`, `data_o`, `uartbrk`, `rbfmirror`, `txint`, `rxint`, `txd`,
-  `rxd`) and the absence of a read/write strobe or chip select — this is
+  `rxd`; its `serper_o` and `tx_hold` exist only with `ENABLE_AT_MODEM`,
+  which this package's build does not define) and the absence of a
+  read/write strobe or chip select — this is
   also stated directly in the build brief and package list as a standing
   fact about this slice's fixtures, not something this package alone
   found.

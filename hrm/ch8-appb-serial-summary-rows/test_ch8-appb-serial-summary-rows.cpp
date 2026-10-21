@@ -33,7 +33,7 @@
 //     CLR convention: data_in[15]=1 ORs data_in[14:0] in, =0 ANDs the
 //     complement out); ADKCONR read paula.v:203 `assign adkconr[15:0] =
 //     (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000`;
-//     paula.v:203-217 instantiates paula_uart as `pu1`, `.rga_i
+//     paula.v:208-227 instantiates paula_uart as `pu1`, `.rga_i
 //     (reg_address_in)`, `.data_i(data_in)`, `.data_o(uartdata_out)`,
 //     `.uartbrk(adkcon[11])`; paula.v:157 `assign data_out = uartdata_out |
 //     intdata_out | diskdata_out | adkconr` -- confirms the four mux arms
@@ -57,7 +57,7 @@
 //     boundary by `hrm/ch8-adkcon-disk-control-bits`'s `Rig::read_reg`,
 //     read for the pattern only, not for its assertions or expected
 //     values).
-//   - paula_uart.v:245-260: `serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre,
+//   - paula_uart.v:256-272: `serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre,
 //     rx_rxd}` occupies bits [15:11] of `data_o`, bit 10 is a hard 0, bits
 //     [9:0] are `rx_data`; `data_o = (rga_i==REG_SERDATR[8:1]) ? {serdatr,
 //     1'b0, rx_data} : 16'h0000`. Reset values: `tx_tbe<=1`, `tx_tsre<=1`

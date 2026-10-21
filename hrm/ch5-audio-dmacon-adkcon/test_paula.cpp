@@ -1280,7 +1280,7 @@ int main(int argc, char** argv) {
             "independently confirmed by a plain grep over denise.v (not "
             "a Verilator measurement): a search for '096' or 'DMACON' "
             "over the whole file returns exactly one comment "
-            "(denise.v:163, 'needs bits in DMACON also') and no register "
+            "(denise.v:166, 'needs bits in DMACON also') and no register "
             "decode at all. Appendix B p.290's own chip column for this "
             "row gives only 'D' -- conflicting with appendix A's 'A D P' "
             "by being narrower, not opposite, per this repository's own "

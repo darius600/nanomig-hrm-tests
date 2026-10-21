@@ -27,7 +27,7 @@
 //   silently failed to take effect (see PRECONDITION below).
 //
 // BOUNDARY: nanomig/src/minimig-aga/minimig.v (module `minimig`, the whole
-//   top-level chipset, ports at minimig.v:149-282) -- built with -DDISABLE_IDE
+//   top-level chipset, ports at minimig.v:149-287) -- built with -DDISABLE_IDE
 //   (ide.v/gayle.v need a per-board Lattice DP16KD primitive that will not
 //   Verilate standalone, same as the ch7-overlay-source sibling package)
 //   and, uniquely to this package, -DENABLE_CART (this package's own

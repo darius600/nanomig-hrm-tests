@@ -15,9 +15,11 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// BOUNDARY: nanomig/src/minimig-aga/paula_uart.v:4-17 module header -- ports
+// BOUNDARY: nanomig/src/minimig-aga/paula_uart.v:4-22 module header -- ports
 //   clk, clk7_en, reset, rga_i[7:0], data_i[15:0], data_o[15:0], uartbrk,
-//   rbfmirror, txint, rxint, txd, rxd. No rd/hwr/lwr strobe and no chip
+//   rbfmirror, txint, rxint, txd, rxd (serper_o and tx_hold, :17-21, exist
+//   only with ENABLE_AT_MODEM, which this build leaves undefined). No
+//   rd/hwr/lwr strobe and no chip
 //   select: a cycle is fully described by rga_i + data_i, and read vs.
 //   write are told apart only by which of data_o / internal state responds
 //   -- this package's own Boundary caveat (SPECIFICATION.md), applied
@@ -59,9 +61,9 @@
 //   row states, not a bit layout, so each is graded on the shape the prose
 //   names, not on a hand-derived expected bit pattern:
 //   - P3 (SERDATR, "data and status read"): one read returns both a status
-//     component that responds to a transmit (TBE, paula_uart.v:139) and a
+//     component that responds to a transmit (TBE, paula_uart.v:149) and a
 //     data component that responds to a receive (rx_data, paula_uart.v:
-//     215-219) -- the same address carries both kinds of fact.
+//     225-229) -- the same address carries both kinds of fact.
 //   - P6 (SERDAT, "data and stop bits write"): the written word supplies
 //     both a data payload and stop-bit control in one write. paula_uart.v's
 //     TX shifter (l.107-129) shifts out serdat's bits LSB-first until the
@@ -431,9 +433,11 @@ int main(int argc, char** argv) {
                     std::string((after_write & 0x1000) ? "still set" : "cleared") +
                     "; note TBE bit 0x2000 was found, while building this "
                     "test, to bounce back to 1 one clk7_en cycle after the "
-                    "write -- paula_uart.v:139's own bottom-of-block "
+                    "write -- paula_uart.v:149's own bottom-of-block "
                     "assignment reasserts it whenever tx_state reads as "
-                    "TX_IDLE, which it still does for one more cycle after "
+                    "TX_IDLE (tx_hold, its other term, is tied low in this "
+                    "build, paula_uart.v:41), which it still does for one "
+                    "more cycle after "
                     "the load -- so TSRE, not TBE, is the status bit this "
                     "assertion reads; not itself a claim in this package's "
                     "18); rxint observed during receive_byte(0xA3): " +

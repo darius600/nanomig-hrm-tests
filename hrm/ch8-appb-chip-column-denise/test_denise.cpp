@@ -10,12 +10,13 @@
 //   p.289 (Appendix B row for each register), composed with printed p.287
 //   (the chip-letter legend).
 // Fixture boundary: `denise` (denise.v) and every module it itself
-//   instantiates -- denise_bitplanes (bplm0, denise.v:361, which itself
-//   instantiates denise_bitplane_shifter, denise_bitplanes.v:446-573,
+//   instantiates -- denise_bitplanes (bplm0, denise.v:379, which itself
+//   instantiates denise_scroll_history, denise_bitplanes.v:576-583, and
+//   denise_bitplane_shifter, denise_bitplanes.v:586-729,
 //   whose bitplane_ram sits on the unbuilt DENISE_EBR branch),
 //   denise_playfields (plfm0,
-//   denise.v:412), denise_sprites (sprm0, denise.v:429, which itself
-//   instantiates denise_sprites_shifter, denise_sprites.v:319-453, whose
+//   denise.v:412), denise_sprites (sprm0, denise.v:450, which itself
+//   instantiates denise_sprites_shifter, denise_sprites.v:441-574, whose
 //   sprite_ram sits on the unbuilt DENISE_EBR branch), denise_spritepriority (spm0,
 //   denise.v:473), denise_colortable (clut0, denise.v:487, which itself
 //   instantiates denise_colortable_ram_mf, denise_colortable.v:39), and
@@ -73,7 +74,7 @@
 //   boundaries. So JOY0DAT/JOY1DAT/JOYTEST's absence from `denise`'s own
 //   hierarchy is a fact about this clone's source layout, not evidence that
 //   the physical *Denise chip* fails to answer there -- denise.v's own
-//   data_out is an unconditional OR of its own sub-signals (denise.v:102/130,
+//   data_out is an unconditional OR of its own sub-signals (denise.v:97,
 //   `col_out | deniseid_out | rgb_out`) with no chip-select/acknowledge
 //   output of any kind, so driving an address absent from denise's own table
 //   simply reads back 0x0000, which is indistinguishable from "claimed and

@@ -36,7 +36,8 @@
 //   denise_colortable_ram_mf.v + denise_spritepriority.v + bitplane_ram.v),
 //   per PACKAGE.md and modelled on hrm/ch3-horizontal-display-window's own
 //   Makefile. Ports, exactly as claims.jsonl's own evidence field names
-//   them (module header, denise.v:31-52): clk, clk7_en, c1, c3, cck, reset,
+//   them (module header, denise.v:31-53, which also declares a blank_out
+//   output the evidence does not name): clk, clk7_en, c1, c3, cck, reset,
 //   strhor, reg_address_in[8:1], data_in[16-1:0], chip48[48-1:0],
 //   data_out[16-1:0], blank, red/green/blue[8-1:0], a1k, ecs, aga, hires
 //   (out), shres (out). fixture a1k=0, ecs=1, aga=0 throughout, matching
@@ -117,7 +118,7 @@
 //   DIW-ONE-PIXEL-RESOLUTION's own DELTA-based check does not depend on
 //   this translation at all.
 //
-// RTL NOTES (WSL/Verilator 5.052): denise.v:436-444 forces clut_data (and
+// RTL NOTES (WSL/Verilator 5.052): denise.v:536-545 forces clut_data (and
 //   therefore rgb) to border/0 whenever !window_ena, so
 //   FIGURE-COLOR-SELECT-INDEX6, EHB-HALF-INTENSITY, HAM-MODIFY-WRITES-PIXEL
 //   and COLOR-BITS-15-12-UNUSED call Harness::enter_wide_window()
@@ -167,7 +168,7 @@
 //
 // WHY THE NINE WO ASSERTIONS PAIR A WRITE EFFECT WITH THE $0000 READ-BACK
 //   (BPLCON1-WO, BPL1DAT-WO..BPL6DAT-WO, DIWSTRT-WO, DIWSTOP-WO,
-//   DIWHIGH-WO): denise.v:102/130 is `data_out = col_out | deniseid_out |
+//   DIWHIGH-WO): denise.v:97 is `data_out = col_out | deniseid_out |
 //   rgb_out` -- exactly three read sources -- so "the written address reads
 //   back $0000" is true of nearly every address in the map, including ones
 //   Denise does not implement at all (a Paula audio pointer at $0A0, the
@@ -521,7 +522,7 @@ public:
     // bpu is written into BPLCON0[14:12] (aga=0, so the AGA bit4 extension
     // term is forced 0); ham (bit11) and dpf (bit10) default to 0 unless
     // ham_on is set. Field positions per claims.jsonl's own evidence field
-    // for this package's C-shr.c01/C-superhires.c1/c2 (denise.v:180-192):
+    // for this package's C-shr.c01/C-superhires.c1/c2 (denise.v:182-194):
     // hires=bit15, bpu=bits14-12, ham=bit11, dpf=bit10.
     void write_bitplane_pattern(int bpu, bool ham_on, bool b1, bool b2, bool b3,
                                  bool b4, bool b5, bool b6, int rounds) {
@@ -570,8 +571,8 @@ public:
         }
     }
 
-    // WHY THIS EXISTS (denise.v:436-444: clut_data = 0 (border) whenever
-    // !window_ena, regardless of bitplane content; denise.v:493-499:
+    // WHY THIS EXISTS (denise.v:536-545: clut_data = 0 (border) whenever
+    // !window_ena, regardless of bitplane content; denise.v:547-553:
     // window_del lags window_ena by one 28MHz edge, not gated by clk7_en)
     // -- every colour-index/EHB/HAM measurement needs to actually be
     // SAMPLED INSIDE the display window, not merely have DIWSTRT/DIWSTOP

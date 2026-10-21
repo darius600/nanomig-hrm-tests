@@ -32,8 +32,8 @@
 //
 // BOUNDARY: `denise` (top-level chipset module), the only fixture every one
 //   of this package's 72 claims classifies as constructible. Per every
-//   claim's own classify.evidence: "port list rtl/denise_sprites.v:32-64 --
-//   the module's only outputs are nsprite and sprdata; there is no
+//   claim's own classify.evidence on the port list (denise_sprites.v:346-364):
+//   "the module's only outputs are nsprite and sprdata; there is no
 //   data_out" -- so the narrower denise_sprites fixture cannot answer this
 //   question at all; every claim's own classify.observable says so in as
 //   many words: "needs a wider boundary: denise -- denise_sprites has no
@@ -233,12 +233,13 @@
 // Every port name and structural fact the PORTS section above already
 // handed over is confirmed at the exact lines below; nothing here revised
 // the spec, only confirmed it:
-//   - denise.v:31-52 -- module header, exact port list as stated above.
+//   - denise.v:31-53 -- module header, exact port list as stated above,
+//     plus a blank_out output this package leaves unread.
 //   - denise.v:64 -- `parameter DENISEID = 9'h07c;`.
-//   - denise.v:130 -- `assign data_out = col_out | deniseid_out | rgb_out;`
-//     (the active, non-`DENISE_EBR` branch -- DENISE_EBR is not defined by
-//     this package's Makefile, confirmed by grep of both this package's
-//     Makefile and hrm/ch3-register-map-denise's).
+//   - denise.v:97 -- `assign data_out = col_out | deniseid_out | rgb_out;`
+//     (outside every `ifdef, so it holds whether or not DENISE_EBR is
+//     defined; this package's Makefile does not define it, confirmed by grep
+//     of both this package's Makefile and hrm/ch3-register-map-denise's).
 //   - denise.v:335 -- `assign deniseid_out = reg_address_in[8:1]==
 //     DENISEID[8:1] ? aga ? 16'h00f8 : ecs ? 16'hfffc : 16'hffff :
 //     16'h0000;` -- confirms DENISEID answers $FFFC under ecs=1/aga=0,
@@ -268,13 +269,14 @@
 //     finds no match in either file, confirming every claim's own
 //     classify.evidence ("the module's only outputs are nsprite and
 //     sprdata; there is no data_out") independently.
-//   - denise_sprites_shifter.v:65-76 and :283-295 -- sprite register
+//   - denise_sprites_shifter.v:270-281 and :283-295 -- sprite register
 //     writes are gated by a plain `always @(posedge clk) if (clk7_en)`,
 //     the SAME generic pattern hrm/ch3-register-map-denise's write_reg
 //     already drives successfully for other Denise registers on this same
 //     fixture. c1/c3 reach only the shift enables and the bitplane
-//     parallel load (denise_bitplane_shifter.v:212, 216, 224;
-//     denise_sprites.v:131-132), none of which gates a register write.
+//     parallel load (denise_bitplane_shifter.v:174, 176, 181;
+//     denise_bitplanes.v:565-566; denise_sprites.v:434-435), none of which
+//     gates a register write.
 //
 // Nothing here was a surprise against the inventory; opening the files
 // confirmed the spec above rather than revising it. Harness (tick/phase,
@@ -374,7 +376,7 @@ public:
     }
 
     // Presents `addr` on reg_address_in, gives it a full 4-phase cycle to
-    // settle (data_out is a combinational mux, per denise.v:130), and
+    // settle (data_out is a combinational mux, per denise.v:97), and
     // returns data_out.
     uint16_t read_reg(uint16_t addr) {
         dut->reg_address_in = addr;
@@ -488,7 +490,7 @@ int main(int argc, char** argv) {
     // SPRITE-REGISTER-WO (p.284/291/292), one shared loop over all 32
     // registers this package's claims name: a distinct, non-zero pattern
     // written to the register's own address reads back $0000 at that same
-    // address (write-only) -- data_out (denise.v:130) is the OR of
+    // address (write-only) -- data_out (denise.v:97) is the OR of
     // col_out|deniseid_out|rgb_out only, none of which ever decodes a
     // sprite-register address (IMPLEMENTATION NOTES above), so the correct,
     // strongest expectation is exactly $0000, not merely "not the pattern".

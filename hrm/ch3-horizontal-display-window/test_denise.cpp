@@ -1307,14 +1307,14 @@ int main(int argc, char** argv) {
         // and ecsena is itself BPLCON0 bit 0 (denise.v:194,
         // `assign ecsena = bplcon0[0];`), NOT the `ecs` top-level port --
         // so BPLCON0 must carry bit 0 set for BRDRBLNK to have any chance
-        // of an effect. t_blank (denise.v:515) only forces black outside
-        // the window (`~window_del`) once display_ena is set (the first
-        // BPL1DAT write in the line, which this Harness's saturation
-        // already performs before reset_line()). Hence BPLCON0 =
-        // 0x1000 | ecsena here, not a bare 0x1000.
+        // of an effect. With `blank` held low, as here, t_blank
+        // (denise.v:562) only forces black outside the window (`~window_del`)
+        // once display_ena is set (the first BPL1DAT write in the line, which
+        // this Harness's saturation already performs before reset_line()).
+        // Hence BPLCON0 = 0x1000 | ecsena here, not a bare 0x1000.
         //
-        // brdntran itself (denise.v:235,254) is commented out in this
-        // file -- `//wire brdntran; //assign brdntran = bplcon3[4] &
+        // brdntran itself (denise.v:235,254) is declared and assigned in
+        // this file -- `wire brdntran; assign brdntran = bplcon3[4] &
         // ecsena;` -- a real wire this RTL declares but never connects to
         // anything. That is consistent with, but not the reason for,
         // D-BRDNTRAN-HAS-NO-EFFECT below: it declines its seven claims as
@@ -1352,7 +1352,7 @@ int main(int argc, char** argv) {
             "renders COLOR00 exactly as every other group above measures it; "
             "setting ONLY BPLCON3 bit 5 (BRDRBLNK) changes that rendering (this "
             "fixture forces RGB to black outside the window when BRDRBLNK is set, "
-            "denise.v:515) -- bit 5 'BRDRBLNK Border blank' (Appendix C, p.307), "
+            "denise.v:562) -- bit 5 'BRDRBLNK Border blank' (Appendix C, p.307), "
             "'the border areas surrounding the active display window may also be "
             "set to be... transparent' (p.307).");
 

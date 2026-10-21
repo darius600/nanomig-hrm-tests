@@ -24,27 +24,30 @@
 //   they resolve in the claim files that hrm-testpipeline/acceptance/ch3.json
 //   lists under `inventories`.
 //
-// BOUNDARY (line numbers from the classifier's own evidence field):
-// denise_bitplanes.v:34-51 and 96-102 module
-// header -- reg_address_in[8:1] (l.42), data_in (l.43), chip48 (l.97),
-// hires (l.98), shres (l.99), hpos (l.100), bpldata[8:1] (l.101, this
+// BOUNDARY (the constructs the classifier's own evidence field names; the
+// built module is the non-DENISE_EBR one):
+// denise_bitplanes.v:330-345 module
+// header -- reg_address_in[8:1] (l.338), data_in (l.339), chip48 (l.340),
+// hires (l.341), shres (l.342), hpos (l.343), bpldata[8:1] (l.344, this
 // module's composed per-pixel bitplane output -- the port every downstream
 // Denise submodule in this repository's own sibling harnesses, e.g.
 // denise_collision's bpldata input and denise_hamgenerator's select input,
 // receives its bitplane sample FROM). denise_bitplanes.v:349 -- BPLCON1 at
-// custom-register address 9'h102. denise_bitplanes.v:169-175 -- OCS write
-// path keeps only data_in[7:0]. denise_bitplanes.v:145-149 -- pf1h =
+// custom-register address 9'h102. denise_bitplanes.v:455-461 -- OCS write
+// path keeps only data_in[7:0]. denise_bitplanes.v:431-435 -- pf1h =
 // {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} (OCS: only the [3:0] half is
-// populated). denise_bitplanes.v:157-161 -- pf2h from bplcon1[7:4].
+// populated). denise_bitplanes.v:443-447 -- pf2h from bplcon1[7:4].
 // denise_bitplanes.v:350-357 -- BPL1DAT..BPL8DAT at 9'h110..9'h11e.
 // denise_bitplanes.v:487-540 -- the eight buffer registers. denise_bitplanes
-// .v:437-441 generates `load` from a BPL1DAT write, and every shifter
-// takes it at .load(load), l.452-565.
-// denise_bitplane_shifter.v:166-180 module header -- clk (l.168), c1/c3
-// (l.170-171), load (l.172), hires (l.173), shres (l.174), fmode (l.175),
-// data_in[63:0] (l.177), scroll[7:0] (l.178), out (l.179); rate select at
-// l.205-219 (lores shifts once per four 28MHz clocks, hires every other,
-// shres always). clk, clk7_en, c1, c3, reset and aga are not individually
+// .v:542-546 generates `load` from a BPL1DAT write, and every shifter
+// takes it at .load(load), l.592-719.
+// denise_bitplane_shifter.v:143-159 module header -- clk (l.145), c1/c3
+// (l.147-148), load (l.149), hires (l.150), shres (l.151), fmode (l.152),
+// data_in[63:0] (l.154), scroll[7:0] (l.155), scroller_out/scroller_in
+// (l.156-157, its link to the shared scroll history in denise_bitplanes),
+// out (l.158); rate select at l.169-177 (lores shifts once per four 28MHz
+// clocks, hires every other, shres always). clk, clk7_en, c1, c3, reset
+// and aga are not individually
 // cited in the claim inventory's evidence field (no claim names their line
 // numbers) but are taken as this module's own top-level ports on the same
 // basis the Harness's whole clocking scheme rests on: they are the
@@ -199,16 +202,16 @@
 // instantiated on the DENISE_EBR branch; Verilator compiles it as unused
 // dead code on this build, harmlessly.
 //
-// WHY THE PF1H NIBBLE IS THE DELAY (denise_bitplanes.v:138-175): the OCS
+// WHY THE PF1H NIBBLE IS THE DELAY (denise_bitplanes.v:424-461): the OCS
 // BPLCON1 write path is `bplcon1 <=
-// {2'b00,2'b11,2'b00,2'b11,data_in[7:0]}` (l.234) -- so pf1h = {bplcon1
-// [11:10],bplcon1[3:0],bplcon1[9:8]} (l.208) actually stores 4*PF1H+3, not
+// {2'b00,2'b11,2'b00,2'b11,data_in[7:0]}` (l.460) -- so pf1h = {bplcon1
+// [11:10],bplcon1[3:0],bplcon1[9:8]} (l.434) actually stores 4*PF1H+3, not
 // PF1H itself (the forced "11" pair becomes pf1h's own bits[1:0]).
-// denise_bitplane_shifter.v:217 then reads `select[5:0] = scroll[7:2] &
+// denise_bitplanes.v:573 then forms `select1 = (... : pf1h_del[7:2]) &
 // fmode_mask` in lores mode -- the >>2 exactly cancels the *4 and discards
-// the constant +3's low bits, so `select` (the scroller-history read
-// index, i.e. the actual delay in lores-pixel steps) still equals the
-// PF1H nibble written, unchanged. This is why the expected values below
+// the constant +3's low bits, so `select1` (the scroll history's read
+// offset, l.759, i.e. the actual delay in lores-pixel steps) still equals
+// the PF1H nibble written, unchanged. This is why the expected values below
 // (kLoresPixelTicks=4 per unit, binary weighting, the 15-unit range) hold.
 //
 // WHY settle_bplcon1() EXISTS: denise_bitplanes.v:145-166 latches pf1h/pf2h from
@@ -226,12 +229,12 @@
 //
 // HOW HIRES-SCROLL-GRANULARITY-2-PIXELS MEASURES: a single bit's output
 // pulse is not a proxy for the shift rate. denise_bitplane_shifter.v's
-// final output stage (`sh_scroller`, l.260-261) resamples the scroller's
+// final output stage (`sh_scroller`, l.206-207) resamples the scroller's
 // combinational output every RAW clock tick regardless of the underlying
 // shift rate, so a single-bit load reads 1 tick wide, not 2, and a two-bit
 // test pattern gives a choppy, non-uniform waveform, not a clean 2-tick
 // plateau. Nor does the assertion take the shift rate documented at
-// denise_bitplane_shifter.v:212 (`shift = ~c1 ^ c3`, every other clock
+// denise_bitplane_shifter.v:174 (`shift = ~c1 ^ c3`, every other clock
 // cycle) as a constant: the "2 hires pixels" conclusion would then depend
 // on the RTL's own definition of a hires pixel's duration, and a wrong
 // shift rate in the RTL would move the constant the same way and stay
@@ -985,7 +988,7 @@ int main(int argc, char** argv) {
     // the RTL is asked only "is one PF1H unit the same duration in both
     // modes" -- a plain tick-count comparison that never asks the RTL what
     // a pixel is. Dividing the measured hires delta by a constant taken
-    // from denise_bitplane_shifter.v:212's own shift rate would make that
+    // from denise_bitplane_shifter.v:174's own shift rate would make that
     // half of the oracle circular: if the RTL's hires shift rate were
     // itself wrong, the constant would be wrong the same way and the
     // assertion would stay green.
