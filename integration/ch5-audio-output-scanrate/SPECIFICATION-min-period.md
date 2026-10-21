@@ -1028,16 +1028,18 @@ Reference run `P_ref = 447`, NTSC and PAL, fx68k and TG68K:
 ### 6.3 Results
 
 Period values below the minimum, fx68k and TG68K identical. The reuse count
-(`c_j = c_{j-1}`) is 0 at every period of both standards. The runs show the
-other classes: **repeat** (`c_j = c_{j-1} - 1`) and, from the repeat, a
-**next** that returns to the sample before it.
+(`c_j = c_{j-1}`, p.141's form) is 0 at every period of both standards. Every
+period 1-119 plays samples again as **repeat** (`c_j = c_{j-1} - 1`, p.164's
+form, both buffered samples again) and, from the repeat, a **next** that
+returns to the sample before it; (b) grades the common clause, a sample
+played again, and is green there.
 
 | Standard | P | Periods in the window that are not next | MP2 / MP4 verdicts |
 |---|---|---|---|
-| NTSC | 1 | repeat 29735 of 59999 classified; next 30264; reuse 0 | (a) green, (b) red, (a) and (b) red |
-| NTSC | 2-113 | repeat 14735 at P = 2, 204 at P = 64, 36 at P = 100, 4 at P = 112, 1 at P = 113; reuse 0 | (a) green, (b) red, (a) and (b) red |
-| NTSC | 114-119 | repeat 1, 4, 6, 6, 5 and 2 (114 to 119 in turn); skip 1, 4, 6, 7, 5 and 2 | (a) green, (b) red, (a) and (b) red, 116 included |
-| NTSC | 120-123 | all next, no repeat, no reuse | (a) red, (b) red, (a) and (b) red |
+| NTSC | 1 | repeat 29735 of 59999 classified; next 30264; reuse 0 | (a), (b), (a) and (b) green |
+| NTSC | 2-113 | repeat 14735 at P = 2, 204 at P = 64, 36 at P = 100, 4 at P = 112, 1 at P = 113; reuse 0 | (a), (b), (a) and (b) green |
+| NTSC | 114-119 | repeat 1, 4, 6, 6, 5 and 2 (114 to 119 in turn); skip 1, 4, 6, 7, 5 and 2 | (a), (b), (a) and (b) green, 116 included |
+| NTSC | 120-123 | all next, no repeat, no reuse | (a), (b), (a) and (b) red |
 | PAL | 1-119 | as NTSC | (a) green |
 | PAL | 120-122 | all next | (a) red |
 
@@ -1067,11 +1069,10 @@ other classes: **repeat** (`c_j = c_{j-1} - 1`) and, from the repeat, a
     pass (T follows T+124 at 29,737 ticks).
 - `P` = 119-123 in the window `W = 60,000`: no off-table read, no double
   fetch, no short pass.
-- Totals, `make -k -B test`: both cores print `2440 passed, 255 failed`, of
-  which the earlier test contributes 126 passed, 0 failed. The 255 failures
-  are the MP2 lines (123 of (b), 123 of (a) and (b) together, 4 of (a) at
-  P = 120-123), the MP4 lines at P = 120-122 (3) and the MP6 lines of NTSC and
-  PAL. The PASS and FAIL lines are identical on both cores.
+- Totals, `make -k -B test`: both cores print `2678 passed, 17 failed`, of
+  which the earlier test contributes 126 passed, 0 failed. The 17 failures
+  are the MP2 lines at P = 120-123 ((a), (b) and (a) and (b) together, 12),
+  the MP4 lines at P = 120-122 (3) and the MP6 lines of NTSC and PAL. The PASS and FAIL lines are identical on both cores.
 - Wall time of a normal run, the two standards in two processes at once:
   fx68k about 13 minutes, TG68K about 21 minutes (the build of each core
   included).
@@ -1085,7 +1086,7 @@ are identical on both.
 | `NMH_MUTATE` | Assertion or precondition | Stimulus | Result on both cores |
 |---|---|---|---|
 | `MP1` | MP1 | `P` = 119, `P` = 64 | both red (next 499 of 503; next 732 of 936) |
-| `MP2` | MP2 | `P` = 124, `P` = 64 | 124 red in (a), (b) and (a) and (b); 64: (a) green, (b) red |
+| `MP2` | MP2 | `P` = 124, `P` = 64 | 124 red in (a), (b) and (a) and (b); 64 green in all three |
 | `MP3` | MP3 | `P` = 119, `P` = 64 | both red |
 | `MP4` | MP4 | `P` = 124, `P` = 64 | 124 red, 64 green |
 | `MP5CH1` | MP5 (control, not a mutation) | NTSC 64, channel 1 on `T` | green, one read per channel in every line |
@@ -1111,10 +1112,11 @@ are identical on both.
   there on this implementation. The same inputs are run through MP2 and MP4
   only at `P` = 124 and `P` = 64, so that their comparators are shown red at
   124 and live at 64.
-- MP2 (b) and the (a) and (b) line are red at every period of the normal run,
-  so no run shows them green: no stimulus at this boundary produces a sample
-  period that reuses the sample just played (section 3.6), because the
-  periods that are not next are repeats, a step back.
+- MP2 (b) is the common clause of p.141 and p.164, a sample played again. Its
+  contrast is the `P` = 124 run (no sample played again, red) through the same
+  comparator; the `P` = 64 run is the green input. The previous sample again
+  (reuse, p.141's form) is 0 at every period; the samples played again are
+  repeats (both buffered samples again, p.164's form), measured, not graded.
 - `MC5STOP`: at `P` = 64 the port window holds 2 wraps and no read out of
   order up to the stop, so MC4 is green; MC5 is red through both clauses (no
   read at the channel offset in the first and last tenth of the window, the

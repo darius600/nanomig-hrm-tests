@@ -33,9 +33,9 @@
 //   measured: fx68k and TG68K: P = 119 red (next 499 of 503 classified, reuse 0, repeat 2, skip 2); P = 64 red (next 732 of 936 classified,
 //   reuse 0, repeat 204); 22 passed, 2 failed
 // MUTATION MP2 stimulus red NMH_MUTATE=MP2: the NTSC MP2 comparator run at P = 124 and P = 64
-//   measured: fx68k and TG68K: P = 124 red in (a), (b) and (a) and (b) together (next 482 of 482, no reuse); P = 64: (a) green, (b) and
-//   (a) and (b) red (reuse 0, repeat 204); 23 passed, 5 failed. (b) is red at every period of the normal run (reuse 0), so no run
-//   shows (b) green; (a) is shown live by the P = 64 run (green) against the P = 124 run (red).
+//   measured: fx68k and TG68K: P = 124 red in (a), (b) and (a) and (b) together (next 482 of 482, no sample played again); P = 64 green in
+//   all three (next 732 of 936, previous sample again 0, both buffered samples again 204); 25 passed, 3 failed. The P = 124 run is the
+//   input for which (b) is red, the P = 64 run the green input of the same comparator.
 // MUTATION MP3 stimulus red NMH_MUTATE=MP3: the PAL MP3 comparator run at P = 119 and P = 64
 //   measured: fx68k and TG68K: P = 119 red (next 499 of 503, repeat 2, skip 2); P = 64 red (next 732 of 936, repeat 204); 22 passed, 2 failed
 // MUTATION MP4 stimulus red NMH_MUTATE=MP4: the PAL MP4 comparator run at P = 124 and P = 64
@@ -829,7 +829,7 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
     if (!ow) return;
     const int Np = (int)std::floor(double(window(rs.declP)) / double(rs.declP));
     Cls k = classify(c, ref, ref.right, t_start, rs.declP, tk, Np);
-    ck.note(id + " " + tag + ": " + S(Np) + " sample periods, classified " + S(k.n) + ": next " + S(k.next) + ", reuse " + S(k.reuse) + ", repeat (back one) " +
+    ck.note(id + " " + tag + ": " + S(Np) + " sample periods, classified " + S(k.n) + ": next " + S(k.next) + ", previous sample again (reuse) " + S(k.reuse) + ", both buffered samples again (repeat) " +
             S(k.repeat) + ", skip " + S(k.skip) + ", unmapped " + S(k.unm) + ", after an unmapped period " + S(k.after_unm) + ", other " + S(k.other));
     if (!k.ok) { ck.record(id + " " + tag + ": not graded, the window ran past the capture"); return; }
     if (!graded) return;
@@ -840,12 +840,14 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
     } else if (rs.declNtsc) {
         std::string sub = rs.P <= 113 ? " [MP2-lo]" : " [MP2-hi]";
         ck.expect(k.next < k.n, id + " " + tag + sub + " (a) (p.141): at least one sample period does not carry the next sample" + win);
-        ck.expect(k.reuse >= 1, id + " " + tag + sub + " (b) (p.141): at least one sample period reuses the sample just played, the one in the sample period before it" + win);
-        ck.expect(k.next < k.n && k.reuse >= 1, id + " " + tag + sub + " (a) and (b) (p.141; sol:5-p141.c10, opus:5-rate.c15): at least one sample period does not carry the next sample "
-                  "and at least one sample period reuses the sample just played" + win);
+        const bool again = k.reuse + k.repeat >= 1;
+        ck.expect(again, id + " " + tag + sub + " (b) (p.141, p.164): at least one sample period plays a sample already played again where the next was due, "
+                  "the previous sample again or both buffered samples again" + win);
+        ck.expect(k.next < k.n && again, id + " " + tag + sub + " (a) and (b) (p.141; sol:5-p141.c10, opus:5-rate.c15): at least one sample period does not carry the next sample "
+                  "and at least one sample period plays a sample already played again" + win);
     } else {
         ck.expect(k.next < k.n, id + " " + tag + " (p.141): at least one sample period does not carry the next sample" + win);
-        ck.note(id + " " + tag + ": reuse periods " + S(k.reuse) + " (PAL reuse is reported, not graded)");
+        ck.note(id + " " + tag + ": previous sample again (reuse) " + S(k.reuse) + ", both buffered samples again (repeat) " + S(k.repeat) + " (PAL reuse and repeat are reported, not graded)");
     }
 }
 
