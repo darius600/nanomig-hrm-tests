@@ -24,7 +24,7 @@
 //   column reads `DMA control write(clear or set)` and ADKCON's bit table
 //   gives bit 15 as `SET/CLR  Set/Clear control bit. Determines if bits
 //   written with a 1 get set or cleared`. Both are implemented the same way
-//   here -- paula.v:164-171 for DMACON and :187-193 for ADKCON:
+//   here -- paula.v:169-176 for DMACON and :187-193 for ADKCON:
 //
 //     if (data_in[15]) adkcon <= adkcon |  data_in[14:0];
 //     else             adkcon <= adkcon & ~data_in[14:0];
@@ -35,7 +35,7 @@
 //   document and one stimulus can satisfy two of them by accident.
 //
 // ADKCONR IS THE ONLY WAY TO SEE ADKCON AT ALL. `adkconr = (address decodes)
-//   ? {1'b0, adkcon[14:0]} : 16'h0000` (paula.v:198), and ADKCON itself is
+//   ? {1'b0, adkcon[14:0]} : 16'h0000` (paula.v:203), and ADKCON itself is
 //   write-only -- the list says `W` and the module agrees by having no read
 //   path at $09E. So every ADKCON assertion here writes at $09E and reads at
 //   $010, which is exactly the pair of rows the document prints.
@@ -48,8 +48,8 @@
 //   `adkcon` over every .v file under src/minimig-aga: the identifier appears
 //   in paula.v and nowhere else, and the only two uses are
 //
-//     .uartbrk(adkcon[11])    (paula.v:211)
-//     .wordsync(adkcon[10])   (paula.v:269)
+//     .uartbrk(adkcon[11])    (paula.v:216)
+//     .wordsync(adkcon[10])   (paula.v:283)
 //
 //   Bits 14-12 (PRECOMP 1-0 and MFMPREC), bit 9 (MSBSYNC) and bits 8-0 are
 //   stored and read back, and drive nothing. The lot records every claim about
@@ -60,14 +60,14 @@
 //   analogue concern a modern floppy back end has no use for.
 //
 // UARTBRK IS THE ONE BIT THIS BOUNDARY CAN SHOW. The table says `11 UARTBRK
-//   Forces a UART break (clears TXD) if true`, and paula_uart.v:136 is
+//   Forces a UART break (clears TXD) if true`, and paula_uart.v:146 is
 //   `if (uartbrk) tx_txd <= 1'b0;` with `assign txd = tx_txd` at :255. So
 //   assertion 6 writes one bit and reads one pin, and the document's sentence
 //   is the whole oracle.
 //
 // WHY DMACON NEEDS THE FLOPPY TO SHOW ITSELF. DMACON is write-only at this
 //   boundary too -- DMACONR lives in Agnus -- so its address can only be
-//   graded through an effect. `dsken = dmacon[4] & dmaen` (paula.v:174) is
+//   graded through an effect. `dsken = dmacon[4] & dmaen` (paula.v:179) is
 //   paula_floppy's `enable`, `dma_active = dmaen && !lenzero && enable`
 //   (paula_floppy.v:248) is what moves the disk state machine out of idle, and
 //   `fdd_led = (dskstate != DISKDMA_IDLE)` (:972) is a port. DSKLEN is used
@@ -114,9 +114,9 @@ public:
 };
 
 // Word addresses as the AA register list prints them, read from the corpus.
-constexpr int A_ADKCONR = 0x010 >> 1;   // paula.v:127
-constexpr int A_DMACON  = 0x096 >> 1;   // paula.v:125
-constexpr int A_ADKCON  = 0x09E >> 1;   // paula.v:126
+constexpr int A_ADKCONR = 0x010 >> 1;   // paula.v:132
+constexpr int A_DMACON  = 0x096 >> 1;   // paula.v:130
+constexpr int A_ADKCON  = 0x09E >> 1;   // paula.v:131
 constexpr int A_DSKLEN  = 0x024 >> 1;   // paula_floppy.v:124, stimulus only
 constexpr int A_IDLE    = 0x000;        // decodes to no register in this module
 
@@ -424,8 +424,8 @@ int main(int argc, char** argv) {
     checks.record(
              "DECLINED at this boundary (absent): MEASURED by grep over every .v "
              "file under src/minimig-aga: `adkcon` appears in paula.v alone, and "
-             "its only two consumers are `.uartbrk(adkcon[11])` at paula.v:211 "
-             "and `.wordsync(adkcon[10])` at paula.v:269. The bit this claim "
+             "its only two consumers are `.uartbrk(adkcon[11])` at paula.v:216 "
+             "and `.wordsync(adkcon[10])` at paula.v:283. The bit this claim "
              "describes is stored and read back, and nothing acts on it. "
              "[claims: sol:AA-adkcon.c11/c12/c13/c14/c16/c17/c23]");
     checks.record(

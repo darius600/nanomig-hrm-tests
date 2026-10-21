@@ -32,7 +32,7 @@
 //   moves the origin not at all with `hires` or `shres` raised -- which is
 //   this fixture's limit, not a reading of the module". That is exactly
 //   right, and worth explaining once rather than rediscovering: pf1h latches
-//   from bplcon1 the instant `load` pulses (denise_bitplanes.v:207-209), but
+//   from bplcon1 the instant `load` pulses (denise_bitplanes.v:147-149), but
 //   pf1h_del -- the value the shifter actually reads -- is a SEPARATE
 //   register that only catches up one 7MHz cycle later (:211-214). Between
 //   those two edges, `select` inside denise_bitplane_shifter briefly reads
@@ -53,7 +53,7 @@
 //   never needs to characterise the settle window at all.
 //
 // THE SIX BITS THAT MOVE THE ORIGIN IN LORES MODE. pf1h is formed as
-//   {bplcon1[11:10], bplcon1[3:0], bplcon1[9:8]} (denise_bitplanes.v:208).
+//   {bplcon1[11:10], bplcon1[3:0], bplcon1[9:8]} (denise_bitplanes.v:148).
 //   In lores mode (fmode fixed at 0 throughout -- this package never writes
 //   FMODE) denise_bitplane_shifter computes
 //     select[5:0] = scroll[7:2] & 6'b00_1111        (:217, lores branch)

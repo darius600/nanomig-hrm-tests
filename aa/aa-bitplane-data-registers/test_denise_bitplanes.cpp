@@ -46,7 +46,7 @@
 //   shifters take their data on phase 1 of the NEXT cycle, one 7MHz cycle
 //   after the write. Every assertion below writes planes 2 to 8 first and
 //   BPL1DAT last, because BPL1DAT is the load trigger
-//   (denise_bitplanes.v:437-441) and not merely another plane.
+//   (denise_bitplanes.v:542-546) and not merely another plane.
 //
 // WHY A PIXEL IS SAMPLED ONCE PER 7MHz CYCLE. In lores the scroller advances
 //   on one phase in four while `sh_scroller` shifts on every 28MHz clock, so
@@ -102,7 +102,7 @@ public:
 };
 
 // Word addresses as the AA register list prints them, read from the corpus.
-constexpr int A_BPLCON1 = 0x102 >> 1;   // denise_bitplanes.v:106
+constexpr int A_BPLCON1 = 0x102 >> 1;   // denise_bitplanes.v:349
 constexpr int A_BPL1DAT = 0x110 >> 1;   // :107, the load trigger; graded elsewhere
 constexpr int A_BPLXDAT[9] = {0, 0x110 >> 1, 0x112 >> 1, 0x114 >> 1, 0x116 >> 1,
                               0x118 >> 1, 0x11a >> 1, 0x11c >> 1, 0x11e >> 1};

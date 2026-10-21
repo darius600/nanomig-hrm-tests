@@ -22,7 +22,7 @@
 //   hrm-testpipeline/acceptance/aa-s1.json lists under `inventories`.
 //
 // WHY THESE FOUR AND NOT THE OTHERS. `hires` and `shres` are ports of this
-//   module (denise.v:180, :187), so two of BPLCON0's bit rows can be read
+//   module (denise.v:182, :189), so two of BPLCON0's bit rows can be read
 //   straight off the boundary. RDRAM and BANK are different: they are not
 //   ports, but they decide what a BUS READ of a colour address returns --
 //

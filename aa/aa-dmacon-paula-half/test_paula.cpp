@@ -19,7 +19,7 @@
 //
 // THE ENTRY'S OWN CHIP COLUMN SAYS WHY MOST OF IT IS DECLINED HERE. The
 //   address-ordered row reads `DMACON 096 W A D P`, three chips -- and the
-//   RTL agrees: `dmacon[4:0]` in paula.v:164-171 holds DSKEN and the four
+//   RTL agrees: `dmacon[4:0]` in paula.v:169-176 holds DSKEN and the four
 //   audio enables, `dmaen` holds bit 9, and BPLEN, COPEN, BLTEN, SPREN and
 //   BLTPRI are decoded in Agnus. BBUSY and BZERO are the blitter's own status
 //   and the table marks both read only.
@@ -29,7 +29,7 @@
 //   graded all sixteen at one boundary would be claiming a decode that is not
 //   there.
 //
-// HOW AN ENABLE IS SEEN. `dsken = dmacon[4] & dmaen` (paula.v:174) is
+// HOW AN ENABLE IS SEEN. `dsken = dmacon[4] & dmaen` (paula.v:179) is
 //   paula_floppy's `enable`, and `dma_active = dmaen && !lenzero && enable`
 //   (paula_floppy.v:248) moves the disk state machine out of idle, which
 //   `fdd_led` reports (:972). The four audio enables reach the audio channels

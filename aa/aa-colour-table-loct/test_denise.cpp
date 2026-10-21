@@ -40,7 +40,7 @@
 //
 //   -- two write strobes with LOCT low, one with it high -- and denise.v:251
 //   is `assign loct = bplcon3[9] & aga`, so the bit only exists on AGA. The
-//   readback follows the same bit: denise.v:222 hands back the low nibbles
+//   readback follows the same bit: denise.v:223 hands back the low nibbles
 //   when LOCT is set and the high ones when it is clear.
 //
 // THE CHIP-SET CONDITION ON LOCT CANNOT BE SHOWN HERE, AND THE REASON IS

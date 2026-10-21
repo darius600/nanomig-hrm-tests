@@ -37,7 +37,7 @@
 //   clk7_en and resets it to 2 on `strhor`, so the fixture pulses strhor to
 //   start a line and then steps. Nothing here drives hpos directly.
 //
-// AND THE TWO REGISTERS DO NOT CARRY THE SAME NINTH BIT. denise.v:295-320: a
+// AND THE TWO REGISTERS DO NOT CARRY THE SAME NINTH BIT. denise.v:308-333: a
 //   write to DIWSTRT forces hdiwstrt[8] to 0, a write to DIWSTOP forces
 //   hdiwstop[8] to 1, and only DIWHIGH -- gated on `ecs` -- sets either from
 //   data. That asymmetry is what makes the window's right edge default to the
