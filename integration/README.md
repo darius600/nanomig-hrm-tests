@@ -99,3 +99,8 @@ A red in these is not a finding.
   example after an upstream change.
 - `harness/` holds what every package shares: `nanomig.mk`, the build for both
   cores; `nanomig_harness.h`, the C++ side; `nanomig.i`, the 68000 side.
+  The build keeps the serial port on the `uart_rx`/`uart_tx` pins, where the
+  manual describes it. The Tang Nano 20K board files at the pinned revision
+  set `ENABLE_AT_MODEM`, which routes the port to the FPGA Companion's virtual
+  AT modem instead; that interface is not tested here (`nanomig.mk` names the
+  defines it leaves out and why).

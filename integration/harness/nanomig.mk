@@ -7,12 +7,22 @@
 #
 # and then `include ../harness/nanomig.mk`. `make test` assembles every
 # program with vasm into <name>.bin, builds nanomig.v once per CPU core -- the
-# defines of nano20k/top.sv (fx68k) and of nano20k/top_020.sv (TG68K) as they
-# stood at NanoMig 4495f86, plus the simulation-only INFER_DPRAM -- and runs the
-# test on each, from its object directory. At the pinned 4315acba both board
-# files also define DISABLE_ROM_LOADER and ENABLE_AT_MODEM, and top_020.sv no
-# longer defines NO_WS2812; this build passes neither of the first two and still
-# passes NO_WS2812 for TG68K. Each run starts from its object
+# defines of nano20k/top.sv (fx68k) and of nano20k/top_020.sv (TG68K) that act
+# on nanomig.v, plus the simulation-only INFER_DPRAM -- and runs the test on
+# each, from its object directory.
+#
+# Board defines this build leaves out, at the pinned 4315acba:
+#   DISABLE_ROM_LOADER and NO_WS2812 act only in the board files themselves,
+#   which this build does not compile (-DNO_WS2812 is passed for TG68K and has
+#   no effect on nanomig.v).
+#   ENABLE_AT_MODEM, set in both board files, routes the serial port to the
+#   FPGA Companion's virtual AT modem: Paula's receive input then comes from a
+#   byte-stream bridge instead of the uart_rx pin, and the bridge holds the
+#   transmitter while its FIFO is full. This build keeps Paula's UART on the
+#   uart_rx/uart_tx pins, which is where the manual describes the serial port;
+#   the boards' serial behaviour at the modem interface is not tested here.
+#
+# Each run starts from its object
 # directory: fx68k reads its microcode from the working directory, and a
 # binary started anywhere else runs without it. The test gets the directory
 # holding the .bin files as its first argument, and writes out_<core>.txt.
