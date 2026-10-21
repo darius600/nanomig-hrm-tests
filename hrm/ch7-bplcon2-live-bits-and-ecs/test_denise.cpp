@@ -60,10 +60,10 @@
 // HOW A SAMPLE IS TAKEN (mechanical fact from the RTL; the manual
 //   quotations fix what counts as pass/fail): a single
 //   BPLxDAT write only pulses the plane shifter's parallel load once
-//   (denise_bitplane_shifter.v:223-226); Harness::run_sweep below rewrites
+//   (denise_bitplane_shifter.v:180-183); Harness::run_sweep below rewrites
 //   BPL2..6DAT and BPL1DAT every round (BPL1DAT last, since its write both
 //   latches l_bpu, denise.v:195-203, and pulses the shared `load` that
-//   parallel-loads every shifter, denise_bitplane_shifter.v:223-226) and
+//   parallel-loads every shifter, denise_bitplane_shifter.v:180-183) and
 //   samples red/green/blue immediately after each of the six writes, with
 //   no extra settle ticks -- 20 rounds x 6 samples = 120 samples. The
 //   measured count for bit 9 at ecs=1 is reported alongside the
