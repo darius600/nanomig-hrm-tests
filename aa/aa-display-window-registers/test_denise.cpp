@@ -20,18 +20,18 @@
 // THE WINDOW IS MADE VISIBLE BY BLANKING THE BORDER, NOT BY DRAWING ANYTHING.
 //   With no bitplane data the colour inside the window and the border colour
 //   are the same entry, so a fixture that only looked at the colour would see
-//   one flat line. denise.v:515 gives the way through:
+//   one flat line. denise.v:562 gives the way through:
 //
-//     t_blank = ecs & ecsena & brdrblnk & (~window_del | ~display_ena)
+//     t_blank = blank | ecs & ecsena & brdrblnk & (~window_del | ~display_ena)
 //     {red,green,blue} = t_blank ? 24'h000000 : out_rgb
 //
-//   So with ECSENA (BPLCON0 bit 0) and BRDRBLNK (BPLCON3 bit 5) set, and a
-//   non-zero COLOR00 in the table, the video output is that colour INSIDE the
-//   window and black outside it. The edges are then countable.
+//   So with `blank` low, ECSENA (BPLCON0 bit 0) and BRDRBLNK (BPLCON3 bit 5)
+//   set, and a non-zero COLOR00 in the table, the video output is that colour
+//   INSIDE the window and black outside it. The edges are then countable.
 //
-//   `display_ena` is the fourth term and it is not automatic: denise.v:146-151
-//   sets it on a write to BPL1DAT and clears it on reset or `blank`. This
-//   fixture writes BPL1DAT once per line, which is what a real scanline does.
+//   `display_ena` is the fourth term and it is not automatic: denise.v:146-155
+//   sets it on a write to BPL1DAT and clears it on reset or a rising `blank`.
+//   This fixture writes BPL1DAT once per line, as a real scanline does.
 //
 // THE BEAM COUNTER IS INTERNAL. denise.v:136-141 counts hpos on every
 //   clk7_en and resets it to 2 on `strhor`, so the fixture pulses strhor to
@@ -53,7 +53,7 @@
 //
 // THE CHIP-SET CONDITION ON DIWHIGH CANNOT BE SHOWN HERE EITHER. The write
 //   is gated on `ecs`, and so is the border blanking this package sees the
-//   window through: `t_blank = ecs & ecsena & brdrblnk & ...`. On the older
+//   window through: `t_blank = blank | ecs & ...`. On the older
 //   chip set nothing is blanked, so the whole line is lit and the first lit
 //   position is 0 whatever the limits are. An assertion that compared the
 //   two chip sets passed -- and was measuring the blanking, not the bit.

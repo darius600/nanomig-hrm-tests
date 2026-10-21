@@ -32,14 +32,14 @@
 //   moves the origin not at all with `hires` or `shres` raised -- which is
 //   this fixture's limit, not a reading of the module". That is exactly
 //   right, and worth explaining once rather than rediscovering: pf1h latches
-//   from bplcon1 the instant `load` pulses (denise_bitplanes.v:147-149), but
+//   from bplcon1 the instant `load` pulses (denise_bitplanes.v:433-435), but
 //   pf1h_del -- the value the shifter actually reads -- is a SEPARATE
-//   register that only catches up one 7MHz cycle later (:211-214). Between
-//   those two edges, `select` inside denise_bitplane_shifter briefly reads
+//   register that only catches up one 7MHz cycle later (:437-440). Between
+//   those two edges, `select1` (denise_bitplanes.v:573) briefly reads
 //   the OLD scroll value while the shift register is already carrying the
 //   NEW word, and in shres mode (shift held at 1'b1 every clock,
-//   denise_bitplane_shifter.v:208) that stale window is long enough relative
-//   to the one-tap-per-clock transit that a naive single read of `select`
+//   denise_bitplane_shifter.v:172) that stale window is long enough relative
+//   to the one-tap-per-clock transit that a naive single read of `select1`
 //   can land on either the old tap or a spurious extra one -- probed by hand
 //   outside this package (a --public Verilator build of denise_bitplanes,
 //   not committed here) and confirmed: without settling, denise_bitplanes'
