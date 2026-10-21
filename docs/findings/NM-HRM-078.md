@@ -10,7 +10,7 @@
 | **Scope** | 8520 timers A and B of both CIAs, INMODE = CNT (CRA bit 5 = 1; CRB bits 6-5 = `01`) over an interval in which CNT has no edge; the counting of CNT edges and CRB mode `11` with CNT low are not isolated. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 340, 341–342, 343, 345, 348–351, 352, 353; 8 — Interface Hardware, printed p. 251; Appendix G — Keyboard Interface, printed p. 357 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `CRA-INMODE`: `sol:F-cra.c8`, `opus:F-cra.c8` (p. 348); `CRB-INMODE-ARITY-00-01` and `CRB-INMODE-ARITY-10-11`: `opus:F-crb.c6` (p. 349); `CRB-INMODE-CODE-00`: `opus:F-crb.c7` (p. 349); `CRB-INMODE-CODE-10`: `opus:F-crb.c9` (p. 349), `opus:F-crb.c15` (p. 350); the P10 rows of `integration/appF-cia-system` (`:3325-3390`), which join the lines below and measure nothing of their own: `sol:F-cra.c13`, `opus:F-cra.c13`, `sol:F-crb.c7`, `sol:F-crb.c10`, `opus:F-crb.c14`. `P7.5` and `P7.5-CIAA-INMODE` (pp. 348, 351) and `P8.65-MODE01` (pp. 349, 351) carry no claim id |
-| **Module** | `cia_timera.v`, `cia_timerb.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L32) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L50); TC64 has NanoMig's code; fixed in MiSTer |
+| **Module** | `cia_timera.v`, `cia_timerb.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L32) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L50); TC64 has NanoMig's code; fixed in MiSTer |
 | **Test** | [`hrm/appF-cia-timer-modes`](../../hrm/appF-cia-timer-modes): `make -C hrm/appF-cia-timer-modes test`, each timer module alone, no CPU core. [`integration/appF-cia-system`](../../integration/appF-cia-system): `make -k -C integration/appF-cia-system test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
 | **Assertions** | 2 red in `hrm/appF-cia-timer-modes`: `CRA-INMODE` (`cia_timera`: 9 passed, 1 failed) expects bit 5 to change the count after 11 E-clock pulses and reads 2 underflows and `$00` with bit 5 set and clear alike; `CRB-INMODE-ARITY-00-01` (`cia_timerb`: 7 passed, 1 failed) expects codes `00` and `01` to differ and reads (10, 0) for both. `CRB-INMODE-ARITY-10-11` is a RECORDED line, not graded. `integration/appF-cia-system`: 98 passed, 26 failed on each core, the same lines on both; 3 red lines are in this finding's scope, each the zero-edge half of INMODE = CNT, expecting v = $1000: `P7.5` (CIA-B timer A; reads $0744 on fx68k, $0596 on TG68K), `P7.5-CIAA-INMODE` (CIA-A timer A; $0DFE, $0D9D) and `P8.65-MODE01` (CIA-B timer B; $0744, $0596). The counting half is three RECORDED lines (`P7.5-COUNTING`, `P7.5-CIAA-INMODE-COUNTING`, `P8.65-MODE01-COUNTING`), not graded. Two P10 lines are red through these lines, `P10-sol:F-cra.c13` (claim `sol:F-cra.c13`, CRA INMODE) and `P10-sol:F-crb.c7` (claims `sol:F-crb.c7`, `sol:F-crb.c10`, CRB INMODE; its mode-11 member is not graded), and two more, `P10-opus:F-cra.c13` and `P10-opus:F-crb.c14`, through them and through lines of [NM-HRM-074](NM-HRM-074.md) and, for CRA, `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)); the other reds are those findings' |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all stop a timer's E-clock count once its INMODE selects CNT, and count CNT's rising edges instead. vAmiga, Denise and Copperline drive CIA-A's CNT from the keyboard's KCLK and CIA-B's from PA1, and count CRB mode 11 only while CNT is high; WinUAE drives CIA-B's alone, from PA1, and counts mode 11 as mode 10. Hardware: not measured; the 6502.org dissection of one 8520 revision agrees with the manual |
@@ -87,14 +87,14 @@ and CRB function tables on pp. 348–349 and both bitmaps on pp. 349–350.
 
 **Timer A counts the E clock whatever CRA bit 5 holds, and timer B's source is
 chosen by CRB bit 6 alone.**
-[`src/minimig-aga/cia_timera.v#L31-L32`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L31-L32):
+[`src/minimig-aga/cia_timera.v#L31-L32`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L31-L32):
 
 ```verilog
 // count enable signal
 assign count = eclk;
 ```
 
-[`src/minimig-aga/cia_timerb.v#L30-L31`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L30-L31):
+[`src/minimig-aga/cia_timerb.v#L30-L31`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L30-L31):
 
 ```verilog
 // Timer B count signal source
@@ -103,16 +103,16 @@ assign count = tmcr[6] ? tmra_ovf : eclk;
 
 Bit 5 is written with the rest of the register,
 `tmcr[6:0] <= {data_in[6:5],1'b0,data_in[3:0]};`
-([`cia_timera.v#L40`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L40),
-[`cia_timerb.v#L39`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L39)),
+([`cia_timera.v#L40`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L40),
+[`cia_timerb.v#L39`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L39)),
 and read back, `({8{~wr&tcr}} & {1'b0,tmcr[6:0]});`
-([`cia_timera.v#L108`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L108),
-[`cia_timerb.v#L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L103));
+([`cia_timera.v#L108`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L108),
+[`cia_timerb.v#L103`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L103));
 no other line of either module reads it. Neither module has a CNT input, and
 neither do the modules around them,
-[`ciaa.v#L80-L104`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L80-L104)
+[`ciaa.v#L80-L104`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L80-L104)
 and
-[`ciab.v#L4-L22`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v#L4-L22).
+[`ciab.v#L4-L22`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciab.v#L4-L22).
 
 | CRA bit 5, CRB bits 6-5 | the page | NanoMig |
 |---|---|---|
@@ -125,10 +125,10 @@ and
 
 Nothing in NanoMig would drive a CNT pin if the timers had one. Key codes reach
 CIA-A's serial data register as whole bytes, with no KCLK,
-[`ciaa.v#L186`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L186),
+[`ciaa.v#L186`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L186),
 `sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};`, and CIA-B's PA1,
 POUT, is an input tied high,
-[`minimig.v#L648`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L648),
+[`minimig.v#L658`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L658),
 `.porta_in({cd,cts,dsr,ri&_joy3[4],1'b1,_joy4[4]}),`.
 
 ### Measured

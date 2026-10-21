@@ -10,7 +10,7 @@
 | **Scope** | NanoMig's `paula_floppy.v` write path at the pinned revision: one full write transfer, uniform payload `0xFF`, read at `sdc_byte_out_data` offset 511; Paula chip revision unknown; real-hardware behaviour not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.247, the last paragraph of the DSKLEN section · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` carries `opus:8-dma.c32` / `sol:8-dskbug.c1`; `A12-DSKBUG-ONE-WORD-SHORT-ON-READ` (declined) carries `opus:8-dma.c33` / `sol:8-dskbug.c2`; `A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE` carries no claim id |
-| **Module** | `paula_floppy.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L865-L882); MiSTer and TC64 have no counterpart of this write path; NanoMig's own |
+| **Module** | `paula_floppy.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L865-L882); MiSTer and TC64 have no counterpart of this write path; NanoMig's own |
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming): `make -C hrm/ch8-dsklen-dma-arming test`; the expected red exits nonzero |
 | **Assertions** | 1 red: `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` — expected the last three bits of the last byte lost (`0xFF` written must not read back as `0xFF`), observed `0x00FF`, all eight bits intact; the package reports `10 passed, 1 failed`. The control `A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE` drives the identical apparatus with payload `0x00` and reads `0x0000` in the same run |
 | **Verdict of the four** | **3–1, and the one is the interesting one.** Copperline reproduces the bug on purpose, with a named constant for it, in images that keep raw MFM cells. WinUAE, vAmiga and Denise all write the last word whole and lose nothing — but WinUAE and Denise both emulate the *other* sentence of the same printed paragraph, and WinUAE calls it a Paula bug in its own comment. Hardware: documented defect, not measured here |
@@ -33,11 +33,11 @@ possibility (*may not come in*). That difference decides how each is graded.
 
 The write path is byte-buffered end to end. A write to DSKDAT during write DMA
 goes into the FIFO, the write state machine strips the clock bits into a byte
-([`:776-777`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L776-L777))
+([`:776-777`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L776-L777))
 and hands whole bytes to the sector buffer
-([`:875-876`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L875-L876)),
+([`:875-876`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L875-L876)),
 which is recombined into whole bytes for the card at
-[`:228-236`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L228-L236).
+[`:228-236`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L228-L236).
 There is no bit-serial shift stage on the write side for the documented timing
 race to happen in; the design emits sectors toward an SD card, not a bit stream
 toward a medium.

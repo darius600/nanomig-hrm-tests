@@ -10,7 +10,7 @@
 | **Scope** | NanoMig's `agnus_beamcounter` on its hardwired default (VARBEAMEN=0), PAL, the line length averaged over four consecutive lines; chip revision unknown; PAL hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C, printed p. 304, the V36 graphics library scan-rate list; 2 — Coprocessor, printed p. 23; 6 — Blitter, printed p. 194, quoted for context · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: `opus:C-scan.c04`, p. 304; `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: `opus:7-appC-beam.c3`, p. 304. The green control carries no claim id, and neither PAL assertion carries one for p. 23 or p. 194 |
-| **Module** | `agnus_beamcounter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86); TC64 has the same constant one bit wider; inherited |
+| **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86); TC64 has the same constant one bit wider; inherited |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both PAL. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: expected an average of 227.5, observed 227.0 over four lines of 227. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: expected 625 lines and 227.5, observed 625 and 227.0; its line-count half matches. The control that writes HTOTAL and measures the line it produces is green. The package reports `28 passed, 5 failed`: the other three reds are the NTSC pair, [NM-HRM-010](NM-HRM-010.md)'s, and [NM-HRM-011](NM-HRM-011.md)'s |
 | **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC. Hardware: not measured |
@@ -53,14 +53,14 @@ standard:
 
 **Every PAL line is 227 colour clocks.** The hardwired line length is one
 constant for both standards —
-[`src/minimig-aga/agnus_beamcounter.v#L86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86):
+[`src/minimig-aga/agnus_beamcounter.v#L86`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L86):
 
 ```verilog
 parameter HTOTAL_VAL      = 8'd227 - 8'd1;   // line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
 ```
 
 and in PAL the long-line bit is held clear —
-[`#L291-L300`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L291-L300):
+[`#L291-L300`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L291-L300):
 
 ```verilog
 if (pal || (loldis && varbeamen))
@@ -68,9 +68,9 @@ if (pal || (loldis && varbeamen))
 ```
 
 That bit reaches only VPOSR's LOL bit
-([`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110));
+([`#L110`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L110));
 the line ends where the counter meets the constant
-([`#L250`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L250)),
+([`#L250`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L250)),
 in either standard.
 
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)

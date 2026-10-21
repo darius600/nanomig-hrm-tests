@@ -10,7 +10,7 @@
 | **Scope** | chip revision unknown; the manual names none. Measured on the multiply path with channel 0 only, volume register values 63, 64, 65, 96 and 127 giving the same `ldatasum`; the PWM path is correct and reaches no output |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (14)</summary> claim ids by assertion: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH`: `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`: `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`): `5-p163.c1`, `5-t59.v64`, `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS`: `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four assertions carry claim ids </details> |
-| **Module** | `paula_audio_mixer.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33); inherited |
+| **Module** | `paula_audio_mixer.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33); inherited |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map): `make -C hrm/ch5-audio-register-map test`; an expected red exits nonzero |
 | **Assertions** | 4 red. `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map` (`8 passed, 1 failed`): expected `ldata` at AUDxVOL=64 to differ from AUDxVOL=63, observed 4032 for both. In `hrm/ch5-audio-volume-scale` (`69 passed, 5 failed`): `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, expected `ldatasum(vol0=63)` and `ldatasum(vol0=64)` to differ, observed identical; `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`), expected 0.0 dB within ±0.1, observed `ldatasum=4032`, -0.137 dB; `TABLE-5-9-HAS-65-VOLUME-LEVELS`, expected 65 distinct outputs over registers 0..64, observed 64. Its two other reds, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT`, are [NM-HRM-002](NM-HRM-002.md)'s |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63. Hardware: not measured |
@@ -39,23 +39,23 @@ levels, and for 63 and 64 to differ.
 
 `paula_audio_mixer` wires bit 6 of the seven-bit volume register *down into* the
 six-bit input of the volume helper by OR-ing it into every bit
-([`paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33),
+([`paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v#L23-L33),
 comment "when volume MSB is set, volume is always maximum"). With `vol0 = 64`
 (`1000000`) the helper sees `111111`, which is **63**.
 
 The same design implements volume a second time, correctly: the PWM path keeps
 `audvol` at seven bits
-([`paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L101-L103))
+([`paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L101-L103))
 and compares across widths, `assign volgate = (volcnt < audvol);`
-([`#L149`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L149)),
+([`#L149`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L149)),
 so 64 stays above 63. Only the multiply path leaves the design:
-[`nanomig.v#L1535-L1538`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1535-L1538)
+[`nanomig.v#L1584-L1587`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1584-L1587)
 connects `ldata`/`rdata` to `audio_left`/`audio_right` and leaves
 `ldata_okk`/`rdata_okk` unconnected. `ldata` is the mixer's `ldatasum`
-(`paula_audio.v:282`, through `paula.v:303` and `minimig.v:528`). Every board top
+(`paula_audio.v:282`, through `paula.v:317` and `minimig.v:538`). Every board top
 in the tree instantiates `nanomig` and takes its audio from `audio_left` and
 `audio_right`
-([`src/tang/nano20k/top.sv:666-667`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/tang/nano20k/top.sv#L666-L667)
+([`src/tang/nano20k/top.sv:702-703`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top.sv#L702-L703)
 is one of twelve); no file outside `src/minimig-aga/` other than `nanomig.v` names
 `ldata_okk` or `rdata_okk`.
 

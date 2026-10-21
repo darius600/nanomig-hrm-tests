@@ -10,7 +10,7 @@
 | **Scope** | `agnus_beamcounter` with ECS enabled (the BEAMCON0 write is gated on it); in the HRM package each bit written alone and with every other implemented BEAMCON0 bit set, in the AA package the three set together; chip revision unknown; real-chip behaviour not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C, printed p. 305, `BEAMCON0` bit table (test chapter 7) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. <details><summary>claim ids by assertion (16)</summary> Claim ids: `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`: `sol:7-appC-beamcon0.c15`, `opus:7-appC-beamcon0.c15`; `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`: `sol:7-appC-beamcon0.c16`, `opus:7-appC-beamcon0.c16`; `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN`: `sol:7-appC-beamcon0.c17`, `opus:7-appC-beamcon0.c17`. Second document: Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, preliminary, pp. 12-13 as the PDF numbers them (the document prints none); `SYNC-POLARITY-BITS-CHANGE-THE-PINS`: `sol:AA-beamcon0.c19`, `sol:AA-beamcon0.c20`, `sol:AA-beamcon0.c21`, `opus:AA-beamcon0.b2`, `opus:AA-beamcon0.b1`, `opus:AA-beamcon0.b0` (p. 12), `sol:AA-beamcon0.c62`, `sol:AA-beamcon0.c63`, `sol:AA-beamcon0.c64`, `opus:AA-beamcon0.c43` (p. 13). All four assertions carry claim ids. </details> |
-| **Module** | `agnus_beamcounter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148); MiSTer has the same code; TC64 differs (it decodes HSYTRUE and VSYTRUE into outputs; CSYTRUE stays unused): inherited |
+| **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148); MiSTer has the same code; TC64 differs (it decodes HSYTRUE and VSYTRUE into outputs; CSYTRUE stays unused): inherited |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits): `make -C hrm/ch7-beamcon0-ecs-control-bits test`; corroborated by [`aa/aa-beamcon0-control-bits`](../../aa/aa-beamcon0-control-bits): `make -C aa/aa-beamcon0-control-bits test`; an expected red exits nonzero |
 | **Assertions** | In the HRM package, 3 red (package `8 passed, 4 failed`; the fourth red, `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE`, is a different claim, on [NM-HRM-033](NM-HRM-033.md)): `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`, expected the `_csync` trace to change with bit 2 set, observed byte-for-byte identical (883 edges); `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`, `_vsync` identical (3 edges); `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN`, `_hsync` identical (881 edges). In the AA package (`4 passed, 1 failed`), `SYNC-POLARITY-BITS-CHANGE-THE-PINS`, expected the three pins to differ somewhere, observed 0 of 260 samples |
 | **Verdict of the four** | **split**: only WinUAE implements all three; Denise implements one; two do not model them at all. Hardware: not measured |
@@ -33,7 +33,7 @@ Three bits, each naming a pin whose polarity it controls.
 ## RTL and measurement
 
 The three bits are declared and **commented out**, and nothing reads `beamcon0_reg[2:0]`:
-[`src/minimig-aga/agnus_beamcounter.v#L138-L142`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L138-L142)
+[`src/minimig-aga/agnus_beamcounter.v#L138-L142`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L138-L142)
 
 ```verilog
 //wire csynctrue    = beamcon0_reg[ 2];
@@ -42,7 +42,7 @@ The three bits are declared and **commented out**, and nothing reads `beamcon0_r
 ```
 
 The composite sync is formed without them:
-[`src/minimig-aga/agnus_beamcounter.v#L421`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L421)
+[`src/minimig-aga/agnus_beamcounter.v#L421`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L421)
 
 ```verilog
 assign _csync = _hsync & _vsync | vser; //composite sync with serration pulses

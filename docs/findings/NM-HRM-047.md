@@ -10,7 +10,7 @@
 | **Scope** | the step-to-step acceptance gate of `paula_floppy.v` (`step_ena_cnt`), a direction reversal against a same-direction continuation. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.245 (PB0 `DSKSTEP*`, lines 31–35 and 37–39) and Figure 8-8, printed p.242–243 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (30)</summary> claims by assertion: `RATIO-A`: p. 242: `opus:8-time.c15`, `opus:8-time.c16`, `opus:8-time.c17`, `sol:8-fig8-8-text.c1`, `sol:8-fig8-8-text.c2`; p. 243: `opus:8-fig8-8.c4`, `opus:8-fig8-8.c5`, `opus:8-fig8-8.c6`, `sol:8-fig8-8.c2`, `sol:8-fig8-8.c3`, `sol:8-fig8-8.c4`, `sol:8-fig8-8.c19`, `sol:8-fig8-8.c21`, `sol:8-fig8-8.c23`; `DIREC-PROTOCOL`: p. 245: `opus:8-cia.c46`, `sol:8-cia.c40`; `TRACK00-POLARITY`: p. 242: `sol:8-fig8-8-text.c4`; p. 243: `sol:8-fig8-8.c27`; `SEL-GATING`: p. 242: `opus:8-time.c21`; p. 243: `opus:8-fig8-8.c10`, `sol:8-fig8-8.c7`, `sol:8-fig8-8.c6`; declined `STEP-POLARITY`: p. 243: `sol:8-fig8-8.c26`; declined `PULSE-WIDTH-FLOOR`: p. 242: `sol:8-fig8-7.c3`, `sol:8-fig8-9-text.c1`; declined `RATIO-B`: p. 243: `sol:8-fig8-8.c1`, `opus:8-fig8-8.c8`, `opus:8-fig8-8.c3`, `sol:8-fig8-8.c17`, `sol:8-fig8-8.c29`; `FIXTURE-LIVE` carries no claim id </details> |
-| **Module** | `paula_floppy.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L594-L603) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301); inherited |
+| **Module** | `paula_floppy.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L594-L603) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301); inherited |
 | **Test** | [`hrm/ch8-drive-step-timing`](../../hrm/ch8-drive-step-timing): `make -C hrm/ch8-drive-step-timing test` |
 | **Assertions** | `RATIO-A` red, 1 of 5 graded (4 passed, 1 failed): expected the reversal and same-direction minimum step-to-step gaps in the printed 6:1 ratio, observed 253:253 ticks. `STEP-POLARITY` and `PULSE-WIDTH-FLOOR` are declined by `record()`, and `RATIO-B` is declined for measuring two quantities that are not of the same kind |
 | **Verdict of the four** | **unanimous with NanoMig on the gate**, and none of the four uses the printed pair for it. All four accept step pulses on a direction-independent floor — tens of microseconds in WinUAE, vAmiga and Copperline, off by default in Denise; three of them carry a seek or *settle* delay elsewhere (Copperline 3 ms and 18 ms by direction, vAmiga 3 ms plus 9 ms, Denise up to 18 ms and off by default), an effect NanoMig does not model at all. Hardware: not measured |
@@ -45,11 +45,11 @@ comparison the page's own.
 
 `step_ena_cnt` is one nine-bit counter that counts up while `step_ena` is low
 and is reset by every accepted `_step` rising edge
-([`paula_floppy.v#L594-L603`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L594-L603)).
+([`paula_floppy.v#L594-L603`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L594-L603)).
 `step_ena` is bit 8, so the gate opens 256 `clk7_en` ticks after the last reset:
 one threshold, and `direc` and `_sel` are not read in the block. The track update
 does consult direction and selection
-([`#L671-L680`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L671-L680)),
+([`#L671-L680`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L671-L680)),
 but the counter reset carries no such gate, so a reversal edge and a
 same-direction edge are admitted by the same `step_ena_cnt[8]`.
 

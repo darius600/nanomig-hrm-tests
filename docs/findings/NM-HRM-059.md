@@ -10,7 +10,7 @@
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: `opus:8-adkcon.c12`, p. 265 (no ch8 ledger; as the FAIL line prints it) |
-| **Module** | `paula.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer and TC64 carry the identical lines, cited in the witness table) |
+| **Module** | `paula.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L137); inherited (MiSTer and TC64 carry the identical lines, cited in the witness table) |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: expected bit 15 of ADKCONR to follow the bit written, observed `0x7FFF`, bit 15 clear; the package reports `17 passed, 2 failed`; the other red, `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, is [NM-HRM-057](NM-HRM-057.md)'s |
 | **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not measured |
@@ -35,10 +35,10 @@ write-only SET/CLR control, and a read of 0 is correct.
 
 ## RTL and measurement
 
-    reg [14:0] adkcon;                                         // paula.v:132
-    assign adkconr = ... ? {1'b0, adkcon[14:0]} : 16'h0000;    // paula.v:198
+    reg [14:0] adkcon;                                         // paula.v:137
+    assign adkconr = ... ? {1'b0, adkcon[14:0]} : 16'h0000;    // paula.v:203
 
-Lines [`paula.v:132`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132) and [`paula.v:198`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L198). Fifteen bits stored, a literal zero in bit 15 on every read. The register cannot
+Lines [`paula.v:137`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L137) and [`paula.v:203`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L203). Fifteen bits stored, a literal zero in bit 15 on every read. The register cannot
 hold the bit, so no stimulus can change the answer.
 
 [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations)

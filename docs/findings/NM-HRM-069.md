@@ -10,7 +10,7 @@
 | **Scope** | the 68000's chip-bus accesses on both CPU cores (fx68k, TG68K), measured with a counting loop with no DMA but refresh (red on fx68k only) and beside a share-mode A-to-D blit (red on both), and, beside that blit, the 68000's grants measured against the first free even-numbered slot (`A8`, red on both); chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8`, no claim id: p. 196, p. 198; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, p. 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198; `A2`, green and not evidence here: `ch6-sysdma.c53`, p. 198. `PARITY-REF` (Figure 6-9) carries no claim id |
-| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code; TC64 the same acknowledge, its counter also counting in turbo mode) |
+| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code; TC64 the same acknowledge, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
 | **Assertions** | `PARITY` and `A8` are red on both cores (37 passed, 3 failed each; the third red, `A4`, is filed on [NM-HRM-091](NM-HRM-091.md)). `PARITY`: expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `A8`: expected every 68000 access whose ready even-numbered slot a DMA access took to be granted exactly at the first free even-numbered slot, neither before it (an odd-numbered grant, the event `PARITY` counts) nor after it; observed 122 granted before it of 124 missed even cycles on fx68k and 120 of 125 on TG68K, none after a free even-numbered slot was left unused. `PARITY-REF` and `A8PRE` pass on both cores |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not measured |
@@ -74,17 +74,17 @@ cycle falls.
 **NanoMig completes a CPU chip-bus access in any colour clock that no DMA channel
 claims, of either parity.** The 68000 bridge acknowledges the CPU on the
 colour-clock phase whenever Agnus is not requesting the bus —
-[`src/minimig-aga/minimig_m68k_bridge.v#L131`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131):
+[`src/minimig-aga/minimig_m68k_bridge.v#L131`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig_m68k_bridge.v#L131):
 
 ```verilog
 if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;
 ```
 
 `cck` is high once in every colour clock, not every other one
-([`src/minimig-aga/amiga_clk.v#L34-L35`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/amiga_clk.v#L34-L35)),
+([`src/minimig-aga/amiga_clk.v#L34-L35`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/amiga_clk.v#L34-L35)),
 and `dbr` is low exactly when Agnus's priority chain falls through to its last
 branch, "bus not allocated by agnus"
-([`src/minimig-aga/agnus.v#L255-L258`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L255-L258)).
+([`src/minimig-aga/agnus.v#L255-L258`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L255-L258)).
 Neither module reads the colour clock's parity on the CPU's behalf, so a
 68000 bus cycle that starts one colour clock late — after an internal
 operation of two clocks, for instance — is served in the next free colour
@@ -92,13 +92,13 @@ clock, which is the other parity.
 
 **With the nasty bit clear, the blitter stands aside by a count.** The bridge
 raises `bls` while the CPU waits
-([`#L145`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L145)),
+([`#L145`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig_m68k_bridge.v#L145)),
 Agnus counts the colour clocks it stays raised
-([`src/minimig-aga/agnus.v#L429-L433`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433))
+([`src/minimig-aga/agnus.v#L429-L433`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L429-L433))
 up to `parameter BLS_CNT_MAX = 3;`
-([`#L109`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L109)),
+([`#L109`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L109)),
 and refuses the blitter the bus once the count is reached
-([`#L243`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L243)).
+([`#L243`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L243)).
 The released colour clock is wherever the count ends, of either parity.
 
 ### Measured

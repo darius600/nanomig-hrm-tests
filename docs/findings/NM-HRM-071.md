@@ -10,7 +10,7 @@
 | **Scope** | SuperHires with BPLCON0 = $1040 (one plane), BPLCON3 SPRES at 0, sprites 0 and 1 at HSTART 192 and 217, sixteen pixels wide, measured on NanoMig's design with an enhanced chip set on both CPU cores; Hires ($9000) only as the control. `integration/ch4-shres-bitplane` adds two planes (BPLCON0 = $2040), sprite 0 at HSTART $C0 over a playfield of value 0, and Hires ($A000) in its frame F10. The original chip set is not measured; chip revision unknown; real hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 296, 297, 300, 302 and 303; Appendix A, printed pp. 271 and 284; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: the red assertions `PC2w` and `C11` carry none; no assertion carries p. 101's `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`, `CH4-size.c6`, `CH4-size.c7`, `CH4-size.c8`, `CH4-size.c9`, p. 124's `CH4-hw.c10`, `CH4-p124.c6`, or p. 128's `CH4-p128.c3`, `CH4-res.c3` |
-| **Module** | `denise.v`, `denise_sprites.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L391) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L361); MiSTer and TC64 carry the same statements: inherited |
+| **Module** | `denise.v`, `denise_sprites.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L426) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L361); MiSTer and TC64 carry the same statements: inherited |
 | **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b): `make -k -C integration/ch4-shres-sprite-b test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero. [`integration/ch4-shres-bitplane`](../../integration/ch4-shres-bitplane): `make -k -C integration/ch4-shres-bitplane test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
 | **Assertions** | 1 red on each core in `integration/ch4-shres-sprite-b`: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails. 1 red on each core in `integration/ch4-shres-bitplane`: `C11` (p. 101) — expected the run of every baseline sprite line that shows one to be 32 ± 1 hires periods long in F7, F8, F9 and F10, observed 16 in F7, F8 and F9 and 32 in F10; `86 passed, 49 failed` on fx68k and on TG68K. `C11` carries no claim id |
 | **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say*. Hardware: not measured |
@@ -112,15 +112,15 @@ evidence*).
 resolutions: one sprite pixel per 70 ns.** Denise feeds the sprite unit a
 resolution code built from BPLCON3's SPRES field, which is forced to 0 outside
 AGA, and BPLCON0's SHRES bit —
-[`src/minimig-aga/denise.v#L390-L391`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L390-L391),
-[`#L252`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L252):
+[`src/minimig-aga/denise.v#L425-L426`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L425-L426),
+[`#L252`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L252):
 
 ```verilog
 assign spres_d = (spres == 2'b00) ? shres ? 2'b10 : 2'b01 : spres;
 ```
 
 and the sprite unit turns the code into a shift enable —
-[`src/minimig-aga/denise_sprites.v#L158-L165`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v#L158-L165):
+[`src/minimig-aga/denise_sprites.v#L126-L133`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites.v#L126-L133):
 
 ```verilog
 2'b10   : shift = ~c1 ^ c3;
@@ -128,13 +128,13 @@ default : shift = ~c1 & ~c3;
 ```
 
 `c1` and `c3` are the 28 MHz-domain phases of the 7 MHz clock
-([`src/minimig-aga/amiga_clk.v#L57-L61`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/amiga_clk.v#L57-L61)),
+([`src/minimig-aga/amiga_clk.v#L57-L61`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/amiga_clk.v#L57-L61)),
 so `~c1 & ~c3` is true in one 28 MHz clock of four, a 140 ns sprite pixel, and
 `~c1 ^ c3` in two of four, a 70 ns one. Each sprite shifter advances on it in
 both builds the package runs, without `DENISE_EBR` (the fx68k build,
-[`denise_sprites_shifter.v#L280-L283`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites_shifter.v#L280-L283))
+[`denise_sprites_shifter.v#L306-L309`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites_shifter.v#L306-L309))
 and with it (the TG68K build,
-[`#L237-L241`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites_shifter.v#L237-L241)).
+[`#L176-L180`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites_shifter.v#L176-L180)).
 With SPRES at 0, SHRES selects code `2'b10`, the encoding the AA specification's
 SPRES table gives to `HIRES(70nS)`.
 
@@ -227,11 +227,11 @@ periods in F7, F8 and F9, 16 in F10) and `C11` stays red. The sprites' colours i
 - **The original chip set is not graded; no run of the package selects it.**
   With an OCS configuration and BPLCON0 bit 6 set, NanoMig's source keeps the
   playfield low resolution and halves the sprite, because
-  [`denise.v#L391`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L391)
+  [`denise.v#L426`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L426)
   reads `shres`, assigned from BPLCON0 bit 6 with no chip-set term at
-  [`#L187`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L187),
+  [`#L189`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L189),
   without the `ecs` term that
-  [`#L362`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L362)
+  [`#L391`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L391)
   applies to the bitplanes; neither Minimig line gates it either. There p. 101
   has no counter-voice: the original chip set's BPLCON0 table marks bit 6 `X`
   (p. 271), p. 296 gives SuperHires to the enhanced Denise, and the AA table's

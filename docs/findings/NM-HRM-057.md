@@ -10,11 +10,11 @@
 | **Scope** | SERDATR bit 11 read at `paula_uart` and at the `paula` boundary, after the RXD pin steps from 1 to 0; chip revision unknown; real Paula not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 · printed p.257, SERDATR bit 11 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`: `sol:8-serdatr.c43` (p.257), `opus:8-serdatr.c23`, `opus:8-serdatr.c24`, `sol:8-serdatr.c105`, `sol:8-serdatr.c106` (p.283); `C4`: `opus:8-serial.c81` (p.257); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`: `opus:8-serial.c82` (p.257); all three reds carry a claim id |
-| **Module** | `paula_uart.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L36-L43) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L36-L43); inherited |
+| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L46-L53) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L36-L43); inherited |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`; [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 3 red, one per package, each one of the package's reds: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, expected 0 `clk7_en` enables, observed 3 (`12 passed, 2 failed`); `C4`, expected 0 beats, observed 2 (`48 passed, 3 failed`); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, expected 0 edges, observed 3 (`17 passed, 2 failed`) |
 | **Verdict of the four** | **2–1 for the page, one cannot answer, and the one dissent does not match NanoMig either**. Hardware: not measured |
-| **Effort** | none; if an Amiga specialist records that "direct" requires zero lag, S: the change touches `paula_uart.v:36-43` and `:234` |
+| **Effort** | none; if an Amiga specialist records that "direct" requires zero lag, S: the change touches `paula_uart.v:46-53` and `:244` |
 
 ---
 
@@ -28,7 +28,7 @@
 
 Two synchroniser flops and one more register:
 
-    reg [1:0] rxd_sync = 2'b11;             // paula_uart.v:36
+    reg [1:0] rxd_sync = 2'b11;             // paula_uart.v:46
     rxd_sync <= {rxd_sync[0], rxd};         // :40
     assign rxds = rxd_sync[1];              // :43
     rx_rxd <= rxds;                         // :234

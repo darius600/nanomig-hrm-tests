@@ -7,10 +7,10 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change. Question: should p.1's "68030" and "From 256K" sentences be reclassified as not-asserted under a fifth `reason_kind`, because they describe which machines Commodore sold and not what NanoMig's `sysctrl.v` offers? Closes when the claim classification in hrm-testpipeline either adds that `reason_kind` and chapter 1 is re-accepted with the two assertions as `record()` lines, or keeps them graded with this page as their explanation. |
 | **Report to** | `no RTL action` — hrm-testpipeline: whoever maintains the suite's claim classification |
-| **Scope** | NanoMig's `sysctrl.v` config values `id='T'` (`system_cpu`) and `id='Y'` (`system_chipmem`) at `4495f86`; no Amiga chip is involved |
+| **Scope** | NanoMig's `sysctrl.v` config values `id='T'` (`system_cpu`) and `id='Y'` (`system_chipmem`) at `4315acb`; no Amiga chip is involved |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 1 — Introduction, printed p. 1 (feature list) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: `sol:1-components.c7`, `opus:1-components.c7`, p. 1. `RAM-BASE-FLOOR-BELOW-256K-ABSENT` carries no claim id; the ids `sol:1-components.c12` and `opus:1-components.c12` (p. 1) sit on the package's `record()` line, which records that sentence as partially graded |
-| **Module** | `sysctrl.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246); in neither MiSTer nor TC64; NanoMig's own |
+| **Module** | `sysctrl.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/misc/sysctrl.v#L263-L281); in neither MiSTer nor TC64; NanoMig's own |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options): `make -C hrm/ch1-cpu-options test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both measure correctly. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: expected 4 pairwise-distinct `system_cpu` states, observed 3. `RAM-BASE-FLOOR-BELOW-256K-ABSENT`: expected a `system_chipmem` state at 256K, observed floor raw 0 documented `"512k"`. The package reports `3 passed, 2 failed` |
 | **Verdict of the four** | **not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold. Hardware: not measured |
@@ -34,7 +34,7 @@ A3000 could be configured down to.
 
 ## RTL and measurement
 
-`sysctrl.v:230-231` is a two-bit field with three meanings and its own remap:
+`sysctrl.v:265-266` is a two-bit field with three meanings and its own remap:
 
 ```verilog
 // Value "T": CPU 68000(0), 68010(1) or 68020(2)
@@ -44,7 +44,7 @@ if(id == "T") system_cpu <= data_in[1:0] == 2'b10 ? 2'b11 : data_in[1:0];
 Raw 2 is remapped onto 3, so the four raw codes reach **three** distinct output
 states. The comment names three processors and never a 68030.
 
-`sysctrl.v:240` documents the chip-memory floor: `// Value "Y": Chipmem
+`sysctrl.v:275` documents the chip-memory floor: `// Value "Y": Chipmem
 512k(0), 1M(1), 1.5M(2) or 2M(2)`. The lowest reachable configuration is 512k;
 there is no 256K state.
 

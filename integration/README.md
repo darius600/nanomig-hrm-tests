@@ -43,6 +43,7 @@ A package whose test source records mutations (`NMH_MUTATE=<selector>` in its co
 | `ch6-blitter-line-fill` | line mode and area fill (pp. 180-192, 200, 268) |
 | `ch6-blitter-geometry` | the blitter's addressing and masking: masks, modulos, shifts, pointer order, minterms (pp. 169-183, 200) |
 | `ch6-blitter-cpu-sharing` | how the blitter and the 68000 share the chip bus, and the done flag (pp. 169-198) |
+| `ch6-dma-priority-load` | DMA priority under load: which requests delay the Copper, and which keep every slot while the blitter, the 68000 or the Copper runs (pp. 19-20, 194-198, 275) |
 | `ch7-system-control` | the light-pen read at the beam-position address and LPENDIS (pp. 216, 239) |
 | `ch8-controller-ports` | the controller ports (chapter 8 and appendix A) |
 | `ch8-disk-serial` | serial-port timing, nine-bit receive and the disk bit-cell rate |

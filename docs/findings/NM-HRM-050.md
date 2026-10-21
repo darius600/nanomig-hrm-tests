@@ -10,7 +10,7 @@
 | **Scope** | `keymap` entries for HID `$64` and `$32`, the two international cutout keys; a combinational translation table, so no chip revision applies; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.252 (text) and p.254 (Figures 8-9 and 8-10) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `CUTOUT-30`: p. 254: `opus:8-fig.c59`, `sol:8-layout.c58`, `opus:8-fig.c148`, `sol:8-layout.c152`; p. 252: `opus:8-keycode.c14`, `sol:8-keycode.c13`; `KEY-$2B`: p. 254: `opus:8-fig.c146`, `sol:8-layout.c150`; p. 252: `opus:8-keycode.c15`, `sol:8-keycode.c14`. Both assertions this page names carry claim ids |
-| **Module** | `amiga_keymap.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L70-L130) · no counterpart in MiSTer; TC64 has a separate PS/2 map that emits both codes; NanoMig's own |
+| **Module** | `amiga_keymap.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/misc/amiga_keymap.v#L70-L130) · no counterpart in MiSTer; TC64 has a separate PS/2 map that emits both codes; NanoMig's own |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table): `make -C hrm/ch8-keycode-table test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `CUTOUT-30`: expected `$30` for HID `$64`, observed `$2B`; the package reports `97 passed, 1 failed` (98 assertions, among them a 94-row exhaustive sweep of the table). Control `KEY-$2B`, green: HID `$32` gives `$2B` |
 | **Verdict of the four** | **unanimous against.** All four carry both cutout keys as distinct codes, `$30` and `$2B`, in their own key tables. Hardware: not measured |
@@ -48,7 +48,7 @@ two keys the page distinguishes are collapsed onto one code.
 codes with the modifier keys mapped into the 0x68+ range"*; FPGA Companion's
 `core_map_key` returns the usage code unchanged for a non-legacy core
 (`src/core.c:60-82`), which NanoMig is: core id 0, *"Generic core"*
-(`src/misc/sysctrl.v:186`). The USB HID usage names, read from Denise's own
+(`src/misc/sysctrl.v:221`). The USB HID usage names, read from Denise's own
 HID-indexed table ([`driver/input/iokit/keyNames.cpp:149`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/driver/input/iokit/keyNames.cpp#L149) and [`:199`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/driver/input/iokit/keyNames.cpp#L199)), bind the
 two stimuli to the two keys:
 

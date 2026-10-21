@@ -10,7 +10,7 @@
 | **Scope** | OCS Agnus, and ECS Agnus and the AA chip set with BEAMCON0 bit 13 clear; BPLCON0 bit 3 set for more than twenty fields in `integration/ch8-light-pen-beam`, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC by `integration/ch8-light-pen-beam` (p. 305 gives LPENDIS no reset value). `integration/appDE-ports-disk`, `integration/ch7-system-control` and `integration/ch3-playfield-system` write BEAMCON0 with bit 13 clear first, so they grade ECS/PAL and ECS/NTSC as they grade OCS; `integration/aa-integ-s1` writes it with bit 13 clear and grades the AA chip set. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed pp. 79, 89; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991; for the AA chip set, Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY, PDF p. 12 · <details><summary>claim ids by assertion (63)</summary> claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `integration/appDE-ports-disk`: `LP-P2-LATCH-AT-PULSE`: `opus:E-lightpen.c12`, `sol:E-lightpen.c10`, `sol:E-lightpen.c21`, pp. 333, 238; `LP-P3A-HOLD`: `opus:E-lightpen.c5`, `sol:E-lightpen.c4`, pp. 333, 239; `LP-P1-LATCH-ENABLE`: `opus:E-lightpen.c21`, `sol:E-lightpen.c18`, pp. 333, 239; `LP-LATCH-ENABLE-AND-POSITION`: `opus:E-lightpen.c3`, `sol:E-lightpen.c2`, p. 333. `integration/ch7-system-control`: `P3-LATCHED-PEN-POSITION`: `opus:7-bp.c3`, `sol:7-beam.c3`, `opus:7-bp.c11`, pp. 216, 238, 239. `integration/ch3-playfield-system`: `P3 aggregate`: `opus:A-bpc.b03.c0`, `sol:A-bplcon.c49`, `opus:A-leg.lpen1`, `sol:A-bplcon.c72`, `opus:3-r0.c09`, `sol:3-regsum-bplcon0.c6`, pp. 271, 89, 229, 239; `P4 aggregate`, recorded not graded: `opus:A-leg.lpen2`, `sol:A-bplcon.c73`, p. 271. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id, and neither do the other reds of the four further packages (`P10-LATCH`, `LP-P1A-LATCH-HOLDS`, `LP-P3B-HELD-PULSE-IGNORED`, `LP-P3D-PULSE-BEFORE-ENABLE`, `LP-P4-DETERMINE-TRIGGER`, `P3-HELD`, `P3-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL`, `P3-MAIN`) or `P4-LPENDIS-READ`, recorded not graded</details> |
-| **Module** | `agnus_beamcounter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121); MiSTer has no latch either (its read path uses a delayed copy of the counter) and TC64's is NanoMig's line for line; inherited |
+| **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121); MiSTer has no latch either (its read path uses a delayed copy of the counter) and TC64's is NanoMig's line for line; inherited |
 | **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam): `make -k -C integration/ch8-light-pen-beam test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. One program, graded in OCS/PAL and OCS/NTSC on both CPU cores. `make -k -C integration/ch8-light-pen-beam latch-test` runs the package against the RTL with the latch of *Decision* applied (`latch.patch`) and exits zero; `late-test` runs it with the release one line late (`late.patch`) and exits nonzero. Four more packages, each with an expected red exiting nonzero: [`integration/appDE-ports-disk`](../../integration/appDE-ports-disk): `make -k -C integration/appDE-ports-disk test`, pulses on one connector at a time, in OCS and ECS, PAL and NTSC; [`integration/ch7-system-control`](../../integration/ch7-system-control): `make -k -C integration/ch7-system-control test`, pulses on both ports at Copper-marked lines, in the same four; [`integration/ch3-playfield-system`](../../integration/ch3-playfield-system): `make -k -C integration/ch3-playfield-system test`, bit 3 set and no pulse, in the same four; [`integration/aa-integ-s1`](../../integration/aa-integ-s1): `make -k -C integration/aa-integ-s1 test`, bit 3 set and no pulse, in the AA chip set (each also as `test-fx68k` and `test-tg68k`) |
 | **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC, in a package run of 156 passed, 38 failed on each core: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239). `P1` expects a pin-6 pulse on one port captured and observes *captured=no* on port 1 and on port 2; `P7` expects one value in lines 0 to 19 after a field with no pulse and observes reads that are not one value. In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded. The page-model control is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green. Four further packages are red the same way on fx68k and on TG68K, 76 lines on each core, listed under *Where else the suite meets it*. |
 | **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line. With BEAMCON0 bit 13 clear the same split holds in ECS and in the AA chip set; with it set, WinUAE hides the latch from the read and Copperline refuses a pulse but keeps the field-end latch (read from their code, not run). Hardware: not measured |
@@ -122,7 +122,7 @@ With the bit low and BPLCON0 bit 3 set, then, the latched value is what the thre
 
 **VPOSR and VHPOSR always read the running counter.** The read multiplexer has
 no other source —
-[`src/minimig-aga/agnus_beamcounter.v#L107-L115`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115):
+[`src/minimig-aga/agnus_beamcounter.v#L107-L115`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L107-L115):
 
 ```verilog
 //beamcounter read registers VPOSR and VHPOSR
@@ -135,14 +135,14 @@ always @(*) begin
 
 `vpos` and `hpos` are the counters themselves; `vpos` changes only by the
 increment at each line and by a VPOSW/VHPOSW write
-([`#L325-L337`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L325-L337)).
+([`#L325-L337`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L325-L337)).
 
 **Agnus does not keep BPLCON0 bit 3.** The beam counter takes bit 1 and bit 2
 of a BPLCON0 write and nothing else —
-[`#L144-L163`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L144-L163),
+[`#L144-L163`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L144-L163),
 `ersy <= data_in[1];` and `lace <= data_in[2];` — and the bitplane sequencer
 takes bits 6, 15, 4 and 14–12 —
-[`src/minimig-aga/agnus_bitplanedma.v#L282`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L282).
+[`src/minimig-aga/agnus_bitplanedma.v#L282`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L282).
 Denise stores the whole register, and its light-pen wire is commented out,
 `//assign lpen     = bplcon0[3];` —
 [`src/minimig-aga/denise.v#L166`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L166),
@@ -151,24 +151,24 @@ Denise stores the whole register, and its light-pen wire is commented out,
 **LPENDIS is stored in ECS and read nowhere.** BEAMCON0 is written only with
 `ecs` set and resets to `{10'b0, ~ntsc, 5'b0}`, bit 13 clear; the wire that
 would name the bit is a comment, `//wire lpendis      = beamcon0_reg[13];` —
-[`#L117-L129`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L117-L129).
+[`#L117-L129`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L117-L129).
 
 **No light-pen line reaches Agnus.** Neither `agnus`
-([`agnus.v#L54-L100`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L54-L100))
+([`agnus.v#L54-L100`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L54-L100))
 nor `agnus_beamcounter`
-([`#L27-L57`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L27-L57))
+([`#L27-L57`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L27-L57))
 has an input for one, and no port of `nanomig.v` is one. Pin 6 of each
 controller port goes to CIA-A and nowhere else: `nanomig.v` passes its two
 joystick bytes, inverted, to Minimig's `_joy1` and `_joy2`
-([`src/nanomig.v#L1503-L1504`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1503-L1504)),
+([`src/nanomig.v#L1552-L1553`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1552-L1553)),
 `userio` crosses them over, `_sjoy1 <= joy_swap ? joy1 : joy2;` with
 `joy_swap` tied to 0
-([`src/minimig-aga/userio.v#L215-L218`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L215-L218),
-[`#L92`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L92)),
+([`src/minimig-aga/userio.v#L215-L218`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/userio.v#L215-L218),
+[`#L92`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/userio.v#L92)),
 and makes the two fire lines from bit 4, the first also from mouse button 0
-([`#L313-L314`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L313-L314));
+([`#L313-L314`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/userio.v#L313-L314));
 both end at CIA-A's port A, `_fire1` on PA7 and `_fire0` on PA6
-([`src/minimig-aga/minimig.v#L622`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L622),
+([`src/minimig-aga/minimig.v#L632`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L632),
 `.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),`). p. 232 gives
 port 1 bit 6 and port 2 bit 7, so `joystick0` bit 4 is port 2's pin 6 and
 `joystick1` bit 4, and `mouse_buttons` bit 0, port 1's. The package measures
@@ -348,7 +348,7 @@ green. The check that LPEN is off after power-up, which needs a latch to be told
   would leave the latched value visible, if there were one.
 - **p. 305's LPENDIS read is not graded on NanoMig.** `P4-LPENDIS-READ` in `integration/ch7-system-control` needs a latch to hide;
   with none its two preconditions, `P4-PRE-LATCHF1` and `P4-PRE-CONTROL`, are red and it is recorded not graded.
-- **What NanoMig outputs.** [NanoMig's README](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/README.md#L23) lists "HDMI video and audio, PAL and NTSC", and its builds for the Tang Nano 20k are HDMI and [RGB LCD](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/README.md#L67). The pen-less half of the finding, the field-end latch with bit 3 set (`P7`, `P3-MAIN`), needs no pen.
+- **What NanoMig outputs.** [NanoMig's README](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/README.md#L22) lists "HDMI video and audio, PAL and NTSC", and its builds for the Tang Nano 20k are HDMI and [RGB LCD](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/README.md#L85). The pen-less half of the finding, the field-end latch with bit 3 set (`P7`, `P3-MAIN`), needs no pen.
 - **Which port.** p. 238 and the technical reference put the pen on port 2's
   pin 6 on the A500, and the B2000's J200 moves it to p. 238's port 1. NanoMig
   would have to route one of its two fire lines to Agnus as well as to CIA-A.

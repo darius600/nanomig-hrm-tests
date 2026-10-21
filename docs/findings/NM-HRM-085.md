@@ -10,7 +10,7 @@
 | **Scope** | one Zorro II memory board (register 00 size code `110`, 2 MB) in the whole design at `nanomig.v`'s ports, `fastram_config` = 1, on both CPU cores: the base byte written to register 48 ($20 and $40), the reads at $200000–$9FFFFE, and two controls, $A00000 with the board configured and $400000 with the board never configured. `fastram_config` = 3 (three boards) is read from the source only. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 384, 386, 388, 391, 395, 431, 433, 434, 435, 436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `P3-NOTOTHER` (pp. 391, 433–435) and `P3-BASE` (pp. 388, 391, 433, 435) each carry `sol:K-0837` and `opus:K-0869` (both p. 435). No claim id: `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED` (pp. 391, 435), `P3-CONTENT` (p. 433), `P3-IMG2` (pp. 431, 435), `P3-CONTROL-IO` (p. 386), `P3-CONTROL-UNCONF` (p. 431) |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35); inherited (MiSTer has the same select; TC64 decodes the same range in its own file) |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35); inherited (MiSTer has the same select; TC64 decodes the same range in its own file) |
 | **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig): `make -k -C integration/appK-autoconfig test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
 | **Assertions** | `P3-NOTOTHER` (`test_appK_autoconfig.cpp:1058-1063`): the board configured at $200000 should not also answer at $400000; the word written there, P2 = $5AA5, reads back as $5AA5. `P3-BASE` (`:1084-1088`): with $40 written to register 48 (base $400000) the board should answer at $400000 and not at $200000; P2 reads back at $200000. Red on fx68k and on TG68K, 27 passed, 3 failed on each core; the third red, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. Green on both cores in the same run, the controls on the same comparator: `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` read $0000 where the reds read P2 |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else. MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does. Hardware: not measured |
@@ -117,7 +117,7 @@ Footnote 6, printed p. 435:
 
 **The write to register 48 ends configuration and keeps nothing of the value
 written** —
-[`src/minimig-aga/cpu_wrapper.v#L639-L642`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L639-L642):
+[`src/minimig-aga/cpu_wrapper.v#L639-L642`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L639-L642):
 
 ```verilog
 if (~cfg_z3) begin
@@ -129,36 +129,36 @@ if (~cfg_z3) begin
 The Zorro II arm reads no `cpu_dout`, and register 4A (`6'b100101`) is not
 decoded anywhere in the module. The Zorro III arm stores
 `z3ram_base1 <= cpu_dout[15:12];`
-([`#L655`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L655))
+([`#L655`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L655))
 and compares it
-([`#L116`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L116));
+([`#L116`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L116));
 the Toccata card, built only with `ENABLE_TOCCATA`, stores
 `toccata_base <= cpu_dout[7:0];`
-([`#L634`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L634))
+([`#L634`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L634))
 and `gary.v` compares it
-([`src/minimig-aga/gary.v#L197`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L197)).
+([`src/minimig-aga/gary.v#L197`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v#L197)).
 
 **The select then takes the whole Zorro II space** —
-[`#L117`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117):
+[`#L117`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L117):
 
 ```verilog
 wire sel_z2ram  = (cpu_addr[31:24] == 8'h00) && (cpu_addr[23] ^ |cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4
 ```
 
 `cpu_addr[23:21]` of 1 to 4 is $200000–$9FFFFF. `sel_z2ram` feeds `ramsel`
-([`#L167`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L167)),
+([`#L167`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L167)),
 the request that reaches `nanomig.v`'s `fastram_sel` port
-([`src/nanomig.v#L259`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L259)
+([`src/nanomig.v#L271`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L271)
 in the fx68k build; through the CPU cache in the TG68K build). The select
 names no base and no size, although register 00 declares one: with
 `fastram_config` = 1 it reads size code `110`
-([`#L572`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L572)),
+([`#L572`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L572)),
 and the module's own comment says where the design expects the board,
 `// Zorro II RAM (Up to 8 meg at 0x200000)`
-([`#L567`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L567)).
+([`#L567`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L567)).
 In a build without `ENABLE_RAM32`, which is both of the package's, the RAM
 address is `{1'b0, cpu_addr[22], cpu_addr[21] | cpu_addr[23]};`
-([`#L216-L217`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L216-L217)),
+([`#L216-L217`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L216-L217)),
 so $800000–$9FFFFF reach the same RAM addresses as $200000–$3FFFFF, and
 $400000–$7FFFFF reach RAM addresses of their own.
 

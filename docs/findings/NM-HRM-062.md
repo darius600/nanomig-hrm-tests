@@ -10,7 +10,7 @@
 | **Scope** | unknown; p.353 names no chip revision or mode. The isolated case is the choice between CIAA and CIAB by A13, A12 and A0 |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, *Hardware Connection Details* · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.353 · claims `sol:F-signals.c64`, `sol:F-signals.c65`, `opus:F-conn.c7`, `opus:F-conn.c8` (all four marked `conflict` at classification); no assertion grades them |
-| **Module** | `gary.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); TC64 has the same A12 and A13 terms; inherited |
+| **Module** | `gary.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); TC64 has the same A12 and A13 terms; inherited |
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; it prints both readings as `MEASURED` lines and grades neither. It exits nonzero on its one red, `CIA-DECODE-DONTCARE`, which is [NM-HRM-075](NM-HRM-075.md)'s |
 | **Assertions** | none: no assertion grades the claim |
 | **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says. Hardware: not measured |
@@ -61,7 +61,7 @@ No assertion grades the claim; `hrm/appF-cia-address-decode` measures both
 readings at `gary`'s port and grades neither (*Test*).
 
 NanoMig's
-[`gary.v#L190-L192`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192)
+[`gary.v#L190-L192`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v#L190-L192)
 has `sel_cia_a = sel_cia & ~cpu_address_in[12]` and
 `sel_cia_b = sel_cia & ~cpu_address_in[13]`: one bit per chip, with the prose's
 polarity (CIAA on A12 low, CIAB on A13 low) and not the printed patterns'

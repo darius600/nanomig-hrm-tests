@@ -55,7 +55,7 @@ With BYPASS set, then, the address the priority logic chooses for a pixel, playf
 //assign bypass   = bplcon0[5];
 ```
 
-The bits of BPLCON0 that Denise reads are 15, 14-12, 11, 10, 6, 4 and 0 (`:180-192`). The priority logic's choice, playfield or sprite, is `clut_data` ([`#L489-L498`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L489-L498)), which is the colour table's `.select` input (`:447`); the video output is the table's colour or the HAM generator's, [`#L508-L518`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L508-L518):
+The bits of BPLCON0 that Denise reads are 15, 14-12, 11, 10, 6, 4 and 0 (`:180-192`). The priority logic's choice, playfield or sprite, is `clut_data` ([`#L536-L545`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L536-L545)), which is the colour table's `.select` input (`:494`); the video output is the table's colour or the HAM generator's, [`#L508-L518`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L508-L518):
 
 ```verilog
 wire  [24-1:0] out_rgb  = ham_sel && window_del && !sprsel_del ? ham_rgb : clut_rgb;
@@ -63,7 +63,7 @@ wire  [24-1:0] out_rgb  = ham_sel && window_del && !sprsel_del ? ham_rgb : clut_
 assign {red[7:0],green[7:0],blue[7:0]} = t_blank ? 24'h000000 : out_rgb;
 ```
 
-`nanomig.v` passes the top four bits of the red byte to its video output, `wire [3:0] r_in = (hbl||vbl)?4'h0:red[7:4];` ([`src/nanomig.v#L1362`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1362)). None of these lines is inside `ifdef DENISE_EBR`, so the TG68K build, which defines it, and the fx68k build have the same path.
+`nanomig.v` passes the top four bits of the red byte to its video output, `wire [3:0] r_in = (hbl||vbl)?4'h0:red[7:4];` ([`src/nanomig.v#L1374`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1374)). None of these lines is inside `ifdef DENISE_EBR`, so the TG68K build, which defines it, and the fx68k build have the same path.
 
 [`integration/aa-integ-s1`](../../integration/aa-integ-s1)'s P6 shows eight low-resolution bit-planes, scrolled by BPLCON1 = $0033, with sprite 0 in front of them on lines $60-$6F. Each line holds twenty groups of sixteen pixels, and every pixel's colour address is non-zero. Two colour tables are loaded: T_id gives entry i the red nibble i>>4, T_x the red nibble $F - (i>>4). Four runs combine BPLCON0 = $0010 (eight planes, B0) or $0030 (the same with BYPASS, B1) with T_id or T_x, and the red output is compared pixel by pixel over the window of F3. The port shows four bits a colour, and `P6-R4` shows they are R7-R4: a pixel whose colour holds red $A5 shows `$A`.
 
@@ -87,7 +87,7 @@ MEASURED: P6 (i): 0 of 248136 pixels differ between B1/T_id and B0/T_id
 ## Risks and unknowns
 
 - **What green and blue show under BYPASS.** The pages name R(7:0) only. WinUAE shows the address on all three colours; leaving green and blue to the table is equally consistent with the pages.
-- **Is BYPASS wanted on NanoMig at all?** Its red byte reaches the video output (`nanomig.v:1362`), so with BYPASS the screen would show colour addresses as red.
+- **Is BYPASS wanted on NanoMig at all?** Its red byte reaches the video output (`nanomig.v:1374`), so with BYPASS the screen would show colour addresses as red.
 - **Two of the three implementations that model an AGA display agree with NanoMig.** vAmiga and Copperline have no BYPASS either; WinUAE alone has one. The finding rests on pp. 4 and 17, not on any implementation.
 - **The reading of the page.** The first line of the p. 17 entry is tagged `[3/3]` in the corpus; its two continuation lines are tagged `[1/3]` because they carry no identifier to corroborate, and the Tesseract reading has the second line word for word (`ocr/p17_300dpi_psm6.txt`, line 7); the 1993 `AGA.guide` retyping reads `bypass color table and 8 bit wide data appear on R(7:0).` The p. 4 lines are tagged `[2/3]`. The document is marked PRELIMINARY.
 - **`sol:AA-bplcon0.c19` is not graded.** Its claim, that scrolling and priority are unchanged under BYPASS, sits on `P6-I`, which prints NOT GRADED while BYPASS does nothing; the red rests on the table clause alone.
@@ -108,4 +108,4 @@ The question put to each: with an AA chip set and BPLCON0 bit 5 set, what reache
 
 ## Decision
 
-**One option: when the AA chip set is selected and BPLCON0 bit 5 is set, drive the red byte from the colour address instead of the table.** In `denise.v`, name the bit again, `bypass = bplcon0[5] & aga`, keep a copy of `clut_data` registered on `clk` so that it lines up with the table's output, which the instance's own comment says is `delayed by one clk28m clock cycle` (`:452`), and select it into the red byte of `out_rgb`, in place of the table's or the HAM generator's, while `bypass` is set; WinUAE turns HAM and EHB off under BYPASS. The page says nothing about green and blue; WinUAE shows the address on all three, and leaving them to the table is the other choice. This option has not been built or run here. On NanoMig the red byte is the video output, so the change puts colour addresses on the screen as red whenever software sets the bit.
+**One option: when the AA chip set is selected and BPLCON0 bit 5 is set, drive the red byte from the colour address instead of the table.** In `denise.v`, name the bit again, `bypass = bplcon0[5] & aga`, keep a copy of `clut_data` registered on `clk` so that it lines up with the table's output, which the instance's own comment says is `delayed by one clk28m clock cycle` (`:499`), and select it into the red byte of `out_rgb`, in place of the table's or the HAM generator's, while `bypass` is set; WinUAE turns HAM and EHB off under BYPASS. The page says nothing about green and blue; WinUAE shows the address on all three, and leaving them to the table is the other choice. This option has not been built or run here. On NanoMig the red byte is the video output, so the change puts colour addresses on the screen as red whenever software sets the bit.

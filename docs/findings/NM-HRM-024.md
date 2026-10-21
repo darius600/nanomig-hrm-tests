@@ -10,7 +10,7 @@
 | **Scope** | AUDxLCH's high field: all four channels at `agnus_audiodma` alone, which has no chipset input; channel 0 at the Agnus top with `ecs` at 0 and at 1; five bits latched in both; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 5 — Audio, printed pp. 139 and 145; Appendix A, printed p. 266; Appendix B, printed p. 290; Appendix C, printed pp. 298 and 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (47)</summary> `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`: `5-p139.c1`, `5-loc.c1`, p. 139; `5-sum.c1`, p. 145; `5-appA-p266.c5`, `5-appA-p266.c11`, `A-audxlc.c1`, `A-audxlch.w1`, p. 266; `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `5-appB-p290.c148`, `B-aud0lch.width`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c6`, p. 309; `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`: `5-p139.c1`, `5-loc.c1`, p. 139; `5-sum.c1`, p. 145; `5-appA-p266.c11`, `A-audxlc.c1`, p. 266; `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, p. 290; `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: `5-appA-p266.c5`, `A-audxlch.w1`, p. 266; `5-appB-p290.c148`, `B-aud0lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c6`, p. 309; green `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`: `5-appA-p266.c6`, `A-audxlch.w1`, p. 266; `5-appB-p290.c149`, `B-aud0lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c1`, `5-appC-p309.c2`, `5-appC-p309.c6`, `C-prose.c1`, `C-prose.lch`, p. 309. `TOP-LEVEL-LIVENESS` and `TEST-DATA-DELIVERY` carry no claim id </details> |
-| **Module** | `agnus_audiodma.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L80-L82) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82); inherited (MiSTer and TC64 have the same lines) |
+| **Module** | `agnus_audiodma.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_audiodma.v#L80-L82) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82); inherited (MiSTer and TC64 have the same lines) |
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer), two fixtures: `agnus_audiodma` alone, and the Agnus top, `agnus`, whose `ecs` input the fixture drives to 0 and to 1: `make -C hrm/ch5-audio-location-pointer test`; an expected red exits nonzero |
 | **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed: `agnus_audiodma` alone 9 passed, 1 failed; Agnus top 1 passed, 2 failed). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` (`agnus_audiodma` alone): bits 3 and 4 of AUDxLCH expected to have no effect, observed `0x40000` and `0x80000`. `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` (Agnus top, `ecs` 0): the same expectation, the same observed values. `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: AUD0LCH = $001F with AUD0LCL = $FFFF expected `0x3FFFF` at `ecs` 0 and `0xFFFFF` at `ecs` 1, observed `0xFFFFF` at both |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware: not measured |
@@ -40,7 +40,7 @@ Three is the OCS width, five is ECS: the width depends on the chipset.
 ## RTL and measurement
 
 NanoMig latches five bits, unconditionally
-([`agnus_audiodma.v#L80-L82`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L80-L82)):
+([`agnus_audiodma.v#L80-L82`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_audiodma.v#L80-L82)):
 
 ```verilog
     if (audlcena & ~reg_address_in[1]) // AUDxLCH
@@ -48,11 +48,11 @@ NanoMig latches five bits, unconditionally
 ```
 
 The module has no `ecs` port in its 157 lines. The Agnus top declares `ecs` at
-[`agnus.v:97`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L97)
+[`agnus.v:97`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L97)
 and connects it to the bitplane, sprite, Copper, blitter and beam-counter
-instances (e.g. [`agnus.v:369`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L369)),
+instances (e.g. [`agnus.v:369`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L369)),
 but the audio engine's instantiation,
-[`agnus.v:344-357`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L344-L357),
+[`agnus.v:344-357`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L344-L357),
 has ten connections and no `ecs`.
 
 The package reads the pointer at `address_out` (word address). `agnus_audiodma`
@@ -122,7 +122,7 @@ the word address written) are green, so the reds are not a dark fixture.
 
 The question and its closure are in the header. Read with
 [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md): the Copper
-([`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L144)),
+([`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L144)),
 the blitter (`BLTxPTH`) and audio all build the pointer from `data_in[4:0]` and
 `data_in[15:1]` with no chipset condition, so this is one decision not to model
 OCS pointer narrowing anywhere in Agnus. Two coherent actions:

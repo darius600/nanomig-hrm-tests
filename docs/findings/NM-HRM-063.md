@@ -10,7 +10,7 @@
 | **Scope** | the 8520's FLAG input and ICR bit 4 (FLG) as built into `ciab`, measured with `flag` held at 1 across a clocked ICR read (red) and with `flag` returned to 0 before the first read (control, passes); chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed p.341 (FLAG) and p.346 (ICR read clears), with p.245 (Chapter 8), p.334 and p.379 for the pin's polarity · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `PROP-FLAG-EDGE-POLARITY`: `opus:F-handshake.c6` / `sol:F-handshake.c7` (p.341); the assertion's message cites p.346, p.245, p.334 and p.379 without a claim id, and the control carries none |
-| **Module** | `cia_int.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_int.v#L57) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_int.v#L81); inherited |
+| **Module** | `cia_int.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_int.v#L57) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_int.v#L81); inherited |
 | **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments): `make -C hrm/appF-ciab-port-assignments test`; an expected red exits nonzero. `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-513`) is red at its second clocked ICR read; its control (`test_appF-ciab-port-assignments.cpp:761-779`) passes |
 | **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` — expected bit 4 and IR clear at the second read, observed `0x90` after the transition and `0x90` again after five more ticks with `flag` held (printed by `make test`); the package reports `7 passed, 3 failed` |
 | **Verdict of the four** | **unanimous, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all set the bit once per index pulse, on a transition — vAmiga and Copperline name it the pin's falling edge, the transition at which NanoMig's `flag` rises — and none of them from a held level. Hardware: not measured; the 8520R4 dissection, one revision, agrees with pp. 341 and 346 |
@@ -58,7 +58,7 @@ transition from a level. The clearing branch, eight lines up, is
 same cycle: a held level survives the read that p.346 says clears it.
 
 `flag` is 1 while INDEX\* is active and 0→1 is the negative transition. Its one
-driver is `index` (`minimig.v:647`, `paula_floppy.v:576`), one `clk7_en` cycle
+driver is `index` (`minimig.v:657`, `paula_floppy.v:576`), one `clk7_en` cycle
 wide (`agnus.v:485`, `agnus_beamcounter.v:374`), and CIA-A's `flag` is tied to
 `1'b0` (`ciaa.v:321`), so in NanoMig `flag` is never held and the bit is set
 once per pulse, as the page predicts.

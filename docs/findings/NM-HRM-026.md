@@ -10,7 +10,7 @@
 | **Scope** | unknown: the figure names no chip revision; measured on NanoMig's `paula_audio_channel` at the pinned revision, in the package's two legal-stimulus runs (one DMA-driven, one direct), reading `audio_state` inside the module |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 5 — Audio, printed p. 164 (the state prose) and p. 166 (Figure 5-8) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (24)</summary> claim ids by assertion, each of the eight reds carrying its own: `5-p164.c4`, `5-sm.c4` (p. 164); `5-p166.c1`, `F58.unused` (p. 166); `5-p164.c18`, `5-sm.c20` (p. 164); `5-p164.c9`, `5-sm.c11` (p. 164); `5-p164.c10`, `5-sm.c12` (p. 164); `5-p166.c6`, `F58.loop.percount` (p. 166); `5-sm.c8` (p. 164); `5-p166.c3`, `F58.t001_101` (p. 166). [NM-HRM-084](NM-HRM-084.md)'s four: `F58-LENCOUNT-STARTUP-ARCS`: `F58.t001_101`, `F58.t101_010` (p. 166); `5-p166.c4`, `F58.t101_010` (p. 166); `5-p164.c23`, `5-p164.c24`, `5-sm.c25` (p. 164); `5-p164.c28`, `5-sm.c29` (p. 164) </details> |
-| **Module** | `paula_audio_channel.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L242-L246) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246); inherited |
+| **Module** | `paula_audio_channel.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L242-L246) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246); inherited |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state): `make -C hrm/ch5-audio-channel-state test`; the expected reds exit nonzero |
 | **Assertions** | 8 red of 43 graded (31 passed, 12 failed), all reading `audio_state` inside the module: `5-p164.c4` and `5-p166.c1`, expected 100, 110 and 111 all return to 000, observed 100 → 0, 110 → 6, 111 → 0: 110 is the RTL's live loop state, `AUDIO_STATE_4`; `5-p164.c18`, expected discard state 101, observed 3; `5-p164.c9`, expected the lower byte (0x44) output in state 011, observed `sample = 0x0`; `5-p164.c10`, expected the `010 → 011 → 010` loop, observed destination 6; `5-p166.c6`, expected `percount` self-loops in 010 and 011, observed both self-loops, the low-byte one in the code that measures 6, not 011; `5-sm.c8`, expected main loop 010 and 011, observed 010 and 6; `5-p166.c3`, expected the 001 exit to reach 101, observed 3. The other four reds are [NM-HRM-084](NM-HRM-084.md)'s |
 | **Verdict of the four** | **all four use the figure's own numbering**, `101` included. Hardware: not measured |
@@ -36,7 +36,7 @@ state encoding. **Printed p. 164**, of the main loop:
 
 ## RTL and measurement
 
-[`paula_audio_channel.v#L242-L246`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L242-L246):
+[`paula_audio_channel.v#L242-L246`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L242-L246):
 
 ```verilog
 parameter AUDIO_STATE_0 = 3'b000;
@@ -63,7 +63,7 @@ The assertions at the ports, on `sample`, `dmareq`, `dmas` and `intreq`, are
 green but for two, which are [NM-HRM-084](NM-HRM-084.md)'s: in the state NanoMig
 codes `3'b011`, the figure's 101, the word after the thrown-away one counts the
 length down,
-[`paula_audio_channel.v#L358`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L358),
+[`paula_audio_channel.v#L358`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L358),
 `lencount = ~lenfin;`, where the figure's bracket on that arc prints no lencount.
 With AUDxLEN = 4, no restart on `dmas` comes between the arrivals of offsets 2 and 3,
 and no interrupt on `intreq` from offset 3's arrival to the next pass's first word

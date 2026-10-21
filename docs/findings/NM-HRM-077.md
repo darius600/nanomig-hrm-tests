@@ -10,7 +10,7 @@
 | **Scope** | CIA-A's PC output and FLAG input as p. 351 assigns them to the parallel port, with a parallel device attached; NanoMig has no parallel connector (no HDL or pin-constraint file in its tree names one). CIA-B is outside it: p. 351 marks its PC `not used` and `ciab`'s FLAG is wired to the disk index. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 345 and 351 (Port Signal Assignments); Appendix E — I/O Connectors and Interfaces, printed pp. 319, 324, 337; 8 — Interface Hardware, printed p. 259 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `CHIP-CAPABILITIES-FIVE` carries `opus:F-intro.c3` (p. 339); `CONTROL-CAPABILITIES-CORE` carries none. Claims classified absent and carried by no assertion: `sol:F-signals.c30`, `sol:F-signals.c31`, `opus:F-portsig.c26`, `opus:F-portsig.c27` (CIA-A's PC and FLAG, p. 351) and `sol:F-overview.c6` (p. 339's output pulse pin). `opus:F-portsig.c47` (p. 351, CIA-B's "PC...not used") is declined on `integration/appF-cia-system`'s RECORDED line. `sol:F-overview.c7` (p. 339's edge detection input) is graded green on `ciab` by `PROP-FLAG-EXISTS` |
-| **Module** | `ciaa.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L321) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L357); inherited (MiSTer has the same code, and so has TC64) |
+| **Module** | `ciaa.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L321) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L357); inherited (MiSTer has the same code, and so has TC64) |
 | **Test** | No package grades it: `ciaa` has no pin at which a test could look, and only a device on the parallel port, which NanoMig does not have, could see the difference. [`hrm/appF-cia-register-map`](../../hrm/appF-cia-register-map) records `CHIP-CAPABILITIES-FIVE` as a RECORDED line, not an assertion (`test_appF-cia-register-map.cpp:1292-1308`): `make -C hrm/appF-cia-register-map test`. |
 | **Assertions** | none: `hrm/appF-cia-register-map` reads `22 passed, 0 failed`, with `CHIP-CAPABILITIES-FIVE` recorded, not graded. Its control, `CONTROL-CAPABILITIES-CORE`, green, grades the three capabilities `ciaa` has, 16 pins, the serial register and three timers, from constants the test writes; neither line reads the fixture |
 | **Verdict of the four** | **split, two and two, along whether they attach a parallel device — and with nothing attached all four read as NanoMig does.** Copperline pulses CIA-A's PC on every port-B read or write, hands the pulse to the attached device as its strobe, and feeds the device's acknowledge into CIA-A's FLAG as a falling edge; WinUAE sets CIA-A's FLAG after each port-B write when a printer or a host parallel port is configured, strobing the host port, and again when the host port's ACK goes active; its parallel-port SCSI adapter raises the same acknowledge. vAmiga and Denise have no PC output and never set CIA-A's FLAG: in both, the FLAG input their CIA model has is driven only by the floppy index, on CIA-B. Hardware: not measured |
@@ -103,7 +103,7 @@ use.
 **`ciaa` has no pin on which a pulse could leave after a port-B access, and no
 pin on which an acknowledge could arrive.** Its outputs are the data bus, the
 interrupt, four port-A lines and the freeze key —
-[`src/minimig-aga/ciaa.v#L91-L102`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L91-L102):
+[`src/minimig-aga/ciaa.v#L91-L102`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L91-L102):
 
 ```verilog
 	output [7:0] data_out,      // bus data out
@@ -116,7 +116,7 @@ interrupt, four port-A lines and the freeze key —
 ```
 
 and its interrupt controller's FLAG input is a constant —
-[`src/minimig-aga/ciaa.v#L321`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L321):
+[`src/minimig-aga/ciaa.v#L321`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L321):
 
 ```verilog
   .flag(1'b0),
@@ -125,27 +125,27 @@ and its interrupt controller's FLAG input is a constant —
 The interrupt controller sets the FLG bit from nothing else, on a read and
 between reads:
 
-- [`src/minimig-aga/cia_int.v#L49`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_int.v#L49), `icr[4] <= flag;`
-- [`src/minimig-aga/cia_int.v#L57`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_int.v#L57), `icr[4] <= icr[4] | flag;`
+- [`src/minimig-aga/cia_int.v#L49`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_int.v#L49), `icr[4] <= flag;`
+- [`src/minimig-aga/cia_int.v#L57`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_int.v#L57), `icr[4] <= icr[4] | flag;`
 
 so bit 4 of CIA-A's ICR is 0 for good, whatever the mask says.
 
 The module's own list of what it leaves out names port B and the PB6/PB7 timer
 outputs, and neither PC nor FLAG:
 
-- [`src/minimig-aga/ciaa.v#L23-L27`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L23-L27), `// port B for CIA A` … `// toggling of PB6/PB7 by timer A/B`
+- [`src/minimig-aga/ciaa.v#L23-L27`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L23-L27), `// port B for CIA A` … `// toggling of PB6/PB7 by timer A/B`
 
 CIA-B is built differently: it declares a FLAG input, which the top level
 drives from the disk index — p. 351's CIA-B assignment:
 
-- [`src/minimig-aga/ciab.v#L17`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v#L17), `input   flag,         // flag (set FLG bit in ICR register)`
-- [`src/minimig-aga/minimig.v#L647`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L647), `.flag(index),`
+- [`src/minimig-aga/ciab.v#L17`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciab.v#L17), `input   flag,         // flag (set FLG bit in ICR register)`
+- [`src/minimig-aga/minimig.v#L657`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L657), `.flag(index),`
 
 **Nothing in the tree is a parallel device.** CIA-A's port B reads the two
 extra joystick inputs, the four-player adapter that plugs into the parallel
 connector and uses neither handshake line:
 
-- [`src/minimig-aga/minimig.v#L624`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L624), `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]}),`
+- [`src/minimig-aga/minimig.v#L634`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L634), `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]}),`
 
 The top level's port list carries no printer or Centronics signal, and no HDL
 or pin-constraint file in NanoMig's tree, the board top levels included,

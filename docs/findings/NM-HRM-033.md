@@ -10,7 +10,7 @@
 | **Scope** | `agnus_beamcounter` at the pinned NanoMig revision; NTSC (`pal=0`), `ecs=1`, VPOSR bit 7 sampled over four consecutive lines, one fresh model per leg. Chip revision: unknown. PAL and other modes: not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 7 — System Control, Appendix C, printed p. 305 (BEAMCON0 bit table, bit 11) and p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` and the note `P6-COMBINATION-MEASURED` carry `sol:7-appC-beamcon0.c6` / `opus:7-appC-beamcon0.c6` (p. 305); `sol:7-appC-loldis.c1` / `opus:7-appC-beamcon0.c21` (p. 309) are carried by a recorded line of the package, not by an assertion |
-| **Module** | `agnus_beamcounter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L295-L297) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L284); inherited (MiSTer and TC64 have the same code) |
+| **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L295-L297) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L284); inherited (MiSTer and TC64 have the same code) |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits): `make -C hrm/ch7-beamcon0-ecs-control-bits test`; the expected red exits nonzero |
 | **Assertions** | `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` — red: expected the toggle to stop with LOLDIS alone, observed it still toggles. The package totals 8 passed, 4 failed; this page grades only the P6 assertion. The two-bit measurement beside it is `P6-COMBINATION-MEASURED`, a `note()` (control toggles; LOLDIS + VARBEAMEN frozen) |
 | **Verdict of the four** | **all four implement LOLDIS on its own**; NanoMig is alone in also requiring VARBEAMEN. Hardware: not measured |
@@ -34,7 +34,7 @@ Neither sentence names a second condition. Setting bit 11 disables the toggle.
 ## RTL and measurement
 
 The freeze is gated on two bits, LOLDIS and VARBEAMEN — `if (pal || (loldis && varbeamen)) long_line <= 1'b0; else if (!(loldis && varbeamen)) long_line <= ~long_line;`
-([`agnus_beamcounter.v#L292-L300`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L292-L300)).
+([`agnus_beamcounter.v#L292-L300`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L292-L300)).
 
 Measured, VPOSR's LOL bit over four consecutive lines:
 

@@ -10,7 +10,7 @@
 | **Scope** | The payload path (`data_odd` / `data_even`) of NanoMig's `paula_floppy.v` at the pinned revision, read at DSKDATR pop #33, the first payload word, for uniform fed bytes `0xFF`, `0x00` and `0x80`; chip revision unknown. The header path is read from the RTL, not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.250 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `A1-MFM-DOUBLES-SIZE`: `opus:8-mfm.c1` / `sol:8-mfm.c1`; `A2-MFM-ONE-ENCODES-01`: `opus:8-mfm.c2` / `sol:8-mfm.c2`; `A3-MFM-ZERO-AFTER-ZERO-ENCODES-10`: `opus:8-mfm.c3` / `sol:8-mfm.c3`; `A4-MFM-ZERO-AFTER-ONE-ENCODES-00`: `opus:8-mfm.c4` / `sol:8-mfm.c4`; the `A0` liveness note carries no claim id |
-| **Module** | `paula_floppy.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L467-L477); MiSTer and TC64 have no counterpart in RTL; NanoMig's own |
+| **Module** | `paula_floppy.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L467-L477); MiSTer and TC64 have no counterpart in RTL; NanoMig's own |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding): `make -C hrm/ch8-mfm-cell-encoding test`; an expected red exits nonzero |
 | **Assertions** | 2 red of 4 graded (`2 passed, 2 failed`): `A2-MFM-ONE-ENCODES-01` — expected cell `01`, observed `11` (uniform `0xFF`, word `0xFFFF`); `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` — expected `00`, observed `10` (uniform `0x80`, word `0xEAEA`). `A1-MFM-DOUBLES-SIZE` and `A3-MFM-ZERO-AFTER-ZERO-ENCODES-10` are green; A3 is green by coincidence |
 | **Verdict of the four** | **unanimous against.** All four implement the page's three rules exactly, and all four carry the previous data bit across the word or byte boundary to do it. Denise prints the manual's table as the comment above its encoder. Hardware: not measured; real Paula does not encode MFM |
@@ -40,10 +40,10 @@ first rule, `1 -> 01`, carries no condition at all.
 ## RTL and measurement
 
 The payload path emits a clock bit of `1` for every data bit
-([`:467-477`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L467-L477),
+([`:467-477`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L467-L477),
 `data_odd` and `data_even`: `{1'b1, fd_dma_buf_out[15], 1'b1, fd_dma_buf_out[13], ...}`).
 The sector header path above it emits `0` instead
-([`mfm_encoder_odd` / `mfm_encoder_even`, :453-462](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L453-L462)).
+([`mfm_encoder_odd` / `mfm_encoder_even`, :453-462](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L453-L462)).
 Neither reads the previous bit, and the file says so twice: *"Clock bits are
 always zero just like minimig firmware did"* (:440-441) and *"minimig sets the
 clock bits to zero for the header and to one for the sector data"* (:451-452).

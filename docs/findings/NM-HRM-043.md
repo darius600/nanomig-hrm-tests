@@ -10,7 +10,7 @@
 | **Scope** | DSKPTH written at the `agnus` boundary with the `ecs` port at 0 and at 1, read back as the pointer the disk DMA slot drives; the page names no chip revision, so `unknown` |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix B, printed p.289 (DSKPTH and DSKPTL rows) and p.288 (the `(E)` mark); p.270 and p.266 are named for comparison · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `P4` `sol:8-appb-dskpth.c8` (p.289 composed with p.288), `P5` `sol:8-appb-dskpth.c9` (p.289), `P2` `opus:8-appB-dskpth.c6` (p.289), `P3` `opus:8-appB-dskpth.c7` / `sol:8-appb-dskpth.c10` (p.289), `P1` `sol:8-appa-dskptr.c3` (p.279, graded on [NM-HRM-044](NM-HRM-044.md)); `LIVENESS` and `COPLIVE` carry no claim id |
-| **Module** | `agnus_diskdma.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56); inherited (byte-identical in MiSTer and TC64) |
+| **Module** | `agnus_diskdma.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56); inherited (byte-identical in MiSTer and TC64) |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper): `make -C hrm/ch8-disk-pointer-ecs-and-copper test` · [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer): `make -C hrm/ch8-disk-dma-pointer test`; an expected red exits nonzero |
 | **Assertions** | 2 red of this page: `P4` expected the same `DSKPTH` write of `0x0018` to load differently at `ecs` 0 and 1, observed no difference; `P5` expected bits 4:3 clear after `0x001F` at `ecs` 0, observed them set. The package reports `4 passed, 3 failed`: the third red, `P1`, is graded on [NM-HRM-044](NM-HRM-044.md); `P2`, `P3`, `LIVENESS` and `COPLIVE` are green |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE ([`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623)) and vAmiga ([`Memory.cpp:1621-1623`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1621-L1623)) mask the address the DMA drives, by Agnus revision. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Here Copperline's has a test naming DSKPT explicitly. Hardware: not measured |
@@ -44,24 +44,24 @@ between the two chipsets.
 assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};
 ```
 
-[`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56)
+[`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_diskdma.v#L56)
 loads five bits, always, from a module with no chipset input; the blitter's
 line loads its pointer with the same expression. The pointer sites of six
 engines take their high bits from `data_in[4:0]` with no `ecs` term:
 
 | engine | line |
 |---|---|
-| audio | [`agnus_audiodma.v:82`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L82) |
-| bitplane | [`agnus_bitplanedma.v:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L220) |
-| blitter | [`agnus_blitter_adrgen.v:62`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter_adrgen.v#L62) |
-| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L161) |
-| **disk** | [`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) |
-| sprite | [`agnus_spritedma.v:179`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_spritedma.v#L179) |
+| audio | [`agnus_audiodma.v:82`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_audiodma.v#L82) |
+| bitplane | [`agnus_bitplanedma.v:220`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L220) |
+| blitter | [`agnus_blitter_adrgen.v:62`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter_adrgen.v#L62) |
+| Copper | [`agnus_copper.v:144`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L144) and [`:161`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L161) |
+| **disk** | [`agnus_diskdma.v:56`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_diskdma.v#L56) |
+| sprite | [`agnus_spritedma.v:179`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_spritedma.v#L179) |
 
 `agnus.v` threads `ecs` to `agnus_bitplanedma`, `agnus_spritedma`, `agnus_copper`,
 `agnus_blitter` and `agnus_beamcounter`, and none of them uses it for a pointer.
 `agnus_diskdma` and `agnus_audiodma` have no such port:
-[`agnus.v:326-340`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L326-L340)
+[`agnus.v:326-340`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L326-L340)
 instantiates the disk engine with twelve connections and no `ecs`.
 
 The test measures at the `agnus` boundary, where `ecs` is a drivable port, not at

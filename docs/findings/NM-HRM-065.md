@@ -10,7 +10,7 @@
 | **Scope** | `cpu_wrapper`'s AUTOCONFIG write path with `cfg_z3` set, in the Zorro II configuration block `$E8xxxx`; the package builds with `ENABLE_RAM32` and drives `cpucfg` and `fastramcfg` at the module's ports; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 435 and 436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `sol:K-0844` and `opus:K-0881` (p. 436, register 48 configures in the Zorro II block); both graded assertions carry a claim id, and the package's other six reds are register 4C and carry none of this page's |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:639-664`, the AUTOCONFIG write path — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L639-L664) at the pinned revision; inherited (MiSTer has the same code, and TC64's own module behaves the same) |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:639-664`, the AUTOCONFIG write path — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_wrapper.v#L639-L664) at the pinned revision; inherited (MiSTer has the same code, and TC64's own module behaves the same) |
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address): `make -C hrm/appK-autoconfig-base-address test`, and its fx68k build `make -C hrm/appK-autoconfig-base-address-fx68k test`; an expected red exits nonzero |
 | **Assertions** | 2 red, the same two in both builds: `sol:K-0844` and `opus:K-0881`, expected register 00 to read 0x0 (configured) after a write to register 48 with `cfg_z3` set, observed raw 0xA; the package reports `5 passed, 8 failed`, and an inverse control turns green for a Zorro II board on the identical write |
 | **Verdict of the four** | **two of four do exactly what NanoMig does; the other two have no Zorro III board to disagree with**. Hardware: not measured |
@@ -84,7 +84,7 @@ gives the same two reds and the same control.
   icesugar-pro and both MiSTle targets (elsewhere it is wired to 0,
   `cpu_wrapper.v:535-540`), and it needs `fastramcfg_d[2]`, whose source bit every board top ties low:
   `wire [2:0] fastram_config = { 1'b0, osd_fastmem };`
-  ([`src/mistle/gw5a_25/top.sv:494`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/mistle/gw5a_25/top.sv#L494)
+  ([`src/mistle/gw5a_25/top.sv:495`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/mistle/gw5a_25/top.sv#L495)
   and the same line in every other top). The package reaches the path at the
   module's own ports.
 - That NanoMig is at fault, or that anything breaks, is not shown: nothing here

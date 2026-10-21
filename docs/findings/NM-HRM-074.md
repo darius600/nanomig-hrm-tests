@@ -10,7 +10,7 @@
 | **Scope** | 8520 as printed in Appendix F; the toggle and pulse outputs of timers A and B on PB6 and PB7 with PBON set. Graded on CIA-B only: CIA-A's PRB read never shows a driven level ([NM-HRM-054](NM-HRM-054.md)). The netlist evidence is the 8520R4 dissection, one revision |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 342, 348, 349, 350, 351, 352, 354; Appendix E, printed p. 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (27)</summary> claims by assertion: `PROP-CRA-PBON`: `sol:F-cra.c4`, `opus:F-cra.c4`, and `PROP-CRA-OUTMODE`: `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348); `P1-MAIN-CRA`: `sol:F-cra.c17` (p. 349); `P1-MAIN-CRB`: `sol:F-crb.c3`, `opus:F-crb.c2` (p. 349) and `sol:F-crb.c14` (p. 350); `P1-MAIN`: `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12` (p. 342) and `opus:F-ports.c7`, `sol:F-ports.c7` (p. 341); `P2-TOGGLE`: `opus:F-timers.c14` (p. 342); `P10-sol:F-timers.c13`: `sol:F-timers.c13` (p. 342); `P10-opus:F-timers.c12`: `opus:F-timers.c12`, `opus:F-timers.c13` (p. 342); `P10-sol:F-cra.c16`: `sol:F-cra.c16` (p. 349); `P10-opus:F-crb.c3`: `opus:F-crb.c3`, `sol:F-crb.c4`, `sol:F-crb.c13` (pp. 349, 350); `P10-opus:F-cra.c12`: `opus:F-cra.c12` (p. 349); `P10-opus:F-cra.c13`: `opus:F-cra.c13` (p. 349); `P10-opus:F-crb.c13`: `opus:F-crb.c13` (p. 350); `P10-opus:F-crb.c14`: `opus:F-crb.c14` (p. 350); `P10-opus:F-timers.c6`: `opus:F-timers.c6`, `sol:F-timers.c8` (p. 341); `P2-LEGR`, `P2-MAIN`, `P2-LEGH`, `P3`, `P4`, `P9-LEGF-TRANSITIONS` and `P9-LEGW` carry no claim id</details> |
-| **Module** | `cia_timera.v`, `cia_timerb.v`, `ciab.v`, `ciaa.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L39-L40) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L54-L55); inherited (NanoMig's `src/minimig-aga/ciaa.v:23-27` declares it: `// NOT implemented is:` ... `// toggling of PB6/PB7 by timer A/B`; MiSTer's `cia_timera.v:54-55` says `// Bit 1: PBON - PB6 output mode (not implemented in simplified version)`; TC64 carries the same statements) |
+| **Module** | `cia_timera.v`, `cia_timerb.v`, `ciab.v`, `ciaa.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L39-L40) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L54-L55); inherited (NanoMig's `src/minimig-aga/ciaa.v:23-27` declares it: `// NOT implemented is:` ... `// toggling of PB6/PB7 by timer A/B`; MiSTer's `cia_timera.v:54-55` says `// Bit 1: PBON - PB6 output mode (not implemented in simplified version)`; TC64 carries the same statements) |
 | **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments): `make -C hrm/appF-ciab-port-assignments test`; [`integration/appF-cia-system`](../../integration/appF-cia-system): `make -k -C integration/appF-cia-system test`. An expected red exits nonzero; `-k` lets the second core run after the first one's red |
 | **Assertions** | `hrm/appF-ciab-port-assignments`: 7 passed, 3 failed; red here are `PROP-CRA-PBON` and `PROP-CRA-OUTMODE` (the third red is [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 98 passed, 26 failed on each core, the same lines on both; eleven of the 26 are this finding's, each graded on CIA-B only: `P1-MAIN-CRA`, `P1-MAIN-CRB`, `P1-MAIN`, `P2-TOGGLE` (with its component lines `P2-LEGR`, `P2-MAIN`, `P2-LEGH`), `P3`, `P4`, `P9-LEGF-TRANSITIONS` and `P9-LEGW`. Expected: bit 6 or 7 of a PRB read carries the timer output; observed: it carries what DDRB and the data register give. Of the other 15 reds, nine are claim rows red through these lines: `P10-sol:F-timers.c13`, `P10-opus:F-timers.c12`, `P10-sol:F-cra.c16`, `P10-opus:F-crb.c3`, `P10-opus:F-cra.c12`, `P10-opus:F-crb.c13`, `P10-opus:F-timers.c6`, and `P10-opus:F-cra.c13` and `P10-opus:F-crb.c14`, which are also red through lines of [NM-HRM-078](NM-HRM-078.md), `P10-opus:F-cra.c13` also through `P7.6-CIAB`; the other six are [NM-HRM-078](NM-HRM-078.md)'s three lines and two claim rows and `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)) |
 | **Verdict of the four** | **unanimous against NanoMig on PBON; split on p. 342's toggle and pulse clauses, which the silicon follows and none of the four follows in full.** WinUAE, vAmiga, Denise and Copperline all put a timer output on PB6 or PB7 when PBON is set, chosen by OUTMODE; none leaves the two bits without effect. vAmiga and Denise pulse high for one cycle, WinUAE shows 0 in pulse mode and Copperline pulses low; vAmiga, Denise and Copperline invert the toggle at each underflow, where WinUAE shows the START bit; Denise's and Copperline's toggle is high after reset, and Copperline's is not set on a start; vAmiga's CIA-B lets DDRB keep an input line at its pull-up. Outside the emulators, the 8520R4 dissection's netlist gives a positive pulse, a toggle low after RES, high after a start and inverted at every underflow, and a line driven while PBON or the DDRB bit is set, as p. 342 does — see *What other Commodore documents say*. Hardware: not measured |
@@ -87,50 +87,50 @@ port output and says nothing about it.
 
 **The two bits are latched with the rest of the control register and read
 back, and nothing else reads them.** Timer A's control register loads at
-[`src/minimig-aga/cia_timera.v#L39-L40`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L39-L40),
+[`src/minimig-aga/cia_timera.v#L39-L40`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L39-L40),
 `tmcr[6:0] <= {data_in[6:5],1'b0,data_in[3:0]};`.
 The only bits the module uses are 0, 3 and 6 —
-[`#L52-L54`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L52-L54),
+[`#L52-L54`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L52-L54),
 `assign oneshot = tmcr[3];`, `assign start = tmcr[0];`,
 `assign spmode = tmcr[6];` — and the whole register goes back out on a read,
-[`#L106-L108`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L106-L108),
+[`#L106-L108`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L106-L108),
 `| ({8{~wr&tcr}} & {1'b0,tmcr[6:0]});`. The underflow leaves the module only as
 the interrupt and as timer B's count input,
-[`#L99-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L99-L103),
+[`#L99-L103`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L99-L103),
 `assign tmra_ovf = underflow;` and `assign irq = underflow;`; in CIA-A,
 `tmra_ovf` also clocks the serial port's output,
-[`ciaa.v#L213`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L213). There is no toggle
+[`ciaa.v#L213`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L213). There is no toggle
 flip-flop, no pulse, and no output port for either.
 `cia_timerb.v` is the same: it stores the register at
-[`#L38-L39`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L38-L39),
+[`#L38-L39`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L38-L39),
 uses bits 0, 3 and 6 at
-[`#L31`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L31),
+[`#L31`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L31),
 `assign count = tmcr[6] ? tmra_ovf : eclk;`, and
-[`#L51-L52`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L51-L52),
+[`#L51-L52`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L51-L52),
 `assign oneshot = tmcr[3];` / `assign start = tmcr[0];`, and reads it back at
-[`#L101-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L101-L103).
+[`#L101-L103`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerb.v#L101-L103).
 
 **Port B is the data register through DDRB, with no timer term.** CIA-B's one
 driver of the port and its PRB read, at
-[`src/minimig-aga/ciab.v#L153-L164`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v#L153-L164),
+[`src/minimig-aga/ciab.v#L153-L164`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciab.v#L153-L164),
 return `portb_out` on a PRB read and `ddrportb` on a DDRB read, and
 `assign portb_out[7:0] = (~ddrportb[7:0]) | regportb[7:0];` has no timer term.
 `portb_out` is what the floppy sees as MTR*, SEL3* to SEL0*, SIDE*, DIR and
 STEP*,
-[`src/minimig-aga/minimig.v#L650`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L650),
+[`src/minimig-aga/minimig.v#L660`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L660),
 `.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})`, so with PBON
 set neither the program nor the drive sees a timer on PB6 or PB7.
 
 CIA-A has no port-B data register at all ([NM-HRM-054](NM-HRM-054.md)); a PRB
 read returns `portb_in`,
-[`src/minimig-aga/ciaa.v#L293-L294`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L293-L294),
+[`src/minimig-aga/ciaa.v#L293-L294`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L293-L294),
 `pb_out[7:0] = portb_in[7:0];`, which is joystick adapter ports 3 and 4,
-[`src/minimig-aga/minimig.v#L624`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L624),
+[`src/minimig-aga/minimig.v#L634`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L634),
 and NanoMig's top level ties those to their idle level,
-[`src/nanomig.v#L1373-L1374`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1373-L1374),
+[`src/nanomig.v#L1385-L1386`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1385-L1386),
 `wire [15:0] JOY2 = 16'h0000;` / `wire [15:0] JOY3 = 16'h0000;`, inverted into
 `_joy3` and `_joy4`. The file's own header lists the gap —
-[`src/minimig-aga/ciaa.v#L23-L27`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L23-L27):
+[`src/minimig-aga/ciaa.v#L23-L27`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L23-L27):
 
 ```verilog
 // NOT implemented is:
@@ -391,7 +391,7 @@ flip-flop cleared by `reset`, set on every rising edge of `tmcr[0]`, and
 inverted on every `underflow`, whatever `tmcr[1]` holds. A rising edge of
 `tmcr[0]` covers a control-register write that starts a stopped timer and the
 one-shot start a timer-high write makes,
-[`cia_timera.v#L41-L42`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L41-L42),
+[`cia_timera.v#L41-L42`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timera.v#L41-L42),
 `else if (thi_load && oneshot)` / `tmcr[0] <= 1'd1;`, and leaves out a
 START = 1 write to a running timer, as the dissection's edge detector does.
 Beside it, a pulse output that is `underflow` held high for one `eclk` count;

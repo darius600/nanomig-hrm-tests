@@ -10,7 +10,7 @@
 | **Scope** | Paula's read of `$002` in `paula.v`; the one dissected Paula is the 8364R7; no other revision and no hardware read measured here |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 278, and Appendix B, printed p. 289 (key on p. 287), DMACONR chip column; test chapter 5 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `DMACONR-NOT-DECODED-BY-PAULA`: `5-appA-p278.c7`, `5-appB-p289.c3`, `A-dmaconr.chip`, pp. 278 and 289; no other assertion of the package is part of this finding |
-| **Module** | `paula.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v); inherited |
+| **Module** | `paula.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v); inherited |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon): `make -C hrm/ch5-audio-dmacon-adkcon test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `DMACONR-NOT-DECODED-BY-PAULA`: expected the `$002` read through `paula.v` to change after `DMACON = 0x8203`, observed `0x0`, equal to the idle read `0x0`; the package reports `19 passed, 2 failed`, and the other red is not this finding's |
 | **Verdict of the four** | **three of four with NanoMig, and the fourth cannot answer**: vAmiga (`Memory.cpp:2411-2412`), Denise (`agnus/register.cpp:64-65`) and Copperline (`custom_regs.rs:12-27`) keep Paula apart from Agnus and read `$002` from Agnus's DMACON alone, while routing `ADKCONR` at `$010` to Paula; WinUAE has one `DMACONR()` for the whole chip set (`custom.cpp:7048`) and no separate Paula to ask. Hardware: the dissected 8364R7 gives Paula's DMACON copy no read path |
@@ -43,9 +43,9 @@ test takes the first reading: that Paula is one of the chips answering a read of
 `paula.v` decodes `DMACON $096`, `ADKCON $09E` and `ADKCONR $010`; there is no
 `DMACONR` decode. `data_out` is the OR of the UART, interrupt, disk and `ADKCONR`
 sources only
-([`paula.v:152`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L152)).
+([`paula.v:157`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L157)).
 Agnus answers the read, from its own copy of DMACON and the blitter's status
-([`agnus.v:280-283`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L280-L283)):
+([`agnus.v:280-283`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L280-L283)):
 
 ```verilog
 always @(*) begin
@@ -68,7 +68,7 @@ The value never changes: Paula is not driving that address.
   contradicted by the dissected 8364R7 and by every implementation that
   separates the chips. As **which chips hold the register**, it is right for
   NanoMig too: `paula.v` keeps its own copy of DMACON, written at `$096`
-  ([`paula.v:164`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L164)),
+  ([`paula.v:169`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L169)),
   as the dissected die's section 6ab does.
 - The dissection covers one revision, the 8364R7; no other revision and no
   hardware read of `$002` is measured.

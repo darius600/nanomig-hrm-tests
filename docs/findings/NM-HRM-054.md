@@ -10,7 +10,7 @@
 | **Scope** | CIA-A port B, CIAAPRB with CIAADDRB, all eight bits, with the port B lines released (`portb_in` = $FF) and nothing driving them; port A's PA0 passes the same comparator (`CONTROL-PA0-OUTPUT`). Chip revision: unknown |
 | **Software impact** | Unreal and "some trainer", named by the comment at `minimig.v:136` ("added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data") as needing the register that `ciaa.v:267` now leaves commented out; no test here runs either program, so the result is unknown |
 | **Chapter** | 8 — Interface Hardware, printed p.259; Appendix E, printed p.324; Appendix F, printed pp.341 and 354 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `PROP-1`: `opus:8-par.c1`, `sol:8-par.c1`, p.259; `PORTB-DIRECTION`: `sol:E-parallel.c69`, `sol:E-parallel.c70`, `sol:E-parallel.c71`, `sol:E-parallel.c72`, `sol:E-parallel.c73`, `sol:E-parallel.c74`, `sol:E-parallel.c75`, `sol:E-parallel.c76`, `opus:E-parallel-iface.c10`, p.324 (the same nine on the green `PORTB-WIDTH`); `PORTB-RELEASED-CONTROL` (pp.341, 354) and `P1-PRE1.4/O1` (p.341) carry no claim id; `CONTROL-PA0-OUTPUT` and each package's `FIXTURE-LIVE` carry neither a claim id nor a page |
-| **Module** | `ciaa.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279); MiSTer has no `regportb` and TC64's is live but reaches nothing, the read mux the same in all three; inherited |
+| **Module** | `ciaa.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L267-L279); MiSTer has no `regportb` and TC64's is live but reaches nothing, the read mux the same in all three; inherited |
 | **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction): `make -C hrm/ch8-parallel-port-direction test`; [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa): `make -C hrm/appDE-parallel-port-ciaa test`; [`integration/appF-cia-system`](../../integration/appF-cia-system): `make -k -C integration/appF-cia-system test`. An expected red exits nonzero |
 | **Assertions** | 2 red, each red at all eight bit positions, expected: a written 0 reads back 0 at bit n, a written 1 reads back 1; observed: 1 after the 0 and 1 after the 1. `PROP-1`, 1 of 4 in `hrm/ch8-parallel-port-direction` (`3 passed, 1 failed`), and `PORTB-DIRECTION`, 1 of 4 in `hrm/appDE-parallel-port-ciaa` (`3 passed, 1 failed`). Green in the same runs: `PORTB-RELEASED-CONTROL` in both and `CONTROL-PA0-OUTPUT` in ch8. `integration/appF-cia-system` records it, not graded: for CIA-A, `P1-PRE1.4/O1` prints a RECORDED line, not a FAIL, and CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause |
 | **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask. Hardware: not measured; the 6502.org dissection of one 8520 revision draws a PRB latch beside the DDRB latch |
@@ -48,7 +48,7 @@ of a released line.
 ## RTL and measurement
 
 CIA-A's port B has the DDR and no PR: the write block is commented out in full
-([`ciaa.v#L267-L279`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279)),
+([`ciaa.v#L267-L279`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L267-L279)),
 
     //reg [7:0] regportb;          // ciaa.v:267 -- commented out
     reg [7:0] ddrportb;            // ciaa.v:268 -- real
@@ -57,7 +57,7 @@ so a write to CIAAPRB is stored nowhere, and the PRB read mux at `:293-294`
 returns `portb_in[7:0]` without consulting `ddrportb`, which is correctly written
 and read back at its own address (`:268`, `:282-288`, `:296`). `ciaa`'s own
 `portb_out` wire (`:114`) is declared, never assigned and never read, and the
-module has no such output port; the `.portb_out(...)` at `minimig.v:650` belongs
+module has no such output port; the `.portb_out(...)` at `minimig.v:660` belongs
 to `ciab`.
 
 Two unit packages build `ciaa.v` alone and use the same comparator
@@ -114,10 +114,10 @@ timer-B one (DDRB = $BF, data $15 and then $95). On both cores:
 The same line is one PASS over CIA-B's two instances, where d1 and o1c read $BB
 and $FB (timer A) and $7B and $FB (timer B): the data bit, 0 and then 1. $FF is
 what CIA-A's port B inputs carry here: `nanomig.v` ties joysticks 3 and 4 to
-zero, [`wire [15:0] JOY2 = 16'h0000;`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1373-L1374)
+zero, [`wire [15:0] JOY2 = 16'h0000;`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1373-L1374)
 and the same for `JOY3`, and passes both to the chipset inverted,
-[`._joy3 (~JOY2 ),` and `._joy4 (~JOY3 ),`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1505-L1506),
-so the eight joystick-adapter lines `minimig.v:624` routes into CIA-A's port B
+[`._joy3 (~JOY2 ),` and `._joy4 (~JOY3 ),`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/nanomig.v#L1554-L1555),
+so the eight joystick-adapter lines `minimig.v:634` routes into CIA-A's port B
 are all 1 and the PRB read at `ciaa.v:293-294` returns them. This reproduces the
 behaviour at the system level.
 
@@ -127,13 +127,13 @@ behaviour at the system level.
   RECORDED line, not a FAIL, and CIA-A's instances are not graded on P1's PBON
   legs or on P1-OTHERBITS' pattern-bit clause.
 - **Only released lines were graded.** Lines held low from outside are only recorded (`portb_in` = `0x3C`, above), not graded; the chip revision is unknown.
-- **CIA-A port B is this tree's four-player joystick adapter** (`minimig.v:624` wires `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]})`),
+- **CIA-A port B is this tree's four-player joystick adapter** (`minimig.v:634` wires `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]})`),
   a real Amiga use of the connector that explains the design decision and does
   not make the port bi-directional.
 - **No handshake was graded.** `grep -rniwE 'pc|drdy|strobe|ack'` over `ciaa.v`
   and `ciab.v` returns nothing, and `ciaa.v:321` ties the interrupt controller's
   `.flag` to `1'b0`, so the acknowledge interrupt cannot fire; the only FLAG
-  driven in the tree is CIA-B's, carrying the floppy index pulse (`minimig.v:647`).
+  driven in the tree is CIA-B's, carrying the floppy index pulse (`minimig.v:657`).
 - **Second documents:** the 6526 specification is the 6526, while the finding
   concerns CIA-A port B on the Amiga's 8520. The TRM calls the printer port an
   "8 bit bidirectional parallel port" (p106) but never names CIA-A port B as that

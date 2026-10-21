@@ -10,7 +10,7 @@
 | **Scope** | OCS Agnus (`ecs` = 0); the first fetch of plane 1 after BPL1PTH = $001F, BPL1PTL = $0000, one bitplane, standard low-resolution fetch window, pointer written before line $50; planes 2 to 6 not measured; the `ecs` = 1 reading is not graded ([NM-HRM-014](NM-HRM-014.md)); chip revision as p. 5 gives it (the original Agnus and the Fat Agnus), hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed p. 54; Appendix A, printed pp. 264, 272; Appendix B, printed pp. 288, 291; Appendix C, printed p. 309; 1 — Introduction, printed p. 5; 4 — Sprite Hardware, printed p. 127 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids carried by `BPLXPTH-OCS-HIGH-THREE-BITS`: `sol:A-bplptr.c3` and `opus:A-bplxpth.fn` (p. 272), `sol:B-subject.c29` (p. 291); `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL` and `BPLXPTH-ECS-HIGH-BITS-TWIN` carry no claim id, and no assertion carries one for pp. 5, 54, 127, 264, 288 or 309 |
-| **Module** | `agnus_bitplanedma.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L220) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L220); inherited (the same statements in MiSTer and TC64) |
+| **Module** | `agnus_bitplanedma.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L220) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L220); inherited (the same statements in MiSTer and TC64) |
 | **Test** | [`hrm/ch3-bitplane-pointers-and-modulo`](../../hrm/ch3-bitplane-pointers-and-modulo): `make -C hrm/ch3-bitplane-pointers-and-modulo test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `BPLXPTH-OCS-HIGH-THREE-BITS`: at `ecs` = 0, BPL1PTH = $001F and BPL1PTL = $0000, expected a first fetch at 0x070000, observed 0x1f0000; the package reports `19 passed, 1 failed`. Its control `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL`, BPL1PTH = $0007 through the same fixture and comparator, is green at 0x070000. The `ecs` = 1 twin, `BPLXPTH-ECS-HIGH-BITS-TWIN`, is a note, not graded |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored bitplane pointer by Agnus revision and names it in a test; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the bitplane fetch drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware: not measured |
@@ -84,18 +84,18 @@ bits)"; BPLxPTH is not among them, which is [NM-HRM-014](NM-HRM-014.md)'s subjec
 from its four siblings in having only an OCS half: the pointer is printed with one
 width, three bits, and no register table gives the ECS a second.
 
-[`agnus_bitplanedma.v#L82`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L82),
-[`#L220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L220)
-and [`#L230`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L230)
+[`agnus_bitplanedma.v#L82`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L82),
+[`#L220`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L220)
+and [`#L230`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L230)
 keep five high bits per plane, `assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];`,
 with no `ecs` term, and drive them straight onto the address. The module has the
-input, [`agnus_bitplanedma.v:35`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L35),
-connected at [`agnus.v:362-381`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L362-L381),
+input, [`agnus_bitplanedma.v:35`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L35),
+connected at [`agnus.v:362-381`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L362-L381),
 and uses it for DIWHIGH, the DDFSTRT and DDFSTOP H2 bit, SuperHires and the OCS
 fetch start and stop; only the pointer bank never sees it. Nothing downstream narrows
-it: [`agnus.v:214`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L214)
+it: [`agnus.v:214`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L214)
 drives `address_out = address_bpl;` and
-[`gary.v:131`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L131)
+[`gary.v:131`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v#L131)
 passes all twenty bits to memory.
 
 In [`hrm/ch3-bitplane-pointers-and-modulo`](../../hrm/ch3-bitplane-pointers-and-modulo),

@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Does p. 280's `14 INTEN Master interrupt (enable only, no request)`, with p. 218's warning that bit 14 "creates no interrupt request", get a correction saying that a write to INTREQ sets bit 14, INTREQR returns it as `0x4000`, and level 6 serves it when INTENA's bit 14 is set, as Figure 7-4 on p. 221 places INTEN? Closes when an Amiga specialist records that correction, or confirms that real Paula takes no request on bit 14, in which case this page is refiled against the RTL. |
 | **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-031 |
 | **Scope** | unknown: the pages name no chip revision; measured on NanoMig's `paula_intcontroller.v` at the pinned revision, with a `SET` write naming bit 14 of INTREQ, a readback through INTREQR, and INTENA's bit 14 set with nothing else pending |
-| **Software impact** | unknown; the only named software is *Unreal*: `paula.v` carries the note [`implementation of intreq[14] (Unreal needs it)`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L53), and what Unreal does without the bit is not stated |
+| **Software impact** | unknown; the only named software is *Unreal*: `paula.v` carries the note [`implementation of intreq[14] (Unreal needs it)`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L53), and what Unreal does without the bit is not stated |
 | **Chapter** | Appendix A, printed p. 280; 7 — System Control, printed pp. 218, 219 and 221 (Figure 7-4) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (13)</summary> claims: `MASTER-BIT14-NO-REQUEST` `5-appA-p280.c20`, `A-int.b14` (p. 280); `P3-INTREQ-FULLY-WRITABLE` carries no claim id, and the package's bus-master-identity record names it with `sol:7-interrupts.c40`, `opus:7-int.c38`, `opus:7-int.c39` (p. 219); `P19-BIT14-INTEN` `sol:7-fig7-4.c45`, `opus:7-fig7-4.c43`, `opus:7-int.c82` (p. 221); `P19-INTEN-SELF-REQUEST-DISPUTED` `sol:7-interrupts.c28`, `opus:7-int.c25`, `sol:7-appA-int.c10`, `opus:7-appA-int.c6`, `opus:7-fig7-4.c45` (pp. 218, 280, 221); `MASTER-ENABLE-BIT14-GATE` carries no claim id </details> |
-| **Module** | `paula_intcontroller.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L132-L134) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134); inherited |
+| **Module** | `paula_intcontroller.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L132-L134) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_intcontroller.v#L132-L134); inherited |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt): `make -C hrm/ch5-audio-interrupt test`; [`hrm/ch7-interrupt-priority-encoder`](../../hrm/ch7-interrupt-priority-encoder): `make -C hrm/ch7-interrupt-priority-encoder test`; [`hrm/ch7-interrupt-register-semantics`](../../hrm/ch7-interrupt-register-semantics): `make -C hrm/ch7-interrupt-register-semantics test`; no assertion is red, so there is no expected red |
 | **Assertions** | none red. Measured, not graded: `MASTER-BIT14-NO-REQUEST` (expected under p. 280's parenthesis: bit 14 reads 0 after the write; observed `0x4000`), `P19-BIT14-INTEN` (observed `INTREQR` `0x4000` and level 6) and `P19-INTEN-SELF-REQUEST-DISPUTED`. Graded and green: `P3-INTREQ-FULLY-WRITABLE` (32768 patterns read back unchanged, 0 mismatches) and `MASTER-ENABLE-BIT14-GATE`. Package totals: `hrm/ch5-audio-interrupt` 9 passed, 0 failed; `hrm/ch7-interrupt-priority-encoder` 22 passed, 0 failed; `hrm/ch7-interrupt-register-semantics` 26 passed, 0 failed |
 | **Verdict of the four** | **unanimous with NanoMig and with Figure 7-4**: WinUAE, vAmiga, Denise and Copperline all latch a written bit 14 in INTREQ, return it through INTREQR, and serve it at level 6 when INTENA's bit 14 is set. None implements p. 280's parenthesis. Hardware: not measured on a real machine; the dissected 8364R7's write path sets any of D0..D14, and it states neither the readback through INTREQR nor the level |
@@ -66,7 +66,7 @@ not except bit 14.
 
 NanoMig latches a request bit at 14 like any other, and the module's own comment
 calls it undocumented
-([`paula_intcontroller.v#L130-L134`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L130-L134)):
+([`paula_intcontroller.v#L130-L134`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L130-L134)):
 
 ```verilog
 //undocumented interrupt
@@ -74,12 +74,12 @@ intreq[14] <= tmp[14];
 ```
 
 `INTREQR` returns it with the other fourteen
-([`#L74-L75`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L74-L75)),
+([`#L74-L75`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L74-L75)),
 and once `INTENA`'s bit 14 opens the gate
-([`#L143-L144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L143-L144)),
+([`#L143-L144`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L143-L144)),
 the priority encoder serves it first, with EXTER, at level 6; `_ipl` is active
 low, so `1` is level 6
-([`#L152-L154`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L152-L154)).
+([`#L152-L154`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L152-L154)).
 That is Figure 7-4's placement.
 
 | measured | result |
@@ -98,9 +98,9 @@ other enables, as the manual says (`MASTER-ENABLE-BIT14-GATE`).
   statement is meant.** "No request" can be read as *there is no request bit* or
   as *no hardware raises it*. Both readings fit if no hardware raises it:
   NanoMig has three such bits, SOFT, COPER and INTEN, each set only by a write
-  ([`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L110),
-  [`#L114`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L114),
-  [`#L134`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_intcontroller.v#L134)).
+  ([`#L110`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L110),
+  [`#L114`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L114),
+  [`#L134`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_intcontroller.v#L134)).
   p. 218's "enable/disable only" does not bend that far, which is why the page,
   and not the RTL, is what is in question.
 - **Nothing in the suite asserts "no request".** The disputed half is recorded,

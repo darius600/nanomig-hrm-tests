@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should a byte write to CIA-A timer A low (`$BFE401`) leave `ovl` set in the OCS-A500 mode, as p. 223's "The OVL bit in one of the 8520 Chips disables the overlay" reads, where the RTL clears it on any CIA-A write? Closes when the RTL (`minimig.v:861-862`) takes `ovl` from the OVL bit and `OTHER-CIA-A-REGISTER-ALSO-CLEARS` turns green, or when an Amiga specialist rejects the change, in which case, if the rejection means p. 223 is wrong, this page is refiled against the printed page. |
+| **What is asked of a reader** | Should a byte write to CIA-A timer A low (`$BFE401`) leave `ovl` set in the OCS-A500 mode, as p. 223's "The OVL bit in one of the 8520 Chips disables the overlay" reads, where the RTL clears it on any CIA-A write? Closes when the RTL (`minimig.v:871-872`) takes `ovl` from the OVL bit and `OTHER-CIA-A-REGISTER-ALSO-CLEARS` turns green, or when an Amiga specialist rejects the change, in which case, if the rejection means p. 223 is wrong, this page is refiled against the printed page. |
 | **Report to** | `NanoMig direct` — harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | the release of `ovl` by a CIA-A write; measured in the OCS-A500 mode (`chipset_config` 0) with a byte write to timer A low. The same two lines serve the OCS-A1000, ECS and AGA modes, which were not measured; chip revision unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 7 — System Control Hardware, printed p. 223; Appendix E, printed p. 337; Appendix F, printed pp. 339, 341, 354; Chapter 1, the model list on printed p. 1 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `OVL-BIT-WRITE-CLEARS-OVERLAY` and `OTHER-CIA-A-REGISTER-ALSO-CLEARS` carry `sol:7-reset.c8` / `opus:7-reset.c4` (p. 223); `RESET-LINE-RESTORES-OVERLAY` carries `sol:7-reset.c12` / `opus:7-reset.c9` (p. 223); `OVL-AT-COLD-START` (`sol:7-reset.c3`, p. 223) is measured, not graded; `CONTROL-RESET-RELEASES`, `CIAB-WRITE-DOES-NOT-CLEAR` and `CHIPRAM-WRITE-DOES-NOT-CLEAR` carry no claim id |
-| **Module** | `minimig.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L861-L862) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L933-L934); MiSTer has the same lines; TC64 takes `ovl` from CIA-A's port-A output (see *Independent evidence*): fixed in TC64 |
+| **Module** | `minimig.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L871-L872) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig.v#L933-L934); MiSTer has the same lines; TC64 takes `ovl` from CIA-A's port-A output (see *Independent evidence*): fixed in TC64 |
 | **Test** | [`hrm/ch7-overlay-source`](../../hrm/ch7-overlay-source): `make -C hrm/ch7-overlay-source test`; an expected red exits nonzero |
 | **Assertions** | `OTHER-CIA-A-REGISTER-ALSO-CLEARS`, red: expected `ovl` 1 after the timer A low write, observed 0; the package reports 10 passed, 1 failed. Its precondition line shares the label stem and is green; `CIAB-WRITE-DOES-NOT-CLEAR` is the control |
 | **Verdict of the four** | **unanimous against NanoMig on every model the manual covers**: vAmiga, Denise and Copperline tie the overlay to the value of the OVL bit on every machine they model, vAmiga's and Copperline's A1200 included, and only a port-A register write can move it; **WinUAE splits by gate array**: every model without Gayle, the AGA A4000 included, does the same, while its Gayle-based A600 and A1200, its CD32 and its CDTV-CR release the overlay on the first write to any CIA-A register, as NanoMig does in every one of its modes. Hardware: not measured |
-| **Effort** | S — `minimig.v:861-862` only, one assignment taken from CIA-A's existing port-A output; an A1200-mode release, if wanted, is a separate term |
+| **Effort** | S — `minimig.v:871-872` only, one assignment taken from CIA-A's existing port-A output; an A1200-mode release, if wanted, is a separate term |
 
 ---
 
@@ -59,7 +59,7 @@ on p. 339 gives DDRA as "set to 0x03": PA0 and PA1 driven.
 
 NanoMig clears the overlay on **any** write to CIA-A, whatever register is
 addressed and whatever data is written
-([`minimig.v#L861-L862`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L861-L862)):
+([`minimig.v#L871-L872`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L871-L872)):
 
 ```verilog
 	if(~_cpu_reset | ~_cpu_reset_in)       ovl <= 1;
@@ -71,18 +71,18 @@ consulted, and neither is the data.
 
 **The rule has no mode term.** NanoMig's four machine modes,
 "OCS-A500(0), OCS-A1000(1), ECS(2) or AGA(3)"
-([`src/misc/sysctrl.v:228-229`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L229)),
+([`src/misc/sysctrl.v:263-264`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/misc/sysctrl.v#L263-L264)),
 reach `minimig.v` as `chipset_config`
-([`:482-484`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L482-L484)),
+([`:487-489`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L487-L489)),
 and lines 861-862 read none of it: the any-write release is the same in the
 OCS-A500, OCS-A1000 and ECS modes, machines the manual covers, as in the AGA
 mode, the A1200, which it does not.
 
 **NanoMig's own CIA-A computes the line the manual describes, and nothing uses
-it.** [`ciaa.v:262`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L262)
+it.** [`ciaa.v:262`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L262)
 drives `porta_out[3:0]` so that bit 0 is high while DDRA bit 0 selects input and
 follows PRA bit 0 otherwise, as pp. 341 and 354 say; `minimig.v` keeps only bits
-3-1 of it ([`:604-605`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L604-L605)).
+3-1 of it ([`:614-615`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L614-L615)).
 
 ### Measured
 
@@ -148,7 +148,7 @@ nothing about the overlay's fate when that direction changes.
 
 The question and its closure are in the header. Suggested change: take `ovl`
 from CIA-A's own port-A output, which `ciaa.v:262` already computes and
-`minimig.v:605` leaves unconnected, as TC64 does:
+`minimig.v:615` leaves unconnected, as TC64 does:
 
 ```verilog
 	// p.223 names THE OVL bit -- CIA-A PA0 as the pin drives it (pp.339, 341, 354)
@@ -156,6 +156,6 @@ from CIA-A's own port-A output, which `ciaa.v:262` already computes and
 ```
 
 CIA-A's reset input is `sys_reset | ~_cpu_reset_in`
-([`minimig.v:422`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L422)),
+([`minimig.v:427`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig.v#L427)),
 and reset clears DDRA, which drives the line high, so the overlay returns on
 reset without a term of its own, as p. 354 has it.

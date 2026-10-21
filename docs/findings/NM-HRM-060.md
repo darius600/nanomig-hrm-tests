@@ -10,7 +10,7 @@
 | **Scope** | NanoMig's `cpu_cache_new` at its own module boundary: a CPU data write to the address of a cached instruction line, read back as an instruction; processor model and revision unknown; real hardware not measured; the chip-bus path (`CHIPRAM_CACHE`) not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 1 — Introduction, printed p. 13, General Amiga Development Guidelines · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `CACHE-HIT-RETAINS-INSTRUCTION` and `CACHE-WRITE-VISIBILITY`: `opus:1-guidelines.c70`, `sol:1-guidelines.c70`, p.13; `CACR-CLEAR-INVALIDATES-CACHE`: `opus:1-guidelines.c75`, p.13; the fixture control `CACHE-FIXTURE-DELIVERS-KNOWN-VALUE` carries no claim id |
-| **Module** | `cpu_cache_new.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_cache_new.v#L296-L309); inherited (MiSTer and TC64 carry the same statement) |
+| **Module** | `cpu_cache_new.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cpu_cache_new.v#L296-L309); inherited (MiSTer and TC64 carry the same statement) |
 | **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache): `make -C hrm/ch1-cpu-and-instruction-cache test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `CACHE-WRITE-VISIBILITY`: expected `$AAAA`, observed `$CCCC`; the package reports `3 passed, 1 failed`. `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` are green: the cache caches and the documented `$0008` flush works |
 | **Verdict of the four** | **3–0 against, one silent.** WinUAE, vAmiga and Copperline all implement the sentence exactly; Denise models a 68000 and has no cache to disagree with. Hardware: not measured |
@@ -50,10 +50,10 @@ CPU_SM_WRITE : begin
 It is an update, not a snoop-invalidate: `cpu_sm_mem_dat_w` carries the written
 word into the line. `cpu_cache_new.v:511` does the same from the SDRAM side,
 `sdr_sm_iram0_we <= sdr_itag0_match && sdr_itag0_valid`, where `CHIPRAM_CACHE`
-is defined (`nanomig.v:333`; without it `snoop_act` is tied to 0, `:394`). The
-path is live: `cpu_wrapper.v:96/258` exports CACR and `nanomig.v:316/426`
+is defined (`nanomig.v:345`; without it `snoop_act` is tied to 0, `:406`). The
+path is live: `cpu_wrapper.v:96/258` exports CACR and `nanomig.v:328/426`
 carries it into `cpu_cache_new` inside the `ENABLE_CACHE` block at `:320`;
-`src/tang/nano20k/top_020.sv:12/15/16` and `src/mistle/gw3a_20/top.sv:9/12/13`
+`src/tang/nano20k/top_020.sv:14/15/16` and `src/mistle/gw3a_20/top.sv:9/12/13`
 define `ENABLE_TG68K`, `ENABLE_CACHE` and `CHIPRAM_CACHE`.
 
 [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache)

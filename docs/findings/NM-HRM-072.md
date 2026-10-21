@@ -10,7 +10,7 @@
 | **Scope** | Paula's serial transmitter: words of $0155 (start bit, eight data bits, one stop bit) written back to back, so each next word waits in SERDAT while the previous one is shifted; N=371, four words, NTSC and PAL, in the package; N=31 and two-word N=32396 (NTSC) only in runs outside `make test`. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed pp. 255, 257, 258, 259, with Figure 8-11 on p. 258; Appendix A, printed pp. 283, 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `P1`, `P2`, `P3` and the controls `P1-CTRL-N0`, `P1-CTRL-N32396`, `P1-CTRL-WITHIN`, `P2-CTRL-PAIR`, `1d`, `2d` carry no claim id. Recorded, not graded: beside `P1` `sol:8-serper.c8`, p. 255; beside `P2` `sol:8-serper.c9`, p. 255; beside `P3` `sol:8-serper.c10`, p. 255; `opus:8-serper.c10`, p. 284 |
-| **Module** | `paula_uart.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L111-L117) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117); TC64's file is the same, line for line; `inherited` |
+| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L121-L127) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117); TC64's file is the same, line for line; `inherited` |
 | **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial): `make -k -C integration/ch8-disk-serial test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
 | **Assertions** | `P1`, `P2`, `P3`, red on fx68k and on TG68K (75 passed, 3 failed on each core; these three are the package's only reds). `P1`: expected every TxD change within ±C/2 of t0 + k·(N+1)·C, observed 20 of 40 at N=371. `P2` (ii): expected U_N equal for every N, observed U_371 = 8.000827 against U_32396 = 8.000000, beyond a tolerance of 0.000579. `P3`: expected 40 of 40 at N=371, observed 20 of 40 |
 | **Verdict of the four** | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows the stop bit after N+1 colour clocks, as p. 255 says. WinUAE has no TxD pin; in its cycle-exact mode with no serial device it starts the waiting word's frame 10(N+1) colour clocks after the previous frame began, and in its loopback mode 3 colour clocks later. None adds half a colour clock. Hardware: not measured |
@@ -59,7 +59,7 @@ For the transmitter, p. 259 makes the number of stop bits the number of 1 bits w
 ## RTL and measurement
 
 **The transmitter spends one `clk7_en` period in `TX_IDLE` between the end of a stop bit and the start bit of a word that is already waiting.** When the stop bit's count ends and the shift register is empty, the state machine goes to `TX_IDLE` instead of loading the waiting word —
-[`src/minimig-aga/paula_uart.v#L111-L117`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L111-L117):
+[`src/minimig-aga/paula_uart.v#L121-L127`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L121-L127):
 
 ```verilog
 if (tx_cnt == 16'd0) begin
@@ -74,11 +74,11 @@ if (tx_cnt == 16'd0) begin
 and only `TX_IDLE`, on the next `clk7_en` edge, loads the word, drives its start bit and reloads the count —
 [`#L87-L104`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L87-L104).
 Every other bit is counted as
-[`#L118-L124`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L118-L124)
+[`#L128-L134`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L128-L134)
 does it: reload `tx_cnt <= #1 {serper[14:0], 1'b1};`, count down to 0, and drive the next bit on the edge that finds 0 — 2N+1 edges counting down and one that changes the pin, 2N+2 `clk7_en` edges. The module runs on `clk7_en`
-([`src/minimig-aga/paula.v#L203-L206`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L203-L206)),
+([`src/minimig-aga/paula.v#L208-L211`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L208-L211)),
 which comes once in every four `clk_28` cycles, while the colour clock `cck` toggles once in every four
-([`src/minimig-aga/amiga_clk.v#L31-L35`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/amiga_clk.v#L31-L35)),
+([`src/minimig-aga/amiga_clk.v#L31-L35`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/amiga_clk.v#L31-L35)),
 so two `clk7_en` edges are one colour clock and a bit lasts N+1 colour clocks, as p. 255 says. The stop bit of a word with another waiting behind it lasts those 2N+2 edges and the `TX_IDLE` edge after them: 2N+3, which is **N+1½ colour clocks**.
 
 ### Measured

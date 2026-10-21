@@ -10,7 +10,7 @@
 | **Scope** | Agnus `BLTSIZV` write with the `ecs` input 0 and 1; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C — Enhanced Chip Set, ECS register map, printed p. 298 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (14)</summary> `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`: `6-appc-modifications.c12`, `ch6-appc-map.bltsizv`, p. 298 (the map row); `6-appa-registers.c70`, `6-appa-registers.c71`, Appendix A p. 269; `ch6-appc-bltsizv.c1`, `6-appc-big-blits.c65`, `ch6-appc-bigblits.c8`, Appendix C p. 308; the control `BLTCON0L-GATED-BY-ECS`: `6-appa-registers.c25`, `6-appa-registers.c26`, `6-appa-registers.c27`, `ch6-appa-bltcon0l.c3`, p. 269; `ch6-appc-map.bltcon0l`, `6-appc-modifications.c11`, p. 298 (the map row); `ch6-appc-ecs.c9`, p. 309; both assertions carry claim ids </details> |
-| **Module** | `agnus_blitter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L546-L549) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569); inherited |
+| **Module** | `agnus_blitter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L546-L549) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569); inherited |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs): `make -C hrm/ch6-blitter-ecs test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`: expected the height loaded with `ecs = 0` to differ from the one loaded with `ecs = 1`, observed 7 and 7; the package reports `12 passed, 4 failed`, the other three reds being other findings |
 | **Verdict of the four** | **all four gate it on ECS. NanoMig alone does not.** Hardware: not measured |
@@ -31,11 +31,11 @@ ECS** — the same status it gives `BLTSIZH $05E` and `BLTCON0L $05A`:
 ## RTL and measurement
 
 NanoMig gates `BLTCON0L` on `ecs`
-([`agnus_blitter.v#L257-L260`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L257-L260))
+([`agnus_blitter.v#L257-L260`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L257-L260))
 and does not gate `BLTSIZV`, and **the line carries the contradiction in its own
 comment**, which calls the register ECS while the code accepts it
 unconditionally
-([`agnus_blitter.v#L546-L549`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L546-L549)):
+([`agnus_blitter.v#L546-L549`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L546-L549)):
 
 ```verilog
   	else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register

@@ -10,7 +10,7 @@
 | **Scope** | ECS Agnus, PAL, 2 MB Chip memory, both CPU cores (fx68k, TG68K) in 68000 mode, the CPU looping in Chip memory: a blit of USE code 1 (D only, BLTCON0 `$01FF`, BLTSIZE `$2020`, 4096 words) with BLTPRI set, counted from its first to its last destination write; and a blit of USE code 9 (A to D, BLTCON0 `$09F0`, BLTSIZE `$7D01`, 500 words) with BLTPRI set, the CPU in the program's code after the BLTSIZE write, counted from its first source read to its last destination write (`A4`); OCS is not run; chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 6 — Blitter, printed pp. 186, 188 (Table 6-2), 189, 198; 7 — System Control, printed p. 222 (Table 7-6); Appendix A, printed p. 278 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P7`: `5-appA-p278.c15`, `A-dmacon.b10`, p. 278. `P7-ON`, `P7-OFF`, `P7-ON-E` and `P7-OFF-E` carry no claim id; `A4` of `integration/ch6-blitter-cpu-sharing` (p. 198) carries none either |
-| **Module** | `agnus.v`, `agnus_blitter.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L402-L406); inherited (MiSTer has the same code; TC64 the same, its counter also counting in turbo mode) |
+| **Module** | `agnus.v`, `agnus_blitter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L429-L433) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L402-L406); inherited (MiSTer has the same code; TC64 the same, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch5-audio-registers-dma`](../../integration/ch5-audio-registers-dma): `make -k -C integration/ch5-audio-registers-dma test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding. [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries `A4` |
 | **Assertions** | In `integration/ch5-audio-registers-dma`, `P7-ON` and `P7` are red on both cores, the package's only reds (87 passed, 2 failed each): expected zero CPU accesses between the first and last destination write of the D-only blit with BLTPRI set; observed 3429 on fx68k and 4095 on TG68K. With BLTPRI clear the same blit measures 3434 and 4095 (`P7-OFF`, green); a blit of USE code E, which leaves no cycle unused, measures 0 on both cores with BLTPRI set (`P7-ON-E`, green) and 2975 and 3106 with it clear (`P7-OFF-E`, green). In `integration/ch6-blitter-cpu-sharing`, `A4` is red on both cores (37 passed, 3 failed each; `A8` and `PARITY`, the other reds, are filed on [NM-HRM-069](NM-HRM-069.md)): expected no CPU Chip-memory access from the first source read to the last destination write of an A-to-D blit with BLTPRI set; observed 2 on each core in a window of 8136 `clk_sys`, a fetch of `$8044A` at +12 (before the first destination write, which is at +24) and a fetch of `$8044C` at +8132, no counter write; `A4PRE` and `A4-CTRL` are green |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 278's *any***: WinUAE in its cycle-exact mode, vAmiga, Denise and Copperline give a waiting 68000 the cycle a blit does not use, the `-` of `D0 - D1 - D2`, whatever BLTPRI holds; WinUAE and Copperline say so in their comments. Copperline alone keeps the 68000 out of a BLTPRI blit's start-up, before its first destination write. Hardware: not measured |
@@ -59,25 +59,25 @@ who has a cycle the blitter does not use while DMAF_BLITHOG is 1.
 and a cycle no DMA channel asks for goes to the 68000, whatever BLTPRI
 holds.** In a blit with channel A off, the state `BLT_A` is an empty cycle,
 `dma_req = usea; // empty cycle if channel A is not enabled`
-([`src/minimig-aga/agnus_blitter.v#L668-L689`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L668-L689)),
+([`src/minimig-aga/agnus_blitter.v#L668-L689`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L668-L689)),
 and a D-only blit alternates it with `BLT_D`, which asks for the bus when a
 destination word is waiting, `dma_req = used & pipeline_full;`
-([`#L735-L757`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L735-L757)).
+([`#L735-L757`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L735-L757)).
 With no request, Agnus's priority chain falls through to its last branch,
 "bus not allocated by agnus", `dbr = 0;`
-([`src/minimig-aga/agnus.v#L243-L266`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L243-L266)),
+([`src/minimig-aga/agnus.v#L243-L266`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L243-L266)),
 and the 68000 bridge acknowledges the CPU,
 `if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;`
-([`src/minimig-aga/minimig_m68k_bridge.v#L131`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131)).
+([`src/minimig-aga/minimig_m68k_bridge.v#L131`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig_m68k_bridge.v#L131)).
 
 **BLTPRI reaches one line.** `wire bltpri = dmacon[10];`
-([`agnus.v#L298`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L298))
+([`agnus.v#L298`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L298))
 is read only by the blitter slowdown counter, `if (!bls || bltpri) bls_cnt <= 2'b00;`
-([`#L429-L433`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433)),
+([`#L429-L433`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L429-L433)),
 which decides whether a cycle the blitter does request goes to it. The
 module's header comment, *"Blitter nasty mode activates the buspri signal to
 indicate to gary to stop access to the chipram/chipregisters."*
-([`#L48-L50`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L48-L50)),
+([`#L48-L50`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L48-L50)),
 is the only place `buspri` occurs in NanoMig's sources.
 
 ### Measured
@@ -120,14 +120,14 @@ grades the zero count (`test_ch5_audio_registers_dma.cpp:1278-1282`);
 not request, and the 68000 gets both.** An A-to-D blit asks for the bus in
 `BLT_A` with `dma_req = usea;` and in `BLT_D` with `dma_req = used & pipeline_full;`.
 `pipeline_full` is cleared in `BLT_INIT` and set at the end of the first
-`BLT_D` ([`agnus_blitter.v#L564-L571`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L564-L571),
-[`#L889-L892`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L889-L892)),
+`BLT_D` ([`agnus_blitter.v#L564-L571`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L564-L571),
+[`#L889-L892`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L889-L892)),
 so the first `BLT_D`, between the first `BLT_A` and the second, requests
 nothing: that is the `-` after `A0`. Every later cycle up to the last word is
 requested. After the last `BLT_D` the state machine enters `BLT_E`, `dma_req = 1'b0;`
-([`#L759-L775`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L759-L775)),
+([`#L759-L775`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L759-L775)),
 the `-` before `D2`, and then `BLT_F`, which requests the last destination write
-([`#L777-L794`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L777-L794)).
+([`#L777-L794`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L777-L794)).
 In both cycles no DMA channel requests, and the priority chain falls
 through to `dbr = 0;` as above, whatever BLTPRI holds.
 
@@ -212,7 +212,7 @@ neither line.
 **One option: build the signal `agnus.v`'s header comment describes.** An
 Agnus output, high while BLTPRI is set and the blitter has not written its last word
 (`bltpri` is in `agnus.v`; `blit_busy` is cleared by `done` in the last
-`BLT_D` ([`agnus_blitter.v#L905`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L905)), before `BLT_E` and `BLT_F`, so the
+`BLT_D` ([`agnus_blitter.v#L905`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L905)), before `BLT_E` and `BLT_F`, so the
 output is taken from the blitter's state, not from `blit_busy`), wired through `minimig.v` to the 68000 bridge
 and joined there to `dbr`, so that `_ta_n` is not asserted for a chip-bus
 access (`dbs`) while it is high. What it would change:
