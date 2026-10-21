@@ -48,8 +48,8 @@
 //     A11-A8. `ciaa` itself has no A11-A8 input at all -- `rs` IS the
 //     already-decoded nibble, not an address. The binding from a raw CPU
 //     address's A11-A8 bits to ciaa's `rs` port is minimig.v's wiring, at
-//     two sites: minimig.v:616 (`.rs(cpu_address_out[11:8])`, CIAA1's own
-//     instantiation) and minimig.v:641 (the CIAB1 twin, same expression).
+//     two sites: minimig.v:626 (`.rs(cpu_address_out[11:8])`, CIAA1's own
+//     instantiation) and minimig.v:651 (the CIAB1 twin, same expression).
 //     This is a FACT ABOUT MINIMIG.V, not about `ciaa` -- confirmed here by
 //     reading ciaa.v's own port list (:80-104), which has no address input
 //     of any width, only the pre-decoded `rs`. This package's Makefile does
@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
         "`rs` is already the decoded 4-bit register-select value; ciaa.v's "
         "own port list, :80-104, has no address input of any width). The "
         "binding from a CPU address's A11-A8 to ciaa's `rs` is "
-        "minimig.v's wiring (minimig.v:616,641, `.rs(cpu_address_out"
+        "minimig.v's wiring (minimig.v:626,641, `.rs(cpu_address_out"
         "[11:8])`), a file this package's Makefile does not compile and "
         "outside a ciaa-only fixture's own boundary -- the same boundary "
         "hrm/appF-cia-register-map's own committed decline already drew "

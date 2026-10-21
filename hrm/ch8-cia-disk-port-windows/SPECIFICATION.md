@@ -106,8 +106,8 @@ than the register-list angle.
 ## PROP-TWO-PORTS — the disk subsystem's signals ride on two distinct, independently-addressed CIA ports, one per chip
 
 **Testable at this rig, restricted to what a three-module boundary can
-show:** the claims' own evidence (`minimig.v:622`: `porta_in` of `ciaa` ←
-`{_fire1,_fire0,_ready,_track0,_wprot,_change}`; `minimig.v:649`:
+show:** the claims' own evidence (`minimig.v:632`: `porta_in` of `ciaa` ←
+`{_fire1,_fire0,_ready,_track0,_wprot,_change}`; `minimig.v:659`:
 `portb_out` of `ciab` → `{_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step}`)
 names one input-direction port on `ciaa` and one output-direction port on
 `ciab` as the two ports the disk subsystem uses. What this rig can show

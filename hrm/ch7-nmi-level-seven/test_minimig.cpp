@@ -16,8 +16,8 @@
 //
 // *** THIS PACKAGE COMPILES RTL THE SHIPPED CONFIGURATION DOES NOT. ***
 //   The NMI path this package measures exists only inside minimig.v's own
-//   `ifdef ENABLE_CART branch (minimig.v:729-757): with that define unset,
-//   minimig.v:754 ties the int7 net that carries it to a constant 1'b0, and
+//   `ifdef ENABLE_CART branch (minimig.v:739-767): with that define unset,
+//   minimig.v:764 ties the int7 net that carries it to a constant 1'b0, and
 //   no build anywhere else in nanomig-hrm-tests sets +define+ENABLE_CART --
 //   this package's own Makefile is the only place in this tree that does.
 //   A green result below is therefore evidence about this define-enabled
@@ -43,21 +43,21 @@
 //   commit): the "NMI"/freeze signal chain is
 //     ciaa.v:187 (Action Replay freeze keycode 0x5f, gated by hrtmon_en ==
 //       memory_config[6], latched into freeze_reg on a kbd_mouse_type==2
-//       keystrobe) --output--> minimig.v:355/628 wire freeze
+//       keystrobe) --output--> minimig.v:360/628 wire freeze
 //     --> cart.v:57 input freeze -> cart.v:84 freeze_req (rising-edge
 //       detect) -> cart.v:87 int7_req -> cart.v:94-99 output reg int7
 //       (int7 <= 1 on int7_req, <= 0 only on a level-7 IACK cycle this
 //       harness never drives, so once set it is sticky for the rest of the
 //       run -- adequate for this package's own proposition, which is about
 //       the level asserted, not about the CPU's own vector-fetch cycle)
-//     --> minimig.v:748 .int7(int7) --> minimig.v:760
+//     --> minimig.v:758 .int7(int7) --> minimig.v:770
 //       `assign _cpu_ipl = int7 ? 3'b000 : _iplx;` (active-low: level L
 //       reads 3'b(7-L), so 3'b000 is 68000 interrupt level 7, 3'b111 is
 //       "no interrupt" -- same encoding paula_intcontroller.v's own
 //       casez priority encoder uses for _iplx, per an earlier stage's own
 //       measurement cited in classify.evidence for these claims).
 //   int7 and _iplx are internal nets of module `minimig` itself (not of a
-//   sub-instance), declared minimig.v:400-401; reached in this file via
+//   sub-instance), declared minimig.v:405-406; reached in this file via
 //   Verilator's --public-flat-rw as dut->rootp->minimig->int7 and
 //   dut->rootp->minimig->_iplx (verified against the generated
 //   obj_dir/Vminimig_minimig.h field names, not guessed).
@@ -108,7 +108,7 @@
 //   interrupt) for the whole run. NMI-NON-MASKABLE checks that _cpu_ipl
 //   still reads 3'b000 (level 7) at that same instant regardless -- the
 //   level the CPU sees did not come from Paula's INTENA-gated encoder at
-//   all (minimig.v:760's other mux input), which is the concrete meaning of
+//   all (minimig.v:770's other mux input), which is the concrete meaning of
 //   the row's own name, "non-maskable interrupt".
 //
 // FIXTURE-DATA-PATH-LIVE / CONTROL: NMI-IDLE-BASELINE-NOT-LEVEL-7 samples
@@ -167,7 +167,7 @@
 //   the check rejects it -- see its own run-log entry below.
 //   Structurally, no *real* stimulus this fixture could apply produces
 //   that sequence on this RTL: _cpu_ipl is `assign _cpu_ipl = int7 ?
-//   3'b000 : _iplx;` (minimig.v:760), a continuous assignment, and
+//   3'b000 : _iplx;` (minimig.v:770), a continuous assignment, and
 //   paula_intcontroller's own priority encoder never outputs level 7 on
 //   any INTENA/INTREQ pattern (every casez branch yields 1-7 as its
 //   *_ipl* value or the explicit all-zero/default 7, never 0 -- confirmed
@@ -431,7 +431,7 @@ public:
     // 1/10th of clk7_en, matching the port's own "ECLK enable (1/10th of
     // CLK)" comment, minimig.v:187). No assertion in this file depends on
     // c1/c3/eclk's own exact phase -- they only feed the CPU-bus bridge and
-    // the SRAM bridge (minimig.v:654-719) and the CIA timers, none of which
+    // the SRAM bridge (minimig.v:664-729) and the CIA timers, none of which
     // this file reads or writes -- so their generation only has to be live,
     // not cycle-accurate against the real hardware.
     void tick() {
@@ -613,8 +613,8 @@ int main(int argc, char** argv) {
         "ENABLE-CART-COMPILED-IN: minimig.v's internal int7 net (not a top-level "
         "port; reached via --public-flat-rw) rises to 1 in response to the freeze "
         "stimulus -- proves this build actually took the `ifdef ENABLE_CART branch "
-        "(minimig.v:729-757, cart.v's freeze/int7 logic wired in) rather than the "
-        "`else` branch that permanently ties int7 to 1'b0 (minimig.v:754). Measures "
+        "(minimig.v:739-767, cart.v's freeze/int7 logic wired in) rather than the "
+        "`else` branch that permanently ties int7 to 1'b0 (minimig.v:764). Measures "
         "a net whose behaviour differs between the two branches, not the "
         "ENABLE_CART preprocessor symbol itself.");
 

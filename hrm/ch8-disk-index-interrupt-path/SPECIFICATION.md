@@ -29,16 +29,16 @@ harness, once per tick, and each join reproduces one piece of `minimig.v`'s
 own top-level wiring:
 
 1. **`paula_floppy`'s `index` output → `ciab`'s `flag` input.** Reproduces
-   `minimig.v:647`, `.flag(index)` — the ciab instantiation's FLAG port
-   fed from the wire `index` — combined with `minimig.v:526`, `.index(index)`,
+   `minimig.v:657`, `.flag(index)` — the ciab instantiation's FLAG port
+   fed from the wire `index` — combined with `minimig.v:536`, `.index(index)`,
    which is where that wire is confirmed to be `paula_floppy`'s own `index`
    output (the paula_floppy instantiation's INDEX port, named `index` at
    both ends of the wire). The harness reads `paula_floppy`'s `index` output
    each tick and drives it onto `ciab`'s `flag` input before evaluating
    `ciab`.
 2. **`ciab`'s `irq` output → `paula_intcontroller`'s `int6` input.**
-   Reproduces `minimig.v:646`, `.irq(int6)` — the ciab instantiation's IRQ
-   port driving the wire `int6` — combined with `minimig.v:511`, which is
+   Reproduces `minimig.v:656`, `.irq(int6)` — the ciab instantiation's IRQ
+   port driving the wire `int6` — combined with `minimig.v:521`, which is
    where that same wire is confirmed to be the `paula` instantiation's
    `int6` input. `paula_intcontroller` is one level inside `paula`, and its
    own `int6` port (present on its port list per the claims'
@@ -220,7 +220,7 @@ This document is written from the 7 claims' `extract.quote` /
 `classify.evidence` content and the build task's own text, both required
 reading before step 1. Facts used above that are properly RTL-derived —
 `paula_floppy.v:93` declaring the `index` output, `paula_floppy.v:576`'s
-synthesis expression for `index`, `minimig.v:526/647/646/511`'s four join
+synthesis expression for `index`, `minimig.v:536/647/646/511`'s four join
 lines, `cia_int.v:57` and `:62-66`'s FLG-latch/`irq` terms, the ICR=0x90
 and INTREQR=0x2000/`_ipl` measurements already taken on `ciab` and
 `paula_intcontroller`, and `paula_intcontroller`'s port list at

@@ -85,7 +85,7 @@ lines), `cia_int.v` (70), `cia_timera.v` (112), `cia_timerb.v` (107) and
 
 It has **no signal named** DTR, RTS, carrier-detect, CTS, DSR, MTR*, SEL3*,
 SEL2*, SEL1*, SEL0*, SIDE*, DIR, STEP*, or INDEX* — those bindings are
-`minimig.v:648-650`'s job (`.porta_in({cd,cts,dsr,...})`, `.porta_out({dtr,rts})`,
+`minimig.v:658-660`'s job (`.porta_in({cd,cts,dsr,...})`, `.porta_out({dtr,rts})`,
 `.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})`,
 `.flag(index)`), one level above this fixture's boundary — exactly the
 argument `ch8-ciabprb-disk-control-bits` used to decline its 16 PB-name
@@ -408,7 +408,7 @@ disk-control-bits` used for its 16 PB-name declines: `ciab` compiled alone
 (this package's assigned top module) has no signal named DTR, RTS, carrier
 detect, CTS or DSR — only generic `porta_out[7:6]` (outputs) and
 `porta_in[5:0]` (inputs). The binding of PA7 to DTR specifically (rather
-than PA6, or nothing) is `minimig.v:648-649`, one level above this fixture's
+than PA6, or nothing) is `minimig.v:658-659`, one level above this fixture's
 own hierarchy. PROP-DDRA-POSITION above already grades the *position* half
 these claims imply (that PA7/PA6 are independently writable, readable,
 direction-controlled output bits); the *name* half is not available inside a
@@ -477,7 +477,7 @@ pretending it did"): `ciab.v` (251 lines), `cia_int.v` (70), `cia_timera.v`
 this file was committed, in order to confirm the toolchain build pattern
 (mirroring `ch8-ciabprb-disk-control-bits`'s own disclosed sequence) and to
 verify the specific numeric predictions above (0x6F, 0xEF, the `tmcr[1]`/
-`tmcr[2]` grep, `minimig.v:648-650`'s bindings). Two things limit what that
+`tmcr[2]` grep, `minimig.v:658-660`'s bindings). Two things limit what that
 reading could have contaminated: first, every expected value in this
 document traces to a `file:line` citation already present in the claims'
 own `classify.evidence`, authored during classification, not discovered

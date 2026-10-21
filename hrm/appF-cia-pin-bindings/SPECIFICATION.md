@@ -73,7 +73,7 @@ five uids that do not exist.
 `sol:F-signals.c84`/`opus:F-signals.c15` (p.354, general IRQ-pin
 description) carry a note that declines only the CIAB leg, already graded
 by hrm/ch8-disk-index-interrupt-path PROP-FLAG-PIN (irq -> int6), and
-leaves at most the CIAA leg (minimig.v:621, irq -> int2). Graded fresh as
+leaves at most the CIAA leg (minimig.v:631, irq -> int2). Graded fresh as
 `CIAA-IRQ-REACHES-INT2` below, for the CIAA leg only — per the rule that a
 uid on a graded line counts as asserted whatever the prose says, both
 uids' full content is considered covered by this one assertion, not
@@ -113,7 +113,7 @@ field. The 21 declined rows fall into these groups (of the 27 noted rows, 4 —
 4. **CIAA-MAP-PA0-OVL-REGISTER** — `sol:F-ciaa-map.c10`,
    `sol:F-signals.c19`, `opus:F-portsig.c15` — `hrm/ch7-overlay-source`
    OVL-BIT-WRITE-CLEARS-OVERLAY already grades the register-level fact;
-   this package independently re-confirmed (`minimig.v:860-862`) that
+   this package independently re-confirmed (`minimig.v:870-872`) that
    `ovl` clears on *any* write to *any* CIAA register with no bit-pattern
    dependence at all, which is what resolves `F-signals.c19`/
    `F-portsig.c15`'s own "the bit-level half is new here" — there is no
@@ -152,7 +152,7 @@ field. The 21 declined rows fall into these groups (of the 27 noted rows, 4 —
   `ciaa` alone), starts the timer, and confirms the internal `int2` net
   (public-flat-rw, read-only — never forced) goes from false to true —
   showing ciaa's own `irq` pin doesn't just exist at the chip boundary but
-  actually reaches the `minimig.v:621` join. Also establishes, whole,
+  actually reaches the `minimig.v:631` join. Also establishes, whole,
   "CIAA can generate interrupt INT2" (`sol:F-ciaa-map.c55`,
   `opus:F-ciaa-map.c32`).
 - **`CIAA-IRQ-REACHES-PORTS`** — same Timer A/ICR/CRA idiom, read one

@@ -62,8 +62,8 @@
 //
 // A FACT WORTH RECORDING, found while reading minimig.v: ciaa's data_out
 //   and ciab's data_out land on DIFFERENT byte lanes of minimig's own 16-bit
-//   cia_data_out bus ([7:0] for ciaa, minimig.v:618; [15:8] for ciab,
-//   minimig.v:643) -- so at minimig's own boundary, the OVERLAP-BOTH-
+//   cia_data_out bus ([7:0] for ciaa, minimig.v:628; [15:8] for ciab,
+//   minimig.v:653) -- so at minimig's own boundary, the OVERLAP-BOTH-
 //   SELECTS-ACTIVE condition would not corrupt a byte-wide CPU *read*
 //   (each chip's answer lands on its own lane). This rig does not build
 //   that lane-combining logic -- it is one level above gary+ciaa+ciab, not
@@ -241,8 +241,8 @@ int main(int argc, char** argv) {
 
     // Writes need the address and wr strobe held across a clk7_en edge
     // (regporta/regportb/ddrportb etc. are clocked). ciaa.data_in is the
-    // LOW byte of cpu_data_out (minimig.v:617); ciab.data_in is the HIGH
-    // byte (minimig.v:642) -- reproduced by this rig's own port mapping.
+    // LOW byte of cpu_data_out (minimig.v:627); ciab.data_in is the HIGH
+    // byte (minimig.v:652) -- reproduced by this rig's own port mapping.
     auto cia_a_write = [&](uint32_t addr23, uint8_t byte) {
         dut->cpu_address = addr23 & 0x7FFFFF;
         dut->cpu_data_out = (uint16_t)byte;
@@ -447,8 +447,8 @@ int main(int argc, char** argv) {
     // TWOPORTS-CIAB-PORTB-SOL-REGLIST-C1 (p.241, sol:8-reglist.c1, twin).
     // Both grade the identical measured fact from two separate citing
     // passages: two distinct, independently-reachable CIA port registers
-    // -- one on ciaa (input direction, porta_in, minimig.v:622), one on
-    // ciab (output direction, portb_out, minimig.v:650) -- answer through
+    // -- one on ciaa (input direction, porta_in, minimig.v:632), one on
+    // ciab (output direction, portb_out, minimig.v:660) -- answer through
     // MUTUALLY EXCLUSIVE chip-selects. NOT graded: that no other CIA port
     // carries a disk signal anywhere else in the design (see
     // SPECIFICATION.md's PROP-TWO-PORTS boundary note).
@@ -598,7 +598,7 @@ int main(int argc, char** argv) {
     // WITHDRAWN to record(): this
     // block pulses ciab's `flag` INPUT PIN directly (dut->ciab_flag = 1) --
     // it proves the CIA ICR bit and the $BFDD00 address, but not p.245's
-    // binding from the disk `index` signal to that pin (minimig.v:526+:647,
+    // binding from the disk `index` signal to that pin (minimig.v:536+:657,
     // `.flag(index)`); a severed or wrong join there still passes this
     // block unchanged. hrm/ch8-disk-index-interrupt-path's PROP-FLAG-PIN
     // assertion (opus:8-cia.c56, opus:8-dskint.c9, sol:8-int.c9) now carries
@@ -621,7 +621,7 @@ int main(int argc, char** argv) {
             "DSKINDEX-LITERAL-OPUS-CIA-C57 (p.245, opus:8-cia.c57, quote 'FLAG DSKINDEX* Disk index pulse "
             "($BFDD00, bit 4)'): CANNOT be graded at this boundary. This block pulses ciab's `flag` pin "
             "directly, proving the ICR bit and the $BFDD00 address, but not the binding from paula_floppy's real "
-            "`index` output to that pin (minimig.v:526+:647) -- a severed join passes unchanged. "
+            "`index` output to that pin (minimig.v:536+:657) -- a severed join passes unchanged. "
             "hrm/ch8-disk-index-interrupt-path's PROP-FLAG-PIN assertion (opus:8-cia.c56, opus:8-dskint.c9, "
             "sol:8-int.c9) now carries the FLAG-pin journey, pulsing the real `index` output and carrying it "
             "across the real join.");

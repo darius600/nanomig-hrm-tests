@@ -46,7 +46,7 @@
 //   affect any measurement below. cpu_address_in is declared [23:1]
 //   (gary.v:51) -- A0 is not present on this port; the byte lane a real
 //   68000 cycle would pick via A0 is decided outside gary by cpu_hwr/
-//   cpu_lwr (per sol:F-signals.c63's own evidence, minimig.v:614,:639).
+//   cpu_lwr (per sol:F-signals.c63's own evidence, minimig.v:624,:649).
 //
 // CLAIM COVERAGE: all 117 claims in this package's slice of
 //   2026-09-17_appF_packages.jsonl are cited exactly where

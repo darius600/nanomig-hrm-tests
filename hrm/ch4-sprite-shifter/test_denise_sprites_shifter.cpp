@@ -56,7 +56,7 @@
 //   NON-GOALS). Confirmed by reading denise_sprites.v's own instantiation
 //   of this module (sps0..sps7, lines 319-453): clk7_en is its only
 //   clock enable -- SPRxDATA and SPRxDATB are latched on it while aen
-//   selects them (denise_sprites_shifter.v:257-269) -- and `shift` is
+//   selects them (denise_sprites_shifter.v:283-295) -- and `shift` is
 //   generated externally from spres/c1/c3
 //   (`shift = ~c1 & ~c3` for spres==2'b00/01, the OCS/ECS default this
 //   package's own claims describe -- SuperHires's spres!=0 timing is out

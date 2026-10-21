@@ -31,7 +31,7 @@
 //   the manual settles it: appA-playfield/p271.txt:8 and appB3/p291.txt:27
 //   both print 'BPLCON0  100  W'; appA-playfield/p271.txt:13 prints
 //   'BPLCON2  104  W'. $DFF104 is BPLCON2's address; BPLCON0 is $DFF100.
-//   denise.v:59-60 agrees (`parameter BPLCON0 = 9'h100;`,
+//   denise.v:60-61 agrees (`parameter BPLCON0 = 9'h100;`,
 //   `parameter BPLCON2 = 9'h104;`, confirmed by direct read). So p.333
 //   attaches BPLCON2's real address to BPLCON0, not to BPLCON2 -- neither
 //   register printed on that line owns $DFF104 under this reading. Per the
@@ -54,7 +54,7 @@
 //
 // FIXTURE LIVENESS / DFF104-PROBE. No claim id, no manual page: two BPLCON0
 //   bits reach `denise`'s own top-level output ports directly -- bit 15 to
-//   `hires` (denise.v:180) and bit 6 to `shres` (denise.v:187) -- so
+//   `hires` (denise.v:182) and bit 6 to `shres` (denise.v:189) -- so
 //   "the write arrived" is observed on a primary output, not inferred from
 //   a read multiplexer that could itself be the thing under test (denise's
 //   own data_out has no case for BPLCON0 or BPLCON2 at all; both are
@@ -144,10 +144,10 @@ int main(int argc, char** argv) {
 
     // Register addresses: documented Amiga custom-chip byte offsets,
     // presented as word indices (byte address >> 1) on reg_address_in[8:1]
-    // -- confirmed at denise.v:39 and denise.v:56-65's own address table.
-    const int BPLCON0_ADDR = 0x80;  // write, byte $100 -- denise.v:59
+    // -- confirmed at denise.v:39 and denise.v:57-66's own address table.
+    const int BPLCON0_ADDR = 0x80;  // write, byte $100 -- denise.v:60
     const int DFF104_ADDR  = 0x82;  // byte $104 -- p.333's printed (wrong)
-                                     // BPLCON0 address; denise.v:60 names
+                                     // BPLCON0 address; denise.v:61 names
                                      // this BPLCON2's real address instead.
 
     // ========================================================================
@@ -166,8 +166,8 @@ int main(int argc, char** argv) {
     checks.expect(
         hires_after_100 == 1 && shres_after_100 == 1 && hires_cleared_after_100 == 0,
         "FIXTURE-LIVENESS: writing 0x8000 to BPLCON0's own address ($DFF100) drives "
-        "`hires` (denise.v:180, BPLCON0 bit 15) to " + hexbit(hires_after_100) +
-        ", and a second write of 0x0040 there drives `shres` (denise.v:187, bit 6) to " +
+        "`hires` (denise.v:182, BPLCON0 bit 15) to " + hexbit(hires_after_100) +
+        ", and a second write of 0x0040 there drives `shres` (denise.v:189, bit 6) to " +
         hexbit(shres_after_100) + " while `hires` returns to " +
         hexbit(hires_cleared_after_100) + " -- the write-to-primary-output data path "
         "for BPLCON0 is alive at this boundary before any claim below is declined on "
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
     checks.note(
         "Writing 0x8000 (BPLCON0's own hires bit, bit 15) to BPLCON0's printed-correct "
         "address $DFF100 drives `hires` high (" + hexbit(hires_at_100) + ") -- "
-        "'BPLCON0  100  W' (appA-playfield/p271.txt:8, appB3/p291.txt:27), denise.v:59 "
+        "'BPLCON0  100  W' (appA-playfield/p271.txt:8, appB3/p291.txt:27), denise.v:60 "
         "`parameter BPLCON0 = 9'h100`.");
 
     do_reset();
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     checks.note(
         "Writing the SAME word (0x8000) to $DFF104 -- p.333's printed (wrong) address "
         "for 'BPLCON0 write only' -- leaves `hires` at " + hexbit(hires_at_104) +
-        ": $DFF104 does not reach BPLCON0's own bit-15 wiring. denise.v:60 names $104 "
+        ": $DFF104 does not reach BPLCON0's own bit-15 wiring. denise.v:61 names $104 "
         "as BPLCON2's own address (`parameter BPLCON2 = 9'h104`), a different register "
         "entirely, confirmed against appA-playfield/p271.txt:13 ('BPLCON2  104  W') -- "
         "neither register p.333 labels with $DFF104 is the one that lives there.");

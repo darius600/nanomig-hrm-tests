@@ -439,7 +439,7 @@ int main(int argc, char** argv) {
 
     // =====================================================================
     // CIAA-IRQ-REACHES-INT2 -- p.354's general IRQ-pin description
-    // (sol:F-signals.c84, opus:F-signals.c15), CIAA leg only (minimig.v:621,
+    // (sol:F-signals.c84, opus:F-signals.c15), CIAA leg only (minimig.v:631,
     // irq -> int2): the claims' classify.note records the CIAB leg as
     // graded by hrm/ch8-disk-index-interrupt-path PROP-FLAG-PIN
     // (irq -> int6). ch1-cia-
@@ -479,14 +479,14 @@ int main(int argc, char** argv) {
             "-- graded for the CIAA leg only, per "
             "these uids' own classify.note: the CIAB leg is already "
             "graded by ch8-disk-index-interrupt-path PROP-FLAG-PIN "
-            "(irq -> int6), so only the CIAA leg (minimig.v:621, "
+            "(irq -> int6), so only the CIAA leg (minimig.v:631, "
             "irq -> int2) is fresh here): \"IRQ is an open drain output "
             "normally connected to the processor interrupt input.\" -- "
             "ciaa's own "
             "`irq` pin, driven true by an unmasked Timer A underflow (the "
             "same mechanism ch1-cia-timers already grades at ciaa alone), "
             "is not merely present at the chip boundary but actually "
-            "reaches `int2` at the minimig.v:621 join -- int2 is false "
+            "reaches `int2` at the minimig.v:631 join -- int2 is false "
             "beforehand and becomes true once the timer underflows.");
     }
     // MUTATION CIAA-IRQ-REACHES-INT2 stimulus red MUT_NO_TIMERA_START: never write CRA's start bit at all -- Timer A never starts, so int2_after stays false and the int2_after conjunct goes red.
@@ -650,7 +650,7 @@ int main(int argc, char** argv) {
         "OVL-BIT-WRITE-CLEARS-OVERLAY, sol:7-reset.c8/opus:7-reset.c4): "
         "sol:F-ciaa-map.c10 (this package's own citation of ch7-overlay-"
         "source, declined above) already establishes -- read directly, "
-        "confirmed again here at minimig.v:860-862 -- that `ovl` clears "
+        "confirmed again here at minimig.v:870-872 -- that `ovl` clears "
         "on ANY write to ANY CIAA register (`sel_cia_a & (cpu_lwr|"
         "cpu_hwr)`), with no dependence on register address or bit "
         "pattern at all. That finding resolves both the register-level "

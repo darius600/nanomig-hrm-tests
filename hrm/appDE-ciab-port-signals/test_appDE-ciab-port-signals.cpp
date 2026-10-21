@@ -65,7 +65,7 @@
 //   name-to-bit identity is cited to appF-cia-pin-bindings (for the five it
 //   covers) as established, not re-derived.
 //
-//   RI (bit 2, `ri & _joy3[4]` at minimig.v:648) is NOT one of the five
+//   RI (bit 2, `ri & _joy3[4]` at minimig.v:658) is NOT one of the five
 //   appF-cia-pin-bindings grades -- classify.evidence's own note says "No
 //   accepted package grades a ring indicator at all" and that remains true;
 //   RI's direction-only claim here is fresh coverage, not a duplicate of
@@ -118,7 +118,7 @@
 //     appF-ciab-port-assignments's own `set_porta_in()` documents.
 //   - ciab.v:118: `pa_out[7:0] = {porta_out[7:6],porta_in2[5:0]}` on a PRA
 //     read -- the read mux a PRA read returns.
-//   - minimig.v:648-649 (read for citation only, not this package's own
+//   - minimig.v:658-659 (read for citation only, not this package's own
 //     boundary): `.porta_in({cd,cts,dsr,ri&_joy3[4],1'b1,_joy4[4]})` over
 //     ciab's 6-bit `porta_in[5:0]` places cd=bit5, cts=bit4, dsr=bit3,
 //     ri&_joy3[4]=bit2; `.porta_out({dtr,rts})` over ciab's `porta_out[7:6]`
@@ -132,7 +132,7 @@
 //
 // Non-goals / scope carve-outs:
 //   - which named RS-232 signal sits at which PA bit position -- a
-//     minimig.v:648-649 wiring fact, out of `ciab` alone's boundary; graded
+//     minimig.v:658-659 wiring fact, out of `ciab` alone's boundary; graded
 //     for DTR/RTS/CD/CTS/DSR at hrm/appF-cia-pin-bindings (minimig top);
 //     not re-graded here, cited only.
 //   - CIA-B FLAG carrying INDEX*, the disk index pulse (p.337) -- already
@@ -340,7 +340,7 @@ bool fixture_live_porta(Harness& h) {
 // (ciab.v:20), and with DDRA set to output mode, a PRA write reaches
 // porta_out on BOTH bits independently. This is the direction/position
 // half of "DTR is an output" / "RTS is an output"; the name-to-bit
-// identity half is minimig.v:649, graded at appF-cia-pin-bindings, cited
+// identity half is minimig.v:659, graded at appF-cia-pin-bindings, cited
 // above, not re-graded here.
 // `omit_ddra` is the stimulus mutation: the DDRA=0xFF write is skipped, so
 // PRA writes cannot reach porta_out (pulled high instead).
@@ -360,7 +360,7 @@ bool prop_pa_output_bits(Harness& h, bool omit_ddra) {
 // PROP-PA-INPUT-BITS (p.326, J6 DIR column: CD="I", CTS="I", DSR="I",
 // RI="I"): PA5 (CD, per CD-IS-PRA-BIT5), PA4 (CTS, CTS-IS-PRA-BIT4), PA3
 // (DSR, DSR-IS-PRA-BIT3, all three cited from appF-cia-pin-bindings) and
-// PA2 (RI, minimig.v:648 `ri & _joy3[4]` -- not covered by any accepted
+// PA2 (RI, minimig.v:658 `ri & _joy3[4]` -- not covered by any accepted
 // package, fresh here) are plain, read-only PASS-THROUGH input bits at
 // `ciab`'s own boundary -- `porta_in` is declared `input [5:0]`
 // (ciab.v:19), and a PRA read returns exactly what was driven onto
@@ -485,7 +485,7 @@ int main(int argc, char** argv) {
             "bits 5/4/3/2 = 0/1/0/1; 0x2A -> the complementary 1/0/1/0), independent of any register "
             "write. This is the direction/position half of \"CD/CTS/DSR/RI is an input\" -- narrower than "
             "the name-to-bit binding, graded at `minimig` for CD/CTS/DSR by hrm/appF-cia-pin-bindings "
-            "(cited, not re-derived); RI (PA2, minimig.v:648 `ri & _joy3[4]`) has no accepted-package "
+            "(cited, not re-derived); RI (PA2, minimig.v:658 `ri & _joy3[4]`) has no accepted-package "
             "citation at all, fresh here [p.326 J6, DIR column: CD \"I\", CTS \"I\", DSR \"I\", RI \"I\"] "
             "sol:E-rs232.c158 sol:E-rs232.c159 sol:E-rs232.c161 sol:E-rs232.c166 opus:E-serial-iface.c11 "
             "opus:E-serial-iface.c12 opus:E-serial-iface.c14 opus:E-serial-iface.c19");
@@ -526,7 +526,7 @@ int main(int argc, char** argv) {
         "p.337, CIA-B footer, \"F....INDEX*\" glossed \"disk index pulse*\" (text layer displaces this "
         "gloss onto \"PC...not used\" -- corpus-defects.md, verified against figures/p337.png directly for "
         "this package): hrm/ch8-disk-index-interrupt-path's PROP-FLAG-PIN already grades that a pulse on "
-        "paula_floppy's real `index` output, carried across minimig.v:526+:647 onto ciab's `flag` input, "
+        "paula_floppy's real `index` output, carried across minimig.v:536+:657 onto ciab's `flag` input, "
         "is what ciab treats as the FLAG pin's DSKINDEX* pulse -- ICR bit 4 (FLG) latches and, with FLG "
         "unmasked, `irq` rises (a non-clocked ICR read returns 0x90). PROP-FLAG-PIN's stimulus IS a pulse "
         "(rise then fall), and p.337's own wording states only that the FLAG input carries a PULSE -- no "

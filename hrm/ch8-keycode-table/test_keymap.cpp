@@ -25,7 +25,7 @@
 // SCOPE / TRANSFERABILITY: every red this package can produce is a statement about NanoMig, not
 //   about the Minimig family. Upstream Minimig-AGA_MiSTer at da7632e has
 //   no amiga_keymap.v, no module `keymap` and no hid.v at all --
-//   rtl/minimig.v:207 takes kbd_mouse_data as a top-level input and the
+//   rtl/minimig.v:212 takes kbd_mouse_data as a top-level input and the
 //   HID-to-Amiga translation happens above the chipset, in software.
 //
 // BOUNDARY: keymap(input [6:0] code, output [6:0] amiga) -- two ports,

@@ -81,11 +81,11 @@
 //   every module it instantiates, zero hits for "POT" anywhere). They ARE
 //   decoded in userio.v (parameters POT0DAT/POT1DAT/POTINP/POTGO,
 //   userio.v:57-60), a SIBLING module instantiated as USERIO1 in
-//   minimig.v:551 -- never inside paula.v, and not part of this package's
+//   minimig.v:561 -- never inside paula.v, and not part of this package's
 //   SRC list.
 //   SERDATR ($018), SERDAT ($030) and SERPER ($032) ARE decoded inside
-//   paula_uart.v (paula_uart.v:21-23), instantiated as `pu1` inside paula.v
-//   at paula.v:203.
+//   paula_uart.v (paula_uart.v:26-28), instantiated as `pu1` inside paula.v
+//   at paula.v:208.
 //   Both facts are real and both are kept in the RECORDED text below.
 //   Neither one, by itself, settles a CHIP-column claim -- see the rule
 //   above. All seven rows are DECLINED with record(), naming the
@@ -268,11 +268,11 @@ int main(int argc, char** argv) {
     // reg_address_in[8:1] -- confirmed at paula.v:67 and used by every
     // package in this tree the same way (e.g. paula_intcontroller's own
     // INTENA/INTENAR addresses).
-    const int ADKCON  = 0x4F;  // write, byte $09E -- paula.v:126
-    const int ADKCONR = 0x08;  // read,  byte $010 -- paula.v:127
-    const int SERDAT  = 0x18;  // write, byte $030 -- paula_uart.v:21
-    const int SERDATR = 0x0C;  // read,  byte $018 -- paula_uart.v:22
-    const int SERPER  = 0x19;  // write, byte $032 -- paula_uart.v:23
+    const int ADKCON  = 0x4F;  // write, byte $09E -- paula.v:131
+    const int ADKCONR = 0x08;  // read,  byte $010 -- paula.v:132
+    const int SERDAT  = 0x18;  // write, byte $030 -- paula_uart.v:26
+    const int SERDATR = 0x0C;  // read,  byte $018 -- paula_uart.v:27
+    const int SERPER  = 0x19;  // write, byte $032 -- paula_uart.v:28
     const int POT0DAT = 0x09;  // byte $012 -- userio.v:57, NOT in this fixture
     const int POT1DAT = 0x0A;  // byte $014 -- userio.v:58, NOT in this fixture
     const int POTGOR  = 0x0B;  // byte $016 -- userio.v:59 ("POTINP"), NOT in this fixture
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
     // fixture proves it can deliver a
     // known, distinct word before any read-based assertion is trusted. Uses
-    // paula.v's own ADKCON/ADKCONR pair (paula.v:126-127, 182-198), not any
+    // paula.v's own ADKCON/ADKCONR pair (paula.v:131-132, 182-198), not any
     // of the seven claim rows, so it cannot be confused with any of them.
     // ========================================================================
     do_reset();
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
             "pair 0 data (vert,horiz)'): not asserted -- POT0DAT's address ($012) is decoded nowhere in paula.v or any "
             "module it instantiates (measured: grep over paula.v, paula_uart.v, paula_intcontroller.v, paula_floppy.v, "
             "paula_audio.v and their own children, zero hits for POT anything). It IS decoded in userio.v (parameter "
-            "POT0DAT = 9'h012, userio.v:57), a sibling module instantiated as USERIO1 in minimig.v:551 -- never inside "
+            "POT0DAT = 9'h012, userio.v:57), a sibling module instantiated as USERIO1 in minimig.v:561 -- never inside "
             "paula.v, and not in this package's Makefile SRC list. A CHIP-column letter names which chip answers at an "
             "address; this fixture never receives userio.v's decode logic and so can return neither a yes nor a no "
             "about it. userio.v is the module that would decide this claim -- p.287's legend ('A=Agnus chip, "
@@ -337,7 +337,7 @@ int main(int argc, char** argv) {
             "T2-POT1DAT (p.289, opus:8-appB.c25 sol:8-appB.c24, quote 'POT1DAT      *014   R           P (E)Pot counter "
             "pair 1 data (vertfhoriz)'): not asserted -- POT1DAT's address ($014) is decoded nowhere in paula.v or any "
             "module it instantiates (measured: grep, zero hits). It IS decoded in userio.v (parameter POT1DAT = "
-            "9'h014, userio.v:58), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
+            "9'h014, userio.v:58), instantiated as USERIO1 in minimig.v:561, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
             "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof. The '(E)' mark is additionally out of scope here "
@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
             "data read (formerly POTINP)'): not asserted -- POTGOR's address ($016) is decoded nowhere in paula.v or "
             "any module it instantiates (measured: grep, zero hits). It IS decoded in userio.v under the RTL's own "
             "name for the same address, parameter POTINP = 9'h016 (userio.v:59, matching the manual's own parenthetical "
-            "'formerly POTINP'), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
+            "'formerly POTINP'), instantiated as USERIO1 in minimig.v:561, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
             "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof.");
@@ -368,7 +368,7 @@ int main(int argc, char** argv) {
             "T7-POTGO (p.289, opus:8-appB.c50 sol:8-appB.c49, quote 'POTGO        *034   W           P    Pot port "
             "data write and start'): not asserted -- POTGO's address ($034) is decoded nowhere in paula.v or any "
             "module it instantiates (measured: grep, zero hits). It IS decoded in userio.v (parameter POTGO = "
-            "9'h034, userio.v:60), instantiated as USERIO1 in minimig.v:551, never inside paula.v and not in this "
+            "9'h034, userio.v:60), instantiated as USERIO1 in minimig.v:561, never inside paula.v and not in this "
             "package's SRC list. userio.v is the module that would decide this claim -- symmetric with "
             "SERDATR/SERDAT/SERPER's presence below (see file header), p.287's legend names a chip, not a "
             "module, so this absence is not read as disproof.");
@@ -383,7 +383,7 @@ int main(int argc, char** argv) {
     // Stimulus: SERDAT=0x0001 -- one data bit set at position 0, so TX shifts
     // exactly once before the shift register reaches 0 and stops: a single,
     // unambiguous LOW pulse on txd whose width is governed purely by SERPER
-    // (paula_uart.v:48-64, 77-142).
+    // (paula_uart.v:58-74, 77-142).
     // ========================================================================
     do_reset();
     int width_fast;
@@ -407,7 +407,7 @@ int main(int argc, char** argv) {
             "P=Paula chip.'): not asserted -- a write at SERDAT's own address ($030) does start a transmission "
             "(txd left its idle-high state and returned to it, low_at=" + std::to_string(low_at) + " high_at=" +
             std::to_string(high_at) + "), which only paula_uart's TX logic (instantiated inside this fixture as pu1, "
-            "paula.v:203) can produce. Per the chip-column rule in the file header, a working transmitter inside the module named "
+            "paula.v:208) can produce. Per the chip-column rule in the file header, a working transmitter inside the module named "
             "`paula` is not, by the p.287 legend's own words, proof that the physical Paula chip owns this address -- "
             "the legend names a chip, not this clone's module layout.");
     }
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
             "has looped back through paula_uart's RX state machine does return content that differs from both the "
             "reset baseline (0x" + baseline_hex +
             ") and an unaddressed 0x0000 -- the data genuinely arrived at this register's own read address, which "
-            "only paula_uart (instantiated inside this fixture, pu1, paula.v:203) can produce. Per the chip-column rule "
+            "only paula_uart (instantiated inside this fixture, pu1, paula.v:208) can produce. Per the chip-column rule "
             "in the file header, a working, content-carrying UART inside the module named `paula` is not, by the p.287 legend's "
             "own words, proof that the physical Paula chip owns this address -- the same non-evidentiary status "
             "this package already gives the POT rows' absence from `paula`.");

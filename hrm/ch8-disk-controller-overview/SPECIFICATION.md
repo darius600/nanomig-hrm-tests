@@ -126,7 +126,7 @@ exclusivity word ("only") whose bare grading would overreach.
   controllable sense signals, each driven by its own disk-sensing condition,
   reach paula_floppy's own ports. Measured and printed, not graded —
   declined via `record()`: this fixture never reaches CIAAPRA itself (the
-  `minimig.v:622` join), so a severed or swapped join would pass.
+  `minimig.v:632` join), so a severed or swapped join would pass.
   `hrm/ch8-cia-disk-signal-bindings`'s PA5/PA4/PA3/PA2-BINDING assertions
   grade the fact through a real CPU read of CIAAPRA ($BFE001).
 - **P-CIABPRB-EIGHT-BITS** — `opus:8-dsk.c24`, `sol:8-reglist.c6`;
@@ -136,7 +136,7 @@ exclusivity word ("only") whose bare grading would overreach.
   each). Eight independently-drivable control inputs (`_sel[3:0]`, `_step`,
   `direc`, `side`, `_motor`) reach paula_floppy, with selection, control and
   stepping functions. Measured and printed, not graded — declined via
-  `record()`: this fixture never reaches CIABPRB itself (the `minimig.v:650`
+  `record()`: this fixture never reaches CIABPRB itself (the `minimig.v:660`
   join). `hrm/ch8-cia-disk-signal-bindings`'s PB7-BINDING through
   PB0-BINDING assertions grade the fact through a real CPU write to CIABPRB
   ($BFD100).

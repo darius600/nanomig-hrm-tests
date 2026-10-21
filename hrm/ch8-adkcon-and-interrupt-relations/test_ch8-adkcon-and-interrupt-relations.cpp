@@ -3,7 +3,7 @@
 // interrupt-request bit, plus the ADKCON/ADKCONR and SERDAT/SERDATR
 // register-summary rows, at the `paula` boundary (paula.v:59), per
 // SPECIFICATION.md. `paula` instantiates paula_uart, paula_intcontroller,
-// paula_floppy and paula_audio directly (paula.v:203,220,243,289) -- INTREQ
+// paula_floppy and paula_audio directly (paula.v:208,220,243,289) -- INTREQ
 // is invisible at paula_uart alone, which is exactly why these 97 claims
 // are assigned here rather than to a paula_uart package.
 //
@@ -146,11 +146,11 @@ const uint8_t ADDR_DMACON  = 0x4B;  // $096 >> 1
 const uint8_t ADDR_ADKCON  = 0x4F;  // $09E >> 1
 
 // ADKCON/INTREQ/DMACON all use the chipset SET/CLR convention
-// (paula.v:187-193, paula_intcontroller.v:88-97): bit 15 of the write
+// (paula.v:192-198, paula_intcontroller.v:88-97): bit 15 of the write
 // selects OR (set, 1) or AND-NOT (clear, 0) against the named data bits.
 const uint16_t SETCLR = 0x8000;
 
-// SERDATR bit positions (paula_uart.v:248, serdatr={rx_ovrun, rx_rbf,
+// SERDATR bit positions (paula_uart.v:258, serdatr={rx_ovrun, rx_rbf,
 // tx_tbe, tx_tsre, rx_rxd} at bits 15:11 of data_o).
 const uint16_t SDR_BIT15_OVRUN = 0x8000;
 const uint16_t SDR_BIT14_RBF   = 0x4000;
@@ -164,7 +164,7 @@ const uint16_t INTREQ_BIT0_TBE  = 0x0001;
 const uint16_t INTREQ_BIT11_RBF = 0x0800;
 
 // ADKCON bit positions (appA-audio/p265.txt; fan-outs confirmed at
-// paula.v:211 bit11->uartbrk, :269 bit10->wordsync; all others store with
+// paula.v:216 bit11->uartbrk, :269 bit10->wordsync; all others store with
 // no consumer, confirmed by reading paula.v's instantiations in full).
 const uint16_t ADK_BIT14_PRECOMP1 = 0x4000;
 const uint16_t ADK_BIT13_PRECOMP0 = 0x2000;
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
 #endif
             "SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT (opus:8-serial.c82 p.257 \"11 RXD Direct read of RXD pin on "
             "Paula chip.\"): SERDATR bit 11 takes " + std::to_string(latency) + " clk7_en edge(s) to reflect a "
-            "change on `rxd` (two synchroniser flops plus one further register, paula_uart.v:36-43,234), not the "
+            "change on `rxd` (two synchroniser flops plus one further register, paula_uart.v:46-53,234), not the "
             "zero-cycle, combinational latency \"direct read\" would predict. Whether \"direct\" forbids a "
             "synchroniser is the adjudication (not this assertion's to make); the measured latency is not in "
             "doubt.");
@@ -662,8 +662,8 @@ int main(int argc, char** argv) {
     // p.265, same table's row 15: "15 SET/CLR Set/clear control bit...".
     // opus:8-adkcon.c12 (the row-15 half -- the "one shared table"
     // prediction that fails for exactly this one row). `adkcon` is
-    // declared `reg [14:0]` (paula.v:132) and ADKCONR is built as
-    // `{1'b0,adkcon[14:0]}` (paula.v:198): bit 15 is structurally always 0.
+    // declared `reg [14:0]` (paula.v:137) and ADKCONR is built as
+    // `{1'b0,adkcon[14:0]}` (paula.v:203): bit 15 is structurally always 0.
     // ========================================================================
     {
         Rig rig;
@@ -697,8 +697,8 @@ int main(int argc, char** argv) {
             "ADKCONR-BIT15-SETCLR-NEVER-READS-BACK (opus:8-adkcon.c12 p.265, row 15 of the shared BIT#/USE table, "
             "\"15 SET/CLR Set/clear control bit. Determines if bits written with a 1 get set or cleared.\"): the "
             "same 'one shared table' claim that assertion 12 confirms true for rows 0-14 predicts row 15's "
-            "written bit (1) reads back too; measured, ADKCONR's bit 15 is structurally always 0 (paula.v:132 "
-            "`reg [14:0] adkcon`, paula.v:198 `{1'b0,adkcon[14:0]}`) regardless of what was written -- it never "
+            "written bit (1) reads back too; measured, ADKCONR's bit 15 is structurally always 0 (paula.v:137 "
+            "`reg [14:0] adkcon`, paula.v:203 `{1'b0,adkcon[14:0]}`) regardless of what was written -- it never "
             "reads back the SET/CLR mode, unlike every other row of the same table. Whether a write-only control "
             "bit *should* read back is the adjudication (not this assertion's to make); ADKCONR=" + hex4(v) +
             " (bit 15 = 0) is not in doubt.");
@@ -807,7 +807,7 @@ int main(int argc, char** argv) {
             "pin to zero.\"; "
             "sol:8-adkcon.c7 p.257 same bit, restored duplicate of opus:8-serial.c100; also p.265 \"11 UARTBRK "
             "Forces a UART break (clears TXD) if true.\"): after reset txd idles high; setting ADKCON bit 11 "
-            "forces it low (paula.v:211 wires adkcon[11] to paula_uart's uartbrk, paula_uart.v:136); clearing bit "
+            "forces it low (paula.v:216 wires adkcon[11] to paula_uart's uartbrk, paula_uart.v:146); clearing bit "
             "11 releases it back to the idle-mark 1");
     }
 
@@ -838,7 +838,7 @@ int main(int argc, char** argv) {
         uint16_t v_clr = rig.read_reg(ADDR_ADKCONR);
         checks.note("BITS-12-9-8: set=" + hex4(v_set) + " clr=" + hex4(v_clr) +
             " -- confirmed by reading paula.v in full: adkcon's only two fan-outs anywhere are bit 11 "
-            "(paula.v:211, UARTBRK, graded above) and bit 10 (paula.v:269, WORDSYNC, graded elsewhere -- see "
+            "(paula.v:216, UARTBRK, graded above) and bit 10 (paula.v:283, WORDSYNC, graded elsewhere -- see "
             "SPECIFICATION.md). Bits 12, 9 and 8 drive no submodule port and reach no logic; storage with no "
             "consumer, matching the same finding hrm/ch8-adkcon-disk-control-bits already made for these same "
             "three bits, and not asserted as a functional claim by any of the three uids below.");
@@ -901,7 +901,7 @@ int main(int argc, char** argv) {
     checks.record("ALREADY GRADED in hrm/ch5-audio-dmacon-adkcon, assertions ADKCON-SETCLR-SET (position/storage "
         "half) and ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS (behaviour half, EXPECTED/GRADED RED there: "
         "paula_audio_channel.v's own first line says attached modes are not supported, and paula.v instantiates "
-        "paula_audio with no adkcon port at all -- confirmed independently by reading paula.v:289-307). "
+        "paula_audio with no adkcon port at all -- confirmed independently by reading paula.v:303-321). "
         "18 claims, all p.265 USE3PN..USE0V1 bit names/effects and the period/volume alternation NOTE: "
         "opus:8-adkcon.c35, opus:8-adkcon.c36 (USE3PN, bit7), opus:8-adkcon.c37, opus:8-adkcon.c38 (USE2P3, bit6), "
         "opus:8-adkcon.c39, opus:8-adkcon.c40 (USE1P2, bit5), opus:8-adkcon.c41, opus:8-adkcon.c42 (USE0P1, bit4), "

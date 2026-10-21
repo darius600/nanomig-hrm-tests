@@ -171,7 +171,7 @@
 //   candidate finding is CONFIRMED, exactly as classified, not
 //   adjusted to pass.
 //
-//   FINDING -- denise_sprites.v:474 reads `if (attach1 || (!aga &&
+//   FINDING -- denise_sprites.v:595 reads `if (attach1 || (!aga &&
 //   attach0))`. At aga=0 (OCS/ECS -- this package's own measurement
 //   basis, matching the sibling harnesses' own default), the EVEN
 //   sprite's own ATTACH bit (attach0) alone -- with the ODD sprite's
@@ -193,7 +193,7 @@
 //
 // MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: built with -DMUT_FIXTURE=1, which makes the MSB-run stimulus 0x0001 instead of 0x8000 (identical to the LSB-run) -> FAIL (2 passed, 2 failed), only FIXTURE-LIVE-DATA-PATH newly red (MSB hpos=145 became equal to LSB hpos=145, no longer distinct or monotonic; mid hpos=138 unchanged). Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
 // MUTATION ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT stimulus red: built with -DMUT_ODD=1, which withholds the ATTACH stimulus in case (ii) (SPR1CTL bit7 measured at 0 instead of 1) -> FAIL (2 passed, 2 failed), only ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT newly red (trace(ii) became identical to trace(i), no longer distinct); ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE, already red at baseline, stayed red for its own reason, confirming the isolation held. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
-// MUTATION ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE stimulus green: built with -DMUT_EVEN=1, which re-measures case (iii) and a fresh case-(i)-shaped baseline both at aga=1 instead of aga=0 (denise_sprites.v:474's own `!aga` term, read while diagnosing the baseline red result above) -> PASS (4 passed, 0 failed), only ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE newly green -- confirming the finding is scoped to aga=0 (OCS/ECS): at aga=1 (AGA) this RTL matches the manual. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged. (Changing case (iii)'s own SPR0DATA image alone -- e.g. 0x4000 instead of 0x8000, aga left at 0 -- would NOT discriminate: it produces NO colour change at all, because the finding holds for any non-zero image once attach0 opens the path at aga=0, not a stimulus this assertion's own computation is sensitive to.)
+// MUTATION ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE stimulus green: built with -DMUT_EVEN=1, which re-measures case (iii) and a fresh case-(i)-shaped baseline both at aga=1 instead of aga=0 (denise_sprites.v:595's own `!aga` term, read while diagnosing the baseline red result above) -> PASS (4 passed, 0 failed), only ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE newly green -- confirming the finding is scoped to aga=0 (OCS/ECS): at aga=1 (AGA) this RTL matches the manual. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged. (Changing case (iii)'s own SPR0DATA image alone -- e.g. 0x4000 instead of 0x8000, aga left at 0 -- would NOT discriminate: it produces NO colour change at all, because the finding holds for any non-zero image once attach0 opens the path at aga=0, not a stimulus this assertion's own computation is sensitive to.)
 // MUTATION CODE-0000-YIELDS-TRANSPARENT-PIXEL stimulus red: built with -DMUT_ZERO=1, which changes SPR0DATA from 0x0000 to 0x8000 (combined code no longer 0000) -> FAIL (2 passed, 2 failed), only CODE-0000-YIELDS-TRANSPARENT-PIXEL newly red (sprdata went non-zero at the expected shifted-out position); ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE, already red at baseline, stayed red for its own reason. Rebuilt with no flags: 3 passed, 1 failed, the one finding unchanged.
 // MUTATION TABLE45-ROW0-REGISTER-NUMBER-CONFLICT: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 //
@@ -516,7 +516,7 @@ int main(int argc, char** argv) {
 #if MUT_EVEN
         // MUTATION: aga changed from 0 to 1 for BOTH sides of the
         // comparison (a fresh, self-contained pair, not the outer aga=0
-        // `baseline`). denise_sprites.v:474 reads `attach1 || (!aga &&
+        // `baseline`). denise_sprites.v:595 reads `attach1 || (!aga &&
         // attach0)` -- at aga=1 the `!aga` term is 0, so attach0 (the
         // even sprite's own bit) can no longer open the attach path, and
         // this assertion is expected to flip from red to green.

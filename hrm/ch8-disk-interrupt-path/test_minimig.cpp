@@ -43,9 +43,9 @@
 // BOUNDARY: minimig.v ports cpu_address/cpu_r_w/_cpu_as/_cpu_uds/_cpu_lds/
 //   cpudata_in/_cpu_dtack/cpu_data (the external 68000 bus, read/write side),
 //   _cpu_ipl (the signal under test -- minimig.v's own top-level output,
-//   `assign _cpu_ipl = int7 ? 3'b000 : _iplx;` at minimig.v:760, and this
+//   `assign _cpu_ipl = int7 ? 3'b000 : _iplx;` at minimig.v:770, and this
 //   build does NOT define ENABLE_CART, so minimig.v's own `else` branch ties
-//   int7 permanently to 1'b0 (minimig.v:754) -- _cpu_ipl equals _iplx, i.e.
+//   int7 permanently to 1'b0 (minimig.v:764) -- _cpu_ipl equals _iplx, i.e.
 //   paula_intcontroller's own `_ipl` output, for the whole run), the SD
 //   floppy-image interface (sdc_img_mounted/sdc_rd/sdc_busy/sdc_byte_*, same
 //   ports paula_floppy exposes standalone, passed straight through paula.v),
@@ -94,16 +94,16 @@
 //     accidentally armed by a PREVIOUS trial's leftover dsklen[15]=1 -- see
 //     the priming-write comment on arm_dsklen() below.
 //   - Disk DMA additionally needs paula.v's own `dsken` (`= dmacon[4] &
-//     dmaen`, paula.v:174, wired to paula_floppy's `enable` port, paula.v:251)
+//     dmaen`, paula.v:179, wired to paula_floppy's `enable` port, paula.v:265)
 //     -- a SEPARATE gate from paula_floppy's own internal dmaen (the
 //     DSKLEN-armed one). Both must be set: DMACON master (bit9) + DSKEN
 //     (bit4) = 0x8210, written once, plus each trial's own DSKLEN arm.
 //   - `wordsync` (paula_floppy's own input, a free pin on the standalone
-//     fixture) is `adkcon[10]` here (paula.v:269) -- ADKCON must be written
+//     fixture) is `adkcon[10]` here (paula.v:283) -- ADKCON must be written
 //     to set/clear it, not driven as a raw pin.
 //   - Disk selection: paula_floppy's `_sel`/`_motor`/`side`/`direc`/`_step`
 //     (free pins standalone) are CIA-B's own PRB output bits here
-//     (minimig.v:644, `.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,
+//     (minimig.v:654, `.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,
 //     direc,_step})`) -- driven by a real CIA-B PRB bus write, at the
 //     standard Amiga address $BFD100 (CIA-B: even byte address, high data
 //     lane, confirmed against ch7-overlay-source's own CIAB_PRA=$BFD000
@@ -182,7 +182,7 @@
 //   register this file also reads (confirmed identical RTL, paula_intcontroller.v),
 //   but reached one wire short of minimig.v's own top-level `_cpu_ipl` port:
 //   that package's own SPECIFICATION.md and .cpp never instantiate `minimig`
-//   at all, so the mux at minimig.v:760 (`_cpu_ipl = int7 ? 3'b000 : _iplx`)
+//   at all, so the mux at minimig.v:770 (`_cpu_ipl = int7 ? 3'b000 : _iplx`)
 //   is never itself exercised in that package's own run -- its green result
 //   is genuine evidence that paula_intcontroller's OWN `_ipl` output reaches
 //   level 6 given a real index pulse through both of its joins, resting on
@@ -287,7 +287,7 @@ constexpr uint32_t ADKCON  = 0xDFF09E;
 constexpr uint32_t CIAB_DDRB = 0xBFD300;
 constexpr uint32_t CIAB_PRB  = 0xBFD100;
 
-// _cpu_ipl encoding (minimig.v:760, active-low IPL2-0 presented as a
+// _cpu_ipl encoding (minimig.v:770, active-low IPL2-0 presented as a
 // positive 3-bit number): idle 3'b111, level L reads (7-L). Confirmed
 // against paula_intcontroller.v's own casez priority encoder (read in full
 // for this package): bit14/13 (undocumented/EXTER) -> _ipl=1 -> level 6;
@@ -507,7 +507,7 @@ public:
     }
     bool ciab_write(uint32_t addr, uint8_t data) {
         // CIA-B always takes its write data from cpu_data_out[15:8]
-        // (minimig.v:636, `.data_in(cpu_data_out[15:8])`), unconditionally
+        // (minimig.v:646, `.data_in(cpu_data_out[15:8])`), unconditionally
         // -- the byte belongs in the UPPER half of the bus regardless of
         // which strobe fires.
         bool ok = false;
@@ -900,8 +900,8 @@ int main(int argc, char** argv) {
     auto dskblk_trial_dsken_gate = [&](const char* uid, const char* label) {
         // MUTATION (stimulus): DMACON's DSKEN bit (bit4) is left CLEARED
         // for this trial instead of enabled. paula.v's own `dsken` wire
-        // (paula.v:174, `dsken = dmacon[4] & dmaen`) feeds paula_floppy's
-        // `enable` port (paula.v:251); with DSKEN off, `dma_active`
+        // (paula.v:179, `dsken = dmacon[4] & dmaen`) feeds paula_floppy's
+        // `enable` port (paula.v:265); with DSKEN off, `dma_active`
         // (`= dmaen && !lenzero && enable`) can never assert regardless of
         // DSKLEN's own arm, so neither the generator nor agnus's automatic
         // drain ever run.

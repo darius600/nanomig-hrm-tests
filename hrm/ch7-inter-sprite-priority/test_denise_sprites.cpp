@@ -44,7 +44,7 @@
 //   cascade (the nsprite[1:0] group tested first, then [3:2], then [5:4],
 //   then [7:6], each testing the lower sprite of its own pair first) and
 //   the sprdata packing ({esprm or osprm, 2-bit group id, 2-bit raw pixel})
-//   are at denise_sprites.v:32-64 and :470-512, as the claims file's own
+//   are at denise_sprites.v:32-64 and :591-633, as the claims file's own
 //   classify.evidence field states.
 //
 // STIMULUS DESIGN: for the twenty-eight pairwise assertions (PRI-*) and the

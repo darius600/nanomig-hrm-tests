@@ -18,7 +18,7 @@ and the `expect()`/`note()`/`record()` calls are in the test source.
 **Every red this package can produce is a statement about NanoMig, not about
 the Minimig family.** In the upstream this project derives from,
 `MiSTer-devel/Minimig-AGA_MiSTer` at `da7632e`, there is no
-`amiga_keymap.v`, no module `keymap` and no `hid.v`: `rtl/minimig.v:207`
+`amiga_keymap.v`, no module `keymap` and no `hid.v`: `rtl/minimig.v:212`
 takes `kbd_mouse_data` as a top-level input and the HID-to-Amiga translation
 happens above the chipset, in software, on MiSTer's ARM side. `src/misc`
 (where `keymap` and `hid` live) is not shared lineage the way `src/minimig-

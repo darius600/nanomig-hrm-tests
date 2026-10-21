@@ -87,22 +87,22 @@
 //   entirely unrelated to `ovl` -- a decode sample that ignores `dbr` can
 //   read the DMA branch and give a self-contradictory reading
 //   (sel_chip[0]=1 while ovl=1, impossible per gary.v:159 alone), which is
-//   why read_with_decode samples only while dbr=0; minimig.v:398
+//   why read_with_decode samples only while dbr=0; minimig.v:403
 //   `wire cpuhlt = 1'b0;` (tied low in this build, so gary's `cpu_hlt` term
-//   never masks the overlay bit's own effect); minimig.v:337/339 declare
+//   never masks the overlay bit's own effect); minimig.v:342/339 declare
 //   `sel_chip`/`sel_kick` as minimig's
-//   own top-level internal wires (GARY1's outputs), minimig.v:684
+//   own top-level internal wires (GARY1's outputs), minimig.v:694
 //   `.address_out(cpu_address_out)` feeds gary's `cpu_address_in` from the
 //   SAME [23:1] Verilog-numbered wire the top-level `cpu_address` port
 //   ultimately drives -- so the appF-recorded trap (hand-built address bit
 //   patterns misalign against minimig's own [23:1] port numbering) is
 //   avoided the same way appF avoided it: real hex byte addresses through
 //   bus_cycle()'s `(byte_addr>>1)` translation, never a hand-built vector.
-//   minimig.v:604-605 `wire [3:0] porta_out; assign {_fire1_dat,_fire0_dat,
+//   minimig.v:614-615 `wire [3:0] porta_out; assign {_fire1_dat,_fire0_dat,
 //   _led} = porta_out[3:1];` (so porta_out[0], PA0's own output value, is
 //   connected to nothing at minimig level -- confirmed independently here,
 //   the same fact appF-cia-pin-bindings recorded for its own PA0 claim);
-//   minimig.v:210/427 `output pwr_led; ... assign pwr_led = ~_led;`;
+//   minimig.v:215/427 `output pwr_led; ... assign pwr_led = ~_led;`;
 //   ciaa.v:262 `assign porta_out[3:0] = {(~ddrporta[7:6]|regporta[3:2]),
 //   (~ddrporta[1:0]|regporta[1:0])}` -- the 8520's own pull-up model: an
 //   input-direction bit (ddrporta=0) reads back forced to 1 regardless of
@@ -114,7 +114,7 @@
 //   !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft;` (cd32pad is tied
 //   1'b0 at userio.v:91, so the live term is always `_sjoy1[4] & _mleft`),
 //   :233-239 build `dmouse0dat` (JOY0DAT) from that same `_sjoy1`;
-//   minimig.v:622 `.porta_in({_fire1,_fire0,...})` places _fire0 at PA6 and
+//   minimig.v:632 `.porta_in({_fire1,_fire0,...})` places _fire0 at PA6 and
 //   _fire1 at PA7. No paula_audio.v line implements a low-pass filter,
 //   cutoff constant or gated signal PA1 could plausibly drive -- grepped
 //   directly for "filter"/"cutoff"/"lowpass" across every minimig-aga
@@ -417,7 +417,7 @@ int main(int argc, char** argv) {
     // and ovl=0 through a REAL CIA-A PRA write at `minimig` rather than by
     // hand-setting gary's `ovl` input in isolation -- is measured below as
     // a note(), not graded fresh: it exercises the JOIN (CIA-A write ->
-    // minimig.v:861-862's ovl register -> gary's decode) that neither
+    // minimig.v:871-872's ovl register -> gary's decode) that neither
     // ch7-overlay-source (stops at reading `ovl` itself) nor
     // ch7-reset-overlay (gary alone, ovl hand-set) tests end-to-end, but
     // the RESULT is not new -- it reproduces the same two states those two
@@ -439,7 +439,7 @@ int main(int argc, char** argv) {
         bool dtack2 = h.read_with_decode(CHIP_BASE, chip0_ovl0, kick_ovl0);
 
         checks.note("PA0-OVL-DECODE-VIA-MINIMIG-JOIN: read $000000 with "
-                    "ovl=1 (cold-start default, minimig.v:861) -> sel_chip[0]=" +
+                    "ovl=1 (cold-start default, minimig.v:871) -> sel_chip[0]=" +
                     std::to_string(chip0_ovl1) + ", sel_kick=" + std::to_string(kick_ovl1) +
                     " (dtack seen=" + std::to_string(dtack1) + "); after a real CIA-A PRA "
                     "write clears ovl to " + (h.dut->ovl ? "1" : "0") +
@@ -495,7 +495,7 @@ int main(int argc, char** argv) {
             "with CIAAPRA bit1 (PA1) configured as output, writing it 0 "
             "drives minimig's own top-level `pwr_led` output to 1 "
             "(asserted/lit) and writing it 1 drives `pwr_led` to 0 -- "
-            "minimig.v:604-605's `_led = porta_out[1]` and minimig.v:427's "
+            "minimig.v:614-615's `_led = porta_out[1]` and minimig.v:432's "
             "`pwr_led = ~_led`, measured through real CPU bus writes, not "
             "read from the assign statements alone. MUTATION: swap which "
             "value (0 or 1) is written first and second -- led_at_pa1_0 "
@@ -522,8 +522,8 @@ int main(int argc, char** argv) {
         "PA1-ROW-PARTIALLY-COVERED (p.337, \"PA1..LED*: led light "
         "(0=bright) / audio filter control (A500 & A2000)\"): the row "
         "bundles two clauses. The LED clause is measured and graded, "
-        "UID-FREE, on PA1-DRIVES-LED-0-IS-BRIGHT above (minimig.v:604-605's "
-        "`_led = porta_out[1]` and minimig.v:427's `pwr_led = ~_led`, "
+        "UID-FREE, on PA1-DRIVES-LED-0-IS-BRIGHT above (minimig.v:614-615's "
+        "`_led = porta_out[1]` and minimig.v:432's `pwr_led = ~_led`, "
         "PASS). The audio-filter clause is NOT constructible on this RTL: "
         "grepped independently across every nanomig-aga source file for "
         "\"filter\", \"cutoff\", \"lowpass\" and \"low_pass\" -- the only "
@@ -573,7 +573,7 @@ int main(int argc, char** argv) {
     //   userio.v:313 `assign _fire0 = ... : _sjoy1[4] & _mleft;` (cd32pad
     //     tied 0 at userio.v:91, so the live term is always
     //     `_sjoy1[4] & _mleft`) -- the SAME _sjoy1 drives _fire0.
-    //   minimig.v:622 places _fire0 at PA6, not PA7.
+    //   minimig.v:632 places _fire0 at PA6, not PA7.
     // So: the connector whose motion produces JOY0DAT has its fire signal
     // on PRA bit 6, not bit 7 -- read directly from the source above, and
     // confirmed live below on the fire-bit half (the JOY0DAT half is a
@@ -643,7 +643,7 @@ int main(int argc, char** argv) {
         "F1-FIRE-CONNECTOR-BIT-GENERIC (p.330, hrm/ch8-ciaapra-fire-buttons "
         "P3, uid-free: 'bit 6 and bit 7 belong to two distinct ports, "
         "whichever numerals those ports carry'; hrm/ch8-cia-disk-signal-"
-        "bindings measures the PA7/PA6=_fire1/_fire0 half at minimig.v:622 "
+        "bindings measures the PA7/PA6=_fire1/_fire0 half at minimig.v:632 "
         "directly) -- the numeral-free core of p.330's FIRE0/FIRE1-to-PRA-"
         "bit paths is already graded. Decline that half. The "
         "numeral-specific half (which PORT NUMBER -- 1 or 2 -- attaches to "
@@ -741,7 +741,7 @@ int main(int argc, char** argv) {
         "OVL-BIT-WRITE-CLEARS-OVERLAY [sol:7-reset.c8, opus:7-reset.c4]): "
         "a write to CIA-A PRA clears ovl -- already graded (that package's "
         "own sibling OTHER-CIA-A-REGISTER-ALSO-CLEARS is red at baseline: "
-        "ANY CIA-A write clears it, minimig.v:861-862, not specifically a "
+        "ANY CIA-A write clears it, minimig.v:871-872, not specifically a "
         "PA0 write). Decline that half. [claims: sol:E-portsig.c9, "
         "opus:E-portsig.c10 -- write-clears sub-proposition only; the "
         "other two halves of this row are declined immediately below]");
@@ -750,11 +750,11 @@ int main(int argc, char** argv) {
         "PA0-BIT-SPECIFIC-NOT-GRADABLE (p.337, hrm/appF-cia-pin-bindings' "
         "own CIAA-MAP-PA0-OVL-REGISTER record(): PA0 being specifically "
         "the bit that clears ovl is not gradable as a positive. "
-        "Independently re-confirmed here, not merely cited: minimig.v:604-"
+        "Independently re-confirmed here, not merely cited: minimig.v:614-"
         "605 `assign {_fire1_dat,_fire0_dat,_led} = porta_out[3:1];` "
         "consumes only porta_out[3:1] -- porta_out[0], PA0's own driven "
         "output value, is connected to nothing at minimig level, and "
-        "minimig.v:862's `sel_cia_a & (cpu_lwr|cpu_hwr)` term that "
+        "minimig.v:872's `sel_cia_a & (cpu_lwr|cpu_hwr)` term that "
         "actually clears ovl reads no register-select or bit-pattern "
         "information at all. There is no PA0-specific gating in this RTL "
         "to test bit-level; inventing one would test a mechanism this "
@@ -775,7 +775,7 @@ int main(int argc, char** argv) {
         "proposition, not a narrower or different-axis one, so declined "
         "per the ordinary rule rather than re-asserted. This package's own "
         "fixture additionally exercises the JOIN (CIA-A write -> "
-        "minimig.v:861-862's ovl register -> gary's decode change) in one "
+        "minimig.v:871-872's ovl register -> gary's decode change) in one "
         "continuous real bus cycle, which neither ch7-overlay-source nor "
         "ch7-reset-overlay does end-to-end -- measured above as "
         "PA0-OVL-DECODE-VIA-MINIMIG-JOIN, reproducing the identical values, "
@@ -834,7 +834,7 @@ int main(int argc, char** argv) {
         "says 'select external 3rd drive' -- an ordinal-to-internal/"
         "external ATTRIBUTION nothing in this RTL distinguishes: "
         "paula_floppy.v:615,:691-694 know only drive index 0..3 and a "
-        "configured count, and minimig.v:378-381 comments them 'disk0 "
+        "configured count, and minimig.v:383-386 comments them 'disk0 "
         "select'..'disk3 select', with no internal/external notion at "
         "all. Not gradable as a positive; not constructible. The same "
         "split applies to appendix F's p.351 twin of this row, declined to "

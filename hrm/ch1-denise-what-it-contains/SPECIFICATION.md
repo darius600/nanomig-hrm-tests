@@ -75,8 +75,8 @@ Agnus's `ntsc` port into `agnus_beamcounter.v`, which decides line counts
 and field height; a `denise`-only fixture cannot distinguish "NTSC hires"
 from "PAL hires" and would produce identical evidence for both. What IS
 inside this boundary and directly observable is the mode-selecting
-mechanism itself: BPLCON0's HIRES bit (denise.v:180, bit 15) and SHRES bit
-(denise.v:187, bit 6) drive the `hires`/`shres` output ports directly and
+mechanism itself: BPLCON0's HIRES bit (denise.v:182, bit 15) and SHRES bit
+(denise.v:189, bit 6) drive the `hires`/`shres` output ports directly and
 combinationally, selecting among the resolution *modes* the four bullets
 describe. Graded (no uid, one shared assertion for both propositions): the
 HIRES/SHRES mode-selection mechanism exists and is directly
@@ -103,7 +103,7 @@ NTSC video standards." PAL/NTSC: Agnus's `ntsc` input and
 `agnus_beamcounter.v`'s separate line-count constants (312 PAL / 262 NTSC)
 -- not a `denise` port, outside this fixture, same reasoning as A3.
 "Bitplane generated": `denise_bitplanes.v` is instantiated inside `denise`
-(denise.v:345) and its containment is already the citation basis for A3's
+(denise.v:361) and its containment is already the citation basis for A3's
 own HIRES/SHRES measurement (the same bitplane-fed pipeline). Actually
 measuring bitplane data reaching a *visible* pixel needs the phase-accurate
 window/hpos state machine `hrm/ch3-bplcon0-display-modes/` and
@@ -119,7 +119,7 @@ beam counter (outside any `denise`-only fixture) for the PAL/NTSC half.
 **B2. `sol:1-components.c52` + `opus:1-components.c51`** (p.3): "Hold-and-
 modify (HAM) mode allows for the display of up to 4,096 colors on screen
 simultaneously." `denise_hamgenerator` is instantiated inside `denise`
-(denise.v:459) -- containment is not in question. But actually measuring
+(denise.v:506) -- containment is not in question. But actually measuring
 "4,096 simultaneously" needs HAM mode enabled, and `hrm/ch3-ham-control-
 field/`'s own header records that the manual **disagrees with itself** about which BPLCON0 bit enables HAM (p.95
 says bit 10; pp.87/90/271 say bit 11) and explicitly declines to resolve
@@ -137,7 +137,7 @@ this one.
 **B4. `sol:1-components.c54` + `opus:1-components.c53`** (p.3, "Displays of
 arbitrary size, larger than the visible viewing area"): both bullets
 describe the same mechanism -- `denise`'s own DIWSTRT/DIWSTOP window
-registers (denise.v:56-57, write path denise.v:290-316) accepting values
+registers (denise.v:57-58, write path denise.v:303-329) accepting values
 outside the nominal edges, plus (for B4 specifically, per its own
 `classify.evidence`) Agnus's vertical window pair, outside this fixture
 regardless. DIWSTRT/DIWSTOP are write-only (no readback via `data_out`,

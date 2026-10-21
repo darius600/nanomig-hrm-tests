@@ -345,7 +345,7 @@ int main(int argc, char** argv) {
     // header says plainly it is "this package's own fixture wrapper -- NOT
     // pinned RTL," wiring gary to ciaa by COPYING how minimig.v connects
     // sel_cia_a, aen and rs, rather than instantiating minimig.v's own join.
-    // A missing or wrong connection in the REAL system top (minimig.v:607-
+    // A missing or wrong connection in the REAL system top (minimig.v:617-
     // 630/762-821) therefore still passes this assertion, because the rig
     // never exercises that real wiring -- only its own hand-written copy of
     // it. This is independently sufficient to withdraw all four, regardless

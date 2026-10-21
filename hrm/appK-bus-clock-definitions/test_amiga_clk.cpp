@@ -59,7 +59,7 @@
 //   on this module are not those pins under another spelling, and three
 //   places in the design say so, none of them written for this test:
 //   amiga_clk.v:47-54 draws c1 tracking clk_7 edge for edge with c3 90
-//   degrees behind it; denise_bitplanes.v:275 says "c1 is the 7MHz clock,
+//   degrees behind it; denise_bitplanes.v:222 says "c1 is the 7MHz clock,
 //   c3 the same clock shifted 90deg"; minimig_sram_bridge.v:46 labels its
 //   c1 waveform "(7.09 MHz)". By the design's own account c1 and c3 are 7M
 //   and CDAC -- which is exactly what this fixture measures them to be.
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
            "connector, and NanoMig has no such connector, so the existence these two headings "
            "assert has no subject here. The ports named c1 and c3 on this module are not those "
            "pins under another spelling: amiga_clk.v:47-54 draws c1 tracking clk_7 edge for edge "
-           "with c3 90 degrees behind it, denise_bitplanes.v:275 calls c1 'the 7MHz clock, c3 the "
+           "with c3 90 degrees behind it, denise_bitplanes.v:222 calls c1 'the 7MHz clock, c3 the "
            "same clock shifted 90deg', and minimig_sram_bridge.v:46 labels its c1 waveform "
            "'(7.09 MHz)'. Measured here and printed above: c1 period = " + std::to_string(c1_period) +
            " clk_28 edges, c3 period = " + std::to_string(c3_period) + ", both equal to 7M's own " +

@@ -23,7 +23,7 @@
 // BOUNDARY: nanomig/src/minimig-aga/denise_collision.v:19 (CLXCON 9h098),
 //   per PACKAGE.md, whose own evidence field additionally cites
 //   denise_collision.v:19-21 (CLXCON 9h098, CLXCON2 9h10e, CLXDAT 9h00e)
-//   and denise.v:474-486 (instantiation with bpldata and nsprite).
+//   and denise.v:521-533 (instantiation with bpldata and nsprite).
 //
 // ORDER OF WORK: this file (assertions, expected values, claim-id coverage)
 // was written and committed from claims.jsonl's quotations and PACKAGE.md's

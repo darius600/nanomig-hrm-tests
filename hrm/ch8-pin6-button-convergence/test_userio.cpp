@@ -55,7 +55,7 @@
 //      which feeds `_fire1`, is driven by `_joy1`. The port comments call
 //      `_joy1` the "default mouse port" and `_joy2` the "default joystick
 //      port".
-//   2. The bit numbering is not in this module. minimig.v:622 joins them as
+//   2. The bit numbering is not in this module. minimig.v:632 joins them as
 //      `.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change})`, and which
 //      concatenation position becomes bit 6 is a fact about ciaa, at a
 //      boundary this fixture does not reach.
@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
     record("opus:8-mbtn.c6 / sol:8-button.c5 (p.232) declined AS A BIT-NUMBER BINDING, and this is "
            "their only mention in this package -- the assertion above carries no uid, because a "
            "uid on a graded line counts as ASSERTED whatever the prose says: \"bit 7 of "
-           "CIAAPRA\" names a position in a register this module does not contain. minimig.v:622 "
+           "CIAAPRA\" names a position in a register this module does not contain. minimig.v:632 "
            "joins the two lines as `.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change})` and "
            "which concatenation position becomes bit 7 is a fact about ciaa. What IS observable "
            "here -- that the second fire line carries a joystick and no mouse -- is graded above.");

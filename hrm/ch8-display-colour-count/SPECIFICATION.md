@@ -2,7 +2,7 @@
 
 Package: `hrm/ch8-display-colour-count`
 Fixture: `denise_colortable` (not `denise`, whose `red`/`green`/`blue`
-ports are 8 bits wide, `denise.v:44-46`).
+ports are 8 bits wide, `denise.v:45-47`).
 Claims file: `hrm-testpipeline/work/ch8-s4-build/ch8-display-colour-count.jsonl`
 (2 claims)
 Subject: printed page 260's "up to 4,096 different colors on-screen
@@ -11,7 +11,7 @@ section's RGB-monitor bullet.
 
 RTL read for this package: `denise_colortable.v` and
 `denise_colortable_ram_mf.v` in full (the `loct` mechanics below and this
-package's own control assertion); `denise.v:44-46` for the port widths.
+package's own control assertion); `denise.v:45-47` for the port widths.
 
 ## The two claims
 

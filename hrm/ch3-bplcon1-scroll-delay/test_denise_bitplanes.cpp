@@ -31,13 +31,13 @@
 // module's composed per-pixel bitplane output -- the port every downstream
 // Denise submodule in this repository's own sibling harnesses, e.g.
 // denise_collision's bpldata input and denise_hamgenerator's select input,
-// receives its bitplane sample FROM). denise_bitplanes.v:106 -- BPLCON1 at
-// custom-register address 9'h102. denise_bitplanes.v:229-235 -- OCS write
-// path keeps only data_in[7:0]. denise_bitplanes.v:205-209 -- pf1h =
+// receives its bitplane sample FROM). denise_bitplanes.v:349 -- BPLCON1 at
+// custom-register address 9'h102. denise_bitplanes.v:169-175 -- OCS write
+// path keeps only data_in[7:0]. denise_bitplanes.v:145-149 -- pf1h =
 // {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} (OCS: only the [3:0] half is
-// populated). denise_bitplanes.v:217-221 -- pf2h from bplcon1[7:4].
-// denise_bitplanes.v:107-114 -- BPL1DAT..BPL8DAT at 9'h110..9'h11e.
-// denise_bitplanes.v:382-435 -- the eight buffer registers. denise_bitplanes
+// populated). denise_bitplanes.v:157-161 -- pf2h from bplcon1[7:4].
+// denise_bitplanes.v:350-357 -- BPL1DAT..BPL8DAT at 9'h110..9'h11e.
+// denise_bitplanes.v:487-540 -- the eight buffer registers. denise_bitplanes
 // .v:437-441 generates `load` from a BPL1DAT write, and every shifter
 // takes it at .load(load), l.452-565.
 // denise_bitplane_shifter.v:166-180 module header -- clk (l.168), c1/c3
@@ -62,7 +62,7 @@
 // registered 7MHz clock and c1 = ~c3 delayed one further 28MHz cycle, so
 // across one 7MHz cycle's four 28MHz phases, c1 and c3 are BOTH high in one
 // phase and BOTH low in another -- they are not two disjoint two-phase
-// signals. denise_bitplane_shifter.v:181 gates its shift-register load on
+// signals. denise_bitplane_shifter.v:160 gates its shift-register load on
 // !c1&&!c3. This Harness uses the measured-working four-phase pattern
 // (clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
 // phase 1 has both high, phase 3 has both low), the same relationship
@@ -73,7 +73,7 @@
 // delivers a loaded, non-zero BPLxDAT value to bpldata BEFORE any scroll
 // claim below is asserted from it -- not a formality here.
 //
-// HPOS[3:2] NOT A CLAIM, HELD CONSTANT: denise_bitplanes.v:146-152 decodes
+// HPOS[3:2] NOT A CLAIM, HELD CONSTANT: denise_bitplanes.v:102-108 decodes
 // hpos[3:2] into an extra 0/4/8/12 lores-pixel write-position delay folded
 // into the effective BPLCON1 value at l.198-213. No claim in this package's
 // 113-record inventory is about that decode. hpos is held at 0 (hpos[3:2]
@@ -199,7 +199,7 @@
 // instantiated on the DENISE_EBR branch; Verilator compiles it as unused
 // dead code on this build, harmlessly.
 //
-// WHY THE PF1H NIBBLE IS THE DELAY (denise_bitplanes.v:198-235): the OCS
+// WHY THE PF1H NIBBLE IS THE DELAY (denise_bitplanes.v:138-175): the OCS
 // BPLCON1 write path is `bplcon1 <=
 // {2'b00,2'b11,2'b00,2'b11,data_in[7:0]}` (l.234) -- so pf1h = {bplcon1
 // [11:10],bplcon1[3:0],bplcon1[9:8]} (l.208) actually stores 4*PF1H+3, not
@@ -211,7 +211,7 @@
 // PF1H nibble written, unchanged. This is why the expected values below
 // (kLoresPixelTicks=4 per unit, binary weighting, the 15-unit range) hold.
 //
-// WHY settle_bplcon1() EXISTS: denise_bitplanes.v:205-226 latches pf1h/pf2h from
+// WHY settle_bplcon1() EXISTS: denise_bitplanes.v:145-166 latches pf1h/pf2h from
 // bplcon1 only `if (load)` -- load pulses for one clk7_en cycle following
 // a BPL1DAT write (l.437-441) -- and pf1h_del/pf2h_del (what actually reaches
 // each shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en
@@ -443,9 +443,9 @@ public:
     // One 28MHz clock edge, then advance the four-phase c1/c3/clk7_en
     // relationship for the NEXT edge -- see THE C1/C3 TRAP above. Phase 0
     // is the clk7_en register-capture phase (also when a BPLxDAT write
-    // latches its buffer register, denise_bitplanes.v:382-435); phase 1
+    // latches its buffer register, denise_bitplanes.v:487-540); phase 1
     // has c1 AND c3 both high; phase 3 has both low (the shifter load
-    // phase, denise_bitplane_shifter.v:181).
+    // phase, denise_bitplane_shifter.v:160).
     void tick() {
         dut->eval();
         dut->clk = 1;
@@ -481,7 +481,7 @@ public:
         clear_reg();
     }
 
-    // denise_bitplanes.v:205-209/217-221: pf1h/pf2h only latch BPLCON1's
+    // denise_bitplanes.v:145-149/217-221: pf1h/pf2h only latch BPLCON1's
     // current value on a `load` pulse (a BPL1DAT write, l.437-441), and
     // pf1h_del/pf2h_del (l.211-214/223-226 -- what actually reaches each
     // shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en cycle.

@@ -38,7 +38,7 @@ static void assertBpu111(const std::string& id, int page, const std::string& rea
                 "BPU code 111 (7): the manual assigns it no defined plane count "
                 "(quoted text itself is the oracle here); this fixture (non-AGA) "
                 "measurably maps it to a %d-plane result rather than crashing or "
-                "producing 7 planes (denise.v:201's own comment: \"Denise thinks "
+                "producing 7 planes (denise.v:203's own comment: \"Denise thinks "
                 "this is EHB 6-plane mode\") -- %s",
                 g_bpu[7].measuredPlanes, restatement.c_str());
   A(id, page, reader, true, buf);
@@ -84,7 +84,7 @@ static void assertHiresPort(const std::string& id, int page, const std::string& 
   bool lo = dut->hires == 0;
   A(id, page, reader, hi && lo,
     "BPLCON0 bit 15 isolated -> denise's own `hires` output port tracks it "
-    "exactly (denise.v:180, assign hires=bplcon0[15]) -- " + restatement);
+    "exactly (denise.v:182, assign hires=bplcon0[15]) -- " + restatement);
 }
 
 static void assertShresPort(const std::string& id, int page, const std::string& reader,
@@ -97,7 +97,7 @@ static void assertShresPort(const std::string& id, int page, const std::string& 
   bool off = dut->shres == 0;
   A(id, page, reader, on && off,
     "BPLCON0 bit 6 isolated -> denise's own `shres` output port tracks it "
-    "exactly (denise.v:187, assign shres=bplcon0[6]) -- " + restatement);
+    "exactly (denise.v:189, assign shres=bplcon0[6]) -- " + restatement);
 }
 
 static void assertDblpfBitId(const std::string& id, int page, const std::string& reader,
@@ -239,7 +239,7 @@ static void assertBplcon3Fn(const std::string& id, int page, const std::string& 
 static void assertAtomicWrite(const std::string& id, int page, const std::string& reader,
                                const std::string& restatement) {
   A(id, page, reader, true,
-    "denise.v:171-178: BPLCON0's only write path is one 16-bit word latched "
+    "denise.v:173-180: BPLCON0's only write path is one 16-bit word latched "
     "at address 0x100 in a single always-block; there is no per-bit or "
     "per-lane strobe -- every other category's setup step reaches its target "
     "configuration through exactly one such write -- " + restatement);

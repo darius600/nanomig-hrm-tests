@@ -38,7 +38,7 @@ controller port connector (JOYODAT, POTODAT)." -- LEFT is anchored to
 JOY0DAT.
 
 **RTL** (read directly, not compiled into this fixture):
-`minimig.v:622` `.porta_in({_fire1,_fire0,...})` against ciaa.v:95's
+`minimig.v:632` `.porta_in({_fire1,_fire0,...})` against ciaa.v:95's
 `input [7:2] porta_in` puts PA7=`_fire1`, PA6=`_fire0`. `userio.v:92`
 `joy_swap` is a hard `1'b0`, so `userio.v:215-218` makes `_sjoy1 = joy2`;
 `userio.v:313` derives `_fire0` from `_sjoy1[4]`; `userio.v:54,233-239`
@@ -53,7 +53,7 @@ diagram does not appear at all in `p330.txt`): the wiring figure under
 "CONNECTOR PIN USAGE FOR FIRE BUTTON INPUTS" labels PRA's bit-7 box
 `FIRE1\` and its bit-6 box `FIRE0\`, and traces PORT 1 pin 6 to the
 `FIRE0\` box and PORT 2 pin 6 to the `FIRE1\` box. That numeric labelling
-(bit7=FIRE1, bit6=FIRE0) matches `minimig.v:622` exactly. It does **not**
+(bit7=FIRE1, bit6=FIRE0) matches `minimig.v:632` exactly. It does **not**
 say which of "PORT 1"/"PORT 2" is "left"/"right" -- a third port-numbering
 scheme on this same page-pair, alongside p.327's J11/J12 and p.329's own
 wording, none of which p.330 ties together explicitly. Not adjudicated; not

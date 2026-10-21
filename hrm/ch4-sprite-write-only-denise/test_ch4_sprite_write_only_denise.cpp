@@ -37,7 +37,7 @@
 //   data_out" -- so the narrower denise_sprites fixture cannot answer this
 //   question at all; every claim's own classify.observable says so in as
 //   many words: "needs a wider boundary: denise -- denise_sprites has no
-//   data_out port ...; the read path is denise.v:97". This package's
+//   data_out port ...; the read path is denise.v:104". This package's
 //   Makefile is copied from hrm/ch3-register-map-denise/'s Makefile (a
 //   package that already builds this exact `denise` top level, with the
 //   full 12-file submodule list including denise_bitplanes.v and
@@ -53,7 +53,7 @@
 //   this one -- NOT discovered by opening denise.v):
 //   in  - clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
 //         data_in[15:0], chip48, blank, a1k, ecs, aga
-//   out - data_out[15:0] (denise.v:97 sources it from
+//   out - data_out[15:0] (denise.v:104 sources it from
 //         col_out|deniseid_out|rgb_out only -- every claim's own
 //         classify.evidence says this in those words -- so no sprite
 //         address is ever a driver of it), red/green/blue, hires, shres
@@ -234,12 +234,12 @@
 // handed over is confirmed at the exact lines below; nothing here revised
 // the spec, only confirmed it:
 //   - denise.v:31-52 -- module header, exact port list as stated above.
-//   - denise.v:63 -- `parameter DENISEID = 9'h07c;`.
+//   - denise.v:64 -- `parameter DENISEID = 9'h07c;`.
 //   - denise.v:130 -- `assign data_out = col_out | deniseid_out | rgb_out;`
 //     (the active, non-`DENISE_EBR` branch -- DENISE_EBR is not defined by
 //     this package's Makefile, confirmed by grep of both this package's
 //     Makefile and hrm/ch3-register-map-denise's).
-//   - denise.v:322 -- `assign deniseid_out = reg_address_in[8:1]==
+//   - denise.v:335 -- `assign deniseid_out = reg_address_in[8:1]==
 //     DENISEID[8:1] ? aga ? 16'h00f8 : ecs ? 16'hfffc : 16'hffff :
 //     16'h0000;` -- confirms DENISEID answers $FFFC under ecs=1/aga=0,
 //     exactly as hrm/ch3-register-map-denise's already-committed file
@@ -251,14 +251,14 @@
 //     non-zero when addressed, independent of any actual collision state --
 //     an even stronger guarantee for the control than merely "measured
 //     non-zero today".
-//   - denise_sprites.v:104-112 -- `selsprx = SPRPOSCTLBASE[8:6]==
+//   - denise_sprites.v:90-98 -- `selsprx = SPRPOSCTLBASE[8:6]==
 //     reg_address_in[8:6]`, `selsprN = selsprx && reg_address_in[5:3]==N`.
 //     With SPRPOSCTLBASE=9'h140 (word address $A0), reg_address_in[5:3]
 //     spans weights 16/8/4 (label n has weight 2^(n-1) since the vector is
 //     indexed [8:1], not [7:0]) -- incrementing that 3-bit field by 1 is
 //     +4 in word-address units, confirming this package's own SPR_BASE+4n
 //     arithmetic exactly, not merely assuming it.
-//   - denise_sprites.v:176 (and the 7 further sprite instances) --
+//   - denise_sprites.v:143 (and the 7 further sprite instances) --
 //     `.address(reg_address_in[2:1])` -- the low 2 bits select the
 //     register within a sprite's 4-word block.
 //   - denise_sprites_shifter.v:35-38 -- `parameter POS=2'b00; CTL=2'b01;
@@ -268,13 +268,13 @@
 //     finds no match in either file, confirming every claim's own
 //     classify.evidence ("the module's only outputs are nsprite and
 //     sprdata; there is no data_out") independently.
-//   - denise_sprites_shifter.v:127-138 and :257-269 -- sprite register
+//   - denise_sprites_shifter.v:65-76 and :283-295 -- sprite register
 //     writes are gated by a plain `always @(posedge clk) if (clk7_en)`,
 //     the SAME generic pattern hrm/ch3-register-map-denise's write_reg
 //     already drives successfully for other Denise registers on this same
 //     fixture. c1/c3 reach only the shift enables and the bitplane
 //     parallel load (denise_bitplane_shifter.v:212, 216, 224;
-//     denise_sprites.v:163-164), none of which gates a register write.
+//     denise_sprites.v:131-132), none of which gates a register write.
 //
 // Nothing here was a surprise against the inventory; opening the files
 // confirmed the spec above rather than revising it. Harness (tick/phase,
@@ -309,9 +309,9 @@ namespace {
 // every constant below follows hrm/ch3-register-map-denise's own
 // convention (see PORTS above).
 constexpr uint16_t IDLE_ADDR     = 0x00;
-constexpr uint16_t DENISEID_ADDR = 0x3E;  // 9'h07C >> 1 (denise.v:63)
+constexpr uint16_t DENISEID_ADDR = 0x3E;  // 9'h07C >> 1 (denise.v:64)
 constexpr uint16_t CLXDAT_ADDR   = 0x07;  // 9'h00E >> 1 (denise_collision.v:21)
-constexpr uint16_t SPR_BASE      = 0xA0;  // 9'h140 >> 1 (denise_sprites.v:55/67)
+constexpr uint16_t SPR_BASE      = 0xA0;  // 9'h140 >> 1 (denise_sprites.v:54/67)
 
 std::string hex4(uint16_t v) {
     char buf[8];
@@ -334,7 +334,7 @@ public:
         dut->chip48 = 0;
         dut->blank = 0;
         dut->a1k = 0;
-        dut->ecs = 1;   // makes DENISEID answer $FFFC (denise.v:322) -- the
+        dut->ecs = 1;   // makes DENISEID answer $FFFC (denise.v:335) -- the
                          // control this package's own measurement depends on.
         dut->aga = 0;
         phase = 0;
@@ -455,7 +455,7 @@ int main(int argc, char** argv) {
     // =========================================================================
     // CONTROL-FIXTURE-ALIVE -- the fixture can deliver a known value before
     // anything below is trusted to read one back. DENISEID and CLXDAT are
-    // two independently decoded read-only registers (denise.v:322,
+    // two independently decoded read-only registers (denise.v:335,
     // denise_collision.v:117); both answering distinct, non-zero values
     // before any write-only-register-reads-non-written-value assertion
     // below is trusted rules out "data_out is stuck" as the explanation for
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
         uint16_t clxdat = h.read_reg(clxdat_addr);
         checks.expect(
             deniseid != 0 && clxdat != 0 && deniseid != clxdat,
-            "CONTROL-FIXTURE-ALIVE: DENISEID ($07C, denise.v:322) and "
+            "CONTROL-FIXTURE-ALIVE: DENISEID ($07C, denise.v:335) and "
             "CLXDAT ($00E, denise_collision.v:117), two independently "
             "decoded read-only registers, both read back distinct non-zero "
             "values (" + hex4(deniseid) + " and " + hex4(clxdat) +

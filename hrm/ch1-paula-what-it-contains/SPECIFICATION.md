@@ -17,7 +17,7 @@ An emulator is never an oracle; the RTL is never an oracle.
 This package's own 37 claim records carry a `classify.evidence` field that
 already cites `paula.v`, `paula_audio.v`, `paula_audio_channel.v`,
 `paula_audio_mixer.v` and `paula_floppy.v` port names and line numbers (e.g.
-`paula.v:132`, `paula_floppy.v:86`, `paula_audio.v:109-128`). Filtering
+`paula.v:137`, `paula_floppy.v:86`, `paula_audio.v:109-128`). Filtering
 `work/2026-09-16_ch1_packages.jsonl` for this package's 37 claims -- required
 just to know this package's own scope -- necessarily exposed that field
 before this document was written. This is the same situation several

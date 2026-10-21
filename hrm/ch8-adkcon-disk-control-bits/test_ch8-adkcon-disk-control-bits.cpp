@@ -20,9 +20,9 @@
 // synchronisation at all -- see A7's own block below.
 //
 // Boundary (read from paula.v): ADKCON/ADKCONR decode inside
-// `paula` (paula.v:126-127, the register-write block at :182-195, the
+// `paula` (paula.v:131-132, the register-write block at :182-195, the
 // read mux at :198). `paula` instantiates `paula_floppy` directly
-// (paula.v:243-286); `adkcon` has exactly two fan-outs anywhere in
+// (paula.v:257-300); `adkcon` has exactly two fan-outs anywhere in
 // paula.v: bit 11 to paula_uart's `uartbrk` (:211, out of this package's
 // scope -- UART, not disk) and bit 10 to paula_floppy's `wordsync` port
 // (:269). No other adkcon bit reaches any submodule at all -- confirmed by
@@ -72,7 +72,7 @@
 // preamble word at word-count 0) with wordsync=0, versus 0x4489 (the sync
 // mark itself, the first position trackrdok has latched by) with
 // wordsync=1. `disk_dmal` (paula's own top-level port, wired straight from
-// paula_floppy's `dmal`, paula.v:255) telling `dmaon & ~fifo_empty` is used
+// paula_floppy's `dmal`, paula.v:269) telling `dmaon & ~fifo_empty` is used
 // to wait for that first push before popping, so no fixed cycle count is
 // guessed at.
 //
@@ -133,7 +133,7 @@ const uint8_t ADDR_DSKSYNC = 0x3F;  // $07E >> 1
 const uint8_t ADDR_DMACON  = 0x4B;  // $096 >> 1
 const uint8_t ADDR_ADKCON  = 0x4F;  // $09E >> 1
 
-// ADKCON/DMACON both use the chipset SET/CLR convention (paula.v:182-195,
+// ADKCON/DMACON both use the chipset SET/CLR convention (paula.v:187-200,
 // :159-171): bit 15 of the write selects OR (set, 1) or AND-NOT (clear, 0)
 // against the named field bits.
 const uint16_t SETCLR = 0x8000;
@@ -636,8 +636,8 @@ int main(int argc, char** argv) {
         uint16_t v_clr = rig.read_reg(ADDR_ADKCONR);
         checks.note("C8-MFMPREC-MSBSYNC-FAST: bits 12/9/8 store and read back individually (ADKCONR=0x" +
                     hex4(v_set) + " set, 0x" + hex4(v_clr) + " cleared) -- confirmed by reading paula.v in full: "
-                    "adkcon's only two fan-outs anywhere in src/minimig-aga are bit 11 (paula.v:211, UART, out of "
-                    "this package's scope) and bit 10 (paula.v:269, graded above as A1/A6/A7). Bits 12, 9 and 8 "
+                    "adkcon's only two fan-outs anywhere in src/minimig-aga are bit 11 (paula.v:216, UART, out of "
+                    "this package's scope) and bit 10 (paula.v:283, graded above as A1/A6/A7). Bits 12, 9 and 8 "
                     "drive no submodule port and reach no logic; this is storage with no consumer, not asserted by "
                     "any claim in this package's fifteen and therefore not graded through expect().");
     }

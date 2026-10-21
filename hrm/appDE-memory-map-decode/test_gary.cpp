@@ -350,7 +350,7 @@ int main() {
     // restriction is NOT gradeable here at all: cpu_address_in is declared
     // [23:1] (gary.v:51) -- A0 is not present on this port, and the byte
     // lane a real 68000 cycle would pick via A0 is decided one module out,
-    // at minimig (minimig.v:614,639, per this claim's own classify.evidence).
+    // at minimig (minimig.v:624,639, per this claim's own classify.evidence).
     // =========================================================================
     checks.record(
         "CIAB-WINDOW-EVENBYTE (p.314, 2 claims: sol:D-memmap-a1000.c7, "
@@ -363,7 +363,7 @@ int main() {
         "even-byte-only restriction is NOT gradeable at this boundary at all: "
         "cpu_address_in is declared [23:1] (gary.v:51), A0 is absent from "
         "this port, and the byte lane is minimig's own decode "
-        "(minimig.v:614,639), a different top module.");
+        "(minimig.v:624,639), a different top module.");
 
     // =========================================================================
     // GROUP 4 -- CIAA-WINDOW-ODDBYTE (p.314, $BF E001-$BF EF01). 2 claims:

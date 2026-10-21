@@ -66,7 +66,7 @@
 //   reads 0 for as long as it waits. A9 below measures that case.
 //
 // (4) RXD'S SYNCHRONISER DELAY (finding candidate S4-C3), confirmed by
-//   tracing paula_uart.v:36-43 and :234: `rxd` -> `rxd_sync[0]` (1 edge)
+//   tracing paula_uart.v:46-53 and :244: `rxd` -> `rxd_sync[0]` (1 edge)
 //   -> `rxd_sync[1]` aka `rxds` (1 more edge) -> `rx_rxd`, SERDATR bit 11
 //   (1 more edge). Three clk7_en-edge delay from pin to bit, confirmed by
 //   direct measurement below (A13), not assumed.
@@ -108,7 +108,7 @@ public:
 };
 
 // Word addresses (rga_i carries the manual's own byte address >> 1),
-// confirmed directly against paula_uart.v:21-23's own localparams.
+// confirmed directly against paula_uart.v:26-28's own localparams.
 constexpr int A_SERDAT   = 0x030 >> 1;
 constexpr int A_SERDATR  = 0x018 >> 1;
 constexpr int A_SERPER   = 0x032 >> 1;
@@ -204,7 +204,7 @@ public:
     // rxint's own pulse routinely fires a few enables BEFORE this
     // driver's stimulus loop reaches its own natural end: RX_START
     // samples the start bit after only a HALF period
-    // (paula_uart.v:172-173), which offsets the RTL's internal sampling
+    // (paula_uart.v:182-183), which offsets the RTL's internal sampling
     // grid from this loop's per-bit FULL-period grid. A caller that waits
     // for rxint only AFTER send_rx_byte() returns can miss the pulse
     // entirely -- exactly the shape hrm/ch8-uart-frame-and-status's own calibration
@@ -302,7 +302,7 @@ int main(int argc, char** argv) {
         uint16_t after = h.read_reg(A_SERDATR);
 #endif
         // DATA (bits 7-0), not RBF (bit 14), is the known-different-state
-        // marker: paula_uart.v:236 makes rx_rbf a pure, unconditional
+        // marker: paula_uart.v:246 makes rx_rbf a pure, unconditional
         // passthrough of the external `rbfmirror` INPUT (`rx_rbf <=
         // rbfmirror;`, every edge, regardless of receive state) -- it is
         // not computed from a local "byte ready" condition at all, which
@@ -442,7 +442,7 @@ int main(int argc, char** argv) {
         Harness h;
         h.set_serper(false);
         uint16_t idle = h.read_reg(A_SERDATR);
-        // paula_uart.v:236 makes rx_rbf a pure, unconditional passthrough
+        // paula_uart.v:246 makes rx_rbf a pure, unconditional passthrough
         // of the external `rbfmirror` INPUT (every clk7_en edge,
         // regardless of receive state) -- not something this module
         // computes from a local "byte ready" condition. hrm/ch8-uart-frame-and-status's
@@ -727,13 +727,13 @@ int main(int argc, char** argv) {
             "combinational read should reflect a pin change with no "
             "clk7_en-enable delay. Measured delay = " +
             std::to_string(delay_enables) + " clk7_en enable(s) "
-            "(paula_uart.v:36-43's two synchroniser flops plus one more "
+            "(paula_uart.v:46-53's two synchroniser flops plus one more "
             "register, rx_rxd, per finding candidate S4-C3).");
     }
     // MUTATION RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ none red: no
     //   stimulus at this boundary can make a fixed, three-register
     //   synchroniser chain (rxd_sync[0], rxd_sync[1]/rxds, rx_rxd --
-    //   paula_uart.v:36-43,234) respond with zero-cycle delay. The delay
+    //   paula_uart.v:46-53,234) respond with zero-cycle delay. The delay
     //   is a property of the RTL's own registers, not of when or how the
     //   bus samples them (unlike A9's TBE, where the analogous delay IS a
     //   sampling-alignment artifact a different bus-timing stimulus CAN

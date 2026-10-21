@@ -781,9 +781,9 @@ int main(int argc, char** argv) {
     // DECLINED via record(): this
     // block only ever reaches paula_floppy's own generic sense ports
     // (_ready/_track0/_wprot/_change); it never touches CIAAPRA itself --
-    // that join is one level up, at minimig.v:622, outside this package's
+    // that join is one level up, at minimig.v:632, outside this package's
     // assigned fixture boundary (paula_floppy alone). A severed, swapped or
-    // wrong-bit join at minimig.v:622 passes this assertion exactly as
+    // wrong-bit join at minimig.v:632 passes this assertion exactly as
     // written. hrm/ch8-cia-disk-signal-bindings carries the fact, at
     // TOP_MODULE=minimig, over a real CPU bus access to CIAAPRA ($BFE001):
     // its PA5-BINDING/PA4-BINDING/PA3-BINDING/PA2-BINDING assertions
@@ -831,7 +831,7 @@ int main(int argc, char** argv) {
             "four input bits for disk sensing'): CANNOT be graded at this boundary. Four independently-"
             "controllable sense signals reach paula_floppy's own ports, but this package's fixture is "
             "paula_floppy alone -- it never reaches CIAAPRA, so it cannot confirm those four bits actually land "
-            "there rather than being severed, swapped, or aliased at the minimig.v:622 join. That join is "
+            "there rather than being severed, swapped, or aliased at the minimig.v:632 join. That join is "
             "graded by hrm/ch8-cia-disk-signal-bindings's PA5/PA4/PA3/PA2-BINDING assertions, over a real CPU "
             "bus access at $BFE001 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations "
             "killed.");
@@ -885,7 +885,7 @@ int main(int argc, char** argv) {
     // DECLINED via record(): same
     // boundary fault as opus:8-dsk.c21/sol:8-reglist.c4 above -- this block
     // never reaches CIAAPRA either, only paula_floppy's own ports, so a
-    // severed or wrong-bit minimig.v:622 join passes it too. Each of
+    // severed or wrong-bit minimig.v:632 join passes it too. Each of
     // hrm/ch8-cia-disk-signal-bindings's PA5/PA4/PA3/PA2-BINDING assertions
     // already establishes, through a real CIAAPRA CPU read, that its named
     // bit responds to its own real sensing condition (deselect vs select for
@@ -935,7 +935,7 @@ int main(int argc, char** argv) {
     //
     // DECLINED via record(): same fault
     // family as the CIAAPRA blocks above -- this block never reaches
-    // CIABPRB, only paula_floppy's own generic ports; the minimig.v:650
+    // CIABPRB, only paula_floppy's own generic ports; the minimig.v:660
     // join is outside this package's fixture boundary and a severed/
     // swapped/wrong-bit join there passes this assertion unchanged.
     // hrm/ch8-cia-disk-signal-bindings's eight PB7..PB0-BINDING assertions
@@ -998,7 +998,7 @@ int main(int argc, char** argv) {
             "opus:8-dsk.c24 sol:8-reglist.c6 P-CIABPRB-EIGHT-BITS (p.241, quote '   CIABPRB    (\\$BFD100)    "
             "eight output bits for disk selection, control\\n                             and stepping'): CANNOT "
             "be graded at this boundary. Eight independently-drivable control inputs reach paula_floppy's own "
-            "ports, but this package's fixture never reaches CIABPRB itself (minimig.v:650, outside paula_floppy "
+            "ports, but this package's fixture never reaches CIABPRB itself (minimig.v:660, outside paula_floppy "
             "alone), so it cannot confirm those eight bits actually land there. hrm/ch8-cia-disk-signal-bindings's "
             "PB7-BINDING through PB0-BINDING assertions carry the fact, over a real CPU bus write to "
             "$BFD100 against the pinned system top -- 15 passed / 0 failed, 15 of 15 mutations killed.");

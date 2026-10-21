@@ -56,7 +56,7 @@ used": the bit means the LED's target state, not physical key state (see
 **Every proposition below is tested at `hid`, and `hid` does not exist
 upstream.** In `MiSTer-devel/Minimig-AGA_MiSTer` at `da7632e` — the project
 this NanoMig core derives from — there is no `amiga_keymap.v`, no `keymap`
-and no `hid.v`. `rtl/minimig.v:207` takes the already-decoded
+and no `hid.v`. `rtl/minimig.v:212` takes the already-decoded
 `kbd_mouse_data` as a top-level input, and the translation from a physical
 keyboard's own protocol into that byte happens in software above the
 chipset, on the host side, not in any RTL this suite builds against. Other

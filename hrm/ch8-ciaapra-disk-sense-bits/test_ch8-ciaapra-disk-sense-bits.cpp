@@ -10,7 +10,7 @@
 //   140d670, before this file was opened for the RTL): `ciaa` alone carries
 //   no signal named DSKRDY*, DSKTRACK0*, DSKPROT* or DSKCHANGE* -- only a
 //   generic `porta_in[7:2]`. The binding of a bit POSITION to one of those
-//   NAMES is a one-line structural fact at minimig.v:622, one level above
+//   NAMES is a one-line structural fact at minimig.v:632, one level above
 //   this fixture's boundary, and is not re-derived or exercised here; nor is
 //   what a low level physically means for a drive (paula_floppy.v, further
 //   downstream), nor DSKCHANGE*'s retention rule (needs a latch this fixture
@@ -27,7 +27,7 @@
 //   main() and SPECIFICATION.md's "Claims not assigned an assertion").
 // Non-goals / scope carve-outs, per the build task and SPECIFICATION.md:
 //   - which drive signal (DSKRDY*, DSKTRACK0*, DSKPROT*, DSKCHANGE*) sits at
-//     which PA bit position is a minimig.v:622 wiring fact, out of `ciaa`
+//     which PA bit position is a minimig.v:632 wiring fact, out of `ciaa`
 //     alone's boundary -- declined, not graded.
 //   - what a drive does with an asserted (LOW) level -- motor at speed,
 //     track zero, write-protect tab, disk presence -- is a paula_floppy.v /

@@ -53,7 +53,7 @@ repeated here. The package list names exactly two of this slice's three
 packages as the first built against `src/misc` (`ch8-keycode-table` at
 `keymap`, `ch8-keyboard-events` at `hid`); this package is the third, at
 `ciaa`, which is the ordinary CIA-A chipset module. The same build brief
-notes upstream's `minimig.v:207` takes `kbd_mouse_data` as a top-level input
+notes upstream's `minimig.v:212` takes `kbd_mouse_data` as a top-level input
 straight into the chipset — i.e. a `ciaa` receiving that same signal is not
 a NanoMig-only insertion the way the keymap/hid translation layer is. A red
 result here is not carved out from the Minimig family by this specification

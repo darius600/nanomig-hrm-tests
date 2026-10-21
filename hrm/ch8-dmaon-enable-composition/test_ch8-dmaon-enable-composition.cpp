@@ -211,7 +211,7 @@ std::string hex4(uint16_t v) {
 // word_address == byte_address >> 1, read directly off paula.v's/
 // paula_floppy.v's own parameter declarations (DMACON=9'h096, DSKLEN=
 // 9'h024, DSKBYTR=9'h01a), not inferred.
-constexpr int DMACON_W  = 0x096 >> 1;  // paula.v:125
+constexpr int DMACON_W  = 0x096 >> 1;  // paula.v:130
 constexpr int DSKLEN_W  = 0x024 >> 1;  // paula_floppy.v:124
 constexpr int DSKBYTR_W = 0x01a >> 1;  // paula_floppy.v:120
 constexpr int IDLE_W    = 0x000;       // Unused address: matches no register above.
@@ -323,7 +323,7 @@ struct Rig {
         settle_edges(2);
     }
 
-    // DMACON's own SET/CLR convention (paula.v:159-171): bit 15 of the
+    // DMACON's own SET/CLR convention (paula.v:164-176): bit 15 of the
     // written word selects OR-in (set) vs AND-NOT-out (clear); bit 9
     // carries the master DMAEN term, bit 4 the DSKEN term. Every write
     // this package performs names exactly the bit(s) it means to change;

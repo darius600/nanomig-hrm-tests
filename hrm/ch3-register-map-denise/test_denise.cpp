@@ -42,7 +42,7 @@
 // FIXTURE CONFIGURATION, and why: a1k=0, ecs=1, aga=0 throughout every
 //   Harness in this file. ecs=1/aga=0 is not a free choice -- it is what
 //   makes the fixture reproduce PACKAGE.md's own disclosed "already
-//   measured" facts: denise.v:322 reads
+//   measured" facts: denise.v:335 reads
 //     deniseid_out = reg_address_in==DENISEID ? aga?$00F8 : ecs?$FFFC:$FFFF
 //                    : 0
 //   so DENISEID reading $FFFC (the value PACKAGE.md's evidence and this
@@ -59,9 +59,9 @@
 //   cycle, so c1 and c3 overlap for two of the four 28MHz phases (both high
 //   in one, both low in another). Each BPLxDAT buffer register latches
 //   `{data_in, chip48_fmode}` directly on clk7_en when reg_address_in[8:1]
-//   matches its own address (denise_bitplanes.v:382-435, one block per
+//   matches its own address (denise_bitplanes.v:487-540, one block per
 //   plane); the plane shifter's own parallel load is gated on `!c1&&!c3`
-//   (denise_bitplane_shifter.v:181's `if (load && !c1 && !c3)`).
+//   (denise_bitplane_shifter.v:160's `if (load && !c1 && !c3)`).
 //   Harness::tick() below drives, every 28MHz cycle, the measured
 //   working pattern: clk7_en=(phase==0), c1=(phase==0||phase==1),
 //   c3=(phase==1||phase==2) -- so phase 1 has both c1 and c3 high, phase 3
@@ -76,7 +76,7 @@
 //   denise_playfields.v:95-100, single-playfield case: `plfdata[7:0] =
 //   bpldata[8:1]` (no dual-playfield, no Swiv exception when bplcon2's
 //   pf2p<=5, which holds because this file never writes BPLCON2). With
-//   l_bpu (denise.v:194-203, latched off BPLCON0.bpu the moment BPL1DAT is
+//   l_bpu (denise.v:196-205, latched off BPLCON0.bpu the moment BPL1DAT is
 //   written) set to 5, denise.v:367-374 forces bpldata[6..8]=0, so the
 //   colour-table select index actually presented is exactly
 //     index = 16*bpldata[5] + 8*bpldata[4] + 4*bpldata[3] + 2*bpldata[2] + bpldata[1]
@@ -85,7 +85,7 @@
 //
 //   MEASURED (this package's own build/calibration, not assumed): a single
 //   BPLxDAT write only pulses the plane shifter's parallel load once
-//   (denise_bitplane_shifter.v:180-183, non-EBR path); with nothing to
+//   (denise_bitplane_shifter.v:159-162, non-EBR path); with nothing to
 //   refetch it the way Agnus DMA would on real hardware, the loaded word
 //   shifts/rescrolls out through a 64-bit-deep pipeline and the plane's
 //   output is reliably non-zero for only about one 28MHz tick before it is
@@ -104,10 +104,10 @@
 //   refresh_bitplanes(): BPLCON0 (sets bpu combinationally, written once)
 //   and BPL2..5DAT (load their own buffer registers, denise_bitplanes.v:
 //   388-414) are written before BPL1DAT in every round, because BPL1DAT's
-//   write is what both latches l_bpu (denise.v:195-203) and pulses `load`
-//   a cycle later (denise_bitplanes.v:437-441), which parallel-loads *all* the
+//   write is what both latches l_bpu (denise.v:197-205) and pulses `load`
+//   a cycle later (denise_bitplanes.v:542-546), which parallel-loads *all* the
 //   plane shifters synchronously from whatever their buffers hold at that
-//   instant (denise_bitplane_shifter.v:180-183).
+//   instant (denise_bitplane_shifter.v:159-162).
 //
 // CLAIM GROUPS -- every one of the 134 claim ids in claims.jsonl is cited,
 //   in full, in exactly one group below (in the assertion string that
@@ -161,7 +161,7 @@
 //        tables (sol:7-appB-bplcon2.c1, sol:7-appA-bplcon2.c1) and are
 //        appended bare to BPLCON2-ADDR's citation list rather than
 //        duplicated on a second assertion of the identical predicate.
-//     -- ADDR (BPLCON3): with BPLCON0's ECSENA bit (bit 0, denise.v:192)
+//     -- ADDR (BPLCON3): with BPLCON0's ECSENA bit (bit 0, denise.v:194)
 //        set and a display window open, BPLCON3's own BRDRBLNK bit (bit 5,
 //        denise.v:253) forces the border area to a fixed value
 //        (denise.v:513-518's `t_blank` forces $000000, though no manual
@@ -328,23 +328,23 @@ namespace {
 
 // reg_address_in is [8:1] (word address >> 1); every constant below is the
 // manual's byte address already shifted right by one, matching denise.v's
-// own `parameter` block (denise.v:56-65) and denise_bitplanes.v:106-115.
+// own `parameter` block (denise.v:57-66) and denise_bitplanes.v:349-358.
 constexpr uint16_t IDLE_ADDR    = 0x00;  // matches no parameter in denise.v or its sub-modules.
 constexpr uint16_t CLXDAT_ADDR  = 0x07;  // 9'h00E >> 1  (denise_collision.v:21)
-constexpr uint16_t DIWSTRT_ADDR = 0x47;  // 9'h08E >> 1  (denise.v:56)
-constexpr uint16_t DIWSTOP_ADDR = 0x48;  // 9'h090 >> 1  (denise.v:57)
-constexpr uint16_t DENISEID_ADDR= 0x3E;  // 9'h07C >> 1  (denise.v:63)
-constexpr uint16_t BPLCON0_ADDR = 0x80;  // 9'h100 >> 1  (denise.v:59)
-constexpr uint16_t BPLCON1_ADDR = 0x81;  // 9'h102 >> 1  (denise_bitplanes.v:106)
-constexpr uint16_t BPLCON2_ADDR = 0x82;  // 9'h104 >> 1  (denise.v:60)
-constexpr uint16_t BPLCON3_ADDR = 0x83;  // 9'h106 >> 1  (denise.v:61)
-constexpr uint16_t BPL1DAT_ADDR = 0x88;  // 9'h110 >> 1  (denise_bitplanes.v:107)
-constexpr uint16_t BPL2DAT_ADDR = 0x89;  // 9'h112 >> 1  (denise_bitplanes.v:108)
-constexpr uint16_t BPL3DAT_ADDR = 0x8A;  // 9'h114 >> 1  (denise_bitplanes.v:109)
-constexpr uint16_t BPL4DAT_ADDR = 0x8B;  // 9'h116 >> 1  (denise_bitplanes.v:110)
-constexpr uint16_t BPL5DAT_ADDR = 0x8C;  // 9'h118 >> 1  (denise_bitplanes.v:111)
-constexpr uint16_t COLOR_BASE   = 0xC0;  // 9'h180 >> 1  (denise.v:65); COLORi = COLOR_BASE+i.
-constexpr uint16_t DIWHIGH_ADDR = 0xF2;  // 9'h1E4 >> 1  (denise.v:58)
+constexpr uint16_t DIWSTRT_ADDR = 0x47;  // 9'h08E >> 1  (denise.v:57)
+constexpr uint16_t DIWSTOP_ADDR = 0x48;  // 9'h090 >> 1  (denise.v:58)
+constexpr uint16_t DENISEID_ADDR= 0x3E;  // 9'h07C >> 1  (denise.v:64)
+constexpr uint16_t BPLCON0_ADDR = 0x80;  // 9'h100 >> 1  (denise.v:60)
+constexpr uint16_t BPLCON1_ADDR = 0x81;  // 9'h102 >> 1  (denise_bitplanes.v:349)
+constexpr uint16_t BPLCON2_ADDR = 0x82;  // 9'h104 >> 1  (denise.v:61)
+constexpr uint16_t BPLCON3_ADDR = 0x83;  // 9'h106 >> 1  (denise.v:62)
+constexpr uint16_t BPL1DAT_ADDR = 0x88;  // 9'h110 >> 1  (denise_bitplanes.v:350)
+constexpr uint16_t BPL2DAT_ADDR = 0x89;  // 9'h112 >> 1  (denise_bitplanes.v:351)
+constexpr uint16_t BPL3DAT_ADDR = 0x8A;  // 9'h114 >> 1  (denise_bitplanes.v:352)
+constexpr uint16_t BPL4DAT_ADDR = 0x8B;  // 9'h116 >> 1  (denise_bitplanes.v:353)
+constexpr uint16_t BPL5DAT_ADDR = 0x8C;  // 9'h118 >> 1  (denise_bitplanes.v:354)
+constexpr uint16_t COLOR_BASE   = 0xC0;  // 9'h180 >> 1  (denise.v:66); COLORi = COLOR_BASE+i.
+constexpr uint16_t DIWHIGH_ADDR = 0xF2;  // 9'h1E4 >> 1  (denise.v:59)
 
 std::string hex4(uint16_t v) {
     char buf[8];
@@ -430,7 +430,7 @@ public:
 
     // MEASURED (this file, calibration retained here as documentation):
     // a single BPLxDAT write pulses the plane shifter's parallel load
-    // exactly once (denise_bitplane_shifter.v:180-183); with nothing to
+    // exactly once (denise_bitplane_shifter.v:159-162); with nothing to
     // refetch it the way Agnus DMA would on real hardware, the loaded word
     // shifts out through the shift/scroll/superhires-scroll pipeline and
     // the plane's `out` (denise.v's bpldata[n]) is only reliably non-zero
@@ -460,7 +460,7 @@ public:
     // transient shift pipeline); l_bpu re-latches bpu's already-correct
     // value on every one of refresh_bitplanes' own BPL1DAT writes.
     void write_bitplane_pattern(bool b1, bool b2, bool b3, bool b4, bool b5, int rounds) {
-        write_reg(BPLCON0_ADDR, 0x5000);  // bpu = bplcon0[14:12] = 5 (denise.v:181, aga=0 so bit4 term is forced 0)
+        write_reg(BPLCON0_ADDR, 0x5000);  // bpu = bplcon0[14:12] = 5 (denise.v:183, aga=0 so bit4 term is forced 0)
         refresh_bitplanes(b1, b2, b3, b4, b5, rounds);
     }
 
@@ -478,7 +478,7 @@ public:
     }
 
     uint32_t read_rgb() {
-        tick(); tick(); tick(); tick();  // let the registered window/window_ena/out_rgb pipeline (denise.v:328-340,509) settle
+        tick(); tick(); tick(); tick();  // let the registered window/window_ena/out_rgb pipeline (denise.v:343-355,509) settle
         return (static_cast<uint32_t>(dut->red) << 16) |
                (static_cast<uint32_t>(dut->green) << 8) |
                static_cast<uint32_t>(dut->blue);
@@ -523,7 +523,7 @@ int main(int argc, char** argv) {
     // is trusted to read one back (package brief, "the fixture proves it can
     // deliver a known value before anything reads one"). Given the c1/c3
     // trap, this is not a formality: DENISEID and CLXDAT are two
-    // *independently* decoded read-only registers (denise.v:322 and
+    // *independently* decoded read-only registers (denise.v:335 and
     // denise_collision.v:117); both answering distinct, non-zero values
     // before any write-only-register-reads-zero assertion below is trusted
     // rules out "data_out is stuck at zero" as the explanation for every
@@ -539,7 +539,7 @@ int main(int argc, char** argv) {
         uint16_t clxdat = h.read_reg(clxdat_addr);
         checks.expect(
             deniseid != 0 && clxdat != 0 && deniseid != clxdat,
-            "[control] CONTROL-FIXTURE-ALIVE: DENISEID ($07C, denise.v:322) "
+            "[control] CONTROL-FIXTURE-ALIVE: DENISEID ($07C, denise.v:335) "
             "and CLXDAT ($00E, denise_collision.v:117), two independently "
             "decoded read-only registers, both read back distinct non-zero "
             "values (" + hex4(deniseid) + " and " + hex4(clxdat) +
@@ -568,7 +568,7 @@ int main(int argc, char** argv) {
         bool ok = at_addr == 0xFFFC && at_other == 0x0000 && after_write == 0xFFFC;
         checks.expect(
             ok,
-            "DENISEID-ADDR-RO: reading $07C returns $FFFC (denise.v:322, "
+            "DENISEID-ADDR-RO: reading $07C returns $FFFC (denise.v:335, "
             "ecs=1/aga=0), reading the unrelated write-only address $100 "
             "through the same data_out mux returns $0000 (the $FFFC is "
             "specific to $07C, not a stuck bus), and an attempted write to "
@@ -593,7 +593,7 @@ int main(int argc, char** argv) {
         h.write_reg(DIWSTRT_ADDR, 0x0030);
         h.write_reg(DIWSTOP_ADDR, 0x0050);
         // DIWSTOP's stored comparison value has an implicit H8=1
-        // (denise.v:314-320, "diwstop H8 = 1"): writing $0050 alone makes
+        // (denise.v:327-333, "diwstop H8 = 1"): writing $0050 alone makes
         // the window's real close point $150, not $050. Writing DIWHIGH=0
         // afterward (ecs=1) clears that override so DIWSTOP's low byte is
         // the whole story, matching the manual's own DIWSTRT/DIWSTOP pair
@@ -602,9 +602,9 @@ int main(int argc, char** argv) {
         h.write_reg(DIWHIGH_ADDR, 0x0000);
         h.write_reg(COLOR_BASE + 0, 0x001);  // COLOR00: near-black
         h.write_reg(COLOR_BASE + 1, 0xFFE);  // COLOR01: distinct from COLOR00
-        h.write_reg(BPLCON0_ADDR, 0x1000);   // bpu=1 (denise.v:181)
+        h.write_reg(BPLCON0_ADDR, 0x1000);   // bpu=1 (denise.v:183)
 
-        // `window` (denise.v:328-334) is an unreset reg that can latch on
+        // `window` (denise.v:343-349) is an unreset reg that can latch on
         // whatever garbage hdiwstrt/hdiwstop held during construction; one
         // full pass out past the (now correctly $050) DIWSTOP forces it
         // through both edges, leaving a known (clear) state.
@@ -739,7 +739,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON3-ADDR (p.271/291) -- with BPLCON0's ECSENA
-    // bit (bit 0, denise.v:192) set and a display window open, BPLCON3's
+    // bit (bit 0, denise.v:194) set and a display window open, BPLCON3's
     // own BRDRBLNK bit (bit 5, denise.v:253) changes the border area's
     // colour (denise.v:513-518, `t_blank`, forces $000000 when set; no
     // manual page prints that RGB value, so this assertion requires only

@@ -70,7 +70,7 @@ says, so a local pin measurement cannot carry any of these uids:
 - **P-THREE-KINDS** — `paula_floppy` declares exactly three output ports
   documented as disk-controller interrupt pulses (`classify.evidence`:
   `paula_floppy.v:96-97` `blckint`, `syncint`; `paula_floppy.v:93` `index`,
-  which `minimig.v:647` ties to `ciab`'s `flag` input). That `index` is a
+  which `minimig.v:657` ties to `ciab`'s `flag` input). That `index` is a
   real, independently-triggerable third pulse, distinct from the other two,
   is graded here under labels carrying no uid
   (P-THREE-KINDS-INDEX-PULSE-A/-B). The two uids appear only on a

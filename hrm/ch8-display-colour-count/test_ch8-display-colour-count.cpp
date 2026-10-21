@@ -52,7 +52,7 @@
 //
 // BOUNDARY: top module `denise_colortable` only (one Verilator build,
 //   sources denise_colortable.v + denise_colortable_ram_mf.v); denise's own
-//   red/green/blue ports are 8 bits wide (denise.v:44-46), so the 12-bit
+//   red/green/blue ports are 8 bits wide (denise.v:45-47), so the 12-bit
 //   colour code lives one level down. Ports: clk, clk7_en,
 //   reg_address_in[8:1], data_in[11:0], rdram, select[7:0], bplxor[7:0],
 //   bank[2:0], loct, ehb_en, rgb[23:0] (denise_colortable.v:9-19). The

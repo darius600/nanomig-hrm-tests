@@ -15,7 +15,7 @@
 //   see the Makefile for the -D plumbing). Baseline drives a valid stop bit
 //   (1) as the last of the ten simulated rx_bits periods; the mutation
 //   drives it low (0) instead -- a framing-error stimulus. paula_uart.v's
-//   8-bit-mode receive path (paula_uart.v:216-219, `rx_data[8:0] <=
+//   8-bit-mode receive path (paula_uart.v:226-229, `rx_data[8:0] <=
 //   {rxds, rx_shift[9:2]}`) samples that final bit straight into SERDATR
 //   bit 8 ("8-bit stop"), so this is expected to flip only that one
 //   checked flag: OVRUN/RBF/TBE/TSRE come from tx_tbe/tx_tsre/rbfmirror,

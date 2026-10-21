@@ -33,7 +33,7 @@ write alters them, and the fixture does **not** latch any of them, including
 PA2. It also states that `ciaa`'s ports are generic 8520 port pins with no
 signal named `_ready`, `_track0`, `_wprot` or `_change` by name, and that the
 binding of a bit **position** to one of those drive-signal **names** is a
-fact one level above `ciaa`, at `minimig.v:622` — not exercised here. And it
+fact one level above `ciaa`, at `minimig.v:632` — not exercised here. And it
 states that the CIA address decode is not a full compare, so grading where on
 the bus CIAAPRA answers is an address-**window** claim that a sibling
 package, `ch8-ciaapra-address-window`, already owns; none of this package's
@@ -48,7 +48,7 @@ splits into parts this fixture can and cannot carry:
   through either the direction register or the data register changes what
   that position reports — is `ciaa`'s own, directly measurable behaviour.
 - **Which drive signal (DSKRDY*, DSKTRACK0*, DSKPROT*, DSKCHANGE*) sits at
-  that position** is the `minimig.v:622` wiring fact above, out of reach at
+  that position** is the `minimig.v:632` wiring fact above, out of reach at
   this boundary.
 - **What a low level physically means for the drive** — motor at speed,
   heads at track zero, write-protect tab, media presence — is downstream of
@@ -156,7 +156,7 @@ here rather than repeated eight times.
 `_ready`, `_track0`, `_wprot` or `_change` — only generic 8520 port pins.
 The correspondence between a bit position and one of DSKRDY*/DSKTRACK0*/
 DSKPROT*/DSKCHANGE* is a wiring fact one level above this fixture
-(`minimig.v:622`, per the build task, not independently opened to draft this
+(`minimig.v:632`, per the build task, not independently opened to draft this
 document). Testing "PAn is named X" as a single claim would require either
 instantiating `minimig` or asserting that one wiring line as a trusted
 contract; this package's fixture is `ciaa` alone, so neither is available.
@@ -197,7 +197,7 @@ content, the primary page-244 source text, and the build task's own text
 (read first, as instructed). The build task itself already states several
 facts that are properly RTL-derived — that `ciaa` is a transparent,
 non-latching buffer for bits 7:2, that its ports carry no drive-signal names,
-that the name binding is at `minimig.v:622`, and that the CIA address decode
+that the name binding is at `minimig.v:632`, and that the CIA address decode
 is not a full compare. None of that was discovered by this document; it was
 handed over before step 1 began, in material the build task named as
 required reading (including a finding-candidates file), and it shapes

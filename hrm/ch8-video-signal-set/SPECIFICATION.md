@@ -11,8 +11,8 @@ The propositions below are drafted from the `quote` / `restatement` fields
 of the 10 claims — they name no port, no line number and no signal width.
 The claims file's `classify.evidence` field, on every one of the 10
 records, names concrete RTL port names and line numbers
-(`minimig.v:239-252`, `agnus_beamcounter.v:421`, `agnus.v:75`,
-`minimig.v:459-461`) and states that the design emits three sync outputs
+(`minimig.v:244-257`, `agnus_beamcounter.v:421`, `agnus.v:75`,
+`minimig.v:464-466`) and states that the design emits three sync outputs
 where the page names one; that fact does not shape any proposition's
 wording (see the Sync section below). Port names, stimulus values and the
 `expect()` assertions are in the test source.

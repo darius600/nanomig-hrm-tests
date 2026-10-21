@@ -25,9 +25,9 @@
 // strobe -- reading $030/$032 the ordinary way (holding rga_i through a
 // clk7_en-qualifying edge) WRITES data_i into that register. This file's
 // read_reg_safe() never advances a qualifying edge; data_o is a
-// continuous `assign` (paula_uart.v:258), so it can be read by evaluating
+// continuous `assign` (paula_uart.v:272), so it can be read by evaluating
 // combinational logic alone. (2) `serper` has no reset term
-// (paula_uart.v:49-55) -- every trial below that cares about SERPER's
+// (paula_uart.v:59-65) -- every trial below that cares about SERPER's
 // value constructs a fresh Rig (and therefore a fresh Vpaula_uart) and
 // calls do_reset() exactly once, before its first write.
 //
@@ -96,7 +96,7 @@ namespace {
 // Register addresses, as rga_i (the $DFFxxx word offset, addr>>1) --
 // paula_uart.v's own localparams REG_SERDAT=9'h030, REG_SERDATR=9'h018,
 // REG_SERPER=9'h032, each right-shifted by 1 at the call site
-// (paula_uart.v:52,61,258 all compare against rga_i, an 8-bit value).
+// (paula_uart.v:62,61,258 all compare against rga_i, an 8-bit value).
 constexpr uint8_t RGA_IDLE    = 0x00;  // matches no decode; safe park address
 constexpr uint8_t RGA_SERDATR = 0x0C;  // $018 >> 1
 constexpr uint8_t RGA_SERDAT  = 0x18;  // $030 >> 1
@@ -124,7 +124,7 @@ public:
 };
 
 // A fresh Vpaula_uart per trial -- `serper` has no reset term
-// (paula_uart.v:49-55), so a reused model would carry a previous trial's
+// (paula_uart.v:59-65), so a reused model would carry a previous trial's
 // period, exactly the hazard the build brief names.
 struct Rig {
     Vpaula_uart* dut;
@@ -198,7 +198,7 @@ struct Rig {
         settle_edges(1);
     }
 
-    // SAFE READ: data_o is a continuous `assign` (paula_uart.v:258), pure
+    // SAFE READ: data_o is a continuous `assign` (paula_uart.v:272), pure
     // combinational logic off rga_i and the module's internal registers --
     // no clock edge is needed to resolve it. This peeks it by setting
     // rga_i and calling eval() alone, WITHOUT ever advancing a

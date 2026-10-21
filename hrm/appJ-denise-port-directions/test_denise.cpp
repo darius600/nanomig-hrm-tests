@@ -112,8 +112,8 @@
 // REGISTER ADDRESSES (word index = byte address >> 1, confirmed against
 //   denise.v's own `reg_address_in[8:1]==<PARAM>[8:1]` decode, same
 //   convention hrm/ch8-appb-chip-column-denise already uses):
-//   BPLCON0=0x80(w) $100 (denise.v:59), DENISEID=0x3E(r) $07C (denise.v:63),
-//   COLOR00=0xC0(w) $180 (denise.v:65, COLORBASE, index 0)
+//   BPLCON0=0x80(w) $100 (denise.v:60), DENISEID=0x3E(r) $07C (denise.v:64),
+//   COLOR00=0xC0(w) $180 (denise.v:66, COLORBASE, index 0)
 //
 // MUTATION METHODOLOGY. Seven propositions are `none impossible` (see
 //   above), each with its own positive control, run for real (WSL
@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
     };
 
     // ecs=0/aga=0 (unlike hrm/ch8-appb-chip-column-denise's own do_reset,
-    // which sets both 1): denise.v:520-521's own `t_blank = (ecs & ecsena &
+    // which sets both 1): denise.v:568-569's own `t_blank = (ecs & ecsena &
     // brdrblnk & ...)` forces the blanking term to 0 outright when ecs=0,
     // so the colour-output positive control below (R0-R3/B0-B3/G0-G3) is
     // never blanked regardless of window/display_ena state -- simplifies
@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     // D-BUS / RGA POSITIVE CONTROL, shared by D6-D0, D15-D7 and RGA8-RGA1.
     // WRITE half: a known word written through data_in to BPLCON0 lands on
-    // denise's own top-level `hires`/`shres` outputs (denise.v:180/187) --
+    // denise's own top-level `hires`/`shres` outputs (denise.v:182/187) --
     // reused verbatim from hrm/ch8-appb-chip-column-denise's own A0
     // liveness. READ half: DENISEID's fixed identity word is read back
     // through data_out at its OWN address and reads DIFFERENTLY from an
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     checks.expect(bus_live,
         "DENISE-D6-D0-DIRECTION: at denise's own boundary, the D6-D0 half of the data bus "
         "identifies to `data_in[15:0]` (input, denise.v:40) and `data_out[15:0]` (output, "
-        "denise.v:42), connected at minimig.v:587/590 -- a Verilog port-direction fact, not a "
+        "denise.v:42), connected at minimig.v:597/590 -- a Verilog port-direction fact, not a "
         "runtime-configurable one, per the axis hrm/appDE-ciab-port-signals grades for the CIA. "
         "The printed pin range (01-07) is not graded; the RTL splits the one printed "
         "bidirectional bus into two unidirectional ports with no pin-range counterpart. "
@@ -285,7 +285,7 @@ int main(int argc, char** argv) {
     checks.expect(rga_selects,
         "DENISE-RGA-DIRECTION: at denise's own boundary, RGA8-RGA1 identifies to "
         "`reg_address_in[9-1:1]` (input, denise.v:39, 'register adress inputs'), connected at "
-        "minimig.v:586 from agnus's `reg_address_out` -- a Verilog port-direction fact. Unlike "
+        "minimig.v:596 from agnus's `reg_address_out` -- a Verilog port-direction fact. Unlike "
         "Agnus's own RGA row, not touched by appendix J's AGNUS-table RGA contradiction (that "
         "split is between p.379 and p.381's two AGNUS printings; Denise's table prints I and "
         "Paula's prints I, and nothing contradicts either). "
@@ -320,30 +320,30 @@ int main(int argc, char** argv) {
         ((red_live && green_live && blue_live) ? "live" : "NOT LIVE -- see MEASURED above") +
         " [no page -- infrastructure, not itself a claim]");
 
-    // MUTATION DENISE-R0-R3-DIRECTION none impossible: R0-R3 identifies to denise.v:44's `red[7:0]` (output), unconditionally declared -- no stimulus can make a video output behave as an input. Positive control: COLOR00-LIVE above.
+    // MUTATION DENISE-R0-R3-DIRECTION none impossible: R0-R3 identifies to denise.v:45's `red[7:0]` (output), unconditionally declared -- no stimulus can make a video output behave as an input. Positive control: COLOR00-LIVE above.
     checks.expect(red_live,
         "DENISE-R0-R3-DIRECTION: at denise's own boundary, R0-R3 identifies to `red[7:0]` "
-        "(output, denise.v:44, 'red componenent video out'), connected at minimig.v:591 and "
-        "assigned at denise.v:520 -- a Verilog port-direction fact. WIDTH NOT GRADED: the page "
+        "(output, denise.v:45, 'red componenent video out'), connected at minimig.v:601 and "
+        "assigned at denise.v:568 -- a Verilog port-direction fact. WIDTH NOT GRADED: the page "
         "prints four bits (OCS); denise.v declares eight (AGA). The direction is the same "
         "proposition; the bit count is a different one, not asserted here. "
         "[p.380 DENISE PIN ASSIGNMENT, DEFINITION column: R0-R3 \"O\"] "
         "sol:J-054 opus:AHJ-186");
 
-    // MUTATION DENISE-B0-B3-DIRECTION none impossible: B0-B3 identifies to denise.v:46's `blue[7:0]` (output), unconditionally declared. Positive control: COLOR00-LIVE above.
+    // MUTATION DENISE-B0-B3-DIRECTION none impossible: B0-B3 identifies to denise.v:47's `blue[7:0]` (output), unconditionally declared. Positive control: COLOR00-LIVE above.
     checks.expect(blue_live,
         "DENISE-B0-B3-DIRECTION: at denise's own boundary, B0-B3 identifies to `blue[7:0]` "
-        "(output, denise.v:46, 'blue component video out'), connected at minimig.v:593 and "
-        "assigned at denise.v:520 -- a Verilog port-direction fact. Same width carve-out as "
+        "(output, denise.v:47, 'blue component video out'), connected at minimig.v:603 and "
+        "assigned at denise.v:568 -- a Verilog port-direction fact. Same width carve-out as "
         "R0-R3 above (four printed OCS bits against eight declared AGA bits). "
         "[p.380 DENISE PIN ASSIGNMENT, DEFINITION column: B0-B3 \"O\"] "
         "sol:J-056 opus:AHJ-188");
 
-    // MUTATION DENISE-G0-G3-DIRECTION none impossible: G0-G3 identifies to denise.v:45's `green[7:0]` (output), unconditionally declared. Positive control: COLOR00-LIVE above.
+    // MUTATION DENISE-G0-G3-DIRECTION none impossible: G0-G3 identifies to denise.v:46's `green[7:0]` (output), unconditionally declared. Positive control: COLOR00-LIVE above.
     checks.expect(green_live,
         "DENISE-G0-G3-DIRECTION: at denise's own boundary, G0-G3 identifies to `green[7:0]` "
-        "(output, denise.v:45, 'green component video out'), connected at minimig.v:592 and "
-        "assigned at denise.v:520 -- a Verilog port-direction fact. Same width carve-out as "
+        "(output, denise.v:46, 'green component video out'), connected at minimig.v:602 and "
+        "assigned at denise.v:568 -- a Verilog port-direction fact. Same width carve-out as "
         "R0-R3/B0-B3 above. [p.380 DENISE PIN ASSIGNMENT, DEFINITION column: G0-G3 \"O\"] "
         "sol:J-058 opus:AHJ-190");
 
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
     // MUTATION DENISE-7M-DIRECTION none impossible: 7M identifies to denise.v:33's `clk7_en` (input), unconditionally declared -- no stimulus can make a clock-enable input behave as an output. Positive control: CLK7EN-LIVE above (a write held with clk7_en forced low never lands; released, it does).
     checks.expect(clk7en_live,
         "DENISE-7M-DIRECTION: at denise's own boundary, 7M identifies to `clk7_en` (input, "
-        "denise.v:33, '7MHz clock enable'), driven at minimig.v:582 -- a Verilog port-direction "
+        "denise.v:33, '7MHz clock enable'), driven at minimig.v:592 -- a Verilog port-direction "
         "fact. REPRESENTATION DIFFERENCE, stated so the finding travels with the claim rather "
         "than the conclusion: NanoMig carries no 7.15909 MHz waveform on a wire -- it runs "
         "`denise` from the 28 MHz `clk` (denise.v:32) and gates the 7 MHz domain with a "
@@ -409,7 +409,7 @@ int main(int argc, char** argv) {
     checks.record(
         "DENISE-CCK-DIRECTION (p.380 DENISE PIN ASSIGNMENT, DEFINITION column: CCK \"I\"): "
         "not asserted. cck identifies to `cck` (input, denise.v:36, 'colour clock enable'), "
-        "driven at minimig.v:585 from the same net that feeds agnus and paula -- the declared "
+        "driven at minimig.v:595 from the same net that feeds agnus and paula -- the declared "
         "direction matches the printed cell. MEASURED: `grep -n cck` over denise.v and all 11 "
         "submodule files this package's own Makefile compiles (denise_bitplanes.v, "
         "denise_bitplane_shifter.v, bitplane_ram.v, denise_playfields.v, denise_sprites.v, "

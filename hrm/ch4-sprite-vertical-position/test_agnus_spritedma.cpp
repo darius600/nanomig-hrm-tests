@@ -1499,7 +1499,7 @@ int main(int argc, char** argv) {
         "claim ('SPRxCTL's chip column in the ECS register map reads A "
         "alone') is declined here in full, not graded. The Denise-side "
         "decode is reported in this package's own classify.evidence "
-        "(denise_sprites.v:104, denise_sprites_shifter.v:138-141 decode "
+        "(denise_sprites.v:90, denise_sprites_shifter.v:138-141 decode "
         "$142 too) -- not something this fixture, which builds "
         "agnus_spritedma alone with no Denise instance, can itself "
         "measure.");

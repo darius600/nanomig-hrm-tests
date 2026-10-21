@@ -61,7 +61,7 @@
 // own "second button" line (already read via POTINP by hrm/ch8-joystick-
 // switch-decode L17, sourced from p.233, not this page), and driving it is a
 // physically grounded stimulus. Pin 9 is NOT: userio.v's ports carry only a
-// role-named 16-bit bus (minimig.v:200-201's own comment: "[fire2,fire,up,
+// role-named 16-bit bus (minimig.v:205-206's own comment: "[fire2,fire,up,
 // down,left,right]", six roles, bits 5..0) with no pin-indexed input at all,
 // and every board top-level file checked (tang/nano20k/top.sv:54,89 --
 // `input [5:0] js1`, `db9_joy1[5:0]`; gatemate/evb/top.sv:59 the same) wires
@@ -154,7 +154,7 @@ static const uint8_t JOY0DAT_ADDR = 0x00a >> 1;
 static const uint8_t POTINP_ADDR  = 0x016 >> 1;
 
 // Bit indices within a _joy1/_joy2 stimulus word (userio.v:239,252,222-227,
-// 171-175; minimig.v:200-201 names the same six roles).
+// 171-175; minimig.v:205-206 names the same six roles).
 enum { BIT_RIGHT = 0, BIT_LEFT = 1, BIT_BACK = 2, BIT_FWD = 3, BIT_FIRE = 4, BIT_BTN2 = 5 };
 
 // Builds a 16-bit stimulus word: idle-high (open) on every bit except the

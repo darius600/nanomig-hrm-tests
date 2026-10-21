@@ -199,7 +199,7 @@ them written for this test:**
 | where | what it says |
 |---|---|
 | `amiga_clk.v:47-54` | the module's own ASCII waveform: `c1` tracks `clk_7` edge for edge, `c3` follows 90° behind |
-| `denise_bitplanes.v:275` | "c1 is the 7MHz clock, c3 the same clock shifted 90deg" |
+| `denise_bitplanes.v:222` | "c1 is the 7MHz clock, c3 the same clock shifted 90deg" |
 | `minimig_sram_bridge.v:46` | labels its `c1` waveform "(7.09 MHz)" |
 
 `nanomig.v:145-152` prints the same thing as a timing table: `c1` and `c3`

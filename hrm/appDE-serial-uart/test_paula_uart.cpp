@@ -85,7 +85,7 @@
 //     data_i, data_o (output), uartbrk, rbfmirror, txint (output), rxint
 //     (output), txd (output), rxd (input). Twelve names; none is
 //     cts/rts/dtr/dsr/cd/ri.
-//   - paula_uart.v:255 `assign txd = tx_txd;` -- txd is a continuous,
+//   - paula_uart.v:265 `assign txd = tx_txd;` -- txd is a continuous,
 //     unconditional read of an internal register the testbench never
 //     writes to.
 //   - paula_uart.v's RX_IDLE/RX_START/RX_SHIFT block samples rxd into a
@@ -95,10 +95,10 @@
 //     rx_rxd};` then `data_o = {serdatr,1'b0,rx_data}` -- serdatr occupies
 //     data_o[15:11], rx_rxd is its low bit, so data_o[11]).
 //   - paula.v (the module that instantiates paula_uart as `pu1`,
-//     paula.v:203-215) carries the same absence: its own port list
+//     paula.v:208-220) carries the same absence: its own port list
 //     (paula.v:60-90) names txd/rxd and nothing modem-control at all.
 //   - minimig.v:189-197 is the first place cts/rts/dtr/dsr/cd/ri and
-//     txd/rxd coexist as names in one module. minimig.v:648-649 wires
+//     txd/rxd coexist as names in one module. minimig.v:658-659 wires
 //     cts/rts/dtr/dsr/cd/ri exclusively into the ciab instance's
 //     porta_in/porta_out (CIA-B port A: `.porta_in({cd,cts,dsr,
 //     ri&_joy3[4],1'b1,_joy4[4]})`, `.porta_out({dtr,rts})`), and

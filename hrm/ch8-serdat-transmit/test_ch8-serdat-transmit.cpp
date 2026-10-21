@@ -541,7 +541,7 @@ int main(int argc, char** argv) {
       const bool ok = (v == 0xBEEF);
 #elif MUT_19
       // stimulus: read SERDATR's address ($018) instead of SERDAT's own
-      // ($030) -- SERDATR is the one address paula_uart.v:258 says is NOT
+      // ($030) -- SERDATR is the one address paula_uart.v:272 says is NOT
       // forced to 0, so this must surface a nonzero value (rx_rxd alone,
       // idle high, already guarantees it) if the read really targets the
       // address the assertion names.

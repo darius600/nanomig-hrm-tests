@@ -81,7 +81,7 @@
 //     nanomig/src/minimig-aga and nanomig/src/misc (run directly, not
 //     merely quoted from classify.evidence) return
 //     ZERO hits for both. Neither printed name occurs anywhere in the RTL;
-//     the binding rests on two RTL comments (agnus.v:71, minimig.v:333)
+//     the binding rests on two RTL comments (agnus.v:71, minimig.v:338)
 //     plus the FUNCTION gloss. The ENCODING differs (RRW reads as one
 //     level line, write in one state and read in the other; `dbwe` is a
 //     plain write-enable). CONCLUSION: the DIRECTION axis survives both
@@ -409,7 +409,7 @@ int main(int argc, char** argv) {
             "RESET-IS-INPUT (p.379 pin 11 RES* \"System reset\" I; p.381 "
             "pin 18 RST* \"Reset\" I -- same signal, naming differs across "
             "generations, direction does not, graded once): `reset` "
-            "(agnus.v:59, input) is driven at minimig.v:444 from the "
+            "(agnus.v:59, input) is driven at minimig.v:449 from the "
             "system reset. A DMACON write is first confirmed to have "
             "landed (DMACONR nonzero); reset is then asserted and released "
             "with the clock still running, and DMACONR is confirmed back "
@@ -448,7 +448,7 @@ int main(int argc, char** argv) {
             "the identity rests on the FUNCTION column \"RG Enable\" "
             "against agnus.v:60's own \"(register bank)\" comment and "
             "gary's `sel_reg` (\"select chip register bank\"), driven onto "
-            "`aen` at minimig.v:446): `aen` (agnus.v:60, input) gates the "
+            "`aen` at minimig.v:451): `aen` (agnus.v:60, input) gates the "
             "register address decoder -- `reg_address_cpu = (aen&(rd|hwr|"
             "lwr)) ? address_in : 8'hFF` (agnus.v:114). A DMACON write "
             "issued with aen held low does NOT land (DMACONR unchanged); "
@@ -502,7 +502,7 @@ int main(int argc, char** argv) {
             "p.381 pin 20 DBR* \"Data bus request\" O -- same name, same "
             "direction, graded once): `dbr` (agnus.v:70, `output reg`, "
             "\"agnus requests data bus\") is consumed by gary at "
-            "minimig.v:456. Graded via a minimal channel-D-only blit "
+            "minimig.v:461. Graded via a minimal channel-D-only blit "
             "(DMACON BLTEN+DMAEN, `blten = dmacon[6] & dmacon[9]`, "
             "agnus.v:301) rather than disk DMA -- disk's own grant has no "
             "DMACON dependency at all (agnus_diskdma.v:49, see the comment "
@@ -550,7 +550,7 @@ int main(int argc, char** argv) {
             "return ZERO hits for both -- neither printed name occurs "
             "anywhere in the RTL, and the binding to `dbwe` rests on two "
             "RTL comments (agnus.v:71 \"agnus does a memory write cycle\", "
-            "minimig.v:333 \"data bus write enable, Agnus tells the RAM "
+            "minimig.v:338 \"data bus write enable, Agnus tells the RAM "
             "it's writing data\") plus the FUNCTION gloss, not a name "
             "match. The ENCODING differs too: p.381's RRW reads as one "
             "level line, write in one state and read in the other; "
@@ -592,8 +592,8 @@ int main(int argc, char** argv) {
             "p.381 pin 17 INT3* \"Blitter ready interrupt\" O -- same "
             "name, same direction, graded once): `int3` (agnus.v:89, "
             "output, \"blitter finished interrupt (to Paula)\") is wired "
-            "at minimig.v:475 to the net Paula's own int3 input consumes "
-            "(minimig.v:511, graded separately by "
+            "at minimig.v:480 to the net Paula's own int3 input consumes "
+            "(minimig.v:521, graded separately by "
             "hrm/appJ-paula-port-directions's PAULA-INT3-DIRECTION, not "
             "here). A minimal channel-D-only "
             "blit (BLTCON0 LF=$FF, no source channels) is armed and run "
@@ -653,7 +653,7 @@ int main(int argc, char** argv) {
             "p.381 pin 18 DMAL \"Request audio/disk DMA\" I -- same name, "
             "same direction, graded once): every DMA-request port agnus "
             "declares is an input and every one is driven from Paula at "
-            "minimig.v:476-479 -- agnus.v:28's own header comment names "
+            "minimig.v:481-484 -- agnus.v:28's own header comment names "
             "it, \"only a dma request input from Paula (dmal input, disk "
             "and audio)\". Graded via disk_dmal (agnus.v:92): asserted "
             "with DMACON DMAEN set, agnus allocates the disk DMA slot "
@@ -843,7 +843,7 @@ int main(int argc, char** argv) {
         "proposition. `_csync` (agnus.v:75, output) is driven at "
         "agnus_beamcounter.v:421 (`assign _csync = _hsync & _vsync | "
         "vser`) and wired straight through, unchanged, at agnus.v:477 -> "
-        "minimig.v:461 (`._csync(_csync)`) onto minimig's own top-level "
+        "minimig.v:466 (`._csync(_csync)`) onto minimig's own top-level "
         "`_csync` output -- the SAME wire, not a re-derived or re-decoded "
         "one. hrm/ch8-video-signal-set's SYNC-OUTPUT-TOGGLES "
         "(test_minimig.cpp:544-553, opus:8-display.c12 sol:8-display.c11) "

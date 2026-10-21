@@ -36,19 +36,19 @@
 //   this package's scope. Only 4 propositions (9 claims) are graded here,
 //   on 4 expect() assertions plus one infrastructure liveness control.
 //
-// RTL POSITIONS USED: BPLCON0[15]=hires, BPLCON0[6]=shres (denise.v:180/187);
-//   the write-decode mechanism (denise.v:174-176). No address used by
+// RTL POSITIONS USED: BPLCON0[15]=hires, BPLCON0[6]=shres (denise.v:182/187);
+//   the write-decode mechanism (denise.v:176-178). No address used by
 //   userio.v/paula.v/agnus.v (e.g. JOY0DAT, word address 0x05/$00A) appears
 //   anywhere in denise.v or any module it instantiates (grep: zero hits),
 //   the same fact hrm/ch8-appb-chip-column-denise/ measures for its own
 //   three JOY*/JOYTEST rows.
 //
 // BOUNDARY: `denise` (denise.v) and every module it itself instantiates --
-//   denise_bitplanes (bplm0, denise.v:345), denise_playfields (plfm0,
-//   denise.v:377), denise_sprites (sprm0, denise.v:393), denise_
-//   spritepriority (spm0, denise.v:419), denise_colortable (clut0,
-//   denise.v:440), denise_hamgenerator (ham0, denise.v:459), denise_
-//   collision (col0, denise.v:474), and each of THEIR OWN submodules
+//   denise_bitplanes (bplm0, denise.v:361), denise_playfields (plfm0,
+//   denise.v:412), denise_sprites (sprm0, denise.v:429), denise_
+//   spritepriority (spm0, denise.v:473), denise_colortable (clut0,
+//   denise.v:487), denise_hamgenerator (ham0, denise.v:506), denise_
+//   collision (col0, denise.v:521), and each of THEIR OWN submodules
 //   (denise_bitplane_shifter, bitplane_ram, denise_sprites_shifter,
 //   sprite_ram, denise_colortable_ram_mf) -- per this file's own Makefile
 //   SRC list, the only place a module could be added. Port list (denise.v:
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     Vdenise* dut = new Vdenise;
     Checks checks;
 
-    const int BPLCON0 = 0x80;  // write word-address, byte $100 -- denise.v:59/175
+    const int BPLCON0 = 0x80;  // write word-address, byte $100 -- denise.v:60/175
     const int OUTSIDE_ADDR = 0x05;  // JOY0DAT, byte $00A -- userio.v, NOT in this fixture
 
     int clk7_cycle = 0;
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
     // [control] FIXTURE-LIVE-BPLCON0 -- no claim id, no page: the fixture
     // proves it can deliver a known, distinct value before any
     // claim-bearing assertion is trusted. BPLCON0
-    // and its hires/shres output ports (denise.v:59, 174-180, 187) are used
+    // and its hires/shres output ports (denise.v:60, 174-180, 187) are used
     // because they are direct, combinational, primary outputs -- "the value
     // arrived" is observed on a real port, not inferred from a read
     // multiplexer that could itself be the thing under test. Carries its own
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
         "graphics and sound features.'): PARTIAL. The video half is measured "
         "above by CUSTOM-SILICON-DRIVES-VIDEO-NO-CPU (denise's video output "
         "moves from a register-bus write alone, with no CPU port anywhere on "
-        "this module). The audio half is Paula's (paula.v:114-115 drives "
+        "this module). The audio half is Paula's (paula.v:119-120 drives "
         "ldata/rdata from four channel instances) -- outside this "
         "single-module `denise` fixture and not built here. 'Advanced' names "
         "no threshold and is not graded either way.");
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
         "over this fixture's own Makefile SRC list, zero hits, the same fact "
         "hrm/ch8-appb-chip-column-denise/ already measured for this exact "
         "address) leaves hires unchanged at 1 -- denise's decode answers only "
-        "its own address table (denise.v:56-65) and does not react to an "
+        "its own address table (denise.v:57-66) and does not react to an "
         "address that belongs to a sibling chip's register space. This is "
         "denise's own half of 'each contain the logic to handle a specific "
         "set of tasks' (p.2). [no uid -- see the following record()]");
@@ -301,8 +301,8 @@ int main(int argc, char** argv) {
     // into agnus_beamcounter.v); a denise-only fixture cannot distinguish
     // "NTSC hires" from "PAL hires" and would produce identical evidence
     // for both. What IS inside this boundary is the mode-selecting
-    // mechanism itself: BPLCON0's HIRES bit (bit 15, denise.v:180) and
-    // SHRES bit (bit 6, denise.v:187) drive hires/shres directly and
+    // mechanism itself: BPLCON0's HIRES bit (bit 15, denise.v:182) and
+    // SHRES bit (bit 6, denise.v:189) drive hires/shres directly and
     // combinationally, selecting among the resolution modes the four
     // bullets describe.
     // ========================================================================
@@ -393,7 +393,7 @@ int main(int argc, char** argv) {
         "input into agnus_beamcounter.v (312 PAL / 262 NTSC line constants) "
         "-- not a denise port, outside this fixture, same reasoning as A3. "
         "'Bitplane generated': denise_bitplanes is instantiated inside "
-        "denise (denise.v:345, containment not in question), but actually "
+        "denise (denise.v:361, containment not in question), but actually "
         "measuring bitplane data reaching a visible pixel needs the "
         "phase-accurate window/hpos state machine hrm/ch3-bplcon0-display-"
         "modes/ and hrm/ch3-horizontal-display-window/ already built and "
@@ -408,7 +408,7 @@ int main(int argc, char** argv) {
         "B2 sol:1-components.c52 opus:1-components.c51 (p.3, 'Hold-and-"
         "modify (HAM) mode allows for the display of up to 4,096 colors on "
         "screen simultaneously.'): declined. denise_hamgenerator is "
-        "instantiated inside denise (denise.v:459, containment not in "
+        "instantiated inside denise (denise.v:506, containment not in "
         "question), but hrm/ch3-ham-control-field/'s own header records "
         "that the manual disagrees with itself "
         "about which BPLCON0 bit enables HAM (p.95 says bit 10; pp.87/90/271 "
@@ -423,8 +423,8 @@ int main(int argc, char** argv) {
         "B3 sol:1-components.c53 opus:1-components.c52 (p.3, 'Overscan mode "
         "allows the creation of higher resolution displays specially suited "
         "for video and film applications.'): declined. The mechanism is "
-        "denise's own DIWSTRT/DIWSTOP window registers (denise.v:56-57, "
-        "write path denise.v:290-316) accepting values outside the nominal "
+        "denise's own DIWSTRT/DIWSTOP window registers (denise.v:57-58, "
+        "write path denise.v:303-329) accepting values outside the nominal "
         "edges. DIWSTRT/DIWSTOP are write-only (no readback via data_out, "
         "confirmed by hrm/ch3-nominal-display-values/'s own finding); "
         "observing an out-of-nominal window's effect needs the hpos-vs-"

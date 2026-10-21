@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
     //
     // The leading underscore is this codebase's active-low marker, the same
     // one `_fire0`, `_ready` and `_track0` carry. The design's own top level
-    // settles it: minimig.v:760 is
+    // settles it: minimig.v:770 is
     //
     //     assign _cpu_ipl = int7 ? 3'b000 : _iplx;   // m68k interrupt request
     //

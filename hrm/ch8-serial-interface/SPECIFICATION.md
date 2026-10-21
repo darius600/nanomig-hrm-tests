@@ -19,7 +19,7 @@ package's own claims file — `ch8-serial-interface.jsonl`, handed to me
 unconditionally by the task sheet — carries a `classify.evidence` field on
 every one of its 106 records, and those fields quote `paula_uart.v` port
 names, line numbers and measured register values (e.g. "reload terms
-`paula_uart.v:102` and `:120`", "`rga_i`=0x018 -> `data_o`=0x3800"). I read
+`paula_uart.v:112` and `:120`", "`rga_i`=0x018 -> `data_o`=0x3800"). I read
 those fields before writing a single word below, because reading the claims
 file is unavoidable — it is where the propositions themselves live. So the
 port names were visible before this document existed, exactly the failure

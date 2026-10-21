@@ -28,8 +28,8 @@
 // phase0: clk7_en=1,c1=1,c3=0   phase1: c1=1,c3=1   phase2: c1=0,c3=1
 // phase3: c1=0,c3=0
 // The BPLxDAT buffer registers latch on clk7_en (phase0,
-// denise_bitplanes.v:382-435); the shifter parallel-load fires on
-// !c1&&!c3 (phase3, denise_bitplane_shifter.v:181). This harness was
+// denise_bitplanes.v:487-540); the shifter parallel-load fires on
+// !c1&&!c3 (phase3, denise_bitplane_shifter.v:160). This harness was
 // verified against PACKAGE.md's own MEASURED example
 // (category 0 / A-bpc.intro) before any other claim was asserted.
 
@@ -256,7 +256,7 @@ static bool eq(const Px& a, const Px& b) {
   return a.r == b.r && a.g == b.g && a.b == b.b;
 }
 
-// Trap 2 (given): denise_bitplanes.v:146-152 decodes hpos[3:2] into 0/4/8/12
+// Trap 2 (given): denise_bitplanes.v:102-108 decodes hpos[3:2] into 0/4/8/12
 // lores pixels of EXTRA SCROLL DELAY (extra_delay_f0), latched into
 // extra_delay_r at the tick load becomes active and added into pf1h_del /
 // pf2h_del, which select where in the 64-bit scroller history the displayed
@@ -273,7 +273,7 @@ static void alignForCleanLoad(int writesUntilBpl1dat) {
 
 // write BPL1..6DAT (2..6 optional via the vector; unspecified = 0). BPL1DAT
 // is written LAST so the shared `load` strobe (denise_bitplanes.v) captures
-// every plane's already-buffered word together (denise_bitplanes.v:437-441 and
+// every plane's already-buffered word together (denise_bitplanes.v:542-546 and
 // the per-plane bpl*dat buffer registers, confirmed by reading that file).
 static void loadPlanes(uint16_t p1, uint16_t p2 = 0, uint16_t p3 = 0,
                         uint16_t p4 = 0, uint16_t p5 = 0, uint16_t p6 = 0) {
@@ -283,7 +283,7 @@ static void loadPlanes(uint16_t p1, uint16_t p2 = 0, uint16_t p3 = 0,
   writeReg(A_BPL4DAT, p4);
   writeReg(A_BPL5DAT, p5);
   writeReg(A_BPL6DAT, p6);
-  writeReg(A_BPL1DAT, p1);  // triggers l_bpu latch (denise.v:194-203) + load
+  writeReg(A_BPL1DAT, p1);  // triggers l_bpu latch (denise.v:196-205) + load
   // Measured (VCD trace during harness development): with alignForCleanLoad's
   // zero extra delay, the shifter's parallel-load fires 3 ticks after the
   // BPL1DAT write and the first loaded bit is visible on the FOLLOWING
@@ -684,7 +684,7 @@ static void measureEhb() {
   auto pxHalf = scanHpos(8);
   for (auto& p : pxHalf) if (p.r==0 && p.b>0 && p.b<0x55) { g_ehb_halved = p; g_ehb_halved_ok = (p.b == (uint8_t)(0x55>>1)); }
 
-  // killehb: with ehb_en forced 0 (denise.v:431, ehb_en=!killehb&&...), plane
+  // killehb: with ehb_en forced 0 (denise.v:485, ehb_en=!killehb&&...), plane
   // 6's bit stops being masked OUT of the colour-table address (it is only
   // excluded from the address -- denise_colortable.v:34,
   // rd_adr=ehb_en?{3'b0,select[4:0]}:select_xored -- when ehb_en is true) and

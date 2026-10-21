@@ -12,7 +12,7 @@
 //   with the manual, not that the assertion is wrong -- no assertion here
 //   was, or should be, adjusted to make the RTL pass.
 // Non-goals: this package does not model CIA-A's internal register file at
-//   all. minimig.v:860-863's `ovl` mux does not read `rs` (register select)
+//   all. minimig.v:870-873's `ovl` mux does not read `rs` (register select)
 //   or `data_out` -- only `sel_cia_a` (an address-range decode) and
 //   `cpu_lwr|cpu_hwr` (a write strobe) -- so the specific bit pattern
 //   written, and which CIA-A register is addressed, are provably irrelevant
@@ -31,7 +31,7 @@
 //   the real amiga_clk.v generator lives one level up and is not part of
 //   this module's hierarchy; this harness reproduces its exact state
 //   machine from amiga_clk.v, read for that purpose only, never modified).
-//   Internally: minimig.v:861-862 `if(~_cpu_reset | ~_cpu_reset_in) ovl<=1;
+//   Internally: minimig.v:871-872 `if(~_cpu_reset | ~_cpu_reset_in) ovl<=1;
 //   else if(sel_cia_a & (cpu_lwr|cpu_hwr)) ovl<=0;`; gary.v:190-192
 //   `sel_cia = cpu_address_in[23:16]==8'hBF; sel_cia_a = sel_cia &
 //   ~cpu_address_in[12]; sel_cia_b = sel_cia & ~cpu_address_in[13];`;
@@ -74,7 +74,7 @@
 //     on/external reset) -- NOT graded with expect(). See the note()/
 //     record() pair before the graded assertions: no stimulus this harness
 //     controls can make `ovl` read anything but 1 at cold start, because
-//     minimig.v:861's `~_cpu_reset` term is already true from tick 0
+//     minimig.v:871's `~_cpu_reset` term is already true from tick 0
 //     regardless of `_cpu_reset_in` (minimig_syscontrol's own `sys_reset`
 //     starts in the asserted state unconditionally) -- the claim is true
 //     but not *isolable* from the internal reset chain at this boundary,
@@ -189,7 +189,7 @@ struct ClkGen {
 };
 
 // CIA-A responds on the low byte lane (odd byte addresses, LDS) and CIA-B
-// on the high byte lane (even, UDS) -- minimig.v:617-618 vs :642-643
+// on the high byte lane (even, UDS) -- minimig.v:627-628 vs :642-643
 // (ciaa.v data_out feeds cpu_data_out[7:0], ciab.v feeds [15:8]).
 constexpr uint32_t CIAA_PRA      = 0xBFE001; // CIA-A PRA -- the OVL bit lives here (manual p.223 + Appendix F)
 constexpr uint32_t CIAA_DDRA     = 0xBFE201; // CIA-A DDRA -- port A DIRECTION, so NOT unrelated to OVL
@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CONTROL-RESET-RELEASES (no claim id; harness precondition). If this
-    // never goes green, `~_cpu_reset` (minimig.v:861) permanently forces
+    // never goes green, `~_cpu_reset` (minimig.v:871) permanently forces
     // ovl<=1 regardless of any CIA write, and every assertion below would
     // silently be measuring a permanently-reset chip -- the control-path
     // analogue of Chapter 6's dead-data-path lesson.
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
     // =========================================================================
     // sol:7-reset.c3 (p.223) -- measured, not graded. See file header and
     // the reasoning below: no stimulus this harness controls can make ovl
-    // read anything but 1 at cold start, because minimig.v:861's
+    // read anything but 1 at cold start, because minimig.v:871's
     // `~_cpu_reset` term is already true from tick 0 regardless of
     // `_cpu_reset_in` (verified separately: driving `_cpu_reset_in` high
     // from tick 0 onward, never asserting it at all, still gives ovl=1 at
@@ -388,7 +388,7 @@ int main(int argc, char** argv) {
         "OVL-AT-COLD-START (p.223, sol:7-reset.c3): ovl reads 1 from "
         "simulation start regardless of _cpu_reset_in -- verified by a "
         "separate run that never asserts _cpu_reset_in low at all, where "
-        "ovl still reads 1 for the first 10 ticks, because minimig.v:861's "
+        "ovl still reads 1 for the first 10 ticks, because minimig.v:871's "
         "`~_cpu_reset` term is already true from tick 0 (minimig_syscontrol's "
         "own sys_reset starts in the asserted state unconditionally).");
     checks.record(

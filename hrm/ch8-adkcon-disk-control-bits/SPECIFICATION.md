@@ -49,7 +49,7 @@ none of the thirteen quotations above touches either:
 
 C8 is the finding that ADKCON has exactly two consumers in all of
 `src/minimig-aga` — bit 11 (UARTBRK, out of scope here per above) and bit
-10 (WORDSYNC) (paula.v:211, :269). Bits 0-14 all store and read back
+10 (WORDSYNC) (paula.v:216, :283). Bits 0-14 all store and read back
 individually, bit 15 never stores. **PRECOMP (14-13), MFMPREC (12), MSBSYNC
 (9) and FAST (8) are storage with no consumer.**
 
@@ -81,10 +81,10 @@ would be the overreach this suite's rules exist to prevent.
 
 ## Fixture boundary: `paula`, not `paula_floppy`
 
-ADKCON ($09E) and ADKCONR ($010) are decoded inside `paula` (paula.v:126-127,
+ADKCON ($09E) and ADKCONR ($010) are decoded inside `paula` (paula.v:131-132,
 the register-write block at :182-195, the read mux at :198), and
 `paula_floppy` has no `adkcon` port at all — only a one-bit input named
-`wordsync` crosses that boundary (paula.v:269).
+`wordsync` crosses that boundary (paula.v:283).
 
 `hrm/ch5-audio-dmacon-adkcon` also uses `paula` as its top module; its
 Makefile shows which submodule files a `paula` build needs, and nothing is

@@ -39,7 +39,7 @@ p.332's own figure prints `POTINP  DFF016`. p.333's *LIGHT PEN* figure prints
 two boxes above. Per `appE/corpus-defects.md` and
 `work/2026-09-17_appDE_finding_candidates.md` item 1, **both of p.333's
 labels are wrong**: `appA-playfield/p271.txt:12` and `appB3/p291.txt:29` print
-`BPLCON2 104`, BPLCON0 is `100`, and `denise.v:59-60` agrees
+`BPLCON2 104`, BPLCON0 is `100`, and `denise.v:60-61` agrees
 (`BPLCON0 = 9'h100; BPLCON2 = 9'h104;`). p.332's own reading is the one the
 rest of the manual corroborates.
 

@@ -28,25 +28,25 @@
 //
 // RTL read for step 2/3, after SPECIFICATION.md was committed (e78a14a):
 //   paula.v in full, paula_uart.v in full.
-//   - paula.v:67 `input [8:1] reg_address_in`; paula.v:126-127
-//     `ADKCON=9'h09e`, `ADKCONR=9'h010`; ADKCON write paula.v:182-195 (SET/
+//   - paula.v:67 `input [8:1] reg_address_in`; paula.v:131-132
+//     `ADKCON=9'h09e`, `ADKCONR=9'h010`; ADKCON write paula.v:187-200 (SET/
 //     CLR convention: data_in[15]=1 ORs data_in[14:0] in, =0 ANDs the
-//     complement out); ADKCONR read paula.v:198 `assign adkconr[15:0] =
+//     complement out); ADKCONR read paula.v:203 `assign adkconr[15:0] =
 //     (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000`;
 //     paula.v:203-217 instantiates paula_uart as `pu1`, `.rga_i
 //     (reg_address_in)`, `.data_i(data_in)`, `.data_o(uartdata_out)`,
-//     `.uartbrk(adkcon[11])`; paula.v:152 `assign data_out = uartdata_out |
+//     `.uartbrk(adkcon[11])`; paula.v:157 `assign data_out = uartdata_out |
 //     intdata_out | diskdata_out | adkconr` -- confirms the four mux arms
 //     are mutually exclusive by address for every address this file uses
 //     (DMACON/ADKCON/ADKCONR decode only at 0x4B/0x4F/0x08; disk addresses
 //     are all outside 0x0C/0x18/0x19; INTENA/INTENAR/INTREQ/INTREQR decode
 //     outside 0x0C/0x18/0x19 too).
-//   - paula_uart.v:20-22 `REG_SERDAT=9'h030`, `REG_SERDATR=9'h018`,
+//   - paula_uart.v:25-27 `REG_SERDAT=9'h030`, `REG_SERDATR=9'h018`,
 //     `REG_SERPER=9'h032`; as `[8:1]` (the form `rga_i`/`reg_address_in`
 //     actually carries): SERDAT=0x18, SERDATR=0x0C, SERPER=0x19 -- three
 //     DISTINCT word addresses, confirming R1/R4/R7's addresses do not
 //     collide with each other.
-//   - paula_uart.v:45-65: SERPER and SERDAT are write-registers with no
+//   - paula_uart.v:55-75: SERPER and SERDAT are write-registers with no
 //     read arm anywhere (`serper`/`serdat` are never read onto `data_o`);
 //     write-decoded only at `rga_i==REG_SERPER[8:1]` (0x19, serper) and
 //     `rga_i==REG_SERDAT[8:1]` (0x18, serdat), each gated by `clk7_en`
@@ -61,23 +61,23 @@
 //     rx_rxd}` occupies bits [15:11] of `data_o`, bit 10 is a hard 0, bits
 //     [9:0] are `rx_data`; `data_o = (rga_i==REG_SERDATR[8:1]) ? {serdatr,
 //     1'b0, rx_data} : 16'h0000`. Reset values: `tx_tbe<=1`, `tx_tsre<=1`
-//     (paula_uart.v:80-81); `rx_rbf<=0`, `rx_rxd<=1`, `rx_ovrun<=0`
-//     (paula_uart.v:150-154); `rx_data` has no reset term, Verilator's
+//     (paula_uart.v:90-91); `rx_rbf<=0`, `rx_rxd<=1`, `rx_ovrun<=0`
+//     (paula_uart.v:160-164); `rx_data` has no reset term, Verilator's
 //     default-0. So SERDATR out of reset = {OVRUN=0,RBF=0,TBE=1,TSRE=1,
 //     RXD=1} at bits[15:11] = 5'b00111 << 11 = 0x3800, bits[9:0]=0 --
 //     confirmed by hand from the RTL text before any build, then confirmed
 //     again by this package's own FIXTURE-LIVE-SERDATR-RESET measurement
 //     below (MEASURED, not asserted -- R1 is what grades it).
-//   - paula_uart.v:135-138 (inside the always-block that also drives
+//   - paula_uart.v:145-148 (inside the always-block that also drives
 //     `tx_txd` from the TX state machine): `if (uartbrk) tx_txd <= #1
 //     1'b0;`, evaluated every `clk7_en` tick AFTER the `case (tx_state)`
 //     block, so it overrides whatever the state machine itself wrote that
-//     same tick whenever `uartbrk` (=`adkcon[11]`, wired at paula.v:211) is
+//     same tick whenever `uartbrk` (=`adkcon[11]`, wired at paula.v:216) is
 //     1; clearing bit 11 hands `tx_txd` back to the state machine (idle ->
-//     1). `assign txd = tx_txd` (paula_uart.v:255), carried straight to
+//     1). `assign txd = tx_txd` (paula_uart.v:265), carried straight to
 //     `paula`'s own `txd` output port -- no further logic between
 //     `tx_txd` and the pin this file drives/reads.
-//   - Write timing: ADKCON's own write (paula.v:182-195) needs one
+//   - Write timing: ADKCON's own write (paula.v:187-200) needs one
 //     `clk7_en` tick to update `adkcon`; `uartbrk` is a combinational wire
 //     off that register, so the *next* `clk7_en` tick inside paula_uart is
 //     when `tx_txd` actually moves -- `settle_edges(4)` after each ADKCON
@@ -112,9 +112,9 @@
 // (3) FUNCTION (R3, R6, R9): each cell's prose names what kind of fact the
 //   row states, not a bit layout.
 //   - R3 (SERDATR, "data and status read"): one read returns both a status
-//     component that responds to a transmit (TSRE, paula_uart.v:114-118)
+//     component that responds to a transmit (TSRE, paula_uart.v:124-128)
 //     and a data component that responds to a receive (rx_data,
-//     paula_uart.v:207-212) -- the same address carries both.
+//     paula_uart.v:217-222) -- the same address carries both.
 //   - R6 (SERDAT, "data and stop bits write"): the TX shifter shifts
 //     `serdat` out LSB-first until the shift register empties; bit 8 (the
 //     word's own 9th bit) is what makes it empty exactly one shift later --
@@ -141,7 +141,7 @@
 //   TXD)" parenthetical (graded together with `opus:8-adkcon.c26`, whose
 //   own `classify.evidence` narrows its graded content to exactly this),
 //   U4 cites p.257's independently-worded "Force the transmit pin to
-//   zero." All three measure the identical RTL fact (paula_uart.v:136) --
+//   zero." All three measure the identical RTL fact (paula_uart.v:146) --
 //   the manual states it three times, on two pages, in three clauses, and
 //   this package's own task forbids collapsing that into one assertion.
 //
@@ -420,7 +420,7 @@ public:
     // so this can never itself perform the write this boundary's missing
     // read/write strobe would otherwise risk at a write-only address
     // (SERDAT/SERPER): a write only ever latches on a clk7_en edge
-    // (paula_uart.v:45-65), and this function never produces one.
+    // (paula_uart.v:55-75), and this function never produces one.
     uint16_t read_reg(int addr) {
         dut->reg_address_in = addr;
         dut->eval();

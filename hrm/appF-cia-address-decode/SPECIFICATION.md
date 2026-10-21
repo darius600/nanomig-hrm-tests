@@ -92,7 +92,7 @@ instruction: **"Measure both readings, record both, grade neither."**
 declared `[23:1]` (gary.v:51) — **A0 is not present on this port at all**.
 The byte lane a real 68000 cycle would select via A0 is decided outside
 `gary`, by `cpu_hwr`/`cpu_lwr` (per `sol:F-signals.c63`'s own evidence,
-citing `minimig.v:614,:639`). So the "A0 included" half of the conflict, as
+citing `minimig.v:624,:649`). So the "A0 included" half of the conflict, as
 printed, cannot be driven or observed as an address bit at this boundary at
 all — it is reported here as a structural fact about the fixture, not
 measured as a bit value. See the CONFLICT-CIA-PATTERN-TRANSPOSED assertion

@@ -8,7 +8,7 @@
 //   alone carries no signal named DSKMOTOR*, DSKSEL3*-DSKSEL0*, DSKSIDE,
 //   DSKDIREC or DSKSTEP* -- only a generic `portb_out[7:0]`. The binding of
 //   a bit POSITION to one of those NAMES is a one-line structural fact at
-//   minimig.v:650, one level above this fixture's boundary, and is not
+//   minimig.v:660, one level above this fixture's boundary, and is not
 //   re-derived or exercised here. What is graded is PROP-POSITION;
 //   PROP-RESET-DEASSERT, PROP-ORDER and PROP-STEP-SHAPE are measured and
 //   printed, not graded (see WHAT IS NOT GRADED, AND WHY below).
@@ -23,7 +23,7 @@
 //   assertion").
 // Non-goals / scope carve-outs, per SPECIFICATION.md:
 //   - which named drive signal (DSKMOTOR*, DSKSEL3*..0*, DSKSIDE, DSKDIREC,
-//     DSKSTEP*) sits at which PB bit position is a minimig.v:650 wiring
+//     DSKSTEP*) sits at which PB bit position is a minimig.v:660 wiring
 //     fact, out of `ciab` alone's boundary -- declined, not graded.
 //   - what a drive does with an asserted (LOW) level -- runs its motor,
 //     selects itself -- is a paula_floppy.v / physical-drive fact, also out
@@ -97,7 +97,7 @@
 //   already establishes generically. Each is measured and printed via
 //   note(), and every uid it would carry is declined via record() -- see
 //   the RECORDED block below. hrm/ch8-cia-disk-signal-bindings grades the
-//   named-signal BINDING claims at the minimig.v:650 join; the 16 binding
+//   named-signal BINDING claims at the minimig.v:660 join; the 16 binding
 //   declines below name that package and the specific PBn-BINDING
 //   assertion carrying each signal. None of these carries a mutation
 //   record: a record()/note() is not an assertion.
@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
             "the whole byte to 0xFF, and a CPU read of PRB must mirror "
             "portb_out exactly (0x3C written and read back). Not graded: "
             "which drive signal (DSKMOTOR* etc.) each position is named for "
-            "-- that binding is minimig.v:650, one level above this "
+            "-- that binding is minimig.v:660, one level above this "
             "boundary [p.244 \"Bits labeled PB are output bits located in "
             "CIABPRB ($BFD100)\"]");
         checks.note("PROP-POSITION per-bit independence: " + detail);
@@ -430,14 +430,14 @@ int main(int argc, char** argv) {
     //
     // Group 1 (16): the named-signal BINDING claims (position -> name).
     // hrm/ch8-cia-disk-signal-bindings grades all of these at the
-    // minimig.v:650 join, over a real CPU bus write, comparing the whole
+    // minimig.v:660 join, over a real CPU bus write, comparing the whole
     // eight-wire group; each record names that package and the specific
     // PBn-BINDING assertion for its signal.
     // ------------------------------------------------------------------
     checks.record(
         "opus:8-cia.c21 (p.244, \"PB7 DSKMOTOR* ... Disk motor control\"): "
         "names PB7's drive-signal binding. `ciab` alone has no signal "
-        "named DSKMOTOR*; the binding of PB7 to that name is minimig.v:650, "
+        "named DSKMOTOR*; the binding of PB7 to that name is minimig.v:660, "
         "one level above this boundary -- graded in hrm/ch8-cia-disk-"
         "signal-bindings' PB7-BINDING assertion. PB7's bit-position "
         "transfer is still exercised as one of PROP-POSITION's eight data "

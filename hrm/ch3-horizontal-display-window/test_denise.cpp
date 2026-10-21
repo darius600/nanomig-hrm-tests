@@ -92,11 +92,11 @@
 //    display window shows the background colour.
 //
 // BOUNDARY (from PACKAGE.md's own evidence field):
-// nanomig/src/minimig-aga/denise.v:56-57
+// nanomig/src/minimig-aga/denise.v:57-58
 // (DIWSTRT custom address 9'h08E, DIWSTOP 9'h090), hdiwstrt l.293-305,
 // hdiwstop l.307-320 (H8 forced 0 for start, 1 for stop), window compare
 // l.328-334, border select l.489-498 (outside the window clut_data is
-// forced to 0, so the border shows COLOR00) -- denise.v:65 (COLORBASE
+// forced to 0, so the border shows COLOR00) -- denise.v:66 (COLORBASE
 // custom address 9'h180) with denise_colortable.v:24,30-34 (write decode)
 // and the colour packing at denise_colortable.v:56-58, used here purely as
 // MEASUREMENT INFRASTRUCTURE (two distinguishable colours to tell "inside"
@@ -122,7 +122,7 @@
 // 58-61 makes c3 the registered 7MHz clock and c1 = ~c3 delayed one further
 // 28MHz cycle, so across one 7MHz cycle's four 28MHz phases, c1 and c3 are
 // BOTH high in one phase and BOTH low in another -- they are not two
-// disjoint two-phase signals. denise_bitplane_shifter.v:181 (a sub-module
+// disjoint two-phase signals. denise_bitplane_shifter.v:160 (a sub-module
 // of THIS fixture) gates its parallel shift-register load on !c1&&!c3.
 // This Harness uses the measured-working four-phase pattern:
 // clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
@@ -132,7 +132,7 @@
 // BEFORE any window-position claim is asserted from it -- not a formality.
 //
 // THE HPOS[3:2] TRAP, AND WHY THIS PACKAGE'S OWN MEASUREMENTS SIDESTEP IT:
-// denise_bitplanes.v:146-152 decodes hpos[3:2] into 0/4/8/12 lores pixels of
+// denise_bitplanes.v:102-108 decodes hpos[3:2] into 0/4/8/12 lores pixels of
 // EXTRA scroll folded into BPLCON1's effective value -- so writing BPL1DAT
 // one colour clock later can move which pixel of a given loaded word first
 // becomes visible. This package is not about scroll delay (that is the
@@ -206,7 +206,7 @@
 //    that anchor (see Harness::scan_window's neighbourhood and the sweep
 //    construction above main()).
 //
-// 2. `window` (denise.v:328-334) has NO reset clause at all, and neither
+// 2. `window` (denise.v:343-349) has NO reset clause at all, and neither
 //    does hdiwstrt/hdiwstop -- so a fresh Vdenise's own zero-init state
 //    (hdiwstrt=0) combined with hpos free-running from its own zero-init
 //    the moment clk7_en starts pulsing (well before any real DIWSTRT
@@ -233,7 +233,7 @@
 // 4. DIWHIGH's two H8 bits are NOT independently latched -- hdiwstrt[8]
 //    and hdiwstop[8] both come from whichever register write most
 //    recently touched them, and a DIWHIGH write sets BOTH from that same
-//    write's own bit 5 and bit 13 (denise.v:303-304, 318-319), not just
+//    write's own bit 5 and bit 13 (denise.v:316-317, 318-319), not just
 //    whichever one a caller "meant" to change. G8's own isolation writes
 //    therefore hold the OTHER bit at the value DIWSTRT/DIWSTOP's own
 //    forcing already produced, so only the bit under test actually moves
@@ -476,7 +476,7 @@ public:
     // relationship for the NEXT edge -- see THE C1/C3 TRAP above. Phase 0
     // is the clk7_en register-capture phase (one sample = one lores-pixel-
     // resolution step; also when a BPLxDAT write latches its buffer
-    // register, denise_bitplanes.v:382-435); phase 1 has c1 AND c3 both
+    // register, denise_bitplanes.v:487-540); phase 1 has c1 AND c3 both
     // high.
     void tick() {
         dut->eval();
@@ -668,7 +668,7 @@ Edges find_edges(const std::vector<uint32_t>& samples, uint32_t border) {
 // BPLCON0 bits (HIRES=bit15, LACE=bit2) for the mode-invariance group.
 //
 // HPOS WRAP: hpos is a 9-bit counter
-// (denise.v:69, 139) that does not stop on its own -- left running past
+// (denise.v:70, 139) that does not stop on its own -- left running past
 // sample index ~509 (hpos 511, the counter's own top) it wraps to 0 and
 // keeps counting, which (since hdiwstrt is still the same value that
 // already matched once) spuriously re-opens `window` partway through a
@@ -725,7 +725,7 @@ Edges measure_window(uint16_t diwstrt_h, uint16_t diwstop_h, uint16_t bplcon0_ex
 // definitely still closed. background comes from a sample inside the SAME
 // run, at an index this function only trusts once a companion SATURATED
 // run, sharing the identical DIWSTRT/DIWSTOP/COLOR00/COLOR01 registers, has
-// independently shown the window open there: `window` (denise.v:328-334)
+// independently shown the window open there: `window` (denise.v:343-349)
 // depends only on hpos versus hdiwstrt/hdiwstop, never on BPL1DAT, so the
 // open/close edges measured on the saturated run apply unchanged to the
 // no-object run's own samples at the same indices.
@@ -1166,8 +1166,8 @@ int main(int argc, char** argv) {
         // RTL NOTE: hdiwstrt[8] and
         // hdiwstop[8] both come from THE SAME MOST RECENT register write
         // that touched either of them -- a DIWSTRT write always forces
-        // hdiwstrt[8]<=0 (denise.v:301-302), a DIWSTOP write always forces
-        // hdiwstop[8]<=1 (denise.v:316-317), and a DIWHIGH write sets
+        // hdiwstrt[8]<=0 (denise.v:314-315), a DIWSTOP write always forces
+        // hdiwstop[8]<=1 (denise.v:329-330), and a DIWHIGH write sets
         // WHICHEVER of the two its own reg_address_in match applies to
         // (both, in the same write, l.303-304 and l.318-319) from data_in
         // bit 5 (start) and bit 13 (stop) OF THAT WRITE -- there is no way
@@ -1304,7 +1304,7 @@ int main(int argc, char** argv) {
     {
         // RTL NOTE: brdrblnk is gated by
         // ecsena (denise.v:253, `assign brdrblnk = bplcon3[5] & ecsena;`),
-        // and ecsena is itself BPLCON0 bit 0 (denise.v:192,
+        // and ecsena is itself BPLCON0 bit 0 (denise.v:194,
         // `assign ecsena = bplcon0[0];`), NOT the `ecs` top-level port --
         // so BPLCON0 must carry bit 0 set for BRDRBLNK to have any chance
         // of an effect. t_blank (denise.v:515) only forces black outside
@@ -1376,10 +1376,10 @@ int main(int argc, char** argv) {
     // ==================== G12: BACKGROUND-SHOWS-WHERE-NO-OBJECT ====================
     // Carries no claim id. A plane carrying no data selects colour
     // register 0 (COLOR00) exactly like the border path does:
-    // denise.v:489-498 forces clut_data=0 outside the window (!window_ena),
+    // denise.v:536-545 forces clut_data=0 outside the window (!window_ena),
     // and inside it clut_data=plfdata^bplxor, where denise_playfields.v's
     // own single-playfield path is plfdata=bpldata (l.100, confirmed by
-    // opening denise_playfields.v) and bplxor resets to 0 (denise.v:278) --
+    // opening denise_playfields.v) and bplxor resets to 0 (denise.v:281) --
     // so with BPL1DAT never written (bpldata stays at its own zero reset)
     // the two paths converge on the identical COLOR00 index whether or not
     // the window is open. No prior assertion in this file scans with the

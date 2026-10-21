@@ -28,9 +28,9 @@
 // BOUNDARY: every one of this package's 9 claim records carries the same
 //   evidence field (classify step, PACKAGE.md's own claims.jsonl): denise.v
 //   forces clut_data to the border colour (8'b0) outside the display window
-//   unless brdsprt is set (denise.v:489-497); the window itself is set at
-//   hpos==hdiwstrt and cleared at hpos==hdiwstop (denise.v:329-334) from
-//   DIWSTRT/DIWSTOP (denise.v:295-320); that gate is decided one level above
+//   unless brdsprt is set (denise.v:536-544); the window itself is set at
+//   hpos==hdiwstrt and cleared at hpos==hdiwstop (denise.v:344-349) from
+//   DIWSTRT/DIWSTOP (denise.v:308-333); that gate is decided one level above
 //   denise_sprites (a bare `sprena` input there), so this package's fixture
 //   is the denise TOP level, not denise_sprites alone.
 //
@@ -72,7 +72,7 @@
 //   (2) the Harness's tick() drives the c1/c3 phase pattern
 //   hrm/ch3-sprite-registers/test_denise_sprites.cpp uses for this same
 //   sprite hardware, matching real c1/c3 timing: the sprite shift enable
-//   is `~c1 & ~c3` (denise_sprites.v:164), true on one phase in four
+//   is `~c1 & ~c3` (denise_sprites.v:132), true on one phase in four
 //   under this pattern and on two under a pattern whose c1 and c3 are
 //   never high together, which would shift at twice the lores rate.
 //   FIXTURE-KNOWN-WORD-IN-ORDER exists to catch a silently dead data
@@ -281,7 +281,7 @@ public:
 
     // Phase pattern reused from hrm/ch3-sprite-registers/test_denise_sprites.cpp
     // (same register bus/sprite hardware): c1 and c3 overlap, so the
-    // sprite shift enable `~c1 & ~c3` (denise_sprites.v:164) fires once
+    // sprite shift enable `~c1 & ~c3` (denise_sprites.v:132) fires once
     // per 7MHz cycle, the lores rate.
     void tick() {
         dut->eval();

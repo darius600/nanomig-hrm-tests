@@ -1408,7 +1408,7 @@ int main(int argc, char** argv) {
         "selects PRA\" against the pinned join'. The byte-lane assignment "
         "this claim names (ciaa's 8-bit data_in/data_out tied to the LOW "
         "byte of the 16-bit CPU bus) is minimig.v's wiring "
-        "(minimig.v:617-618), outside ciaa's own port list -- out of scope "
+        "(minimig.v:627-628), outside ciaa's own port list -- out of scope "
         "here on the same boundary grounds as the two claims below, not "
         "because a sibling package fully covers it. Quoted honestly, not "
         "smoothed into a clean-duplicate claim. Not graded here.");
@@ -1417,7 +1417,7 @@ int main(int argc, char** argv) {
         "ch7-interrupt-priority-encoder grades the level encoder at "
         "paula_intcontroller; this package's own note states plainly that "
         "no package grades the ciaa-irq-to-int2 join itself, which is "
-        "minimig.v:621 (`.irq(int2)`), outside ciaa's own port list (ciaa "
+        "minimig.v:631 (`.irq(int2)`), outside ciaa's own port list (ciaa "
         "exposes only its own `irq` output, not what it is wired to). Not "
         "graded here.");
 
@@ -1445,7 +1445,7 @@ int main(int argc, char** argv) {
         "the build brief's summary for the other 34. Declined here for an "
         "independent boundary reason instead: PA1's value reaches a "
         "physical LED only through minimig.v (`_led`/`pwr_led`, "
-        "minimig.v:427,605), outside ciaa's own port list -- the same "
+        "minimig.v:432,605), outside ciaa's own port list -- the same "
         "boundary hrm/ch8-ciaa-port-direction already drew around "
         "CIAADDRA/CIAAPRA's bus address. ciaa's own half of this fact "
         "(PA1 is one of the chip's two genuinely bidirectional port-A "
@@ -1459,7 +1459,7 @@ int main(int argc, char** argv) {
         "A11, A10, A9, and A8 are used to specify which of the 16 internal "
         "registers you want to access'): this is a fact about minimig.v's "
         "address bridge (cpu_address_out[11:8] -> ciaa's `rs` input, "
-        "minimig.v:616,641), not about ciaa itself. ciaa's own `rs` port "
+        "minimig.v:626,641), not about ciaa itself. ciaa's own `rs` port "
         "is already the decoded nibble; it has no A11-A8 input to observe. "
         "Out of scope for a ciaa-only fixture on the same boundary/"
         "ownership grounds hrm/ch8-ciaa-port-direction used to decline "

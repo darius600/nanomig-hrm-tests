@@ -76,7 +76,7 @@ input clock is `clk_28`; `clk7_en` (a plain output port, "7MHz output
 clock enable") is the module's own operationalization of "CPU clock" —
 confirmed by `minimig_m68k_bridge.v`'s own header timing diagram, which
 draws "CPU_CLK" toggling at the same rate `clk7_en`/`clk7n_en` gate. `eclk`
-is a 10-bit one-hot rotator (`amiga_clk.v:22,36,64`); `minimig.v:620`/`:645`
+is a 10-bit one-hot rotator (`amiga_clk.v:22,36,64`); `minimig.v:630`/`:645`
 wire bit 8 specifically into each CIA's single-bit `eclk` port (by the
 shifter's own symmetry every bit behaves identically, so this choice is
 cosmetic — made only to match what the rest of the tree actually uses, not

@@ -50,7 +50,7 @@
 //     txd for the upcoming interval (:123). The frame ends (TSRE, :113-116)
 //     only once the shift register reads all-zero -- i.e. once the
 //     *highest* set bit has been shifted out, not the first.
-//   - Receive frame layout, traced by hand from paula_uart.v:146-241
+//   - Receive frame layout, traced by hand from paula_uart.v:156-251
 //     (RX_IDLE/RX_START/RX_SHIFT) and confirmed against the printed table:
 //     8-bit mode (LONG=serper[15]=0) needs 10 bit-cells (1 start + 8 data +
 //     1 stop-slot) and data_o[7:0] carries the 8 data bits LSB-first,
@@ -170,13 +170,13 @@
 // MUTATION opus:8-serial.c45 stimulus red f driven with byte 0x7D instead of 0x7E, while the comparison stays literally against 0x7E MUT_66
 // MUTATION opus:8-serial.c52 stimulus red f2 driven with byte 0x88 instead of 0x87, while the comparison stays literally against 0x87 MUT_67
 // MUTATION opus:8-serial.c59 stimulus red rbfmirror left clear (0) instead of set (1) before frame 2, so the overrun condition this assertion probes never arms MUT_68
-// MUTATION opus:8-serial.c65 stimulus red rbfmirror left clear (0) instead of set (1) -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:236), not a consequence of the frame completing, so RBF never reads set MUT_69
+// MUTATION opus:8-serial.c65 stimulus red rbfmirror left clear (0) instead of set (1) -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:246), not a consequence of the frame completing, so RBF never reads set MUT_69
 // MUTATION opus:8-serial.c70 stimulus red t transmitted with SERDAT=0x8001 (a 17-cell frame) instead of 0x0155, against the unchanged 16-cell capture window, so the frame never completes MUT_70
 // MUTATION opus:8-serial.c76 stimulus red the SERDAT write omitted entirely -- no transmission is triggered, so TSRE cannot be observed to clear mid-shift MUT_71
 // MUTATION opus:8-serial.c79 stimulus red the second write retargeted to SERDATR (no write path at all, paula_uart.v) instead of SERDAT -- no second word ever loads, so TSRE sets within the watch window on word 1 alone instead of staying clear through both MUT_72
 // MUTATION opus:8-serial.c84 stimulus red rx9 driven with 0x1D4 instead of 0x0D4 -- the 9th bit actually presented is now 1, while the comparison stays literally against 0x0D4's own bit 8 (0) MUT_73
-// MUTATION sol:8-serial.c14 stimulus red rbfmirror left clear (0) instead of set (1) before the frame -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:236), not a consequence of the frame completing, so RBF never reads set MUT_74
-// MUTATION opus:8-serial.c83 none impossible: SERDATR bit 10 is `1'b0`, a hardcoded literal in paula_uart.v:258's `data_o` bus mux (`{serdatr, 1'b0, rx_data}`), not a register or wire fed by any port -- no combination of SERPER, SERDAT, rxd or rbfmirror can ever make it read nonzero, so no stimulus mutation can turn this assertion red. Same shape as hrm/ch8-keycode-table's CUTOUT-30.
+// MUTATION sol:8-serial.c14 stimulus red rbfmirror left clear (0) instead of set (1) before the frame -- RBF (rx_rbf) is a direct mirror of that pin (paula_uart.v:246), not a consequence of the frame completing, so RBF never reads set MUT_74
+// MUTATION opus:8-serial.c83 none impossible: SERDATR bit 10 is `1'b0`, a hardcoded literal in paula_uart.v:272's `data_o` bus mux (`{serdatr, 1'b0, rx_data}`), not a register or wire fed by any port -- no combination of SERPER, SERDAT, rxd or rbfmirror can ever make it read nonzero, so no stimulus mutation can turn this assertion red. Same shape as hrm/ch8-keycode-table's CUTOUT-30.
 
 #include <cstdint>
 #include <cstdio>
@@ -661,7 +661,7 @@ int measure_rx_frame_cells(Harness& h, const std::vector<int>& bits, int cell_be
     // Round to the nearest whole bit-cell rather than truncating: the
     // state machine's own start-bit confirmation window (RX_IDLE's
     // edge-detect latency plus RX_START's N-cycle, not 2N+2-cycle, sample
-    // delay -- paula_uart.v:170, :180) is shorter than a full steady-state
+    // delay -- paula_uart.v:180, :190) is shorter than a full steady-state
     // cell, so a straight floor-division under-counts by one cell on every
     // frame measured this way. Rounding attributes that short first
     // interval to the one bit-time it still occupies.
@@ -951,7 +951,7 @@ int main(int argc, char** argv) {
                             (idle & BIT_RBF) == 0;
       const int cb = measure_cell_beats(h, 10);
 #if MUT_74
-      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:236 -- left clear, RBF never reads set
+      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:246 -- left clear, RBF never reads set
 #else
       h.dut->rbfmirror = 1;
 #endif
@@ -1495,7 +1495,7 @@ int main(int argc, char** argv) {
       const uint16_t idle = h.read_reg(ADDR_SERDATR);
       const int cb = measure_cell_beats(h, 10);
 #if MUT_69
-      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:236 -- left clear, RBF never reads set
+      h.dut->rbfmirror = 0;  // RBF (rx_rbf) is a direct mirror of this pin, paula_uart.v:246 -- left clear, RBF never reads set
 #else
       h.dut->rbfmirror = 1;
 #endif
@@ -1632,7 +1632,7 @@ int main(int argc, char** argv) {
     // reading it back costs zero clk7_en beats, so the read PATH is not
     // what is slow. RED AT BASELINE: bit 11 still lags a genuine pin
     // change by several clk7_en cycles (a two-flop synchroniser plus one
-    // more register, paula_uart.v:36-43, :234) -- "direct" does not hold
+    // more register, paula_uart.v:46-53, :244) -- "direct" does not hold
     // on its ordinary reading.
     { Harness h;
       // Control: DB7-0 already holds a known, stable value (0 at reset,
@@ -1673,7 +1673,7 @@ int main(int argc, char** argv) {
       checks.note("C4: measured latency -- RXD-bit-after-pin-change = " +
                    std::to_string(rxd_latency) + " clk7_en beats (0 would "
                    "match \"direct\"). The pin passes a two-flop "
-                   "synchroniser plus one more register (paula_uart.v:36-43, "
+                   "synchroniser plus one more register (paula_uart.v:46-53, "
                    ":234) before reaching bit 11.");
     }
 

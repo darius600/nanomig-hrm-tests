@@ -16,7 +16,7 @@ INDEX*), insofar as claims from those pages were classified into this package.
 `ciab` compiled alone exposes a 2-bit port-A output (`porta_out[7:6]`,
 `ciab.v:20`) and a 6-bit port-A input (`porta_in[5:0]`, `ciab.v:19`). It has
 **no signal named** DTR, RTS, CTS, DSR, CD or RI — those name-to-bit bindings
-are `minimig.v:648-649`'s job, one level above this fixture's own boundary.
+are `minimig.v:658-659`'s job, one level above this fixture's own boundary.
 This package's 12 RS-232 claims (6 named signals, 2 readers each) restate only
 p.326's DIR column ("<signal> is an output" / "<signal> is an input") — never a
 bit position — so what `ciab` alone can show is exactly that: the
@@ -122,7 +122,7 @@ the gloss "disk index pulse*".
 
 `hrm/ch8-disk-index-interrupt-path`'s PROP-FLAG-PIN (`opus:8-cia.c56`,
 `opus:8-dskint.c9`, `sol:8-int.c9`) already grades that a **pulse** on
-`paula_floppy`'s real `index` output, carried across `minimig.v:526+:647` onto
+`paula_floppy`'s real `index` output, carried across `minimig.v:536+:657` onto
 `ciab`'s `flag` input, sets ICR bit 4 (FLG) and raises `irq`. p.337's own
 wording states only that the FLAG input carries a *pulse* — it makes no
 edge-polarity claim of the kind printed p.341 does ("Any negative transition
@@ -183,6 +183,6 @@ concerns CRA/CRB/timer/TOD behaviour. Also read in full:
 `hrm/appF-cia-pin-bindings/test_minimig.cpp` (the name-to-bit citations this
 package's labels lean on), and
 `hrm/ch8-disk-index-interrupt-path/test_ch8-disk-index-interrupt-path.cpp`
-(PROP-FLAG-PIN, cited on the one decline). `minimig.v:648-650` was read for
+(PROP-FLAG-PIN, cited on the one decline). `minimig.v:658-660` was read for
 citation only (lines already disclosed in the claims' own
 `classify.evidence`), not as this package's own fixture boundary.

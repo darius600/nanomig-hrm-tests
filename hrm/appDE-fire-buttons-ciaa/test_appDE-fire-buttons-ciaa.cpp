@@ -29,7 +29,7 @@
 //   bus; it has NO notion of a DB9 connector, a pin number, or which
 //   physical controller port ("left"/"right", J11/J12) a bit traces back to
 //   -- that information exists only at `userio` (the connector-to-_sjoy
-//   crossbar) and is joined to `ciaa` at `minimig` (minimig.v:622). Claims
+//   crossbar) and is joined to `ciaa` at `minimig` (minimig.v:632). Claims
 //   that need it are declined below by module boundary, not regraded with a
 //   weaker guess, per the build brief.
 // Non-goals: anything outside the `ciaa` fixture this package builds, and
@@ -129,7 +129,7 @@
 //     connector (JOYODAT, POTODAT)." -- so LEFT is anchored to JOY0DAT.
 //   Together the manual pairs JOY0DAT's own connector with CIAAPRA bit 7.
 //
-//   nanomig-hrm-tests/nanomig/src/minimig-aga/minimig.v:622 --
+//   nanomig-hrm-tests/nanomig/src/minimig-aga/minimig.v:632 --
 //     `.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change})` against
 //     ciaa.v:95's `input [7:2] porta_in` -- PA7=_fire1, PA6=_fire0.
 //   nanomig-hrm-tests/nanomig/src/minimig-aga/userio.v:92 -- `wire joy_swap
@@ -145,7 +145,7 @@
 //
 //   Chained: `_sjoy1` (== `joy2`, the port whose motion is read back at
 //   JOY0DAT) feeds `_fire0` (userio.v:313), and `_fire0` lands on PA6
-//   (minimig.v:622). So this RTL puts JOY0DAT's own connector's fire button
+//   (minimig.v:632). So this RTL puts JOY0DAT's own connector's fire button
 //   on CIAAPRA bit 6 -- the manual (p.329+p.327) puts it on bit 7. **The two
 //   disagree.**
 //
@@ -157,7 +157,7 @@
 //   "FIRE1\" and its bit-6 box "FIRE0\", and traces PORT 1 pin 6 to the
 //   FIRE0\ box (bit 6) and PORT 2 pin 6 to the FIRE1\ box (bit 7) -- i.e.
 //   this figure's OWN bit assignment (bit7=FIRE1, bit6=FIRE0) matches
-//   minimig.v:622's PA7=_fire1/PA6=_fire0 exactly. What this figure does
+//   minimig.v:632's PA7=_fire1/PA6=_fire0 exactly. What this figure does
 //   NOT state is which of "PORT 1"/"PORT 2" is "left"/"right" -- a THIRD
 //   port-numbering scheme on top of p.327's J11/J12 and p.329's own
 //   left/right wording, none of which this page ties together explicitly.
@@ -408,7 +408,7 @@ int main(int argc, char** argv) {
     // decline swallowing a proposition this fixture could answer.
     // ========================================================================
     checks.note("CANDIDATE-1-MEASURED (read from userio.v/minimig.v, not compiled or simulated by this "
-        "ciaa-alone fixture -- see file header for the full citation chain): minimig.v:622 wires "
+        "ciaa-alone fixture -- see file header for the full citation chain): minimig.v:632 wires "
         "porta_in={_fire1,_fire0,...} so PA7=_fire1, PA6=_fire0; userio.v:92 ties joy_swap=1'b0 so userio.v:215-218 "
         "makes _sjoy1=joy2; userio.v:313 derives _fire0 from _sjoy1[4]; userio.v:54,233-239 counts JOY0DAT "
         "(dmouse0dat) from that same _sjoy1/_djoy1. So the connector whose motion is read back at JOY0DAT drives "
@@ -418,7 +418,7 @@ int main(int argc, char** argv) {
     checks.note("CANDIDATE-1-MEASURED-RENDER (figures/p330.png, read directly -- corpus-defects.md confirms "
         "p330.txt's text layer LOSES this diagram): the connector-to-PRA wiring figure labels PRA bit 7 \"FIRE1\\\" "
         "and bit 6 \"FIRE0\\\", tracing PORT 1 pin 6 to the FIRE0\\ (bit 6) box and PORT 2 pin 6 to the FIRE1\\ "
-        "(bit 7) box -- matching minimig.v:622's PA7=_fire1/PA6=_fire0 exactly. This figure never states which of "
+        "(bit 7) box -- matching minimig.v:632's PA7=_fire1/PA6=_fire0 exactly. This figure never states which of "
         "\"PORT 1\"/\"PORT 2\" is \"left\"/\"right\" (a third port-numbering scheme, alongside p.327's J11/J12 and "
         "p.329's own wording); not adjudicated here, not used by any graded assertion in this file.");
 

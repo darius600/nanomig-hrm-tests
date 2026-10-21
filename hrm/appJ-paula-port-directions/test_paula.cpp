@@ -103,13 +103,13 @@
 // REGISTER ADDRESSES (word index = byte address >> 1, confirmed against
 //   paula.v's own `reg_address_in[8:1]==<PARAM>[8:1]` decode, same
 //   convention hrm/ch8-appb-chip-column-paula already uses):
-//   ADKCON=0x4F(w) $09E, ADKCONR=0x08(r) $010 (paula.v:126-127)
-//   DMACON=0x4B(w) $096 (paula.v:125)
+//   ADKCON=0x4F(w) $09E, ADKCONR=0x08(r) $010 (paula.v:131-132)
+//   DMACON=0x4B(w) $096 (paula.v:130)
 //   INTENA=0x4D(w) $09A, INTENAR=0x0E(r) $01C,
 //   INTREQ=0x4E(w) $09C, INTREQR=0x0F(r) $01E (paula_intcontroller.v:27-30)
 //   DSKLEN=0x12(w) $024 (paula_floppy.v:124)
 //   SERDAT=0x18(w) $030, SERDATR=0x0C(r) $018, SERPER=0x19(w) $032
-//     (paula_uart.v:21-23, values reused from ch8-appb-chip-column-paula)
+//     (paula_uart.v:26-28, values reused from ch8-appb-chip-column-paula)
 //   AUD0VOL=0x54, AUD0DAT=0x55 (base $0A0>>1=0x50, +4/+5 word;
 //     paula_audio.v:131, paula_audio_channel.v:24-26)
 //   AUD1VOL=0x5C, AUD1DAT=0x5D (base $0B0>>1=0x58, +4/+5 word)
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     checks.expect(bus_live,
         "PAULA-D8-D2-DIRECTION: at paula's own boundary, the D8-D2 half of the data bus "
         "identifies to `data_in[15:0]` (input, paula.v:68) and `data_out[15:0]` (output, "
-        "paula.v:69), both connected at minimig.v:496-497 -- a Verilog port-direction fact, "
+        "paula.v:69), both connected at minimig.v:501-502 -- a Verilog port-direction fact, "
         "not a runtime-configurable one, per the axis hrm/appDE-ciab-port-signals grades for "
         "the CIA. The printed pin range (01-07) is not graded; the RTL splits the one printed "
         "bidirectional bus into two unidirectional ports with no pin-range counterpart. "
@@ -316,7 +316,7 @@ int main(int argc, char** argv) {
     checks.expect(rga_live,
         "PAULA-RGA-DIRECTION: at paula's own boundary, RGA8-RGA1 identifies to "
         "`reg_address_in[8:1]` (input, paula.v:67, 'register address inputs'), connected at "
-        "minimig.v:495 from agnus's `reg_address_out` -- a Verilog port-direction fact. Not "
+        "minimig.v:500 from agnus's `reg_address_out` -- a Verilog port-direction fact. Not "
         "touched by appendix J's own AGNUS-table RGA contradiction (that split is between "
         "p.379 and p.381's two AGNUS printings, not this page's PAULA row). "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: RGA8-RGA1 \"I\"] "
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
     // MUTATION PAULA-RES-DIRECTION none impossible: RES* identifies to paula.v:66's `reset` (input), unconditionally declared -- no stimulus can make a reset input behave as an output. Positive control: RESET-LIVE above.
     checks.expect(reset_live,
         "PAULA-RES-DIRECTION: at paula's own boundary, RES* identifies to `reset` (input, "
-        "paula.v:66), driven at minimig.v:494 -- a Verilog port-direction fact. POLARITY NOT "
+        "paula.v:66), driven at minimig.v:499 -- a Verilog port-direction fact. POLARITY NOT "
         "GRADED: the page prints RES* (active low by its own NOTE) and paula.v's `reset` is "
         "active high; that is a different axis, not asserted here. "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: RES* \"I\"] "
@@ -381,11 +381,11 @@ int main(int argc, char** argv) {
         checks.note(std::string("DMAL-FIXTURE-LIVE: ") + (dmal_live ? "live" : "NOT LIVE -- see MEASURED above") + " [no page -- infrastructure, not itself a claim]");
     }
 
-    // MUTATION PAULA-DMAL-DIRECTION none impossible: DMAL identifies to paula.v:84's `disk_dmal` (output), unconditionally declared -- no stimulus can make a DMA-request output behave as an input. Positive control: DMAL-LIVE above.
+    // MUTATION PAULA-DMAL-DIRECTION none impossible: DMAL identifies to paula.v:89's `disk_dmal` (output), unconditionally declared -- no stimulus can make a DMA-request output behave as an input. Positive control: DMAL-LIVE above.
     checks.expect(dmal_live,
         "PAULA-DMAL-DIRECTION: at paula's own boundary, DMAL identifies to `disk_dmal` "
-        "(output, paula.v:84, 'disk dma data transfer request (to Agnus)'), wired to agnus's "
-        "matching input at minimig.v:511-514 -- a Verilog port-direction fact, and the exact "
+        "(output, paula.v:89, 'disk dma data transfer request (to Agnus)'), wired to agnus's "
+        "matching input at minimig.v:521-524 -- a Verilog port-direction fact, and the exact "
         "complement of p.379's Agnus DMAL row (printed I there). NanoMig splits the one "
         "printed DMAL pin into five dedicated request wires (disk + 4 audio channels); the "
         "time-multiplexing of one physical pin is not graded, only the direction. "
@@ -453,38 +453,38 @@ int main(int argc, char** argv) {
     bool ipl_live = ipl_int2_moved && ipl_int3_moved && ipl_int6_moved;
     checks.note(std::string("IPL-FIXTURE-LIVE: ") + (ipl_live ? "live" : "NOT LIVE -- see MEASURED above") + " [no page -- infrastructure, not itself a claim]");
 
-    // MUTATION PAULA-INT2-DIRECTION none impossible: INT2* identifies to paula.v:78's `int2` (input), unconditionally declared -- no stimulus can make it behave as an output. Positive control: INT2-LIVE above (INTREQR bit3 set).
+    // MUTATION PAULA-INT2-DIRECTION none impossible: INT2* identifies to paula.v:83's `int2` (input), unconditionally declared -- no stimulus can make it behave as an output. Positive control: INT2-LIVE above (INTREQR bit3 set).
     checks.expect(int2_live,
         "PAULA-INT2-DIRECTION: at paula's own boundary, INT2* identifies to `int2` (input, "
-        "paula.v:78, 'level 2 interrupt'), driven at minimig.v:506-509 -- a Verilog "
+        "paula.v:83, 'level 2 interrupt'), driven at minimig.v:516-519 -- a Verilog "
         "port-direction fact. hrm/appF-cia-pin-bindings' CIAA-IRQ-REACHES-INT2 grades that "
         "CIA-A's interrupt REACHES int2 at the `minimig` boundary, a routing proposition at a "
         "different boundary; cited, not declined against. "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: INT2* \"I\"] "
         "sol:J-092 opus:AHJ-225");
 
-    // MUTATION PAULA-INT3-DIRECTION none impossible: INT3* identifies to paula.v:79's `int3` (input), unconditionally declared. Positive control: INT3-LIVE above (INTREQR bit6 set).
+    // MUTATION PAULA-INT3-DIRECTION none impossible: INT3* identifies to paula.v:84's `int3` (input), unconditionally declared. Positive control: INT3-LIVE above (INTREQR bit6 set).
     checks.expect(int3_live,
         "PAULA-INT3-DIRECTION: at paula's own boundary, INT3* identifies to `int3` (input, "
-        "paula.v:79, 'level 3 interrupt'), driven at minimig.v:511 from agnus's `int3` output "
+        "paula.v:84, 'level 3 interrupt'), driven at minimig.v:521 from agnus's `int3` output "
         "-- a Verilog port-direction fact, and the receiving end of p.379's Agnus INT3* row "
         "(printed O there; both ends graded, one per chip, at their own boundaries). "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: INT3* \"I\"] "
         "sol:J-094 opus:AHJ-227");
 
-    // MUTATION PAULA-INT6-DIRECTION none impossible: INT6* identifies to paula.v:80's `int6` (input), unconditionally declared. Positive control: INT6-LIVE above (INTREQR bit13 set).
+    // MUTATION PAULA-INT6-DIRECTION none impossible: INT6* identifies to paula.v:85's `int6` (input), unconditionally declared. Positive control: INT6-LIVE above (INTREQR bit13 set).
     checks.expect(int6_live,
         "PAULA-INT6-DIRECTION: at paula's own boundary, INT6* identifies to `int6` (input, "
-        "paula.v:80, 'level 6 interrupt'), driven at minimig.v:512 -- a Verilog port-direction "
+        "paula.v:85, 'level 6 interrupt'), driven at minimig.v:522 -- a Verilog port-direction "
         "fact. hrm/ch8-disk-index-interrupt-path's PROP-LEVEL6 traces an index pulse through "
         "to level 6, a path proposition at a different axis; cited, not declined against. "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: INT6* \"I\"] "
         "sol:J-096 opus:AHJ-229");
 
-    // MUTATION PAULA-IPL-DIRECTION none impossible: IPL0*-IPL2 identifies to paula.v:81's `_ipl[2:0]` (output), unconditionally declared -- no stimulus can make an interrupt-request output behave as an input. Positive control: IPL-FIXTURE-LIVE above (_ipl leaves its idle value 7 for each of int2/int3/int6, one at a time).
+    // MUTATION PAULA-IPL-DIRECTION none impossible: IPL0*-IPL2 identifies to paula.v:86's `_ipl[2:0]` (output), unconditionally declared -- no stimulus can make an interrupt-request output behave as an input. Positive control: IPL-FIXTURE-LIVE above (_ipl leaves its idle value 7 for each of int2/int3/int6, one at a time).
     checks.expect(ipl_live,
         "PAULA-IPL-DIRECTION: at paula's own boundary, IPL0*-IPL2 identifies to `_ipl[2:0]` "
-        "(output, paula.v:81, 'm68k interrupt request'), connected at minimig.v:510 -- a "
+        "(output, paula.v:86, 'm68k interrupt request'), connected at minimig.v:520 -- a "
         "Verilog port-direction fact. hrm/ch1-paula-what-it-contains already drives this exact "
         "channel, naming `_ipl` one of Paula's three output domains. PRINTED DEFECT RECORDED, "
         "NOT RESOLVED: the range's first endpoint (IPL0) carries the active-low asterisk and "
@@ -545,7 +545,7 @@ int main(int argc, char** argv) {
     // MUTATION PAULA-CCK-DIRECTION none impossible: CCK identifies to paula.v:65's `cck` (input), unconditionally declared -- no stimulus can make a colour-clock-enable input behave as an output. Positive control: CCK-GATES-AUDIO above (ldata frozen at 0 with cck held low, moves once cck is asserted).
     checks.expect(cck_live,
         "PAULA-CCK-DIRECTION: at paula's own boundary, CCK identifies to `cck` (input, "
-        "paula.v:65, 'colour clock enable'), driven at minimig.v:493 from the same net that "
+        "paula.v:65, 'colour clock enable'), driven at minimig.v:498 from the same net that "
         "feeds agnus and denise -- a Verilog port-direction fact. REPRESENTATION DIFFERENCE: "
         "a clock ENABLE on a 28 MHz master, not a clock pin; not touched by appendix J's own "
         "AGNUS-table CCK contradiction (that is between p.379 and p.381's two AGNUS printings, "
@@ -579,10 +579,10 @@ int main(int argc, char** argv) {
         checks.note(std::string("AUDB-FIXTURE-LIVE: ") + (audb_live ? "live" : "NOT LIVE -- see MEASURED above") + " [no page -- infrastructure, not itself a claim]");
     }
 
-    // MUTATION PAULA-AUDA-DIRECTION none impossible: AUDA identifies to paula.v:114's `ldata[14:0]` (output), unconditionally declared -- no stimulus can make an audio DAC output behave as an input. Positive control: AUDA-LIVE above.
+    // MUTATION PAULA-AUDA-DIRECTION none impossible: AUDA identifies to paula.v:119's `ldata[14:0]` (output), unconditionally declared -- no stimulus can make an audio DAC output behave as an input. Positive control: AUDA-LIVE above.
     checks.expect(auda_live,
         "PAULA-AUDA-DIRECTION: at paula's own boundary, AUDA identifies to `ldata[14:0]` "
-        "(output, paula.v:114, 'left DAC data'), connected at minimig.v:523 -- a Verilog "
+        "(output, paula.v:119, 'left DAC data'), connected at minimig.v:533 -- a Verilog "
         "port-direction fact. hrm/ch1-paula-what-it-contains names `ldata` an audio DAC output "
         "in its own THREE-CHIPS-DISJOINT-OUTPUTS label. REPRESENTATION DIFFERENCE: the printed "
         "pin is an analogue output, `ldata` a 15-bit digital DAC word -- that audio LEAVES "
@@ -591,10 +591,10 @@ int main(int argc, char** argv) {
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: AUDA \"O\"] "
         "sol:J-108 opus:AHJ-241");
 
-    // MUTATION PAULA-AUDB-DIRECTION none impossible: AUDB identifies to paula.v:115's `rdata[14:0]` (output), unconditionally declared. Positive control: AUDB-LIVE above.
+    // MUTATION PAULA-AUDB-DIRECTION none impossible: AUDB identifies to paula.v:120's `rdata[14:0]` (output), unconditionally declared. Positive control: AUDB-LIVE above.
     checks.expect(audb_live,
         "PAULA-AUDB-DIRECTION: at paula's own boundary, AUDB identifies to `rdata[14:0]` "
-        "(output, paula.v:115, 'right DAC data'), connected at minimig.v:524 -- a Verilog "
+        "(output, paula.v:120, 'right DAC data'), connected at minimig.v:534 -- a Verilog "
         "port-direction fact. Same representation-difference and channel-routing carve-out as "
         "AUDA above. [p.380 PAULA PIN ASSIGNMENT, DEFINITION column: AUDB \"O\"] "
         "sol:J-106 opus:AHJ-239");
@@ -644,7 +644,7 @@ int main(int argc, char** argv) {
     // MUTATION PAULA-TXD-DIRECTION none impossible: TXD identifies to paula.v:71's `txd` (output), unconditionally declared -- no stimulus can make a serial-transmit output behave as an input. Positive control: TXD-LIVE above.
     checks.expect(txd_live,
         "PAULA-TXD-DIRECTION: at paula's own boundary, TXD identifies to `txd` (output, "
-        "paula.v:71, 'serial port transmitted data'), connected at minimig.v:498 -- a Verilog "
+        "paula.v:71, 'serial port transmitted data'), connected at minimig.v:503 -- a Verilog "
         "port-direction fact. hrm/ch1-paula-what-it-contains drives exactly this path at "
         "test_ch1-paula-what-it-contains.cpp:338 (`txd_dropped = (rig.dut->txd == 0)`), so the "
         "path is independently known live. [p.380 PAULA PIN ASSIGNMENT, DEFINITION column: "
@@ -653,7 +653,7 @@ int main(int argc, char** argv) {
     // MUTATION PAULA-RXD-DIRECTION none impossible: RXD identifies to paula.v:72's `rxd` (input), unconditionally declared. Positive control: RXD-LIVE above.
     checks.expect(rxd_live,
         "PAULA-RXD-DIRECTION: at paula's own boundary, RXD identifies to `rxd` (input, "
-        "paula.v:72, 'serial port received data'), connected at minimig.v:499 -- a Verilog "
+        "paula.v:72, 'serial port received data'), connected at minimig.v:504 -- a Verilog "
         "port-direction fact. hrm/appDE-serial-uart builds at `paula_uart`, one level below, "
         "and drives the receive path there, so the channel is independently known live. "
         "[p.380 PAULA PIN ASSIGNMENT, DEFINITION column: RXD \"I\"] "

@@ -27,13 +27,13 @@
 //
 // THE RIG'S JOINS (SPECIFICATION.md's own section, reproduced here against
 //   the now-open RTL):
-//   1. paula_floppy.index -> ciab.flag, reproducing minimig.v:647
-//      (`.flag(index)`) combined with minimig.v:526 (`.index(index)`,
+//   1. paula_floppy.index -> ciab.flag, reproducing minimig.v:657
+//      (`.flag(index)`) combined with minimig.v:536 (`.index(index)`,
 //      confirming the wire's origin is paula_floppy's own INDEX port).
 //      Made in propagate_joins() below: `cb->flag = pf->index;` before every
 //      shared clock edge.
-//   2. ciab.irq -> paula_intcontroller.int6, reproducing minimig.v:646
-//      (`.irq(int6)`) combined with minimig.v:511 (the same wire on paula's
+//   2. ciab.irq -> paula_intcontroller.int6, reproducing minimig.v:656
+//      (`.irq(int6)`) combined with minimig.v:521 (the same wire on paula's
 //      own `.int6(int6)` port; paula_intcontroller's own `int6` port is one
 //      level inside `paula`, not independently confirmed by opening
 //      paula.v, which is outside this fixture). Made in propagate_joins()
@@ -266,8 +266,8 @@ struct Rig {
     // round, entirely in software: no Verilog top wires these three
     // modules together anywhere in this fixture.
     void propagate_joins() {
-        cb->flag = pf->index;   // join 1: minimig.v:526 + :647
-        pic->int6 = cb->irq;    // join 2: minimig.v:646 + :511
+        cb->flag = pf->index;   // join 1: minimig.v:536 + :657
+        pic->int6 = cb->irq;    // join 2: minimig.v:656 + :521
     }
 
     void eval_settled() {
@@ -458,7 +458,7 @@ int main(int argc, char** argv) {
                     " -> data_out=" + hex8(icr_read));
         checks.expect(icr_read == 0x90,
             "opus:8-cia.c56 opus:8-dskint.c9 sol:8-int.c9 PROP-FLAG-PIN: a pulse on paula_floppy's real "
-            "`index` output, carried across join 1 (minimig.v:526+:647) onto ciab's `flag` input, is what "
+            "`index` output, carried across join 1 (minimig.v:536+:657) onto ciab's `flag` input, is what "
             "ciab treats as the FLAG pin's DSKINDEX* pulse -- ICR bit 4 (FLG) latches and, with FLG "
             "unmasked, `irq` rises; a non-clocked ICR read returns 0x90 (irq=1, FLG=1) [p.245 \"FLAG "
             "DSKINDEX* Disk index pulse ($BFDD00, bit 4)\"; p.250 \"...8520 Flag pin...\"]");
@@ -488,7 +488,7 @@ int main(int argc, char** argv) {
                     ", after a real index pulse -> INTREQR=" + hex16(reqr) + " level=" + std::to_string(level));
         checks.expect(level == 6 && (reqr & (1u << 13)) != 0,
             "opus:8-dskint.c8 sol:8-int.c8 opus:8-cia.c58 sol:8-cia.c52 PROP-LEVEL6: a pulse on `index`, "
-            "carried through join 1 (minimig.v:526+:647) and join 2 (minimig.v:646+:511) with FLG "
+            "carried through join 1 (minimig.v:536+:657) and join 2 (minimig.v:656+:521) with FLG "
             "unmasked and INTENA's master+bit13 enabled, sets INTREQ bit 13 and drives paula_intcontroller "
             "to request 68000 level 6 (measured _ipl=1, level=7-_ipl=6) [p.250 \"INDEX (level 6, 8520 Flag "
             "pin)\"; p.245 \"Can be used to create a level 6 interrupt\"]");

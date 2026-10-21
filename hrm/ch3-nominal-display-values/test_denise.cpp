@@ -102,7 +102,7 @@
 //   Harness (prime_window_closed(), the same measure
 //   hrm/ch3-horizontal-display-window takes).
 //
-// SAMPLE-INDEX TRANSLATION: denise.v:291-303 registers the hpos
+// SAMPLE-INDEX TRANSLATION: denise.v:304-316 registers the hpos
 //   comparator's result through TWO clk7_en-gated stages (`window` on the
 //   compare itself, then `window_ena <= window` one clk7_en edge later)
 //   before window_del (a plain-every-28MHz-edge register that catches up
@@ -197,7 +197,7 @@
 //                 at exactly $77=119 (open_idx=raw_start).
 //     DIWSTOP  -- the $8888 this assertion already writes closes the
 //                 window at exactly $88+256=392 (close_idx=raw_stop+256).
-//     DIWHIGH  -- denise.v:314-319: hdiwstop[8] defaults to 1 unless
+//     DIWHIGH  -- denise.v:327-332: hdiwstop[8] defaults to 1 unless
 //                 DIWHIGH (ecs=1) loads data_in[13] into it; the $9999
 //                 this assertion already writes has bit13=0 and pulls the
 //                 close edge in from $C1+256=449 to exactly $C1=193.
@@ -571,7 +571,7 @@ public:
     }
 
     // WHY THIS EXISTS (denise.v:436-444: clut_data = 0 (border) whenever
-    // !window_ena, regardless of bitplane content; denise.v:446-452:
+    // !window_ena, regardless of bitplane content; denise.v:493-499:
     // window_del lags window_ena by one 28MHz edge, not gated by clk7_en)
     // -- every colour-index/EHB/HAM measurement needs to actually be
     // SAMPLED INSIDE the display window, not merely have DIWSTRT/DIWSTOP
@@ -1254,7 +1254,7 @@ int main(int argc, char** argv) {
     // C-diwhigh.c01 (p306).
     //
     // DIWHIGH has a real, ECS-gated effect at THIS boundary --
-    // denise.v:314-319: hdiwstop[8] defaults to 1 (close edge = raw_stop+
+    // denise.v:327-332: hdiwstop[8] defaults to 1 (close edge = raw_stop+
     // 256) unless DIWHIGH is written with ecs=1, which loads data_in[13]
     // into it instead. The $9999 pattern this assertion already writes has
     // bit13=0, so writing it must pull the close edge in from $C1+256=449

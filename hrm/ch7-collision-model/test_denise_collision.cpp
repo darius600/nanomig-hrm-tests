@@ -28,7 +28,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // BOUNDARY: nanomig/src/minimig-aga/denise_collision.v (read in full for
-//   this build). Instantiated at denise.v:474-486 with bpldata and nsprite.
+//   this build). Instantiated at denise.v:521-533 with bpldata and nsprite.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory was written from
 //   claims.jsonl's quotations alone and committed before

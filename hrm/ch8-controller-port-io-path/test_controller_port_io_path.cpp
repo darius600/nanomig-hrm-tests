@@ -14,9 +14,9 @@
 //   cia_timerb.v/cia_timerd.v to elaborate -- confirmed from
 //   hrm/ch8-ciaa-port-direction/Makefile's own SRC list, read after
 //   SPECIFICATION.md was committed). Wiring verified against minimig.v
-//   (USERIO1 at minimig.v:551, CIAA1 at minimig.v:607, the porta_in/
+//   (USERIO1 at minimig.v:561, CIAA1 at minimig.v:617, the porta_in/
 //   porta_out/_fire0/_fire1/_fire0_dat/_fire1_dat/_joy1/_joy2 wiring at
-//   minimig.v:560-565, 605, 622-624) after the specification commit, per
+//   minimig.v:570-575, 605, 622-624) after the specification commit, per
 //   this task's order of work. No other package's test source or Makefile
 //   was read except test_denise.cpp and its Makefile
 //   (hrm/ch8-appb-chip-column-denise), for harness style only, disclosed
@@ -65,7 +65,7 @@
 //     JOY0DAT/JOY1DAT are already reversed from what their own names
 //     suggest, this build does not assume CIAAPRA's bit/numeral pairing
 //     is the naive one either, and checked it here instead of guessing.
-//   - minimig.v:622 wires `.porta_in({_fire1,_fire0,_ready,_track0,
+//   - minimig.v:632 wires `.porta_in({_fire1,_fire0,_ready,_track0,
 //     _wprot,_change})` onto ciaa's `porta_in[7:2]` (ciaa.v:95, 6 bits
 //     wide): bit7=_fire1, bit6=_fire0. ciaa.v's own read mux
 //     (ciaa.v:251-259) returns `porta_in2[7:2]` (a same-width registered
@@ -75,9 +75,9 @@
 //   - The claimed "output" half is real but bounded: writing PRA with
 //     DDRA configured for output changes `porta_out[3:2]`
 //     (ciaa.v:262 -- `porta_out[3]` from bit 7/regporta[3],
-//     `porta_out[2]` from bit 6/regporta[2]), which minimig.v:605 names
+//     `porta_out[2]` from bit 6/regporta[2]), which minimig.v:615 names
 //     `_fire1_dat`/`_fire0_dat`. Measured directly (ciaa.v ports,
-//     minimig.v:200-201, 358-359): minimig.v's own top-level `_joy1`/
+//     minimig.v:205-206, 358-359): minimig.v's own top-level `_joy1`/
 //     `_joy2` are plain primary inputs with no matching output-enable or
 //     tristate port, and userio.v only reads `_fire0_dat`/`_fire1_dat`
 //     into the `cd32pad` shift-register path (userio.v:181-208), which

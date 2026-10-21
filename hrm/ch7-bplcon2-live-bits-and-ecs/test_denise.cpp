@@ -34,13 +34,13 @@
 //   + denise_spritepriority.v + bitplane_ram.v), matching
 //   hrm/ch3-register-map-denise's own boundary since both exercise the same
 //   BPLCON2-to-pixel path. a1k=0, aga=0 throughout (this package's claims
-//   are OCS/ECS only; aga=0 also keeps bit 8's rdram gate, denise.v:219
+//   are OCS/ECS only; aga=0 also keeps bit 8's rdram gate, denise.v:221
 //   `assign rdram = bplcon2[8] & aga`, inert so bit 8 reads as dead on the
 //   same basis as the true-dead bits rather than confounded by AGA).
 //
 // THE RIG, and why: every sweep-based measurement below uses the SAME
 //   six-bitplane, single-playfield, EHB-eligible configuration --
-//   BPLCON0=$6000 (bpu=6, ham=0, dpf=0, denise.v:181-183), BPL1..5DAT held
+//   BPLCON0=$6000 (bpu=6, ham=0, dpf=0, denise.v:183-185), BPL1..5DAT held
 //   at $0000 and BPL6DAT refreshed at $FFFF -- so the colour-table select
 //   index presented is fixed at 32 (denise_playfields.v:100 plfdata=
 //   bpldata[8:1], denise.v:367-372 gate bpldata[7:1] on l_bpu, giving index
@@ -50,7 +50,7 @@
 //   (KILLEHB) live at ecs=1 -- a dead-bit measurement taken on a rig that
 //   could never show a live bit either proves nothing against the
 //   units-error objection. Index 32 is what makes bit 9 reachable at all:
-//   denise_colortable.v:34 only folds/halves when `ehb_en` (denise.v:431,
+//   denise_colortable.v:34 only folds/halves when `ehb_en` (denise.v:485,
 //   itself gated by `!killehb`) is true AND the select's bit 5 is set
 //   (denise_colortable.v:52,62 `ehb_sel <= select_xored[5]`), so an index
 //   below 32 would make killehb's own bit invisible regardless of whether
@@ -60,10 +60,10 @@
 // HOW A SAMPLE IS TAKEN (mechanical fact from the RTL; the manual
 //   quotations fix what counts as pass/fail): a single
 //   BPLxDAT write only pulses the plane shifter's parallel load once
-//   (denise_bitplane_shifter.v:180-183); Harness::run_sweep below rewrites
+//   (denise_bitplane_shifter.v:159-162); Harness::run_sweep below rewrites
 //   BPL2..6DAT and BPL1DAT every round (BPL1DAT last, since its write both
-//   latches l_bpu, denise.v:195-203, and pulses the shared `load` that
-//   parallel-loads every shifter, denise_bitplane_shifter.v:180-183) and
+//   latches l_bpu, denise.v:197-205, and pulses the shared `load` that
+//   parallel-loads every shifter, denise_bitplane_shifter.v:159-162) and
 //   samples red/green/blue immediately after each of the six writes, with
 //   no extra settle ticks -- 20 rounds x 6 samples = 120 samples. The
 //   measured count for bit 9 at ecs=1 is reported alongside the
@@ -124,7 +124,7 @@
 //   (d) ENBPLCN3-ENABLES-BRDRBLNK grades ENBPLCN3 through BRDRBLNK ("05
 //   BRDRBLNK Border blank"), which p.307 -- the same page used for
 //   KILLEHB -- defines on the same table, and which is itself gated by
-//   ENBPLCN3 in the RTL (denise.v:192,253,515): a graded enable/disable
+//   ENBPLCN3 in the RTL (denise.v:194,253,515): a graded enable/disable
 //   experiment at the denise boundary, no debug port added.
 //
 // MUTATION-LOG SUMMARY (6 assertions, 6 mutation flags; each was actually
@@ -238,20 +238,20 @@
 namespace {
 
 // reg_address_in is [8:1] (word address >> 1), matching denise.v's own
-// `parameter` block (denise.v:56-65) and denise_bitplanes.v:106-115.
+// `parameter` block (denise.v:57-66) and denise_bitplanes.v:349-358.
 constexpr uint16_t IDLE_ADDR    = 0x00;
-constexpr uint16_t BPLCON0_ADDR = 0x80;  // 9'h100 >> 1  (denise.v:59)
-constexpr uint16_t BPLCON2_ADDR = 0x82;  // 9'h104 >> 1  (denise.v:60)
-constexpr uint16_t BPLCON3_ADDR = 0x83;  // 9'h106 >> 1  (denise.v:61)
-constexpr uint16_t DIWSTRT_ADDR = 0x47;  // 9'h08E >> 1  (denise.v:56)
-constexpr uint16_t DIWSTOP_ADDR = 0x48;  // 9'h090 >> 1  (denise.v:57)
-constexpr uint16_t BPL1DAT_ADDR = 0x88;  // 9'h110 >> 1  (denise_bitplanes.v:107)
-constexpr uint16_t BPL2DAT_ADDR = 0x89;  // 9'h112 >> 1  (denise_bitplanes.v:108)
-constexpr uint16_t BPL3DAT_ADDR = 0x8A;  // 9'h114 >> 1  (denise_bitplanes.v:109)
-constexpr uint16_t BPL4DAT_ADDR = 0x8B;  // 9'h116 >> 1  (denise_bitplanes.v:110)
-constexpr uint16_t BPL5DAT_ADDR = 0x8C;  // 9'h118 >> 1  (denise_bitplanes.v:111)
-constexpr uint16_t BPL6DAT_ADDR = 0x8D;  // 9'h11A >> 1  (denise_bitplanes.v:112)
-constexpr uint16_t COLOR_BASE   = 0xC0;  // 9'h180 >> 1  (denise.v:65); COLORi = COLOR_BASE+i.
+constexpr uint16_t BPLCON0_ADDR = 0x80;  // 9'h100 >> 1  (denise.v:60)
+constexpr uint16_t BPLCON2_ADDR = 0x82;  // 9'h104 >> 1  (denise.v:61)
+constexpr uint16_t BPLCON3_ADDR = 0x83;  // 9'h106 >> 1  (denise.v:62)
+constexpr uint16_t DIWSTRT_ADDR = 0x47;  // 9'h08E >> 1  (denise.v:57)
+constexpr uint16_t DIWSTOP_ADDR = 0x48;  // 9'h090 >> 1  (denise.v:58)
+constexpr uint16_t BPL1DAT_ADDR = 0x88;  // 9'h110 >> 1  (denise_bitplanes.v:350)
+constexpr uint16_t BPL2DAT_ADDR = 0x89;  // 9'h112 >> 1  (denise_bitplanes.v:351)
+constexpr uint16_t BPL3DAT_ADDR = 0x8A;  // 9'h114 >> 1  (denise_bitplanes.v:352)
+constexpr uint16_t BPL4DAT_ADDR = 0x8B;  // 9'h116 >> 1  (denise_bitplanes.v:353)
+constexpr uint16_t BPL5DAT_ADDR = 0x8C;  // 9'h118 >> 1  (denise_bitplanes.v:354)
+constexpr uint16_t BPL6DAT_ADDR = 0x8D;  // 9'h11A >> 1  (denise_bitplanes.v:355)
+constexpr uint16_t COLOR_BASE   = 0xC0;  // 9'h180 >> 1  (denise.v:66); COLORi = COLOR_BASE+i.
 
 // BPLCON2 bit constants under test.
 constexpr uint16_t BIT15 = 0x8000, BIT14 = 0x4000, BIT13 = 0x2000, BIT12 = 0x1000;
@@ -367,7 +367,7 @@ std::vector<uint32_t> run_sweep(bool ecs, uint16_t bplcon2_value) {
     h.write_reg(COLOR_BASE + 0, 0x0F0F);
     h.write_reg(DIWSTRT_ADDR, 0x0030);
     h.write_reg(DIWSTOP_ADDR, 0x00A0);
-    h.sample_at_hpos(0x0130);   // flush any latched 'window' reg garbage (denise.v:328-334)
+    h.sample_at_hpos(0x0130);   // flush any latched 'window' reg garbage (denise.v:343-349)
     h.pulse_strhor();
     h.advance_hpos(0x30 - 2);
 
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
         auto measure_priority = [](uint16_t bplcon2_value) -> uint32_t {
             Harness h(true);  // ecs=1 (this file's rig default; PF2PRI itself
                                // is undisputed on both chipsets, p.210/271)
-            h.write_reg(BPLCON0_ADDR, 0x2400);        // bpu=2, dpf=1, ham=0 (denise.v:181-183)
+            h.write_reg(BPLCON0_ADDR, 0x2400);        // bpu=2, dpf=1, ham=0 (denise.v:183-185)
             h.write_reg(BPLCON2_ADDR, bplcon2_value);  // PF2PRI = bit 6
             h.write_reg(COLOR_BASE + 1, 0x0F00);  // COLOR01: red   (playfield 1 wins, PF2PRI=0)
             h.write_reg(COLOR_BASE + 9, 0x00F0);  // COLOR09: green (playfield 2 wins, PF2PRI=1;
@@ -613,7 +613,7 @@ int main(int argc, char** argv) {
         uint32_t expected = pack(0x7F, 0x00, 0x7F);
         checks.expect(measured == expected,
             "EHB-ACTIVE-PRECONDITION: with killehb=0, ecs=1, bpu=6/ham=0/dpf=0/a1k=0 and "
-            "the colour-select index at 32 (denise.v:431 ehb_en, denise_colortable.v:34/62), "
+            "the colour-select index at 32 (denise.v:485 ehb_en, denise_colortable.v:34/62), "
             "the sampled pixel equals COLOR00's own written value with every channel halved "
             "-- proving the EHB fold-and-halve path is genuinely engaged before "
             "BPLCON2-BIT9-KILLEHB-LIVE-ECS below is trusted to mean anything.");
@@ -655,7 +655,7 @@ int main(int argc, char** argv) {
     // same p.210/264/271 reasoning as BIT15 above). ECS half (ZDBPSEL2,
     // p.307) stays recorded, not asserted, per opus:7-appA-bplcon2.c6's own
     // conflict_resolution ("the signal does not exist in this design at
-    // all"), confirmed here: bit 14 is latched at denise.v:215 but never
+    // all"), confirmed here: bit 14 is latched at denise.v:217 but never
     // read anywhere else in denise.v or any sub-module it instantiates --
     // a different, unrelated reason from the OCS half's.
     // =========================================================================
@@ -898,7 +898,7 @@ int main(int argc, char** argv) {
     // BPLCON2-BIT8 -- undisputed inert-looking on both chipsets within this
     // package's scope (SPECIFICATION.md P8), a measurement only (same
     // p.210/264/271 reasoning as BIT15 above). Gated by AGA, not ECS
-    // (denise.v:219 `rdram = bplcon2[8] & aga`), and aga=0 throughout this
+    // (denise.v:221 `rdram = bplcon2[8] & aga`), and aga=0 throughout this
     // file.
     // =========================================================================
     {
@@ -940,7 +940,7 @@ int main(int argc, char** argv) {
     // BRDRBLNK: the same p.307 table used for KILLEHB also defines
     // BRDRBLNK ("05 BRDRBLNK Border blank"), so a BPLCON3 field IS quoted
     // in this package's claims. At the denise.v boundary RGB is exposed, and BRDRBLNK (bplcon3[5]) is itself
-    // gated by ENBPLCN3 (denise.v:192 ecsena=bplcon0[0]; :253
+    // gated by ENBPLCN3 (denise.v:194 ecsena=bplcon0[0]; :253
     // brdrblnk=bplcon3[5]&ecsena; :515 t_blank=ecs&ecsena&brdrblnk&
     // (~window_del|~display_ena); :518 red/green/blue forced to 0 when
     // t_blank), giving a graded enable/disable experiment without adding a
@@ -956,7 +956,7 @@ int main(int argc, char** argv) {
             h.write_reg(COLOR_BASE + 0, 0x0FFF);  // COLOR00 (border colour): white
             h.write_reg(DIWSTRT_ADDR, 0x0030);
             h.write_reg(DIWSTOP_ADDR, 0x00A0);
-            h.sample_at_hpos(0x0130);  // flush any latched 'window' reg garbage (denise.v:328-334)
+            h.sample_at_hpos(0x0130);  // flush any latched 'window' reg garbage (denise.v:343-349)
             h.pulse_strhor();          // hpos -> 2, before hdiwstrt(0x30): the border region
             return h.current_rgb();
         };

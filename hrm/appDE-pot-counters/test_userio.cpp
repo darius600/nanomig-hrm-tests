@@ -329,7 +329,7 @@ static void group_C_potinp_address_conflict() {
          "read only') returns $" + hex4(at_104) + ": userio.v's read mux (userio.v:289-309) "
          "carries no case for this offset at all and falls through to the default 16'h0000. "
          "$DFF104 is not POTINP under either reading at this module: appA-playfield/p271.txt:12 "
-         "and appB3/p291.txt:29 both print BPLCON2 at 104 (BPLCON0 is 100), and denise.v:59-60 "
+         "and appB3/p291.txt:29 both print BPLCON2 at 104 (BPLCON0 is 100), and denise.v:60-61 "
          "agrees (BPLCON0=9'h100, BPLCON2=9'h104) -- a different module, outside this package's "
          "boundary.");
 

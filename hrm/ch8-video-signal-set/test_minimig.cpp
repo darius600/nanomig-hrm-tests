@@ -44,12 +44,12 @@
 //
 //   Internally, traced by reading the RTL (never modified): minimig.v:
 //   247-249 declares red/green/blue as denise.v's own output ports,
-//   wired straight through (minimig.v:592-595, "denise DENISE1 (...
-//   .red(red), .green(green), .blue(blue) ...)"); minimig.v:240-242/
+//   wired straight through (minimig.v:602-605, "denise DENISE1 (...
+//   .red(red), .green(green), .blue(blue) ...)"); minimig.v:245-247/
 //   459-461 does the same for _hsync/_vsync/_csync from agnus.v, which
 //   itself gets _csync from agnus_beamcounter.v:421 (`assign _csync =
 //   _hsync & _vsync | vser;`). Inside denise.v: COLORBASE = 9'h180
-//   (denise.v:65) is the base of the 32-entry colour table at
+//   (denise.v:66) is the base of the 32-entry colour table at
 //   $DFF180-$DFF1BE; denise_colortable.v's wr_en fires whenever a CPU
 //   write lands with reg_address_in in that range and clk7_en is true
 //   (denise_colortable.v:32); with aga=0 (this fixture never sets the
@@ -59,7 +59,7 @@
 //   24-bit colour-table word -- so a plain COLOR00 write of {R,G,B}
 //   nibbles reads back nibble-replicated: red[7:0]={R,R}, green[7:0]=
 //   {G,G}, blue[7:0]={B,B} (denise_colortable.v:56-57's packing). With
-//   no bitplane DMA and no sprites configured, denise.v:491-497's
+//   no bitplane DMA and no sprites configured, denise.v:538-544's
 //   priority mux (`clut_data = ... plfdata ^ bplxor` when no sprite and
 //   window disabled forces `clut_data = 0`) selects colour-table index 0
 //   (COLOR00) for every sampled pixel. Denise forces red/green/blue to 0
@@ -82,7 +82,7 @@
 //   (agnus_beamcounter.v:224-225) read from CPU-writable registers only
 //   when `varhsyen && varbeamen` (BEAMCON0 bits 8 and 7, :134-135) are
 //   both set, and BEAMCON0 itself only accepts a write when `ecs`
-//   (:123,172) is true -- gated by chipset_config[4:3] (minimig.v:483).
+//   (:123,172) is true -- gated by chipset_config[4:3] (minimig.v:488).
 //   So: raise chipset_config to set ecs, write BEAMCON0=$01A0 (bits
 //   8,7,5 -- varhsyen, varbeamen, and pal, the last only to avoid also
 //   flipping agnus_beamcounter.v:167-175's separate `pal` register,
@@ -240,7 +240,7 @@ struct ClkGen {
 // $DFF180 -- COLOR00, the background/border colour-table entry. With no
 // bitplane DMA and no sprites configured (this fixture sets up neither),
 // denise.v's priority mux selects colour-table index 0 for every sampled
-// pixel (denise.v:487-497), so COLOR00 is what red/green/blue carry.
+// pixel (denise.v:534-544), so COLOR00 is what red/green/blue carry.
 constexpr uint32_t COLOR00_ADDR = 0xDFF180;
 
 // Agnus's variable-beam registers, used only by SYNC-OUTPUT-TOGGLES's

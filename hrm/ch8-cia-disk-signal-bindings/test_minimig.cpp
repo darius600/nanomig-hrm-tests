@@ -7,7 +7,7 @@
 //   both declined all 24 (`record()`, not graded): at the `ciaa`/`ciab`
 //   boundary alone, the port is a generic porta_in[7:2]/portb_out[7:0] with
 //   no signal named DSKRDY* etc -- the binding is one level up, at
-//   minimig.v:622/650. This package is built specifically to pick those 24
+//   minimig.v:632/650. This package is built specifically to pick those 24
 //   claims up at that join, per the build brief handed down for this unit.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -29,13 +29,13 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // THE JOIN, verified by direct reading before this file was written:
-//   minimig.v:380-387   wire _sel1,_sel2,_sel3,side,_motor,_track0,_change,
+//   minimig.v:385-392   wire _sel1,_sel2,_sel3,side,_motor,_track0,_change,
 //                        _ready,_wprot; (declaration order differs from the
 //                        brief's paraphrase; the four names are identical)
-//   minimig.v:607-630   ciaa CIAA1 (...
+//   minimig.v:617-640   ciaa CIAA1 (...
 //                        .porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),
 //                        ...)
-//   minimig.v:633-651   ciab CIAB1 (...
+//   minimig.v:643-661   ciab CIAB1 (...
 //                        .portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
 //                        );
 //   minimig.v:489-548   paula PAULA1 (... ._step(_step), .direc(direc),
@@ -59,7 +59,7 @@
 //                        (selects B, rs=1=PRB) by direct measurement before
 //                        this file's real assertions were written (see
 //                        STEP3 notes / commit history for this package).
-//   So: the six-signal concatenation at minimig.v:622 lands on PA7..PA2 as
+//   So: the six-signal concatenation at minimig.v:632 lands on PA7..PA2 as
 //   {_fire1,_fire0,_ready,_track0,_wprot,_change} -- _ready=PA5, _track0=PA4,
 //   _wprot=PA3, _change=PA2, exactly what Table 8-5 requires. Confirmed by
 //   this package's own measurements below, not merely read off the source.
@@ -339,7 +339,7 @@ public:
 
     // Verbatim (data-carrying) extension of ch7-overlay-source's own
     // bus_cycle(): same dtack-wait/settle shape, plus an actual write_data
-    // payload (that package never needed one -- minimig.v:862's ovl mux
+    // payload (that package never needed one -- minimig.v:872's ovl mux
     // reads only the write strobe, never the data).
     bool bus_cycle(uint32_t byte_addr, bool is_write, uint16_t write_data = 0) {
         bool low_byte = (byte_addr & 1u) != 0;
@@ -372,7 +372,7 @@ public:
         return low ? (uint8_t)(v & 0xFF) : (uint8_t)((v >> 8) & 0xFF);
     }
 
-    // --- CIAB PRB/DDRB (the write-side join, minimig.v:650) ---
+    // --- CIAB PRB/DDRB (the write-side join, minimig.v:660) ---
     void ciab_ddrb_all_out() { write_byte(0xBFD300, 0xFF); }
     void ciab_prb(uint8_t value) { pb_state = value; write_byte(0xBFD100, value); }
     uint8_t ciab_prb_read() { return read_byte(0xBFD100); }
@@ -399,7 +399,7 @@ public:
     // file header's stimulus-source note about the DDRB-write transient).
     void home_zero() { for (int i = 0; i < 5; ++i) do_step(/*outward=*/true); }
 
-    // --- SD-card mount/unmount (top-level pins, minimig.v:534-535) ---
+    // --- SD-card mount/unmount (top-level pins, minimig.v:544-545) ---
     // disk_present's own always-block (paula_floppy.v:959-966) is NOT
     // clk7_en-gated, so a handful of raw ticks is enough.
     void mount(int n, uint32_t size) {
@@ -415,7 +415,7 @@ public:
         dut->eval();
     }
 
-    // --- Observation (public-flat-rw, minimig.v:622/650 internal nets) ---
+    // --- Observation (public-flat-rw, minimig.v:632/650 internal nets) ---
     // CIAA PRA read via a real CPU bus access at $BFE001; nibble bits
     // [3:0] = (PA5,PA4,PA3,PA2), matching Table 8-5's own column order.
     uint8_t pa_nibble() {
@@ -542,7 +542,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     // CONTROL-RESET-RELEASES (harness precondition, no claim id -- same
     // shape as hrm/ch7-overlay-source's own). Without this, ciaa/ciab/
-    // paula_floppy's shared `reset` (minimig.v:422, sys_reset|~_cpu_reset_in)
+    // paula_floppy's shared `reset` (minimig.v:427, sys_reset|~_cpu_reset_in)
     // never deasserts and nothing below would be measuring live RTL.
     // ========================================================================
     {
@@ -609,7 +609,7 @@ int main(int argc, char** argv) {
         "(the C17-style deselected mask on all four), selecting drive 0 (floppy_drives=0, "
         "one drive configured, so paula_floppy.v:691-694's _ready reduces to _sel[0] alone) "
         "with track/wrprot/change all otherwise deasserted reads (0,1,1,1) -- PA5 alone "
-        "moves. minimig.v:622 .porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}) with "
+        "moves. minimig.v:632 .porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}) with "
         "ciaa.v:254's unconditional porta_in2[7:2] passthrough [p.244 \"PA5 DSKRDY* Disk "
         "ready (active low)\"]");
 
@@ -641,13 +641,13 @@ int main(int argc, char** argv) {
     // ========================================================================
     // PB-BINDING claims (CIABPRB, $BFD100, write side). Each check writes
     // one known byte through a real CPU bus write and observes all eight
-    // named join wires (minimig.v:650) directly -- the target wire low, the
+    // named join wires (minimig.v:660) directly -- the target wire low, the
     // other seven high -- so a swap between any two of the eight positions
     // is caught.
     // ========================================================================
     checks.expect(check_pb_bit(h, 7, 0, MUT_PB7),
         "opus:8-cia.c21 sol:8-cia.c20 PB7-BINDING: CIABPRB's PB7 carries _motor "
-        "(DSKMOTOR*) at the minimig.v:650 join, distinctly from the other seven named "
+        "(DSKMOTOR*) at the minimig.v:660 join, distinctly from the other seven named "
         "wires -- clearing only PB7 through a real CPU write reads _motor low and "
         "_sel3/_sel2/_sel1/_sel0/side/direc/_step all high [p.244 \"PB7 DSKMOTOR* ... "
         "Disk motor control\"]");

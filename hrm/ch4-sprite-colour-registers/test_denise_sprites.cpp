@@ -849,7 +849,7 @@ int main(int argc, char** argv) {
         "bit is valid only for odd-numbered sprites\" is the SAME "
         "proposition hrm/ch4-attached-sprites/ already tested as "
         "ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE (using CH4-p128.c8, "
-        "CH4-sctl.c4, CH4-attach.c27) and found RED (denise_sprites.v:474, "
+        "CH4-sctl.c4, CH4-attach.c27) and found RED (denise_sprites.v:595, "
         "`attach1 || (!aga && attach0)`, lets the EVEN sprite's own bit "
         "open the combined-colour path at aga=0) -- see that package's "
         "own RESULTS/FINDING. Not re-tested here to avoid re-measuring an "

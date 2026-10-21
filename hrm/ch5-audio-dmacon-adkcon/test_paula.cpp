@@ -4,7 +4,7 @@
 //   reaches an audio enable -- paula_audio_channel takes dmaena already
 //   decoded) and ADKCON's audio attach/modulation bits (bits 0-7,
 //   ATPER0-3/ATVOL0-3), which paula_audio (instantiated as `paula_audio ad1`
-//   at paula.v:289-307) never receives -- paula.v has no ADKCON port on that
+//   at paula.v:303-321) never receives -- paula.v has no ADKCON port on that
 //   instantiation at all. Also carries the register-map claims (address,
 //   read/write direction, chip ownership, SET/CLR semantics) for DMACON,
 //   DMACONR, ADKCON, ADKCONR and the sixteen AUDxLEN/PER/ VOL/DAT registers,
@@ -87,7 +87,7 @@
 // WIRING FACTS AND EXPECTED VALUES: the port list, the register
 //   word-address arithmetic (reg_address_in is bits [8:1], i.e.
 //   byte_address>>1), the uartbrk/tx_txd interaction and the facts this
-//   file depends on (paula.v:175-178's auden derivation, paula.v:186-198's
+//   file depends on (paula.v:180-183's auden derivation, paula.v:191-203's
 //   ADKCON/ADKCONR storage and read decode, and paula_audio's ad1
 //   instantiation carrying no adkcon port at all) come from paula.v,
 //   paula_audio.v and paula_uart.v. They are wiring facts, never
@@ -670,7 +670,7 @@ public:
         ticks(4);
     }
 
-    // data_out is a plain combinational OR-mux (paula.v:152); no clock
+    // data_out is a plain combinational OR-mux (paula.v:157); no clock
     // edge is required for it to reflect the currently-addressed value.
     uint16_t read_reg(int addr_w) {
         dut->reg_address_in = addr_w;
@@ -1215,7 +1215,7 @@ int main(int argc, char** argv) {
             "that cycle (not a length-counter boundary) makes audio_dmal "
             "bit 0 never appear again, once any already-in-flight request "
             "has drained -- auden is a continuous assignment off the "
-            "DMACON/DMAEN registers (paula.v:174-178), not gated by any "
+            "DMACON/DMAEN registers (paula.v:179-183), not gated by any "
             "internal channel state, so the stop is unconditional. "
             "'You can stop the channel by writing a 0 into the AUDxEN bit "
             "at any time.' (p.145, 5-p145.c1, 5-stop.c1). measured started=" +
@@ -1240,7 +1240,7 @@ int main(int argc, char** argv) {
             " ($096>>1, i.e. byte address $096) is the write that reaches "
             "auden (proving the address decode is exactly $096), yet "
             "reading back that same address, before or after, returns 0 "
-            "both times -- paula.v's own data_out mux (paula.v:152) never "
+            "both times -- paula.v's own data_out mux (paula.v:157) never "
             "includes a DMACON term. 'DMACON 096 W A D P DMA control "
             "write (clear or set)' (appendix A p.278, 5-appA-p278.c1, "
             "5-appA-p278.c2, 5-appA-p278.c4, A-dmacon.addr, A-dmacon.acc); "
@@ -1316,7 +1316,7 @@ int main(int argc, char** argv) {
             "reading word address 0x" +
             hex(DMACONR_W) +
             " ($002>>1) through paula.v's own read multiplexer "
-            "(paula.v:152: uartdata_out | intdata_out | diskdata_out | "
+            "(paula.v:157: uartdata_out | intdata_out | diskdata_out | "
             "adkconr -- no DMACONR term at all) still returns 0x" +
             hex(v) +
             ", identical to the pre-write idle readback 0x" +
@@ -1417,8 +1417,8 @@ int main(int argc, char** argv) {
         bool released_high = h.dut->txd == 1;
         checks.expect(idle_high && forced_low && released_high,
             "ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW: after reset txd idles "
-            "high; setting ADKCON bit 11 forces it low (paula.v:211 wires "
-            "adkcon[11] to paula_uart's uartbrk, paula_uart.v:136 `if "
+            "high; setting ADKCON bit 11 forces it low (paula.v:216 wires "
+            "adkcon[11] to paula_uart's uartbrk, paula_uart.v:146 `if "
             "(uartbrk) tx_txd <= #1 1'b0`); clearing bit 11 releases it "
             "back to the idle-mark 1. 'Forces a UART break (clears TXD) "
             "if true.' (appendix A p.265, 5-appA-p265.c18, A-adkcon.b11). CH8 S2 CITES: opus:8-adkcon.c4, sol:8-adkcon.c3, opus:8-appA-adkcon.c18, opus:8-appA-adkcon.c19, sol:8-appa-adkbit.c10, sol:8-appb-adkcon.c6.");
@@ -1431,7 +1431,7 @@ int main(int argc, char** argv) {
     // gate finds them nowhere in this file's runtime text and does not
     // credit this package with testing them.
     checks.record(
-        "ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE]: paula.v:269 "
+        "ADKCON-BIT10-WORDSYNC [NOT COVERED BY THIS PACKAGE]: paula.v:283 "
         "wires adkcon[10] to paula_floppy's wordsync port, and "
         "paula_floppy.v:924-925 gates trackrdok on a sync-code match "
         "against real disk data. This module's own disk interface is the "
@@ -1475,7 +1475,7 @@ int main(int argc, char** argv) {
             "VOL/DAT addresses (channels 0-3), each first written a "
             "distinct non-zero value, read back as 0x0000 -- "
             "paula_audio.v has no data_out port at all and "
-            "paula_audio_channel.v has none either, so paula.v:152's own "
+            "paula_audio_channel.v has none either, so paula.v:157's own "
             "read multiplexer (uartdata_out | intdata_out | diskdata_out "
             "| adkconr) carries no audio term whatsoever. 'AUDxDAT 0AA W "
             "P Audio channel x data' / 'AUDxLEN 0A4 W P...' / 'AUDxPER "
@@ -1541,9 +1541,9 @@ int main(int argc, char** argv) {
             "reach those peaks -- attach/modulate has zero effect. "
             "paula_audio_channel.v:1's own first line: 'This module "
             "handles a single amiga audio channel. attached modes are "
-            "not supported.' paula.v:289-307 instantiates paula_audio "
+            "not supported.' paula.v:303-321 instantiates paula_audio "
             "with NO adkcon port at all -- adkcon[7:0] is stored at "
-            "paula.v:186-192 and reaches nothing; only adkcon[11] "
+            "paula.v:191-197 and reaches nothing; only adkcon[11] "
             "(uartbrk) and adkcon[10] (wordsync) leave the register, "
             "both disk/UART, neither audio. This is expected RED: 'If "
             "the \"attach\" bit for an audio channel is set, that "
@@ -1608,7 +1608,7 @@ int main(int argc, char** argv) {
     // repeated in this record() call.
     checks.record(
         "DSKEN-BIT-NOT-INDEPENDENTLY-TESTABLE [NOT COVERED BY THIS "
-        "PACKAGE]: dsken (paula.v:174, `dsken = dmacon[4] & dmaen`) is an "
+        "PACKAGE]: dsken (paula.v:179, `dsken = dmacon[4] & dmaen`) is an "
         "internal wire, not a paula.v port -- its only externally "
         "observable consequence is disk_dmal, which is paula_floppy's own "
         "dmal output and depends on paula_floppy's own DSKLEN/state "

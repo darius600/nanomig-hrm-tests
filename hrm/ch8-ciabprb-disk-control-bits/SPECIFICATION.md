@@ -37,7 +37,7 @@ register: `portb_out[7:0]`, driven from the PRB write register with the
 8520's own pull-up behaviour (undriven bits read 1). It has no signal named
 `_motor`, `_sel3..0`, `side`, `direc` or `_step` — those names, and which of
 `portb_out`'s eight bit positions each one is, are a wiring fact at a level
-above `ciab` (`minimig.v:650`). A claim that states "bit PBn is named X" is
+above `ciab` (`minimig.v:660`). A claim that states "bit PBn is named X" is
 therefore only partly a claim about `ciab`: the fact that PBn is a distinct,
 independently writable bit position is `ciab`'s own behaviour and is
 testable here; the fact that position n carries the name X, and therefore
@@ -46,7 +46,7 @@ compiled boundary can confirm or deny. This package grades the first half
 and declines the second, naming the reason, rather than exercising a
 walking-bit pattern and letting a passing result stand in for a claim about
 drive semantics it did not test. The second half is graded by
-`hrm/ch8-cia-disk-signal-bindings` at the `minimig.v:650` join.
+`hrm/ch8-cia-disk-signal-bindings` at the `minimig.v:660` join.
 
 The same split applies to "active low", reset defaults, write order and
 pulse shape: what `ciab` alone can show is that the register echoes what
@@ -197,7 +197,7 @@ the three writes, the stimulus itself; the two uids are declined via
 DSKMOTOR*, DSKSEL3*–DSKSEL0*, DSKSIDE, DSKDIREC or DSKSTEP* — only
 `portb_out[7:0]`, a generic 8520 port. The correspondence between a bit
 position and one of these names is a wiring fact one level above this
-fixture (`minimig.v:650`), graded in `hrm/ch8-cia-disk-signal-bindings` by
+fixture (`minimig.v:660`), graded in `hrm/ch8-cia-disk-signal-bindings` by
 the PBn-BINDING assertion for each signal: `opus:8-cia.c21`, `c32`, `c34`,
 `c36`, `c38`, `c41`, `c45`, `c49`, and composed twins `sol:8-cia.c20`,
 `c30`, `c31`, `c32`, `c33`, `c35`, `c39`, `c44`. The five composed `sol`

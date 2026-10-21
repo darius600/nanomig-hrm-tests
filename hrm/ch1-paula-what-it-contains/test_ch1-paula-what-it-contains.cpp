@@ -15,8 +15,8 @@
 // RTL read for step 2, after SPECIFICATION.md was committed (commit
 // 900981b): paula.v in full (311 lines -- confirms DMACON bit9=DMAEN
 // master, bit4=DSKEN, bits3:0=audio channel enables, all SET/CLR at
-// paula.v:159-175; confirms paula_audio ad1's instantiation at
-// paula.v:289-307 carries no adkcon port at all), paula_intcontroller.v in
+// paula.v:164-180; confirms paula_audio ad1's instantiation at
+// paula.v:303-321 carries no adkcon port at all), paula_intcontroller.v in
 // full (176 lines -- confirms intena[14] is a master gate ANDed with the
 // other 14 bits before the priority encoder, paula_intcontroller.v:143-146
 // and :152-169), paula_floppy.v in full (1041 lines -- confirms
@@ -131,7 +131,7 @@ const uint8_t AUD_DAT_ADDR[4] = {ADDR_AUD0DAT, ADDR_AUD1DAT, ADDR_AUD2DAT, ADDR_
 // named data bits.
 const uint16_t SETCLR = 0x8000;
 
-// DMACON bits (paula.v:159-175): bit9 DMAEN (master), bit4 DSKEN.
+// DMACON bits (paula.v:164-180): bit9 DMAEN (master), bit4 DSKEN.
 const uint16_t DMACON_DMAEN = 0x0200;
 const uint16_t DMACON_DSKEN = 0x0010;
 
@@ -592,7 +592,7 @@ int main(int argc, char** argv) {
         "ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS: with every one of ADKCON's eight audio attach/modulate bits "
         "set, two independently armed channels reach exactly the peaks they would have reached with no attach "
         "bits set at all -- attach/modulate has zero effect on the audio path (paula_audio_channel.v:1's own first "
-        "line: attached modes are not supported; paula.v:289-307 instantiates paula_audio with no adkcon port at "
+        "line: attached modes are not supported; paula.v:303-321 instantiates paula_audio with no adkcon port at "
         "all). This is this package's own disclosed measured fact. Claim: sol:1-components.c78, "
         "opus:1-components.c77 (p.4, \"The audio channels may be linked together to provide amplitude or "
         "frequency modulation or both forms of modulation simultaneously.\"). Not re-graded.");

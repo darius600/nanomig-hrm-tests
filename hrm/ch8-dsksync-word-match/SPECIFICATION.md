@@ -57,7 +57,7 @@ Every proposition's own `classify.evidence` names `paula_floppy` observables
 only: `reg_address_in`, `data_in`, `data_out`, `wordsync`, `dmal`, `syncint`,
 `blckint`, `enable`, and the SD-side `sdc_byte_in_data`/`sdc_byte_in_strobe`/
 `sdc_byte_addr`. `wordsync` arrives at this boundary as a plain one-bit input
-(`paula_floppy.v:98`) — ADKCON's decode and the `paula.v:269` wire that
+(`paula_floppy.v:98`) — ADKCON's decode and the `paula.v:283` wire that
 carries bit 10 into it belong to `paula`, and no proposition here needs to
 drive ADKCON through that decode: the testbench drives `wordsync` directly.
 

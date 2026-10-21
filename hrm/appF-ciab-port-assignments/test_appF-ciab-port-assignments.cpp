@@ -9,7 +9,7 @@
 //   carries no signal named DTR, RTS, carrier-detect, CTS, DSR, MTR*,
 //   SEL3*..SEL0*, SIDE*, DIR, STEP* or INDEX* -- only generic
 //   `porta_out[7:6]`, `porta_in[5:0]` and `portb_out[7:0]`. Those bindings
-//   are minimig.v:648-650, one level above this fixture.
+//   are minimig.v:658-660, one level above this fixture.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 339, 340, 341, 348, 351; committed specification
@@ -27,7 +27,7 @@
 // Non-goals / scope carve-outs, per the build task and SPECIFICATION.md:
 //   - which named signal (DTR, RTS, carrier-detect, CTS, DSR, and all eight
 //     PB disk-control names) sits at which PA/PB bit position is a
-//     minimig.v:648-650 wiring fact, out of `ciab` alone's boundary --
+//     minimig.v:658-660 wiring fact, out of `ciab` alone's boundary --
 //     declined, not graded, for all ten PA-name claims and (independently,
 //     citing an accepted package) all eight PB-name claims.
 //   - the specific pulse-sets-ICR-bit-4 behaviour (a rise then a fall) --
@@ -917,16 +917,16 @@ int main(int argc, char** argv) {
         "window declines the analogous $BFE001 claim as unreachable on its own hand-built rig, recording "
         "that no package currently grades the bus-width half against the pinned join -- the same is true "
         "here: ciab's own 8-bit data_in/data_out say nothing about which half of a 16-bit CPU bus they sit "
-        "on (that is minimig.v:642-643, one level above this boundary). Not graded here.");
+        "on (that is minimig.v:652-653, one level above this boundary). Not graded here.");
     checks.record(
         "sol:F-signals.c35 (p.351, same address-map line, restated as \"The CIA-B table associates CIA-B "
         "with INT6\"): already graded downstream -- hrm/ch8-disk-index-interrupt-path's PROP-LEVEL6 "
         "(opus:8-dskint.c8, sol:8-int.c8, opus:8-cia.c58, sol:8-cia.c52) carries a ciab interrupt across "
-        "minimig.v:646+:511 to a measured 68000 level 6. Not graded here.");
+        "minimig.v:656+:521 to a measured 68000 level 6. Not graded here.");
     checks.record(
         "sol:F-signals.c46 opus:F-portsig.c39 (p.351, \"PB7..MTR* motor\"): hrm/ch8-cia-disk-signal-"
         "bindings' PB7-BINDING assertion (opus:8-cia.c21, sol:8-cia.c20) already grades this at the "
-        "minimig.v:650 join, over a real CPU bus write. Not graded here.");
+        "minimig.v:660 join, over a real CPU bus write. Not graded here.");
     checks.record(
         "sol:F-signals.c47 opus:F-portsig.c40 (p.351, \"PB6..SEL3* select external 3rd drive\"): "
         "hrm/ch8-cia-disk-signal-bindings' PB6-BINDING (opus:8-cia.c32, sol:8-cia.c30). Not graded here.");
@@ -956,7 +956,7 @@ int main(int argc, char** argv) {
         "sol:F-signals.c55 opus:F-portsig.c48 (p.351, \"F....INDEX*\" / \"PC...not used, disk index*\", "
         "the gloss displaced one row up in the text layer, corpus-defects.md): hrm/ch8-disk-index-"
         "interrupt-path's PROP-FLAG-PIN (opus:8-cia.c56, opus:8-dskint.c9, sol:8-int.c9) pulses "
-        "paula_floppy's real index output across minimig.v:526+:647 onto ciab's flag pin and reads "
+        "paula_floppy's real index output across minimig.v:536+:657 onto ciab's flag pin and reads "
         "ICR=0x90; its PROP-LEVEL6 carries it on to level 6. Not graded here.");
 
     // ------------------------------------------------------------------
@@ -970,7 +970,7 @@ int main(int argc, char** argv) {
     // has no signal named DTR, RTS, carrier-detect, CTS or DSR -- only
     // generic porta_out[7:6]/porta_in[5:0]; the position half PROP-DDRA-
     // POSITION and FIXTURE-LIVE (porta) above already grade generically.
-    // The name half is minimig.v:648-649, one level above this fixture, and
+    // The name half is minimig.v:658-659, one level above this fixture, and
     // building a minimig-top package to grade it is outside this build
     // task's assignment (top module ciab) -- a real suite-coverage gap,
     // reported as such, not worked around.
@@ -978,25 +978,25 @@ int main(int argc, char** argv) {
     checks.record(
         "sol:F-signals.c36 opus:F-portsig.c29 (p.351, \"PA7..com line DTR*, driven output\"): ciab alone "
         "has no signal named DTR -- only porta_out[7], a generic output bit (graded, position only, under "
-        "PROP-DDRA-POSITION above). The binding of PA7 to DTR specifically is minimig.v:649 "
+        "PROP-DDRA-POSITION above). The binding of PA7 to DTR specifically is minimig.v:659 "
         "(`.porta_out({dtr,rts})`), one level above this boundary. Unlike the PB disk-control names, no "
         "accepted package currently grades this binding at all (verified: classify.note's own \"Not graded "
         "anywhere in hrm/\" is correct) -- a real gap in suite coverage, out of this ciab-only package's "
         "assigned scope to close. Not graded here.");
     checks.record(
         "sol:F-signals.c37 opus:F-portsig.c30 (p.351, \"PA6..com line RTS*, driven output\"): same reason "
-        "as sol:F-signals.c36, for PA6/RTS (minimig.v:649). Not graded here.");
+        "as sol:F-signals.c36, for PA6/RTS (minimig.v:659). Not graded here.");
     checks.record(
         "sol:F-signals.c38 opus:F-portsig.c31 (p.351, \"PA5..com line carrier detect*\"): same reason, for "
-        "PA5/carrier-detect (minimig.v:648). PA5 is an INPUT bit, not output, but the boundary argument is "
+        "PA5/carrier-detect (minimig.v:658). PA5 is an INPUT bit, not output, but the boundary argument is "
         "identical: the name binding is minimig-level, the position/transparency half is covered by "
         "FIXTURE-LIVE (porta) above. Not graded here.");
     checks.record(
         "sol:F-signals.c39 opus:F-portsig.c32 (p.351, \"PA4..com line CTS*\"): same reason, for PA4/CTS "
-        "(minimig.v:648). Not graded here.");
+        "(minimig.v:658). Not graded here.");
     checks.record(
         "sol:F-signals.c40 opus:F-portsig.c33 (p.351, \"PA3..com line DSR*\"): same reason, for PA3/DSR "
-        "(minimig.v:648). Not graded here.");
+        "(minimig.v:658). Not graded here.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

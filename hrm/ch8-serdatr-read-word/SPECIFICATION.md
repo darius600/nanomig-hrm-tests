@@ -18,10 +18,10 @@ full JSON (`opus:8-serdatr.c2`) was read before the quote-only extraction
 below was set up, and its `classify.evidence` field is dense with RTL detail
 — `paula_uart`'s full port list (`clk`, `clk7_en`, `reset`, `rga_i`,
 `data_i`, `data_o`, `uartbrk`, `rbfmirror`, `txint`, `rxint`, `txd`, `rxd`),
-the SERDATR read-word assembly at `paula_uart.v:258`
+the SERDATR read-word assembly at `paula_uart.v:272`
 (`serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd}` at bits 15..11, a
 literal `1'b0` at bit 10, `rx_data[9:0]` at bits 9..0), and the register
-address constant `paula_uart.v:22`. This is the same shape of exposure the
+address constant `paula_uart.v:27`. This is the same shape of exposure the
 build brief names for slice s3 — a bundling the builder did not create and
 could not avoid while learning what the 123 claims even were, since each
 claim record bundles `extract` and `classify` in one JSON object. Every
@@ -460,7 +460,7 @@ distinctly before any content-specific assertion below is graded.
   change on `rxd` should be visible at bit 11 with no more delay than the
   read cycle itself takes.
 - **This is finding candidate S4-C3.** Per the candidates file: the path is
-  `rxd` -> two synchroniser flops (`paula_uart.v:36-42`) -> one more
+  `rxd` -> two synchroniser flops (`paula_uart.v:46-52`) -> one more
   register, so the bit tracks `rxd` with a fixed multi-cycle delay rather
   than combinationally. Whether "direct" forbids a synchroniser is not this
   package's question to settle; the measured delay is. Expected: **RED**,

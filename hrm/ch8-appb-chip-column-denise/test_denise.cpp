@@ -10,18 +10,18 @@
 //   p.289 (Appendix B row for each register), composed with printed p.287
 //   (the chip-letter legend).
 // Fixture boundary: `denise` (denise.v) and every module it itself
-//   instantiates -- denise_bitplanes (bplm0, denise.v:345, which itself
+//   instantiates -- denise_bitplanes (bplm0, denise.v:361, which itself
 //   instantiates denise_bitplane_shifter, denise_bitplanes.v:446-573,
 //   whose bitplane_ram sits on the unbuilt DENISE_EBR branch),
 //   denise_playfields (plfm0,
-//   denise.v:377), denise_sprites (sprm0, denise.v:393, which itself
+//   denise.v:412), denise_sprites (sprm0, denise.v:429, which itself
 //   instantiates denise_sprites_shifter, denise_sprites.v:319-453, whose
 //   sprite_ram sits on the unbuilt DENISE_EBR branch), denise_spritepriority (spm0,
-//   denise.v:419), denise_colortable (clut0, denise.v:440, which itself
+//   denise.v:473), denise_colortable (clut0, denise.v:487, which itself
 //   instantiates denise_colortable_ram_mf, denise_colortable.v:39), and
-//   denise_hamgenerator (ham0, denise.v:459, which also instantiates
+//   denise_hamgenerator (ham0, denise.v:506, which also instantiates
 //   denise_colortable_ram_mf, denise_hamgenerator.v:38), and
-//   denise_collision (col0, denise.v:474). No other module is compiled into
+//   denise_collision (col0, denise.v:521). No other module is compiled into
 //   this package -- confirmed by this file's own Makefile SRC list, the only
 //   place a module could be added.
 // Non-goals: anything outside the `denise` fixture this package builds, and
@@ -40,10 +40,10 @@
 //   Measured directly against this RTL (grep over denise.v and every module
 //   listed above, zero hits for "00a", "00c" or "036" as an address):
 //   JOY0DAT ($00A), JOY1DAT ($00C) and JOYTEST ($036) are decoded nowhere in
-//   `denise`'s own hierarchy. denise.v's own address table (denise.v:56-65)
+//   `denise`'s own hierarchy. denise.v's own address table (denise.v:57-66)
 //   is DIWSTRT $08E, DIWSTOP $090, DIWHIGH $1E4, BPLCON0 $100, BPLCON2 $104,
 //   BPLCON3 $106, BPLCON4 $10C, DENISEID $07C, BPL1DAT $110 and COLORBASE
-//   $180 (base of a range, denise.v:221/434). None of the seven submodules
+//   $180 (base of a range, denise.v:222/434). None of the seven submodules
 //   listed above decode any address at all except denise_bitplanes,
 //   denise_sprites, denise_colortable, denise_hamgenerator and
 //   denise_collision, and grep over all of them for "00a"/"00c"/"036" is
@@ -51,10 +51,10 @@
 //   JOY0DAT/JOY1DAT/JOYTEST ARE decoded in userio.v (parameters JOY0DAT =
 //   9'h00a, JOY1DAT = 9'h00c at userio.v:54-55, JOYTEST = 9'h036 at
 //   userio.v:61, used at userio.v:290-317), a SIBLING module instantiated as
-//   USERIO1 in minimig.v:551 -- never inside denise.v (instantiated
-//   separately as DENISE1 at minimig.v:579), and not part of this package's
+//   USERIO1 in minimig.v:561 -- never inside denise.v (instantiated
+//   separately as DENISE1 at minimig.v:589), and not part of this package's
 //   Makefile SRC list. Both USERIO1 and DENISE1 are wired to the same
-//   `reg_address`/`custom_data_in` buses in minimig.v (minimig.v:556-557,
+//   `reg_address`/`custom_data_in` buses in minimig.v (minimig.v:566-567,
 //   588-589), confirming they are address-bus siblings, not a
 //   parent/submodule pair.
 //
@@ -96,13 +96,13 @@
 //   prior reasoning.
 //
 // FIXTURE LIVENESS (A0). Independent of any claim: denise.v's OWN internal
-//   BPLCON0 register ($100, denise.v:59/175-176) is round-tripped with two
+//   BPLCON0 register ($100, denise.v:60/175-176) is round-tripped with two
 //   distinct words before any claim-bearing register is trusted, proving the
 //   reg_address_in -> internal register -> observable-output path is alive
 //   at all. BPLCON0 is used rather than a register with a read-back path
 //   because two of its bits are wired straight to denise's own top-level
-//   output ports -- bit 15 to `hires` (denise.v:180) and bit 6 to `shres`
-//   (denise.v:187) -- so "the value arrived" is observed on a primary
+//   output ports -- bit 15 to `hires` (denise.v:182) and bit 6 to `shres`
+//   (denise.v:189) -- so "the value arrived" is observed on a primary
 //   output, not inferred from a read multiplexer that could itself be the
 //   thing under test.
 //
@@ -217,10 +217,10 @@ int main(int argc, char** argv) {
     // Register addresses: documented Amiga custom-chip byte offsets (printed
     // Appendix B), presented as word indices (byte address >> 1) on
     // reg_address_in[8:1] -- confirmed at denise.v:39 (`input wire [9-1:1]
-    // reg_address_in`) and denise.v:56-65's own address table, and used the
+    // reg_address_in`) and denise.v:57-66's own address table, and used the
     // same way by every package in this tree (e.g.
     // ch8-appb-chip-column-paula's own ADKCON/SERDAT addresses).
-    const int BPLCON0 = 0x80;  // write, byte $100 -- denise.v:59
+    const int BPLCON0 = 0x80;  // write, byte $100 -- denise.v:60
     const int JOY0DAT = 0x05;  // byte $00A -- userio.v:54, NOT in this fixture
     const int JOY1DAT = 0x06;  // byte $00C -- userio.v:55, NOT in this fixture
     const int JOYTEST = 0x1B;  // byte $036 -- userio.v:61, NOT in this fixture
@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
     // BUILD-BRIEF's own requirement that the fixture prove it can deliver a
     // known, distinct word before any claim-bearing assertion is trusted.
     // Uses denise.v's own BPLCON0 register and its own hires/shres output
-    // ports (denise.v:59, 175-176, 180, 187) -- none of the three claim
+    // ports (denise.v:60, 175-176, 180, 187) -- none of the three claim
     // rows below -- so it cannot be confused with any of them.
     // ========================================================================
     do_reset();
@@ -271,8 +271,8 @@ int main(int argc, char** argv) {
             "denise_playfields.v, denise_sprites.v, denise_sprites_shifter.v, sprite_ram.v, denise_spritepriority.v, "
             "denise_colortable.v, denise_colortable_ram_mf.v, denise_hamgenerator.v and denise_collision.v, zero hits). "
             "It IS decoded in userio.v (parameter JOY0DAT = 9'h00a, userio.v:54, used at userio.v:290-292), a sibling "
-            "module instantiated as USERIO1 in minimig.v:551 -- never inside denise.v, which is instantiated separately "
-            "as DENISE1 at minimig.v:579, and not in this package's Makefile SRC list. A CHIP-column letter names which "
+            "module instantiated as USERIO1 in minimig.v:561 -- never inside denise.v, which is instantiated separately "
+            "as DENISE1 at minimig.v:589, and not in this package's Makefile SRC list. A CHIP-column letter names which "
             "chip answers at an address; this fixture never receives userio.v's decode logic and so can return neither "
             "a yes nor a no about it. userio.v is the module that would decide this claim -- p.287's legend names a "
             "chip, not a module, so this absence is not read as disproof, the symmetric counterpart of "
@@ -287,8 +287,8 @@ int main(int argc, char** argv) {
             "1 data (vert,horiz)', composed with p.287's legend 'A=Agnus chip, D=Denise chip, P=Paula chip.'): not "
             "asserted -- JOY1DAT's address ($00C) is decoded nowhere in denise.v or any module it instantiates "
             "(measured: grep, zero hits, same file list as P1). It IS decoded in userio.v (parameter JOY1DAT = 9'h00c, "
-            "userio.v:55, used at userio.v:294), instantiated as USERIO1 in minimig.v:551, never inside denise.v "
-            "(DENISE1, minimig.v:579) and not in this package's SRC list. userio.v is the module that would decide "
+            "userio.v:55, used at userio.v:294), instantiated as USERIO1 in minimig.v:561, never inside denise.v "
+            "(DENISE1, minimig.v:589) and not in this package's SRC list. userio.v is the module that would decide "
             "this claim -- p.287's legend names a chip, not a module, so this absence is not read as disproof, "
             "symmetric with ch8-appb-chip-column-paula's own presence-based rows being declined the same way.");
     }
@@ -301,8 +301,8 @@ int main(int argc, char** argv) {
             "four joystick-mouse counters at once', composed with p.287's legend 'A=Agnus chip, D=Denise chip, P=Paula "
             "chip.'): not asserted -- JOYTEST's address ($036) is decoded nowhere in denise.v or any module it "
             "instantiates (measured: grep, zero hits, same file list as P1). It IS decoded in userio.v (parameter "
-            "JOYTEST = 9'h036, userio.v:61, used at userio.v:317), instantiated as USERIO1 in minimig.v:551, never "
-            "inside denise.v (DENISE1, minimig.v:579) and not in this package's SRC list. userio.v is the module that "
+            "JOYTEST = 9'h036, userio.v:61, used at userio.v:317), instantiated as USERIO1 in minimig.v:561, never "
+            "inside denise.v (DENISE1, minimig.v:589) and not in this package's SRC list. userio.v is the module that "
             "would decide this claim -- p.287's legend names a chip, not a module, so this absence is not read as "
             "disproof, symmetric with ch8-appb-chip-column-paula's own presence-based rows being declined the same "
             "way.");

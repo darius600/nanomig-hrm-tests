@@ -32,9 +32,9 @@
 // METHODOLOGY:
 //
 // (1) ADDRESS (P1, P4, P7): shown by contrast within this module's own
-//   three rows. paula_uart.v:258's data_o mux has exactly one nonzero arm,
+//   three rows. paula_uart.v:272's data_o mux has exactly one nonzero arm,
 //   gated on rga_i==REG_SERDATR[8:1] ($018); presenting the other two
-//   addresses the same way answers 0x0000 (P1). paula_uart.v:52/61's write
+//   addresses the same way answers 0x0000 (P1). paula_uart.v:62/61's write
 //   decodes are each gated on one specific rga_i value ($032/$030); P4/P7
 //   present the SAME data value at the wrong row's address first (no
 //   effect) and then at the claimed address (an effect), so the effect is
@@ -193,7 +193,7 @@ std::string hex16(uint16_t v) {
 // Register byte addresses (printed p.289). rga_i carries address bits
 // [8:1]; a custom-chip byte address is always even, so the port value is
 // the byte address shifted right by one -- read directly from
-// paula_uart.v:21-23's own REG_SERDAT/REG_SERDATR/REG_SERPER localparams
+// paula_uart.v:26-28's own REG_SERDAT/REG_SERDATR/REG_SERPER localparams
 // and their [8:1] comparisons.
 constexpr int A_SERDATR = 0x018;
 constexpr int A_SERDAT  = 0x030;
@@ -302,7 +302,7 @@ public:
 
     // Drives rxd with a start(0) + 8 data bits (LSB-first) + stop(1) frame
     // for byte b, timed at bit_width_ticks clk7_en ticks per bit -- SERPER's
-    // own reload value, read directly from paula_uart.v:172/186/207's
+    // own reload value, read directly from paula_uart.v:182/186/207's
     // {serper[14:0],1'b1} expression (2*SERPER+2 ticks per bit; the same
     // reload feeds both the RX and TX period counters). Returns true if
     // rxint was observed to pulse before the timeout.

@@ -33,7 +33,7 @@
 // the clk7_en/clk7n_en rate). "CPU clock" is therefore operationalized as
 // the `clk7_en` pulse rate at this fixture's own boundary, and "E clock" as
 // one bit of the 10-bit one-hot `eclk` bus -- `eclk[8]`, the specific bit
-// minimig.v:620/645 wires into each CIA's single-bit `eclk` port (confirmed
+// minimig.v:630/645 wires into each CIA's single-bit `eclk` port (confirmed
 // read directly; by the shifter's own symmetry every bit behaves
 // identically, so this choice is cosmetic, made only to match what the
 // rest of the tree actually uses).
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
     // =====================================================================
     {
         Harness h;
-        const int bit = 8;  // the bit minimig.v:620/645 actually wires into each CIA's eclk port
+        const int bit = 8;  // the bit minimig.v:630/645 actually wires into each CIA's eclk port
         // Find the tick index of the first two rising edges of eclk[bit],
         // and the clk7_en pulse count strictly between them. MUT_COUNT_RAW_TICKS
         // counts every clk_28 tick instead of only clk7_en-qualified ones --
