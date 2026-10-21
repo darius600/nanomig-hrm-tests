@@ -65,7 +65,7 @@
 // registered 7MHz clock and c1 = ~c3 delayed one further 28MHz cycle, so
 // across one 7MHz cycle's four 28MHz phases, c1 and c3 are BOTH high in one
 // phase and BOTH low in another -- they are not two disjoint two-phase
-// signals. denise_bitplane_shifter.v:160 gates its shift-register load on
+// signals. denise_bitplane_shifter.v:181 gates its shift-register load on
 // !c1&&!c3. This Harness uses the measured-working four-phase pattern
 // (clk7_en=(phase==0), c1=(phase==0||phase==1), c3=(phase==1||phase==2) --
 // phase 1 has both high, phase 3 has both low), the same relationship
@@ -448,7 +448,7 @@ public:
     // is the clk7_en register-capture phase (also when a BPLxDAT write
     // latches its buffer register, denise_bitplanes.v:487-540); phase 1
     // has c1 AND c3 both high; phase 3 has both low (the shifter load
-    // phase, denise_bitplane_shifter.v:160).
+    // phase, denise_bitplane_shifter.v:181).
     void tick() {
         dut->eval();
         dut->clk = 1;

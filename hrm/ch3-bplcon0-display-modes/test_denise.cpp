@@ -29,7 +29,7 @@
 // phase3: c1=0,c3=0
 // The BPLxDAT buffer registers latch on clk7_en (phase0,
 // denise_bitplanes.v:487-540); the shifter parallel-load fires on
-// !c1&&!c3 (phase3, denise_bitplane_shifter.v:160). This harness was
+// !c1&&!c3 (phase3, denise_bitplane_shifter.v:181). This harness was
 // verified against PACKAGE.md's own MEASURED example
 // (category 0 / A-bpc.intro) before any other claim was asserted.
 

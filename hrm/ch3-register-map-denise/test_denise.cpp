@@ -61,7 +61,7 @@
 //   `{data_in, chip48_fmode}` directly on clk7_en when reg_address_in[8:1]
 //   matches its own address (denise_bitplanes.v:487-540, one block per
 //   plane); the plane shifter's own parallel load is gated on `!c1&&!c3`
-//   (denise_bitplane_shifter.v:160's `if (load && !c1 && !c3)`).
+//   (denise_bitplane_shifter.v:181's `if (load && !c1 && !c3)`).
 //   Harness::tick() below drives, every 28MHz cycle, the measured
 //   working pattern: clk7_en=(phase==0), c1=(phase==0||phase==1),
 //   c3=(phase==1||phase==2) -- so phase 1 has both c1 and c3 high, phase 3
@@ -85,7 +85,7 @@
 //
 //   MEASURED (this package's own build/calibration, not assumed): a single
 //   BPLxDAT write only pulses the plane shifter's parallel load once
-//   (denise_bitplane_shifter.v:159-162, non-EBR path); with nothing to
+//   (denise_bitplane_shifter.v:180-183, non-EBR path); with nothing to
 //   refetch it the way Agnus DMA would on real hardware, the loaded word
 //   shifts/rescrolls out through a 64-bit-deep pipeline and the plane's
 //   output is reliably non-zero for only about one 28MHz tick before it is
@@ -107,7 +107,7 @@
 //   write is what both latches l_bpu (denise.v:197-205) and pulses `load`
 //   a cycle later (denise_bitplanes.v:542-546), which parallel-loads *all* the
 //   plane shifters synchronously from whatever their buffers hold at that
-//   instant (denise_bitplane_shifter.v:159-162).
+//   instant (denise_bitplane_shifter.v:180-183).
 //
 // CLAIM GROUPS -- every one of the 134 claim ids in claims.jsonl is cited,
 //   in full, in exactly one group below (in the assertion string that
@@ -430,7 +430,7 @@ public:
 
     // MEASURED (this file, calibration retained here as documentation):
     // a single BPLxDAT write pulses the plane shifter's parallel load
-    // exactly once (denise_bitplane_shifter.v:159-162); with nothing to
+    // exactly once (denise_bitplane_shifter.v:180-183); with nothing to
     // refetch it the way Agnus DMA would on real hardware, the loaded word
     // shifts out through the shift/scroll/superhires-scroll pipeline and
     // the plane's `out` (denise.v's bpldata[n]) is only reliably non-zero
