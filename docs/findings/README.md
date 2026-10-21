@@ -222,12 +222,19 @@ two lines have drifted apart far enough for that to matter.
 
 Measured across the 28 modules the findings cite, against NanoMig at `4495f86`,
 with `diff --strip-trailing-cr -b` and counting the lines either side has that
-the other lacks:
+the other lacks; the first two items are measured against NanoMig at `4315acb`
+as well:
 
-- **six are identical in all three** — `agnus_audiodma.v`,
+- **five are identical in all three** — `agnus_audiodma.v`,
   `agnus_blitter_adrgen.v`, `denise_collision.v`, `paula_audio_mixer.v`,
-  `paula_intcontroller.v`, `paula_uart.v`. Line numbers match as well as content,
-  so a citation carries across unchanged.
+  `paula_intcontroller.v`, at `4495f86` and at `4315acb`. Line numbers match as
+  well as content, so a citation carries across unchanged.
+- **`paula_uart.v` is identical in MiSTer and TC64, and NanoMig's at `4315acb`
+  differs from both by 18 lines**: the AT-modem bridge's `serper_o` output and
+  `tx_hold` input under `ENABLE_AT_MODEM`, the constant `tx_hold` without it,
+  and the two transmitter terms that test it. From the end of the port list on,
+  NanoMig's line numbers run 5 to 14 higher than theirs; the transmitter and the
+  receiver are 10 higher.
 - **`cia_int.v` is identical in TC64 and 115 lines different in MiSTer.** For
   NM-HRM-063 the closer sibling is TC64.
 - **three are NanoMig's own** — `src/misc/amiga_keymap.v`, `hid.v`, `sysctrl.v` —
