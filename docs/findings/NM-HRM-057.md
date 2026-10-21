@@ -29,10 +29,10 @@
 Two synchroniser flops and one more register:
 
     reg [1:0] rxd_sync = 2'b11;             // paula_uart.v:46
-    rxd_sync <= {rxd_sync[0], rxd};         // :40
-    assign rxds = rxd_sync[1];              // :43
-    rx_rxd <= rxds;                         // :234
-    assign serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd};   // :248
+    rxd_sync <= {rxd_sync[0], rxd};         // :50
+    assign rxds = rxd_sync[1];              // :53
+    rx_rxd <= rxds;                         // :244
+    assign serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd};   // :258
 
 `ch8-serdatr-read-word` measures 3 `clk7_en` enables between a pin change and
 bit 11. `ch8-adkcon-and-interrupt-relations` measures the same 3 edges at the
