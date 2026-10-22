@@ -1,12 +1,10 @@
-# Test specification: AA Blitter pointer and modulo registers, and BEAMCON0 (package aa-s2)
+# Test specification: AA Blitter pointer and modulo registers, and BEAMCON0 (package aa-integ-s2)
 
 This document specifies an integration test package that checks an FPGA
 re-implementation of the Amiga chip set against Commodore's *Functional
-Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91. It was written
-from the package's claims (`claims-spec-stage.jsonl`) and the specification's
-page text alone, with the Amiga Hardware Reference Manual, 3rd edition,
-consulted only where the AA specification builds on it. Its author never saw
-the implementation or any test. "p.N" is a page of the AA specification as the
+Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, with the Amiga
+Hardware Reference Manual, 3rd edition, consulted only where the AA
+specification builds on it. "p.N" is a page of the AA specification as the
 corpus numbers it (`pNN.txt`, the PDF page); "HRM p.N" is a printed page of the
 Hardware Reference Manual. Every expected value comes from an AA page. HRM pages
 are cited only for context and for procedures the AA pages take for granted,
@@ -58,11 +56,12 @@ does speak, it agrees with the mark:
 
 - **Configuration:** `Config.chipset_config = 0x10` (AA selected) and 2 MB
   of Chip memory (`Config.memory_config = 0x03`, "11 = 2.0 MB" in
-  `nanomig_harness.h`). Every run is built from this configuration and the
-  test asserts it before every run (the lines P1-CONFIG ... P7-CONFIG check the
-  test's own configuration: no output of the DUT shows it, no stimulus changes it,
-  and every run keeps it; their mutation changes the object the line reads). P2
-  depends on the 2 MB. PAL is not a
+  `nanomig_harness.h`). The test holds one `Config` object. Every harness of
+  every run, in a normal, partial or mutation run alike, is built from that
+  object, and the line CONFIG asserts it once, first, in every run: no output of
+  the DUT shows the configuration and no stimulus changes it. The mutation of
+  CONFIG changes that object (`chipset_config` 0x08), so the runs themselves are
+  built from a non-AA configuration. P2 depends on the 2 MB. PAL is not a
   harness setting: `Config` has no field for it. Every run selects the PAL
   decodes itself, through BEAMCON0 bit 5 (2.2).
 - **CPU cores and which build is graded:** every run is executed on both
@@ -531,6 +530,26 @@ value `V` in V1, V2 there is one blit, eight in all, each with `W = 1`, `H = 1`
 - For `x` = D: the D-only blit with the D pointer `V`.
 - `R_x` is `V` to `V + $FF`.
 
+**Every address bit on every channel.** The two checkerboard values V1 and V2
+swap to the same observations when two address bits that carry the same value
+in both are exchanged, so they do not show that each of the 20 address bits
+(1-20) is the bit the page says. A second program (`prog_p2w`) therefore
+runs, for each channel `x` in A, B, C, D and each address bit `b` in 1-20, two
+blits of the same form as above (`W = 1`, `H = 1`): a *walking one*, with the
+pointer `1 << b` (byte address; exactly that address bit set), and a *walking
+zero*, with the pointer `$1FFFFE` with bit `b` clear. That is 160 blits. The
+channel's single access must be at exactly the pointer written (the port shows
+the byte address of the word), a read for A, B and C and a write for D. The
+neutral D pointer is `$0F0000` as above. The blits' accesses are the port
+accesses between `BLIT_GO` and `BLIT_DONE` that no address of the CPU's own
+(program image, results and marker area, the stack below `PROGRAM_STACK`) and
+no refresh access (byte address `$000000`) explains. The walking-bit blits have
+their own fixture (P2W-FIXTURE), address map (P2W-MAP: the single word of every
+pointer lies outside the program image, the results area, the marker area and
+the stack), anchor (P2W-ANCHOR: with BLTEN clear the same 160 blits make no such
+access) and finished check (P2W-FINISHED, as P2-FINISHED); the assertions are
+P2-WALK1 and P2-WALK0.
+
 **Contrast from above.** For each channel `x`, one more blit as above with
 `V1`, except that channel `x`'s PTH is written as `$0035` (bit 5 set; PTL
 `$5554`), four in all. p.6: "+=Address register pair.Low word uses
@@ -553,8 +572,11 @@ above any access in the window at byte `$355554-$355653`.
 | V2 = `$0AAAAA` | `$055555` |
 | V1 with PTH `$0035` | `$0AAAAA`, and no access at byte `$355554-$355653` |
 
+| walking one, bit `b` (`1 << b`) | the word at byte address `1 << b`, for `b` = 1-20 |
+| walking zero, bit `b` (`$1FFFFE` with bit `b` clear) | the word at that byte address, for `b` = 1-20 |
+
 This holds for every channel. A dropped, stuck or swapped address bit makes at
-least one of the first two differ; a pointer wider than the "20 bit address"
+least one of the first two differ and at least one walking blit; a pointer wider than the "20 bit address"
 (p.13) makes the third differ.
 
 **Preconditions,** each with its contrasting case:
@@ -563,7 +585,7 @@ least one of the first two differ; a pointer wider than the "20 bit address"
   configuration.
 - **The program image, stack and results do not overlap either region.**
   Asserted from the program's own address map.
-- **F1 anchor and blit finished,** as in P1, with the same contrasts.
+- **F1 anchor and blit finished,** as in P1, with the same contrasts, for the 12 blits above and, separately, for the 160 walking-bit blits (P2W-ANCHOR, P2W-FINISHED).
 
 **Contrasting case.**
 
