@@ -546,8 +546,9 @@ accesses between `BLIT_GO` and `BLIT_DONE` that no address of the CPU's own
 no refresh access (byte address `$000000`) explains. The walking-bit blits have
 their own fixture (P2W-FIXTURE), address map (P2W-MAP: the single word of every
 pointer lies outside the program image, the results area, the marker area and
-the stack), anchor (P2W-ANCHOR: with BLTEN clear the same 160 blits make no such
-access) and finished check (P2W-FINISHED, as P2-FINISHED); the assertions are
+the stack), anchor (P2W-ANCHOR: with BLTEN clear the 16 blits of address bits 1 and 20 of
+every channel and mode make no such access; a blit that makes no memory cycle
+waits for the timeout of 2.2, so the 160 blits cannot all run) and finished check (P2W-FINISHED, as P2-FINISHED); the assertions are
 P2-WALK1 and P2-WALK0.
 
 **Contrast from above.** For each channel `x`, one more blit as above with
@@ -975,22 +976,30 @@ depending on the machine, and HRM p.229 names pin 6 as the fire-button line
 ("Input and output for pin 6 (port 1 & 2 fire buttons)"). The harness has
 no light-pen function of its own. The test drives pin 6 of both controller
 ports together through the fire inputs of the port list's `joystick0` and
-`joystick1`, set with `ports()`, so the port question does not arise.
+`joystick1`, set with `ports()`, so the port question does not arise. That
+pin 6 of both ports is driven is shown by the program itself and not by the
+chip's reaction to it: the same pin is the fire input of CIA-A port register A
+(`$BFE001`), bit 7 for port 2 (/FIR1) and bit 6 for port 1 (/FIR0), low while
+the button is pressed (HRM p.229 "CIAAPRA ($BFE001) Input and output for
+pin 6 (port 1 & 2 fire buttons)"; HRM p.339 "BFE001 pra /FIR1 /FIRO ...").
 
 **Stimulus.**
 
 1. Set `DMACON = $7FFF` and `BPLCON0 = $0000`.
 2. Set `BEAMCON0 = $0020` (P8-0: LPENDIS = 0) or `$2020` (P8-1: LPENDIS = 1).
-3. Frame sync, then poll VPOSR/VHPOSR (F4) until `V = 254` and `H >= $80`.
+3. Frame sync, then poll VHPOSR (F4) until `V = 254`.
 4. Set `BPLCON0 = $0008` (LPEN).
 5. Write marker `LP_GO`.
-6. Take `N` samples in one loop: the F4 long word, then HHPOSR (word).
+6. Take `N` samples in one loop: one read of the CIA-A port register A byte,
+   then the F4 long word, the word HHPOSR, and the CIA byte as a word.
 7. Write marker `LP_END`, then set `BPLCON0 = $0000`.
 
 **The pulse.** The test drives pin 6 of both controller ports to its active
-(pressed) level for at most `2*T_C`, then releases it. The pulse starts at `LP_GO + D`, where `D` and
-`N` are fitted per CPU core from the dry run below. They must satisfy all of
-the following:
+(pressed) level for one sample interval plus `2*T_C`, then releases it, so
+that at least one read of the CIA fire inputs falls inside it. The pulse
+starts 2 system clocks after the last store of the sample `ip`, at `LP_GO + D`,
+where `D` and `N` are fitted per CPU core from the dry run below. They must
+satisfy all of the following:
 
 - at least 4 samples fall before the pulse;
 - at least 8 fall after it;
@@ -998,11 +1007,12 @@ the following:
 - in the dry run the samples after the pulse reach `V >= 256`, so that the
   running counter changes VPOSR bit 0 (V8) inside the window.
 
-**Dry run P8-dry:** as P8-0 without the pulse.
+**Dry run P8-dry:** as P8-0 without the pulse. It is asserted first (the
+fixture), and no sample of it is printed or used before that line.
 
 **Observation.** The samples, each dated by its store time at the port (F4):
 
-- "before" samples were stored before the pulse started;
+- "before" samples were stored completely before the pulse started;
 - "after" samples were stored more than one sample interval after the pulse
   ended.
 
@@ -1022,7 +1032,13 @@ not graded: p.12 speaks of the "beam hit position".
     sample is dated by its store, and the read that produced it happened up
     to one sample interval earlier.
   - The hit's `V` is 255, so VPOSR bit 0 (V8) stays 0 in the "after" samples.
-- **P8-0, HHPOSR:** all "after" samples are identical.
+- **P8-0, HHPOSR:** all "after" samples are identical, and that value lies
+  between the alternate counter at the last "before" sample and the alternate
+  counter at the first "after" sample. Both are the HHPOSR values of the dry
+  run's samples of the same indices: the pulse runs are cycle-aligned with the
+  dry run up to the pulse (precondition 5), so the dry run, which has no
+  trigger, dates the running counter at those two samples. A constant that
+  does not lie between them is not the position latched at the trigger.
 - **P8-1:**
   - The samples show the counters running across the whole window, including
     after the pulse: every two consecutive samples satisfy the three criteria of
@@ -1032,31 +1048,38 @@ not graded: p.12 speaks of the "beam hit position".
     shown to read the actual counter.
   - HHPOSR: consecutive "after" samples are not all identical.
 
-All three registers are graded in both settings, subject to precondition 3.
+VPOSR and VHPOSR (P8-0-VH, P8-1-VH) are graded whenever preconditions 1, 2, 4
+and 5 hold, whether or not any counter freezes: that a chip does not latch the
+position is what P8-0-VH then reports. HHPOSR (P8-0-HH, P8-1-HH) is graded
+when precondition 3 also holds. The aggregate P8 is graded when all of its
+parts can be graded, and also when a part that can be graded is already red,
+since one red part falsifies the conjunction.
 
 **Preconditions,** each with its contrasting case:
 
-1. **The trigger reaches the chip:** the pulse freezes `(V,H)` in at least
-   one of P8-0 and P8-1 (all "after" samples identical). Which LPENDIS
-   setting shows the latched value is what P8 grades, so the precondition
-   does not name one: an implementation that reads the latch with LPENDIS
-   high instead of low still passes this precondition and is red in both
-   expectations. If neither run freezes, the chip did not see the trigger,
-   and P8 is reported as not checkable. The green of P8-1 means something
-   only when this precondition holds. Contrast: P8-dry (no pulse), whose
-   samples advance throughout. The page speaks of a latched value only where
-   a hit exists; HRM p.239 describes the trigger.
+1. **The trigger reaches pin 6.** In each pulse run the CIA-A fire inputs
+   (`$BFE001` bits 7 and 6) read low in at least one sample read while the
+   pulse is driven, and high in every sample stored before the pulse started
+   and in every sample stored more than one sample interval after it ended.
+   This does not depend on what the chip does with the trigger. Contrast: the
+   same run without the pulse, in which no sample reads low.
 2. **LPE enables the latch.** Contrast: P8-0 with step 4 writing
    `BPLCON0 = $0000`. The samples then advance through the pulse, showing the
    counters running by the criteria of the F4 anchor: "LPEN =Light
    pen enable" (p.17), and p.12 conditions the latched read on LPE.
 3. **The alternate counter runs,** so that HHPOSR can be graded. In P8-dry,
-   HHPOSR takes at least two different values. If it does not, HHPOSR is not
-   graded in either setting (reported). A counter that never moves would pass
-   the freeze check without meaning anything. The page does not say whether
-   this counter runs with DUAL = 0.
+   HHPOSR takes at least two different values and is higher at the first
+   "after" sample than at the last "before" sample. If not, HHPOSR is not
+   graded in either setting (reported as not checkable). A counter that never
+   moves would pass the latch check without meaning anything. The page does not
+   say whether this counter runs with DUAL = 0. Contrast: a dry run of one
+   sample, in which HHPOSR cannot take two values.
 4. **F4 anchor** in P8-dry. Contrast: none beyond the P8-0 freeze, which is
    the same measurement going the other way.
+5. **The pulse runs are aligned with the dry run.** Each "before" sample of
+   both pulse runs is stored at the same time after `LP_GO` as the dry run's
+   sample of the same index and shows the same `V`, `H` and HHPOSR. Contrast:
+   a pulse program with four more instructions in the sample loop.
 
 **Contrasting case.** P8-1 against P8-0: same stimulus, LPENDIS changed, and
 the page predicts running counters instead of a frozen value.
@@ -1856,10 +1879,11 @@ Mutation variants (a symbol defined before the include) and the labels that sele
 4. **LOL per line.** The LOL of a sampled line is that of the line's first sample: a sample taken after H wraps and before V steps carries the next line's LOL.
 5. **P14-STABLE.** Two consecutive frames give the same V_max and the same frame period in units of T_L, the period divided by the mean line period of the
    stopped frame and rounded to a whole number of lines.
-6. **P8.** The dry run takes 300 samples. D and N are fitted from it per core: the pulse starts 2 system clocks after the store of the sample three
+6. **P8.** The dry run takes 120 samples (about 25 lines). D and N are fitted from it per core: the pulse starts 2 system clocks after the last store of the sample three
    before the last sample on line 255, and the run takes samples up to 14 after that one. The F4 anchor is evaluated over those N samples. The pulse lasts
-   2*T_C system clocks. P8-HHRUN and P8-TRIGGER are reports: when HHPOSR takes one value only in the dry run, or no pulse run freezes (V,H), the dependent lines are
-   NOT GRADED, as section 3, P8, preconditions 1 and 3 say.
+   one sample interval (the median difference of the dry run's store times) and 2*T_C system clocks, so that a CIA read falls inside it. P8-TRIGGER is graded: it holds
+   when the CIA fire inputs show the pulse (section 3, P8, precondition 1). P8-HHRUN is an anchor: when HHPOSR does not run across the pulse in the dry run it prints
+   `NOT CHECKABLE` and the HHPOSR lines are NOT GRADED, as section 3, P8, precondition 3 says.
 7. **F5 anchors.** S-H and S-V hold or do not hold; an S-H part that does not hold prints `NOT CHECKABLE`, never `FAIL`; an S-V that does not hold prints `FAIL` on F5-SV-DIFF and leaves the VSY* lines NOT GRADED. S-V is S-V1 against S-V2 alone; S-V3 is the
    graded line F5-SV-INV, which prints FAIL on a chip that ignores VSYTRUE and does not decide whether the VSY* lines are graded. The runs of P9 and P10 are not
    taken when neither part holds; P9-NH, P9-NC and P10-CPAIR assert identity at every sample and take their own runs. P9-A grades opus:AA-beamcon0.c15,
