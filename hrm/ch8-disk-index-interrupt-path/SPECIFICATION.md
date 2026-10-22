@@ -220,7 +220,7 @@ This document is written from the 7 claims' `extract.quote` /
 `classify.evidence` content and the build task's own text, both required
 reading before step 1. Facts used above that are properly RTL-derived —
 `paula_floppy.v:93` declaring the `index` output, `paula_floppy.v:576`'s
-synthesis expression for `index`, `minimig.v:536/647/646/511`'s four join
+synthesis expression for `index`, `minimig.v:536/657/656/521`'s four join
 lines, `cia_int.v:57` and `:62-66`'s FLG-latch/`irq` terms, the ICR=0x90
 and INTREQR=0x2000/`_ipl` measurements already taken on `ciab` and
 `paula_intcontroller`, and `paula_intcontroller`'s port list at

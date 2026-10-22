@@ -9,29 +9,29 @@
 //   were not read -- ciaa/ciab instantiate them for the timers, which none
 //   of this package's assertions touch, the same scoping call
 //   ch8-ciaapra-address-window made for the identical reason).
-//   minimig.v lines 600-651 (ciaa CIAA1 / ciab CIAB1 instantiations) and
-//   762-819 (gary GARY1 instantiation) -- the wiring this rig reproduces.
+//   minimig.v lines 610-661 (ciaa CIAA1 / ciab CIAB1 instantiations) and
+//   772-829 (gary GARY1 instantiation) -- the wiring this rig reproduces.
 //
 // THE JOINS THIS RIG MAKES, and the minimig.v line each one reproduces:
-//   - gary.cpu_address_in <- this rig's cpu_address         (minimig.v:765)
-//   - ciaa.aen <- gary.sel_cia_a                             (minimig.v:612)
-//   - ciab.aen <- gary.sel_cia_b                             (minimig.v:637)
-//   - ciaa.rs  <- cpu_address[11:8]                          (minimig.v:616)
-//   - ciab.rs  <- cpu_address[11:8]                          (minimig.v:641)
-//   - ciaa.data_in <- cpu_data_out[7:0]  (LOW byte lane)     (minimig.v:617)
-//   - ciab.data_in <- cpu_data_out[15:8] (HIGH byte lane)    (minimig.v:642)
-//   - ciaa.wr <- cpu_lwr | cpu_hwr                           (minimig.v:614)
-//   - ciab.wr <- cpu_hwr | cpu_lwr                           (minimig.v:639)
-//   - ciaa.rd <- cpu_rd, ciab.rd <- cpu_rd (same signal)     (minimig.v:613,638)
+//   - gary.cpu_address_in <- this rig's cpu_address         (minimig.v:775)
+//   - ciaa.aen <- gary.sel_cia_a                             (minimig.v:622)
+//   - ciab.aen <- gary.sel_cia_b                             (minimig.v:647)
+//   - ciaa.rs  <- cpu_address[11:8]                          (minimig.v:626)
+//   - ciab.rs  <- cpu_address[11:8]                          (minimig.v:651)
+//   - ciaa.data_in <- cpu_data_out[7:0]  (LOW byte lane)     (minimig.v:627)
+//   - ciab.data_in <- cpu_data_out[15:8] (HIGH byte lane)    (minimig.v:652)
+//   - ciaa.wr <- cpu_lwr | cpu_hwr                           (minimig.v:624)
+//   - ciab.wr <- cpu_hwr | cpu_lwr                           (minimig.v:649)
+//   - ciaa.rd <- cpu_rd, ciab.rd <- cpu_rd (same signal)     (minimig.v:623,648)
 //   - ciaa.porta_in <- {_fire1,_fire0,_ready,_track0,_wprot,_change}
 //         -- the six disk/joystick sense bits PROP-TWO-PORTS names
-//                                                             (minimig.v:622)
+//                                                             (minimig.v:632)
 //   - ciab.portb_out -> {_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step}
 //         -- the eight disk control bits PROP-TWO-PORTS and
-//            PROP-CIABPRB-WINDOW name                        (minimig.v:650)
+//            PROP-CIABPRB-WINDOW name                        (minimig.v:660)
 //   - ciab.flag <- (this rig's ciab_flag input; minimig.v wires the real
 //         disk index pulse `index` here) -- the mechanism
-//         PROP-DSKINDEX-WINDOW's ICR bit rides on             (minimig.v:647)
+//         PROP-DSKINDEX-WINDOW's ICR bit rides on             (minimig.v:657)
 // This rig does NOT reproduce the disk-signal *names* as internal wires
 // (no `_ready`, `_motor`, etc. exist inside this file) -- it exposes the
 // generic ciaa/ciab port positions those minimig.v lines connect to,
@@ -82,10 +82,10 @@ module cia_disk_port_windows_rig
 	input             cpu_rd,
 	input             cpu_hwr,
 	input             cpu_lwr,
-	// [7:0] -> ciaa.data_in (minimig.v:617), [15:8] -> ciab.data_in (minimig.v:642)
+	// [7:0] -> ciaa.data_in (minimig.v:627), [15:8] -> ciab.data_in (minimig.v:652)
 	input      [15:0] cpu_data_out,
-	output     [7:0]  cia_a_data_out,  // ciaa's own data_out (minimig.v:618 lands this on cia_data_out[7:0])
-	output     [7:0]  cia_b_data_out,  // ciab's own data_out (minimig.v:643 lands this on cia_data_out[15:8])
+	output     [7:0]  cia_a_data_out,  // ciaa's own data_out (minimig.v:628 lands this on cia_data_out[7:0])
+	output     [7:0]  cia_b_data_out,  // ciab's own data_out (minimig.v:653 lands this on cia_data_out[15:8])
 
 	// gary's decode outputs, exposed so the precondition and the overlap
 	// fact are asserted directly rather than inferred from data content.
@@ -93,8 +93,8 @@ module cia_disk_port_windows_rig
 	output            sel_cia_a,
 	output            sel_cia_b,
 
-	// ciaa's own remaining ports (minimig.v:607-630)
-	input      [7:2]  ciaa_porta_in,   // minimig.v:622 -- disk sense + joystick fire bits
+	// ciaa's own remaining ports (minimig.v:617-640)
+	input      [7:2]  ciaa_porta_in,   // minimig.v:632 -- disk sense + joystick fire bits
 	output     [3:0]  ciaa_porta_out,
 	input      [7:0]  ciaa_portb_in,
 	input             ciaa_tick,
@@ -106,13 +106,13 @@ module cia_disk_port_windows_rig
 	output            freeze,
 	input             hrtmon_en,
 
-	// ciab's own remaining ports (minimig.v:633-651)
+	// ciab's own remaining ports (minimig.v:643-661)
 	input      [5:0]  ciab_porta_in,
 	output     [7:6]  ciab_porta_out,
-	output     [7:0]  ciab_portb_out,  // minimig.v:650 -- disk control bits
+	output     [7:0]  ciab_portb_out,  // minimig.v:660 -- disk control bits
 	input             ciab_tick,
 	input             ciab_eclk,
-	input             ciab_flag,       // minimig.v:647 -- DSKINDEX*'s mechanism
+	input             ciab_flag,       // minimig.v:657 -- DSKINDEX*'s mechanism
 	output            ciab_irq
 );
 

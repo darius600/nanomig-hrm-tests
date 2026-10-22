@@ -256,7 +256,7 @@ static bool eq(const Px& a, const Px& b) {
   return a.r == b.r && a.g == b.g && a.b == b.b;
 }
 
-// Trap 2 (given): denise_bitplanes.v:102-108 decodes hpos[3:2] into 0/4/8/12
+// Trap 2 (given): denise_bitplanes.v:388-394 decodes hpos[3:2] into 0/4/8/12
 // lores pixels of EXTRA SCROLL DELAY (extra_delay_f0), latched into
 // extra_delay_r at the tick load becomes active and added into pf1h_del /
 // pf2h_del, which select where in the 64-bit scroller history the displayed
@@ -710,7 +710,7 @@ static void measureEhb() {
 
 static void measureBplcon3Effect() {
   // brdrblnk (BPLCON3 bit5) forces the border area to black when ecs=1 and
-  // ecsena(BPLCON0 bit0)=1 (denise.v:253,515, confirmed by reading denise.v).
+  // ecsena(BPLCON0 bit0)=1 (denise.v:253,562, confirmed by reading denise.v).
   // Compare the border colour (outside the window, where COLOR00 would
   // otherwise show) with brdrblnk=0 vs brdrblnk=1.
   // no loadPlanes() here: the border-area check depends only on

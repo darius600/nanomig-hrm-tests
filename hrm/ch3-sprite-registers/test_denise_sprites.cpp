@@ -53,10 +53,10 @@
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
 //
-// BOUNDARY: nanomig/src/minimig-aga/denise_sprites.v:54,67 (SPRPOSCTLBASE
+// BOUNDARY: nanomig/src/minimig-aga/denise_sprites.v:367 (SPRPOSCTLBASE
 //   9'h140), per PACKAGE.md, whose own evidence field additionally cites
 //   the sprite resolution select at denise.v:252 (`spres` =
-//   `bplcon3[7:6] & aga`) and denise.v:425-426/393-416 (instantiation
+//   `bplcon3[7:6] & aga`) and denise.v:425-426/450-468 (instantiation
 //   with `reg_address_in`, `hpos`, `sprena`). That `& aga` term means
 //   `spres` can only be non-zero one level up, in denise.v, when `aga` is
 //   also set -- a fact about denise.v's wiring, outside this package's

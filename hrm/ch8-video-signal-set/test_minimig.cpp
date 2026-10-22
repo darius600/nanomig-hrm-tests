@@ -43,10 +43,10 @@
 //   signals under test).
 //
 //   Internally, traced by reading the RTL (never modified): minimig.v:
-//   247-249 declares red/green/blue as denise.v's own output ports,
+//   252-254 declares red/green/blue as denise.v's own output ports,
 //   wired straight through (minimig.v:602-605, "denise DENISE1 (...
 //   .red(red), .green(green), .blue(blue) ...)"); minimig.v:245-247/
-//   459-461 does the same for _hsync/_vsync/_csync from agnus.v, which
+//   464-466 does the same for _hsync/_vsync/_csync from agnus.v, which
 //   itself gets _csync from agnus_beamcounter.v:421 (`assign _csync =
 //   _hsync & _vsync | vser;`). Inside denise.v: COLORBASE = 9'h180
 //   (denise.v:66) is the base of the 32-entry colour table at

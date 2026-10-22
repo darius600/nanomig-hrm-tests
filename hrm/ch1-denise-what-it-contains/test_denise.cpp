@@ -36,7 +36,7 @@
 //   this package's scope. Only 4 propositions (9 claims) are graded here,
 //   on 4 expect() assertions plus one infrastructure liveness control.
 //
-// RTL POSITIONS USED: BPLCON0[15]=hires, BPLCON0[6]=shres (denise.v:182/187);
+// RTL POSITIONS USED: BPLCON0[15]=hires, BPLCON0[6]=shres (denise.v:182/189);
 //   the write-decode mechanism (denise.v:176-178). No address used by
 //   userio.v/paula.v/agnus.v (e.g. JOY0DAT, word address 0x05/$00A) appears
 //   anywhere in denise.v or any module it instantiates (grep: zero hits),
@@ -44,21 +44,21 @@
 //   three JOY*/JOYTEST rows.
 //
 // BOUNDARY: `denise` (denise.v) and every module it itself instantiates --
-//   denise_bitplanes (bplm0, denise.v:361), denise_playfields (plfm0,
-//   denise.v:412), denise_sprites (sprm0, denise.v:429), denise_
+//   denise_bitplanes (bplm0, denise.v:379), denise_playfields (plfm0,
+//   denise.v:412), denise_sprites (sprm0, denise.v:450), denise_
 //   spritepriority (spm0, denise.v:473), denise_colortable (clut0,
 //   denise.v:487), denise_hamgenerator (ham0, denise.v:506), denise_
 //   collision (col0, denise.v:521), and each of THEIR OWN submodules
 //   (denise_bitplane_shifter, bitplane_ram, denise_sprites_shifter,
 //   sprite_ram, denise_colortable_ram_mf) -- per this file's own Makefile
 //   SRC list, the only place a module could be added. Port list (denise.v:
-//   32-51): clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
+//   32-52): clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
 //   data_in[15:0], chip48[47:0], data_out[15:0] (out), blank (IN -- an
 //   external blanking signal denise CONSUMES, not one it produces; the
 //   classify.evidence of this package's claims c54/c53 (declined as B4
 //   below) proposes reading `blank` as an output, which this port list
 //   contradicts; B4 is declined on independent grounds regardless),
-//   red/green/blue[7:0] (out), a1k, ecs, aga, hires (out),
+//   blank_out (out), red/green/blue[7:0] (out), a1k, ecs, aga, hires (out),
 //   shres (out). No CPU address/data/interrupt-acknowledge port of any
 //   kind is declared anywhere in this list -- the register bus (reg_
 //   address_in/data_in) is the only content-bearing input.
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     Vdenise* dut = new Vdenise;
     Checks checks;
 
-    const int BPLCON0 = 0x80;  // write word-address, byte $100 -- denise.v:60/175
+    const int BPLCON0 = 0x80;  // write word-address, byte $100 -- denise.v:60/177
     const int OUTSIDE_ADDR = 0x05;  // JOY0DAT, byte $00A -- userio.v, NOT in this fixture
 
     int clk7_cycle = 0;
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
     // [control] FIXTURE-LIVE-BPLCON0 -- no claim id, no page: the fixture
     // proves it can deliver a known, distinct value before any
     // claim-bearing assertion is trusted. BPLCON0
-    // and its hires/shres output ports (denise.v:60, 174-180, 187) are used
+    // and its hires/shres output ports (denise.v:60, 176-182, 189) are used
     // because they are direct, combinational, primary outputs -- "the value
     // arrived" is observed on a real port, not inferred from a read
     // multiplexer that could itself be the thing under test. Carries its own
@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
     checks.expect(
         shres_before == 0 && shres_after == 1,
         "CUSTOM-SILICON-DRIVES-VIDEO-NO-CPU: denise's own port list (denise.v:"
-        "32-51) declares no CPU address/data/interrupt-acknowledge port of any "
+        "32-52) declares no CPU address/data/interrupt-acknowledge port of any "
         "kind -- the register bus (reg_address_in/data_in) is the only "
         "content-bearing input. A single write on that bus alone moves a video "
         "output (shres) from 0 to 1, with no other stimulus, demonstrating the "
@@ -393,7 +393,7 @@ int main(int argc, char** argv) {
         "input into agnus_beamcounter.v (312 PAL / 262 NTSC line constants) "
         "-- not a denise port, outside this fixture, same reasoning as A3. "
         "'Bitplane generated': denise_bitplanes is instantiated inside "
-        "denise (denise.v:361, containment not in question), but actually "
+        "denise (denise.v:379, containment not in question), but actually "
         "measuring bitplane data reaching a visible pixel needs the "
         "phase-accurate window/hpos state machine hrm/ch3-bplcon0-display-"
         "modes/ and hrm/ch3-horizontal-display-window/ already built and "

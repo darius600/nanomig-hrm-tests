@@ -93,9 +93,9 @@
 //
 // BOUNDARY (from PACKAGE.md's own evidence field):
 // nanomig/src/minimig-aga/denise.v:57-58
-// (DIWSTRT custom address 9'h08E, DIWSTOP 9'h090), hdiwstrt l.293-305,
-// hdiwstop l.307-320 (H8 forced 0 for start, 1 for stop), window compare
-// l.328-334, border select l.489-498 (outside the window clut_data is
+// (DIWSTRT custom address 9'h08E, DIWSTOP 9'h090), hdiwstrt l.306-318,
+// hdiwstop l.320-333 (H8 forced 0 for start, 1 for stop), window compare
+// l.343-349, border select l.536-545 (outside the window clut_data is
 // forced to 0, so the border shows COLOR00) -- denise.v:66 (COLORBASE
 // custom address 9'h180) with denise_colortable.v:24,30-34 (write decode)
 // and the colour packing at denise_colortable.v:56-58, used here purely as
@@ -132,7 +132,7 @@
 // BEFORE any window-position claim is asserted from it -- not a formality.
 //
 // THE HPOS[3:2] TRAP, AND WHY THIS PACKAGE'S OWN MEASUREMENTS SIDESTEP IT:
-// denise_bitplanes.v:102-108 decodes hpos[3:2] into 0/4/8/12 lores pixels of
+// denise_bitplanes.v:388-394 decodes hpos[3:2] into 0/4/8/12 lores pixels of
 // EXTRA scroll folded into BPLCON1's effective value -- so writing BPL1DAT
 // one colour clock later can move which pixel of a given loaded word first
 // becomes visible. This package is not about scroll delay (that is the
@@ -233,7 +233,7 @@
 // 4. DIWHIGH's two H8 bits are NOT independently latched -- hdiwstrt[8]
 //    and hdiwstop[8] both come from whichever register write most
 //    recently touched them, and a DIWHIGH write sets BOTH from that same
-//    write's own bit 5 and bit 13 (denise.v:316-317, 318-319), not just
+//    write's own bit 5 and bit 13 (denise.v:316-317, 331-332), not just
 //    whichever one a caller "meant" to change. G8's own isolation writes
 //    therefore hold the OTHER bit at the value DIWSTRT/DIWSTOP's own
 //    forcing already produced, so only the bit under test actually moves
@@ -515,7 +515,7 @@ public:
 
     // WHY THIS EXISTS (a stimulus/methodology measure, no oracle text
     // involved): denise.v's
-    // `window` register (l.328-334) has NO reset clause at all -- it only
+    // `window` register (l.343-349) has NO reset clause at all -- it only
     // ever changes on `hpos==hdiwstrt` (-> 1) or `hpos==hdiwstop` (-> 0),
     // otherwise holding. hdiwstrt/hdiwstop themselves also default to 0 on
     // a fresh Vdenise (Verilator's own zero-init, denise.v declares no
@@ -1169,7 +1169,7 @@ int main(int argc, char** argv) {
         // hdiwstrt[8]<=0 (denise.v:314-315), a DIWSTOP write always forces
         // hdiwstop[8]<=1 (denise.v:329-330), and a DIWHIGH write sets
         // WHICHEVER of the two its own reg_address_in match applies to
-        // (both, in the same write, l.303-304 and l.318-319) from data_in
+        // (both, in the same write, l.316-317 and l.331-332) from data_in
         // bit 5 (start) and bit 13 (stop) OF THAT WRITE -- there is no way
         // to write DIWHIGH once and change only one of hdiwstrt[8]/
         // hdiwstop[8] while leaving the other exactly as DIWSTRT/DIWSTOP's

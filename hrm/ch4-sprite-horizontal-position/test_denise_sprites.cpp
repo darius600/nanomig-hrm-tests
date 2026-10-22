@@ -807,7 +807,7 @@ int main(int argc, char** argv) {
         "data' (CH4-appC-position.c12, p.303). denise_sprites (this "
         "fixture) and denise_sprites_shifter decode only the HORIZONTAL "
         "half of SPRxPOS -- data_in[7:0] as hstart[8:1] "
-        "(denise_sprites_shifter.v:69-73) -- graded above on "
+        "(denise_sprites_shifter.v:270-274) -- graded above on "
         "SPRXPOS-BITS-7-0-ARE-SH8-SH1-STEP-OF-2; agnus_spritedma keeps "
         "only data_in[15:8] as VSTART and discards SPRxPOS[6:0] entirely "
         "(agnus_spritedma.v:205-215), graded in the sibling package "

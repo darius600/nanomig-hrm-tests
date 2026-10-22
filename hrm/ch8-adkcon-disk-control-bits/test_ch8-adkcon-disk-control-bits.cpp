@@ -134,7 +134,7 @@ const uint8_t ADDR_DMACON  = 0x4B;  // $096 >> 1
 const uint8_t ADDR_ADKCON  = 0x4F;  // $09E >> 1
 
 // ADKCON/DMACON both use the chipset SET/CLR convention (paula.v:187-200,
-// :159-171): bit 15 of the write selects OR (set, 1) or AND-NOT (clear, 0)
+// :164-176): bit 15 of the write selects OR (set, 1) or AND-NOT (clear, 0)
 // against the named field bits.
 const uint16_t SETCLR = 0x8000;
 const uint16_t ADK_BIT10_WORDSYNC = 0x0400;

@@ -3,7 +3,7 @@
 //   delay measured on the bitplane serial output, and the BPLxDAT registers
 //   that feed the shifters. Package ch3-bplcon1-scroll-delay, fixture
 //   denise_bitplanes (one Verilator build, this module + its own
-//   denise_bitplane_shifter and bitplane_ram instances, no other module).
+//   denise_bitplane_shifter and denise_scroll_history instances, nothing else).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 42, 53, 57, 60, 67, 71, 72, 80, 81, 82, 83, 84, 85, 90, 271, 272, 291.
@@ -76,9 +76,9 @@
 // delivers a loaded, non-zero BPLxDAT value to bpldata BEFORE any scroll
 // claim below is asserted from it -- not a formality here.
 //
-// HPOS[3:2] NOT A CLAIM, HELD CONSTANT: denise_bitplanes.v:102-108 decodes
+// HPOS[3:2] NOT A CLAIM, HELD CONSTANT: denise_bitplanes.v:388-394 decodes
 // hpos[3:2] into an extra 0/4/8/12 lores-pixel write-position delay folded
-// into the effective BPLCON1 value at l.198-213. No claim in this package's
+// into the effective BPLCON1 value at l.424-439. No claim in this package's
 // 113-record inventory is about that decode. hpos is held at 0 (hpos[3:2]
 // == 0, the zero-offset case) throughout every stimulus below so this
 // mechanism contributes nothing to any measurement -- carried as a constant
@@ -187,20 +187,20 @@
 // cannot establish the claim's full generality and the id does not sit on
 // it with a caveat.
 //
-// RTL NOTES (WSL/Verilator 5.052). denise_bitplanes.v carries a
-// `DENISE_EBR ifdef with a completely different port set on the other
-// branch (chip16_r/chip16_idx instead of chip48, a shared external
-// bitplane_ram instance); it is undefined anywhere in nanomig/ and this
-// package's Makefile does not define it either, so the non-EBR branch
-// compiles -- the one the classifier's evidence field's line numbers
-// (chip48 l.97, hires l.98, shres l.99, hpos l.100, bpldata l.101) point
-// at. Its ports are the ones this file drives (clk, clk7_en, reset, c1,
-// c3, aga, reg_address_in[8:1], data_in[15:0], chip48[47:0], hires,
-// shres, hpos[8:0], bpldata[8:1] out; denise_bitplane_shifter's
-// clk/clk7_en/c1/c3/load/hires/shres/fmode[1:0]/aga/data_in[63:0]
-// /scroll[7:0]/out). bitplane_ram.v is a real module but is only
-// instantiated on the DENISE_EBR branch; Verilator compiles it as unused
-// dead code on this build, harmlessly.
+// RTL NOTES (WSL/Verilator 5.052). denise_bitplanes.v holds two modules
+// named denise_bitplanes under a `DENISE_EBR ifdef, the EBR one with a
+// completely different port set (chip16_r/chip16_idx instead of chip48,
+// l.44-45) and a bitplane_ram instance in each of its shifters. This
+// package's Makefile does not define DENISE_EBR, so the non-EBR module
+// (l.330-732) compiles -- the one whose ports the BOUNDARY above cites
+// (chip48 l.340, hires l.341, shres l.342, hpos l.343, bpldata l.344).
+// Its ports are the ones this file drives (clk, clk7_en, reset, c1, c3,
+// aga, reg_address_in[8:1], data_in[15:0], chip48[47:0], hires, shres,
+// hpos[8:0], bpldata[8:1] out; denise_bitplane_shifter's clk/clk7_en/c1/
+// c3/load/hires/shres/fmode[1:0]/aga/data_in[63:0]/scroll[7:0]/
+// scroller_out/scroller_in/out). bitplane_ram.v is a real module, but only
+// the DENISE_EBR shifter instantiates it (denise_bitplane_shifter.v:75);
+// Verilator compiles it as unused dead code on this build, harmlessly.
 //
 // WHY THE PF1H NIBBLE IS THE DELAY (denise_bitplanes.v:424-461): the OCS
 // BPLCON1 write path is `bplcon1 <=
@@ -214,10 +214,10 @@
 // the PF1H nibble written, unchanged. This is why the expected values below
 // (kLoresPixelTicks=4 per unit, binary weighting, the 15-unit range) hold.
 //
-// WHY settle_bplcon1() EXISTS: denise_bitplanes.v:145-166 latches pf1h/pf2h from
+// WHY settle_bplcon1() EXISTS: denise_bitplanes.v:431-452 latches pf1h/pf2h from
 // bplcon1 only `if (load)` -- load pulses for one clk7_en cycle following
-// a BPL1DAT write (l.437-441) -- and pf1h_del/pf2h_del (what actually reaches
-// each shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en
+// a BPL1DAT write (l.542-546) -- and pf1h_del/pf2h_del (what select1/select2
+// and each shifter's `scroll` read) lag pf1h/pf2h by one further clk7_en
 // cycle. A bare BPLCON1 write immediately followed by the timed BPL1DAT
 // trigger write measures a FLAT, PF1H-independent delay for every value
 // 0..15 -- the trigger's own shifter load happens before the new BPLCON1
@@ -229,7 +229,7 @@
 //
 // HOW HIRES-SCROLL-GRANULARITY-2-PIXELS MEASURES: a single bit's output
 // pulse is not a proxy for the shift rate. denise_bitplane_shifter.v's
-// final output stage (`sh_scroller`, l.206-207) resamples the scroller's
+// final output stage (`sh_scroller`, l.206-207) resamples the scroll history's
 // combinational output every RAW clock tick regardless of the underlying
 // shift rate, so a single-bit load reads 1 tick wide, not 2, and a two-bit
 // test pattern gives a choppy, non-uniform waveform, not a clean 2-tick
@@ -484,10 +484,10 @@ public:
         clear_reg();
     }
 
-    // denise_bitplanes.v:145-149/217-221: pf1h/pf2h only latch BPLCON1's
-    // current value on a `load` pulse (a BPL1DAT write, l.437-441), and
-    // pf1h_del/pf2h_del (l.211-214/223-226 -- what actually reaches each
-    // shifter's `scroll` port) lag pf1h/pf2h by one further clk7_en cycle.
+    // denise_bitplanes.v:431-435/443-447: pf1h/pf2h only latch BPLCON1's
+    // current value on a `load` pulse (a BPL1DAT write, l.542-546), and
+    // pf1h_del/pf2h_del (l.437-440/449-452 -- what select1/select2 and each
+    // shifter's `scroll` read) lag pf1h/pf2h by one further clk7_en cycle.
     // A bare BPLCON1 write alone does not move any measured delay; call
     // this once after writing BPLCON1 and before any timed measurement
     // trigger write, so a throwaway BPL1DAT write latches the new value

@@ -18,7 +18,7 @@ SRC_DIR = $(NANOMIG)/src/minimig-aga
 #
 # UNLIKE the sibling package, this Makefile also defines ENABLE_CART. This
 # package's own subject (Figure 7-4's NMI row) lives entirely behind that
-# define: minimig.v:754 ties the int7 signal that carries it to a constant
+# define: minimig.v:764 ties the int7 signal that carries it to a constant
 # 1'b0 when ENABLE_CART is not set, and no build anywhere else in this tree
 # sets it (STEP3-NOTES-ch7-nmi-level-seven.md, SPECIFICATION.md "Scope and
 # limits"). A build of this package is therefore evidence about the

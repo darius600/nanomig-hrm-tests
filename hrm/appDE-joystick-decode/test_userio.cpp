@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
         "\"Unused\". Checked against the board wiring before accepting "
         "classify's \"status: testable\" call, and it does not hold: "
         "userio.v's ports carry only a role-named 16-bit bus (minimig.v:"
-        "200-201's own port comment, \"[fire2,fire,up,down,left,right]\", "
+        "205-206's own port comment, \"[fire2,fire,up,down,left,right]\", "
         "names six roles at bits 5..0 and nothing else), and every board "
         "top-level file in this tree (checked: tang/nano20k/top.sv:54 "
         "`input [5:0] js1`, :89 `wire [5:0] db9_joy1 = {...}`; "

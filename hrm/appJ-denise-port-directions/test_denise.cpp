@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     // D-BUS / RGA POSITIVE CONTROL, shared by D6-D0, D15-D7 and RGA8-RGA1.
     // WRITE half: a known word written through data_in to BPLCON0 lands on
-    // denise's own top-level `hires`/`shres` outputs (denise.v:182/187) --
+    // denise's own top-level `hires`/`shres` outputs (denise.v:182/189) --
     // reused verbatim from hrm/ch8-appb-chip-column-denise's own A0
     // liveness. READ half: DENISEID's fixed identity word is read back
     // through data_out at its OWN address and reads DIFFERENTLY from an
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     checks.expect(bus_live,
         "DENISE-D6-D0-DIRECTION: at denise's own boundary, the D6-D0 half of the data bus "
         "identifies to `data_in[15:0]` (input, denise.v:40) and `data_out[15:0]` (output, "
-        "denise.v:42), connected at minimig.v:597/590 -- a Verilog port-direction fact, not a "
+        "denise.v:42), connected at minimig.v:599/601 -- a Verilog port-direction fact, not a "
         "runtime-configurable one, per the axis hrm/appDE-ciab-port-signals grades for the CIA. "
         "The printed pin range (01-07) is not graded; the RTL splits the one printed "
         "bidirectional bus into two unidirectional ports with no pin-range counterpart. "

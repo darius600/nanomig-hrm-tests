@@ -103,7 +103,7 @@
 //   Order matters and is enforced by write_bitplane_pattern()/
 //   refresh_bitplanes(): BPLCON0 (sets bpu combinationally, written once)
 //   and BPL2..5DAT (load their own buffer registers, denise_bitplanes.v:
-//   388-414) are written before BPL1DAT in every round, because BPL1DAT's
+//   493-519) are written before BPL1DAT in every round, because BPL1DAT's
 //   write is what both latches l_bpu (denise.v:197-205) and pulses `load`
 //   a cycle later (denise_bitplanes.v:542-546), which parallel-loads *all* the
 //   plane shifters synchronously from whatever their buffers hold at that
@@ -478,7 +478,7 @@ public:
     }
 
     uint32_t read_rgb() {
-        tick(); tick(); tick(); tick();  // let the registered window/window_ena/out_rgb pipeline (denise.v:343-355,509) settle
+        tick(); tick(); tick(); tick();  // let the registered window/window_ena/out_rgb pipeline (denise.v:343-355,556) settle
         return (static_cast<uint32_t>(dut->red) << 16) |
                (static_cast<uint32_t>(dut->green) << 8) |
                static_cast<uint32_t>(dut->blue);

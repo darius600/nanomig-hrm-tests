@@ -466,7 +466,7 @@ int main(int argc, char** argv) {
             "APPB2-SPR4PTH.chip, APPB2-SPR4PTL.chip, APPB2-SPR5PTH.chip, "
             "APPB2-SPR5PTL.chip, APPB2-SPR6PTH.chip, APPB2-SPR6PTL.chip, "
             "APPB2-SPR7PTH.chip, APPB2-SPR7PTL.chip) already records "
-            "denise_sprites.v:90 requiring reg_address_in[8:6]==101, "
+            "denise_sprites.v:403 requiring reg_address_in[8:6]==101, "
             "i.e. only $140 and above -- outside the $120-$13E sprite-"
             "pointer range -- a fact carried from that prior "
             "classification measurement, not established by this "

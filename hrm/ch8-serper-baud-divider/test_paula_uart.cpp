@@ -96,7 +96,7 @@ namespace {
 // Register addresses, as rga_i (the $DFFxxx word offset, addr>>1) --
 // paula_uart.v's own localparams REG_SERDAT=9'h030, REG_SERDATR=9'h018,
 // REG_SERPER=9'h032, each right-shifted by 1 at the call site
-// (paula_uart.v:62,61,258 all compare against rga_i, an 8-bit value).
+// (paula_uart.v:62,71,272 all compare against rga_i, an 8-bit value).
 constexpr uint8_t RGA_IDLE    = 0x00;  // matches no decode; safe park address
 constexpr uint8_t RGA_SERDATR = 0x0C;  // $018 >> 1
 constexpr uint8_t RGA_SERDAT  = 0x18;  // $030 >> 1

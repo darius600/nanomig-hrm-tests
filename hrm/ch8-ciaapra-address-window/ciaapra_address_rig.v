@@ -4,8 +4,8 @@
 // `ciaa` and `gary` (both $(NANOMIG)/src/minimig-aga/*.v, read-only, pinned
 // submodule) and wires them exactly the way minimig.v wires them for the
 // signals this package measures. The wiring was read from
-// $(NANOMIG)/src/minimig-aga/minimig.v (lines 607-630 for the ciaa
-// instantiation, 762-821 for gary's, both citing cpu_address_out as the
+// $(NANOMIG)/src/minimig-aga/minimig.v (lines 617-640 for the ciaa
+// instantiation, 772-831 for gary's, both citing cpu_address_out as the
 // address both modules see) only after SPECIFICATION.md was committed
 // (commit bd0970f).
 //

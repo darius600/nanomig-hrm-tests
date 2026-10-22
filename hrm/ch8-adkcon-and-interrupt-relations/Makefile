@@ -3,7 +3,7 @@ NANOMIG ?= ../../nanomig
 
 TOP := paula
 # paula.v instantiates paula_uart, paula_intcontroller, paula_floppy and
-# paula_audio directly (paula.v:203,220,243,289); paula_audio in
+# paula_audio directly (paula.v:208,234,257,303); paula_audio in
 # turn instantiates paula_audio_channel and paula_audio_mixer, which itself
 # instantiates paula_audio_volume. paula_floppy in turn instantiates
 # paula_floppy_fifo. paula_floppy_ebr.v and paula_floppy_dma_buf.v are

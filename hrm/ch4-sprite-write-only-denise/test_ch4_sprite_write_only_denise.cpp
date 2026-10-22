@@ -37,7 +37,7 @@
 //   data_out" -- so the narrower denise_sprites fixture cannot answer this
 //   question at all; every claim's own classify.observable says so in as
 //   many words: "needs a wider boundary: denise -- denise_sprites has no
-//   data_out port ...; the read path is denise.v:104". This package's
+//   data_out port ...; the read path is denise.v:97". This package's
 //   Makefile is copied from hrm/ch3-register-map-denise/'s Makefile (a
 //   package that already builds this exact `denise` top level, with the
 //   full 12-file submodule list including denise_bitplanes.v and
@@ -53,7 +53,7 @@
 //   this one -- NOT discovered by opening denise.v):
 //   in  - clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
 //         data_in[15:0], chip48, blank, a1k, ecs, aga
-//   out - data_out[15:0] (denise.v:104 sources it from
+//   out - data_out[15:0] (denise.v:97 sources it from
 //         col_out|deniseid_out|rgb_out only -- every claim's own
 //         classify.evidence says this in those words -- so no sprite
 //         address is ever a driver of it), red/green/blue, hires, shres
@@ -252,17 +252,17 @@
 //     non-zero when addressed, independent of any actual collision state --
 //     an even stronger guarantee for the control than merely "measured
 //     non-zero today".
-//   - denise_sprites.v:90-98 -- `selsprx = SPRPOSCTLBASE[8:6]==
+//   - denise_sprites.v:403-411 -- `selsprx = SPRPOSCTLBASE[8:6]==
 //     reg_address_in[8:6]`, `selsprN = selsprx && reg_address_in[5:3]==N`.
 //     With SPRPOSCTLBASE=9'h140 (word address $A0), reg_address_in[5:3]
 //     spans weights 16/8/4 (label n has weight 2^(n-1) since the vector is
 //     indexed [8:1], not [7:0]) -- incrementing that 3-bit field by 1 is
 //     +4 in word-address units, confirming this package's own SPR_BASE+4n
 //     arithmetic exactly, not merely assuming it.
-//   - denise_sprites.v:143 (and the 7 further sprite instances) --
+//   - denise_sprites.v:447 (and the 7 further sprite instances) --
 //     `.address(reg_address_in[2:1])` -- the low 2 bits select the
 //     register within a sprite's 4-word block.
-//   - denise_sprites_shifter.v:35-38 -- `parameter POS=2'b00; CTL=2'b01;
+//   - denise_sprites_shifter.v:215-218 -- `parameter POS=2'b00; CTL=2'b01;
 //     DATA=2'b10; DATB=2'b11;` -- confirms the +0/+1/+2/+3 ordering this
 //     package's spec already assumed.
 //   - denise_sprites.v/denise_sprites_shifter.v -- grep for `data_out`
@@ -313,7 +313,7 @@ namespace {
 constexpr uint16_t IDLE_ADDR     = 0x00;
 constexpr uint16_t DENISEID_ADDR = 0x3E;  // 9'h07C >> 1 (denise.v:64)
 constexpr uint16_t CLXDAT_ADDR   = 0x07;  // 9'h00E >> 1 (denise_collision.v:21)
-constexpr uint16_t SPR_BASE      = 0xA0;  // 9'h140 >> 1 (denise_sprites.v:54/67)
+constexpr uint16_t SPR_BASE      = 0xA0;  // 9'h140 >> 1 (denise_sprites.v:367)
 
 std::string hex4(uint16_t v) {
     char buf[8];

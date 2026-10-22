@@ -21,7 +21,7 @@ and reason-group entries.
   `!c1 && !c3` (denise_bitplane_shifter.v:181), so the display path depends on that
   phase relationship, and a harness that asserts nothing cannot tell a live path from
   a dead one.
-- Horizontal scroll alignment (trap 2, given): denise_bitplanes.v:102-108 decodes
+- Horizontal scroll alignment (trap 2, given): denise_bitplanes.v:388-394 decodes
   `hpos[3:2]` into 0/4/8/12 lores pixels of extra scroll; plane writes in this suite are
   aligned to `hpos[3:2]==0` unless a test is deliberately exercising that offset.
 - Window: DIWSTRT H=$30, DIWSTOP H=$50, reused from PACKAGE.md's own MEASURED example, as the

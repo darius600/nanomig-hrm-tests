@@ -16,7 +16,7 @@
 //   SPECIFICATION.md was committed). Wiring verified against minimig.v
 //   (USERIO1 at minimig.v:561, CIAA1 at minimig.v:617, the porta_in/
 //   porta_out/_fire0/_fire1/_fire0_dat/_fire1_dat/_joy1/_joy2 wiring at
-//   minimig.v:570-575, 605, 622-624) after the specification commit, per
+//   minimig.v:570-575, 615, 632-634) after the specification commit, per
 //   this task's order of work. No other package's test source or Makefile
 //   was read except test_denise.cpp and its Makefile
 //   (hrm/ch8-appb-chip-column-denise), for harness style only, disclosed
@@ -77,7 +77,7 @@
 //     (ciaa.v:262 -- `porta_out[3]` from bit 7/regporta[3],
 //     `porta_out[2]` from bit 6/regporta[2]), which minimig.v:615 names
 //     `_fire1_dat`/`_fire0_dat`. Measured directly (ciaa.v ports,
-//     minimig.v:205-206, 358-359): minimig.v's own top-level `_joy1`/
+//     minimig.v:205-206, 363-364): minimig.v's own top-level `_joy1`/
 //     `_joy2` are plain primary inputs with no matching output-enable or
 //     tristate port, and userio.v only reads `_fire0_dat`/`_fire1_dat`
 //     into the `cd32pad` shift-register path (userio.v:181-208), which

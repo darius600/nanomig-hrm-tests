@@ -124,7 +124,7 @@
 //   (d) ENBPLCN3-ENABLES-BRDRBLNK grades ENBPLCN3 through BRDRBLNK ("05
 //   BRDRBLNK Border blank"), which p.307 -- the same page used for
 //   KILLEHB -- defines on the same table, and which is itself gated by
-//   ENBPLCN3 in the RTL (denise.v:194,253,515): a graded enable/disable
+//   ENBPLCN3 in the RTL (denise.v:194,253,562): a graded enable/disable
 //   experiment at the denise boundary, no debug port added.
 //
 // MUTATION-LOG SUMMARY (6 assertions, 6 mutation flags; each was actually

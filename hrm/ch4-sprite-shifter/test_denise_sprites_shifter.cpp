@@ -54,7 +54,7 @@
 //   hpos[8:0], fmode[15:0], shift, chip48[47:0], data_in[15:0],
 //   sprdata[1:0] (output), attach (output, unused by this package -- see
 //   NON-GOALS). Confirmed by reading denise_sprites.v's own instantiation
-//   of this module (sps0..sps7, lines 319-453): clk7_en is its only
+//   of this module (sps0..sps7, lines 441-574): clk7_en is its only
 //   clock enable -- SPRxDATA and SPRxDATB are latched on it while aen
 //   selects them (denise_sprites_shifter.v:283-295) -- and `shift` is
 //   generated externally from spres/c1/c3

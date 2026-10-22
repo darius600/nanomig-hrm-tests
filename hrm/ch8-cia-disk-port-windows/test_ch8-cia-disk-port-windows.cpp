@@ -52,8 +52,8 @@
 //      every clk7_en cycle when the register is not itself being read;
 //      icrs&&!wr instead latches icr[4] directly from the CURRENT flag and
 //      clears otherwise -- standard latch/clear-on-read).
-//   6. $(NANOMIG)/src/minimig-aga/minimig.v lines 600-651 (ciaa CIAA1 /
-//      ciab CIAB1 instantiations) and 762-819 (gary GARY1 instantiation) --
+//   6. $(NANOMIG)/src/minimig-aga/minimig.v lines 610-661 (ciaa CIAA1 /
+//      ciab CIAB1 instantiations) and 772-829 (gary GARY1 instantiation) --
 //      the wiring cia_disk_port_windows_rig.v reproduces; see that file's
 //      own header for the join-by-join citation.
 //   cia_timera.v, cia_timerb.v, cia_timerd.v were NOT read -- ciaa/ciab

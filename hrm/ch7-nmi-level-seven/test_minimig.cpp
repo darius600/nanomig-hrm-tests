@@ -43,7 +43,7 @@
 //   commit): the "NMI"/freeze signal chain is
 //     ciaa.v:187 (Action Replay freeze keycode 0x5f, gated by hrtmon_en ==
 //       memory_config[6], latched into freeze_reg on a kbd_mouse_type==2
-//       keystrobe) --output--> minimig.v:360/628 wire freeze
+//       keystrobe) --output--> minimig.v:360/638 wire freeze
 //     --> cart.v:57 input freeze -> cart.v:84 freeze_req (rising-edge
 //       detect) -> cart.v:87 int7_req -> cart.v:94-99 output reg int7
 //       (int7 <= 1 on int7_req, <= 0 only on a level-7 IACK cycle this

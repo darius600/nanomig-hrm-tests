@@ -17,7 +17,7 @@ SRC_DIR = $(NANOMIG)/src/minimig-aga
 #
 # UNLIKE ch7-nmi-level-seven's own Makefile, this one does NOT define
 # ENABLE_CART: that define is specific to chapter 7's NMI/freeze subject
-# (minimig.v:754 ties int7 to a constant 1'b0 without it) and has nothing to
+# (minimig.v:764 ties int7 to a constant 1'b0 without it) and has nothing to
 # do with the disk interrupt paths this package measures. Defining it here
 # would make this package's build evidence about define-enabled RTL rather
 # than about NanoMig as it ships, which is exactly the caveat ch7-nmi-level-

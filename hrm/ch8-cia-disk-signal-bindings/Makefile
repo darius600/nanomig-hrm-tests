@@ -19,7 +19,7 @@ VERILOG_SOURCES = $(filter-out $(EXCLUDE_SOURCES),$(wildcard $(SRC_DIR)/*.v))
 
 VERILATOR = verilator
 # --public-flat-rw added (not present in ch7-overlay-source's own Makefile):
-# this package observes internal nets at the minimig.v:622/650 join
+# this package observes internal nets at the minimig.v:632/660 join
 # (_ready/_track0/_wprot/_change and _motor/_sel3..0/side/direc/_step) via
 # dut->rootp->minimig-><signal>, the same mechanism hrm/ch7-nmi-level-seven
 # already uses at this identical TOP_MODULE=minimig boundary. Observation

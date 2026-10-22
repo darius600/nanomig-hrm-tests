@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
     // fixture proves it can deliver a
     // known, distinct word before any read-based assertion is trusted. Uses
-    // paula.v's own ADKCON/ADKCONR pair (paula.v:131-132, 182-198), not any
+    // paula.v's own ADKCON/ADKCONR pair (paula.v:131-132, 187-203), not any
     // of the seven claim rows, so it cannot be confused with any of them.
     // ========================================================================
     do_reset();
@@ -383,7 +383,7 @@ int main(int argc, char** argv) {
     // Stimulus: SERDAT=0x0001 -- one data bit set at position 0, so TX shifts
     // exactly once before the shift register reaches 0 and stops: a single,
     // unambiguous LOW pulse on txd whose width is governed purely by SERPER
-    // (paula_uart.v:58-74, 77-142).
+    // (paula_uart.v:58-74, 87-152).
     // ========================================================================
     do_reset();
     int width_fast;

@@ -36,7 +36,7 @@
 // (1) ADDRESS (P1, P4, P7): shown by contrast within this module's own
 //   three rows. paula_uart.v:272's data_o mux has exactly one nonzero arm,
 //   gated on rga_i==REG_SERDATR[8:1] ($018); presenting the other two
-//   addresses the same way answers 0x0000 (P1). paula_uart.v:62/61's write
+//   addresses the same way answers 0x0000 (P1). paula_uart.v:62/71's write
 //   decodes are each gated on one specific rga_i value ($032/$030); P4/P7
 //   present the SAME data value at the wrong row's address first (no
 //   effect) and then at the claimed address (an effect), so the effect is
@@ -66,7 +66,7 @@
 //     225-229) -- the same address carries both kinds of fact.
 //   - P6 (SERDAT, "data and stop bits write"): the written word supplies
 //     both a data payload and stop-bit control in one write. paula_uart.v's
-//     TX shifter (l.107-129) shifts out serdat's bits LSB-first until the
+//     TX shifter (l.117-139) shifts out serdat's bits LSB-first until the
 //     shift register empties; bit 8 (the byte's own 9th bit) is what makes
 //     it empty exactly after the 8 data bits plus one more "1" bit --
 //     flipping bit 8 alone, data payload unchanged, changes the frame's own
@@ -304,7 +304,7 @@ public:
 
     // Drives rxd with a start(0) + 8 data bits (LSB-first) + stop(1) frame
     // for byte b, timed at bit_width_ticks clk7_en ticks per bit -- SERPER's
-    // own reload value, read directly from paula_uart.v:182/186/207's
+    // own reload value, read directly from paula_uart.v:196/217's
     // {serper[14:0],1'b1} expression (2*SERPER+2 ticks per bit; the same
     // reload feeds both the RX and TX period counters). Returns true if
     // rxint was observed to pulse before the timeout.

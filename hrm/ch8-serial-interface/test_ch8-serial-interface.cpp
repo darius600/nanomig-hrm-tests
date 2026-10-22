@@ -1674,7 +1674,7 @@ int main(int argc, char** argv) {
                    std::to_string(rxd_latency) + " clk7_en beats (0 would "
                    "match \"direct\"). The pin passes a two-flop "
                    "synchroniser plus one more register (paula_uart.v:46-53, "
-                   ":234) before reaching bit 11.");
+                   ":244) before reaching bit 11.");
     }
 
     // C5 -- SERDATR bit 10 is unused, and reads a fixed value regardless

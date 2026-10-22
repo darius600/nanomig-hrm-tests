@@ -44,7 +44,7 @@
 //   `denise`'s own hierarchy. denise.v's own address table (denise.v:57-66)
 //   is DIWSTRT $08E, DIWSTOP $090, DIWHIGH $1E4, BPLCON0 $100, BPLCON2 $104,
 //   BPLCON3 $106, BPLCON4 $10C, DENISEID $07C, BPL1DAT $110 and COLORBASE
-//   $180 (base of a range, denise.v:222/434). None of the seven submodules
+//   $180 (base of a range, denise.v:222). None of the seven submodules
 //   listed above decode any address at all except denise_bitplanes,
 //   denise_sprites, denise_colortable, denise_hamgenerator and
 //   denise_collision, and grep over all of them for "00a"/"00c"/"036" is
@@ -56,7 +56,7 @@
 //   separately as DENISE1 at minimig.v:589), and not part of this package's
 //   Makefile SRC list. Both USERIO1 and DENISE1 are wired to the same
 //   `reg_address`/`custom_data_in` buses in minimig.v (minimig.v:566-567,
-//   588-589), confirming they are address-bus siblings, not a
+//   598-599), confirming they are address-bus siblings, not a
 //   parent/submodule pair.
 //
 //   Why this absence settles nothing either way -- grounded in the legend,
@@ -97,7 +97,7 @@
 //   prior reasoning.
 //
 // FIXTURE LIVENESS (A0). Independent of any claim: denise.v's OWN internal
-//   BPLCON0 register ($100, denise.v:60/175-176) is round-tripped with two
+//   BPLCON0 register ($100, denise.v:60/177-178) is round-tripped with two
 //   distinct words before any claim-bearing register is trusted, proving the
 //   reg_address_in -> internal register -> observable-output path is alive
 //   at all. BPLCON0 is used rather than a register with a read-back path
@@ -231,7 +231,7 @@ int main(int argc, char** argv) {
     // BUILD-BRIEF's own requirement that the fixture prove it can deliver a
     // known, distinct word before any claim-bearing assertion is trusted.
     // Uses denise.v's own BPLCON0 register and its own hires/shres output
-    // ports (denise.v:60, 175-176, 180, 187) -- none of the three claim
+    // ports (denise.v:60, 177-178, 182, 189) -- none of the three claim
     // rows below -- so it cannot be confused with any of them.
     // ========================================================================
     do_reset();

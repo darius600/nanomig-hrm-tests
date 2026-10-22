@@ -49,7 +49,7 @@
 //   of a write block.
 //
 // (2) serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd} (paula_uart.v
-//   :248), and data_o = {serdatr, 1'b0, rx_data} when addressed (:258) --
+//   :258), and data_o = {serdatr, 1'b0, rx_data} when addressed (:272) --
 //   bit 15=rx_ovrun, 14=rx_rbf, 13=tx_tbe, 12=tx_tsre, 11=rx_rxd, 10=a
 //   LITERAL 1'b0 (no signal anywhere can move it -- matches p.283's "10 0
 //   Not used" reading it as a genuinely fixed cell, unlike the
@@ -733,7 +733,7 @@ int main(int argc, char** argv) {
     // MUTATION RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ none red: no
     //   stimulus at this boundary can make a fixed, three-register
     //   synchroniser chain (rxd_sync[0], rxd_sync[1]/rxds, rx_rxd --
-    //   paula_uart.v:46-53,234) respond with zero-cycle delay. The delay
+    //   paula_uart.v:46-53,244) respond with zero-cycle delay. The delay
     //   is a property of the RTL's own registers, not of when or how the
     //   bus samples them (unlike A9's TBE, where the analogous delay IS a
     //   sampling-alignment artifact a different bus-timing stimulus CAN

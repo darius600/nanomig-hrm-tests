@@ -89,7 +89,7 @@
 //   (sel_chip[0]=1 while ovl=1, impossible per gary.v:159 alone), which is
 //   why read_with_decode samples only while dbr=0; minimig.v:403
 //   `wire cpuhlt = 1'b0;` (tied low in this build, so gary's `cpu_hlt` term
-//   never masks the overlay bit's own effect); minimig.v:342/339 declare
+//   never masks the overlay bit's own effect); minimig.v:342/344 declare
 //   `sel_chip`/`sel_kick` as minimig's
 //   own top-level internal wires (GARY1's outputs), minimig.v:694
 //   `.address_out(cpu_address_out)` feeds gary's `cpu_address_in` from the
@@ -102,7 +102,7 @@
 //   _led} = porta_out[3:1];` (so porta_out[0], PA0's own output value, is
 //   connected to nothing at minimig level -- confirmed independently here,
 //   the same fact appF-cia-pin-bindings recorded for its own PA0 claim);
-//   minimig.v:215/427 `output pwr_led; ... assign pwr_led = ~_led;`;
+//   minimig.v:215/432 `output pwr_led; ... assign pwr_led = ~_led;`;
 //   ciaa.v:262 `assign porta_out[3:0] = {(~ddrporta[7:6]|regporta[3:2]),
 //   (~ddrporta[1:0]|regporta[1:0])}` -- the 8520's own pull-up model: an
 //   input-direction bit (ddrporta=0) reads back forced to 1 regardless of
@@ -751,7 +751,7 @@ int main(int argc, char** argv) {
         "own CIAA-MAP-PA0-OVL-REGISTER record(): PA0 being specifically "
         "the bit that clears ovl is not gradable as a positive. "
         "Independently re-confirmed here, not merely cited: minimig.v:614-"
-        "605 `assign {_fire1_dat,_fire0_dat,_led} = porta_out[3:1];` "
+        "615 `assign {_fire1_dat,_fire0_dat,_led} = porta_out[3:1];` "
         "consumes only porta_out[3:1] -- porta_out[0], PA0's own driven "
         "output value, is connected to nothing at minimig level, and "
         "minimig.v:872's `sel_cia_a & (cpu_lwr|cpu_hwr)` term that "

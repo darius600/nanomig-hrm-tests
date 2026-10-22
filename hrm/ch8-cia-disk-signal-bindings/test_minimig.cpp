@@ -7,7 +7,7 @@
 //   both declined all 24 (`record()`, not graded): at the `ciaa`/`ciab`
 //   boundary alone, the port is a generic porta_in[7:2]/portb_out[7:0] with
 //   no signal named DSKRDY* etc -- the binding is one level up, at
-//   minimig.v:632/650. This package is built specifically to pick those 24
+//   minimig.v:632/660. This package is built specifically to pick those 24
 //   claims up at that join, per the build brief handed down for this unit.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
@@ -415,7 +415,7 @@ public:
         dut->eval();
     }
 
-    // --- Observation (public-flat-rw, minimig.v:632/650 internal nets) ---
+    // --- Observation (public-flat-rw, minimig.v:632/660 internal nets) ---
     // CIAA PRA read via a real CPU bus access at $BFE001; nibble bits
     // [3:0] = (PA5,PA4,PA3,PA2), matching Table 8-5's own column order.
     uint8_t pa_nibble() {

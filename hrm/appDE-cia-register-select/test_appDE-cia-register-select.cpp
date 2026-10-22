@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
         "`rs` is already the decoded 4-bit register-select value; ciaa.v's "
         "own port list, :80-104, has no address input of any width). The "
         "binding from a CPU address's A11-A8 to ciaa's `rs` is "
-        "minimig.v's wiring (minimig.v:626,641, `.rs(cpu_address_out"
+        "minimig.v's wiring (minimig.v:626,651, `.rs(cpu_address_out"
         "[11:8])`), a file this package's Makefile does not compile and "
         "outside a ciaa-only fixture's own boundary -- the same boundary "
         "hrm/appF-cia-register-map's own committed decline already drew "

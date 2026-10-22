@@ -42,8 +42,8 @@ module controller_port_io_path
     input         reset,
 
     // ---- controller-port-facing stimulus (userio side; page 227/232) ----
-    // Named exactly as minimig.v names them (minimig.v:200-201) so the
-    // wiring below is traceable line-for-line against minimig.v:564-565.
+    // Named exactly as minimig.v names them (minimig.v:205-206) so the
+    // wiring below is traceable line-for-line against minimig.v:574-575.
     input  [15:0] _joy1,
     input  [15:0] _joy2,
     input   [2:0] mouse_btn,
@@ -57,7 +57,7 @@ module controller_port_io_path
     output  [7:0] cia_data_out,
     output  [3:0] cia_porta_out,
 
-    // Non-claim porta_in bits (minimig.v:622 supplies these from disk
+    // Non-claim porta_in bits (minimig.v:632 supplies these from disk
     // logic elsewhere in minimig.v, not from userio). Exposed here only
     // so the fixture can prove its ciaa-side register-read path is alive
     // on bits that are not one of the 10 claims under test -- see

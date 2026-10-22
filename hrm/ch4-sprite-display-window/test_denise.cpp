@@ -72,7 +72,7 @@
 //   (2) the Harness's tick() drives the c1/c3 phase pattern
 //   hrm/ch3-sprite-registers/test_denise_sprites.cpp uses for this same
 //   sprite hardware, matching real c1/c3 timing: the sprite shift enable
-//   is `~c1 & ~c3` (denise_sprites.v:132), true on one phase in four
+//   is `~c1 & ~c3` (denise_sprites.v:435), true on one phase in four
 //   under this pattern and on two under a pattern whose c1 and c3 are
 //   never high together, which would shift at twice the lores rate.
 //   FIXTURE-KNOWN-WORD-IN-ORDER exists to catch a silently dead data
@@ -281,7 +281,7 @@ public:
 
     // Phase pattern reused from hrm/ch3-sprite-registers/test_denise_sprites.cpp
     // (same register bus/sprite hardware): c1 and c3 overlap, so the
-    // sprite shift enable `~c1 & ~c3` (denise_sprites.v:132) fires once
+    // sprite shift enable `~c1 & ~c3` (denise_sprites.v:435) fires once
     // per 7MHz cycle, the lores rate.
     void tick() {
         dut->eval();

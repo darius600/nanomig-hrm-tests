@@ -103,7 +103,7 @@ NTSC video standards." PAL/NTSC: Agnus's `ntsc` input and
 `agnus_beamcounter.v`'s separate line-count constants (312 PAL / 262 NTSC)
 -- not a `denise` port, outside this fixture, same reasoning as A3.
 "Bitplane generated": `denise_bitplanes.v` is instantiated inside `denise`
-(denise.v:361) and its containment is already the citation basis for A3's
+(denise.v:379) and its containment is already the citation basis for A3's
 own HIRES/SHRES measurement (the same bitplane-fed pipeline). Actually
 measuring bitplane data reaching a *visible* pixel needs the phase-accurate
 window/hpos state machine `hrm/ch3-bplcon0-display-modes/` and

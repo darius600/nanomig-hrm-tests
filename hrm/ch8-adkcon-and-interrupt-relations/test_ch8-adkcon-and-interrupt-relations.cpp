@@ -3,7 +3,7 @@
 // interrupt-request bit, plus the ADKCON/ADKCONR and SERDAT/SERDATR
 // register-summary rows, at the `paula` boundary (paula.v:59), per
 // SPECIFICATION.md. `paula` instantiates paula_uart, paula_intcontroller,
-// paula_floppy and paula_audio directly (paula.v:208,220,243,289) -- INTREQ
+// paula_floppy and paula_audio directly (paula.v:208,234,257,303) -- INTREQ
 // is invisible at paula_uart alone, which is exactly why these 97 claims
 // are assigned here rather than to a paula_uart package.
 //
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
 #endif
             "SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT (opus:8-serial.c82 p.257 \"11 RXD Direct read of RXD pin on "
             "Paula chip.\"): SERDATR bit 11 takes " + std::to_string(latency) + " clk7_en edge(s) to reflect a "
-            "change on `rxd` (two synchroniser flops plus one further register, paula_uart.v:46-53,234), not the "
+            "change on `rxd` (two synchroniser flops plus one further register, paula_uart.v:46-53,244), not the "
             "zero-cycle, combinational latency \"direct read\" would predict. Whether \"direct\" forbids a "
             "synchroniser is the adjudication (not this assertion's to make); the measured latency is not in "
             "doubt.");

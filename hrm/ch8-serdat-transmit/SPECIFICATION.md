@@ -588,7 +588,7 @@ rather than left implicit:
   found.
 - `paula_uart.v:26`, `REG_SERDAT = 9'h030` — used above only to justify that
   ADDR030 is reachable at all, not to supply any expected value.
-- `paula_uart.v:110/113/122-123/255` — `tx_shift <= serdat` at load,
+- `paula_uart.v:110/123/132-133/265` — `tx_shift <= serdat` at load,
   termination on `tx_shift == 16'd0`, right-shift with zero-fill and
   `tx_txd <= tx_shift[0]`, `assign txd = tx_txd`. This **confirms**, after
   the fact, the H-indexed length rule this document derives by hand from
