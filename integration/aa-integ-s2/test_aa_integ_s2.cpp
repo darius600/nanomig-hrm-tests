@@ -18,8 +18,8 @@
 // Kinds: oracle changes the object a line reads (the runs keep make_config()), stimulus changes what a program or a register list
 // writes (on the private build of SPECIFICATION.md 6.6 where the record says so), implementation runs a copy of the chip set (the private
 // build of 6.6), none is a line no run changes.
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5
 // MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
-// MUTATION P1-CONFIG oracle red NMH_MUTATE=P1-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P1-CONFIG; NOT GRADED 5; fx68k: FAIL P1-CONFIG; NOT GRADED 5
 // MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
 // MUTATION P1-FINISHED stimulus red NMH_MUTATE=P1-FINISHED: BLTSIZE $00C2 (height 3) in place of $0082; TG68K: FAIL P1-FINISHED; NOT GRADED 5; fx68k: FAIL P1-FINISHED; NOT GRADED 5
 // MUTATION P1-INC stimulus red NMH_MUTATE=P1-INC: the second blit is descending (BLTCON1 bit 1) with its four pointers $40 higher: its accesses stay in the channel regions with step -2, so the step is no longer one constant (prog_p1_desc); TG68K: FAIL P1-INC; NOT GRADED 5; fx68k: FAIL P1-INC; NOT GRADED 5
@@ -28,24 +28,27 @@
 // MUTATION P1-C stimulus red NMH_MUTATE=P1-C: BLTCMOD written 12 in place of 8; TG68K: FAIL P1-C, P1; fx68k: FAIL P1-C, P1
 // MUTATION P1-D stimulus red NMH_MUTATE=P1-D: the pointer written to BLTDPTH and BLTDPTL is $0F0100 in place of $0F0000; TG68K: FAIL P1-A, P1-B, P1-C, P1-D, P1; fx68k: FAIL P1-A, P1-B, P1-C, P1-D, P1
 // MUTATION P1 stimulus red NMH_MUTATE=P1: the values written to BLTCMOD and BLTAMOD swapped (24 and 8); TG68K: FAIL P1-A, P1-C, P1; fx68k: FAIL P1-A, P1-C, P1
-// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 4; fx68k: FAIL P2-FIXTURE; NOT GRADED 4
-// MUTATION P2-CONFIG oracle red NMH_MUTATE=P2-CONFIG: the Config object the line reads is set to memory_config 0x00 in place of 0x03; the runs of the proposition are still built from make_config(); TG68K: FAIL P2-CONFIG; NOT GRADED 4; fx68k: FAIL P2-CONFIG; NOT GRADED 4
-// MUTATION P2-MAP stimulus red NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4
-// MUTATION P2-ANCHOR stimulus red NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 4; fx68k: FAIL P2-ANCHOR; NOT GRADED 4
-// MUTATION P2-FINISHED stimulus red NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-FINISHED; NOT GRADED 4
+// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 6; fx68k: FAIL P2-FIXTURE; NOT GRADED 6
+// MUTATION P2W-FIXTURE stimulus red NMH_MUTATE=P2W-FIXTURE: the walking-bit program stores $DEAD in place of $BEEF; TG68K: FAIL P2W-FIXTURE; NOT GRADED 3; fx68k: FAIL P2W-FIXTURE; NOT GRADED 3
+// MUTATION P2-MAP stimulus red NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 6; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 6
+// MUTATION P2W-MAP stimulus red NMH_MUTATE=P2W-MAP: the pointer of walking-bit blit 5 is $0C0000, an address of the results area (prog_p2w_map); TG68K: FAIL P2W-MAP, P2W-FINISHED; NOT GRADED 3; fx68k: FAIL P2W-MAP, P2W-FINISHED; NOT GRADED 3
+// MUTATION P2-ANCHOR stimulus red NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 6; fx68k: FAIL P2-ANCHOR; NOT GRADED 6
+// MUTATION P2W-ANCHOR stimulus red NMH_MUTATE=P2W-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2W-ANCHOR; NOT GRADED 3; fx68k: FAIL P2W-ANCHOR; NOT GRADED 3
+// MUTATION P2-FINISHED stimulus red NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 6; fx68k: FAIL P2-FINISHED; NOT GRADED 6
+// MUTATION P2W-FINISHED stimulus red NMH_MUTATE=P2W-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2W-FINISHED; NOT GRADED 3; fx68k: FAIL P2W-FINISHED; NOT GRADED 3
 // MUTATION P2-V1 stimulus red NMH_MUTATE=P2-V1: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2
 // MUTATION P2-V2 stimulus red NMH_MUTATE=P2-V2: PTL written $AAA8 in place of $AAAA in the V2 blits; TG68K: FAIL P2-V2, P2; fx68k: FAIL P2-V2, P2
 // MUTATION P2-PTH5 stimulus red NMH_MUTATE=P2-PTH5: PTH written $0025 in place of $0035 in the four contrast blits; TG68K: FAIL P2-PTH5, P2; fx68k: FAIL P2-PTH5, P2
+// MUTATION P2-WALK1 stimulus red NMH_MUTATE=P2-WALK1: the walking-one blit of channel B for address bit 7 is written with the pointer of address bit 8 (prog_p2w_pos); TG68K: FAIL P2-WALK1, P2; fx68k: FAIL P2-WALK1, P2
+// MUTATION P2-WALK0 stimulus red NMH_MUTATE=P2-WALK0: the walking-zero blit of channel C for address bit 12 is written with its pointer shifted up one bit (prog_p2w_pos0); TG68K: FAIL P2-WALK0, P2; fx68k: FAIL P2-WALK0, P2
 // MUTATION P2 stimulus red NMH_MUTATE=P2: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2
 // MUTATION P3-FIXTURE stimulus red NMH_MUTATE=P3-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P3-FIXTURE; NOT GRADED 3; fx68k: FAIL P3-FIXTURE; NOT GRADED 3
-// MUTATION P3-CONFIG oracle red NMH_MUTATE=P3-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P3-CONFIG; NOT GRADED 3; fx68k: FAIL P3-CONFIG; NOT GRADED 3
 // MUTATION P3-ANCHOR stimulus red NMH_MUTATE=P3-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P3-ANCHOR; NOT GRADED 3; fx68k: FAIL P3-ANCHOR; NOT GRADED 3
 // MUTATION P3-FINISHED stimulus red NMH_MUTATE=P3-FINISHED: BLTSIZE $00C3 (height 3) in place of $0083; TG68K: FAIL P3-FINISHED; NOT GRADED 3; fx68k: FAIL P3-FINISHED; NOT GRADED 3
 // MUTATION P3-ASC stimulus red NMH_MUTATE=P3-ASC: channel A's pointer $0E0200 in place of $0E0100 in the ascending blit; TG68K: FAIL P3-ASC, P3; fx68k: FAIL P3-ASC, P3
 // MUTATION P3-DESC stimulus red NMH_MUTATE=P3-DESC: channel A's pointer $0E0200 in place of $0E0100 in the descending blit; TG68K: FAIL P3-DESC, P3; fx68k: FAIL P3-DESC, P3
 // MUTATION P3 stimulus red NMH_MUTATE=P3: channel A's pointer $0E0200 in place of $0E0100 in both blits; TG68K: FAIL P3-ASC, P3-DESC, P3; fx68k: FAIL P3-ASC, P3-DESC, P3
 // MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5
-// MUTATION P4-CONFIG oracle red NMH_MUTATE=P4-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P4-CONFIG; NOT GRADED 5; fx68k: FAIL P4-CONFIG; NOT GRADED 5
 // MUTATION P4-ANCHOR stimulus red NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5
 // MUTATION P4-FINISHED stimulus red NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5
 // MUTATION P4-INC stimulus red NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write adds an access to channel A's region: the first blit then has no line of W accesses per channel and no step is measured, so the line is red through the access count; the constant-step clause has no mutation of its own; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5
@@ -55,7 +58,6 @@
 // MUTATION P4-D stimulus red NMH_MUTATE=P4-D: BLTDMOD written 14 in place of 10 in the first blit; TG68K: FAIL P4-D, P4; fx68k: FAIL P4-D, P4
 // MUTATION P4 stimulus red NMH_MUTATE=P4: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
 // MUTATION P5-FIXTURE stimulus red NMH_MUTATE=P5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P5-FIXTURE; NOT GRADED 5; fx68k: FAIL P5-FIXTURE; NOT GRADED 5
-// MUTATION P5-CONFIG oracle red NMH_MUTATE=P5-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P5-CONFIG; NOT GRADED 5; fx68k: FAIL P5-CONFIG; NOT GRADED 5
 // MUTATION P5-REGIONS stimulus red NMH_MUTATE=P5-REGIONS: the modulo $3FFE of the set replaced by $7FFE; TG68K: FAIL P5-REGIONS; NOT GRADED 5; fx68k: FAIL P5-REGIONS; NOT GRADED 5
 // MUTATION P5-ANCHOR stimulus red NMH_MUTATE=P5-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P5-ANCHOR; NOT GRADED 5; fx68k: FAIL P5-ANCHOR; NOT GRADED 5
 // MUTATION P5-FINISHED stimulus red NMH_MUTATE=P5-FINISHED: BLTSIZE $0142 (height 5) in place of $0102; TG68K: FAIL P5-FINISHED; NOT GRADED 5; fx68k: FAIL P5-FINISHED; NOT GRADED 5
@@ -66,7 +68,6 @@
 // MUTATION P5-D stimulus red NMH_MUTATE=P5-D: the modulo of channel D in the first blit is $3FFC in place of $3FFE; TG68K: FAIL P5-D, P5; fx68k: FAIL P5-D, P5
 // MUTATION P5 stimulus red NMH_MUTATE=P5: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
 // MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3
-// MUTATION P6-CONFIG oracle red NMH_MUTATE=P6-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P6-CONFIG; NOT GRADED 3; fx68k: FAIL P6-CONFIG; NOT GRADED 3
 // MUTATION P6-ANCHOR stimulus red NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3
 // MUTATION P6-FINISHED stimulus red NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3
 // MUTATION P6-INC stimulus red NMH_MUTATE=P6-INC: BLTSIZE $0102 (height 4) in place of $00C2: no channel makes W*H = 6 accesses, so no step is measured and the line is red through the empty population; the constant-step clause has no mutation of its own; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3
@@ -74,7 +75,6 @@
 // MUTATION P6-COUNT stimulus red NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6
 // MUTATION P6 stimulus red NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
 // MUTATION P7-FIXTURE stimulus red NMH_MUTATE=P7-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P7-FIXTURE; NOT GRADED 27; fx68k: FAIL P7-FIXTURE; NOT GRADED 27
-// MUTATION P7-CONFIG oracle red NMH_MUTATE=P7-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P7-CONFIG; NOT GRADED 27; fx68k: FAIL P7-CONFIG; NOT GRADED 27
 // MUTATION P7-FETCH stimulus red NMH_MUTATE=P7-FETCH: the Copper's MOVE to each register is a MOVE to COLOR00, COPCON bit 1 set; TG68K: FAIL P7-FETCH; NOT GRADED 15; fx68k: FAIL P7-FETCH; NOT GRADED 15
 // MUTATION P7-COPER stimulus red NMH_MUTATE=P7-COPER: the MOVE to INTREQ in every list is a MOVE to the no-operation register; TG68K: FAIL P7-COPER; NOT GRADED 15; fx68k: FAIL P7-COPER; NOT GRADED 15
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-BLIT: BLTEN clear for the final blit; TG68K: FAIL P7-BLIT; NOT GRADED 27; fx68k: FAIL P7-BLIT; NOT GRADED 27
@@ -106,15 +106,18 @@
 // MUTATION P7-PTH stimulus red NMH_MUTATE=P7-PTH: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
 // MUTATION P7-PTL stimulus red NMH_MUTATE=P7-PTL: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
 // MUTATION P7-MOD stimulus red NMH_MUTATE=P7-MOD: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
-// MUTATION P8-FIXTURE stimulus red NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P8-FIXTURE; NOT GRADED 5; fx68k: FAIL P8-FIXTURE; NOT GRADED 5
-// MUTATION P8-ANCHOR stimulus red NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before; TG68K: FAIL P8-ANCHOR; NOT GRADED 5; fx68k: FAIL P8-ANCHOR; NOT GRADED 5
-// MUTATION P8-FIT stimulus red NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; TG68K: FAIL P8-FIT; NOT GRADED 5; fx68k: FAIL P8-FIT; NOT GRADED 5
-// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS
-// MUTATION P8-0-VH stimulus red NMH_MUTATE=P8-0-VH on the private build of 6.6: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; private TG68K build: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
-// MUTATION P8-0-HH stimulus red NMH_MUTATE=P8-0-HH on the private build of 6.6: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; private TG68K build: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
-// MUTATION P8-1-VH stimulus red NMH_MUTATE=P8-1-VH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
-// MUTATION P8-1-HH stimulus red NMH_MUTATE=P8-1-HH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
-// MUTATION P8 stimulus red NMH_MUTATE=P8 on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P8-FIXTURE stimulus red NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; repository build TG68K: FAIL P8-FIXTURE; NOT GRADED 1; repository build fx68k: FAIL P8-FIXTURE; NOT GRADED 1
+// MUTATION P8-ANCHOR stimulus red NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before (prog_lpen_rev); repository build TG68K: FAIL P8-ANCHOR; NOT GRADED 5; NOT CHECKABLE 1; repository build fx68k: FAIL P8-ANCHOR; NOT GRADED 5; NOT CHECKABLE 1
+// MUTATION P8-FIT stimulus red NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; repository build TG68K: FAIL P8-FIT; NOT GRADED 7; NOT CHECKABLE 1; repository build fx68k: FAIL P8-FIT; NOT GRADED 7; NOT CHECKABLE 1
+// MUTATION P8-TRIGGER stimulus red NMH_MUTATE=P8-TRIGGER: the pulse is not driven: the fire inputs stay released; repository build TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; repository build fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1
+// MUTATION P8-ALIGN stimulus red NMH_MUTATE=P8-ALIGN: the pulse runs use the program with four more instructions in the sample loop (prog_lpen_slow); repository build TG68K: FAIL P8-ALIGN; NOT GRADED 5; NOT CHECKABLE 1; repository build fx68k: FAIL P8-ALIGN; NOT GRADED 5; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-ALIGN; NOT GRADED 5; fx68k: FAIL P8-ALIGN; NOT GRADED 5
+// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE: BPLCON0 bit 3 set in the control run, so that the pulse freezes the samples again; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-LPE; NOT GRADED 5; fx68k: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build
+// MUTATION P8-HHRUN stimulus red NMH_MUTATE=P8-HHRUN: the dry run that must show HHPOSR running takes one sample, in which HHPOSR cannot take two values; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; fx68k: no FAIL; NOT GRADED 3; NOT CHECKABLE 1
+// MUTATION P8-0-VH stimulus red NMH_MUTATE=P8-0-VH: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8; fx68k: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build
+// MUTATION P8-0-HH stimulus red NMH_MUTATE=P8-0-HH: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build
+// MUTATION P8-1-VH stimulus red NMH_MUTATE=P8-1-VH: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build
+// MUTATION P8-1-HH stimulus red NMH_MUTATE=P8-1-HH: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build
+// MUTATION P8 stimulus red NMH_MUTATE=P8: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build
 // MUTATION F5-FIXTURE stimulus red NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5; fx68k: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5
 // MUTATION F5-LINES stimulus red NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5
 // MUTATION F5-ALIGN stimulus red NMH_MUTATE=F5-ALIGN: HTOTAL $00E0 in place of $00E2 in S-H2; TG68K: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3
@@ -258,6 +261,8 @@ bool want(const char* prop) {
     if (only && std::string(only) != prop) return false;
     if (!g_mutate) return true;
     std::string m = g_mutate, p = prop;
+    if (m.compare(0, 4, "P2W-") == 0) return p == "P2";   // the walking-bit lines belong to P2
+    if (m == "CONFIG") return p == "P1";   // the mutated configuration is the one a run is built from
     return m == p || m.compare(0, p.size() + 1, p + "-") == 0;
 }
 
@@ -306,6 +311,9 @@ nmh::Config make_config() {
     cfg.memory_config  = 0x03;     // 2.0 MB Chip memory
     return cfg;
 }
+// The one Config object: every harness of every run is built from it, and CONFIG reads it.
+nmh::Config g_cfg;
+bool g_cfg_ok = false;
 
 using Range = std::pair<uint32_t, uint32_t>;
 
@@ -325,7 +333,7 @@ struct RunOpts {
 
 std::shared_ptr<RunData> run_opts(const RunOpts& o) {
     auto r = std::make_shared<RunData>();
-    nmh::NanomigHarness h(make_config());
+    nmh::NanomigHarness h(g_cfg);
     r->loaded = h.load_program(g_dir + "/" + o.prog + ".bin") > 0;
     if (!r->loaded) return r;
     for (const auto& p : o.pokes) h.poke_word(p.first / 2, p.second);
@@ -539,9 +547,6 @@ void proposition_p1() {
     BRun fx = mutating("P1-FIXTURE") ? brun("prog_p1_nofix", 4, &kLay1) : mn;
     g.expect(fx.fixture, "P1-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
 
-    nmh::Config cfg = make_config();
-    if (mutating("P1-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P1-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     bool anchor = true;
     if (full("P1-ANCHOR")) {
@@ -577,7 +582,7 @@ void proposition_p1() {
     g.expect(inc_const && inc.has_value(), "P1-INC: within every line of every enabled channel consecutive addresses differ by one constant step");
     checks.note("P1 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
 
-    bool pre = fx.fixture && config_ok(cfg) && anchor && finished && inc_const && inc.has_value();
+    bool pre = fx.fixture && g_cfg_ok && anchor && finished && inc_const && inc.has_value();
     long long step = inc.value_or(0);
 
     // The pointers and modulos of the page's table: C 048/04A 060, B 04C/04E 062,
@@ -638,9 +643,6 @@ void proposition_p2() {
     BRun fx = mutating("P2-FIXTURE") ? brun("prog_p2_nofix", 12, nullptr) : mn;
     g.expect(fx.fixture, "P2-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
 
-    nmh::Config cfg = make_config();
-    if (mutating("P2-CONFIG")) cfg.memory_config = 0x00;
-    g.expect(config_ok(cfg), "P2-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03), which the pointer values above 1 MB need");
 
     // the program image, stack, markers and results do not overlap a region:
     // computed from the pointers the program wrote
@@ -679,7 +681,7 @@ void proposition_p2() {
     }
     g.expect(finished, "P2-FINISHED: every blit raised BLIT, read BBUSY clear, and the channel under test and channel D each made exactly W*H = 1 access");
 
-    bool pre = fx.fixture && config_ok(cfg) && map_ok && anchor && finished;
+    bool pre = fx.fixture && g_cfg_ok && map_ok && anchor && finished;
 
     // V1 and V2: the access sits at the written address, for each channel
     auto one_at = [&](int i, uint32_t want_byte) {
@@ -697,7 +699,88 @@ void proposition_p2() {
     g.expect_if(pre, v1, "P2-V1: with the pointer written as PTH $0015, PTL $5554 (byte address $155554) each of channels A, B, C and D accesses word address $0AAAAA");
     g.expect_if(pre, v2, "P2-V2: with the pointer written as PTH $000A, PTL $AAAA (byte address $0AAAAA) each of channels A, B, C and D accesses word address $055555");
     g.expect_if(pre, p5, "P2-PTH5: with PTH bit 5 set in addition (PTH $0035, PTL $5554) each of channels A, B, C and D accesses the same word address $0AAAAA as with it clear, and nothing is accessed at byte $355554-$355653");
-    g.expect_if(pre, v1 && v2 && p5,
+    // ---- walking one and walking zero: every address bit on every channel (prog_p2w) ----
+    std::string wprog = sel("prog_p2w", {{"P2W-MAP", "prog_p2w_map"}, {"P2-WALK1", "prog_p2w_pos"},
+                                         {"P2-WALK0", "prog_p2w_pos0"}});
+    BRun wm = brun(wprog, 160, nullptr);
+    const int wch[4] = {kA, kB, kC, kD};
+    auto wcpu = [](uint32_t a) {
+        return (a >= 0x080400 && a < 0x081000) || (a >= 0x0C0000 && a < 0x0C1002) || (a >= 0x0FFE00 && a < 0x0FFF00);
+    };
+    auto wfill = [&](BRun& b) {
+        for (int i = 0; i < 160; ++i) {
+            const int ch = wch[i / 40];
+            std::vector<Acc> own, neutral;
+            if (b.win[i].ok)
+                for (const auto& a : b.r->acc) {
+                    if (a.cyc < b.win[i].t0 || a.cyc > b.win[i].t1 || wcpu(a.byte) || a.byte == 0) continue;
+                    if (ch != kD && a.wr && a.byte == kNeutralD) neutral.push_back(a);
+                    else own.push_back(a);
+                }
+            b.ch[i][ch] = own;
+            if (ch != kD) b.ch[i][kD] = neutral;
+        }
+    };
+    wfill(wm);
+    auto wptr = [&](const BRun& b, int i) {
+        return ((uint32_t)b.r->word(kResults + 0x400 + 4 * i) << 16) | b.r->word(kResults + 0x402 + 4 * i);
+    };
+    auto wexpect = [&](int i) {
+        const int pos = i % 20 + 1;
+        return ((i % 40) < 20) ? (uint32_t)(1u << pos) : (uint32_t)(0x1FFFFEu ^ (1u << pos));
+    };
+    BRun wfx = mutating("P2W-FIXTURE") ? brun("prog_p2w_nofix", 160, nullptr) : wm;
+    g.expect(wfx.fixture, "P2W-FIXTURE: the walking-bit program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    bool wmap_ok = true;
+    for (int i = 0; i < 160; ++i) {
+        uint32_t p = wptr(wm, i), lo = p, hi = p + 2;
+        auto overlaps = [&](uint32_t a, uint32_t b2) { return lo < b2 && a < hi; };
+        if (overlaps(kProgLo, kProgHi) || overlaps(kResults, kMarker + 2) || overlaps(0x0FFE00, 0x0FFF00)) wmap_ok = false;
+    }
+    g.expect(wmap_ok, "P2W-MAP: no pointer of any walking-bit blit addresses the program image, the results area, the marker area or the stack");
+    bool wanchor = true;
+    if (full("P2W-ANCHOR")) {
+        // the sparse variant: address bits 1 and 20 of every channel and mode, 16 blits (a blit that makes no
+        // memory cycle waits for the timeout of 2.2)
+        BRun c = brun(mutating("P2W-ANCHOR") ? "prog_p2w_sparse" : "prog_p2w_nobl", 16, nullptr);
+        bool windows = c.fixture, empty = true;
+        std::string s;
+        for (int i = 0; i < 16; ++i) {
+            windows = windows && c.win[i].ok;
+            if (!c.win[i].ok) continue;
+            for (const auto& a : c.r->acc)
+                if (a.cyc >= c.win[i].t0 && a.cyc <= c.win[i].t1 && !wcpu(a.byte) && a.byte != 0) {
+                    empty = false;
+                    if (s.size() < 60) s += " " + dec(i) + ":" + hexs(a.byte) + (a.wr ? "w" : "r");
+                }
+        }
+        wanchor = windows && empty;
+        if (!s.empty()) checks.note("P2W-ANCHOR measured, BLTEN clear: accesses (blit:byte address) that no CPU range explains:" + s);
+        g.expect(wanchor, "P2W-ANCHOR: with DMAEN set and BLTEN clear, the 16 walking-bit blits of address bits 1 and 20 make no access outside the program's own ranges between BLIT_GO and BLIT_DONE");
+    } else checks.record("P2W-ANCHOR: not evaluated in this mutation run");
+    BRun wfin = wm;
+    if (mutating("P2W-FINISHED")) { wfin = brun("prog_p2w_h3", 160, nullptr); wfill(wfin); }
+    bool wfinished = wfin.fixture;
+    for (int i = 0; i < 160; ++i) {
+        const int ch = wch[i / 40];
+        wfinished = wfinished && wfin.win[i].ok && wfin.seen[i] && wfin.bbusy_clear[i] && wfin.ch[i][ch].size() == 1;
+        if (ch != kD) wfinished = wfinished && wfin.ch[i][kD].size() == 1;
+    }
+    g.expect(wfinished, "P2W-FINISHED: every walking-bit blit raised BLIT, read BBUSY clear, and the channel under test and channel D each made exactly W*H = 1 access");
+    bool prew = pre && wfx.fixture && wmap_ok && wanchor && wfinished;
+    bool w1 = true, w0 = true;
+    std::string wm1, wm0;
+    for (int i = 0; i < 160; ++i) {
+        const int ch = wch[i / 40];
+        bool good = wm.win[i].ok && wm.ch[i][ch].size() == 1 && wm.ch[i][ch][0].byte == wexpect(i) && wm.ch[i][ch][0].wr == (ch == kD);
+        if ((i % 40) < 20) { w1 = w1 && good; if (!good) wm1 += " " + dec(i); }
+        else { w0 = w0 && good; if (!good) wm0 += " " + dec(i); }
+    }
+    checks.note("P2 measured: walking-bit blits whose access is not at the expected address: walking one:" + (wm1.empty() ? std::string(" none") : wm1) +
+                "; walking zero:" + (wm0.empty() ? std::string(" none") : wm0));
+    g.expect_if(prew, w1, "P2-WALK1: with a pointer that has exactly one of the address bits 1-20 set (PTH bits 4-0 are address bits 20-16, PTL bits 15-1 address bits 15-1) each of channels A, B, C and D accesses the word whose address has exactly that bit set, for each of the 20 bits");
+    g.expect_if(prew, w0, "P2-WALK0: with a pointer that has exactly one of the address bits 1-20 clear each of channels A, B, C and D accesses the word whose address has exactly that bit clear, for each of the 20 bits");
+    g.expect_if(pre && prew, v1 && v2 && p5 && w1 && w0,
         "P2: opus:AA-bltxpth.c7 opus:AA-bltxptl.c6 opus:AA-bltxpth.c8 sol:AA-bltxpth.c4 sol:AA-bltxptl.c4 sol:AA-bltxpt.c1 opus:AA-bltxpth.c5 opus:AA-bltxptl.c4: "
         "a pointer pair is one 20-bit address, PTH bits 4-0 are address bits 20-16 and PTL bits 15-1 are address bits 15-1, for each of the four channels, and PTH bit 5 is not an address bit");
 }
@@ -713,9 +796,6 @@ void proposition_p3() {
     BRun mn = brun(main_prog, 2, &kLay1);
     BRun fx = mutating("P3-FIXTURE") ? brun("prog_p3_nofix", 2, &kLay1) : mn;
     g.expect(fx.fixture, "P3-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    nmh::Config cfg = make_config();
-    if (mutating("P3-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P3-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     bool anchor = true;
     if (full("P3-ANCHOR")) {
@@ -736,7 +816,7 @@ void proposition_p3() {
         for (int k = 0; k < 4; ++k) finished = finished && fin.ch[i][k].size() == (size_t)(W * H);
     }
     g.expect(finished, "P3-FINISHED: both blits raised BLIT, read BBUSY clear, and every channel made exactly W*H = 6 accesses");
-    bool pre = fx.fixture && config_ok(cfg) && anchor && finished;
+    bool pre = fx.fixture && g_cfg_ok && anchor && finished;
 
     auto first_ok = [&](int blit) {
         bool ok = mn.win[blit].ok;
@@ -767,9 +847,6 @@ void proposition_p4() {
     BRun mn = brun(main_prog, 2, &kLay1);
     BRun fx = mutating("P4-FIXTURE") ? brun("prog_p4_nofix", 2, &kLay1) : mn;
     g.expect(fx.fixture, "P4-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    nmh::Config cfg = make_config();
-    if (mutating("P4-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P4-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     bool anchor = true;
     if (full("P4-ANCHOR")) {
@@ -799,7 +876,7 @@ void proposition_p4() {
     g.expect(inc_const && inc.has_value(), "P4-INC: within every line of the first blit consecutive addresses of every channel differ by one constant step");
     checks.note("P4 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
     checks.record("P4-NOWRITE: that no pointer or modulo register is written between the two blits follows from the program text and is not visible at the port, so it is not graded");
-    bool pre = fx.fixture && config_ok(cfg) && anchor && finished && inc_const && inc.has_value();
+    bool pre = fx.fixture && g_cfg_ok && anchor && finished && inc_const && inc.has_value();
     long long step = inc.value_or(0);
 
     bool ok[4];
@@ -833,9 +910,6 @@ void proposition_p5() {
     BRun mn = brun(main_prog, 5, &kLay5);
     BRun fx = mutating("P5-FIXTURE") ? brun("prog_p5_nofix", 5, &kLay5) : mn;
     g.expect(fx.fixture, "P5-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    nmh::Config cfg = make_config();
-    if (mutating("P5-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P5-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     // the largest excursion of every channel stays inside its region, from the
     // pointers and modulos the program wrote
@@ -884,7 +958,7 @@ void proposition_p5() {
         }
     g.expect(inc_const && inc.has_value(), "P5-INC: within every line of every channel in every blit consecutive addresses differ by one constant step");
     checks.note("P5 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
-    bool pre = fx.fixture && config_ok(cfg) && regions_ok && anchor && finished && inc_const && inc.has_value();
+    bool pre = fx.fixture && g_cfg_ok && regions_ok && anchor && finished && inc_const && inc.has_value();
     long long step = inc.value_or(0);
 
     // blit j gives A, B, C, D the values with indices j, j+1, j+2, j+3 (mod 5)
@@ -923,9 +997,6 @@ void proposition_p6() {
     BRun mn = brun(main_prog, 1, &kLay1);
     BRun fx = mutating("P6-FIXTURE") ? brun("prog_p6_nofix", 1, &kLay1) : mn;
     g.expect(fx.fixture, "P6-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    nmh::Config cfg = make_config();
-    if (mutating("P6-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P6-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     bool anchor = true;
     if (full("P6-ANCHOR")) {
@@ -939,7 +1010,7 @@ void proposition_p6() {
     BRun fin = mutating("P6-FINISHED") ? brun("prog_p6_nobl", 1, &kLay1) : mn;
     bool finished = fin.fixture && fin.win[0].ok && fin.seen[0] && fin.bbusy_clear[0];
     g.expect(finished, "P6-FINISHED: the blit raised BLIT and BBUSY read clear");
-    bool pre = fx.fixture && config_ok(cfg) && anchor && finished;
+    bool pre = fx.fixture && g_cfg_ok && anchor && finished;
 
     // the increment is measured on the channels that make W*H accesses; how many
     // accesses each channel makes is what P6-COUNT grades
@@ -1080,9 +1151,6 @@ void proposition_p7() {
     if (a0) fx = fx && a0->fixture;
     if (a1) fx = fx && a1->fixture;
     g.expect(fx, "P7-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    nmh::Config cfg = make_config();
-    if (mutating("P7-CONFIG")) cfg.chipset_config = 0x08;
-    g.expect(config_ok(cfg), "P7-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     bool fetch_all = true, coper_all = true, blit_all = true;
     bool fetched[2][12] = {}, coper_k[2][12] = {};
@@ -1110,7 +1178,7 @@ void proposition_p7() {
         g.expect(anchor, "P7-ANCHOR: with DMAEN set and BLTEN clear, the same blit makes no port access in any channel region between BLIT_GO and BLIT_DONE");
     } else checks.record("P7-ANCHOR: not evaluated in this mutation run");
 
-    bool pre = fx && config_ok(cfg) && anchor && blit_all;
+    bool pre = fx && g_cfg_ok && anchor && blit_all;
 
     // per register and per run: the value the blit shows, against the page's prediction
     bool ok[2][12] = {};
@@ -1180,9 +1248,10 @@ void proposition_p7() {
 // port shows the stores with their times.
 struct Sm {
     uint64_t t;      // port time of the store of the VHPOSR word
+    uint64_t tend = 0;   // port time of the last store of the sample
     int V, H;        // V = (VPOSR & 7) * 256 + (VHPOSR >> 8), H = VHPOSR & $FF
     int lol;         // VPOSR bit 7
-    uint16_t vposr, vhposr, hh;
+    uint16_t vposr, vhposr, hh, cia;
 };
 
 // The long word is read as two bus cycles, VPOSR first. A sample taken at the
@@ -1193,9 +1262,9 @@ struct Sm {
 // graded on it as read.
 int g_tears = 0;
 
-std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool hh) {
-    const uint32_t rec = hh ? 6 : 4;
-    struct Rec { uint16_t w[3] = {0, 0, 0}; uint64_t t1 = 0; int got = 0; };
+std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool hh, bool cia = false) {
+    const uint32_t rec = cia ? 8 : hh ? 6 : 4;
+    struct Rec { uint16_t w[4] = {0, 0, 0, 0}; uint64_t t1 = 0, tl = 0; int got = 0; };
     std::map<uint32_t, Rec> m;
     for (const auto& a : r.acc) {
         if (!a.wr || a.byte < base || a.byte >= limit) continue;
@@ -1204,13 +1273,14 @@ std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool
         x.w[f] = a.data;
         x.got |= 1 << f;
         if (f == 1) x.t1 = a.cyc;
+        x.tl = std::max(x.tl, a.cyc);
     }
     std::vector<Sm> out;
     for (const auto& kv : m) {
         const Rec& x = kv.second;
-        if ((x.got & 3) != 3 || (hh && !(x.got & 4))) continue;
+        if ((x.got & 3) != 3 || (hh && !(x.got & 4)) || (cia && !(x.got & 8))) continue;
         Sm s;
-        s.t = x.t1; s.vposr = x.w[0]; s.vhposr = x.w[1]; s.hh = hh ? x.w[2] : 0;
+        s.t = x.t1; s.tend = x.tl; s.vposr = x.w[0]; s.vhposr = x.w[1]; s.hh = hh ? x.w[2] : 0; s.cia = cia ? x.w[3] : 0;
         s.V = ((x.w[0] & 7) << 8) | (x.w[1] >> 8);
         s.H = x.w[1] & 0xFF;
         s.lol = (x.w[0] >> 7) & 1;
@@ -2247,7 +2317,7 @@ LpRun lp_run(uint16_t bc0, int nsamp, uint16_t bplcon0, bool pulse, uint64_t del
     LpRun l;
     l.r = run_opts(o);
     l.fixture = l.r->loaded && l.r->done && l.r->word(kResults) == 0xBEEF;
-    l.s = samples_of(*l.r, kLpBuf, kLpBuf + 0x20000, true);
+    l.s = samples_of(*l.r, kLpBuf, kLpBuf + 0x20000, true, true);
     auto g1 = find_mark(*l.r, kMLpGo);
     if (g1) l.t_go = l.r->marks[*g1].cyc;
     return l;
@@ -2259,7 +2329,10 @@ bool vh_less(const Sm& a, const Sm& b) { return a.V < b.V || (a.V == b.V && a.H 
 void proposition_p8() {
     if (!want("P8")) return;
     // the dry run: the program as P8-0 without the pulse
-    LpRun dry = lp_run(0x0020, 300, 0x0008, false, 0, 0, mutating("P8-FIXTURE") ? "prog_lpen_nofix" : "prog_lpen");
+    LpRun dry = lp_run(0x0020, 120, 0x0008, false, 0, 0, mutating("P8-FIXTURE") ? "prog_lpen_nofix" : "prog_lpen");
+    // the fixture is asserted before any sample of the dry run is printed or used
+    g.expect(dry.fixture, "P8-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    if (!dry.fixture) { checks.record("NOT GRADED: P8: the fixture does not hold, so no sample of the dry run is used"); return; }
     std::vector<Sm> ds = dry.s;
     long long tc = colour_clock(ds);
     // fit D and N: the pulse falls on line 255, three samples before its last sample
@@ -2268,9 +2341,8 @@ void proposition_p8() {
     bool fit_ok = iL >= 7 && tc > 0 && dry.t_go > 0;
     int ip = fit_ok ? (mutating("P8-FIT") ? 2 : iL - 3) : 0;
     int nsamp = fit_ok ? iL + 14 : 0;
-    if (nsamp > 300) fit_ok = false;
-    uint64_t delay = fit_ok ? (ds[ip].t + 2 - dry.t_go) : 0;
-    uint64_t plen = fit_ok ? (uint64_t)(2 * tc) : 0;
+    if (nsamp > 120) fit_ok = false;
+    uint64_t delay = fit_ok ? (ds[ip].tend + 2 - dry.t_go) : 0;
     long long interval = 0;   // the median store-time difference of consecutive samples, in system clocks
     if (ds.size() > 8) {
         std::vector<long long> d;
@@ -2278,9 +2350,11 @@ void proposition_p8() {
         std::sort(d.begin(), d.end());
         interval = d[d.size() / 2];
     }
+    // the pulse lasts one sample interval and 2*T_C, so that at least one read of the CIA fire inputs falls inside it
+    uint64_t plen = fit_ok ? (uint64_t)(interval + 2 * tc) : 0;
     checks.note("P8 measured: colour clock T_C = " + dec(tc) + " system clocks, sample interval = " + dec(interval) +
                 " system clocks, " + dec((long long)ds.size()) + " dry-run samples, last line-255 sample index " + dec(iL) +
-                ", pulse delay D = " + dec((long long)delay) + ", samples N = " + dec(nsamp));
+                ", pulse delay D = " + dec((long long)delay) + ", pulse length = " + dec((long long)plen) + ", samples N = " + dec(nsamp));
 
     {
         std::string lst;
@@ -2289,27 +2363,18 @@ void proposition_p8() {
         checks.note("P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO:" + lst);
     }
     // preconditions on the dry run
-    g.expect(dry.fixture, "P8-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool crosses = false;
     for (size_t i = 1; i < ds.size(); ++i) if (ds[i - 1].V == 255 && ds[i].V == 256) crosses = true;
     checks.note("P8 measured: dry run over all " + dec((long long)ds.size()) + " samples: F4 violations = " + dec(f4_violations(ds, false)) + ", line wraps with V not yet stepped = " +
                 dec(f4_lag(ds)) + ", crosses 255 to 256 = " + dec(crosses ? 1 : 0) +
                 ", last sample V:H = " + (ds.empty() ? std::string("n/a") : dec(ds.back().V) + ":" + dec(ds.back().H)));
     LpRun dry_anchor = dry;
-    if (mutating("P8-ANCHOR")) dry_anchor = lp_run(0x0020, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0, "prog_lpen_rev");
+    if (mutating("P8-ANCHOR")) dry_anchor = lp_run(0x0020, nsamp > 0 ? nsamp : 120, 0x0008, false, 0, 0, "prog_lpen_rev");
     // the anchor is checked over the samples of the window the pulse runs take
     if (nsamp > 0 && (int)dry_anchor.s.size() > nsamp) dry_anchor.s.resize(nsamp);
     int viol_a = f4_violations(dry_anchor.s, false);
     g.expect(!dry_anchor.s.empty() && viol_a == 0 && crosses,
              "P8-ANCHOR: in the dry run (no pulse) the samples of the window show the counters running: V never decreases and H increases within a line, and the samples cross from V = 255 to V = 256");
-    // the alternate counter runs: HHPOSR takes at least two different values in the dry run
-    LpRun hh_run = dry;
-    if (mutating("P8-HHRUN")) hh_run = lp_run(0x0060, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0);
-    bool hh_moves = false;
-    for (size_t i = 1; i < hh_run.s.size(); ++i) if (hh_run.s[i].hh != hh_run.s[0].hh) hh_moves = true;
-    if (hh_moves) checks.note("P8-HHRUN: in the dry run HHPOSR takes at least two different values, so the alternate counter runs and HHPOSR is graded");
-    else checks.record("P8-HHRUN: in the dry run HHPOSR takes one value only (" + hexs(hh_run.s.empty() ? 0 : hh_run.s[0].hh, 4) +
-                       "): the page does not say whether the alternate counter runs with DUAL = 0, so HHPOSR is not graded in either setting");
     bool fit_geom = fit_ok;
     if (fit_ok) {
         // the pulse falls on line 255 and at least 4 samples fall before it and 8 after it
@@ -2322,6 +2387,7 @@ void proposition_p8() {
 
     // the pulse runs
     bool pulse_on = !mutating("P8-TRIGGER");
+    const char* pulse_prog = mutating("P8-ALIGN") ? "prog_lpen_slow" : "prog_lpen";
     // P8-0-HH swaps LPENDIS between the two pulse runs (the latch is then in the P8-1 run and the
     // P8-0 run reads the running counters); P8-1-VH, P8-1-HH and P8 clear it in the P8-1 run
     uint16_t bc0_for_0 = mutating("P8-0-HH") ? 0x2020 : 0x0020;
@@ -2330,15 +2396,15 @@ void proposition_p8() {
     uint64_t delay0 = delay;
     if (mutating("P8-0-VH") && fit_geom)
         for (size_t i = 0; i + 1 < ds.size(); ++i)
-            if (ds[i].V == 256) { delay0 = ds[i + 1].t + 2 - dry.t_go; break; }
-    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay0, plen) : LpRun();
-    LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen) : LpRun();
+            if (ds[i].V == 256) { delay0 = ds[i + 1].tend + 2 - dry.t_go; break; }
+    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay0, plen, pulse_prog) : LpRun();
+    LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen, pulse_prog) : LpRun();
 
     auto split = [&](const LpRun& L, std::vector<Sm>& before, std::vector<Sm>& after) {
         before.clear(); after.clear();
         if (!L.r) return;
         for (const auto& x : L.s) {
-            if (x.t < L.r->pulse_start) before.push_back(x);
+            if (x.tend < L.r->pulse_start) before.push_back(x);
             else if (x.t > L.r->pulse_end + (uint64_t)interval) after.push_back(x);
         }
     };
@@ -2350,9 +2416,43 @@ void proposition_p8() {
         for (const auto& x : a) if (!vh_equal(x, a[0])) return false;
         return true;
     };
-    bool trig = (frozen(a0s) || frozen(a1s));
-    if (trig) checks.note("P8-TRIGGER: the pulse reaches the chip: in at least one of the two pulse runs every sample taken after the pulse shows one identical (V,H)");
-    else checks.record("P8-TRIGGER: in neither pulse run do the samples taken after the pulse show one identical (V,H): the chip did not see the trigger, so P8 is not checkable");
+
+    // P8-TRIGGER: the pulse reaches pin 6 of the controller ports, shown by the program's own read of the CIA-A fire inputs
+    // (HRM p.339: CIA-A PRA bits 7 and 6 are /FIR1 and /FIR0, low when the fire button is pressed): a sample read while the pulse
+    // is driven shows both bits low, and no sample read before or after it does
+    auto delivered = [&](const LpRun& L) {
+        if (!L.r || L.s.empty() || L.r->pulse_start == 0) return false;
+        bool in = false, ok = true;
+        for (const auto& x : L.s) {
+            bool pressed = (x.cia & 0xC0) == 0;
+            if (x.tend < L.r->pulse_start || x.t > L.r->pulse_end + (uint64_t)interval) { if (pressed) ok = false; }
+            else if (pressed) in = true;
+        }
+        return in && ok;
+    };
+    bool trig = delivered(p0) && delivered(p1);
+    g.expect_if(fit_geom, trig, "P8-TRIGGER: the pulse reaches pin 6 of the controller ports: the CIA-A fire inputs (PRA bits 7 and 6) read low in a sample read during the pulse and high in every sample read before it or after it, in both pulse runs");
+
+    // P8-ALIGN: the pulse runs are cycle-aligned with the dry run up to the pulse, so the dry run's samples date the running counters
+    std::string align_diag;
+    auto aligned_with_dry = [&](const LpRun& L, const std::vector<Sm>& before) {
+        if (before.size() < 4) return false;
+        for (size_t j = 0; j < before.size(); ++j) {
+            if (j >= ds.size()) return false;
+            if (before[j].t - L.t_go != ds[j].t - dry.t_go || !vh_equal(before[j], ds[j]) || before[j].hh != ds[j].hh) {
+                if (align_diag.empty())
+                    align_diag = "sample " + dec((long long)j) + ": time after LP_GO " + dec((long long)(before[j].t - L.t_go)) + " against " +
+                                 dec((long long)(ds[j].t - dry.t_go)) + ", V:H:HHPOSR " + dec(before[j].V) + ":" + dec(before[j].H) + ":" + dec(before[j].hh) +
+                                 " against " + dec(ds[j].V) + ":" + dec(ds[j].H) + ":" + dec(ds[j].hh);
+                return false;
+            }
+        }
+        return true;
+    };
+    bool align = fit_geom && aligned_with_dry(p0, b0) && aligned_with_dry(p1, b1);
+    if (!align_diag.empty()) checks.note("P8 measured: the first sample before the pulse that differs from the dry run: " + align_diag);
+    bool pulsed = fit_geom && p0.r && p1.r && p0.r->pulse_start && p1.r->pulse_start;
+    g.expect_if(pulsed, align, "P8-ALIGN: before the pulse each sample of the pulse runs is stored at the same time after LP_GO as the dry run's sample of the same index and shows the same V, H and HHPOSR, so the dry run's samples date the running counters in the pulse runs");
 
     // LPE enables the latch: with BPLCON0 bit 3 clear the samples advance through the pulse
     bool lpe_ok = true;
@@ -2364,14 +2464,29 @@ void proposition_p8() {
         g.expect(lpe_ok, "P8-LPE: with BPLCON0 bit 3 (LPEN) clear the same pulse does not freeze the samples: they advance through and after it");
     } else checks.record("P8-LPE: not evaluated in this run");
 
-    bool pre = dry.fixture && pre_base && trig && lpe_ok && !b0.empty() && !a0s.empty();
-    bool pre_hh = pre && hh_moves;
+    // the alternate counter runs in the dry run (HHPOSR takes at least two values) and rises across the pulse
+    LpRun hh_run = dry;
+    if (mutating("P8-HHRUN")) hh_run = lp_run(0x0020, 1, 0x0008, false, 0, 0);
+    bool hh_moves = false;
+    for (size_t i = 1; i < hh_run.s.size(); ++i) if (hh_run.s[i].hh != hh_run.s[0].hh) hh_moves = true;
+    // the dry run's HHPOSR at the last sample before the pulse and at the first sample after it
+    size_t ia0 = 0;
+    for (size_t j = 0; j < p0.s.size(); ++j) if (!a0s.empty() && p0.s[j].t == a0s.front().t) ia0 = j;
+    bool have_hh_idx = fit_geom && !b0.empty() && !a0s.empty() && ia0 < ds.size();
+    int hh_lo = have_hh_idx ? (int)(ds[b0.size() - 1].hh & 0xFF) : 0, hh_hi = have_hh_idx ? (int)(ds[ia0].hh & 0xFF) : 0;
+    bool hh_rises = have_hh_idx && hh_hi > hh_lo;
+    g.expect_anchor(hh_moves && hh_rises,
+        "P8-HHRUN: in the dry run HHPOSR takes at least two different values and is higher at the first sample after the pulse than at the last sample before it, so the alternate counter runs across the pulse and HHPOSR is graded");
+
+    bool pre = dry.fixture && pre_base && trig && align && lpe_ok && !b0.empty() && !a0s.empty();
+    bool pre_hh = pre && hh_moves && hh_rises;
     checks.note("P8 measured: P8-0 run: " + dec((long long)b0.size()) + " samples before the pulse, " + dec((long long)a0s.size()) +
                 " after; P8-1 run: " + dec((long long)b1.size()) + " before, " + dec((long long)a1s.size()) + " after");
     if (!a0s.empty()) checks.note("P8 measured: P8-0 first sample after the pulse: V=" + dec(a0s.front().V) + " H=" + dec(a0s.front().H) +
                                   " HHPOSR=" + dec(a0s.front().hh) + "; last: V=" + dec(a0s.back().V) + " H=" + dec(a0s.back().H) + " HHPOSR=" + dec(a0s.back().hh));
     if (!a1s.empty()) checks.note("P8 measured: P8-1 first sample after the pulse: V=" + dec(a1s.front().V) + " H=" + dec(a1s.front().H) +
                                   " HHPOSR=" + dec(a1s.front().hh) + "; last: V=" + dec(a1s.back().V) + " H=" + dec(a1s.back().H) + " HHPOSR=" + dec(a1s.back().hh));
+    if (have_hh_idx) checks.note("P8 measured: the dry run's HHPOSR is " + dec(hh_lo) + " at the last sample before the pulse and " + dec(hh_hi) + " at the first sample after it");
 
     // P8-0, VPOSR and VHPOSR
     bool v0 = !b0.empty() && frozen(a0s);
@@ -2384,8 +2499,11 @@ void proposition_p8() {
              double(hit.H) <= double(lb.H) + elapsed_cck + interval_cck;
         for (const auto& x : a0s) if ((x.vposr & 1) != 0) v0 = false;
     }
+    // HHPOSR: every sample after the pulse is the latched value, and it lies between the running alternate counter
+    // before the pulse and the running alternate counter after it, dated by the dry run
     bool h0 = !a0s.empty();
     for (const auto& x : a0s) if (x.hh != a0s[0].hh) h0 = false;
+    if (h0) h0 = have_hh_idx && (int)(a0s[0].hh & 0xFF) >= hh_lo && (int)(a0s[0].hh & 0xFF) <= hh_hi;
     // P8-1, VPOSR and VHPOSR
     bool v1 = !p1.s.empty() && f4_violations(p1.s, false) == 0;
     if (v1) {
@@ -2395,10 +2513,12 @@ void proposition_p8() {
     bool h1 = false;
     for (size_t i = 1; i < a1s.size(); ++i) if (a1s[i].hh != a1s[i - 1].hh) h1 = true;
     g.expect_if(pre, v0, "P8-0-VH: with LPENDIS = 0, LPEN set and a light-pen trigger, VHPOSR and VPOSR return the position latched at the trigger: every sample after the pulse is one identical (V,H) on line 255, not earlier than the last sample before the pulse and not later than the running counter at the end of the pulse, and VPOSR bit 0 (V8) stays 0");
-    g.expect_if(pre_hh, h0, "P8-0-HH: with LPENDIS = 0, LPEN set and a light-pen trigger, HHPOSR returns the latched value: every sample after the pulse is identical");
+    g.expect_if(pre_hh, h0, "P8-0-HH: with LPENDIS = 0, LPEN set and a light-pen trigger, HHPOSR returns the latched value: every sample after the pulse is identical, and it is not lower than the dry run's HHPOSR at the last sample before the pulse and not higher than the dry run's at the first sample after it");
     g.expect_if(pre, v1, "P8-1-VH: with LPENDIS = 1 and the same trigger, VHPOSR and VPOSR return the running counters: (V,H) increases strictly from each sample to the next across the whole window, and the last sample has V >= 256 with VPOSR bit 0 (V8) set");
     g.expect_if(pre_hh, h1, "P8-1-HH: with LPENDIS = 1 and the same trigger, HHPOSR returns the running alternate counter: consecutive samples after the pulse are not all identical");
-    g.expect_if(pre_hh, v0 && h0 && v1 && h1,
+    // the aggregate needs all three registers; it is graded when they can all be graded, and also when a graded part is already red
+    bool agg_known_red = !(v0 && v1);
+    g.expect_if(pre && (pre_hh || agg_known_red), v0 && h0 && v1 && h1,
         "P8: opus:AA-beamcon0.b13 sol:AA-beamcon0.c8 opus:AA-beamcon0.c9 opus:AA-beamcon0.c10 opus:AA-beamcon0.c8 sol:AA-beamcon0.c24 sol:AA-beamcon0.c25 sol:AA-beamcon0.c26: "
         "with LPEN set, BEAMCON0 bit 13 (LPENDIS) low makes VHPOSR, VPOSR and HHPOSR read the latched light-pen position, and high makes them read the actual beam counters");
 }
@@ -2412,6 +2532,12 @@ int main(int argc, char** argv) {
     std::string core = NMH_XSTR(NANOMIG_CORE_NAME);
     std::printf("CORE: %s\n", core.c_str());
     if (g_mutate) std::printf("NMH_MUTATE=%s\n", g_mutate);
+
+    // CONFIG: the configuration every harness of every run below is built from.
+    g_cfg = make_config();
+    if (mutating("CONFIG")) g_cfg.chipset_config = 0x08;
+    g_cfg_ok = config_ok(g_cfg);
+    g.expect(g_cfg_ok, "CONFIG: the harness configuration of every run selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
 
     proposition_p1();
     proposition_p2();

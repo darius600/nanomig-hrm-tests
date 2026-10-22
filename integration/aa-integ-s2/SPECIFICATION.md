@@ -1974,8 +1974,8 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 
 | Label | Kind and result | What changes, and what printed |
 |---|---|---|
+| CONFIG | stimulus red | NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5 |
 | P1-FIXTURE | stimulus red | NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5 |
-| P1-CONFIG | oracle red | NMH_MUTATE=P1-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P1-CONFIG; NOT GRADED 5; fx68k: FAIL P1-CONFIG; NOT GRADED 5 |
 | P1-ANCHOR | stimulus red | NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5 |
 | P1-FINISHED | stimulus red | NMH_MUTATE=P1-FINISHED: BLTSIZE $00C2 (height 3) in place of $0082; TG68K: FAIL P1-FINISHED; NOT GRADED 5; fx68k: FAIL P1-FINISHED; NOT GRADED 5 |
 | P1-INC | stimulus red | NMH_MUTATE=P1-INC: the second blit is descending (BLTCON1 bit 1) with its four pointers $40 higher: its accesses stay in the channel regions with step -2, so the step is no longer one constant (prog_p1_desc); TG68K: FAIL P1-INC; NOT GRADED 5; fx68k: FAIL P1-INC; NOT GRADED 5 |
@@ -1984,24 +1984,27 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P1-C | stimulus red | NMH_MUTATE=P1-C: BLTCMOD written 12 in place of 8; TG68K: FAIL P1-C, P1; fx68k: FAIL P1-C, P1 |
 | P1-D | stimulus red | NMH_MUTATE=P1-D: the pointer written to BLTDPTH and BLTDPTL is $0F0100 in place of $0F0000; TG68K: FAIL P1-A, P1-B, P1-C, P1-D, P1; fx68k: FAIL P1-A, P1-B, P1-C, P1-D, P1 |
 | P1 | stimulus red | NMH_MUTATE=P1: the values written to BLTCMOD and BLTAMOD swapped (24 and 8); TG68K: FAIL P1-A, P1-C, P1; fx68k: FAIL P1-A, P1-C, P1 |
-| P2-FIXTURE | stimulus red | NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 4; fx68k: FAIL P2-FIXTURE; NOT GRADED 4 |
-| P2-CONFIG | oracle red | NMH_MUTATE=P2-CONFIG: the Config object the line reads is set to memory_config 0x00 in place of 0x03; the runs of the proposition are still built from make_config(); TG68K: FAIL P2-CONFIG; NOT GRADED 4; fx68k: FAIL P2-CONFIG; NOT GRADED 4 |
-| P2-MAP | stimulus red | NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4 |
-| P2-ANCHOR | stimulus red | NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 4; fx68k: FAIL P2-ANCHOR; NOT GRADED 4 |
-| P2-FINISHED | stimulus red | NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-FINISHED; NOT GRADED 4 |
+| P2-FIXTURE | stimulus red | NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 6; fx68k: FAIL P2-FIXTURE; NOT GRADED 6 |
+| P2W-FIXTURE | stimulus red | NMH_MUTATE=P2W-FIXTURE: the walking-bit program stores $DEAD in place of $BEEF; TG68K: FAIL P2W-FIXTURE; NOT GRADED 3; fx68k: FAIL P2W-FIXTURE; NOT GRADED 3 |
+| P2-MAP | stimulus red | NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 6; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 6 |
+| P2W-MAP | stimulus red | NMH_MUTATE=P2W-MAP: the pointer of walking-bit blit 5 is $0C0000, an address of the results area (prog_p2w_map); TG68K: FAIL P2W-MAP, P2W-FINISHED; NOT GRADED 3; fx68k: FAIL P2W-MAP, P2W-FINISHED; NOT GRADED 3 |
+| P2-ANCHOR | stimulus red | NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 6; fx68k: FAIL P2-ANCHOR; NOT GRADED 6 |
+| P2W-ANCHOR | stimulus red | NMH_MUTATE=P2W-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2W-ANCHOR; NOT GRADED 3; fx68k: FAIL P2W-ANCHOR; NOT GRADED 3 |
+| P2-FINISHED | stimulus red | NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 6; fx68k: FAIL P2-FINISHED; NOT GRADED 6 |
+| P2W-FINISHED | stimulus red | NMH_MUTATE=P2W-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2W-FINISHED; NOT GRADED 3; fx68k: FAIL P2W-FINISHED; NOT GRADED 3 |
 | P2-V1 | stimulus red | NMH_MUTATE=P2-V1: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2 |
 | P2-V2 | stimulus red | NMH_MUTATE=P2-V2: PTL written $AAA8 in place of $AAAA in the V2 blits; TG68K: FAIL P2-V2, P2; fx68k: FAIL P2-V2, P2 |
 | P2-PTH5 | stimulus red | NMH_MUTATE=P2-PTH5: PTH written $0025 in place of $0035 in the four contrast blits; TG68K: FAIL P2-PTH5, P2; fx68k: FAIL P2-PTH5, P2 |
+| P2-WALK1 | stimulus red | NMH_MUTATE=P2-WALK1: the walking-one blit of channel B for address bit 7 is written with the pointer of address bit 8 (prog_p2w_pos); TG68K: FAIL P2-WALK1, P2; fx68k: FAIL P2-WALK1, P2 |
+| P2-WALK0 | stimulus red | NMH_MUTATE=P2-WALK0: the walking-zero blit of channel C for address bit 12 is written with its pointer shifted up one bit (prog_p2w_pos0); TG68K: FAIL P2-WALK0, P2; fx68k: FAIL P2-WALK0, P2 |
 | P2 | stimulus red | NMH_MUTATE=P2: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2 |
 | P3-FIXTURE | stimulus red | NMH_MUTATE=P3-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P3-FIXTURE; NOT GRADED 3; fx68k: FAIL P3-FIXTURE; NOT GRADED 3 |
-| P3-CONFIG | oracle red | NMH_MUTATE=P3-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P3-CONFIG; NOT GRADED 3; fx68k: FAIL P3-CONFIG; NOT GRADED 3 |
 | P3-ANCHOR | stimulus red | NMH_MUTATE=P3-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P3-ANCHOR; NOT GRADED 3; fx68k: FAIL P3-ANCHOR; NOT GRADED 3 |
 | P3-FINISHED | stimulus red | NMH_MUTATE=P3-FINISHED: BLTSIZE $00C3 (height 3) in place of $0083; TG68K: FAIL P3-FINISHED; NOT GRADED 3; fx68k: FAIL P3-FINISHED; NOT GRADED 3 |
 | P3-ASC | stimulus red | NMH_MUTATE=P3-ASC: channel A's pointer $0E0200 in place of $0E0100 in the ascending blit; TG68K: FAIL P3-ASC, P3; fx68k: FAIL P3-ASC, P3 |
 | P3-DESC | stimulus red | NMH_MUTATE=P3-DESC: channel A's pointer $0E0200 in place of $0E0100 in the descending blit; TG68K: FAIL P3-DESC, P3; fx68k: FAIL P3-DESC, P3 |
 | P3 | stimulus red | NMH_MUTATE=P3: channel A's pointer $0E0200 in place of $0E0100 in both blits; TG68K: FAIL P3-ASC, P3-DESC, P3; fx68k: FAIL P3-ASC, P3-DESC, P3 |
 | P4-FIXTURE | stimulus red | NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5 |
-| P4-CONFIG | oracle red | NMH_MUTATE=P4-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P4-CONFIG; NOT GRADED 5; fx68k: FAIL P4-CONFIG; NOT GRADED 5 |
 | P4-ANCHOR | stimulus red | NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5 |
 | P4-FINISHED | stimulus red | NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5 |
 | P4-INC | stimulus red | NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write adds an access to channel A's region: the first blit then has no line of W accesses per channel and no step is measured, so the line is red through the access count; the constant-step clause has no mutation of its own; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5 |
@@ -2011,7 +2014,6 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P4-D | stimulus red | NMH_MUTATE=P4-D: BLTDMOD written 14 in place of 10 in the first blit; TG68K: FAIL P4-D, P4; fx68k: FAIL P4-D, P4 |
 | P4 | stimulus red | NMH_MUTATE=P4: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4 |
 | P5-FIXTURE | stimulus red | NMH_MUTATE=P5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P5-FIXTURE; NOT GRADED 5; fx68k: FAIL P5-FIXTURE; NOT GRADED 5 |
-| P5-CONFIG | oracle red | NMH_MUTATE=P5-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P5-CONFIG; NOT GRADED 5; fx68k: FAIL P5-CONFIG; NOT GRADED 5 |
 | P5-REGIONS | stimulus red | NMH_MUTATE=P5-REGIONS: the modulo $3FFE of the set replaced by $7FFE; TG68K: FAIL P5-REGIONS; NOT GRADED 5; fx68k: FAIL P5-REGIONS; NOT GRADED 5 |
 | P5-ANCHOR | stimulus red | NMH_MUTATE=P5-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P5-ANCHOR; NOT GRADED 5; fx68k: FAIL P5-ANCHOR; NOT GRADED 5 |
 | P5-FINISHED | stimulus red | NMH_MUTATE=P5-FINISHED: BLTSIZE $0142 (height 5) in place of $0102; TG68K: FAIL P5-FINISHED; NOT GRADED 5; fx68k: FAIL P5-FINISHED; NOT GRADED 5 |
@@ -2022,7 +2024,6 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P5-D | stimulus red | NMH_MUTATE=P5-D: the modulo of channel D in the first blit is $3FFC in place of $3FFE; TG68K: FAIL P5-D, P5; fx68k: FAIL P5-D, P5 |
 | P5 | stimulus red | NMH_MUTATE=P5: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5 |
 | P6-FIXTURE | stimulus red | NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3 |
-| P6-CONFIG | oracle red | NMH_MUTATE=P6-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P6-CONFIG; NOT GRADED 3; fx68k: FAIL P6-CONFIG; NOT GRADED 3 |
 | P6-ANCHOR | stimulus red | NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3 |
 | P6-FINISHED | stimulus red | NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3 |
 | P6-INC | stimulus red | NMH_MUTATE=P6-INC: BLTSIZE $0102 (height 4) in place of $00C2: no channel makes W*H = 6 accesses, so no step is measured and the line is red through the empty population; the constant-step clause has no mutation of its own; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3 |
@@ -2030,7 +2031,6 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P6-COUNT | stimulus red | NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6 |
 | P6 | stimulus red | NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6 |
 | P7-FIXTURE | stimulus red | NMH_MUTATE=P7-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P7-FIXTURE; NOT GRADED 27; fx68k: FAIL P7-FIXTURE; NOT GRADED 27 |
-| P7-CONFIG | oracle red | NMH_MUTATE=P7-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P7-CONFIG; NOT GRADED 27; fx68k: FAIL P7-CONFIG; NOT GRADED 27 |
 | P7-FETCH | stimulus red | NMH_MUTATE=P7-FETCH: the Copper's MOVE to each register is a MOVE to COLOR00, COPCON bit 1 set; TG68K: FAIL P7-FETCH; NOT GRADED 15; fx68k: FAIL P7-FETCH; NOT GRADED 15 |
 | P7-COPER | stimulus red | NMH_MUTATE=P7-COPER: the MOVE to INTREQ in every list is a MOVE to the no-operation register; TG68K: FAIL P7-COPER; NOT GRADED 15; fx68k: FAIL P7-COPER; NOT GRADED 15 |
 | P7-BLIT | stimulus red | NMH_MUTATE=P7-BLIT: BLTEN clear for the final blit; TG68K: FAIL P7-BLIT; NOT GRADED 27; fx68k: FAIL P7-BLIT; NOT GRADED 27 |
@@ -2062,15 +2062,18 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P7-PTH | stimulus red | NMH_MUTATE=P7-PTH: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more |
 | P7-PTL | stimulus red | NMH_MUTATE=P7-PTL: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more |
 | P7-MOD | stimulus red | NMH_MUTATE=P7-MOD: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more |
-| P8-FIXTURE | stimulus red | NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P8-FIXTURE; NOT GRADED 5; fx68k: FAIL P8-FIXTURE; NOT GRADED 5 |
-| P8-ANCHOR | stimulus red | NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before; TG68K: FAIL P8-ANCHOR; NOT GRADED 5; fx68k: FAIL P8-ANCHOR; NOT GRADED 5 |
-| P8-FIT | stimulus red | NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; TG68K: FAIL P8-FIT; NOT GRADED 5; fx68k: FAIL P8-FIT; NOT GRADED 5 |
-| P8-LPE | stimulus red | NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS |
-| P8-0-VH | stimulus red | NMH_MUTATE=P8-0-VH on the private build of 6.6: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; private TG68K build: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
-| P8-0-HH | stimulus red | NMH_MUTATE=P8-0-HH on the private build of 6.6: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; private TG68K build: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
-| P8-1-VH | stimulus red | NMH_MUTATE=P8-1-VH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
-| P8-1-HH | stimulus red | NMH_MUTATE=P8-1-HH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
-| P8 | stimulus red | NMH_MUTATE=P8 on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P8-FIXTURE | stimulus red | NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; repository build TG68K: FAIL P8-FIXTURE; NOT GRADED 1; repository build fx68k: FAIL P8-FIXTURE; NOT GRADED 1 |
+| P8-ANCHOR | stimulus red | NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before (prog_lpen_rev); repository build TG68K: FAIL P8-ANCHOR; NOT GRADED 5; NOT CHECKABLE 1; repository build fx68k: FAIL P8-ANCHOR; NOT GRADED 5; NOT CHECKABLE 1 |
+| P8-FIT | stimulus red | NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; repository build TG68K: FAIL P8-FIT; NOT GRADED 7; NOT CHECKABLE 1; repository build fx68k: FAIL P8-FIT; NOT GRADED 7; NOT CHECKABLE 1 |
+| P8-TRIGGER | stimulus red | NMH_MUTATE=P8-TRIGGER: the pulse is not driven: the fire inputs stay released; repository build TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; repository build fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1 |
+| P8-ALIGN | stimulus red | NMH_MUTATE=P8-ALIGN: the pulse runs use the program with four more instructions in the sample loop (prog_lpen_slow); repository build TG68K: FAIL P8-ALIGN; NOT GRADED 5; NOT CHECKABLE 1; repository build fx68k: FAIL P8-ALIGN; NOT GRADED 5; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-ALIGN; NOT GRADED 5; fx68k: FAIL P8-ALIGN; NOT GRADED 5 |
+| P8-LPE | stimulus red | NMH_MUTATE=P8-LPE: BPLCON0 bit 3 set in the control run, so that the pulse freezes the samples again; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-LPE; NOT GRADED 5; fx68k: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build |
+| P8-HHRUN | stimulus red | NMH_MUTATE=P8-HHRUN: the dry run that must show HHPOSR running takes one sample, in which HHPOSR cannot take two values; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; fx68k: no FAIL; NOT GRADED 3; NOT CHECKABLE 1 |
+| P8-0-VH | stimulus red | NMH_MUTATE=P8-0-VH: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8; fx68k: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build |
+| P8-0-HH | stimulus red | NMH_MUTATE=P8-0-HH: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build |
+| P8-1-VH | stimulus red | NMH_MUTATE=P8-1-VH: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build |
+| P8-1-HH | stimulus red | NMH_MUTATE=P8-1-HH: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build |
+| P8 | stimulus red | NMH_MUTATE=P8: LPENDIS = 0 in the P8-1 run; repository build TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; repository build fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build |
 | F5-FIXTURE | stimulus red | NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5; fx68k: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5 |
 | F5-LINES | stimulus red | NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5 |
 | F5-ALIGN | stimulus red | NMH_MUTATE=F5-ALIGN: HTOTAL $00E0 in place of $00E2 in S-H2; TG68K: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3 |
@@ -2134,17 +2137,21 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 
 Where a line cannot go red or green on the repository build, because the chip set does not do what the page says (no light-pen latch, no alternate counter on
 HHPOSR, no lengthened line, a vertical sync that follows the long-field convention, no VSYTRUE inversion, no composite blank on VSY*, no UHRES DMA), the test was
-also run on a TG68K build whose chip set follows the pages in those points: a light-pen trigger on the controller ports' fire inputs latches the beam position while
-BPLCON0 bit 3 is set, HHPOSR reads an alternate counter that counts to HTOTAL with DUAL set, a long line lasts one colour clock more, VSY* carries the comparator VSY with
-VARVSYEN, the variable composite blank with CSCBEN, and is inverted by VSYTRUE, and the comparator VSY is set and reset at VSSTRT and VSSTOP with the
+also run on a build whose chip set follows the pages in those points, on both cores. `private/uhres.patch` is the patch against the pinned NanoMig and
+`make private-uhres` applies it to a copy, builds both cores and runs the test (outputs `out_private_uhres_fx68k.txt` and `out_private_uhres_tg68k.txt`); the repository's
+NanoMig is not changed. The patch makes: a light-pen trigger on the controller ports' fire inputs latch the beam position while BPLCON0 bit 3 is set, released at the end
+of the internal vertical blank (HRM p.239: vertical position 20; with VARVBEN the comparator's VBSTOP, p.12); HHPOSR read an alternate counter that counts to HTOTAL with DUAL set (with DUAL
+clear it follows the main counter, which the pages do not state, so the results of the HHPOSR lines on this build are recorded and are not used as controls); a long line last one
+colour clock more; the VSY* pin carry the comparator VSY whenever VARVSYEN is set, the variable composite blank (inverted: the starred pin is low while the blank is active) with CSCBEN,
+and the hardwired vertical sync otherwise, and VSYTRUE invert whichever of the three is on the pin; and the comparator VSY be set and reset at VSSTRT and VSSTOP with the
 horizontal position HSSTRT on short fields. The UHRES DMA follows p.15, p.16, p.22 and p.27: with BPLCON0 bit 7 (UHRES) and DMACON DMAEN set, at each reset of the
 horizontal counter in use (the main counter; with DUAL the alternate counter) the chain takes the next three "free" memory cycles, those that no refresh, disk, audio,
 bit-plane or sprite channel uses: the first for the sprite pointer, the second for the bit-plane pointer, the third for the sprite pointer again; each pointer is a pair of
 5 and 15 bits (p.6), the bit-plane pointer advances after each access by 2 plus the sign-extended BPLHMOD and the sprite pointer by 2, and the accesses come on the lines from
-BPLHSTRT up to, not including, BPLHSTOP (bit plane) and from SPRHSTRT to SPRHSTOP (sprite). The refresh accesses keep the address $000000. A second copy differs from the first
-in one point, the long-line toggle: every line is long (6.5, P14-0-LONGONLY). The copies live outside the repository and are not part of the package; `implementation green` in
-6.5 means that the line printed PASS on the first copy, and a record of a stimulus on the private build names the line that printed FAIL there. The normal run of the first copy:
-148 passed, 0 failed.
+BPLHSTRT up to, not including, BPLHSTOP (bit plane) and from SPRHSTRT to SPRHSTOP (sprite); BPLHDAT (`$07A`) is put on the register address lines with the bit-plane
+pointer and SPRHDAT (`$078`) with the sprite pointer (p.15, p.27). No output of `nanomig.v` shows the register address lines, so the test has no line on them. The refresh
+accesses keep the address `$000000`. `private/longline.patch` is `uhres.patch` plus one change, the long-line toggle: every line is long (6.5, P14-0-LONGONLY),
+built by `make private-longline`. `implementation green` in 6.5 means that the line printed PASS on the first build, and a record of a stimulus on the private build names the line that printed FAIL there. The normal run of the first build is in 6.7.
 
 
 ### 6.7 RECORDED: the final run of every core
@@ -2154,7 +2161,6 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | Line | TG68K | fx68k | private build |
 |---|---|---|---|
 | P1-FIXTURE | PASS | PASS | PASS |
-| P1-CONFIG | PASS | PASS | PASS |
 | P1-ANCHOR | PASS | PASS | PASS |
 | P1-FINISHED | PASS | PASS | PASS |
 | P1-INC | PASS | PASS | PASS |
@@ -2164,7 +2170,6 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | P1-D | PASS | PASS | PASS |
 | P1 | PASS | PASS | PASS |
 | P2-FIXTURE | PASS | PASS | PASS |
-| P2-CONFIG | PASS | PASS | PASS |
 | P2-MAP | PASS | PASS | PASS |
 | P2-ANCHOR | PASS | PASS | PASS |
 | P2-FINISHED | PASS | PASS | PASS |
@@ -2173,14 +2178,12 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | P2-PTH5 | PASS | PASS | PASS |
 | P2 | PASS | PASS | PASS |
 | P3-FIXTURE | PASS | PASS | PASS |
-| P3-CONFIG | PASS | PASS | PASS |
 | P3-ANCHOR | PASS | PASS | PASS |
 | P3-FINISHED | PASS | PASS | PASS |
 | P3-ASC | PASS | PASS | PASS |
 | P3-DESC | PASS | PASS | PASS |
 | P3 | PASS | PASS | PASS |
 | P4-FIXTURE | PASS | PASS | PASS |
-| P4-CONFIG | PASS | PASS | PASS |
 | P4-ANCHOR | PASS | PASS | PASS |
 | P4-FINISHED | PASS | PASS | PASS |
 | P4-INC | PASS | PASS | PASS |
@@ -2190,7 +2193,6 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | P4-D | PASS | PASS | PASS |
 | P4 | PASS | PASS | PASS |
 | P5-FIXTURE | PASS | PASS | PASS |
-| P5-CONFIG | PASS | PASS | PASS |
 | P5-REGIONS | PASS | PASS | PASS |
 | P5-ANCHOR | PASS | PASS | PASS |
 | P5-FINISHED | PASS | PASS | PASS |
@@ -2201,7 +2203,6 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | P5-D | PASS | PASS | PASS |
 | P5 | PASS | PASS | PASS |
 | P6-FIXTURE | PASS | PASS | PASS |
-| P6-CONFIG | PASS | PASS | PASS |
 | P6-ANCHOR | PASS | PASS | PASS |
 | P6-FINISHED | PASS | PASS | PASS |
 | P6-INC | PASS | PASS | PASS |
@@ -2209,7 +2210,6 @@ TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K
 | P6-COUNT | PASS | PASS | PASS |
 | P6 | PASS | PASS | PASS |
 | P7-FIXTURE | PASS | PASS | PASS |
-| P7-CONFIG | PASS | PASS | PASS |
 | P7-FETCH | PASS | PASS | PASS |
 | P7-COPER | PASS | PASS | PASS |
 | P7-BLIT | PASS | PASS | PASS |
