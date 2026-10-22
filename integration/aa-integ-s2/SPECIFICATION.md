@@ -1977,6 +1977,7 @@ Mutation variants (a symbol defined before the include) and the labels that sele
 ```text
 P1 measured: increment = 2 bytes
 P2 measured: first access of the channel under test per blit: 155554 0AAAAA 155554 0AAAAA 155554 0AAAAA 155554 0AAAAA 155554 155554 155554 155554
+P2 measured: walking-bit blits whose access is not at the expected address: walking one: none; walking zero: none
 P3 measured: first access of C B A D in blit P3-ASC: 0B0100 0D0100 0E0100 0F0100
 P3 measured: first access of C B A D in blit P3-DESC: 0B0100 0D0100 0E0100 0F0100
 P4 measured: increment = 2 bytes
@@ -1991,7 +1992,8 @@ P7 measured, COPCON bit 1 clear: the data word at offset 10 was fetched for 12 o
 P7 measured, COPCON bit 1 set: the data word at offset 10 was fetched for 12 of 12 lists
 P7 measured, COPCON bit 1 clear: BLTAPTH=14 BLTAPTL=0 BLTAMOD=8 BLTBPTH=13 BLTBPTL=0 BLTBMOD=8 BLTCPTH=11 BLTCPTL=0 BLTCMOD=8 BLTDPTH=15 BLTDPTL=0 BLTDMOD=8
 P7 measured, COPCON bit 1 set: BLTAPTH=17 BLTAPTL=16384 BLTAMOD=24 BLTBPTH=18 BLTBPTL=16384 BLTBMOD=24 BLTCPTH=19 BLTCPTL=16384 BLTCMOD=24 BLTDPTH=20 BLTDPTL=16384 BLTDMOD=24
-P8 measured: P8-0 run: 7 samples before the pulse, 15 after; P8-1 run: 7 before, 15 after
+P8 measured: the dry run's HHPOSR is 0 at the last sample before the pulse and 0 at the first sample after it
+P8 measured: 534 samples into the next frame, 112 of them in lines 25-60 after the wrap
 F5 measured: S-H1 against S-H2, hs: 628 intervals [line -1, length 16] [line 0, length 16] [line 0, length 16] [line 1, length 16]; T_C = 8, lines in the frame 313
 F5 measured: S-V1 against S-V2, vs: 1 intervals [line 102, length 3632]
 F5 measured: V_var length 4540 system clocks starting in line 100; V_norm length 4540 starting in line 2
@@ -2000,12 +2002,15 @@ P9 measured: CSCBEN set, HCENTER $91 against $99, hs: 0 intervals; differing lin
 P9 measured: CSCBEN set, VBSTRT 150 against 152, vs: 0 intervals
 P10 measured: VARHSYEN, HSSTOP $30 against $34, hs: 628 intervals [line -1, length 16] [line 0, length 16] [line 0, length 16] [line 1, length 16]; VARVSYEN, VSSTOP 103 against 105, vs: 1 intervals [line 102, length 3632]
 P10 measured: CSCBEN and VARHSYEN, HCENTER $91 against $99, hs: 0 intervals; same pair, vs: 1 intervals [line 4, length 64]
+P11 measured: median port line of a stopped frame = 227 colour clocks in the DUAL run (anchor 1)
 P11 measured: HTOTAL=0038: maximum H = 226, maximum HHPOSR (bits 7-0) = 0, HHPOSR decreases per main line = 0.000 (0 over 313 lines)
 P11 measured: HHPOSR decreases per main line 0.000 with HTOTAL $38 and 0.000 with HTOTAL $E2, expected ratio 3.982
 P12 measured: colour clock T_C = 8 system clocks; HHPOSR rate per colour clock = 0.000, alternate counter period = 0.000 colour clocks, fewest HHPOSR decreases on a main line = 0
 P12 measured, DUAL clear: BPLHPT/SPRHPT accesses on lines 102-108: 0/0 0/0 0/0 0/0 0/0 0/0 0/0
 P12 measured, DUAL clear: accesses on lines 102-108 that refresh, UHRES and the null sprite do not explain = 0
 P12 measured, DUAL set: BPLHPT/SPRHPT accesses on lines 102-108: 0/0 0/0 0/0 0/0 0/0 0/0 0/0
+P12 measured: HHPOSR read right after the write of HHPOSW: 0 after writing 8, 0 after writing 28
+P12 measured: chains in the graded frame 0 and 0, disturbed 0 and 0, delay of the first undisturbed chain after the predicted reset n/a and n/a system clocks
 P13 measured: frame markers 5, frame B 570224 system clocks, refresh groups 314
 P13 measured, PAL clear: port line lengths in colour clocks 227,227,227,227...; lines of 228 in frame B = 0, lines with LOL = 1 in frame A = 157
 P14 measured: F4 violations, PAL set frames 0 and 0, PAL clear frames 0 and 0
@@ -2016,11 +2021,12 @@ P14 measured, PAL clear: port line lengths in colour clocks 227,227,227,227..., 
 **TG68K only:**
 
 ```text
-P8 measured: colour clock T_C = 8 system clocks, sample interval = 208 system clocks, 300 dry-run samples, last line-255 sample index 9, pulse delay D = 1466, samples N = 23
-P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:210:0000@208 255:10:0000@424 255:36:0000@632 255:62:0000@840 255:88:0000@1048 255:114:0000@1256 255:140:0000@1464 255:166:0000@1672 255:192:0000@1880 255:218:0000@2088 256:18:0000@2304 256:44:0000@2512 256:70:0000@2720 256:96:0000@2928 256:122:0000@3136 256:148:0000@3344 256:174:0000@3552 256:200:0000@3760 256:226:0000@3968 257:26:0000@4184 257:52:0000@4392 257:78:0000@4600 257:104:0000@4808 257:130:0000@5016
-P8 measured: dry run over all 300 samples: F4 violations = 0, line wraps with V not yet stepped = 2, crosses 255 to 256 = 1, last sample V:H = 289:74
-P8 measured: P8-0 first sample after the pulse: V=255 H=192 HHPOSR=0; last: V=257 H=104 HHPOSR=0
-P8 measured: P8-1 first sample after the pulse: V=255 H=192 HHPOSR=0; last: V=257 H=104 HHPOSR=0
+P8 measured: colour clock T_C = 8 system clocks, sample interval = 360 system clocks, 120 dry-run samples, last line-255 sample index 8, pulse delay D = 2218, pulse length = 376, samples N = 22
+P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:82:0000@320 254:127:0000@680 254:172:0000@1040 254:217:0000@1400 255:35:0000@1760 255:80:0000@2120 255:125:0000@2480 255:170:0000@2840 255:215:0000@3200 256:33:0000@3560 256:78:0000@3920 256:123:0000@4280 256:168:0000@4640 256:213:0000@5000 257:31:0000@5360 257:76:0000@5720 257:121:0000@6080 257:166:0000@6440 257:211:0000@6800 258:29:0000@7160 258:74:0000@7520 258:119:0000@7880 258:164:0000@8240 258:209:0000@8600
+P8 measured: dry run over all 120 samples: F4 violations = 0, line wraps with V not yet stepped = 1, crosses 255 to 256 = 1, last sample V:H = 277:216
+P8 measured: P8-0 run: 6 samples before the pulse, 14 after; P8-1 run: 6 before, 14 after
+P8 measured: P8-0 first sample after the pulse: V=255 H=215 HHPOSR=0; last: V=258 H=119 HHPOSR=0
+P8 measured: P8-1 first sample after the pulse: V=255 H=215 HHPOSR=0; last: V=258 H=119 HHPOSR=0
 P11 measured: 2078 samples in the frame, F4 order violations = 0
 P13 measured: colour clock T_C = 8 system clocks, frame A samples = 2726, F4 violations = 0, line wraps with V not yet stepped = 24, port lines in frame B = 313
 P14 measured, PAL set: frame lines 313 and 313, frame periods 568408 and 568408 system clocks; PAL clear: frame lines 263 and 263, frame periods 477608 and 477608
@@ -2030,11 +2036,12 @@ samples taken across the step from line 255 to line 256 and completed with the V
 **fx68k only:**
 
 ```text
-P8 measured: colour clock T_C = 8 system clocks, sample interval = 200 system clocks, 300 dry-run samples, last line-255 sample index 9, pulse delay D = 1418, samples N = 23
-P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:215:0000@208 255:14:0000@416 255:39:0000@616 255:64:0000@816 255:89:0000@1016 255:114:0000@1216 255:139:0000@1416 255:164:0000@1616 255:189:0000@1816 255:214:0000@2016 256:12:0000@2216 256:37:0000@2416 256:62:0000@2616 256:87:0000@2816 256:112:0000@3016 256:137:0000@3216 256:162:0000@3416 256:187:0000@3616 256:212:0000@3816 257:10:0000@4016 257:35:0000@4216 257:60:0000@4416 257:85:0000@4616 257:110:0000@4816
-P8 measured: dry run over all 300 samples: F4 violations = 0, line wraps with V not yet stepped = 1, crosses 255 to 256 = 1, last sample V:H = 288:20
-P8 measured: P8-0 first sample after the pulse: V=255 H=189 HHPOSR=0; last: V=257 H=85 HHPOSR=0
-P8 measured: P8-1 first sample after the pulse: V=255 H=189 HHPOSR=0; last: V=257 H=85 HHPOSR=0
+P8 measured: colour clock T_C = 8 system clocks, sample interval = 360 system clocks, 120 dry-run samples, last line-255 sample index 7, pulse delay D = 1858, pulse length = 376, samples N = 21
+P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:107:0000@320 254:152:0000@680 254:197:0000@1040 255:16:0000@1408 255:60:0000@1760 255:105:0000@2120 255:150:0000@2480 255:195:0000@2840 256:14:0000@3208 256:58:0000@3560 256:103:0000@3920 256:148:0000@4280 256:193:0000@4640 257:12:0000@5008 257:56:0000@5360 257:101:0000@5720 257:146:0000@6080 257:191:0000@6440 258:10:0000@6808 258:54:0000@7160 258:99:0000@7520 258:144:0000@7880 258:189:0000@8240 259:8:0000@8608
+P8 measured: dry run over all 120 samples: F4 violations = 0, line wraps with V not yet stepped = 1, crosses 255 to 256 = 1, last sample V:H = 278:14
+P8 measured: P8-0 run: 5 samples before the pulse, 14 after; P8-1 run: 5 before, 14 after
+P8 measured: P8-0 first sample after the pulse: V=255 H=195 HHPOSR=0; last: V=258 H=99 HHPOSR=0
+P8 measured: P8-1 first sample after the pulse: V=255 H=195 HHPOSR=0; last: V=258 H=99 HHPOSR=0
 P11 measured: 1963 samples in the frame, F4 order violations = 0
 P13 measured: colour clock T_C = 8 system clocks, frame A samples = 2531, F4 violations = 0, line wraps with V not yet stepped = 23, port lines in frame B = 313
 P14 measured, PAL set: frame lines 313 and 313, frame periods 568400 and 568416 system clocks; PAL clear: frame lines 263 and 263, frame periods 477600 and 477616
@@ -2228,155 +2235,178 @@ built by `make private-longline`. `implementation green` in 6.5 means that the l
 
 ### 6.7 RECORDED: the final run of every core
 
-TG68K: 123 passed, 11 failed. fx68k: 123 passed, 11 failed. Private build (TG68K): 148 passed, 0 failed. Both builds select the AA chip set (`chipset_config` 0x10) and 2 MB of Chip memory in every run and are graded.
+Repository build, TG68K: 132 passed, 13 failed. fx68k: 132 passed, 13 failed. Private build (`make private-uhres`), TG68K: 160 passed, 0 failed. fx68k: 160 passed, 0 failed. Both builds select the AA chip set (`chipset_config` 0x10) and 2 MB of Chip memory in every run and are graded. A line that is not graded prints `NOT GRADED`, `NOT CHECKABLE` or `NOT OBSERVABLE` in the run and in this table.
 
-| Line | TG68K | fx68k | private build |
-|---|---|---|---|
-| P1-FIXTURE | PASS | PASS | PASS |
-| P1-ANCHOR | PASS | PASS | PASS |
-| P1-FINISHED | PASS | PASS | PASS |
-| P1-INC | PASS | PASS | PASS |
-| P1-A | PASS | PASS | PASS |
-| P1-B | PASS | PASS | PASS |
-| P1-C | PASS | PASS | PASS |
-| P1-D | PASS | PASS | PASS |
-| P1 | PASS | PASS | PASS |
-| P2-FIXTURE | PASS | PASS | PASS |
-| P2-MAP | PASS | PASS | PASS |
-| P2-ANCHOR | PASS | PASS | PASS |
-| P2-FINISHED | PASS | PASS | PASS |
-| P2-V1 | PASS | PASS | PASS |
-| P2-V2 | PASS | PASS | PASS |
-| P2-PTH5 | PASS | PASS | PASS |
-| P2 | PASS | PASS | PASS |
-| P3-FIXTURE | PASS | PASS | PASS |
-| P3-ANCHOR | PASS | PASS | PASS |
-| P3-FINISHED | PASS | PASS | PASS |
-| P3-ASC | PASS | PASS | PASS |
-| P3-DESC | PASS | PASS | PASS |
-| P3 | PASS | PASS | PASS |
-| P4-FIXTURE | PASS | PASS | PASS |
-| P4-ANCHOR | PASS | PASS | PASS |
-| P4-FINISHED | PASS | PASS | PASS |
-| P4-INC | PASS | PASS | PASS |
-| P4-A | PASS | PASS | PASS |
-| P4-B | PASS | PASS | PASS |
-| P4-C | PASS | PASS | PASS |
-| P4-D | PASS | PASS | PASS |
-| P4 | PASS | PASS | PASS |
-| P5-FIXTURE | PASS | PASS | PASS |
-| P5-REGIONS | PASS | PASS | PASS |
-| P5-ANCHOR | PASS | PASS | PASS |
-| P5-FINISHED | PASS | PASS | PASS |
-| P5-INC | PASS | PASS | PASS |
-| P5-A | PASS | PASS | PASS |
-| P5-B | PASS | PASS | PASS |
-| P5-C | PASS | PASS | PASS |
-| P5-D | PASS | PASS | PASS |
-| P5 | PASS | PASS | PASS |
-| P6-FIXTURE | PASS | PASS | PASS |
-| P6-ANCHOR | PASS | PASS | PASS |
-| P6-FINISHED | PASS | PASS | PASS |
-| P6-INC | PASS | PASS | PASS |
-| P6-STEPS | PASS | PASS | PASS |
-| P6-COUNT | PASS | PASS | PASS |
-| P6 | PASS | PASS | PASS |
-| P7-FIXTURE | PASS | PASS | PASS |
-| P7-FETCH | PASS | PASS | PASS |
-| P7-COPER | PASS | PASS | PASS |
-| P7-BLIT | PASS | PASS | PASS |
-| P7-ANCHOR | PASS | PASS | PASS |
-| P7-0-PTH-A | PASS | PASS | PASS |
-| P7-0-PTL-A | PASS | PASS | PASS |
-| P7-0-MOD-A | PASS | PASS | PASS |
-| P7-0-PTH-B | PASS | PASS | PASS |
-| P7-0-PTL-B | PASS | PASS | PASS |
-| P7-0-MOD-B | PASS | PASS | PASS |
-| P7-0-PTH-C | PASS | PASS | PASS |
-| P7-0-PTL-C | PASS | PASS | PASS |
-| P7-0-MOD-C | PASS | PASS | PASS |
-| P7-0-PTH-D | PASS | PASS | PASS |
-| P7-0-PTL-D | PASS | PASS | PASS |
-| P7-0-MOD-D | PASS | PASS | PASS |
-| P7-1-PTH-A | PASS | PASS | PASS |
-| P7-1-PTL-A | PASS | PASS | PASS |
-| P7-1-MOD-A | PASS | PASS | PASS |
-| P7-1-PTH-B | PASS | PASS | PASS |
-| P7-1-PTL-B | PASS | PASS | PASS |
-| P7-1-MOD-B | PASS | PASS | PASS |
-| P7-1-PTH-C | PASS | PASS | PASS |
-| P7-1-PTL-C | PASS | PASS | PASS |
-| P7-1-MOD-C | PASS | PASS | PASS |
-| P7-1-PTH-D | PASS | PASS | PASS |
-| P7-1-PTL-D | PASS | PASS | PASS |
-| P7-1-MOD-D | PASS | PASS | PASS |
-| P7-PTH | PASS | PASS | PASS |
-| P7-PTL | PASS | PASS | PASS |
-| P7-MOD | PASS | PASS | PASS |
-| P8-FIXTURE | PASS | PASS | PASS |
-| P8-ANCHOR | PASS | PASS | PASS |
-| P8-FIT | PASS | PASS | PASS |
-| P8-LPE | PASS | PASS | PASS |
-| P8-0-VH | NOT GRADED | NOT GRADED | PASS |
-| P8-0-HH | NOT GRADED | NOT GRADED | PASS |
-| P8-1-VH | NOT GRADED | NOT GRADED | PASS |
-| P8-1-HH | NOT GRADED | NOT GRADED | PASS |
-| P8 | NOT GRADED | NOT GRADED | PASS |
-| F5-FIXTURE | PASS | PASS | PASS |
-| F5-LINES | PASS | PASS | PASS |
-| F5-ALIGN | PASS | PASS | PASS |
-| F5-SH-DIFF | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
-| F5-SH-INV | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
-| F5-SV-DIFF | PASS | PASS | PASS |
-| F5-SV-INV | FAIL | FAIL | PASS |
-| P9-AH | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-AC | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-NH | PASS | PASS | PASS |
-| P9-NC | PASS | PASS | PASS |
-| P9-BV | FAIL | FAIL | PASS |
-| P9-NV | PASS | PASS | PASS |
-| P9-A | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-B | FAIL | FAIL | PASS |
-| P9-ID | FAIL | FAIL | PASS |
-| P10-CPAIR | PASS | PASS | PASS |
-| P10-SPAIR | NOT GRADED | NOT GRADED | NOT GRADED |
-| P10-VPAIR | PASS | PASS | PASS |
-| P10-VSPAIR | PASS | PASS | PASS |
-| P10 | NOT GRADED | NOT GRADED | NOT GRADED |
-| P11-FIXTURE | PASS | PASS | PASS |
-| P11-ANCHOR | PASS | PASS | PASS |
-| P11-HHRUN | FAIL | FAIL | PASS |
-| P11-MAXH | NOT GRADED | NOT GRADED | PASS |
-| P11-HHMAX | NOT GRADED | NOT GRADED | PASS |
-| P11 | NOT GRADED | NOT GRADED | PASS |
-| P11-PERIOD | NOT GRADED | NOT GRADED | PASS |
-| P12-FIXTURE | PASS | PASS | PASS |
-| P12-F3 | PASS | PASS | PASS |
-| P12-UHRES | FAIL | FAIL | PASS |
-| P12-BANDWIDTH | PASS | PASS | PASS |
-| P12-K | FAIL | FAIL | PASS |
-| P12-0 | NOT GRADED | NOT GRADED | PASS |
-| P12-1-BPL | NOT GRADED | NOT GRADED | PASS |
-| P12-1-SPR | NOT GRADED | NOT GRADED | PASS |
-| P12 | NOT GRADED | NOT GRADED | PASS |
-| P13-FIXTURE | PASS | PASS | PASS |
-| P13-F3 | PASS | PASS | PASS |
-| P13-F4 | PASS | PASS | PASS |
-| P13-VARMODE | PASS | PASS | PASS |
-| P13-LOLDIS | PASS | PASS | PASS |
-| P13-1-LINES | PASS | PASS | PASS |
-| P13-1-LOL | PASS | PASS | PASS |
-| P13 | PASS | PASS | PASS |
-| P13-0-LINES | FAIL | FAIL | PASS |
-| P13-0-LOL | PASS | PASS | PASS |
-| P13-0-COUNT | FAIL | FAIL | PASS |
-| P14-FIXTURE | PASS | PASS | PASS |
-| P14-F3 | PASS | PASS | PASS |
-| P14-F4 | PASS | PASS | PASS |
-| P14-STABLE | PASS | PASS | PASS |
-| P14-NORMAL | PASS | PASS | PASS |
-| P14-0-LOL | PASS | PASS | PASS |
-| P14-0-LINES | FAIL | FAIL | PASS |
-| P14-0-LONGONLY | NOT GRADED | NOT GRADED | PASS |
-| P14-1 | PASS | PASS | PASS |
-| P14 | FAIL | FAIL | PASS |
+| Line | TG68K | fx68k | private TG68K | private fx68k |
+|---|---|---|---|---|
+| CONFIG | PASS | PASS | PASS | PASS |
+| P1-FIXTURE | PASS | PASS | PASS | PASS |
+| P1-ANCHOR | PASS | PASS | PASS | PASS |
+| P1-FINISHED | PASS | PASS | PASS | PASS |
+| P1-INC | PASS | PASS | PASS | PASS |
+| P1-A | PASS | PASS | PASS | PASS |
+| P1-B | PASS | PASS | PASS | PASS |
+| P1-C | PASS | PASS | PASS | PASS |
+| P1-D | PASS | PASS | PASS | PASS |
+| P1 | PASS | PASS | PASS | PASS |
+| P2-FIXTURE | PASS | PASS | PASS | PASS |
+| P2-MAP | PASS | PASS | PASS | PASS |
+| P2-ANCHOR | PASS | PASS | PASS | PASS |
+| P2-FINISHED | PASS | PASS | PASS | PASS |
+| P2-V1 | PASS | PASS | PASS | PASS |
+| P2-V2 | PASS | PASS | PASS | PASS |
+| P2-PTH5 | PASS | PASS | PASS | PASS |
+| P2W-FIXTURE | PASS | PASS | PASS | PASS |
+| P2W-MAP | PASS | PASS | PASS | PASS |
+| P2W-ANCHOR | PASS | PASS | PASS | PASS |
+| P2W-FINISHED | PASS | PASS | PASS | PASS |
+| P2-WALK1 | PASS | PASS | PASS | PASS |
+| P2-WALK0 | PASS | PASS | PASS | PASS |
+| P2 | PASS | PASS | PASS | PASS |
+| P3-FIXTURE | PASS | PASS | PASS | PASS |
+| P3-ANCHOR | PASS | PASS | PASS | PASS |
+| P3-FINISHED | PASS | PASS | PASS | PASS |
+| P3-ASC | PASS | PASS | PASS | PASS |
+| P3-DESC | PASS | PASS | PASS | PASS |
+| P3 | PASS | PASS | PASS | PASS |
+| P4-FIXTURE | PASS | PASS | PASS | PASS |
+| P4-ANCHOR | PASS | PASS | PASS | PASS |
+| P4-FINISHED | PASS | PASS | PASS | PASS |
+| P4-INC | PASS | PASS | PASS | PASS |
+| P4-A | PASS | PASS | PASS | PASS |
+| P4-B | PASS | PASS | PASS | PASS |
+| P4-C | PASS | PASS | PASS | PASS |
+| P4-D | PASS | PASS | PASS | PASS |
+| P4 | PASS | PASS | PASS | PASS |
+| P5-FIXTURE | PASS | PASS | PASS | PASS |
+| P5-REGIONS | PASS | PASS | PASS | PASS |
+| P5-ANCHOR | PASS | PASS | PASS | PASS |
+| P5-FINISHED | PASS | PASS | PASS | PASS |
+| P5-INC | PASS | PASS | PASS | PASS |
+| P5-A | PASS | PASS | PASS | PASS |
+| P5-B | PASS | PASS | PASS | PASS |
+| P5-C | PASS | PASS | PASS | PASS |
+| P5-D | PASS | PASS | PASS | PASS |
+| P5 | PASS | PASS | PASS | PASS |
+| P6-FIXTURE | PASS | PASS | PASS | PASS |
+| P6-ANCHOR | PASS | PASS | PASS | PASS |
+| P6-FINISHED | PASS | PASS | PASS | PASS |
+| P6-INC | PASS | PASS | PASS | PASS |
+| P6-STEPS | PASS | PASS | PASS | PASS |
+| P6-COUNT | PASS | PASS | PASS | PASS |
+| P6 | PASS | PASS | PASS | PASS |
+| P7-FIXTURE | PASS | PASS | PASS | PASS |
+| P7-FETCH | PASS | PASS | PASS | PASS |
+| P7-COPER | PASS | PASS | PASS | PASS |
+| P7-BLIT | PASS | PASS | PASS | PASS |
+| P7-ANCHOR | PASS | PASS | PASS | PASS |
+| P7-0-PTH-A | PASS | PASS | PASS | PASS |
+| P7-0-PTL-A | PASS | PASS | PASS | PASS |
+| P7-0-MOD-A | PASS | PASS | PASS | PASS |
+| P7-0-PTH-B | PASS | PASS | PASS | PASS |
+| P7-0-PTL-B | PASS | PASS | PASS | PASS |
+| P7-0-MOD-B | PASS | PASS | PASS | PASS |
+| P7-0-PTH-C | PASS | PASS | PASS | PASS |
+| P7-0-PTL-C | PASS | PASS | PASS | PASS |
+| P7-0-MOD-C | PASS | PASS | PASS | PASS |
+| P7-0-PTH-D | PASS | PASS | PASS | PASS |
+| P7-0-PTL-D | PASS | PASS | PASS | PASS |
+| P7-0-MOD-D | PASS | PASS | PASS | PASS |
+| P7-1-PTH-A | PASS | PASS | PASS | PASS |
+| P7-1-PTL-A | PASS | PASS | PASS | PASS |
+| P7-1-MOD-A | PASS | PASS | PASS | PASS |
+| P7-1-PTH-B | PASS | PASS | PASS | PASS |
+| P7-1-PTL-B | PASS | PASS | PASS | PASS |
+| P7-1-MOD-B | PASS | PASS | PASS | PASS |
+| P7-1-PTH-C | PASS | PASS | PASS | PASS |
+| P7-1-PTL-C | PASS | PASS | PASS | PASS |
+| P7-1-MOD-C | PASS | PASS | PASS | PASS |
+| P7-1-PTH-D | PASS | PASS | PASS | PASS |
+| P7-1-PTL-D | PASS | PASS | PASS | PASS |
+| P7-1-MOD-D | PASS | PASS | PASS | PASS |
+| P7-PTH | PASS | PASS | PASS | PASS |
+| P7-PTL | PASS | PASS | PASS | PASS |
+| P7-MOD | PASS | PASS | PASS | PASS |
+| P8-FIXTURE | PASS | PASS | PASS | PASS |
+| P8-ANCHOR | PASS | PASS | PASS | PASS |
+| P8-FIT | PASS | PASS | PASS | PASS |
+| P8-TRIGGER | PASS | PASS | PASS | PASS |
+| P8-ALIGN | PASS | PASS | PASS | PASS |
+| P8-LPE | PASS | PASS | PASS | PASS |
+| P8-HHRUN | NOT CHECKABLE | NOT CHECKABLE | PASS | PASS |
+| P8-0-VH | FAIL | FAIL | PASS | PASS |
+| P8-0-HH | NOT GRADED | NOT GRADED | PASS | PASS |
+| P8-1-VH | PASS | PASS | PASS | PASS |
+| P8-1-HH | NOT GRADED | NOT GRADED | PASS | PASS |
+| P8-VBREL | PASS | PASS | PASS | PASS |
+| P8 | FAIL | FAIL | PASS | PASS |
+| F5-FIXTURE | PASS | PASS | PASS | PASS |
+| F5-LINES | PASS | PASS | PASS | PASS |
+| F5-ALIGN | PASS | PASS | PASS | PASS |
+| F5-SH-DIFF | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
+| F5-SH-INV | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
+| F5-SV-DIFF | PASS | PASS | PASS | PASS |
+| F5-SV-INV | FAIL | FAIL | PASS | PASS |
+| F5-SH | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
+| P9-AH | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P9-AC | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P9-NH | PASS | PASS | PASS | PASS |
+| P9-NC | PASS | PASS | PASS | PASS |
+| P9-BV | FAIL | FAIL | PASS | PASS |
+| P9-NV | PASS | PASS | PASS | PASS |
+| P9-A | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P9-B | FAIL | FAIL | PASS | PASS |
+| P9-ID | FAIL | FAIL | PASS | PASS |
+| P10-CPAIR | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P10-SPAIR | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P10-VPAIR | PASS | PASS | PASS | PASS |
+| P10-VSPAIR | PASS | PASS | PASS | PASS |
+| P10 | NOT GRADED | NOT GRADED | NOT GRADED | NOT GRADED |
+| P11-FIXTURE | PASS | PASS | PASS | PASS |
+| P11-ANCHOR | PASS | PASS | PASS | PASS |
+| P11-HHRUN | FAIL | FAIL | PASS | PASS |
+| P11-MAXH | NOT GRADED | NOT GRADED | PASS | PASS |
+| P11-HHMAX | NOT GRADED | NOT GRADED | PASS | PASS |
+| P11 | NOT GRADED | NOT GRADED | PASS | PASS |
+| P11-PERIOD | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-KFIXTURE | PASS | PASS | PASS | PASS |
+| P12-KANCHOR | PASS | PASS | PASS | PASS |
+| P12-FIXTURE | PASS | PASS | PASS | PASS |
+| P12-F3 | PASS | PASS | PASS | PASS |
+| P12-UHRES | FAIL | FAIL | PASS | PASS |
+| P12-UHRESEN | PASS | PASS | PASS | PASS |
+| P12-BANDWIDTH | PASS | PASS | PASS | PASS |
+| P12-K | FAIL | FAIL | PASS | PASS |
+| P12-0 | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-1-BPL | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-1-SPR | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-PHFIXTURE | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-HHW | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12-PHASE | NOT GRADED | NOT GRADED | PASS | PASS |
+| P12 | NOT GRADED | NOT GRADED | PASS | PASS |
+| P13-FIXTURE | PASS | PASS | PASS | PASS |
+| P13-F3 | PASS | PASS | PASS | PASS |
+| P13-F4 | PASS | PASS | PASS | PASS |
+| P13-VARMODE | PASS | PASS | PASS | PASS |
+| P13-LOLDIS | PASS | PASS | PASS | PASS |
+| P13-1-LINES | PASS | PASS | PASS | PASS |
+| P13-1-LOL | PASS | PASS | PASS | PASS |
+| P13 | PASS | PASS | PASS | PASS |
+| P13-0-FIXTURE | PASS | PASS | PASS | PASS |
+| P13-0-F3 | PASS | PASS | PASS | PASS |
+| P13-0-F4 | PASS | PASS | PASS | PASS |
+| P13-0-LINES | FAIL | FAIL | PASS | PASS |
+| P13-0-LOL | PASS | PASS | PASS | PASS |
+| P13-0-COUNT | FAIL | FAIL | PASS | PASS |
+| P14-FIXTURE | PASS | PASS | PASS | PASS |
+| P14-F3 | PASS | PASS | PASS | PASS |
+| P14-F4 | PASS | PASS | PASS | PASS |
+| P14-STABLE | PASS | PASS | PASS | PASS |
+| P14-NORMAL | PASS | PASS | PASS | PASS |
+| P14-0-LOL | PASS | PASS | PASS | PASS |
+| P14-0-LINES | FAIL | FAIL | PASS | PASS |
+| P14-0-LONGONLY | NOT GRADED | NOT GRADED | PASS | PASS |
+| P14-1 | PASS | PASS | PASS | PASS |
+| P14 | FAIL | FAIL | PASS | PASS |
+
+The long-line copy (`make private-longline`, every line long): TG68K: 154 passed, 6 failed, FAIL P13-0-LINES, P13-0-LOL, P14-0-LOL, P14-0-LINES, P14-0-LONGONLY, P14. fx68k: 154 passed, 6 failed, FAIL P13-0-LINES, P13-0-LOL, P14-0-LOL, P14-0-LINES, P14-0-LONGONLY, P14.
