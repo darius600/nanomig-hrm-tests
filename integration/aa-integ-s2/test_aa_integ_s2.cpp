@@ -328,6 +328,7 @@ struct RunOpts {
     bool pulse = false;                  // drive both controller ports' fire inputs
     uint16_t pulse_marker = 0;
     uint64_t pulse_delay = 0, pulse_len = 0;
+    uint64_t pulse2_delay = 0;           // a second pulse of the same length at the marker's time plus this, when non-zero
     bool video_graded = false;           // keep hs/vs of the graded frame: the 2nd to the 3rd frame marker after the register list
 };
 
@@ -349,6 +350,15 @@ std::shared_ptr<RunData> run_opts(const RunOpts& o) {
             h.ports()->joystick0 = 0x00;
             h.ports()->joystick1 = 0x00;
             r->pulse_end = h.cycles();
+            if (o.pulse2_delay) {
+                uint64_t s2 = *t + o.pulse2_delay;
+                if (h.cycles() < s2) h.run_cycles(s2 - h.cycles());
+                h.ports()->joystick0 = 0x10;
+                h.ports()->joystick1 = 0x10;
+                h.run_cycles(o.pulse_len);
+                h.ports()->joystick0 = 0x00;
+                h.ports()->joystick1 = 0x00;
+            }
         }
     }
     r->done = h.run_until_write(kDoneAddr, kDoneValue, o.budget);
@@ -2464,9 +2474,10 @@ struct LpRun {
 };
 
 LpRun lp_run(uint16_t bc0, int nsamp, uint16_t bplcon0, bool pulse, uint64_t delay, uint64_t len,
-             const char* prog = "prog_lpen") {
+             const char* prog = "prog_lpen", uint64_t delay2 = 0) {
     RunOpts o;
     o.prog = prog;
+    o.pulse2_delay = delay2;
     o.pokes = {{kLcfg + 0, bc0}, {kLcfg + 2, (uint16_t)(nsamp - 1)}, {kLcfg + 4, bplcon0}};
     o.pulse = pulse; o.pulse_marker = kMLpGo; o.pulse_delay = delay; o.pulse_len = len;
     LpRun l;
@@ -2671,6 +2682,23 @@ void proposition_p8() {
     g.expect_if(pre_hh, h0, "P8-0-HH: with LPENDIS = 0, LPEN set and a light-pen trigger, HHPOSR returns the latched value: every sample after the pulse is identical, and it is not lower than the dry run's HHPOSR at the last sample before the pulse and not higher than the dry run's at the first sample after it");
     g.expect_if(pre, v1, "P8-1-VH: with LPENDIS = 1 and the same trigger, VHPOSR and VPOSR return the running counters: (V,H) increases strictly from each sample to the next across the whole window, and the last sample has V >= 256 with VPOSR bit 0 (V8) set");
     g.expect_if(pre_hh, h1, "P8-1-HH: with LPENDIS = 1 and the same trigger, HHPOSR returns the running alternate counter: consecutive samples after the pulse are not all identical");
+    // P8-VBREL: the freeze is released at the end of the internal vertical blank. The same trigger, with the samples taken on into
+    // the next frame: after the end of the vertical blank (HRM p.239: vertical position 20; the samples of lines 25-60 are taken)
+    // the counters run again, the samples satisfying the F4 criteria and not all identical.
+    if (pre) {
+        uint64_t to_line = (uint64_t)((313 - 254 + 45) * 227) * (uint64_t)tc;   // LP_GO to line 45 of the next frame, about
+        int nsamp2 = (int)(to_line / (uint64_t)(interval > 0 ? interval : 1)) + 10;
+        if (nsamp2 > 3000) nsamp2 = 3000;
+        uint64_t second = mutating("P8-VBREL") ? (uint64_t)((313 - 254 + 30) * 227) * (uint64_t)tc : 0;   // a second trigger at about line 30 of the next frame
+        LpRun pv = lp_run(0x0020, nsamp2, 0x0008, pulse_on, delay, plen, pulse_prog, second);
+        size_t wrap = 0;
+        for (size_t j = 1; j < pv.s.size(); ++j) if (pv.s[j].V + 100 < pv.s[j - 1].V) { wrap = j; break; }
+        std::vector<Sm> tail;
+        for (size_t j = wrap; wrap && j < pv.s.size(); ++j) if (pv.s[j].V >= 25 && pv.s[j].V <= 60) tail.push_back(pv.s[j]);
+        bool vbrel = tail.size() >= 8 && f4_violations(tail, false) == 0 && !frozen(tail);
+        checks.note("P8 measured: " + dec((long long)pv.s.size()) + " samples into the next frame, " + dec((long long)tail.size()) + " of them in lines 25-60 after the wrap");
+        g.expect(vbrel, "P8-VBREL: after the end of the internal vertical blank of the next frame the samples of lines 25-60 show the counters running again: they satisfy the F4 criteria and are not all identical");
+    } else checks.record("NOT GRADED: P8-VBREL [a precondition does not hold]");
     // the aggregate needs all three registers; it is graded when they can all be graded, and also when a graded part is already red
     bool agg_known_red = !(v0 && v1);
     g.expect_if(pre && (pre_hh || agg_known_red), v0 && h0 && v1 && h1,
