@@ -21,7 +21,7 @@
 //   arbitration among channels for a contested slot (needs the Agnus top
 //   level); exact inter-cycle timing (COP-02's cycle-time territory, already
 //   covered and already carrying an unrelated valid red finding); rejected/
-//   illegal-destination MOVE behaviour (closed elsewhere, FPGA-068);
+//   illegal-destination MOVE behaviour (closed elsewhere);
 //   WAIT/SKIP instructions mixed into the same list.
 // Claim ids: ids such as `COP2-copins-fields-p275.c1` and
 //   `COP2-copins-fields-p275.c2` name one sentence of the manual in this

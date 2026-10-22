@@ -7,7 +7,7 @@
 //   pages 21 and 26) states only that the write does not occur; it does not
 //   define what the Copper does next. Frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-03
-// Non-goals: The register-range boundaries themselves (FPGA-056, red as
+// Non-goals: The register-range boundaries themselves (red as
 //   NM-HRM-004). ECS and CDANG=1 rejection variants. Whether halting is
 //   correct for real Agnus silicon - this protects observed behaviour, it
 //   does not endorse it. Any claim that the single-word fetch violates the
@@ -24,7 +24,7 @@
 //   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
-// inspected during FPGA-063 and FPGA-065 before this specification was written.
+// inspected before this specification was written.
 // For a regression test that is the intended situation, and it is precisely why
 // this test must not be presented as HRM-derived.
 //

@@ -80,7 +80,7 @@
 //   convention are NOT read from those two files for
 //   this package -- they are reused verbatim from THREE already-
 //   committed sibling packages built against this exact fixture:
-//   hrm/denise_sprites/test_denise_sprites.cpp (the original FPGA-030
+//   hrm/denise_sprites/test_denise_sprites.cpp (the original
 //   harness), hrm/ch3-sprite-registers/test_denise_sprites.cpp (the
 //   HRM-format harness for the same module), and hrm/ch4-attached-
 //   sprites/test_denise_sprites.cpp (whose own FIXTURE-LIVE-DATA-PATH

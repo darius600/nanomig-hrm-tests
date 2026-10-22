@@ -49,7 +49,7 @@
 //   written and committed from claims.jsonl's own quotations plus two
 //   already-committed sibling harnesses' disclosed interface for this
 //   exact fixture: hrm/denise_collision/test_denise_collision.cpp (the
-//   original FPGA-031 harness -- port list, register word-address
+//   original harness -- port list, register word-address
 //   convention $098->0x4C/$00E->0x07, clk/clk7_en/reset/aga/
 //   reg_address_in/data_in/dblpf/bpldata/nsprite/data_out, bpldata as an
 //   8-bit per-bitplane hit vector, nsprite as an 8-bit per-sprite hit

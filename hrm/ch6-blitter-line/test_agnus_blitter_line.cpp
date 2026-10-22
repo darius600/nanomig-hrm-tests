@@ -8,7 +8,7 @@
 //   (BLTCON1 bit 6) setting the first pixel's error sign; the sign flag
 //   driving the modulo bank choice (BLTAMOD vs BLTBMOD); BLTCPT/BLTDPT as
 //   separate registers in the same role; the required BLTSIZE width of 2;
-//   and, added for FPGA-090's final gap, the h field's own tenth bit (bit 9,
+//   and, added last, the h field's own tenth bit (bit 9,
 //   value 512) as a real pixel-counter bit in original-chip-set (ecs=0) line
 //   mode.
 // Test class: HRM_CONFORMANCE
@@ -187,7 +187,7 @@
 //     6-line-mode.c100, ch6-line.c41, 6-appa-registers.c42,
 //     6-appa-registers.c65, 6-appa-registers.c68, ch6-appa-bltsize.c6,
 //     ch6-appa-bltsize.ld1, ch6-linesum.c25, 6-line-mode.c4, ch6-line.c4.
-//   LINE-HEIGHT-FIELD-TEN-BITS-OCS (p.269 -- FPGA-090's final gap, added
+//   LINE-HEIGHT-FIELD-TEN-BITS-OCS (p.269 -- added
 //     after the rest of this file; not in the original 225-record
 //     classify.package=="PKG-BLT-LINE" filter at build time, re-routed here
 //     from PKG-BLT-SIZE by the build register after that package's builder
@@ -416,7 +416,7 @@
 //   the minor axis this assertion expects to fire is now suppressed;
 //   expected constant 8/8 left untouched) -> FAIL; 15/16 others PASS.
 //
-// MUTATION LINE-HEIGHT-FIELD-TEN-BITS-OCS stimulus red, added for FPGA-090:
+// MUTATION LINE-HEIGHT-FIELD-TEN-BITS-OCS stimulus red, added last:
 //   h_bit9's BLTSIZE write changed from bltsize_word(2, 600) to
 //   bltsize_word(2, 88) -- the exact 9-bit-truncated value -- with all three
 //   expected constants (600/88/600) left untouched -> FAIL: MEASURED

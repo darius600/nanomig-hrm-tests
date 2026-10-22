@@ -167,7 +167,7 @@
 //     MASK-BIT-EXCLUDED-FROM-LOGIC above, reasserted at random over ~1000
 //     cases rather than one worked value each)
 //
-// ADDED FOR FPGA-090 (the build register's note on what deleting
+// ADDED LATER (what deleting
 // hrm/agnus_blitter_mask would genuinely lose): MASK-MUX-RANDOM-SWEEP below
 // keeps that package's randomised-sweep TECHNIQUE, not its harness - it
 // compiles and drives the real agnus_blitter (this file's existing Harness,
@@ -1002,7 +1002,7 @@ int main(int argc, char** argv) {
 
     // ---------------- MASK-MUX-RANDOM-SWEEP (p.180-182, p.198-199, Figure 6-13) ----------------
     // The technique kept from hrm/agnus_blitter_mask (the superseded
-    // package - see file header, "ADDED FOR FPGA-090"): a randomised sweep
+    // package - see file header, "ADDED LATER"): a randomised sweep
     // of the mask multiplexer, but run against the REAL compiled
     // agnus_blitter above (this file's existing Harness, untouched), not
     // agnus_blitter_mask.v's pasted copy of agnus_blitter.v:311-319. A

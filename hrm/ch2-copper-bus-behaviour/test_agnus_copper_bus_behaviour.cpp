@@ -8,8 +8,8 @@
 //   Frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-04, COP-07, COP-08
 // Non-goals: Which channel wins a contested slot (decided outside this
-//   module). COPEN and real DMACON gating (FPGA-055). The exact blanking
-//   edge - sof is an input. Cycle-time figures (FPGA-067). Any claim that
+//   module). COPEN and real DMACON gating. The exact blanking
+//   edge - sof is an input. Cycle-time figures. Any claim that
 //   the observed resume position is HRM-correct; the manual does not
 //   describe it.
 // Claim ids: ids such as `COP2-about-the-copper.c13` and
@@ -47,7 +47,7 @@
 // the assertion.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
-// inspected during FPGA-063 and FPGA-065 before this specification was written.
+// inspected before this specification was written.
 
 #include <cstdint>
 #include <iostream>

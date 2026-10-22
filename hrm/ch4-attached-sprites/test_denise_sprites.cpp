@@ -34,7 +34,7 @@
 //   convention are NOT read from those two files for
 //   this package -- they are reused verbatim from two SIBLING packages
 //   already committed and already built against this exact fixture:
-//   hrm/denise_sprites/test_denise_sprites.cpp (the original FPGA-030
+//   hrm/denise_sprites/test_denise_sprites.cpp (the original
 //   harness) and hrm/ch3-sprite-registers/test_denise_sprites.cpp (the
 //   HRM-format harness for the same module, which itself documents
 //   this same reuse in its own ORDER OF WORK section). Reusing an

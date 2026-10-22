@@ -29,9 +29,9 @@
 //   system," Restated: the Copper retrieves its instructions by direct
 //   memory access (DMA).
 //
-// Why this test exists: FPGA-056 to FPGA-058 all filtered COPINS out in order
-// to find MOVE writes, i.e. they relied on R1 without ever establishing it.
-// FPGA-059 then overclaimed that nothing further was testable at this boundary.
+// Why this test exists: tests that look for MOVE writes filter COPINS out and
+// so rely on R1 without establishing it; this test asserts R1 directly.
+//
 //
 // MUTATION C1 stimulus red: run_cycles after start() cut from 4000 to 4 (too short to reach the second MOVE)
 //   -> FAIL as expected (only one instruction's first word gets fetched, not two).
@@ -67,7 +67,7 @@
 //   reachable stimulus in this harness. Since C3 and C4 use the same
 //   grants_for_instruction_at() mechanism in this same file and both correctly
 //   confirm MOVE and SKIP cost exactly 2, the counting mechanism is sound and
-//   the FAIL is a DUT/RTL gap. Tracked as FPGA-064.
+//   the FAIL is a DUT/RTL gap.
 
 #include <cstdint>
 #include <iostream>

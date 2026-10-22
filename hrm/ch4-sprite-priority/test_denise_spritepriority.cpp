@@ -100,7 +100,7 @@
 //
 // OVERLAP WITH THE TWO EXISTING PACKAGES ON THIS FIXTURE (read in full
 // before this file was written, per the build brief):
-//   hrm/denise_spritepriority/ is a pre-claims legacy suite (FPGA-033,
+//   hrm/denise_spritepriority/ is a pre-claims legacy suite (superseded;
 //     Chapter 7 oracle, no claim ids, no MUTATION discipline). Its last
 //     two cases (SPR0+SPR6 both active vs SPR6 alone, same bplcon2) give
 //     INCIDENTAL, non-isolated evidence that a lower-numbered group wins

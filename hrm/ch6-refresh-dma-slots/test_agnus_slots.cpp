@@ -27,7 +27,7 @@
 // agnus_blitter harness and its fixture traps do not apply here. No existing
 // HRM-style package compiles `agnus` (checked: hrm/agnus_refresh/ predates
 // this chapter's HRM claim pipeline entirely - its own header names a
-// different test class, "RTL_REGRESSION", against "the Frozen FPGA-021
+// different test class, "RTL_REGRESSION", against "the Frozen
 // specification", not a manual quotation, and its Makefile's TOP_MODULE and
 // its testbench's Verilated class name do not even agree - not prior art for
 // an HRM_CONFORMANCE package, and left untouched).

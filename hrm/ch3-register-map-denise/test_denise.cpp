@@ -597,7 +597,7 @@ int main(int argc, char** argv) {
         // the window's real close point $150, not $050. Writing DIWHIGH=0
         // afterward (ecs=1) clears that override so DIWSTOP's low byte is
         // the whole story, matching the manual's own DIWSTRT/DIWSTOP pair
-        // (and hrm/denise/'s older FPGA-034 harness, which does the same
+        // (and hrm/denise/'s older harness, which does the same
         // "write DIWHIGH last" for this reason).
         h.write_reg(DIWHIGH_ADDR, 0x0000);
         h.write_reg(COLOR_BASE + 0, 0x001);  // COLOR00: near-black
