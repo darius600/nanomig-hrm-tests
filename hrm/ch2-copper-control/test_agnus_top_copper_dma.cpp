@@ -272,9 +272,9 @@ int main(int argc, char** argv) {
     }
 
     if (checks.count() == 0) {
-        std::cout << "FPGA-055 Agnus top-level DMACON checks passed.\n";
+        std::cout << "Agnus top-level DMACON checks passed.\n";
     } else {
-        std::cerr << "FPGA-055 Agnus top-level DMACON checks failed: "
+        std::cerr << "Agnus top-level DMACON checks failed: "
                   << checks.count() << " assertion(s).\n";
     }
 

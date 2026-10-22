@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     dut->trace(tfp, 99);
     tfp->open("trace.vcd");
 
-    std::cout << "Starting FPGA-044: Paula UART Tests...\n";
+    std::cout << "Starting Paula UART Tests...\n";
 
     dut->clk = 0;
     dut->clk7_en = 0;

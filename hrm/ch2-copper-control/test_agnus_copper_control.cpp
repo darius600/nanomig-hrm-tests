@@ -585,9 +585,9 @@ int main(int argc, char** argv) {
         "opposed to an explicit jump is never exercised) [claims: ch2-appa-copins.c141]");
 
     if (checks.count() == 0) {
-        std::cout << "FPGA-055 Copper register/control module checks passed.\n";
+        std::cout << "Copper register/control module checks passed.\n";
     } else {
-        std::cerr << "FPGA-055 Copper register/control module checks failed: "
+        std::cerr << "Copper register/control module checks failed: "
                   << checks.count() << " assertion(s).\n";
     }
 

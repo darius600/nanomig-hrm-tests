@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     dut->trace(tfp, 99);
     tfp->open("trace.vcd");
 
-    std::cout << "Starting FPGA-046: Top-Level System Bus Tests...\n";
+    std::cout << "Starting Top-Level System Bus Tests...\n";
 
     dut->clk_28 = 0;
     dut->reset_n = 0;

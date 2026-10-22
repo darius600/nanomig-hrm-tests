@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     dut->trace(tfp, 99);
     tfp->open("trace.vcd");
 
-    std::cout << "Starting FPGA-047: Copper <-> Register Bus Test...\n";
+    std::cout << "Starting Copper <-> Register Bus Test...\n";
 
     dut->clk_28 = 0;
     dut->reset_n = 0;
