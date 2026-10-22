@@ -1481,8 +1481,21 @@ time it comes out" (BPLHPT), and with DUAL these differ (section 4, item 14).
 
 **Preconditions,** each with its contrasting case:
 
-1. **UHRES DMA exists,** so that P12-0 shows its one-per-line pattern.
-   Contrast: `BPLCON0 = $0000`, which shows no access in either region (p.16).
+0. **UHRES is enabled** in the runs that grade the chain (P12-UHRESEN): the
+   register lists write BPLCON0 with bit 7 (UHRES) set and DMACON with SET and
+   DMAEN set, with DUAL clear and with DUAL set. Asserted from the register list
+   written. Contrast: BPLCON0 written with UHRES clear.
+1. **UHRES DMA exists,** so that P12-0 shows its one-per-line pattern (P12-UHRES).
+   On every graded line the first three accesses in the two regions are, in this
+   order, the sprite pointer, the bit-plane pointer and the sprite pointer: p.15
+   "The SHRHDAT gets the first and third free cycles" and "this pointer comes out
+   on the 2nd 'free' cycle after the start of each horiz. line", p.27 "activated
+   in the 1st & 3rd 'free' cycles ... after horiz line start". Ordinary bit-plane
+   and sprite data fetches into the same regions do not make that sequence at the
+   start of a line. Contrast: the same regions fed by one lores bit plane and a
+   sprite with data and `BPLCON0 = $1000` (UHRES clear), which accesses both
+   regions on every line without the sequence (the regions alone do not show UHRES
+   DMA); and `BPLCON0 = $0000`, which shows no access in either region (p.16).
 2. **Bandwidth is left.** No bit plane is fetched (BPU = 0), the sprites
    fetch only the null sprite, all other DMA is off, and the CPU is stopped.
    Contrast: none. The page conditions the claim on free bandwidth, and this
@@ -1491,7 +1504,10 @@ time it comes out" (BPLHPT), and with DUAL these differ (section 4, item 14).
    (for P12-1; the DUAL-clear case P12-0 does not use the alternate counter):
    in P11's DUAL run, HHPOSR decreases at least twice within every main line.
    Here this is a precondition and not the clause under test, which is the
-   UHRES chain. Contrast: `HTOTAL = $00E2` makes `k` fall. The page
+   UHRES chain. That DUAL run has its own fixture (P12-KFIXTURE: its program
+   stores `$BEEF` first) and F4 anchor (P12-KANCHOR); both gate P12-K and every
+   check derived from its alternate-counter rate. Contrasts: the fixture program
+   storing `$DEAD`, the samples stored below the one before, and `HTOTAL = $00E2` makes `k` fall. The page
    then predicts fewer appearances; `k` and the count must move together.
 4. **F3 anchor**, and `VMARK(90)` lies in the port line the test calls 90.
    The marker is written within a few CCK of the line start because the poll
@@ -1502,6 +1518,30 @@ time it comes out" (BPLHPT), and with DUAL these differ (section 4, item 14).
    the window. Contrast: a lores bit plane fetched from byte address `$000000`
    with BPL1MOD -40 (every line reads the same 20 words) puts more than four
    accesses at the refresh addresses in every line, so the anchor fails (P12-F3).
+   UHRES stays enabled (`BPLCON0 = $1080`) in this contrast and in the contrast of
+   precondition 2, so that only the clause of the precondition is falsified.
+
+5. **The chain follows the resets of the alternate counter** (P12-PHASE). The
+   program writes the alternate counter through HHPOSW (p.24 "HHPOSW ... DUAL mode
+   hires H beam counter write") with `$08` in one run and `$1C` in another, right
+   after `VMARK(90)`, writes a marker, and stops the CPU. The counter then counts
+   up to HTOTAL = `$38` and resets every `$38 + 1 = 57` CCK, so its resets fall at
+   the time of the marker plus `(57 - v)` CCK plus a multiple of 57 CCK, up to one
+   latency of the write that is the same in both runs. The runs are cycle-aligned.
+   A chain that starts at those resets starts a constant time after them: every chain of the
+   graded frame that waits for no busy cycle (no access outside the two regions between
+   64 system clocks before the predicted reset and its first access: p.15 says the pointers
+   use the 'free' cycles, so a chain waits for busy ones) starts the same number of
+   system clocks after the predicted reset in both runs, and each run has at least one
+   such chain. A chain that does not start at the resets does not move with them and
+   gives different delays. This does not show that the chain starts at the first
+   free cycle: the page gives no bound for the latency of the write or for the number of free
+   cycles in a line, and none is invented. Preconditions of this line: the runs'
+   fixture (P12-PHFIXTURE: `$BEEF` stored first, contrast `$DEAD`) and that
+   the write takes effect (P12-HHW: HHPOSR read right after the write differs between
+   the two runs by the difference of the two values written; contrast: the same value
+   written in both runs). Contrast of the line: DUAL clear in the second run, in which the
+   chain starts at the normal counter's reset and does not move with the alternate counter.
 
 **Contrasting case.** P12-0 (DUAL off): one bit-plane and two sprite pointer
 appearances per line.
