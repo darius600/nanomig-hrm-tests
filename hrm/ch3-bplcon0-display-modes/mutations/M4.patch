@@ -1,16 +1,16 @@
 --- denise.v
 +++ denise.v
-@@ -189,7 +189,7 @@
- //assign lpen     = bplcon0[3];
- //assign lace     = bplcon0[2];
- //assign ersy     = bplcon0[1];
+@@ -191,7 +191,7 @@
+ assign lpen     = bplcon0[3];
+ assign lace     = bplcon0[2];
+ assign ersy     = bplcon0[1];
 -assign ecsena   = bplcon0[0];
 +assign ecsena   = bplcon0[7];
  
  // bpu is updated when bpl1dat register is written
  always @ (posedge clk) begin
-@@ -327,9 +327,9 @@
- // true when beamcounter satisfies horizontal diwstrt/diwstop limits
+@@ -342,9 +342,9 @@
+ 
  always @(posedge clk)
    if (clk7_en) begin
 -    if (hpos[8:0]==hdiwstrt[8:0])
