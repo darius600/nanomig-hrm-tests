@@ -1052,6 +1052,15 @@ not graded: p.12 speaks of the "beam hit position".
     shown to read the actual counter.
   - HHPOSR: consecutive "after" samples are not all identical.
 
+**The release of the freeze (P8-VBREL).** HRM p.239: "This freeze is released at the end of internal
+vertical blanking (vertical position 20)", and AA p.12 (VARVBEN) names the generated vertical blank as
+resetting the light pen. With the P8-0 trigger the samples are taken on into the next frame; the samples of
+lines 25-60 of that frame (after the wrap of V, past the end of the vertical blank, with a margin of five
+lines that is the measurement's, not a page value) satisfy the F4 criteria and are not all identical:
+the counters run again with LPEN still set and no further trigger. Graded when preconditions 1, 2, 4 and 5
+hold. Contrast: a second trigger at about line 30 of the next frame, after which the samples are
+identical again.
+
 VPOSR and VHPOSR (P8-0-VH, P8-1-VH) are graded whenever preconditions 1, 2, 4
 and 5 hold, whether or not any counter freezes: that a chip does not latch the
 position is what P8-0-VH then reports. HHPOSR (P8-0-HH, P8-1-HH) is graded
