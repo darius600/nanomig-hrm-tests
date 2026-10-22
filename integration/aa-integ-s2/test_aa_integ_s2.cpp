@@ -1457,6 +1457,25 @@ std::map<int, int> lol_by_line(const std::vector<Sm>& s) {
     return m;
 }
 
+// The F3 numbers of a run's graded frame: the line periods in colour clocks.
+struct LineData {
+    std::vector<Grp> groups;
+    std::vector<long long> lines;      // line periods in system clocks
+    std::vector<long long> cck;        // line periods in colour clocks (rounded down)
+    bool anchor = false;               // groups of exactly four, whole colour clocks
+    bool frame_ok = false;             // the window holds a full frame's lines
+};
+
+LineData line_data(const BeamRun& b, size_t m_from, size_t m_to, bool filter = true) {
+    LineData d;
+    if (b.fm.size() <= m_to) return d;
+    d.groups = refresh_groups(*b.r, b.fm[m_from], b.fm[m_to], filter);
+    d.anchor = f3_anchor(d.groups, b.tc, &d.lines);
+    for (long long l : d.lines) d.cck.push_back(b.tc > 0 ? l / b.tc : 0);
+    d.frame_ok = d.lines.size() >= 250;
+    return d;
+}
+
 // ---- P11 --------------------------------------------------------------------
 
 // the mean number of HHPOSR decreases per main line of the frame, and whether HHPOSR
@@ -1486,6 +1505,13 @@ void proposition_p11() {
     if (mutating("P11-FIXTURE")) o.prog = "prog_beam_nofix";
     if (mutating("P11-HHMAX") || mutating("P11")) o.regs = regs(0x0070, 0x0060);
     BeamRun d = beam_run(o);
+    // the contrast of P11-MAXH: the same sample loop with VARBEAMEN set and DUAL clear, where the page predicts that HTOTAL bounds the main counter
+    BeamRun dm = d;
+    if (mutating("P11-MAXH")) {
+        BeamOpts om = o;
+        om.regs = RegList{{kHTOTAL, 0x0038}, {kVTOTAL, 0x0138}, {kBEAMCON0, 0x08A0}};
+        dm = beam_run(om);
+    }
     g.expect(d.fixture, "P11-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     int viol = f4_violations(d.post1);
     {
@@ -1503,6 +1529,21 @@ void proposition_p11() {
     bool hh_runs = !hh_by_line.empty();
     for (const auto& kv : hh_by_line) if (kv.second.size() < 2) hh_runs = false;
     g.expect(hh_runs, "P11-HHRUN: on every main line of the frame HHPOSR takes at least two different values, so the alternate counter runs");
+    // the main counter's line length, from the refresh groups of a stopped frame (F3): the period of the port lines
+    auto port_line_cck = [&](const BeamRun& b, bool* anchor) {
+        LineData l = line_data(b, 1, 2);
+        if (anchor) *anchor = l.anchor && l.frame_ok;
+        std::vector<long long> c = l.cck;
+        if (c.empty()) return 0LL;
+        std::sort(c.begin(), c.end());
+        return c[c.size() / 2];
+    };
+    bool d_line_anchor = false, dm_line_anchor = false;
+    long long d_line = port_line_cck(d, &d_line_anchor), dm_line = port_line_cck(dm, &dm_line_anchor);
+    int maxH_m = 0;
+    for (const auto& x : dm.post1) maxH_m = std::max(maxH_m, x.H);
+    checks.note("P11 measured: median port line of a stopped frame = " + dec(d_line) + " colour clocks in the DUAL run (anchor " + dec(d_line_anchor ? 1 : 0) + ")" +
+                (mutating("P11-MAXH") ? ", " + dec(dm_line) + " in the contrast run with VARBEAMEN set (anchor " + dec(dm_line_anchor ? 1 : 0) + "), maximum H of its samples = " + dec(maxH_m) : std::string("")));
     long long wraps = 0; int lines = 0;
     {
         std::map<int, int> w;
@@ -1513,7 +1554,10 @@ void proposition_p11() {
     checks.note("P11 measured: HTOTAL=" + hexs(o.regs[0].second, 4) + ": maximum H = " + dec(maxH) + ", maximum HHPOSR (bits 7-0) = " + dec(hhmax) +
                 ", HHPOSR decreases per main line = " + fnum(lines ? (double)wraps / lines : 0) + " (" + dec(wraps) + " over " + dec(lines) + " lines)");
     bool pre = d.fixture && hh_runs && viol == 0;
-    bool maxh_ok = maxH > 0x38;
+    // the contrast run is live when its fixture and F4 anchor hold and HTOTAL + 1 = 57 colour clocks is what its port lines measure
+    bool dm_live = !mutating("P11-MAXH") || (dm.fixture && f4_violations(dm.post1) == 0 && !dm.post1.empty() && dm_line_anchor && dm_line == 0x38 + 1);
+    pre = pre && dm_live;
+    bool maxh_ok = (mutating("P11-MAXH") ? maxH_m : maxH) > 0x38;
     bool hhmax_ok = hhmax <= 0x38 && !d.post1.empty();
     g.expect_if(pre, maxh_ok, "P11-MAXH: with DUAL set and HTOTAL = $38 the maximum H of the main horizontal counter over the frame exceeds $38: HTOTAL does not reset the main counter");
     g.expect_if(pre, hhmax_ok, "P11-HHMAX: with DUAL set and HTOTAL = $38 every HHPOSR sample (bits 7-0) is at most $38: HTOTAL is the alternate counter's highest count");
@@ -1537,24 +1581,6 @@ void proposition_p11() {
 
 // ---- P13 and P14: line lengths and LOL --------------------------------------
 
-// The F3 numbers of a run's graded frame: the line periods in colour clocks.
-struct LineData {
-    std::vector<Grp> groups;
-    std::vector<long long> lines;      // line periods in system clocks
-    std::vector<long long> cck;        // line periods in colour clocks (rounded down)
-    bool anchor = false;               // groups of exactly four, whole colour clocks
-    bool frame_ok = false;             // the window holds a full frame's lines
-};
-
-LineData line_data(const BeamRun& b, size_t m_from, size_t m_to, bool filter = true) {
-    LineData d;
-    if (b.fm.size() <= m_to) return d;
-    d.groups = refresh_groups(*b.r, b.fm[m_from], b.fm[m_to], filter);
-    d.anchor = f3_anchor(d.groups, b.tc, &d.lines);
-    for (long long l : d.lines) d.cck.push_back(b.tc > 0 ? l / b.tc : 0);
-    d.frame_ok = d.lines.size() >= 250;
-    return d;
-}
 
 RegList p13_regs(uint16_t htotal, uint16_t bc0) {
     return RegList{{kHTOTAL, htotal}, {kVTOTAL, 0x0138}, {kBEAMCON0, bc0}};
@@ -1578,10 +1604,13 @@ void proposition_p13() {
     if (mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT"))
         o0.regs = p13_regs(0x00E2, 0x00A0);
     if (mutating("P13-FIXTURE")) o1.prog = "prog_beam_nofix";
+    if (mutating("P13-0-FIXTURE")) o0.prog = "prog_beam_nofix";
+    if (mutating("P13-0-F3")) { auto x = dma_regs(); o0.regs.insert(o0.regs.begin(), x.begin(), x.end()); }
     if (mutating("P13-F3")) { auto x = dma_regs(); o1.regs.insert(o1.regs.begin(), x.begin(), x.end()); }
     BeamRun r1 = beam_run(o1);
     g.expect(r1.fixture, "P13-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
-    bool need0 = !g_mutate || mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT");
+    bool need0 = !g_mutate || mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT") ||
+                 mutating("P13-0-FIXTURE") || mutating("P13-0-F3") || mutating("P13-0-F4");
     BeamRun r0;
     if (need0) r0 = beam_run(o0);
 
@@ -1646,7 +1675,14 @@ void proposition_p13() {
 
     // P13-0: the toggle returns
     if (!need0) return;
-    bool pre0 = pre && r0.fixture && l0.anchor && l0.frame_ok;
+    // the PAL-clear run has its own fixture, port-line anchor and counter anchor
+    g.expect(r0.fixture, "P13-0-FIXTURE: the program of the PAL-clear run stores the constant $BEEF first and the harness reads it back before any other result of that run is used");
+    g.expect(l0.anchor && l0.frame_ok, "P13-0-F3: in frame B of the PAL-clear run the refresh accesses come in groups of exactly four, one group per line, and every line period is a whole number of colour clocks");
+    BeamRun rev0 = r0;
+    if (mutating("P13-0-F4")) { BeamOpts a = o0; a.prog = "prog_beam_rev"; rev0 = beam_run(a); }
+    int viol0 = f4_violations(rev0.post1);
+    g.expect(!rev0.post1.empty() && viol0 == 0, "P13-0-F4: the samples of frame A of the PAL-clear run show the counters running: V never decreases within the frame and H increases within a line");
+    bool pre0 = pre && r0.fixture && l0.anchor && l0.frame_ok && !rev0.post1.empty() && viol0 == 0;
     bool alt_lines = l0.cck.size() >= 250, alt_lol = false;
     for (size_t i = 0; i < l0.cck.size(); ++i) {
         if (l0.cck[i] != 0x00E2 + 1 && l0.cck[i] != 0x00E2 + 2) alt_lines = false;
@@ -1761,7 +1797,7 @@ void proposition_p14() {
     g.expect_if(pre && longlen == 228, nolongpair, "P14-0-LONGONLY: with PAL clear in normal mode no two consecutive port lines are both long");
     // P14-1: at least one of the frame length and the line-length pattern differs from P14-0
     bool differs = f1a != f0a || l1.cck != l0.cck;
-    g.expect_if(pre, differs, "P14-1: opus:AA-beamcon0.c35 sol:AA-beamcon0.c52 opus:AA-beamcon0.b5 sol:AA-beamcon0.c16: with PAL set in normal mode the frame length in lines or the sequence of port line lengths differs from that with PAL clear");
+    g.expect_if(pre, differs, "P14-1: with PAL set in normal mode the frame length in lines or the sequence of port line lengths differs from that with PAL clear (a control that carries no claim id: the pages give no PAL decodes, so the difference is not graded as appropriate)");
     g.expect_if(pre, lol0 && lines0 && nolongpair && differs,
         "P14: in normal mode the PAL bit selects decodes that differ from those with PAL clear, which has every other line a long line of 228 colour clocks");
 }
@@ -1810,6 +1846,8 @@ struct UhRun {
     int other = 0;                     // accesses on those lines that refresh, UHRES and the null sprite do not explain
     std::string other_first;           // the first of them
     std::vector<double> len_cck;       // those lines' lengths in colour clocks
+    std::vector<std::string> seq;      // per line 102..108, the region accesses in time order: S sprite pointer region, B bit-plane pointer region
+    RegList regs;                      // the register list the program wrote
 };
 
 // a refresh access: a read of the refresh addresses (byte address below $1000), not the level-3 vector the
@@ -1839,6 +1877,7 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
         o.pokes.push_back({kCfg + 0x12 + 4 * (uint32_t)i, regs[i].second});
     }
     UhRun u;
+    u.regs = regs;
     u.r = run_opts(o);
     const RunData& d = *u.r;
     u.fixture = d.loaded && d.done && d.word(kResults) == 0xBEEF;
@@ -1877,11 +1916,13 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
         size_t gi = (size_t)(u.g90 + (ln - 90));
         uint64_t a = u.groups[gi].t, b = u.groups[gi + 1].t;
         int nb = 0, ns = 0;
+        std::string sq;
         for (const auto& x : d.acc) {
             if (x.cyc < a || x.cyc >= b) continue;
-            if (x.byte >= kBplhLo && x.byte < kBplhHi) ++nb;
-            if (x.byte >= kSprhLo && x.byte < kSprhHi) ++ns;
+            if (x.byte >= kBplhLo && x.byte < kBplhHi) { ++nb; sq += 'B'; }
+            if (x.byte >= kSprhLo && x.byte < kSprhHi) { ++ns; sq += 'S'; }
         }
+        u.seq.push_back(sq);
         for (const auto& x : d.acc) {
             if (x.cyc < a || x.cyc >= b) continue;
             if (x.byte < 0x1000 || (x.byte >= kBplhLo && x.byte < 0x1B0000)) continue;
@@ -1900,7 +1941,15 @@ void proposition_p12() {
     BeamOpts od;
     od.post = 1; od.hh = true; od.stops = 2;
     od.regs = {{kHTOTAL, mutating("P12-K") ? (uint16_t)0x00E2 : (uint16_t)0x0038}, {kBEAMCON0, 0x0060}};
+    if (mutating("P12-KFIXTURE")) od.prog = "prog_beam_nofix";
+    if (mutating("P12-KANCHOR")) od.prog = "prog_beam_rev";
     BeamRun dr = beam_run(od);
+    // the DUAL run has its own fixture and F4 anchor; they gate P12-K and every check derived from its alternate-counter rate
+    g.expect(dr.fixture, "P12-KFIXTURE: the program of the DUAL run stores the constant $BEEF first and the harness reads it back before any other result of that run is used");
+    int kviol = f4_violations(dr.post1);
+    bool kanchor = !dr.post1.empty() && kviol == 0;
+    g.expect(kanchor, "P12-KANCHOR: the samples of the DUAL run show the counters running: V never decreases within the frame and H increases within a line");
+    bool kgate = dr.fixture && kanchor;
     double rate = hh_rate(dr);
     bool every_twice = false;
     int minwraps = hh_wraps_min(dr, &every_twice);
@@ -1917,40 +1966,55 @@ void proposition_p12() {
         // with data in the sprite region, so that both regions are accessed on every graded line
         RegList ex = disp;
         ex.push_back({0x0E0, 0x0018}); ex.push_back({0x0E2, 0x0000});
-        p0 = uh_run(0x0020, 0x1000, dr.tc, "prog_uhres_ctl", ex, true);
+        p0 = uh_run(0x0020, 0x1000, dr.tc, "prog_uhres_ctl", ex, true);   // BPLCON0 $1000: UHRES clear, one bit plane
     } else if (mutating("P12-F3")) {
         // a lores bit plane fetched from byte address $000000 with BPL1MOD -40, so that every line reads the same 20
         // words of the refresh addresses: its reads look like refresh accesses
         RegList ex = disp;
         ex.push_back({0x0E0, 0x0000}); ex.push_back({0x0E2, 0x0000}); ex.push_back({0x108, 0xFFD8});
-        p0 = uh_run(0x0020, 0x1000, dr.tc, prog.c_str(), ex);
+        p0 = uh_run(0x0020, 0x1080, dr.tc, prog.c_str(), ex);   // BPLCON0 $1080: UHRES set, one bit plane
     } else if (mutating("P12-BANDWIDTH")) {
         // a bit plane fetched in the lines under test
         RegList ex = disp;
         ex.push_back({0x0E0, 0x000F}); ex.push_back({0x0E2, 0x8000});
-        p0 = uh_run(0x0020, 0x1000, dr.tc, prog.c_str(), ex);
+        p0 = uh_run(0x0020, 0x1080, dr.tc, prog.c_str(), ex);   // BPLCON0 $1080: UHRES set, one bit plane
+    } else if (mutating("P12-UHRESEN")) {
+        p0 = uh_run(0x0020, 0x0000, dr.tc, prog.c_str());   // UHRES clear
     } else p0 = uh_run(mutating("P12-0") ? 0x0060 : 0x0020, 0x0080, dr.tc, prog.c_str());   // P12-0: DUAL set in the P12-0 run
+    UhRun p1 = uh_run(mutating("P12-1-BPL") || mutating("P12-1-SPR") || mutating("P12") ? 0x0020 : 0x0060, 0x0080, dr.tc, prog.c_str());
     g.expect(p0.fixture, "P12-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool f3 = p0.anchor && p0.g90 >= 0;
     g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses (reads of byte addresses below $1000) come in groups of exactly four, one group per line period, every line period is a whole number of colour clocks, and the port line holding VMARK(90), which the test calls 90, and every line of lines 90-109 is such a group");
-    // UHRES DMA exists: both regions are accessed on every graded line of P12-0
-    bool exists = !p0.bplh.empty();
-    for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] == 0 || p0.sprh[i] == 0) exists = false;
+    // UHRES is enabled in the runs that grade the chain: BPLCON0 bit 7 is written set and DMACON sets DMAEN
+    auto uh_enabled = [](const UhRun& u) {
+        bool bpl = false, dma = false;
+        for (const auto& rg : u.regs) {
+            if (rg.first == 0x100) bpl = (rg.second & 0x0080) != 0;
+            if (rg.first == 0x096) dma = (rg.second & 0x8200) == 0x8200;
+        }
+        return bpl && dma;
+    };
+    // UHRES DMA exists: on every graded line of P12-0 the first three accesses in the two regions are, in this order, the sprite
+    // pointer (first free cycle), the bit-plane pointer (second) and the sprite pointer (third) of the chain (p.15, p.27). Ordinary
+    // bit-plane and sprite data fetches do not make that sequence at the start of a line.
+    bool exists = !p0.bplh.empty() && p0.seq.size() == p0.bplh.size();
+    for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] == 0 || p0.sprh[i] == 0 || p0.seq[i].compare(0, 3, "SBS") != 0) exists = false;
     {
         std::string s;
         for (size_t i = 0; i < p0.bplh.size(); ++i) s += " " + dec(p0.bplh[i]) + "/" + dec(p0.sprh[i]);
         checks.note("P12 measured, DUAL clear: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
     }
-    g.expect(exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES bit-plane pointer region and the UHRES sprite pointer region are accessed on every graded line");
+    g.expect(exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES pointer regions are accessed on every graded line, and the first three accesses of the line in them are the sprite pointer, the bit-plane pointer and the sprite pointer, in this order");
+    bool uhen0 = uh_enabled(p0) && uh_enabled(p1);
+    g.expect(uhen0, "P12-UHRESEN: the runs that grade the UHRES chain write BPLCON0 with bit 7 (UHRES) set and DMACON with SET and DMAEN set, with DUAL clear and with DUAL set");
     // bandwidth is left: on the graded lines the port shows only refresh, UHRES and null-sprite accesses
-    bool bw = p0.anchor && p0.other == 0;
+    bool bw = p0.other == 0;
     checks.note("P12 measured, DUAL clear: accesses on lines 102-108 that refresh, UHRES and the null sprite do not explain = " + dec(p0.other) +
                 (p0.other ? ", first:" + p0.other_first : std::string("")));
     g.expect(bw, "P12-BANDWIDTH: on lines 102-108 the port shows only refresh, UHRES and null-sprite accesses: no bit plane is fetched, no other DMA runs and the CPU is stopped");
-    g.expect(every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every complete main line, so the alternate counter wraps at least twice per main line");
-    bool pre = p0.fixture && f3 && exists && bw && every_twice;
+    g.expect_if(kgate, every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every complete main line, so the alternate counter wraps at least twice per main line");
+    bool pre = p0.fixture && f3 && uhen0 && exists && bw && every_twice && kgate;
 
-    UhRun p1 = uh_run(mutating("P12-1-BPL") || mutating("P12-1-SPR") || mutating("P12") ? 0x0020 : 0x0060, 0x0080, dr.tc, prog.c_str());
     bool pre1 = pre && p1.anchor && p1.g90 >= 0 && p1.other == 0;
     {
         std::string s;
@@ -1959,7 +2023,7 @@ void proposition_p12() {
     }
     // P12-0: exactly 1 bit-plane pointer access and 2 sprite pointer accesses on every graded line;
     // the DUAL-clear case does not use the alternate counter, so P12-K is not among its preconditions
-    bool pre0 = p0.fixture && f3 && exists && bw;
+    bool pre0 = p0.fixture && f3 && uhen0 && exists && bw;
     bool c0 = !p0.bplh.empty();
     for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] != 1 || p0.sprh[i] != 2) c0 = false;
     g.expect_if(pre0, c0, "P12-0: with DUAL clear every graded line shows exactly 1 UHRES bit-plane pointer access and exactly 2 UHRES sprite pointer accesses");
@@ -1986,9 +2050,10 @@ struct SyncSet {
     bool fix = true;
     bool dma = false;       // a bit plane is fetched: accesses the refresh filter cannot explain
     uint16_t htotal = 0x00E2;
+    uint16_t bplcon0 = 0;   // written before BEAMCON0 when non-zero (LACE for the long-field mutations)
     std::string key() const {
         return hexs(bc0, 4) + "-" + dec(hsstrt) + "-" + dec(hsstop) + "-" + dec(hcenter) + "-" + dec(vsstop) + "-" + dec(vbstrt) +
-               (fix ? "" : "-nofix") + (dma ? "-dma" : "") + "-ht" + dec(htotal);
+               (fix ? "" : "-nofix") + (dma ? "-dma" : "") + "-ht" + dec(htotal) + "-bp" + dec(bplcon0);
     }
 };
 
@@ -2013,6 +2078,7 @@ std::shared_ptr<SyncRun> sync_run(const SyncSet& s) {
               {kHBSTOP, 0x0081}, {kHCENTER, s.hcenter}, {kVSSTRT, 100}, {kVSSTOP, s.vsstop}, {kVBSTRT, s.vbstrt},
               {kVBOSTOP, 170}, {kBEAMCON0, s.bc0}};
     if (s.dma) { auto x = dma_regs(); o.regs.insert(o.regs.begin(), x.begin(), x.end()); }
+    if (s.bplcon0) o.regs.insert(o.regs.begin(), {0x100, s.bplcon0});
     auto r = std::make_shared<SyncRun>();
     r->b = beam_run(o);
     r->tc = colour_clock(r->b.pre);
@@ -2191,9 +2257,10 @@ void proposition_p9_p10() {
     if (mutating("P9-AH")) c_h2 = c_h1;
     if (mutating("P9-AC")) c_c2 = c_h1;
     if (mutating("P9-BV") || mutating("P9-B") || mutating("P9-ID")) c_v2 = c_h1;
-    // VARHSYEN set in the compared runs: HSSTRT reaches HSY* (P9-NH) and HCENTER the vertical sync (P9-NC)
-    if (mutating("P9-NH")) nh1.bc0 = nh2.bc0 = 0x01A0;
-    if (mutating("P9-NC")) nc1.bc0 = nc2.bc0 = 0x01A0;
+    // VARVSYEN and VARHSYEN set in the compared runs: HSSTRT is the horizontal position of the variable VSY on short fields (P9-NH);
+    // and with interlace HCENTER is its horizontal position on long fields (P9-NC)
+    if (mutating("P9-NH")) nh1.bc0 = nh2.bc0 = 0x03A0;
+    if (mutating("P9-NC")) { nc1.bc0 = nc2.bc0 = 0x03A0; nc1.bplcon0 = nc2.bplcon0 = 0x0004; }
     if (mutating("P9-NV")) nv1.bc0 = nv2.bc0 = 0x04A0;
     if (w9) {
         auto a1 = L(c_h1), a2 = L(c_h2), cc2 = L(c_c2), b2 = L(c_v2);
@@ -2240,22 +2307,24 @@ void proposition_p9_p10() {
         // P9-NH and P9-NC assert identity at every sample: a deterministic scan doubler keeps identical inputs identical,
         // so they do not need anchor S-H and their runs are always taken
         auto bh1 = sync_run(nh1), bh2 = sync_run(nh2), bc1 = sync_run(nc1), bc2 = sync_run(nc2), bv1 = L(nv1), bv2 = L(nv2);
-        auto same = [&](const SyncRun& x, const SyncRun& y) { return aligned(x, y) && diff_itv(x, y, 0).empty() && diff_itv(x, y, 1).empty(); };
+        // the vertical sync reaches the harness unchanged, so identity of VSY* is observed; the HSY* halves are not observable (the scan doubler regenerates hs)
+        auto same = [&](const SyncRun& x, const SyncRun& y) { return aligned(x, y) && diff_itv(x, y, 1).empty(); };
         bool nh_ok = same(*bh1, *bh2), nc_ok = same(*bc1, *bc2), nv_ok = same(*bv1, *bv2);
         bool pre_a = s_h && a1->ok && a2->ok && cc2->ok && aligned(*a1, *a2) && aligned(*a1, *cc2) && vvar && vnorm;
         bool pre_b = s_v && a1->ok && b2->ok && aligned(*a1, *b2) && vvar && vnorm;
         g.expect_if(pre_a, ah_ok, "P9-AH: with CSCBEN set and VARHSYEN and VARVSYEN clear, changing HSSTRT from $20 to $24 changes the HSY* output on every chip line, in one interval of exactly 4 colour clocks");
         g.expect_if(pre_a, ac_ok, "P9-AC: with CSCBEN set, changing HCENTER from $91 to $99 changes the HSY* output on consecutive chip lines only, as many as there are lines in vertical sync, each in one interval of exactly 8 colour clocks");
-        bool pre_nh = bh1->ok && bh2->ok, pre_nc = bc1->ok && bc2->ok;
-        g.expect_if(pre_nh, nh_ok, "P9-NH: with CSCBEN clear, changing HSSTRT from $20 to $24 changes neither pin at any sample");
-        g.expect_if(pre_nc, nc_ok, "P9-NC: with CSCBEN clear, changing HCENTER from $91 to $99 changes neither pin at any sample");
+        bool pre_nh = s_v && bh1->ok && bh2->ok, pre_nc = s_v && bc1->ok && bc2->ok;
+        checks.record("NOT OBSERVABLE: the HSY* halves of P9-NH, P9-NC and P9-NV: the harness shows hs only after the scan doubler, which regenerates it, so identity of the hs samples cannot show that HSSTRT, HCENTER or VBSTRT does not reach the HSY* pin");
+        g.expect_if(pre_nh, nh_ok, "P9-NH: with CSCBEN clear, changing HSSTRT from $20 to $24 does not change the VSY* output at any sample (the HSY* half is not observable at this boundary)");
+        g.expect_if(pre_nc, nc_ok, "P9-NC: with CSCBEN clear, changing HCENTER from $91 to $99 does not change the VSY* output at any sample (the HSY* half is not observable at this boundary)");
         g.expect_if(pre_b, bv_ok, "P9-BV: with CSCBEN set, changing VBSTRT from 150 to 152 changes the VSY* output only inside one interval of at most two line periods that starts between 49 and 51 line periods after the start of V_var, each of its two line periods holding differing samples");
-        g.expect_if(s_v && bv1->ok && bv2->ok, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 changes neither pin at any sample");
+        g.expect_if(s_v && bv1->ok && bv2->ok, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 does not change the VSY* output at any sample (the HSY* half is not observable at this boundary)");
         bool a_all = ah_ok && ac_ok && nh_ok && nc_ok, b_all = bv_ok && nv_ok;
         g.expect_if(pre_a, a_all,
-            "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the pins");
+            "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the HSY* and VSY* pins");
         g.expect_if(pre_b, b_all,
-            "P9-B: opus:AA-beamcon0.c16 sol:AA-beamcon0.c34: with CSCBEN set the variable composite blank comes out on the VSY* pin and follows VBSTRT; with CSCBEN clear VBSTRT does not reach the pins");
+            "P9-B: opus:AA-beamcon0.c16 sol:AA-beamcon0.c34: with CSCBEN set the variable composite blank comes out on the VSY* pin and follows VBSTRT; with CSCBEN clear VBSTRT does not reach the VSY* pin");
         g.expect_if(pre_a || pre_b, (!pre_a || a_all) && (!pre_b || b_all),
             "P9-ID: opus:AA-beamcon0.b10 sol:AA-beamcon0.c11: BEAMCON0 bit 10 is CSCBEN: setting it routes the variable composite sync to HSY* and the variable composite blank to VSY*, on whichever pin this harness can check");
     }
@@ -2285,8 +2354,9 @@ void proposition_p9_p10() {
                     itv_note("same pair, vs", diff_itv(*p1, *p2, 1), *p1));
         bool pre_s = s_h && ps1->ok && p3->ok && aligned(*ps1, *p3), pre_c = p1->ok && p2->ok;
         bool pre_vp = s_v && q1->ok && q2->ok, pre_vs = s_v && qs1->ok && q3->ok && aligned(*qs1, *q3);
-        bool pre_h = pre_s && pre_c, pre_v = pre_vp && pre_vs;
-        g.expect_if(pre_c, cpair, "P10-CPAIR: with CSCBEN and VARHSYEN set, changing HCENTER from $91 to $99 changes nothing at any sample: the comparator HSY is independent of HCENTER");
+        bool cpair_observable = false;   // HSY* is not observable at this boundary: the P10 aggregate cannot be graded whole
+        bool pre_h = pre_s && pre_c && cpair_observable, pre_v = pre_vp && pre_vs;
+        checks.record("NOT OBSERVABLE: P10-CPAIR: with CSCBEN and VARHSYEN set, that changing HCENTER from $91 to $99 changes nothing at the HSY* pin cannot be observed at this boundary, since the scan doubler regenerates hs; the VSY* samples of the pair are a MEASURED line");
         g.expect_if(pre_s, spair, "P10-SPAIR: with CSCBEN and VARHSYEN set, changing HSSTOP from $30 to $34 changes the HSY* output on every chip line, vertical-sync lines included, in one interval of exactly 4 colour clocks");
         g.expect_if(pre_vp, vpair, "P10-VPAIR: with CSCBEN and VARVSYEN set, changing VBSTRT from 150 to 152 changes nothing at any sample: the comparator VSY is independent of VBSTRT");
         g.expect_if(pre_vs, vspair, "P10-VSPAIR: with CSCBEN and VARVSYEN set, changing VSSTOP from 103 to 105 changes the VSY* output in exactly one interval of exactly two line periods");
@@ -2561,6 +2631,7 @@ int main(int argc, char** argv) {
     checks.record("DECLINED-INTERLACE: sol:AA-beamcon0.c50: the page does not say what 'doesn't work' looks like in 640*400*4 interlace mode, so no observation can be graded against it");
     checks.record("DECLINED-NORMAL: opus:AA-beamcon0.c18: the claim joins a statement about the CSY* pin, which cannot be seen, to the CSCBEN routing that P9 grades under other ids");
     checks.record("DECLINED-WRITEONLY: opus:AA-bltxpth.c2 opus:AA-bltxptl.c2 opus:AA-bltxmod.c2: the page gives no value for a read of a W address, so 'write only' has no observable consequence");
+    checks.record("DECLINED-PAL: opus:AA-beamcon0.c35 sol:AA-beamcon0.c52 opus:AA-beamcon0.b5 sol:AA-beamcon0.c16: p.12 says the PAL bit sets the appropriate decodes for PAL in normal mode and gives no PAL decode value, so that PAL-set timing differs from PAL-clear timing is a proxy that cannot show the decodes are appropriate, or that the difference is PAL");
     checks.record("DECLINED-DUAL: opus:AA-beamcon0.c30 sol:AA-beamcon0.c47: DUAL runs all the horizontal comparators with the alternate counter, and P11 grades HTOTAL only");
     if (g_tears) checks.note("samples taken across the step from line 255 to line 256 and completed with the V8 they lacked: " + dec(g_tears));
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
