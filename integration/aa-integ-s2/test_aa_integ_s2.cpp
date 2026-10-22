@@ -15,9 +15,10 @@
 //
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
-// Kinds: oracle changes the object a line reads (the runs keep make_config()), stimulus changes what a program or a register list
-// writes (on the private build of SPECIFICATION.md 6.6 where the record says so), implementation runs a copy of the chip set (the private
-// build of 6.6), none is a line no run changes.
+// Kinds: stimulus changes what a program or a register list writes, or the Config object every run is built from (CONFIG);
+// the private build of SPECIFICATION.md 6.6 (a copy of the chip set made by private/*.patch, make private-uhres) is named where a
+// record gives its result beside the repository build's. implementation green and implementation red run that copy, none
+// impossible says why no stimulus can falsify the line at this boundary.
 // MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5
 // MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
 // MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
@@ -2449,9 +2450,9 @@ void proposition_p9_p10() {
                     itv_note("same pair, vs", diff_itv(*p1, *p2, 1), *p1));
         bool pre_s = s_h && ps1->ok && p3->ok && aligned(*ps1, *p3), pre_c = p1->ok && p2->ok;
         bool pre_vp = s_v && q1->ok && q2->ok, pre_vs = s_v && qs1->ok && q3->ok && aligned(*qs1, *q3);
-        bool cpair_observable = false;   // HSY* is not observable at this boundary: the P10 aggregate cannot be graded whole
+        const bool cpair_observable = false;   // HSY* is not observable at this boundary: the scan doubler regenerates hs
         bool pre_h = pre_s && pre_c && cpair_observable, pre_v = pre_vp && pre_vs;
-        checks.record("NOT OBSERVABLE: P10-CPAIR: with CSCBEN and VARHSYEN set, that changing HCENTER from $91 to $99 changes nothing at the HSY* pin cannot be observed at this boundary, since the scan doubler regenerates hs; the VSY* samples of the pair are a MEASURED line");
+        g.expect_if(cpair_observable, cpair, "P10-CPAIR: with CSCBEN and VARHSYEN set, changing HCENTER from $91 to $99 changes nothing at the HSY* pin: the comparator HSY is independent of HCENTER (not observable at this boundary, since the scan doubler regenerates hs; the VSY* samples of the pair are a MEASURED line)");
         g.expect_if(pre_s, spair, "P10-SPAIR: with CSCBEN and VARHSYEN set, changing HSSTOP from $30 to $34 changes the HSY* output on every chip line, vertical-sync lines included, in one interval of exactly 4 colour clocks");
         g.expect_if(pre_vp, vpair, "P10-VPAIR: with CSCBEN and VARVSYEN set, changing VBSTRT from 150 to 152 changes nothing at any sample: the comparator VSY is independent of VBSTRT");
         g.expect_if(pre_vs, vspair, "P10-VSPAIR: with CSCBEN and VARVSYEN set, changing VSSTOP from 103 to 105 changes the VSY* output in exactly one interval of exactly two line periods");

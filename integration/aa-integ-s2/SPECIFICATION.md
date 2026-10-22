@@ -1905,7 +1905,8 @@ the PAL = 0 (NTSC) decodes.
 |---|---|
 | `test_aa_integ_s2.cpp` | The test: one function per proposition, the anchors F5, the fixture and configuration lines, the declined claims. |
 | `s2.i`, `blit.i`, `p7.i` | Constants, the blit engine (P1-P7) and the Copper part of P7, shared by the programs. |
-| `prog_p1.s` ... `prog_p7.s`, `prog_beam.s`, `prog_lpen.s`, `prog_uhres.s` | The stimulus programs. |
+| `prog_p1.s` ... `prog_p7.s`, `prog_p2w.s`, `prog_beam.s`, `prog_lpen.s`, `prog_uhres.s` | The stimulus programs. |
+| `private/*.patch`, `Makefile` | The patches of the private build (6.6) and the targets `private-uhres`, `private-longline` and `private-novbrelease` that apply one to a copy of the chip set and run the test on both cores. |
 | `prog_*_<variant>.s` | One mutation variant each: a few `equ` lines that change one stimulus value, then `include` of the program. |
 | `Makefile` | `TEST_CPP` and the programs, with `../harness/nanomig.mk`. |
 
@@ -1924,8 +1925,9 @@ words written to the marker area `$0C1000`: `$F001` frame sync, `$A100+i` and `$
 | `blit.i` with `prog_p1..p6.s` | The template of 2.3 for each entry of a table of 16 words at `$080C00` (flags, BLTCON0, BLTCON1, BLTSIZE, the four pointers, the four modulos). The program writes every register of an entry, clears BLIT, writes `BLIT_GO`, writes BLTSIZE, waits for BLIT with the timeout of 2.2, stores the outcome at `RESULTS+$10+4i` and DMACONR at `RESULTS+$12+4i`, writes `BLIT_DONE`. The flag bits skip the registers (P4's second blit) or the pointers and modulos (P7's final blit). `prog_p1.s` and `prog_p5.s` take `DESC`: the second (P1) or third (P5) blit is then descending (BLTCON1 bit 1) with its four pointers higher ($40 in `prog_p1.s`, $10 in `prog_p5.s`), which keeps its accesses in the channel regions. `prog_p5.s` takes `MC0`, `MB0`, `MA0` and `MD0`, the modulos of its first blit. The test reads the table back from Chip memory where a precondition is about what the program wrote (P2-MAP, P5-REGIONS). |
 | `prog_p7.s` with `p7.i` | The CPU copies twelve Copper lists of eight words to `$0A0000`, writes the base values of the twelve registers, writes COPCON, starts the Copper in the order of P7 step 4, and for k = 1..12 waits for COPER, clears it, waits for line 100, points COP1LC at list k+1 and waits for VERTB; then it clears COPEN and runs the final blit. List k is `WAIT $3C01,$FFFE`, `MOVE INTREQ,$8010`, `MOVE <register k>,<value k>`, `WAIT $FFFF,$FFFE`. |
 | `prog_beam.s` | The ROM overlay is cleared (CIA-A DDRA `$03`, PRA `$00`), the level-3 vector at `$6C` points at a handler that clears VERTB. The test pokes a parameter block at `$0B8000` before the program starts: whether to take a dry-run sample frame before the register list, how many sample frames after it, whether HHPOSR is stored, how many frames to stop, and the register list (offset, value pairs). Sample frames store `VPOSR:VHPOSR` (and HHPOSR) at the buffer pointer until VERTB; stopped frames are `INTREQ = $0020`, `INTENA = $C020`, `STOP #$2000`, then the frame marker and `INTENA = $7FFF`. Buffers: `$1B0000` (dry run), `$1D0000` and `$1E0000` (sample frames). |
-| `prog_lpen.s` | P8: BEAMCON0 from the parameter block, frame sync, polling until V = 254 and H >= $80, BPLCON0 from the parameter block, `LP_GO`, then N samples of `VPOSR:VHPOSR` and HHPOSR at `$1B0000`. |
-| `prog_uhres.s` | P12: the register list, then per frame the eight sprite pointers set to the null sprite at `$1A0000`, polling until V >= 90, `VMARK(90)`, `STOP` until VERTB. |
+| `prog_lpen.s` | P8: BEAMCON0 from the parameter block, frame sync, polling until V = 254, BPLCON0 from the parameter block, `LP_GO`, then N samples at `$1B0000` of 8 bytes each: the CIA-A port register A byte (`$BFE001`) read first, then `VPOSR:VHPOSR`, HHPOSR and the CIA byte as a word. `prog_lpen_slow.s` adds four instructions to the loop. |
+| `prog_p2w.s` | P2: 160 blits of one word, the channel under test (A, B, C, D) with a pointer that has one address bit 1-20 set (walking one) or clear (walking zero), the others neutral; the pointer written is stored at `RESULTS+$400+4i`. Variants: `nobl` and `sparse` (16 blits), `h3`, `nofix`, `map`, `pos`, `pos0`. |
+| `prog_uhres.s` | P12: the register list, then per frame the eight sprite pointers set to the null sprite at `$1A0000`, polling until V >= 90, `VMARK(90)`, `STOP` until VERTB. `prog_uhphase.s` also writes `CFG+4` to HHPOSW right after `VMARK(90)`, writes the marker `$F021`, reads HHPOSR back and stores it at `RESULTS+$100`. |
 
 Mutation variants (a symbol defined before the include) and the labels that select them: see 6.5.
 
@@ -1956,7 +1958,7 @@ Mutation variants (a symbol defined before the include) and the labels that sele
    `NOT CHECKABLE` and the HHPOSR lines are NOT GRADED, as section 3, P8, precondition 3 says.
 7. **F5 anchors.** S-H and S-V hold or do not hold; an S-H part that does not hold prints `NOT CHECKABLE`, never `FAIL`; an S-V that does not hold prints `FAIL` on F5-SV-DIFF and leaves the VSY* lines NOT GRADED. S-V is S-V1 against S-V2 alone; S-V3 is the
    graded line F5-SV-INV, which prints FAIL on a chip that ignores VSYTRUE and does not decide whether the VSY* lines are graded. The runs of P9 and P10 are not
-   taken when neither part holds; P9-NH, P9-NC and P10-CPAIR assert identity at every sample and take their own runs. P9-A grades opus:AA-beamcon0.c15,
+   taken when neither part holds; P9-NH, P9-NC and P9-NV grade the VSY* samples when anchor S-V holds, and their HSY* halves and P10-CPAIR are recorded as not observable. P9-A grades opus:AA-beamcon0.c15,
    sol:AA-beamcon0.c33 and opus:AA-beamcon0.c38, P9-B grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34, P9-ID grades opus:AA-beamcon0.b10 and
    sol:AA-beamcon0.c11 when either part is checkable, and P10 needs both parts.
 8. **P9-BV position.** The page fixes the blank's start only to line 150, at no horizontal position, and V_var's to line 100 at HSSTRT (p.12, short fields), so the
@@ -2040,7 +2042,7 @@ P14 measured, PAL set: frame lines 313 and 313, frame periods 568400 and 568416 
 
 ### 6.5 Mutations
 
-Every mutation leaves the comparator and the expected values alone. A record of kind `stimulus` changes what a program or a register list writes, on the repository build unless the record says that it ran on the private build of 6.6; `implementation` runs a copy of the chip set (6.6); `oracle` changes the object a line reads and leaves the runs alone (the CONFIG lines check the test's own configuration, which no stimulus changes). The two cores are listed together because they agree line by line.
+Every mutation leaves the comparator and the expected values alone and changes only the stimulus: what a program or a register list writes, or the Config object every run is built from (CONFIG). A record of kind `stimulus` names its change and the lines that printed FAIL, and the lines that were NOT GRADED or NOT CHECKABLE, on the repository build; where the record also names the private build of 6.6 it gives that result beside it, for TG68K and fx68k. `implementation green` records that the private build makes a line PASS where the repository build prints FAIL or does not grade it, and, where there is a selector, the stimulus that turns it red there; `implementation red` records a private copy with one more change. A run of a private build is an implementation demonstration and is not a stimulus-mutation record. `none impossible` gives the reason no stimulus can falsify a line at this boundary. Each result lists the first six FAIL lines. NMH_MUTATE selects the mutation; the programs of 6.2 carry the variants.
 
 | Label | Kind and result | What changes, and what printed |
 |---|---|---|
