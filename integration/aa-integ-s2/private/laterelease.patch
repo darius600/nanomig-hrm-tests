@@ -1,0 +1,372 @@
+--- a/src/minimig-aga/agnus.v
++++ b/src/minimig-aga/agnus.v
+@@ -53,6 +53,7 @@
+ 
+ module agnus
+ (
++	input         lpen_trig,       // light pen trigger
+ 	input         clk,             // clock
+ 	input         clk7_en,         
+ 	input         cck,             // colour clock enable, active whenever hpos[0] is high (odd dma slots used by chipset)
+@@ -126,6 +127,11 @@
+ wire dma_cop = req_cop & copen; //copper dma is using its slot
+ wire dma_blt = req_blt & blten; //blitter dma is using its slot
+ wire dma_ref;                   //refresh dma slots
++wire dma_uh;                    //uhres dma slots
++wire [20:1] address_uh;         //uhres dma address
++wire [8:1] rga_uh;              //uhres identifier on the register address lines
++wire [7:0] hhpos_w;
++wire dual_w;
+ 
+ reg       ack_cop;        //copper dma acknowledge
+ reg       ack_blt;        //blitter dma acknowledge
+@@ -228,6 +234,18 @@
+ 		dbwe = 0;
+ 		refresh = 0;
+ 	end
++	else if (dma_uh) begin
++		// bus allocated to the uhres pointers
++		cpu_custom = 0;
++		dbr = 1;
++		ack_cop = 0;
++		ack_blt = 0;
++		ack_spr = 0;
++		address_out = address_uh;
++		reg_address = rga_uh;
++		dbwe = 0;
++		refresh = 0;
++	end
+ 	else if (dma_cop) begin
+ 		// bus allocated to copper
+ 		cpu_custom = 0;
+@@ -307,7 +325,7 @@
+ wire ena_cop = ~dma_bpl;
+ //dma enable for blitter tells the blitter that no higher priority dma channel is using the bus
+ //since blitter has the lowest priority and can use any dma slot (even and odd) all other dma channels block blitter activity
+-wire ena_blt = ~(dma_ref | dma_dsk | dma_aud | dma_spr | dma_bpl | dma_cop) && bls_cnt!=BLS_CNT_MAX ? 1'b1 : 1'b0;
++wire ena_blt = ~(dma_ref | dma_dsk | dma_aud | dma_spr | dma_bpl | dma_cop | dma_uh) && bls_cnt!=BLS_CNT_MAX ? 1'b1 : 1'b0;
+ 
+ wire  [8:0] hpos;      //alternative horizontal beam counter
+ wire [10:0] vpos;      //vertical beam counter
+@@ -457,8 +475,27 @@
+ //--------------------------------------------------------------------------------------
+ 
+ //instantiate beam counters
++agnus_uhres uh1
++(
++	.clk(clk),
++	.clk7_en(clk7_en),
++	.reset(reset),
++	.hpos(hpos),
++	.vpos(vpos),
++	.dual(dual_w),
++	.hhpos(hhpos_w),
++	.dmaen(dmacon[9]),
++	.busy(dma_dsk | dma_ref | dma_aud | dma_bpl | (req_spr & spren)),
++	.reg_address_in(reg_address),
++	.data_in(data_in),
++	.dma(dma_uh),
++	.address_out(address_uh),
++	.rga(rga_uh)
++);
++
+ agnus_beamcounter  bc1
+ (
++	.lpen_trig(lpen_trig),
+ 	.clk(clk),
+ 	.clk7_en(clk7_en),
+ 	.reset(reset),
+@@ -486,7 +523,9 @@
+ 	.vbl_int(vbl_int),
+ 	.htotal_out(htotal),
+ 	.harddis_out(harddis),
+-	.varbeamen_out(varbeamen)
++	.varbeamen_out(varbeamen),
++	.hhpos_out(hhpos_w),
++	.dual_out(dual_w)
+ );
+ 
+ //horizontal strobe for Denise
+@@ -500,3 +539,81 @@
+ 
+ endmodule
+ 
++
++// UHRES dma engine of the page-built private copy (AA pp. 6, 10, 15, 16, 22, 27, 28)
++module agnus_uhres
++(
++	input         clk,
++	input         clk7_en,
++	input         reset,
++	input   [8:0] hpos,            // main horizontal beam counter
++	input  [10:0] vpos,            // vertical beam counter
++	input         dual,            // BEAMCON0 DUAL
++	input   [7:0] hhpos,           // alternate horizontal beam counter
++	input         dmaen,           // DMACON DMAEN
++	input         busy,            // a higher priority channel uses this slot
++	input   [8:1] reg_address_in,
++	input  [15:0] data_in,
++	output        dma,
++	output [20:1] address_out,
++	output  [8:1] rga              // BPLHDAT (07A) with the bit plane pointer, SPRHDAT (078) with the sprite pointer
++);
++
++reg        uhres;
++reg [10:0] sstrt, sstop, bstrt, bstop;
++reg [15:0] bmod;
++reg [20:1] bpt, spt;
++
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reset) begin
++			uhres <= 1'b0;
++		end else begin
++			case (reg_address_in[8:1])
++				8'h80: uhres <= data_in[7];                   // BPLCON0 bit 7
++				8'hE8: sstrt <= data_in[10:0];                // SPRHSTRT 1D0
++				8'hE9: sstop <= data_in[10:0];                // SPRHSTOP 1D2
++				8'hEA: bstrt <= data_in[10:0];                // BPLHSTRT 1D4
++				8'hEB: bstop <= data_in[10:0];                // BPLHSTOP 1D6
++				8'hF3: bmod  <= data_in[15:0];                // BPLHMOD  1E6
++				8'hF4: spt[20:16] <= data_in[4:0];            // SPRHPTH  1E8
++				8'hF5: spt[15:1]  <= data_in[15:1];           // SPRHPTL  1EA
++				8'hF6: bpt[20:16] <= data_in[4:0];            // BPLHPTH  1EC
++				8'hF7: bpt[15:1]  <= data_in[15:1];           // BPLHPTL  1EE
++				default: ;
++			endcase
++		end
++	end
++end
++
++// the chain restarts at the line start of the counter in use (AA p.12 DUAL)
++wire arm = hpos[0] && (dual ? (hhpos == 8'd0) : (hpos[8:1] == 8'd0));
++
++reg [1:0] cnt;      // free cycles seen since the restart: 0, 1, 2; 3 = chain finished
++reg       on, lb, ls;
++
++wire slot = hpos[0] && on && (cnt != 2'd3);
++wire free = slot && !busy;
++
++assign dma = free && ((cnt == 2'd0 && ls) || (cnt == 2'd1 && lb) || (cnt == 2'd2 && ls));
++assign address_out = (cnt == 2'd1) ? bpt : spt;
++assign rga = (cnt == 2'd1) ? 8'h3D : 8'h3C;
++
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (arm) begin
++			cnt <= 2'd0;
++			on  <= uhres && dmaen;
++			lb  <= (vpos >= bstrt) && (vpos < bstop);
++			ls  <= (vpos >= sstrt) && (vpos < sstop);
++		end else if (free) begin
++			cnt <= cnt + 2'd1;
++		end
++		if (dma && !arm) begin
++			if (cnt == 2'd1) bpt <= bpt + 20'd1 + {{5{bmod[15]}}, bmod[15:1]};
++			else             spt <= spt + 20'd1;
++		end
++	end
++end
++
++endmodule
+--- a/src/minimig-aga/agnus_beamcounter.v
++++ b/src/minimig-aga/agnus_beamcounter.v
+@@ -26,6 +26,7 @@
+ 
+ module agnus_beamcounter
+ (
++	input             lpen_trig,      // light pen trigger
+ 	input	            clk,            // bus clock
+ 	input             clk7_en,
+ 	input	            reset,          // reset
+@@ -40,7 +41,7 @@
+ 	output reg  [8:0] hpos,           // horizontal beam counter (140ns)
+ 	output reg [10:0] vpos,           // vertical beam counter
+ 	output reg        _hsync,         // horizontal sync
+-	output reg        _vsync,         // vertical sync
++	output            _vsync,         // vertical sync (VSY* pin)
+ 	output            field1,         // 
+ 	output reg        lace,
+ 	output            _csync,         // composite sync
+@@ -53,7 +54,9 @@
+ 	output reg        vbl_int,        // vertical interrupt request (for Paula)
+ 	output      [8:0] htotal_out,     // video line length
+ 	output            harddis_out,
+-	output            varbeamen_out
++	output            varbeamen_out,
++	output      [7:0] hhpos_out,      // alternate (DUAL) horizontal beam counter
++	output            dual_out
+ );
+ 
+ //register names and adresses		
+@@ -102,14 +105,25 @@
+ //--------------------------------------------------------------------------------------
+ 
+ reg long_frame; // 1 : long frame (313 lines); 0 : normal frame (312 lines)
++reg _vsync_i; // the comparator vertical sync
++reg _vsync_hw; // the hardwired vertical sync
+ reg long_line;	 // long line signal for NTSC compatibility (actually long lines are not supported yet)
++reg [7:0] hpos2; // alternate horizontal counter
++reg        lpen_r;     // BPLCON0 bit 3
++reg        trig_d;
++reg        lp_latched;
++reg [10:0] lp_v;
++reg [8:1]  lp_h;
++reg [7:0]  lp_hh;
+ 
+ //beamcounter read registers VPOSR and VHPOSR
+ always @(*) begin
+ 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
+-		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,(lp_latched && !beamcon0_reg[13]) ? lp_v[10:8] : vpos[10:8]};
+ 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
+-		data_out[15:0] = {vpos[7:0],hpos[8:1]};
++		data_out[15:0] = (lp_latched && !beamcon0_reg[13]) ? {lp_v[7:0],lp_h} : {vpos[7:0],hpos[8:1]};
++	else if (reg_address_in[8:1]==9'h1DA >> 1)
++		data_out[15:0] = {8'b0, (lp_latched && !beamcon0_reg[13]) ? lp_hh : hpos2};
+ 	else
+ 		data_out[15:0] = 0;
+ end
+@@ -125,6 +139,9 @@
+ 	end
+ end
+ 
++wire dual         = beamcon0_reg[6];
++assign dual_out      = dual;
++assign hhpos_out     = hpos2;
+ wire harddis      = beamcon0_reg[14];
+ //wire lpendis      = beamcon0_reg[13];
+ wire varvben      = beamcon0_reg[12];
+@@ -184,7 +201,7 @@
+ reg [10:0] vtotal_reg;
+ reg [10:0] vsstrt_reg;
+ reg [10:0] vsstop_reg;
+-//reg [10:0] vbstrt_reg;
++reg [10:0] vbstrt_reg;
+ reg [10:0] vbstop_reg;
+ 
+ always @ (posedge clk) begin
+@@ -199,7 +216,7 @@
+ 			vtotal_reg  <= pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
+ 			vsstrt_reg  <= VSSTRT_VAL[10:0];
+ 			vsstop_reg  <= VSSTOP_VAL[10:0];
+-			//vbstrt_reg  <= VBSTRT_VAL[10:0];
++			vbstrt_reg  <= VBSTRT_VAL[10:0];
+ 			vbstop_reg  <= pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL;
+ 		end else begin
+ 			case (reg_address_in[8:1])
+@@ -212,7 +229,7 @@
+ 				VTOTAL [8:1] : vtotal_reg  <= {data_in[10:0]};
+ 				VSSTRT [8:1] : vsstrt_reg  <= {data_in[10:0]};
+ 				VSSTOP [8:1] : vsstop_reg  <= {data_in[10:0]};
+-				//VBSTRT [8:1] : vbstrt_reg  <= {data_in[10:0]};
++				VBSTRT [8:1] : vbstrt_reg  <= {data_in[10:0]};
+ 				VBSTOP [8:1] : vbstop_reg  <= {data_in[10:0]};
+ 			endcase
+ 		end
+@@ -247,7 +264,7 @@
+ reg end_of_line;
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+-		if (hpos[8:0]=={htotal[8:1],1'b0})
++		if (hpos[8:0]==({htotal[8:1],1'b0} + (long_line ? 9'd2 : 9'd0)))
+ 			end_of_line <= 1'b1;
+ 		else
+ 			end_of_line <= 1'b0;
+@@ -288,6 +305,41 @@
+ always @(cck) hpos[0] = cck;
+ `endif
+    
++// light pen: a trigger edge while BPLCON0 bit 3 is set latches the beam position
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reg_address_in[8:1] == BPLCON0[8:1])
++			lpen_r <= data_in[3];
++		trig_d <= lpen_trig;
++		if (!lpen_r || vpos == 11'd45)   // variant: the freeze is released late, at line 45
++			lp_latched <= 1'b0;
++		else if (lpen_trig && !trig_d && !lp_latched) begin
++			lp_latched <= 1'b1;
++			lp_v <= vpos;
++			lp_h <= hpos[8:1];
++			lp_hh <= hpos2;
++		end
++	end
++end
++
++// alternate horizontal counter: with DUAL it counts to the HTOTAL value on its own,
++// otherwise it follows the main counter
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reg_address_in[8:1] == (9'h1D8 >> 1))   // HHPOSW writes the alternate counter
++			hpos2 <= data_in[7:0];
++		else if (dual) begin
++			if (cck) begin
++				if (hpos2 == htotal_reg[8:1]) hpos2 <= 8'd0;
++				else hpos2 <= hpos2 + 8'd1;
++			end
++		end else if (end_of_line)
++			hpos2 <= 8'd0;
++		else if (cck)
++			hpos2 <= hpos2 + 8'd1;
++	end
++end
++
+ //long line signal (not used, only for better NTSC compatibility)
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+@@ -384,6 +436,13 @@
+ //                                                                                      //
+ //--------------------------------------------------------------------------------------//
+ 
++// VSY* pin: the comparator VSY when VARVSYEN, else with CSCBEN the variable composite blank, else
++// the hardwired vertical sync; VSYTRUE inverts the pin
++wire cscben_w = beamcon0_reg[10];
++wire vcb = (vpos >= vbstrt_reg) && (vpos < vbstop_reg);   // composite blank, active high
++wire _vsync_sel = varvsyen ? _vsync_i : (cscben_w ? ~vcb : _vsync_hw);
++assign _vsync = beamcon0_reg[1] ? ~_vsync_sel : _vsync_sel;
++
+ //horizontal sync
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+@@ -398,10 +457,19 @@
+ // PAL: Long field Vsync line 3 - 5.5, Short field: line 2.5 - 5
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
++		if (vpos==vsstrt && hpos==(long_frame && lace ? hcenter : hsstrt))
++			_vsync_i <= 1'b0;
++		else if (vpos==vsstop && hpos==(long_frame && lace ? hcenter : hsstrt))
++			_vsync_i <= 1'b1;		
++	end
++end
++
++always @(posedge clk) begin
++	if (clk7_en) begin
+ 		if ((vpos==vsstrt+1 && hpos==hsstrt && long_frame) || (vpos==vsstrt && hpos==hcenter && !long_frame))
+-			_vsync <= 1'b0;
++			_vsync_hw <= 1'b0;
+ 		else if ((vpos==vsstop && hpos==hcenter && long_frame) || (vpos==vsstop && hpos==hsstrt && !long_frame))
+-			_vsync <= 1'b1;		
++			_vsync_hw <= 1'b1;		
+ 	end
+ end
+ 
+@@ -418,7 +486,7 @@
+ end
+ 
+ //composite sync
+-assign _csync = _hsync & _vsync | vser; //composite sync with serration pulses
++assign _csync = _hsync & _vsync_hw | vser; //composite sync with serration pulses
+ 
+ //--------------------------------------------------------------------------------------//
+ //                                                                                      //
+--- a/src/minimig-aga/minimig.v
++++ b/src/minimig-aga/minimig.v
+@@ -444,6 +444,7 @@
+ //instantiate agnus
+ agnus AGNUS1
+ (
++	.lpen_trig(~_joy1[4] | ~_joy2[4]),
+ 	.clk(clk),
+ 	.clk7_en(clk7_en),
+ 	.cck(cck),

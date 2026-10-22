@@ -19,7 +19,7 @@
 // the private build of SPECIFICATION.md 6.6 (a copy of the chip set made by private/*.patch, make private-uhres) is named where a
 // record gives its result beside the repository build's. implementation green and implementation red run that copy, none
 // impossible says why no stimulus can falsify the line at this boundary.
-// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5; with NMH_ONLY=P8, P11, P12, P13 or P14 in place of P1: FAIL CONFIG; NOT GRADED 1 on each core; with NMH_ONLY=P9, P10 or F5: FAIL CONFIG; NOT GRADED 1 (one line for F5, P9 and P10) on each core
 // MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
 // MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
 // MUTATION P1-FINISHED stimulus red NMH_MUTATE=P1-FINISHED: BLTSIZE $00C2 (height 3) in place of $0082; TG68K: FAIL P1-FINISHED; NOT GRADED 5; fx68k: FAIL P1-FINISHED; NOT GRADED 5
@@ -52,7 +52,7 @@
 // MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5
 // MUTATION P4-ANCHOR stimulus red NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5
 // MUTATION P4-FINISHED stimulus red NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5
-// MUTATION P4-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel, no stimulus that keeps the other preconditions valid predicts anything else, and line mode changes the population the clause is graded on
+// MUTATION P4-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel; BLTCON1 bit 1 (DESC, p.14) reverses the direction of every channel of a blit at once, so within one blit the step stays one constant, +2 or -2, and no stimulus makes it differ between lines or channels of that blit; the population of this line is one blit (the first blit of the run), whereas P1-INC and P5-INC measure one step over several blits, a descending one among ascending ones, and are falsifiable; line mode changes the population the clause is graded on
 // MUTATION P4-A stimulus red NMH_MUTATE=P4-A: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
 // MUTATION P4-B stimulus red NMH_MUTATE=P4-B: BLTBMOD written 4 in place of -2 in the first blit; TG68K: FAIL P4-B, P4; fx68k: FAIL P4-B, P4
 // MUTATION P4-C stimulus red NMH_MUTATE=P4-C: BLTCMOD written 4 in place of 0 in the first blit; TG68K: FAIL P4-C, P4; fx68k: FAIL P4-C, P4
@@ -71,7 +71,7 @@
 // MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3
 // MUTATION P6-ANCHOR stimulus red NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3
 // MUTATION P6-FINISHED stimulus red NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3
-// MUTATION P6-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel, no stimulus that keeps the other preconditions valid predicts anything else, and line mode changes the population the clause is graded on
+// MUTATION P6-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel; BLTCON1 bit 1 (DESC, p.14) reverses the direction of every channel of a blit at once, so within one blit the step stays one constant, +2 or -2, and no stimulus makes it differ between lines or channels of that blit; the population of this line is one blit (the one blit of the run), whereas P1-INC and P5-INC measure one step over several blits, a descending one among ascending ones, and are falsifiable; line mode changes the population the clause is graded on
 // MUTATION P6-STEPS stimulus red NMH_MUTATE=P6-STEPS: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
 // MUTATION P6-COUNT stimulus red NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6
 // MUTATION P6 stimulus red NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
@@ -110,16 +110,16 @@
 // MUTATION P8-FIXTURE stimulus red NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; repository build: TG68K: FAIL P8-FIXTURE; NOT GRADED 1; fx68k: FAIL P8-FIXTURE; NOT GRADED 1
 // MUTATION P8-ANCHOR stimulus red NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before (prog_lpen_rev); repository build: TG68K: FAIL P8-ANCHOR; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-ANCHOR; NOT GRADED 6; NOT CHECKABLE 1
 // MUTATION P8-FIT stimulus red NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; repository build: TG68K: FAIL P8-FIT; NOT GRADED 8; NOT CHECKABLE 1; fx68k: FAIL P8-FIT; NOT GRADED 8; NOT CHECKABLE 1
-// MUTATION P8-TRIGGER stimulus red NMH_MUTATE=P8-TRIGGER: the pulse is not driven: the fire inputs stay released; repository build: TG68K: FAIL P8-TRIGGER; NOT GRADED 7; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 7; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-TRIGGER; NOT GRADED 7; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 7; NOT CHECKABLE 1; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
+// MUTATION P8-TRIGGER stimulus red NMH_MUTATE=P8-TRIGGER: the pulse is scheduled and timed as in the normal run and the fire inputs are not driven (they stay released); repository build: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
 // MUTATION P8-ALIGN stimulus red NMH_MUTATE=P8-ALIGN: the pulse runs use the program with four more instructions in the sample loop (prog_lpen_slow); repository build: TG68K: FAIL P8-ALIGN; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-ALIGN; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-ALIGN; NOT GRADED 6; fx68k: FAIL P8-ALIGN; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
-// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE: BPLCON0 bit 3 set in the control run, so that the pulse freezes the samples again; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-LPE; NOT GRADED 6; fx68k: FAIL P8-LPE; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
-// MUTATION P8-HHRUN stimulus red NMH_MUTATE=P8-HHRUN: the dry run that must show HHPOSR running takes one sample, in which HHPOSR cannot take two values; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; fx68k: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT CHECKABLE on TG68K and NOT CHECKABLE on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
-// MUTATION P8-0-VH stimulus red NMH_MUTATE=P8-0-VH: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8; fx68k: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build
-// MUTATION P8-0-HH stimulus red NMH_MUTATE=P8-0-HH: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
-// MUTATION P8-1-VH stimulus red NMH_MUTATE=P8-1-VH: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
-// MUTATION P8-1-HH stimulus red NMH_MUTATE=P8-1-HH: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
-// MUTATION P8-VBREL stimulus red NMH_MUTATE=P8-VBREL: a second trigger at about line 30 of the next frame, so that the counters freeze again before the lines graded; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-VBREL; fx68k: FAIL P8-VBREL; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build; the copy of the private build without the release of the latch (make private-novbrelease) prints, on TG68K: FAIL P8-VBREL; on fx68k: FAIL P8-VBREL
-// MUTATION P8 stimulus red NMH_MUTATE=P8: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 2; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build
+// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE: BPLCON0 bit 3 set in the control run, so that the pulse freezes the samples again; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-LPE; NOT GRADED 6; fx68k: FAIL P8-LPE; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
+// MUTATION P8-HHRUN stimulus red NMH_MUTATE=P8-HHRUN: the dry run that must show HHPOSR running takes one sample, in which HHPOSR cannot take two values; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; fx68k: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT CHECKABLE on TG68K and NOT CHECKABLE on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
+// MUTATION P8-0-VH stimulus red NMH_MUTATE=P8-0-VH: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8; fx68k: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build; the private results of P8-0-HH, P8-1-HH and P8 in this record rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
+// MUTATION P8-0-HH stimulus red NMH_MUTATE=P8-0-HH: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
+// MUTATION P8-1-VH stimulus red NMH_MUTATE=P8-1-VH: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build; the private results of P8-0-HH, P8-1-HH and P8 in this record rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
+// MUTATION P8-1-HH stimulus red NMH_MUTATE=P8-1-HH: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
+// MUTATION P8-VBREL stimulus red NMH_MUTATE=P8-VBREL: a second trigger at about line 30 of the next frame, so that the counters freeze again before the lines graded; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; the line itself is NOT GRADED there, on TG68K and on fx68k, since no counter freezes after the first trigger and there is no freeze to release; private build of 6.6: TG68K: FAIL P8-VBREL; fx68k: FAIL P8-VBREL; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k (the first sample after the wrap on line 20 on both), and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the copy of the private build without the release of the latch (make private-novbrelease) prints, on TG68K: FAIL P8-VBREL; on fx68k: FAIL P8-VBREL; the copy that releases the latch at line 45 in place of vertical position 20 (make private-laterelease) prints, on TG68K: FAIL P8-VBREL; on fx68k: FAIL P8-VBREL, with the first sample after the wrap on line 45 and 11 samples in lines 25-60 that run correctly, so that the line goes red through the bound on the first sample after the wrap alone
+// MUTATION P8 stimulus red NMH_MUTATE=P8: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build; the private results of P8-0-HH, P8-1-HH and P8 in this record rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control
 // MUTATION F5-FIXTURE stimulus red NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-FIXTURE, F5-LINES, F5-SV-INV; NOT CHECKABLE 3
 // MUTATION F5-LINES stimulus red NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-LINES, F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3
 // MUTATION F5-ALIGN stimulus red NMH_MUTATE=F5-ALIGN: HTOTAL $00E0 in place of $00E2 in S-H2; TG68K: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3
@@ -147,11 +147,11 @@
 // MUTATION P11-MAXH stimulus red NMH_MUTATE=P11-MAXH: BEAMCON0 $08A0 (VARBEAMEN, LOLDIS, DUAL clear) with VTOTAL $0138 in place of $0060 in the contrast run, whose samples give the maximum H and whose stopped frame gives the port line of 57 colour clocks; HHPOSR liveness is taken from the unmodified DUAL run; repository build: TG68K: FAIL P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-HHRUN; NOT GRADED 3; private build of 6.6: TG68K: FAIL P11-MAXH, P11; fx68k: FAIL P11-MAXH, P11; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
 // MUTATION P11-HHMAX stimulus red NMH_MUTATE=P11-HHMAX: HTOTAL $0070 in place of $0038; repository build: TG68K: FAIL P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-HHRUN; NOT GRADED 3; private build of 6.6: TG68K: FAIL P11-HHMAX, P11; fx68k: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
 // MUTATION P11 stimulus red NMH_MUTATE=P11: HTOTAL $0070 in place of $0038 in the DUAL run; repository build: TG68K: FAIL P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-HHRUN; NOT GRADED 3; private build of 6.6: TG68K: FAIL P11-HHMAX, P11; fx68k: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
-// MUTATION P12-KFIXTURE stimulus red NMH_MUTATE=P12-KFIXTURE: the program of the DUAL run stores $DEAD in place of $BEEF; repository build: TG68K: FAIL P12-KFIXTURE, P12-UHRES; NOT GRADED 8; fx68k: FAIL P12-KFIXTURE, P12-UHRES; NOT GRADED 8
-// MUTATION P12-KANCHOR stimulus red NMH_MUTATE=P12-KANCHOR: the samples of the DUAL run are stored below the one before; repository build: TG68K: FAIL P12-KANCHOR, P12-UHRES; NOT GRADED 8; fx68k: FAIL P12-KANCHOR, P12-UHRES; NOT GRADED 8; private build of 6.6: TG68K: FAIL P12-KANCHOR; NOT GRADED 7; fx68k: FAIL P12-KANCHOR; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
+// MUTATION P12-KFIXTURE stimulus red NMH_MUTATE=P12-KFIXTURE: the program of the DUAL run stores $DEAD in place of $BEEF; repository build: TG68K: FAIL P12-KFIXTURE; NOT GRADED 11; fx68k: FAIL P12-KFIXTURE; NOT GRADED 11
+// MUTATION P12-KANCHOR stimulus red NMH_MUTATE=P12-KANCHOR: the samples of the DUAL run are stored below the one before; repository build: TG68K: FAIL P12-KANCHOR; NOT GRADED 11; fx68k: FAIL P12-KANCHOR; NOT GRADED 11; private build of 6.6: TG68K: FAIL P12-KANCHOR; NOT GRADED 11; fx68k: FAIL P12-KANCHOR; NOT GRADED 11; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
 // MUTATION P11-PERIOD implementation green the private build of 6.6 makes the line PASS on TG68K and PASS on fx68k, where it is NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; with NMH_MUTATE=P11-PERIOD (HTOTAL $0038 in place of $00E2 in the contrast run) the private build prints TG68K: FAIL P11-PERIOD; fx68k: FAIL P11-PERIOD
 // MUTATION P12-FIXTURE stimulus red NMH_MUTATE=P12-FIXTURE: the program stores $DEAD in place of $BEEF; repository build: TG68K: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-FIXTURE; NOT GRADED 7; fx68k: FAIL P12-FIXTURE; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
-// MUTATION P12-F3 stimulus red NMH_MUTATE=P12-F3: a lores bit plane fetched from byte address $000000 with BPL1MOD -40 and BPLCON0 $1080 (UHRES set), so that every line reads the same 20 words of the refresh addresses; repository build: TG68K: FAIL P12-F3, P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-F3, P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-F3, P12-UHRES; NOT GRADED 7; fx68k: FAIL P12-F3, P12-UHRES; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
+// MUTATION P12-F3 stimulus red NMH_MUTATE=P12-F3: a lores bit plane fetched from byte address $000000 with BPL1MOD -40 and BPLCON0 $1080 (UHRES set), so that every line reads the same 20 words of the refresh addresses; repository build: TG68K: FAIL P12-F3, P12-K; NOT GRADED 9; fx68k: FAIL P12-F3, P12-K; NOT GRADED 9; private build of 6.6: TG68K: FAIL P12-F3; NOT GRADED 9; fx68k: FAIL P12-F3; NOT GRADED 9; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
 // MUTATION P12-UHRES stimulus red NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES (BPLCON0 $1000), so that both regions are accessed on every graded line without the sprite, bit-plane, sprite pointer sequence at the start of a line; repository build: TG68K: FAIL P12-UHRES, P12-UHRESEN, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-UHRESEN, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-UHRES, P12-UHRESEN; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-UHRESEN; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build
 // MUTATION P12-UHRESEN stimulus red NMH_MUTATE=P12-UHRESEN: BPLCON0 $0000 in place of $0080 in the P12-0 run; repository build: TG68K: FAIL P12-UHRES, P12-UHRESEN, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-UHRESEN, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-UHRES, P12-UHRESEN; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-UHRESEN; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
 // MUTATION P12-BANDWIDTH stimulus red NMH_MUTATE=P12-BANDWIDTH: a lores bit plane fetched from $0F8000 on lines 102-108, BPLCON0 $1080 (UHRES set); repository build: TG68K: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-BANDWIDTH; NOT GRADED 7; fx68k: FAIL P12-BANDWIDTH; NOT GRADED 7; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build
@@ -161,8 +161,8 @@
 // MUTATION P12-1-SPR stimulus red NMH_MUTATE=P12-1-SPR: DUAL clear in the P12-1 run; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-1-BPL, P12-1-SPR, P12; fx68k: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
 // MUTATION P12 stimulus red NMH_MUTATE=P12: DUAL clear in the P12-1 run; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-1-BPL, P12-1-SPR, P12; fx68k: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
 // MUTATION P12-PHFIXTURE stimulus red NMH_MUTATE=P12-PHFIXTURE: the program that writes the alternate counter stores $DEAD in place of $BEEF; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-PHFIXTURE; NOT GRADED 3; fx68k: FAIL P12-PHFIXTURE; NOT GRADED 3; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
-// MUTATION P12-HHW stimulus red NMH_MUTATE=P12-HHW: the value $08 written to HHPOSW in both runs in place of $08 and $1C; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: no FAIL; fx68k: no FAIL; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
-// MUTATION P12-PHASE stimulus red NMH_MUTATE=P12-PHASE: DUAL clear in the second run, so that the chain starts at the normal counter's reset; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-PHASE, P12; fx68k: FAIL P12-PHASE, P12; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
+// MUTATION P12-HHW stimulus red NMH_MUTATE=P12-HHW: the value $08 written to HHPOSW in the second run in place of $1C, the expected difference of the two values written staying $14; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-HHW; NOT GRADED 2; fx68k: FAIL P12-HHW; NOT GRADED 2; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
+// MUTATION P12-PHASE stimulus red NMH_MUTATE=P12-PHASE: DUAL clear in the second run, so that the chain starts at the normal counter's reset, P12-HHW being measured on a third run with DUAL set; repository build: TG68K: FAIL P12-UHRES, P12-K; NOT GRADED 7; fx68k: FAIL P12-UHRES, P12-K; NOT GRADED 7; private build of 6.6: TG68K: FAIL P12-PHASE, P12; fx68k: FAIL P12-PHASE, P12; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build
 // MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P13-FIXTURE; NOT GRADED 3; fx68k: FAIL P13-FIXTURE; NOT GRADED 3
 // MUTATION P13-F3 stimulus red NMH_MUTATE=P13-F3: a bit plane fetched in frame B; TG68K: FAIL P13-F3; NOT GRADED 3; fx68k: FAIL P13-F3; NOT GRADED 3
 // MUTATION P13-F4 stimulus red NMH_MUTATE=P13-F4: the samples are stored below the one before; TG68K: FAIL P13-F4; NOT GRADED 3; fx68k: FAIL P13-F4; NOT GRADED 3
@@ -273,7 +273,7 @@ bool want(const char* prop) {
     if (!g_mutate) return true;
     std::string m = g_mutate, p = prop;
     if (m.compare(0, 4, "P2W-") == 0) return p == "P2";   // the walking-bit lines belong to P2
-    if (m == "CONFIG") return p == "P1";   // the mutated configuration is the one a run is built from
+    if (m == "CONFIG") return only ? true : p == "P1";   // the mutated configuration is the one a run is built from; with NMH_ONLY it reaches the proposition named
     return m == p || m.compare(0, p.size() + 1, p + "-") == 0;
 }
 
@@ -340,6 +340,7 @@ struct RunOpts {
     uint16_t pulse_marker = 0;
     uint64_t pulse_delay = 0, pulse_len = 0;
     uint64_t pulse2_delay = 0;           // a second pulse of the same length at the marker's time plus this, when non-zero
+    bool pulse_drive = true;             // false: the pulse is scheduled and timed as usual, but the fire inputs are not written
     bool video_graded = false;           // keep hs/vs of the graded frame: the 2nd to the 3rd frame marker after the register list
 };
 
@@ -355,20 +356,16 @@ std::shared_ptr<RunData> run_opts(const RunOpts& o) {
         if (t) {
             r->pulse_start = *t + o.pulse_delay;
             while (h.cycles() < r->pulse_start) h.run_cycles(1);
-            h.ports()->joystick0 = 0x10;
-            h.ports()->joystick1 = 0x10;
+            if (o.pulse_drive) { h.ports()->joystick0 = 0x10; h.ports()->joystick1 = 0x10; }
             h.run_cycles(o.pulse_len);
-            h.ports()->joystick0 = 0x00;
-            h.ports()->joystick1 = 0x00;
+            if (o.pulse_drive) { h.ports()->joystick0 = 0x00; h.ports()->joystick1 = 0x00; }
             r->pulse_end = h.cycles();
             if (o.pulse2_delay) {
                 uint64_t s2 = *t + o.pulse2_delay;
                 if (h.cycles() < s2) h.run_cycles(s2 - h.cycles());
-                h.ports()->joystick0 = 0x10;
-                h.ports()->joystick1 = 0x10;
+                if (o.pulse_drive) { h.ports()->joystick0 = 0x10; h.ports()->joystick1 = 0x10; }
                 h.run_cycles(o.pulse_len);
-                h.ports()->joystick0 = 0x00;
-                h.ports()->joystick1 = 0x00;
+                if (o.pulse_drive) { h.ports()->joystick0 = 0x00; h.ports()->joystick1 = 0x00; }
             }
         }
     }
@@ -864,7 +861,7 @@ void proposition_p4() {
     const long long mod[4] = {0, -2, 6, 10};
     std::string main_prog = sel("prog_p4", {{"P4-A", "prog_p4_moda14"}, {"P4-B", "prog_p4_modb"},
                                             {"P4-C", "prog_p4_modc"}, {"P4-D", "prog_p4_modd"},
-                                            {"P4", "prog_p4_moda14"}, {"P4-INC", "prog_p4_touch"}});
+                                            {"P4", "prog_p4_moda14"}});
     BRun mn = brun(main_prog, 2, &kLay1);
     BRun fx = mutating("P4-FIXTURE") ? brun("prog_p4_nofix", 2, &kLay1) : mn;
     g.expect(fx.fixture, "P4-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
@@ -1014,7 +1011,7 @@ void proposition_p6() {
     const int W = 2, H = 3;
     const long long mod[4] = {0, -4, 8, 20};
     std::string main_prog = sel("prog_p6", {{"P6-STEPS", "prog_p6_modb12"}, {"P6-COUNT", "prog_p6_nousec"},
-                                            {"P6", "prog_p6_modb12"}, {"P6-INC", "prog_p6_h4"}});
+                                            {"P6", "prog_p6_modb12"}});
     BRun mn = brun(main_prog, 1, &kLay1);
     BRun fx = mutating("P6-FIXTURE") ? brun("prog_p6_nofix", 1, &kLay1) : mn;
     g.expect(fx.fixture, "P6-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
@@ -1516,6 +1513,7 @@ double wraps_per_line(const BeamRun& b, bool* moves) {
 
 void proposition_p11() {
     if (!want("P11")) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: P11 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     // DUAL set, VARBEAMEN clear, HTOTAL $38
     auto regs = [&](uint16_t htotal, uint16_t bc0) {
         return RegList{{kHTOTAL, htotal}, {kBEAMCON0, bc0}};
@@ -1615,6 +1613,7 @@ RegList dma_regs() {
 
 void proposition_p13() {
     if (!want("P13")) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: P13 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     BeamOpts o1;
     o1.post = 1; o1.stops = 4;
     o1.regs = p13_regs(0x00E2, 0x00A0);
@@ -1735,6 +1734,7 @@ void proposition_p13() {
 
 void proposition_p14() {
     if (!want("P14")) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: P14 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     BeamOpts o1;
     o1.post = 2; o1.stops = 4;
     o1.regs = {{kBEAMCON0, 0x0020}};
@@ -2017,6 +2017,7 @@ std::vector<long long> phase_delays(const PhaseData& p, int v, long long tc, int
 
 void proposition_p12() {
     if (!want("P12")) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: P12 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     // P11's DUAL run: the alternate counter's rate and its wraps per main line
     BeamOpts od;
     od.post = 1; od.hh = true; od.stops = 2;
@@ -2030,9 +2031,8 @@ void proposition_p12() {
     bool kanchor = !dr.post1.empty() && kviol == 0;
     g.expect(kanchor, "P12-KANCHOR: the samples of the DUAL run show the counters running: V never decreases within the frame and H increases within a line");
     bool kgate = dr.fixture && kanchor;
-    // the colour clock the UHRES runs are timed in is measured from a DUAL run whose samples are in order
-    long long uh_tc = dr.tc;
-    if (mutating("P12-KANCHOR")) { BeamOpts oc = od; oc.prog = "prog_beam"; uh_tc = beam_run(oc).tc; }
+    // the UHRES runs are timed in the colour clock that DUAL run measures, so every line timed in it is gated on its fixture and anchor
+    long long uh_tc = kgate ? dr.tc : 0;
     double rate = hh_rate(dr);
     bool every_twice = false;
     int minwraps = hh_wraps_min(dr, &every_twice);
@@ -2067,7 +2067,7 @@ void proposition_p12() {
     UhRun p1 = uh_run(mutating("P12-1-BPL") || mutating("P12-1-SPR") || mutating("P12") ? 0x0020 : 0x0060, 0x0080, uh_tc, prog.c_str());
     g.expect(p0.fixture, "P12-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool f3 = p0.anchor && p0.g90 >= 0;
-    g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses (reads of byte addresses below $1000) come in groups of exactly four, one group per line period, every line period is a whole number of colour clocks, and the port line holding VMARK(90), which the test calls 90, and every line of lines 90-109 is such a group");
+    g.expect_if(kgate, f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses (reads of byte addresses below $1000) come in groups of exactly four, one group per line period, every line period is a whole number of colour clocks, and the port line holding VMARK(90), which the test calls 90, and every line of lines 90-109 is such a group");
     // UHRES is enabled in the runs that grade the chain: BPLCON0 bit 7 is written set and DMACON sets DMAEN
     auto uh_enabled = [](const UhRun& u) {
         bool bpl = false, dma = false;
@@ -2087,14 +2087,14 @@ void proposition_p12() {
         for (size_t i = 0; i < p0.bplh.size(); ++i) s += " " + dec(p0.bplh[i]) + "/" + dec(p0.sprh[i]);
         checks.note("P12 measured, DUAL clear: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
     }
-    g.expect(exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES pointer regions are accessed on every graded line, and the first three accesses of the line in them are the sprite pointer, the bit-plane pointer and the sprite pointer, in this order");
+    g.expect_if(kgate && f3, exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES pointer regions are accessed on every graded line, and the first three accesses of the line in them are the sprite pointer, the bit-plane pointer and the sprite pointer, in this order");
     bool uhen0 = uh_enabled(p0) && uh_enabled(p1);
     g.expect(uhen0, "P12-UHRESEN: the runs that grade the UHRES chain write BPLCON0 with bit 7 (UHRES) set and DMACON with SET and DMAEN set, with DUAL clear and with DUAL set");
     // bandwidth is left: on the graded lines the port shows only refresh, UHRES and null-sprite accesses
     bool bw = p0.other == 0;
     checks.note("P12 measured, DUAL clear: accesses on lines 102-108 that refresh, UHRES and the null sprite do not explain = " + dec(p0.other) +
                 (p0.other ? ", first:" + p0.other_first : std::string("")));
-    g.expect(bw, "P12-BANDWIDTH: on lines 102-108 the port shows only refresh, UHRES and null-sprite accesses: no bit plane is fetched, no other DMA runs and the CPU is stopped");
+    g.expect_if(kgate && f3, bw, "P12-BANDWIDTH: on lines 102-108 the port shows only refresh, UHRES and null-sprite accesses: no bit plane is fetched, no other DMA runs and the CPU is stopped");
     g.expect_if(kgate, every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every complete main line, so the alternate counter wraps at least twice per main line");
     bool pre = p0.fixture && f3 && uhen0 && exists && bw && every_twice && kgate;
 
@@ -2106,7 +2106,7 @@ void proposition_p12() {
     }
     // P12-0: exactly 1 bit-plane pointer access and 2 sprite pointer accesses on every graded line;
     // the DUAL-clear case does not use the alternate counter, so P12-K is not among its preconditions
-    bool pre0 = p0.fixture && f3 && uhen0 && exists && bw;
+    bool pre0 = p0.fixture && f3 && uhen0 && exists && bw && kgate;
     bool c0 = !p0.bplh.empty();
     for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] != 1 || p0.sprh[i] != 2) c0 = false;
     g.expect_if(pre0, c0, "P12-0: with DUAL clear every graded line shows exactly 1 UHRES bit-plane pointer access and exactly 2 UHRES sprite pointer accesses");
@@ -2122,19 +2122,22 @@ void proposition_p12() {
     // P12-PHASE: the chain starts at the resets of the alternate counter. The counter is written with vA in one run and with vB in
     // another, the programs being the same and the runs cycle-aligned, so that its resets, and with them the chains, move by
     // (vA - vB) colour clocks if the chain starts at them.
-    const int vA = 0x08, vB = mutating("P12-HHW") ? 0x08 : 0x1C;
+    // the values the page-faithful run writes and the difference HHPOSR must show; the contrast of P12-HHW changes only the value written
+    const int vA = 0x08, vB = 0x1C, vW = mutating("P12-HHW") ? 0x08 : vB;
     const char* phprog = mutating("P12-PHFIXTURE") ? "prog_uhphase_nofix" : "prog_uhphase";
-    UhRun qa, qb;
+    UhRun qa, qb, qh;
     PhaseData pa, pb;
     if (pre1) {
         qa = uh_run(0x0060, 0x0080, uh_tc, phprog, {}, false, vA);
-        qb = uh_run(mutating("P12-PHASE") ? 0x0020 : 0x0060, 0x0080, uh_tc, phprog, {}, false, vB);   // P12-PHASE: DUAL clear in the second run
+        qb = uh_run(mutating("P12-PHASE") ? 0x0020 : 0x0060, 0x0080, uh_tc, phprog, {}, false, vW);   // P12-PHASE: DUAL clear in the second run
+        // P12-HHW is measured on a pair of runs with DUAL set: when the second run has DUAL clear, a third run with DUAL set takes its place
+        qh = mutating("P12-PHASE") ? uh_run(0x0060, 0x0080, uh_tc, phprog, {}, false, vW) : qb;
         pa = phase_data(qa); pb = phase_data(qb);
     }
-    bool phfix = qa.fixture && qb.fixture;
+    bool phfix = qa.fixture && qb.fixture && qh.fixture;
     g.expect_if(pre1, phfix, "P12-PHFIXTURE: the program that writes the alternate counter stores the constant $BEEF first and the harness reads it back before any other result of its runs is used");
-    int rba = qa.r ? qa.r->word(kResults + 0x100) : 0, rbb = qb.r ? qb.r->word(kResults + 0x100) : 0;
-    checks.note("P12 measured: HHPOSR read right after the write of HHPOSW: " + dec(rba) + " after writing " + dec(vA) + ", " + dec(rbb) + " after writing " + dec(vB));
+    int rba = qa.r ? qa.r->word(kResults + 0x100) : 0, rbb = qh.r ? qh.r->word(kResults + 0x100) : 0;
+    checks.note("P12 measured: HHPOSR read right after the write of HHPOSW: " + dec(rba) + " after writing " + dec(vA) + ", " + dec(rbb) + " after writing " + dec(vW));
     bool hhw = phfix && (rbb - rba == vB - vA);
     g.expect_if(pre1 && phfix, hhw, "P12-HHW: a write to HHPOSW sets the alternate counter: HHPOSR read right after the write differs between the two runs by the difference of the two values written");
     int dsa = 0, dsb = 0;
@@ -2300,6 +2303,7 @@ bool v_pair_one_interval(const SyncRun& x, const SyncRun& y, std::vector<Itv>* o
 void proposition_p9_p10() {
     bool w9 = want("P9"), w10 = want("P10"), wf5 = want("F5");
     if (!w9 && !w10 && !wf5) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: F5, P9 and P10 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     // Which F5 runs? the mutations of the F5 anchors change one of them.
     SyncSet h1; h1.bc0 = 0x01A0;
     SyncSet h2 = h1; h2.hsstop = 0x34;
@@ -2431,7 +2435,7 @@ void proposition_p9_p10() {
         g.expect_if(s_v && bv1->ok && bv2->ok, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 does not change the VSY* output at any sample (the HSY* half is not observable at this boundary)");
         bool a_all = ah_ok && ac_ok && nh_ok && nc_ok, b_all = bv_ok && nv_ok;
         g.expect_if(pre_a, a_all,
-            "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the HSY* and VSY* pins");
+            "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the VSY* pin (the HSY* half is not observable at this boundary)");
         g.expect_if(pre_b, b_all,
             "P9-B: opus:AA-beamcon0.c16 sol:AA-beamcon0.c34: with CSCBEN set the variable composite blank comes out on the VSY* pin and follows VBSTRT; with CSCBEN clear VBSTRT does not reach the VSY* pin");
         g.expect_if(pre_a || pre_b, (!pre_a || a_all) && (!pre_b || b_all),
@@ -2488,10 +2492,11 @@ struct LpRun {
 };
 
 LpRun lp_run(uint16_t bc0, int nsamp, uint16_t bplcon0, bool pulse, uint64_t delay, uint64_t len,
-             const char* prog = "prog_lpen", uint64_t delay2 = 0) {
+             const char* prog = "prog_lpen", uint64_t delay2 = 0, bool drive = true) {
     RunOpts o;
     o.prog = prog;
     o.pulse2_delay = delay2;
+    o.pulse_drive = drive;
     o.pokes = {{kLcfg + 0, bc0}, {kLcfg + 2, (uint16_t)(nsamp - 1)}, {kLcfg + 4, bplcon0}};
     o.pulse = pulse; o.pulse_marker = kMLpGo; o.pulse_delay = delay; o.pulse_len = len;
     LpRun l;
@@ -2508,6 +2513,7 @@ bool vh_less(const Sm& a, const Sm& b) { return a.V < b.V || (a.V == b.V && a.H 
 
 void proposition_p8() {
     if (!want("P8")) return;
+    if (!g_cfg_ok) { checks.record("NOT GRADED: P8 [CONFIG does not hold: the harness is not configured as the specification requires]"); return; }
     // the dry run: the program as P8-0 without the pulse
     LpRun dry = lp_run(0x0020, 120, 0x0008, false, 0, 0, mutating("P8-FIXTURE") ? "prog_lpen_nofix" : "prog_lpen");
     // the fixture is asserted before any sample of the dry run is printed or used
@@ -2566,7 +2572,8 @@ void proposition_p8() {
     bool pre_base = dry.fixture && fit_geom && !dry_anchor.s.empty() && viol_a == 0 && crosses;
 
     // the pulse runs
-    bool pulse_on = !mutating("P8-TRIGGER");
+    // P8-TRIGGER: the pulse is scheduled and timed as in the normal run, and the fire inputs are not driven
+    const bool pulse_on = true, drive_on = !mutating("P8-TRIGGER");
     const char* pulse_prog = mutating("P8-ALIGN") ? "prog_lpen_slow" : "prog_lpen";
     // P8-0-HH swaps LPENDIS between the two pulse runs (the latch is then in the P8-1 run and the
     // P8-0 run reads the running counters); P8-1-VH, P8-1-HH and P8 clear it in the P8-1 run
@@ -2577,8 +2584,8 @@ void proposition_p8() {
     if (mutating("P8-0-VH") && fit_geom)
         for (size_t i = 0; i + 1 < ds.size(); ++i)
             if (ds[i].V == 256) { delay0 = ds[i + 1].tend + 2 - dry.t_go; break; }
-    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay0, plen, pulse_prog) : LpRun();
-    LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen, pulse_prog) : LpRun();
+    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay0, plen, pulse_prog, 0, drive_on) : LpRun();
+    LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen, pulse_prog, 0, drive_on) : LpRun();
 
     auto split = [&](const LpRun& L, std::vector<Sm>& before, std::vector<Sm>& after) {
         before.clear(); after.clear();
@@ -2696,9 +2703,10 @@ void proposition_p8() {
     g.expect_if(pre_hh, h0, "P8-0-HH: with LPENDIS = 0, LPEN set and a light-pen trigger, HHPOSR returns the latched value: every sample after the pulse is identical, and it is not lower than the dry run's HHPOSR at the last sample before the pulse and not higher than the dry run's at the first sample after it");
     g.expect_if(pre, v1, "P8-1-VH: with LPENDIS = 1 and the same trigger, VHPOSR and VPOSR return the running counters: (V,H) increases strictly from each sample to the next across the whole window, and the last sample has V >= 256 with VPOSR bit 0 (V8) set");
     g.expect_if(pre_hh, h1, "P8-1-HH: with LPENDIS = 1 and the same trigger, HHPOSR returns the running alternate counter: consecutive samples after the pulse are not all identical");
-    // P8-VBREL: the freeze is released at the end of the internal vertical blank. The same trigger, with the samples taken on into
-    // the next frame: after the end of the vertical blank (HRM p.239: vertical position 20; the samples of lines 25-60 are taken)
-    // the counters run again, the samples satisfying the F4 criteria and not all identical.
+    // P8-VBREL: the freeze is released at the end of the internal vertical blank (HRM p.239: vertical position 20). The same
+    // trigger, with the samples taken on into the next frame. Graded when a freeze took place (the samples after the trigger are
+    // identical up to the wrap of V, at least two of them): the first sample after the wrap lies on line 21 or earlier, and the
+    // samples of lines 25-60 show the counters running, satisfying the F4 criteria and not all identical.
     if (pre) {
         uint64_t to_line = (uint64_t)((313 - 254 + 45) * 227) * (uint64_t)tc;   // LP_GO to line 45 of the next frame, about
         int nsamp2 = (int)(to_line / (uint64_t)(interval > 0 ? interval : 1)) + 10;
@@ -2707,11 +2715,21 @@ void proposition_p8() {
         LpRun pv = lp_run(0x0020, nsamp2, 0x0008, pulse_on, delay, plen, pulse_prog, second);
         size_t wrap = 0;
         for (size_t j = 1; j < pv.s.size(); ++j) if (pv.s[j].V + 100 < pv.s[j - 1].V) { wrap = j; break; }
+        // the samples after the trigger, up to the wrap (or to the last sample when V never wraps)
+        std::vector<Sm> frz;
+        for (size_t j = 0; j < (wrap ? wrap : pv.s.size()); ++j)
+            if (pv.r && pv.s[j].t > pv.r->pulse_end + (uint64_t)interval) frz.push_back(pv.s[j]);
+        bool froze = frozen(frz);
         std::vector<Sm> tail;
         for (size_t j = wrap; wrap && j < pv.s.size(); ++j) if (pv.s[j].V >= 25 && pv.s[j].V <= 60) tail.push_back(pv.s[j]);
-        bool vbrel = tail.size() >= 8 && f4_violations(tail, false) == 0 && !frozen(tail);
-        checks.note("P8 measured: " + dec((long long)pv.s.size()) + " samples into the next frame, " + dec((long long)tail.size()) + " of them in lines 25-60 after the wrap");
-        g.expect(vbrel, "P8-VBREL: after the end of the internal vertical blank of the next frame the samples of lines 25-60 show the counters running again: they satisfy the F4 criteria and are not all identical");
+        bool first_ok = wrap && pv.s[wrap].V <= 21;
+        bool vbrel = first_ok && tail.size() >= 8 && f4_violations(tail, false) == 0 && !frozen(tail);
+        checks.note("P8 measured: " + dec((long long)pv.s.size()) + " samples into the next frame, " + dec((long long)frz.size()) +
+                    " after the trigger before the wrap, first sample after the wrap on line " + (wrap ? dec(pv.s[wrap].V) : std::string("n/a")) + ", " +
+                    dec((long long)tail.size()) + " of them in lines 25-60 after the wrap");
+        if (froze)
+            g.expect(vbrel, "P8-VBREL: after the end of the internal vertical blank of the next frame the first sample that no longer shows the frozen position lies on line 21 or earlier, and the samples of lines 25-60 show the counters running again: they satisfy the F4 criteria and are not all identical");
+        else checks.record("NOT GRADED: P8-VBREL [no counter froze after the trigger, so there is no freeze to release]");
     } else checks.record("NOT GRADED: P8-VBREL [a precondition does not hold]");
     // the aggregate needs all three registers; it is graded when they can all be graded, and also when a graded part is already red
     bool agg_known_red = !(v0 && v1);

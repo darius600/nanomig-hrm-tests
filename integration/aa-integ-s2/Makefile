@@ -10,13 +10,16 @@ include ../harness/nanomig.mk
 #   make private-uhres      the page-built chip set
 #   make private-longline   the same with every line long (P14-0-LONGONLY)
 #   make private-novbrelease   the same without the release of the light-pen latch at the end of the vertical blank (P8-VBREL)
-.PHONY: private-uhres private-longline private-novbrelease private-build
+#   make private-laterelease   the same with the latch released at line 45 in place of vertical position 20 (P8-VBREL)
+.PHONY: private-uhres private-longline private-novbrelease private-laterelease private-build
 private-uhres:
 	$(MAKE) private-build PATCH=uhres
 private-longline:
 	$(MAKE) private-build PATCH=longline
 private-novbrelease:
 	$(MAKE) private-build PATCH=novbrelease
+private-laterelease:
+	$(MAKE) private-build PATCH=laterelease
 private-build: private/$(PATCH).patch
 	rm -rf obj_dir_private_$(PATCH)
 	mkdir -p obj_dir_private_$(PATCH)/nanomig obj_dir_private_$(PATCH)/integration/aa-integ-s2
