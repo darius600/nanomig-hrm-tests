@@ -10,9 +10,9 @@ Hardware Reference Manual. Every expected value comes from an AA page. HRM pages
 are cited only for context and for procedures the AA pages take for granted,
 never as the source of an expected value.
 
-The package has 81 claims. 60 of them support the propositions P1-P14 in
+The package has 81 claims. 56 of them support the propositions P1-P14 in
 section 3; P11 carries none of them and is the measurement P12 needs. The
-other 21 cannot be graded whole by any proposition; section 1 lists them with
+other 25 cannot be graded whole by any proposition; section 1 lists them with
 the reason for each. Section 5 maps every claim id to where it is used.
 
 ---
@@ -29,6 +29,7 @@ the reason for each. Section 5 maps every claim id to where it is used.
 | sol:AA-beamcon0.c50 | "(It doesn't work in 640*400*4 interlace mode)" (p.12). The page does not say what "doesn't work" looks like, so no observation can be graded against it. |
 | opus:AA-beamcon0.c18 | The claim joins two statements. "The normal monitor uses the normal composite sync" is a statement about the CSY* pin, which cannot be seen. The rest ("the variable composite sync & blank come out the HSY* & VSY* pins") restates the CSCBEN routing that P9 grades under opus:AA-beamcon0.c15, opus:AA-beamcon0.c16, sol:AA-beamcon0.c33 and sol:AA-beamcon0.c34. A claim id is graded whole or not at all, and no test can grade the first half, so the id is not used. |
 | opus:AA-bltxpth.c2, opus:AA-bltxptl.c2, opus:AA-bltxmod.c2 | Each says the register "is write only: the entry's type column is W". The legends define only "W=Write, R=Read," (p.6, p.10) and give no value for a read of a W address, so "only" has no observable consequence and cannot be graded. That the entry's type is W, and that a write to it takes effect, is graded in P1 under sol:AA-bltxpth.c2, sol:AA-bltxptl.c2 and sol:AA-bltxmod.c2 ("makes ... W access"). |
+| opus:AA-beamcon0.c35, sol:AA-beamcon0.c52, opus:AA-beamcon0.b5, sol:AA-beamcon0.c16 | "PAL= Set appropriate decodes (in normal mode) for PAL" (p.12). The page gives no PAL decode value, so that the timing with PAL set differs from the timing with PAL clear can only be a proxy for "appropriate": it cannot show that the decodes are appropriate or that the difference is PAL. P14-1 stays as a control that carries no claim id. |
 | opus:AA-beamcon0.c30, sol:AA-beamcon0.c47 | "DUAL= Run the horizontal comparators with the alternate horizontal beam counter" (p.12). The claim covers all the horizontal comparators, which p.24 names for the alternate counter: "doing the comparisons for HBSTRT,STOP,HTOTAL,HSSTRT,HSSTOP". P11 grades HTOTAL only, so neither id is graded whole. P11 stays, without claim ids, as the measurement P12 needs. |
 
 Several claims are tagged CONFLICT but are used all the same:
@@ -370,9 +371,12 @@ regenerates it). They are then reported as not checkable, not as red. If S-V
 fails, F5-SV-DIFF is FAIL (the vertical sync is passed through to the harness, so the
 failure is the chip's) and the VSY* parts of P9 and P10 are not graded. The anchor's own contrasting cases are
 built in: S-H2 against S-H1 and S-V2 against S-V1 must differ, and S-H3 must
-invert. P9-NH, P9-NC and P10-CPAIR assert identity at every sample, which a
-deterministic scan doubler keeps whatever it regenerates, so they need no
-anchor: each is graded when its runs exist and are cycle-aligned (F6).
+invert. The HSY* halves of P9-NH, P9-NC and P9-NV and the line P10-CPAIR assert identity of the
+hs samples at every sample; a deterministic scan doubler that regenerates hs keeps identical
+inputs identical whatever the chip does, so identity of hs cannot show that a register does
+not reach the HSY* pin. They are recorded as not observable at this boundary and not graded.
+Their VSY* halves, where the harness shows the chip's own signal, are graded when anchor S-V
+holds and the runs are cycle-aligned (F6).
 
 **F6: graded frame and run alignment.**
 
@@ -1107,7 +1111,8 @@ VARVSYEN = 0 (and VARBEAMEN = 1, F5):
   VBSTRT.
 
 With CSCBEN = 0 (VARBEAMEN still 1) none of these registers affects the two
-pins.
+pins. At this boundary only the VSY* half is observable (F5): the HSY* halves of
+the controls below are recorded as not observable and not graded.
 
 **Page text.**
 
@@ -1211,7 +1216,7 @@ in F5.
   - Polarity and the horizontal content of the composite blank are not
     graded: the page does not state them, and where horizontal blanking
     covers a sample in both runs, the runs need not differ there.
-- **Contrasting pairs, CSCBEN = 0:** all three pairs identical at every sample.
+- **Contrasting pairs, CSCBEN = 0:** all three pairs identical at every VSY* sample (P9-NH, P9-NC, P9-NV). That they are identical at every HSY* sample is not observable at this boundary and is not graded.
 
 **Preconditions,** each with its contrasting case:
 
@@ -1219,8 +1224,8 @@ in F5.
    (for (b), on S-V1 against S-V2 alone). The anchor's contrasts are part of F5.
    If S-H or S-V fails, the corresponding part is not graded (reported as not
    checkable for S-H, with F5-SV-DIFF FAIL for S-V), and its claim ids come off the assertion (they are recorded as not graded,
-   with the failed anchor as the reason). The CSCBEN = 0 pairs of (a) (P9-NH and
-   P9-NC) assert identity at every sample and need no anchor (F5):
+   with the failed anchor as the reason). The CSCBEN = 0 pairs (P9-NH, P9-NC, P9-NV) grade the VSY* samples and need anchor S-V, which shows that the
+   VSY* samples respond to the registers (F5):
    - (a) grades opus:AA-beamcon0.c15, sol:AA-beamcon0.c33 and
      opus:AA-beamcon0.c38;
    - (b) grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34;
@@ -1277,7 +1282,7 @@ VARBEAMEN is set in every run, as in F5.
 **Expected.**
 
 - **With `$05A0`:**
-  - The C-pair is identical at every HSY* sample. Its VSY* samples are not graded: whether the composite blank on VSY* depends on HCENTER is not stated by the page; they are printed as a MEASURED line.
+  - The C-pair is identical at every HSY* sample (P10-CPAIR: not observable at this boundary, recorded and not graded). Its VSY* samples are not graded: whether the composite blank on VSY* depends on HCENTER is not stated by the page; they are printed as a MEASURED line.
   - The S-pair differs on every chip line, including the vertical-sync lines,
     in one interval of exactly `4*T_C` (F5, "Interval lengths are exact").
     During VSY the composite would not be reset at HSSTOP (p.13), so a
@@ -1294,8 +1299,8 @@ VARBEAMEN is set in every run, as in F5.
   VARHSYEN have priority, so each needs both halves: if S-H or S-V fails,
   both ids come off the assertion and are recorded as not graded, with the
   failed anchor as the reason; the checkable half is still run and reported.
-  P10-CPAIR asserts identity of the HSY* samples only, at every sample, and needs no anchor (F5): it is
-  graded when its two runs exist and are cycle-aligned.
+  P10-CPAIR is not observable at this boundary (F5) and is recorded, not graded; the aggregate P10 is
+  therefore never graded whole here.
 - **Cycle alignment (F6).** Contrast: none; this is a validity check on the
   comparison.
 - **The vertical-sync lines exist in the graded frame.** Asserted as in P9.
@@ -1378,7 +1383,13 @@ horizontal counter (read via VHPOSR).
   then predicts that HTOTAL governs the main counter: the maximum `H` is at
   most `$38`. p.12: "VARBEAMEN= Enables the variable beam counter comparators
   to operate ... on the main horiz counter". p.24 gives "this many + 1", and
-  with LOLDIS = 1 there are no long lines.
+  with LOLDIS = 1 there are no long lines. The sample loop takes one sample per
+  34 CCK, so on these 57-CCK lines HHPOSR cannot take two values on every main
+  line; the precondition of the alternate counter's liveness is therefore taken
+  from the unmodified DUAL run, and the contrast run is live by its own fixture, its
+  F4 anchor and the HTOTAL-controlled period of its port lines: in a stopped frame
+  of the contrast run every port line (F3) is `$38 + 1 = 57` CCK long, and the
+  maximum `H` of its samples is the assertion of P11-MAXH.
 - For the bound on HHPOSR: DUAL run with `HTOTAL = $0070`. Some HHPOSR sample
   must now exceed `$38`, and all must stay at most `$70`.
 
@@ -1549,6 +1560,13 @@ Frame A: the F4 sample loop over a full frame, storing VPOSR (for LOL) with
 
 **Preconditions,** each with its contrasting case:
 
+0. **The PAL-clear run has its own anchors,** separately from the PAL-set run:
+   P13-0-FIXTURE (its program stores `$BEEF` first), P13-0-F3 (in its frame B
+   the refresh accesses come in groups of exactly four, one group per line, and
+   every line period is a whole number of colour clocks) and P13-0-F4 (the F4
+   anchor on its frame A). P13-0-LINES, P13-0-LOL and P13-0-COUNT are graded
+   only when all three hold. Contrasts: the fixture program storing `$DEAD`, a
+   bit plane fetched in frame B, and the samples stored below the one before.
 1. **Variable-beam mode is in effect:** line length follows HTOTAL. Contrast:
    `HTOTAL = $00C0` in P13-1. p.24 counts both settings from HTOTAL ("this
    many + 1", "this many + 2"), so every port line of frame B is shorter by
@@ -1569,10 +1587,13 @@ Frame A: the F4 sample loop over a full frame, storing VPOSR (for LOL) with
 
 ### P14: In normal mode, the PAL bit selects different decodes from PAL = 0; the page names no PAL values
 
-**Claims:** opus:AA-beamcon0.c35, sol:AA-beamcon0.c52, opus:AA-beamcon0.b5,
-sol:AA-beamcon0.c16, all graded by P14-1 alone (PAL = 1 decodes differ from
-PAL = 0 decodes); the NTSC long-line lines P14-0-LOL, P14-0-LINES and
-P14-0-LONGONLY and the aggregate P14 carry none. **Pages:** p.12, p.29.
+**Claims:** none. The claims opus:AA-beamcon0.c35, sol:AA-beamcon0.c52,
+opus:AA-beamcon0.b5 and sol:AA-beamcon0.c16 say that the PAL bit sets the
+appropriate decodes for PAL; the page gives no PAL decode value, so that PAL-set
+timing differs from PAL-clear timing is a proxy that cannot show the decodes
+are appropriate (section 1). P14-1 is kept as a control that carries no claim id.
+The NTSC long-line lines P14-0-LOL, P14-0-LINES and P14-0-LONGONLY and the
+aggregate P14 carry none either. **Pages:** p.12, p.29.
 
 **Proposition.** With VARBEAMEN = 0, the frame timing with BEAMCON0 bit 5
 (PAL) = 1 differs from the timing with PAL = 0. With PAL = 0, every other line
@@ -1614,8 +1635,8 @@ the PAL = 0 (NTSC) decodes.
   - LOL alternates between consecutive lines;
   - the port lines alternate, the longer ones being 228 CCK;
   - "every other line": no two consecutive port lines are both long.
-- **P14-1:** at least one of these differs from P14-0: `V_max + 1`, or the
-  line-length pattern (the sequence of `L`).
+- **P14-1** (a control with no claim id): at least one of these differs from
+  P14-0: `V_max + 1`, or the line-length pattern (the sequence of `L`).
 
 **Preconditions,** each with its contrasting case:
 
@@ -1747,7 +1768,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-beamcon0.b13 | P8 |
 | opus:AA-beamcon0.b15 | not used (section 1) |
 | opus:AA-beamcon0.b3 | not used (section 1) |
-| opus:AA-beamcon0.b5 | P14 |
+| opus:AA-beamcon0.b5 | not used (section 1) |
 | opus:AA-beamcon0.c10 | P8 |
 | opus:AA-beamcon0.c15 | P9 |
 | opus:AA-beamcon0.c16 | P9 |
@@ -1756,7 +1777,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-beamcon0.c30 | not used (section 1) |
 | opus:AA-beamcon0.c31 | P12 |
 | opus:AA-beamcon0.c32 | P12 |
-| opus:AA-beamcon0.c35 | P14 |
+| opus:AA-beamcon0.c35 | not used (section 1) |
 | opus:AA-beamcon0.c37 | not used (section 1) |
 | opus:AA-beamcon0.c38 | P9 |
 | opus:AA-beamcon0.c8 | P8 |
@@ -1787,7 +1808,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-bltxptl.c6 | P2 |
 | opus:AA-bltxptl.c7 | not used (section 1) |
 | sol:AA-beamcon0.c11 | P9 |
-| sol:AA-beamcon0.c16 | P14 |
+| sol:AA-beamcon0.c16 | not used (section 1) |
 | sol:AA-beamcon0.c18 | not used (section 1) |
 | sol:AA-beamcon0.c24 | P8 |
 | sol:AA-beamcon0.c25 | P8 |
@@ -1799,7 +1820,7 @@ the PAL = 0 (NTSC) decodes.
 | sol:AA-beamcon0.c48 | P12 |
 | sol:AA-beamcon0.c49 | P12 |
 | sol:AA-beamcon0.c50 | not used (section 1) |
-| sol:AA-beamcon0.c52 | P14 |
+| sol:AA-beamcon0.c52 | not used (section 1) |
 | sol:AA-beamcon0.c53 | P13 |
 | sol:AA-beamcon0.c54 | not used (section 1) |
 | sol:AA-beamcon0.c6 | not used (section 1) |
