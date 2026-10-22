@@ -52,7 +52,7 @@
 // MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5
 // MUTATION P4-ANCHOR stimulus red NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5
 // MUTATION P4-FINISHED stimulus red NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5
-// MUTATION P4-INC stimulus red NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write adds an access to channel A's region: the first blit then has no line of W accesses per channel and no step is measured, so the line is red through the access count; the constant-step clause has no mutation of its own; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5
+// MUTATION P4-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel, no stimulus that keeps the other preconditions valid predicts anything else, and line mode changes the population the clause is graded on
 // MUTATION P4-A stimulus red NMH_MUTATE=P4-A: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
 // MUTATION P4-B stimulus red NMH_MUTATE=P4-B: BLTBMOD written 4 in place of -2 in the first blit; TG68K: FAIL P4-B, P4; fx68k: FAIL P4-B, P4
 // MUTATION P4-C stimulus red NMH_MUTATE=P4-C: BLTCMOD written 4 in place of 0 in the first blit; TG68K: FAIL P4-C, P4; fx68k: FAIL P4-C, P4
@@ -71,7 +71,7 @@
 // MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3
 // MUTATION P6-ANCHOR stimulus red NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3
 // MUTATION P6-FINISHED stimulus red NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3
-// MUTATION P6-INC stimulus red NMH_MUTATE=P6-INC: BLTSIZE $0102 (height 4) in place of $00C2: no channel makes W*H = 6 accesses, so no step is measured and the line is red through the empty population; the constant-step clause has no mutation of its own; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3
+// MUTATION P6-INC none impossible unfalsifiable at this boundary: AA p.13 (BLTxMOD) adds the modulo only at the end of a line, so within a line of an area blit the step is the word size on every channel, no stimulus that keeps the other preconditions valid predicts anything else, and line mode changes the population the clause is graded on
 // MUTATION P6-STEPS stimulus red NMH_MUTATE=P6-STEPS: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
 // MUTATION P6-COUNT stimulus red NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6
 // MUTATION P6 stimulus red NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
