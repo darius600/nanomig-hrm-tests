@@ -82,7 +82,7 @@ commit.
 | | |
 |---|---:|
 | test packages, `hrm/` | **217** |
-| assertions, `hrm/` | **3688** — 3490 pass, **198 fail** |
+| assertions, `hrm/` | **3691** — 3493 pass, **198 fail** |
 | packages, `hrm/` | 154 green, 63 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
