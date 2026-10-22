@@ -273,7 +273,7 @@
  			end_of_line <= 1'b1;
  		else
  			end_of_line <= 1'b0;
-@@ -288,6 +305,39 @@
+@@ -288,6 +305,41 @@
  always @(cck) hpos[0] = cck;
  `endif
     
@@ -298,7 +298,9 @@
 +// otherwise it follows the main counter
 +always @(posedge clk) begin
 +	if (clk7_en) begin
-+		if (dual) begin
++		if (reg_address_in[8:1] == (9'h1D8 >> 1))   // HHPOSW writes the alternate counter
++			hpos2 <= data_in[7:0];
++		else if (dual) begin
 +			if (cck) begin
 +				if (hpos2 == htotal_reg[8:1]) hpos2 <= 8'd0;
 +				else hpos2 <= hpos2 + 8'd1;
@@ -313,7 +315,7 @@
  //long line signal (not used, only for better NTSC compatibility)
  always @(posedge clk) begin
  	if (clk7_en) begin
-@@ -384,6 +434,13 @@
+@@ -384,6 +436,13 @@
  //                                                                                      //
  //--------------------------------------------------------------------------------------//
  
@@ -327,7 +329,7 @@
  //horizontal sync
  always @(posedge clk) begin
  	if (clk7_en) begin
-@@ -398,10 +455,19 @@
+@@ -398,10 +457,19 @@
  // PAL: Long field Vsync line 3 - 5.5, Short field: line 2.5 - 5
  always @(posedge clk) begin
  	if (clk7_en) begin
@@ -349,7 +351,7 @@
  	end
  end
  
-@@ -418,7 +484,7 @@
+@@ -418,7 +486,7 @@
  end
  
  //composite sync

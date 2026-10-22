@@ -1856,9 +1856,10 @@ bool is_refresh(const Acc& a) { return !a.wr && a.byte < 0x1000 && !(a.byte >= 0
 
 // extra: registers added to the list, and sprite words poked at the sprite data address
 UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "prog_uhres", RegList extra = {},
-             bool sprite_data = false) {
+             bool sprite_data = false, int hhw = -1) {
     RunOpts o;
     o.prog = prog;
+    if (hhw >= 0) o.pokes.push_back({kCfg + 4, (uint16_t)hhw});
     RegList regs = {{kHTOTAL, 0x0038}, {0x1E6, 0x0000}, {0x1D4, 100}, {0x1D6, 110}, {0x1D0, 100}, {0x1D2, 110},
                     {0x1EC, 0x0018}, {0x1EE, 0x0000}, {0x1E8, 0x0019}, {0x1EA, 0x0000},
                     {kBEAMCON0, bc0}, {0x100, bplcon0}};
@@ -1933,6 +1934,64 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
         u.len_cck.push_back(double(b - a) / double(tc));
     }
     return u;
+}
+
+
+// ---- the chain against the reset of the alternate counter (P12-PHASE) ----
+struct PhaseData {
+    bool ok = false;
+    uint64_t tw = 0;                 // the time of the marker written right after the write of HHPOSW
+    std::vector<uint64_t> t1;        // the first access of every complete chain (sprite, bit plane, sprite pointer) in the graded frame
+    std::vector<uint64_t> other;     // the accesses of the window outside the two regions
+};
+PhaseData phase_data(const UhRun& u) {
+    PhaseData p;
+    if (!u.fixture || u.tvm == 0) return p;
+    const RunData& d = *u.r;
+    std::vector<uint64_t> hw;
+    for (const auto& m : d.marks) if (m.code == 0xF021) hw.push_back(m.cyc);
+    if (hw.size() < 3) return p;
+    uint64_t tnext = 0;
+    for (const auto& m : d.marks) if (m.code == kMFrame && m.cyc > u.tvm) { tnext = m.cyc; break; }
+    if (!tnext) return p;
+    p.tw = hw[2];
+    std::vector<std::pair<uint64_t, char>> ev;
+    for (const auto& x : d.acc) {
+        if (x.cyc < u.tvm || x.cyc >= tnext) continue;
+        if (x.byte >= kBplhLo && x.byte < kBplhHi) ev.push_back({x.cyc, 'B'});
+        else if (x.byte >= kSprhLo && x.byte < kSprhHi) ev.push_back({x.cyc, 'S'});
+        else p.other.push_back(x.cyc);
+    }
+    for (size_t i = 0; i + 2 < ev.size();) {
+        if (ev[i].second == 'S' && ev[i + 1].second == 'B' && ev[i + 2].second == 'S') { p.t1.push_back(ev[i].first); i += 3; }
+        else ++i;
+    }
+    p.ok = true;
+    return p;
+}
+
+// The alternate counter is written with v right after the marker; it then counts up to HTOTAL and resets every
+// (HTOTAL + 1) colour clocks, so its resets fall at tw + (HTOTAL + 1 - v) T_C + k (HTOTAL + 1) T_C, up to the one latency of the
+// write, which is the same in every run of the same program. A chain that starts at those resets starts a constant time after
+// them, for every chain that waits for no busy cycle. The delay of such an undisturbed chain, from the predicted reset, is
+// returned for every chain; a chain is disturbed when an access outside the two regions falls between 64 system clocks before
+// the predicted reset and its first access (it waits for a free cycle, p.15).
+std::vector<long long> phase_delays(const PhaseData& p, int v, long long tc, int htotal, int* disturbed) {
+    std::vector<long long> out;
+    const long long per = (long long)(htotal + 1) * tc;
+    const long long first = (long long)(htotal + 1 - v) * tc;
+    if (disturbed) *disturbed = 0;
+    for (uint64_t t1 : p.t1) {
+        long long rel = (long long)(t1 - p.tw) - first;
+        if (rel < 0) continue;
+        long long k = rel / per;
+        uint64_t r = p.tw + (uint64_t)(first + k * per);
+        bool dist = false;
+        for (uint64_t o : p.other) if (o + 64 >= r && o < t1) { dist = true; break; }
+        if (dist) { if (disturbed) ++*disturbed; continue; }
+        out.push_back((long long)(t1 - r));
+    }
+    return out;
 }
 
 void proposition_p12() {
@@ -2036,7 +2095,33 @@ void proposition_p12() {
     }
     g.expect_if(pre1, b1, "P12-1-BPL: with DUAL set every graded line shows at least 2 UHRES bit-plane pointer accesses, and their number is floor(k) or ceil(k) for the line's k alternate-counter resets");
     g.expect_if(pre1, s1, "P12-1-SPR: with DUAL set every graded line shows more than 2 UHRES sprite pointer accesses");
-    g.expect_if(pre1, c0 && b1 && s1,
+    // P12-PHASE: the chain starts at the resets of the alternate counter. The counter is written with vA in one run and with vB in
+    // another, the programs being the same and the runs cycle-aligned, so that its resets, and with them the chains, move by
+    // (vA - vB) colour clocks if the chain starts at them.
+    const int vA = 0x08, vB = mutating("P12-HHW") ? 0x08 : 0x1C;
+    const char* phprog = mutating("P12-PHFIXTURE") ? "prog_uhphase_nofix" : "prog_uhphase";
+    UhRun qa, qb;
+    PhaseData pa, pb;
+    if (pre1) {
+        qa = uh_run(0x0060, 0x0080, dr.tc, phprog, {}, false, vA);
+        qb = uh_run(mutating("P12-PHASE") ? 0x0020 : 0x0060, 0x0080, dr.tc, phprog, {}, false, vB);   // P12-PHASE: DUAL clear in the second run
+        pa = phase_data(qa); pb = phase_data(qb);
+    }
+    bool phfix = qa.fixture && qb.fixture;
+    g.expect_if(pre1, phfix, "P12-PHFIXTURE: the program that writes the alternate counter stores the constant $BEEF first and the harness reads it back before any other result of its runs is used");
+    int rba = qa.r ? qa.r->word(kResults + 0x100) : 0, rbb = qb.r ? qb.r->word(kResults + 0x100) : 0;
+    checks.note("P12 measured: HHPOSR read right after the write of HHPOSW: " + dec(rba) + " after writing " + dec(vA) + ", " + dec(rbb) + " after writing " + dec(vB));
+    bool hhw = phfix && (rbb - rba == vB - vA);
+    g.expect_if(pre1 && phfix, hhw, "P12-HHW: a write to HHPOSW sets the alternate counter: HHPOSR read right after the write differs between the two runs by the difference of the two values written");
+    int dsa = 0, dsb = 0;
+    std::vector<long long> ca = phase_delays(pa, vA, dr.tc, 0x38, &dsa), cb = phase_delays(pb, vB, dr.tc, 0x38, &dsb);
+    bool phase_ok = !ca.empty() && !cb.empty();
+    for (long long c : ca) if (c != ca[0]) phase_ok = false;
+    for (long long c : cb) if (!ca.empty() && c != ca[0]) phase_ok = false;
+    checks.note("P12 measured: chains in the graded frame " + dec((long long)pa.t1.size()) + " and " + dec((long long)pb.t1.size()) + ", disturbed " + dec(dsa) + " and " + dec(dsb) +
+                ", delay of the first undisturbed chain after the predicted reset " + (ca.empty() ? std::string("n/a") : dec(ca[0])) + " and " + (cb.empty() ? std::string("n/a") : dec(cb[0])) + " system clocks");
+    g.expect_if(pre1 && phfix && hhw, phase_ok, "P12-PHASE: the chains that wait for no busy cycle start the same time after the predicted resets of the alternate counter in both runs: with the counter written with $08 and with $1C, every such chain in the graded frame, at least one in each run, starts the same number of system clocks after the reset that follows from the value written");
+    g.expect_if(pre1 && phfix && hhw, c0 && b1 && s1 && phase_ok,
         "P12: opus:AA-beamcon0.c31 opus:AA-beamcon0.c32 sol:AA-beamcon0.c48 sol:AA-beamcon0.c49: with UHRES enabled and DUAL set the UHRES pointer chain starts at each reset of the alternate counter, so the UHRES bit-plane and sprite pointers come out more than once per main line, against once and twice per line with DUAL clear");
 }
 

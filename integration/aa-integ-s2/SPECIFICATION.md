@@ -2201,7 +2201,7 @@ HHPOSR, no lengthened line, a vertical sync that follows the long-field conventi
 also run on a build whose chip set follows the pages in those points, on both cores. `private/uhres.patch` is the patch against the pinned NanoMig and
 `make private-uhres` applies it to a copy, builds both cores and runs the test (outputs `out_private_uhres_fx68k.txt` and `out_private_uhres_tg68k.txt`); the repository's
 NanoMig is not changed. The patch makes: a light-pen trigger on the controller ports' fire inputs latch the beam position while BPLCON0 bit 3 is set, released at the end
-of the internal vertical blank (HRM p.239: vertical position 20; with VARVBEN the comparator's VBSTOP, p.12); HHPOSR read an alternate counter that counts to HTOTAL with DUAL set (with DUAL
+of the internal vertical blank (HRM p.239: vertical position 20; with VARVBEN the comparator's VBSTOP, p.12); HHPOSR read an alternate counter that counts to HTOTAL with DUAL set and HHPOSW write it (with DUAL
 clear it follows the main counter, which the pages do not state, so the results of the HHPOSR lines on this build are recorded and are not used as controls); a long line last one
 colour clock more; the VSY* pin carry the comparator VSY whenever VARVSYEN is set, the variable composite blank (inverted: the starred pin is low while the blank is active) with CSCBEN,
 and the hardwired vertical sync otherwise, and VSYTRUE invert whichever of the three is on the pin; and the comparator VSY be set and reset at VSSTRT and VSSTOP with the

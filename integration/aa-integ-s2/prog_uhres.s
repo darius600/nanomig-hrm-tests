@@ -8,7 +8,10 @@
 ;   CFG+8   number of entries of the register list
 ;   CFG+$10 the register list: pairs of (register offset, value)
 ; and the null sprite: two zero words at NULLSPR. CTL, defined before this file
-; is included, points sprite 0 at sprite data at SPRCTL instead.
+; is included, points sprite 0 at sprite data at SPRCTL instead. PHASE, defined before
+; this file is included, makes the program write the word CFG+4 to HHPOSW (the alternate
+; horizontal beam counter) right after VMARK(90), write the marker $F021, read HHPOSR back
+; and store it at RESULTS+$100.
 
         include "nanomig.i"
         include "s2.i"
@@ -18,6 +21,8 @@ NULLSPR equ     $1A0000
 SPRCTL  equ     $190000                 ; CTL: the sprite data
 M_VMARK         equ     $F020
 M_REGS          equ     $F003
+M_HHW           equ     $F021
+HHPOSW          equ     $1D8
 
         ifnd    FIXVAL
 FIXVAL  equ     $BEEF
@@ -58,6 +63,13 @@ start:
         cmp.w   #90,d0
         bcs.s   .poll
         move.w  #M_VMARK,MARKER
+        ifd     PHASE
+        move.w  CFG+4,d3                ; PHASE: write the alternate counter, then mark the time
+        move.w  d3,HHPOSW(a0)
+        move.w  #M_HHW,MARKER
+        move.w  HHPOSR(a0),d4           ; the alternate counter read back
+        move.w  d4,RESULTS+$100
+        endc
         dbra    d6,.frame
         bsr     stopframe
         DONE
