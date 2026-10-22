@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**57 findings ask for a review, in 29 modules.** They are listed by the
+**59 findings ask for a review, in 29 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -28,10 +28,11 @@ The marks and this list are derived from each page's header table by
 `hrm-testpipeline` repository, and are rewritten whenever a header changes.
 Module links point at the NanoMig revision the pages cite, `4315acb`.
 
-## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v) — 3
+## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v) — 4
 
 | finding | subject | evidence |
 |---|---|---|
+| [NM-AA-010](findings/NM-AA-010.md) | the UHRES pointers never come out: with BPLCON0 bit 7 and DMAEN set, no BPLHPT or SPRHPT access reaches Chip memory, where AA pp. 15 and 27 give them the first three free cycles of each line | a test fails against the page; the implementations split |
 | [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a test fails against the page; the implementations split |
 | [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
 | [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
@@ -43,13 +44,14 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
 | [NM-HRM-092](findings/NM-HRM-092.md) | below the minimum period a pass of audio DMA does not always start again at AUDxLC: channel 0 reads past its table, fetches the first word twice or ends a pass one word short, where pp. 139 and 147 restart it each time | a test fails against the page; the implementations split |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v) — 8
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v) — 9
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-AA-004](findings/NM-AA-004.md) | VPOSR reports chip identifier $23, where the AA list gives an Alice $22 | a test fails against the page |
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | a test fails against the page |
 | [NM-AA-008](findings/NM-AA-008.md) | HHPOSR reads $0000 with DUAL set: the secondary beam counter of AA p. 24 is not there | a test fails against the page; the implementations split |
+| [NM-AA-009](findings/NM-AA-009.md) | with CSCBEN set, VSY* keeps the vertical sync and VBSTRT never reaches it, where AA pp. 12 and 29 put the variable composite blank on that pin | a test fails against the page |
 | [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | a test fails against the page |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a test fails against the page |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
