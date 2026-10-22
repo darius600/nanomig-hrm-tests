@@ -53,20 +53,20 @@
 //   never needs to characterise the settle window at all.
 //
 // THE SIX BITS THAT MOVE THE ORIGIN IN LORES MODE. pf1h is formed as
-//   {bplcon1[11:10], bplcon1[3:0], bplcon1[9:8]} (denise_bitplanes.v:148).
+//   {bplcon1[11:10], bplcon1[3:0], bplcon1[9:8]} (denise_bitplanes.v:434).
 //   In lores mode (fmode fixed at 0 throughout -- this package never writes
-//   FMODE) denise_bitplane_shifter computes
-//     select[5:0] = scroll[7:2] & 6'b00_1111        (:217, lores branch)
-//     sh_select   = {aga, scroll[1:0]}               (:254, lores branch)
+//   FMODE -- and aga=1) the scroll path, `scroll` being pf1h_del, computes
+//     select1   = pf1h_del[7:2] & 6'b00_1111  (denise_bitplanes.v:573, :556)
+//     sh_select = {1'b0, scroll[1:0]} + 3     (denise_bitplane_shifter.v:200)
 //   which keeps pf1h[7:6] (bplcon1[11:10]) out of the picture entirely and
 //   leaves exactly six live bits: bplcon1[3:0] picks one of 16 taps in the
-//   64-deep `scroller` (:238, shifts once per lores pixel via `shift` at
-//   :216), and bplcon1[9:8] picks one of 4 taps in the 8-deep `sh_scroller`
-//   (:259-261, which shifts every 28MHz clock regardless of mode). One full
-//   turn of the fine 2 bits is one coarse tap, so the combined 6-bit field
-//   F = (bplcon1[3:0] << 2) | bplcon1[9:8] is a single linear count from 0
-//   to 63, one 28MHz clock (35ns) per unit -- measured directly below, not
-//   assumed.
+//   64-entry scroll history (denise_scroll_history, denise_bitplanes.v:759,
+//   read at wrptr-1-select1, written once per lores pixel by `shift` :566),
+//   and bplcon1[9:8] picks one of 4 taps in the 8-deep `sh_scroller`
+//   (denise_bitplane_shifter.v:206-208, which shifts every 28MHz clock
+//   regardless of mode). One full turn of the fine 2 bits is one coarse tap,
+//   so F = (bplcon1[3:0] << 2) | bplcon1[9:8] is a single linear count from
+//   0 to 63, one 28MHz clock (35ns) per unit -- measured below, not assumed.
 //
 // WHY EVERY WRITE ZEROES PLANES 2 TO 8. Only plane 1's scroll (pf1h_del) is
 //   under test; the even planes use pf2h_del, formed from a different slice
@@ -205,7 +205,7 @@ public:
 };
 
 // pf1h's fine field is bplcon1[9:8]; its coarse field is bplcon1[3:0].
-// bplcon1[11:10] never reaches lores-mode select or sh_select and is left 0.
+// bplcon1[11:10] never reaches lores-mode select1 or sh_select and is left 0.
 static inline uint16_t bplcon1_for_coarse_fine(int coarse4, int fine2) {
     return (uint16_t)((coarse4 & 0xF) | ((fine2 & 0x3) << 8));
 }
