@@ -13,14 +13,14 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**56 findings ask for a review, in 29 modules.** They are listed by the
+**57 findings ask for a review, in 29 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
 
 | findings | why no RTL review |
 |---|---|
-| 23 | filed against the printed page or the classification: no RTL change follows |
+| 24 | filed against the printed page or the classification: no RTL change follows |
 | 2 | filed against the RTL, but seen in the RTL source and not red at any pin: no test yet, or measured only inside the module |
 
 The marks and this list are derived from each page's header table by
@@ -36,11 +36,12 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
 | [NM-HRM-091](findings/NM-HRM-091.md) | with BLTPRI set, the 68000 still gets the chip-bus cycles a blit does not use, where p. 278 prevents it from stealing any bus cycles while blitter DMA is running | a test fails against the page |
 
-## [`src/minimig-aga/agnus_audiodma.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_audiodma.v) — 1
+## [`src/minimig-aga/agnus_audiodma.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_audiodma.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
+| [NM-HRM-092](findings/NM-HRM-092.md) | below the minimum period a pass of audio DMA does not always start again at AUDxLC: channel 0 reads past its table, fetches the first word twice or ends a pass one word short, where pp. 139 and 147 restart it each time | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v) — 8
 
@@ -200,12 +201,13 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 |---|---|---|
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | a test fails against the page |
 
-## [`src/minimig-aga/paula_audio_channel.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v) — 2
+## [`src/minimig-aga/paula_audio_channel.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v) — 3
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | a test fails against the page |
 | [NM-HRM-084](findings/NM-HRM-084.md) | the length counter also counts the first data word after audio DMA starts: the first pass is one word short of AUDxLEN, and at AUDxLEN = 3 runs two words past the data set | a test fails against the page |
+| [NM-HRM-092](findings/NM-HRM-092.md) | below the minimum period a pass of audio DMA does not always start again at AUDxLC: channel 0 reads past its table, fetches the first word twice or ends a pass one word short, where pp. 139 and 147 restart it each time | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/paula_audio_mixer.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v) — 1
 
