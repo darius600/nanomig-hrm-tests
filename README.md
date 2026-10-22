@@ -92,7 +92,7 @@ commit.
 | registered findings | **85**, all open — 75 against the Hardware Reference Manual and 10 against the AA specification. **59 ask you to decide whether the RTL should change** (52 HRM, 7 AA); 76 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **10** — seven are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
-| accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
+| accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
 
 **Reading a test's output.** `PASS:` and `FAIL:` lines are the checks, the
 measurement against the value the page gives; only they count, and the summary
@@ -122,7 +122,7 @@ from such a run. A tool in the separate `hrm-testpipeline` repository checks it 
 | see what may be wrong in the RTL, module by module | [`docs/rtl-review.md`](docs/rtl-review.md) |
 | look up a finding | [`docs/findings.md`](docs/findings.md), the register, then its page in [`docs/findings/`](docs/findings/) |
 | find anything else | [`docs/README.md`](docs/README.md), the map |
-| see how the tests are made | the [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository |
+| see how the tests are made | the [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository (not public yet) |
 
 Each finding page says what the printed page says, what NanoMig does and how
 that was measured, what four independent implementations (WinUAE, vAmiga,
@@ -137,7 +137,7 @@ at the pinned submodule revision, for the printed claims they cite.* It does
 not mean the module is correct, that the page's other statements are covered,
 or that anything on a `MEASURED` or `RECORDED` line was checked. Coverage is
 measured per claim, from the suite's own output, by the coverage ledger in
-[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline); it is
+[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) (not public yet); it is
 never implied by a green.
 
 ## Layout
@@ -161,4 +161,12 @@ Addison-Wesley, 1991; Commodore, *Functional Specification for the Advanced
 Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY. Neither is distributed here.
 Which pages each unit covers, what was measured and what is disclosed about it
 are in the acceptance records,
-[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance).
+[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet).
+
+## Licence
+
+This repository is licensed under the GNU General Public License, version 3 or (at your option)
+any later version (GPL-3.0-or-later): the tests, the RTL patches and the documentation; see
+[`LICENSE`](LICENSE). The quotations from the *Amiga Hardware Reference Manual* and the AA
+specification remain Commodore's text, quoted for review and not covered by this licence.
+NanoMig, the RTL under test, is a submodule under its own terms.

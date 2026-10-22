@@ -110,9 +110,9 @@ specialist rules on it.
 
 **A claim id** such as `opus:E-extdisk-iface.c4` names one claim, a single
 falsifiable statement quoted from a printed page of the manual and classified in
-[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline); the prefix
+[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) (not public yet); the prefix
 `opus:` or `sol:` names which of the two language models, each reading the page independently, recorded it
-([how a claim is identified](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/classify.md#a-claim-is-identified-by-reader-id-never-by-id)).
+([how a claim is identified](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/classify.md#a-claim-is-identified-by-reader-id-never-by-id), not public yet).
 
 **The status column reads `lifecycle · filed against · evidence`**, and every row
 is built from the three fields at the top of the page it links to, so the two can

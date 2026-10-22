@@ -12,7 +12,7 @@ Why it exists: the complete worked example,
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking), runs to
 some two thousand lines; this one is the shape, in about a hundred lines. The rules every
 package follows are the pipeline's build rules,
-[`docs/playbook/build.md`](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/build.md).
+[`docs/playbook/build.md`](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/build.md) (in `hrm-testpipeline`, not public yet).
 
 What to look at, in order:
 

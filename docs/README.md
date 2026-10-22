@@ -54,5 +54,5 @@ None of them is needed before reading a finding or running the suite.
 
 How the tests are made — claim extraction, gates, mutation, validation, and the
 records of the validation rounds — is in the
-[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository.
+[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository (not public yet).
 This one holds the tests and the findings.

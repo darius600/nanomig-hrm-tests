@@ -156,7 +156,7 @@ All of them are here.
 |---|---|
 | `sol:7-int.c56`, `opus:8-appB.c31` | a **claim id**. The prefix names which of two models read the printed page: the pipeline has every chapter read twice, independently, before either reading is merged. The rest is that reader's own numbering — chapter or appendix, section, claim. An id names one reader's reading of one printed sentence, so the same sentence usually has two ids. |
 | `FPGA-nnn` | a task number in the private lab that plans this work. It is **not** a finding key and resolves to nothing public. Findings are `NM-HRM-nnn`; the mapping is in the table above. |
-| `work/ch8-s2-build/<package>.jsonl` | the package's claim file, in the sibling repository: [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work). Every id a package cites is a row there. |
+| `work/ch8-s2-build/<package>.jsonl` | the package's claim file, in the sibling repository: [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work) (not public yet). Every id a package cites is a row there. |
 | a `work/…` path marked *private lab workspace* | a planning document that is not published. Five such citations exist, all in chapter-2 packages; the claim ids beside them are the public record of the same work. |
 | `BOUNDARIES.md`, `CANDIDATES.md` | working files of a single build, in that build's directory under `work/`. |
 | "the builder", "the lead", "the validator" | roles in the pipeline, not people: the model that wrote a package, the model that assigned the work, and the independent model that checked it. `hrm-testpipeline/docs/model-collaboration-guide.md` defines them. |
