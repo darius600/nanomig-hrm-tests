@@ -21,12 +21,12 @@ confirmed it — and adjusting it to pass would delete the finding.
 
 | Oracle | Documents | Tests |
 |---|---|---|
-| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 26 graded packages |
+| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 27 graded packages |
 | Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages; `integration/`, 8 graded packages |
 
 **`integration/` runs whole systems** rather than one module: `nanomig.v`
 with a 68000 program assembled by vasm, on both CPU cores NanoMig offers
-(fx68k and TG68K). Twenty-six packages there are graded against the manual and
+(fx68k and TG68K). Twenty-seven packages there are graded against the manual and
 eight against the AA specification, for claims that only show across module
 boundaries. A red in them becomes a finding only once a
 validation has confirmed it against the page, and
