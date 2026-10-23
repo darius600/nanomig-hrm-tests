@@ -1459,8 +1459,10 @@ These are measurements of the final run, not oracles:
 
 - A chip line lasts P = 1816 clk_sys cycles, the video port shows 908 samples per output line, and 70 ns of chip time is one sample (u = 1, PC-PIXEL). The visible part of an output line is the samples 65-818.
 - A normal PAL frame (BEAMCON0 = `0x0020`) lasts 313 lines (568,408 cycles) in every run.
-- With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; p.29 gives "there's this many + 1 in a field", 1536 lines, and the PC-FRAME line prints the measured length beside it.
+- With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; p.29 gives "there's this many + 1 in a field", 1536 lines, which LF-FRAME grades (FAIL on both cores). With VTOTAL = `0x04FF` the fields last 1281 lines; the difference of 256 lines between the two VTOTAL values is what LF-CONTROL grades (PASS on both cores).
 - With the SSCAN2 bit of FMODE set a sprite is shown a second time 512 output pixels to the right of its first image (S11); S12 reads the first image.
+- With FMODE = `0x0001` the reads of plane x lie 4 bytes apart, 11 reads per line in D-STD's fetch window; with FMODE = `0x0003` they lie 8 bytes apart, 6 reads per line. On all 208 graded lines of all eight planes the display shows the fetched words in memory order, MSB first (B5-32, B5-64: PASS on both cores).
+- S14: in every band after an event line, every measured line shows the written position and pattern from the line after the event line on (fx68k and TG68K).
 - SPRxCTL bit 4 (SH1): the k = 1 pair of S5 shows the leftmost cS pixel moved by 0 output pixels on all 128 band lines, where p.28 ("04 SH1=0 start horiz. value, 70nS increment") asks for 1. The pairs k = 2..10 move by exactly 2^(k-1) output pixels.
 
 ### 5.5 Readings the build had to fix
@@ -1476,11 +1478,11 @@ These are measurements of the final run, not oracles:
 
 Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. A mutation run grades the part of the proposition that its selector names; where that is a sub-population of the normal run (S8 and S9 grade the k = 2 pair, C2 plane 3, C3 plane 7 with data 1, S5 and S5-SH10-SH3 the k = 3 pair), the record says so.
 
-Every red line has a green control through the same comparator, named in the records: S5 for S5-SH1 (the comparator for k = 2..10; the record S5-SH1 runs it green on the k = 1 pair), S6-CONTROL for S6 (the data word shifted by one 35-ns pixel), S7-CONTROL-SH1 and S7-CONTROL-SH0 for the preconditions S7-PC-SH1 and S7-PC-SH0 (SH2 in place of SH1; a data word shifted by one 35-ns pixel in place of SH0), S7-CONTROL and S7-CONTROL-V for the comparators of S7 itself, S15-CONTROL-GROUPS and S15-CONTROL-LOM for S15-PC-GROUPS and S15-PC-LOM and S16-CONTROL-ACCESS for S16-PC-ACCESS (each runs the comparator on a region that bit-plane DMA reaches: plane 1's data in the region of P_1 and plane 5's in that of P_5, two words per line; the LOM control compares two runs whose DIWSTRT differs by two lines), C5-CONTROL for C5 and J-CONTROL for the joint assertions. A record of kind `stimulus impossible` states a stimulus that runs while its line prints NOT GRADED because named preconditions print FAIL, and names the control on which the comparator is live; a record of kind `none impossible` states why no stimulus applies.
+Every red line has a green control through the same comparator, named in the records: S5 for S5-SH1 (the comparator for k = 2..10; the record S5-SH1 runs it green on the k = 1 pair), S6-CONTROL for S6 (the data word shifted by one 35-ns pixel), S7-CONTROL-SH1 and S7-CONTROL-SH0 for the preconditions S7-PC-SH1 and S7-PC-SH0 (SH2 in place of SH1; a data word shifted by one 35-ns pixel in place of SH0), S7-CONTROL and S7-CONTROL-V for the comparators of S7 itself, S15-CONTROL-GROUPS and S15-CONTROL-LOM for S15-PC-GROUPS and S15-PC-LOM and S16-CONTROL-ACCESS for S16-PC-ACCESS (each runs the comparator on a region that bit-plane DMA reaches: plane 1's data in the region of P_1 and plane 5's in that of P_5, two words per line; the LOM control compares two runs whose DIWSTRT differs by two lines), C5-CONTROL for C5, LF-CONTROL for LF-FRAME (the field-length measure of LF-FRAME on two VTOTAL values: a difference of exactly 256 lines) and J-CONTROL for the joint assertions. A record of kind `stimulus impossible` states a stimulus that runs while its line prints NOT GRADED because named preconditions print FAIL, and names the control on which the comparator is live; a record of kind `none impossible` states why no stimulus applies.
 
 ### 5.7 Results of the final run
 
-Final run of `make -k -B test`: fx68k 179 passed, 9 failed; TG68K 179 passed, 9 failed.
+Final run of `make -k -B test`: fx68k 196 passed, 10 failed; TG68K 196 passed, 10 failed.
 
 | Line | fx68k | TG68K |
 |---|---|---|
@@ -1489,6 +1491,8 @@ Final run of `make -k -B test`: fx68k 179 passed, 9 failed; TG68K 179 passed, 9 
 | B2 | PASS | PASS |
 | B3 | PASS | PASS |
 | B4 | PASS | PASS |
+| B5-32 | PASS | PASS |
+| B5-64 | PASS | PASS |
 | S1 | PASS | PASS |
 | S2 | PASS | PASS |
 | S3 | PASS | PASS |
@@ -1522,10 +1526,13 @@ Final run of `make -k -B test`: fx68k 179 passed, 9 failed; TG68K 179 passed, 9 
 | C4 | PASS | PASS |
 | C5 | PASS | PASS |
 | C5-CONTROL | PASS | PASS |
+| LF-FRAME | FAIL | FAIL |
+| LF-CONTROL | PASS | PASS |
 | J1 | PASS | PASS |
 | J2 | FAIL | FAIL |
 | J3 | FAIL | FAIL |
 | J4 | PASS | PASS |
+| J5 | PASS | PASS |
 | J-CONTROL | PASS | PASS |
 
-S5-SH1 and S6 print FAIL on both cores, and J2 and J3 with them; S7, S15 and S16 print NOT GRADED because a precondition prints FAIL (S7-PC-SH1 and S7-PC-SH0; S15-PC-GROUPS and S15-PC-LOM; S16-PC-ACCESS); the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.
+S5-SH1 and S6 print FAIL on both cores, and J2 and J3 with them, and LF-FRAME prints FAIL on both cores (1537 lines measured where p.29 gives 1536); S7, S15 and S16 print NOT GRADED because a precondition prints FAIL (S7-PC-SH1 and S7-PC-SH0; S15-PC-GROUPS and S15-PC-LOM; S16-PC-ACCESS); the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.

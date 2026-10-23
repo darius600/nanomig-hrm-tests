@@ -206,7 +206,7 @@ void prop_B2() {
     g.expect(pc_marker, "B2-PC-MARKER: in the CPU variant the marker of F2 and F3 lies after t_F(i) and before the first plane-1 read of that frame");
     bool pre_all = pre.setup && pre.frame && pc_bpl && pc_move && pc_marker;
     g.assert_line("B2", pre_all, ok_all,
-        "B2: opus:AA-bplxptl.c7 sol:AA-bplxptl.c12: a bit-plane pointer written by the processor or the coprocessor during vertical blank determines where plane 1's fetch begins in the frame that follows (p.15): in both variants the first read in F2 is at A_a / 2 and the first read in F3 is at A_b / 2");
+        "B2: a bit-plane pointer written by the processor or the coprocessor during vertical blank determines where plane 1's fetch begins in the frame that follows (p.15): in both variants the first read in F2 is at A_a / 2 and the first read in F3 is at A_b / 2");
 }
 
 

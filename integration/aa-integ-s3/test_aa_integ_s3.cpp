@@ -46,6 +46,18 @@
 // MUTATION B4-PC-NODMA stimulus red NMH_MUTATE=B4-PC-NODMA: BPLEN is set and the plane pointers point to Z; tg68k: FAIL B4-PC-TAG B4-PC-PIXEL B4-PC-NODMA B4-PC-BEAM; fx68k: FAIL B4-PC-TAG B4-PC-PIXEL B4-PC-NODMA B4-PC-BEAM
 // MUTATION B4-PC-BEAM stimulus red NMH_MUTATE=B4-PC-BEAM: the CPU events target H = 0xE0; tg68k: FAIL B4-PC-BEAM; fx68k: FAIL B4-PC-BEAM
 // MUTATION B4-PC-MOVE stimulus red NMH_MUTATE=B4-PC-MOVE: a Copper event MOVE carries a data word that differs from the intended one; tg68k: FAIL B4-PC-MOVE; fx68k: FAIL B4-PC-MOVE
+// MUTATION B5-32 stimulus red NMH_MUTATE=B5-32: P_1 is filled with zeros in the FMODE = 0x0001 run; B5-32 grades plane 1 alone in this run; tg68k: FAIL B5-32; fx68k: FAIL B5-32
+// MUTATION B5-64 stimulus red NMH_MUTATE=B5-64: P_1 is filled with zeros in the FMODE = 0x0003 run; B5-64 grades plane 1 alone in this run; tg68k: FAIL B5-64; fx68k: FAIL B5-64
+// MUTATION B5-PC-SETUP stimulus red NMH_MUTATE=B5-PC-SETUP: the program variant without the setup-marker store runs; tg68k: FAIL B5-PC-SETUP B5-PC-FRAME B5-PC-BPL-32 B5-PC-BPL-64; fx68k: FAIL B5-PC-SETUP B5-PC-FRAME B5-PC-BPL-32 B5-PC-BPL-64
+// MUTATION B5-PC-FRAME stimulus red NMH_MUTATE=B5-PC-FRAME: COPEN is not set (no fetch at COP1LC); tg68k: FAIL B5-PC-FRAME B5-PC-TAG B5-PC-PIXEL B5-PC-BPL-32 B5-PC-BPL-64; fx68k: FAIL B5-PC-FRAME B5-PC-TAG B5-PC-PIXEL B5-PC-BPL-32 B5-PC-BPL-64
+// MUTATION B5-PC-TAG stimulus red NMH_MUTATE=B5-PC-TAG: the tag block carries no MOVE COLOR00; tg68k: FAIL B5-PC-TAG B5-PC-PIXEL; fx68k: FAIL B5-PC-TAG B5-PC-PIXEL
+// MUTATION B5-PC-PIXEL stimulus red NMH_MUTATE=B5-PC-PIXEL: HTOTAL = 0x00E3 with BEAMCON0 = 0x08A0 (228 colour clocks per line); tg68k: FAIL B5-PC-PIXEL; fx68k: FAIL B5-PC-PIXEL
+// MUTATION B5-PC-BPL-32 stimulus red NMH_MUTATE=B5-PC-BPL-32: BPLEN is clear in the FMODE = 0x0001 run; tg68k: FAIL B5-PC-BPL-32 B5-PC-WORDS-32; fx68k: FAIL B5-PC-BPL-32 B5-PC-WORDS-32
+// MUTATION B5-PC-BPL-64 stimulus red NMH_MUTATE=B5-PC-BPL-64: BPLEN is clear in the FMODE = 0x0003 run; tg68k: FAIL B5-PC-BPL-64 B5-PC-WORDS-64; fx68k: FAIL B5-PC-BPL-64 B5-PC-WORDS-64
+// MUTATION B5-PC-STRIDE-32 stimulus red NMH_MUTATE=B5-PC-STRIDE-32: FMODE = 0x0000 in the 32-pixel run (the reads step by 2 bytes); tg68k: FAIL B5-PC-STRIDE-32; fx68k: FAIL B5-PC-STRIDE-32
+// MUTATION B5-PC-STRIDE-64 stimulus red NMH_MUTATE=B5-PC-STRIDE-64: FMODE = 0x0000 in the 64-pixel run (the reads step by 2 bytes); tg68k: FAIL B5-PC-STRIDE-64; fx68k: FAIL B5-PC-STRIDE-64
+// MUTATION B5-PC-WORDS-32 stimulus red NMH_MUTATE=B5-PC-WORDS-32: DDFSTOP = 0x0040 in the FMODE = 0x0001 run (fewer than 3 reads of P_x per line); tg68k: FAIL B5-PC-WORDS-32; fx68k: FAIL B5-PC-WORDS-32
+// MUTATION B5-PC-WORDS-64 stimulus red NMH_MUTATE=B5-PC-WORDS-64: DDFSTOP = 0x0040 in the FMODE = 0x0003 run (fewer than 3 reads of P_x per line); tg68k: FAIL B5-PC-WORDS-64; fx68k: FAIL B5-PC-WORDS-64
 // MUTATION S1 stimulus red NMH_MUTATE=S1: sprite 4 points to l_5 + 0x0100 and its list lies there; tg68k: FAIL S1; fx68k: FAIL S1
 // MUTATION S1-PC-SETUP stimulus red NMH_MUTATE=S1-PC-SETUP: the program variant without the setup-marker store runs; tg68k: FAIL S1-PC-SETUP S1-PC-FRAME S1-PC-MOVE S1-PC-SPR; fx68k: FAIL S1-PC-SETUP S1-PC-FRAME S1-PC-MOVE S1-PC-SPR
 // MUTATION S1-PC-FRAME stimulus red NMH_MUTATE=S1-PC-FRAME: COPEN is not set (no fetch at COP1LC); tg68k: FAIL S1-PC-FRAME S1-PC-MOVE S1-PC-SPR; fx68k: FAIL S1-PC-FRAME S1-PC-MOVE S1-PC-SPR
@@ -208,11 +220,17 @@
 // MUTATION C5-PC-STATIC stimulus red NMH_MUTATE=C5-PC-STATIC: the program writes CLXCON; tg68k: FAIL C5-PC-STATIC; fx68k: FAIL C5-PC-STATIC
 // MUTATION C5-PC-SPR stimulus red NMH_MUTATE=C5-PC-SPR: SPREN is clear; tg68k: FAIL C5-PC-SPR C5-PC-WINDOW; fx68k: FAIL C5-PC-SPR C5-PC-WINDOW
 // MUTATION C5-PC-WINDOW stimulus red NMH_MUTATE=C5-PC-WINDOW: the result read is at line 0x68; tg68k: FAIL C5-PC-WINDOW; fx68k: FAIL C5-PC-WINDOW
+// MUTATION LF-FRAME stimulus red NMH_MUTATE=LF-FRAME: VTOTAL = 0x04FF in the run, so the comparator expects VTOTAL + 1 = 1280 lines; the line prints FAIL in the normal run as well (1537 lines measured with VTOTAL = 0x05FF, 1281 with VTOTAL = 0x04FF, on both cores): no input reaches a green LF-FRAME, and the field-length measure is live on LF-CONTROL; tg68k: FAIL LF-FRAME; fx68k: FAIL LF-FRAME
+// MUTATION LF-CONTROL stimulus red NMH_MUTATE=LF-CONTROL: the second run uses VTOTAL = 0x05FF in place of 0x04FF, so the two field lengths do not differ by 256; tg68k: FAIL LF-FRAME LF-CONTROL (LF-FRAME prints FAIL in the normal run as well); fx68k: FAIL LF-FRAME LF-CONTROL (LF-FRAME prints FAIL in the normal run as well)
+// MUTATION LF-PC-SETUP stimulus red NMH_MUTATE=LF-PC-SETUP: the program variant without the setup-marker store runs; tg68k: FAIL LF-PC-SETUP LF-PC-FRAME (LF-FRAME NOT GRADED); fx68k: FAIL LF-PC-SETUP LF-PC-FRAME (LF-FRAME NOT GRADED)
+// MUTATION LF-PC-FRAME stimulus red NMH_MUTATE=LF-PC-FRAME: COPEN is not set (no fetch at COP1LC); tg68k: FAIL LF-PC-FRAME LF-PC-TAG (LF-FRAME NOT GRADED); fx68k: FAIL LF-PC-FRAME LF-PC-TAG (LF-FRAME NOT GRADED)
+// MUTATION LF-PC-TAG stimulus red NMH_MUTATE=LF-PC-TAG: the tag block carries no MOVE COLOR00; tg68k: FAIL LF-PC-TAG (LF-FRAME NOT GRADED); fx68k: FAIL LF-PC-TAG (LF-FRAME NOT GRADED)
 // MUTATION S15-PC-LOM none impossible NMH_MUTATE=-: already red at baseline, no stimulus can reach it: the line prints FAIL in every run because the port shows no access in region U (S15-PC-GROUPS prints FAIL), so no stimulus change of S15 reaches a group whose line offset could be measured; its comparator is live on S15-CONTROL-LOM, which runs it on the region of P_1 that bit-plane DMA reaches
 // MUTATION J1 none impossible NMH_MUTATE=-: not exercised, by a scope decision: J1 adds no stimulus (SPECIFICATION.md section 3) and is the conjunction of the verdicts of S5-SH10-SH3 and S8; the conjunction is shown live in both directions by J2 and J3 (FAIL through S5-SH1 and S6) and J-CONTROL (PASS), and the contrasting cases of the parts are the records of S5-SH10-SH3 and S8.
 // MUTATION J2 none impossible NMH_MUTATE=-: not exercised, by a scope decision: J2 adds no stimulus and is the conjunction of the verdicts of S5, S5-SH1 and S6; S5-SH1 and S6 print FAIL in the normal run on both cores; see J1 for the comparator.
 // MUTATION J3 none impossible NMH_MUTATE=-: not exercised, by a scope decision: J3 adds no stimulus and is the conjunction of the verdicts of S5, S5-SH1, S6, S8, S9, S10 and S12; S5-SH1 and S6 print FAIL in the normal run on both cores; see J1 for the comparator.
 // MUTATION J4 none impossible NMH_MUTATE=-: not exercised, by a scope decision: J4 adds no stimulus and is the conjunction of the verdicts of S1 and S14-B, both PASS in the normal run on both cores; see J1 for the comparator.
+// MUTATION J5 none impossible NMH_MUTATE=-: not exercised, by a scope decision: J5 adds no stimulus and is the conjunction of the verdicts of B3, B5-32 and B5-64, all PASS in the normal run on both cores; see J1 for the comparator, and the contrasting cases of the parts are the records of B3, B5-32 and B5-64.
 // MUTATION J-CONTROL none impossible NMH_MUTATE=-: not exercised, by a scope decision: J-CONTROL is the conjunction of the verdicts of S1-S4, all PASS on both cores; the contrasting cases of its parts are the records of S1, S2, S3 and S4, and J1-J4 show the same conjunction printing FAIL.
 // MUTATION_RECORDS_END
 
@@ -223,6 +241,7 @@
 #include "s3_props_j.h"
 #include "s3_props_b.h"
 #include "s3_props_b34.h"
+#include "s3_props_b5.h"
 #include "s3_props_s12.h"
 #include "s3_props_s34.h"
 #include "s3_props_s567.h"
@@ -231,6 +250,8 @@
 #include "s3_props_s121314.h"
 #include "s3_props_s1516.h"
 #include "s3_props_c.h"
+#include "s3_props_lf.h"
+#include "s3_withdrawn.h"
 
 using namespace s3;
 
@@ -246,6 +267,7 @@ int main(int argc, char** argv) {
     prop_B2();
     prop_B3();
     prop_B4();
+    prop_B5();
     prop_S1();
     prop_S2();
     prop_S3();
@@ -267,7 +289,9 @@ int main(int argc, char** argv) {
     prop_C3();
     prop_C4();
     prop_C5();
+    prop_LF();
     joint_assertions();
+    if (!g_mutate && !std::getenv("NMH_ONLY")) record_withdrawn();
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;

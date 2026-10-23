@@ -60,8 +60,11 @@ inline void joint_assertions() {
         v5 + "; " + v5s1 + "; " + v6 + "; " + v8 + "; " + v9 + "; " + v10 + "; " + v12);
     g.expect(part_ok("S1") && part_ok("S14-B"),
         "J4: opus:AA-sprxptl.c6: the pointer pair contains the 20 bit address of sprite x's DMA data (p.28); it passes only if S1 (the 20-bit address each pair holds) and S14-B (the list read through pointer x belongs to sprite x) pass; parts: " + v1 + "; " + v14b);
+    g.expect(part_ok("B3") && part_ok("B5-32") && part_ok("B5-64"),
+        "J5: opus:AA-bplxdat.c10 sol:AA-bplxdat.c26: a bit-plane word is 16/32/64 pixels and its MSB is output first (p.15); it passes only if B3 (16-pixel words, FMODE = 0), B5-32 (32-pixel words, FMODE = 0x0001) and B5-64 (64-pixel words, FMODE = 0x0003) pass; parts: " +
+        vs("B3") + "; " + vs("B5-32") + "; " + vs("B5-64"));
     g.expect(part_ok("S1") && part_ok("S2") && part_ok("S3") && part_ok("S4"),
-        "J-CONTROL: the comparator of J1-J4 (every named part passed on the graded build) applied to the parts S1, S2, S3 and S4, which are graded and green: " + v1 + "; " + v2 + "; " + v3 + "; " + v4);
+        "J-CONTROL: the comparator of J1-J4 (every named part passed on this core) applied to the parts S1, S2, S3 and S4, which are graded and green: " + v1 + "; " + v2 + "; " + v3 + "; " + v4);
 }
 
 }  // namespace s3

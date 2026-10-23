@@ -159,7 +159,7 @@ inline void prop_S2() {
     g.expect(pc_move, "S2-PC-MOVE: in the Copper variant the SPR0PTH and SPR0PTL data words of F2 and F3 are fetched after t_F(i), before the first list read of that frame, and carry list A (F2) and list B (F3)");
     g.expect(pc_marker, "S2-PC-MARKER: in the CPU variant the marker of F2 and F3 lies after t_F(i) and before the first list read of that frame");
     g.assert_line("S2", pre.setup && pre.frame && pc_spr && pc_move && pc_marker, ok_all,
-        "S2: opus:AA-sprxptl.c7: a sprite pointer written by the processor or the coprocessor during vertical blank determines where sprite 0's list is read in the following frame (p.28): in both variants the first read in F2 is at list A's word 0 and the first read in F3 is at list B's word 0");
+        "S2: a sprite pointer written by the processor or the coprocessor during vertical blank determines where sprite 0's list is read in the following frame (p.28): in both variants the first read in F2 is at list A's word 0 and the first read in F3 is at list B's word 0");
 }
 
 }  // namespace s3

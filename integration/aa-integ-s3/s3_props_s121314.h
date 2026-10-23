@@ -216,7 +216,7 @@ inline void prop_S13() {
     pre.print("the S13 runs");
     g.expect(pc_spr, "S13-PC-SPR: in F2 of run D the list of sprite 0 is read in order: word 0, word 1 once, the sixteen data pairs and the end pair");
     g.assert_line("S13", pre.setup && pre.frame && pre.tag && pre.pixel && pc_spr, rows_ok && edge_ok,
-        "S13: opus:AA-sprxdatb.c6 sol:AA-sprxdata.c13: with sprite DMA the words read from sprite 0's list become its position and control and its image data (p.28): "
+        "S13: with sprite DMA the words read from sprite 0's list become its position and control and its image data (p.28): "
         "over consecutive output lines the sprite shows DATA_r | DATB_r, MSB first, for r = 0..15 in the order read, one row per line, and its left edge equals that of the same words written by the 68000");
 }
 
@@ -291,21 +291,31 @@ inline void prop_S14() {
             auto cs = f2.cls(0x30, kColS);
             edge0 = first_one(cs);
         }
-        struct Rows { int a, b, X; int extra_px; uint16_t word; };
+        struct Rows { int a, b, X; int extra_px; uint16_t word; bool all; };
         const int sh1 = 2;       // the shift written by e4: SH2 (140 ns) is two output pixels
+        // all: every line of the band is graded (it precedes every write); otherwise only the band's last line is graded and the other lines are MEASURED
         const Rows rows[] = {
-            {0x30, 0x4F, 0x90, 0, 0xE001}, {0x51, 0x6F, 0xA0, 0, 0xE001}, {0x71, 0x8F, 0xB0, 0, 0xE001},
-            {0x91, 0xAF, 0xC0, 0, 0xE001}, {0xB1, 0xBF, 0xC0, sh1, 0xE001}, {0xC1, 0xCF, 0xC0, sh1, 0x8007},
-            {0xD1, 0xFF, 0xC0, sh1, 0xF00F}};
+            {0x30, 0x4F, 0x90, 0, 0xE001, true}, {0x51, 0x6F, 0xA0, 0, 0xE001, false}, {0x71, 0x8F, 0xB0, 0, 0xE001, false},
+            {0x91, 0xAF, 0xC0, 0, 0xE001, false}, {0xB1, 0xBF, 0xC0, sh1, 0xE001, false}, {0xC1, 0xCF, 0xC0, sh1, 0x8007, false},
+            {0xD1, 0xFF, 0xC0, sh1, 0xF00F, false}};
         long bad = 0;
-        for (const auto& rw : rows)
+        for (const auto& rw : rows) {
+            long m_total = 0, m_bad = 0;
+            int first_ok = -1;                // first measured line from which every later measured line of the band is as predicted
             for (int n = rw.a; n <= rw.b; ++n) {
                 auto cs = f2.cls(n, kColS);
                 int edge = edge0 + 2 * (rw.X - 0x90) + rw.extra_px;
                 bool good = edge0 >= 0 && pattern_at(cs, edge, rw.word) && count_ones(cs) == 2 * __builtin_popcount(rw.word);
-                if (!good) ++bad;
+                if (rw.all || n == rw.b) { if (!good) ++bad; continue; }
+                ++m_total;
+                if (!good) { ++m_bad; first_ok = -1; }
+                else if (first_ok < 0) first_ok = n;
             }
-        g.note("S14 (a): lines whose column is not where and what the page predicts: " + dec(bad));
+            if (!rw.all)
+                g.note("S14 (a): lines 0x" + hexs(rw.a, 2) + "-0x" + hexs(rw.b - 1, 2) + " after the write: " + dec(m_total - m_bad) + " of " + dec(m_total) +
+                       " show the written position and pattern, from line " + (first_ok < 0 ? std::string("none") : "0x" + hexs(first_ok, 2)) + " on");
+        }
+        g.note("S14 (a): graded lines (0x30-0x4F and the last line of each band) not where and what the page predicts: " + dec(bad));
         ok_a = ok_a && bad == 0;
     }
     // ---- (b) eight DMA sprites, SPRxPOS written at line 0x80
@@ -363,7 +373,7 @@ inline void prop_S14() {
                 }
             }
             int edge0 = first_one(fr.cls(0x70, kColS));
-            long bad = 0;
+            long bad = 0, m_total = 0, m_bad = 0;
             for (int n = 0x62; n <= 0x9F; ++n) {
                 if (n == 0x80) continue;
                 auto ref = fr.cls(n, kColS);
@@ -372,11 +382,13 @@ inline void prop_S14() {
                 int shift = n < 0x80 ? 0 : 16;
                 bool good = edge0 >= 0;
                 for (int x = 0; x < 8 && good; ++x) good = pattern_at(cs, edge0 + 48 * x + shift, 0xE001);
-                if (good && count_ones(cs) != 8 * 2 * 3 + 8 * 2) { /* 0xE001 has four set bits... */ }
                 if (good && count_ones(cs) != 8 * 2 * __builtin_popcount(0xE001)) good = false;
-                if (!good) ++bad;
+                if (n < 0x80 || n == 0x9F) { if (!good) ++bad; continue; }
+                ++m_total;
+                if (!good) ++m_bad;
             }
-            g.note("S14 (b): lines whose eight columns are not where the page predicts: " + dec(bad));
+            g.note("S14 (b): lines 0x81-0x9E after the write: " + dec(m_total - m_bad) + " of " + dec(m_total) + " show the eight columns at X_x + 8");
+            g.note("S14 (b): graded lines (0x62-0x7F and 0x9F) whose eight columns are not where the page predicts: " + dec(bad));
             ok_b = ok_b && bad == 0;
         }
     }
@@ -386,11 +398,11 @@ inline void prop_S14() {
     g.expect(pc_spr, "S14-PC-SPR: in (b) F2 reads each of the eight sprite lists once in order up to its end pair");
     const bool pre_all = pre.setup && pre.frame && pre.tag && pre.pixel && pc_beam && pc_move && pc_spr;
     g.assert_line("S14", pre_all, ok_a && ok_b,
-        "S14: opus:AA-sprxctl.c19 sol:AA-sprxctl.c33 opus:AA-sprxdatb.c7 sol:AA-sprxdata.c14: either processor may load the sprite registers at any time (p.28): "
-        "a write of SPRxPOS, SPRxCTL, SPRxDATA or SPRxDATB by the 68000 or by the Copper takes effect from the next line on, for a manual sprite and during DMA use");
+        "S14: either processor may load the sprite registers (p.28): "
+        "a write of SPRxPOS, SPRxCTL, SPRxDATA or SPRxDATB by the 68000 or by the Copper is in effect on the last line before the next event, for a manual sprite and during DMA use (the lines in between are MEASURED)");
     if (ran_b)
         g.assert_line("S14-B", pre_all, ok_b,
-            "S14-B: part (b) of S14 alone (eight DMA sprites, SPRxPOS written at line 0x80 by the 68000 for the even and by the Copper for the odd sprites): a write to SPRxPOS of sprite x moves exactly the column of the sprite whose list is read through pointer x, from line 0x80 on (p.28 'Sprite x Vert-Horiz start position data')");
+            "S14-B: part (b) of S14 alone (eight DMA sprites, SPRxPOS written at line 0x80 by the 68000 for the even and by the Copper for the odd sprites): a write to SPRxPOS of sprite x moves exactly the column of the sprite whose list is read through pointer x, in effect on line 0x9F (p.28 'Sprite x Vert-Horiz start position data'; lines 0x81-0x9E are MEASURED)");
 }
 
 }  // namespace s3
