@@ -13,7 +13,7 @@ Conventions of this document:
 
 ## 1. Claims that give no proposition
 
-Each claim below is declined: no assertion carries its id. Where a proposition checks part of what a claim states, the row names that part; the id is still declined whole, because no assertion grades all of it. The reason is given; a test must not grade what these claims state.
+Each claim below is declined: no assertion carries its id. Where a proposition checks part of what a claim states, the row names that part; the id is still declined whole, because no assertion grades all of it. The reason is given, and the executable prints it on a `RECORDED:` line for each id; a test must not grade what these claims state.
 
 | Claims | Reason |
 |---|---|
@@ -24,7 +24,10 @@ Each claim below is declined: no assertion carries its id. Where a proposition c
 | opus:AA-clxcon2.c13; sol:AA-clxcon2.c18 (the line `**k**XRESET BY ECSENA*****` after CLXCON2's table) | The printed page does not carry this line. The scan (`bands\p18_band3.png`) ends with the row "01 MVBP8 Match value for Bit Plane 8 collision" and the frame of the box; nothing follows. The claim itself records that the line comes from one OCR reading only. Even read as "RESET BY ECSENA" it does not say which bits it governs, and the pages that list what ECSENA controls (p.4, p.17) name only five BPLCON3 bits: "BRDRBLNK,BRDNTRAN,ZDCLKEN,BRDSPRT, and EXTBLKEN" (p.17). No expected value. |
 | opus:AA-sprxdatb.c12; sol:AA-sprxdata.c19 (the sentence "In lowres mode," continues on p.29) | These records state only that a sentence breaks across a page. Its continuation (p.29, "1 sprite pixel is 1 bitplane pixel wide. In HRES and SHRES mode, 1 sprite pixel is 2 bitplane pixels.") is not a claim of this package. |
 | sol:AA-bplxpth.c11 (misprint `x=1,2,3,45,6,7,8`) | A record of a misprint (confirmed on the scan, `bands\p15_band2.png`). It changes nothing a test can see: the entry prints eight addresses and BPLxPTL prints "x=1,2,3,4,5,6,7,8". The addresses are used in B1. |
-| opus:AA-bplxdat.c10; sol:AA-bplxdat.c26 (a bit-plane word is "16/32/64 pixels") | B3 checks the 16-pixel word (FMODE = 0) only. The 32- and 64-pixel words cannot be given an expected value that a test can see: the pages give the fetch increment per FMODE setting (p.23) but not how many fetch cycles a line takes in the wide modes, nor how a 32- or 64-bit fetch appears at a Chip-memory port that reports word addresses. On the display, a 32-pixel word shown in memory order is indistinguishable from two 16-pixel words. |
+| opus:AA-bplxptl.c7; sol:AA-bplxptl.c12 (BPLxPTL "must be reinitalized by the processor or coprocessor to point to the beginning of Bit Plane data every vertical blank time") | p.15 states an obligation for every plane and every vertical blank. B2 performs two writes of plane 1's pointer (one in each of two vertical blanks) and grades their address effect. That establishes neither the universal programming obligation nor a consequence of omitting a vertical-blank re-initialisation, and it covers plane 1 only. B2 remains as a check of the pointer effect and carries no claim id. |
+| opus:AA-sprxptl.c7 (the sprite pointer registers "must be initialized by the processor or coprocessor every vertical blank time") | p.28 states an obligation for every sprite and every vertical blank. S2 performs writes in two vertical blanks and grades the address effect for sprite 0. That establishes neither the universal obligation nor a consequence of omitting an initialisation. S2 remains as a check of the pointer effect and carries no claim id. |
+| opus:AA-sprxdatb.c6; sol:AA-sprxdata.c13 (the image data registers "are usually loaded by the Sprite DMA channel") | One DMA load of sprite 0 shows that the load is possible and that data flow, not "usually": the page defines no population or threshold for it. S13 remains as a mechanism check and carries no claim id. |
+| opus:AA-sprxctl.c19; sol:AA-sprxctl.c33; opus:AA-sprxdatb.c7; sol:AA-sprxdata.c14 (either processor may load the registers "any time", "at any time") | S14 samples a finite set of line-start, mid-line and vertical-blank writes by both processors; it does not establish every instant. The latency "takes effect from the next line on" is not stated by the page. S14 grades the value in effect on the last line before the next event, and the sampled behaviour from the next line on is MEASURED. S14 and S14-B carry no claim id. |
 | opus:AA-sprxctl.c18; sol:AA-sprxctl.c32 (POS and CTL "are usually loaded by the Sprite DMA channel, during horizontal blank") | S13 checks the loading by the Sprite DMA channel only. "Usually ... during horizontal blank" grades nothing ("usually" admits exceptions), and the chip's horizontal blanking interval is not visible: the video output passes a line doubler, and the pages give no fixed horizontal-blank position for the default beam. |
 | opus:AA-sprhstop.c9 (SPRHWRM "(ECS and later chips only)") | S16 checks the positive part only: SPRHWRM acts with ECS and with AA behaviour. The "only" cannot be checked: with OCS behaviour there are no UHRES pointers at all (p.16, UHRES "(hires chips only)"), so there is no UHRES cycle whose direction could be seen. |
 | opus:AA-sprhstop.c8 (SPRHWRM swaps ARW* "so that external devices can detect the RGA and put things into memory") | S16 checks the swapped ARW* polarity only; sol:AA-sprhstop.c22 states that part alone and is graded by S16. The register address bus (RGA) and the SPRHDAT identifier on it are not visible to a test. |
@@ -227,7 +230,7 @@ p.19 also says: "NOTE: Playfield 1 is all odd numbered enabled bit planes. Playf
 
 | Id | Precondition asserted before grading | Stimulus change that makes it fail |
 |---|---|---|
-| PC-FRAME | t_F(i) exists for every frame used. Consecutive t_F are equally spaced (within P/8). In the LF configuration the field also lasts at least as many lines as the longest list of the proposition needs: 0x249 lines for S8 and S9 (the stop line 0x248 of the k = 9 list lies inside the field), 0x449 lines for S15 (k = 10). The length of the field is a MEASURED line, printed against p.29 ("so there's this many + 1 in a field": 1536 lines for VTOTAL = `0x05FF`, LACE clear); it is not a precondition. | Omit setting COPEN: no fetch at COP1LC. In LF, omit VARBEAMEN: the field is a normal PAL field, shorter than the least length. |
+| PC-FRAME | t_F(i) exists for every frame used. Consecutive t_F are equally spaced (within P/8). In the LF configuration the field also lasts at least as many lines as the longest list of the proposition needs: 0x249 lines for S8 and S9 (the stop line 0x248 of the k = 9 list lies inside the field), 0x449 lines for S15 (k = 10). The exact length of the field is graded by the proposition LF; it is not a precondition of any other proposition. | Omit setting COPEN: no fetch at COP1LC. In LF, omit VARBEAMEN: the field is a normal PAL field, shorter than the least length. |
 | PC-TAG | In every graded frame, t_tag(n) exists for n = 0x2C..0xFF with equal spacing P (within P/32). The output shows tag(n) for each n in increasing order. | Remove the MOVE COLOR00 instructions from the tag block: no tags. |
 | PC-BPL(set) | In the graded frame, the port shows reads in the region of every plane in the set on every graded line, and no reads in the regions of planes outside it. | Clear BPLEN: no reads. |
 | PC-SPR(x) | In the graded frame, list x is read in order: word 0, word 1 once, then its data pairs, then the end pair. | Clear SPREN: no reads. |
@@ -241,7 +244,7 @@ p.19 also says: "NOTE: Playfield 1 is all odd numbered enabled bit planes. Playf
 
 ## 3. Propositions
 
-There are 25 propositions: B1-B4 (bit planes), S1-S16 (sprites), C1-C5 (collision control). For each one, "Claims" lists every claim it rests on. Four joint assertions J1-J4 follow them: each carries claims that no single proposition grades whole, and passes only if every proposition grading a part of them passes.
+There are 27 propositions: B1-B5 (bit planes), S1-S16 (sprites), C1-C5 (collision control) and LF (field length). For each one, "Claims" lists every claim it rests on. Five joint assertions J1-J5 follow them: each carries claims that no single proposition grades whole, and passes only if every proposition grading a part of them passes.
 
 ### B1. Bit-plane pointers: addresses, and the address they hold
 
@@ -286,9 +289,9 @@ For the preconditions: clear BPLEN (PC-BPL fails; in the BPU = 3 run, PC-BPLN fa
 
 ### B2. Bit-plane pointer re-initialisation in vertical blank
 
-**Claims (p.15):** opus:AA-bplxptl.c7, sol:AA-bplxptl.c12.
+**Claims (p.15):** none. opus:AA-bplxptl.c7 and sol:AA-bplxptl.c12 are declined (section 1); B2 checks the pointer effect of the writes without carrying them.
 
-**Proposition.** A bit-plane pointer written by the processor or by the coprocessor during vertical blank determines where that plane's fetch begins in the frame that follows. The page requires this write in every vertical blank.
+**Proposition.** A bit-plane pointer written by the processor or by the coprocessor during vertical blank determines where that plane's fetch begins in the frame that follows.
 
 **Stimulus.** D-STD, BPU = 1, DMACON = `0x8380`. A_a = `0x090000`, A_b = `0x0A8000`. Two variants:
 
@@ -323,7 +326,7 @@ For the preconditions: CPU variant with the write delayed to line 0x80 (by beam 
 
 ### B3. Bit-plane data registers receive the DMA data, 16-pixel words, MSB first
 
-**Claims (p.15; the sentence ends on p.16):** opus:AA-bplxdat.c4, c6, c11; sol:AA-bplxdat.c21, c22, c27. The claims that a word is "16/32/64 pixels" are declined (section 1); B3 checks the 16-pixel word without carrying them.
+**Claims (p.15; the sentence ends on p.16):** opus:AA-bplxdat.c4, c6, c11; sol:AA-bplxdat.c21, c22, c27. The clause "16/32/64 pixels" of opus:AA-bplxdat.c10 and sol:AA-bplxdat.c26 is carried by the joint assertion J5; B3 is its 16-pixel part (FMODE = 0), B5 its 32- and 64-pixel parts.
 
 **Proposition.** For each plane x = 1..8, the words that plane x's pointer fetches reach the display as 16-pixel words (FMODE = 0), most significant bit first, that is, leftmost.
 
@@ -407,6 +410,48 @@ For the preconditions: set BPLEN (reads appear); PC-BEAM with target H = 0xE0 (t
 
 ---
 
+### B5. Bit-plane words of 32 and 64 pixels
+
+**Claims (p.15):** none directly. The clause "(16/32/64 pixels)" of opus:AA-bplxdat.c10 and sol:AA-bplxdat.c26 is carried by the joint assertion J5, whose parts are B3 (16 pixels), B5-32 and B5-64.
+
+**Proposition.** For each plane x = 1..8:
+
+- **B5-32.** With FMODE = `0x0001` (p.23: BPAGEM = 0, BPL32 = 1, "by 4 bytes", "normal CAS", bus width 32) the fetch of plane x advances by 4 bytes, and the 4 bytes fetched reach the display as one 32-pixel word, MSB first. The word at the lower address holds the more significant half, so a fetch at byte address A shows the words at A and A+2 in this order, leftmost first.
+- **B5-64.** With FMODE = `0x0003` (p.23: BPAGEM = 1, BPL32 = 1, "by 8 bytes", "double CAS", bus width 32) the fetch of plane x advances by 8 bytes, and the 8 bytes fetched reach the display as one 64-pixel word, MSB first: a fetch at byte address A shows the words at A, A+2, A+4 and A+6 in this order, leftmost first.
+
+The order of the words within a fetch is the byte order of the 68000, whose long word keeps its high-order word at the lower address; p.15 says the MSB is output first.
+
+**Stimulus.**
+
+- D-STD with BPU = 8, PAL-ON, DMACON = `0x8380`, and FMODE written in the setup with the value above. DDFSTRT and DDFSTOP are those of D-STD: the pages give no other fetch window for the wide modes, so the number of fetches per line is measured, not specified.
+- One run per plane x and per FMODE value. Plane x points to P_x, filled with `W(i) = 0x8000 | ((i & 0x3FFF) << 1)` for word index i = 0, 1, 2, ... as in B3: every word is unique, so the words at A, A+2, A+4 and A+6 are four distinct values and the display shows which memory word came where.
+- All other planes point to Z.
+- The harness supplies the three words that follow the primary read address through its `chip48` path, wrapping inside the aligned 16-byte block; the Chip-memory port reports the primary address only (`nanomig_harness.h`).
+
+**Observation.** In F2, for each chip line n = 0x30..0xFF: R_n = the reads in P_x on line n (word addresses, in time order), and the output of line n.
+
+**Expected.** Let g = 2 words per fetch (FMODE = `0x0001`) or 4 words per fetch (FMODE = `0x0003`). On every such line, with i the word index of a read in R_n, the cON/not-cON sequence of the line contains, as one contiguous run, the bits of the words W(i), W(i+1), ..., W(i+g-1) of every read of R_n except its first and last, in read order, each word from bit 15 down to bit 0, and each bit occupying exactly 2 output pixels.
+
+Page quotes:
+
+- "... for that word (16/32/64 pixels). The MSB is output first, and" (p.15).
+- p.23's table: "0 1 by 4 bytes normal CAS 32" and "1 1 by 8 bytes double CAS 32" (BPAGEM, BPL32, "Bitplane Fetch Increment", "Memory Cycle", "Bus Width").
+
+Quantifier: every graded line of every plane. The first and last fetch of a line may be cut by the window edge, and the pages say nothing about that edge, so they are not graded.
+
+**Preconditions.** PC-SETUP, PC-FRAME, PC-TAG, PC-PIXEL, PC-BPL({1..8}) as in B3, and:
+
+- B5-PC-STRIDE: on every graded line the reads of P_x lie at byte offsets from P_x that are multiples of the fetch increment (4 resp. 8 bytes), and consecutive reads differ by exactly that increment (p.23, "Bitplane Fetch Increment": the pointer starts at P_x and advances by the increment per fetch).
+- B5-PC-WORDS: at least 3 reads of P_x on every graded line.
+
+**Contrasting case.** Fill P_x with zeros: no cON pixel appears, and the expected run is absent.
+
+For the preconditions: clear BPLEN (PC-BPL fails); FMODE = 0 in both runs (the reads step by 2 bytes: PC-STRIDE fails); remove the tag MOVEs (PC-TAG fails).
+
+**Reference frame.** Chip lines by line anchor; output lines by tag.
+
+---
+
 ### S1. Sprite pointers: addresses, and the address they hold
 
 **Claims (p.28):** opus:AA-sprxpth.c1, c2, c4; sol:AA-sprxpth.c1, c2, c12; opus:AA-sprxptl.c1, c2, c4; sol:AA-sprxptl.c1, c2, c12. S1 is also a part of the joint assertion J4 (opus:AA-sprxptl.c6), which carries that id.
@@ -441,9 +486,9 @@ For the preconditions: clear SPREN (PC-SPR fails).
 
 ### S2. Sprite pointer initialisation in vertical blank
 
-**Claims (p.28):** opus:AA-sprxptl.c7.
+**Claims (p.28):** none. opus:AA-sprxptl.c7 is declined (section 1); S2 checks the pointer effect of the writes without carrying it.
 
-**Proposition.** A sprite pointer written by the processor or the coprocessor during vertical blank determines where sprite x's list is read in the following frame. The page requires the write in every vertical blank.
+**Proposition.** A sprite pointer written by the processor or the coprocessor during vertical blank determines where sprite x's list is read in the following frame.
 
 **Stimulus.** As B2, for sprite 0 (D-STD, BPU = 1, PAL-SPR, DMACON = `0x83A0`):
 
@@ -906,7 +951,7 @@ For the preconditions: clear SPREN.
 
 ### S13. The sprite DMA channel loads POS, CTL, DATA and DATB
 
-**Claims (p.28):** opus:AA-sprxdatb.c6; sol:AA-sprxdata.c13. The POS/CTL part carries no claim id: the claims that state it also place the load "during horizontal blank" and are declined (section 1).
+**Claims (p.28):** none. opus:AA-sprxdatb.c6 and sol:AA-sprxdata.c13 are declined (section 1), as are the claims that place the POS/CTL load "during horizontal blank". S13 remains as a mechanism check.
 
 **Proposition.** With sprite DMA, the words read from sprite x's list become its position and control (POS, CTL) and its image data (DATA, DATB).
 
@@ -941,9 +986,9 @@ For the preconditions: clear SPREN (no reads, no image).
 
 ### S14. Either processor may load the sprite registers at any time
 
-**Claims (p.28):** opus:AA-sprxctl.c19; sol:AA-sprxctl.c33; opus:AA-sprxdatb.c7; sol:AA-sprxdata.c14.
+**Claims (p.28):** none. opus:AA-sprxctl.c19, sol:AA-sprxctl.c33, opus:AA-sprxdatb.c7 and sol:AA-sprxdata.c14 are declined (section 1).
 
-**Proposition.** The 68000 and the Copper can each write SPRxPOS, SPRxCTL, SPRxDATA and SPRxDATB at any time. The write takes effect from the next line on, both for a manual sprite and during DMA use.
+**Proposition.** The 68000 and the Copper can each write SPRxPOS, SPRxCTL, SPRxDATA and SPRxDATB, and the write takes effect, both for a manual sprite and during DMA use. From which line on it takes effect is MEASURED: the page states no latency.
 
 **Stimulus.**
 
@@ -962,34 +1007,34 @@ For the preconditions: clear SPREN (no reads, no image).
 
 **Observation.** Outputs in F2.
 
-**Expected (a).** The column shows:
+**Expected (a).** The column shows, on the graded lines:
 
-| Lines | Position | Pattern |
+| Graded lines | Position | Pattern |
 |---|---|---|
 | 0x30-0x4F | X = 0x90 | 0xE001 |
-| 0x51-0x6F | X = 0xA0 | 0xE001 |
-| 0x71-0x8F | X = 0xB0 | 0xE001 |
-| 0x91-0xAF | X = 0xC0 | 0xE001 |
-| 0xB1-0xBF | two output pixels right of 0x91-0xAF | 0xE001 |
-| 0xC1-0xCF | same position | 0x8007 |
-| 0xD1-0xFF | same position | 0xF00F |
+| 0x6F | X = 0xA0 | 0xE001 |
+| 0x8F | X = 0xB0 | 0xE001 |
+| 0xAF | X = 0xC0 | 0xE001 |
+| 0xBF | two output pixels right of 0xAF | 0xE001 |
+| 0xCF | same position | 0x8007 |
+| 0xFF | same position | 0xF00F |
 
-The event lines themselves are left open.
+Lines 0x30-0x4F precede every write. Each other graded line is the last line before the next event: the new value is in effect there. The event lines themselves, and the lines between an event line and the graded line of its band (0x51-0x6E, 0x71-0x8E, 0x91-0xAE, 0xB1-0xBE, 0xC1-0xCE, 0xD1-0xFE), are not graded: for those lines the build MEASURES how many show the new position and pattern, and from which line on.
 
-**Expected (b).** Column x is at X_x on the lines up to 0x7F where the reference shows it, and at X_x + 8 (16 output pixels right) on lines 0x81-0x9F. Only column x moves when SPRxPOS is written, which ties list x (S1) to register set x.
+**Expected (b).** Column x is at X_x on the lines up to 0x7F where the reference shows it, and at X_x + 8 (16 output pixels right) on line 0x9F. Only column x moves when SPRxPOS is written, which ties list x (S1) to register set x. Lines 0x81-0x9E are MEASURED, not graded.
 
-**Graded lines.** S14 (a and b together, carrying the claim ids) and S14-B (part (b) alone, no claim id; it is the part of J4). The effect of SPRxCTL bit 4 (SH1) is not part of S14: e4 writes the SH2 bit, whose effect S5 establishes, and SH1 is graded by S5-SH1.
+**Graded lines.** S14 (a and b together, no claim id) and S14-B (part (b) alone, no claim id; it is the part of J4). The effect of SPRxCTL bit 4 (SH1) is not part of S14: e4 writes the SH2 bit, whose effect S5 establishes, and SH1 is graded by S5-SH1.
 
 Page:
 
 - "however they may be loaded by either processor any time" (POS, CTL).
 - "but may be loaded by either processor at any time" (DATA, DATB).
 
-Quantifier "any time": sampled at line start, in mid-line, in vertical blank, by both processors, with and without DMA. That does not establish every instant.
+Quantifier "any time": sampled at line start, in mid-line, in vertical blank, by both processors, with and without DMA. That does not establish every instant, and the ids that state it are declined (section 1).
 
 **Preconditions.** PC-FRAME, PC-TAG, PC-BEAM, PC-MOVE; PC-SPR(x) in (b).
 
-**Contrasting case.** Omit e3: lines 0x91-0xAF stay at X = 0xB0. Write SPR0CTL = `0x0000` at e4: lines 0xB1-0xFF stay at the position of 0x91-0xAF. Omit the line-0x80 write for x = 3: column 3 stays at X_3.
+**Contrasting case.** Omit e3: line 0xAF stays at X = 0xB0. Write SPR0CTL = `0x0000` at e4: lines 0xBF, 0xCF and 0xFF stay at the position of 0xAF. Omit the line-0x80 write for x = 3: column 3 stays at X_3 on line 0x9F.
 
 For the preconditions: the PC-BEAM change; clear SPREN in (b).
 
@@ -1320,7 +1365,31 @@ For the preconditions: add a CLXCON write (the static check fails).
 
 ---
 
-### J1-J4. Joint assertions
+### LF. Field length of the long frame
+
+**Claims:** none. The sentence graded is p.29's, which no claim of this package states.
+
+**Proposition.** With VARBEAMEN set, VTOTAL = `0x05FF` and LACE clear, a field has VTOTAL + 1 = 1536 lines. Page (p.29, VTOTAL): "It's the line number to reset the counter, so there's this many + 1 in a field. The exception is if the LACE bit is set (BPLCON0), in which case every other field is this many +2 & the short field is this many + 1."
+
+**Stimulus.** The LF configuration of 2.9 (HTOTAL = `0x00E2`, VTOTAL = `0x05FF`, BEAMCON0 = `0x08A0`), D-STD with BPU = 1 (BPLCON0 = `0x1000`, so LACE is clear), the plane pointer to Z, DMACON = `0x8380`. The Copper tag block and the vertical-blank block are those of 2.6.
+
+**Observation.** t_F(1), t_F(2), t_F(3) and the tag spacing P of F1 and F2 (2.11).
+
+**Expected.** For F1 and for F2 the field has N = (t_F(i+1) - t_F(i)) / P lines, N a whole number within P/8 (2.11, line-offset measure), and N = VTOTAL + 1 = 1536.
+
+**Control.** LF-CONTROL: the same stimulus with VTOTAL = `0x04FF`. The page's sentence ties the field length to VTOTAL line for line, so the field is exactly 256 lines shorter than with `0x05FF`: N(`0x05FF`) - N(`0x04FF`) = 256. The control passes on a field length that does not equal VTOTAL + 1; it shows that the measure follows the stimulus.
+
+**Preconditions.** PC-SETUP; PC-FRAME (t_F(1)..t_F(3) exist and are equally spaced); PC-TAG; LF-PC-LINES: both field lengths are whole numbers of lines within P/8 (2.11).
+
+**Contrasting case.** VTOTAL = `0x04FF`: the expected count is 1280 in place of 1536 (LF-FRAME with the stimulus's own VTOTAL).
+
+For the preconditions: omit COPEN (PC-FRAME fails); remove the tag MOVEs (PC-TAG fails); leave out the setup marker (PC-SETUP fails).
+
+**Reference frame.** t_F and tags.
+
+---
+
+### J1-J5. Joint assertions
 
 Each claim below states something that two or more propositions grade in parts. Its id is carried by one joint assertion, and by nothing else: the part propositions carry no part of these ids. A joint assertion adds no stimulus and no observation. It passes only if every part proposition passes (on the core that runs it), and fails if any part fails or is not graded. Its record names the verdict of each part.
 
@@ -1330,6 +1399,7 @@ Each claim below states something that two or more propositions grade in parts. 
 | J2 | opus:AA-sprxpos.c8; sol:AA-sprxpos.c14 | SPRxPOS bits 7-0 are SH10-SH3; the "Low-order 3 bits are in SPRxCTL register below" (p.28) | S5: SH10-SH2. S5-SH1: SH1. S6: SH0. |
 | J3 | opus:AA-sprxctl.c17; sol:AA-sprxctl.c31 | "These 2 registers work together as position, size and feature Sprite control registers." (p.28) | Position: S5 (SH10-SH2), S5-SH1 (SH1), S6 (SH0), S8 (SV9-SV0). Size: S9 (EV9-EV0). Feature: the two functions p.28 gives these registers beyond position and size, S10 ("07 ATT Sprite attach control bit") and S12 (SH10 "free to be used by ALICE as an individual scan double enable"). |
 | J4 | opus:AA-sprxptl.c6 | "This pair of registers contains the 20 bit address of Sprite x (x=0,1,2,3,4,5,6,7) DMA data." (p.28) | S1: the 20-bit address each pair holds. S14-B: part (b) of S14 ties the list read through pointer x to sprite x (a write to SPRxPOS moves exactly that column). |
+| J5 | opus:AA-bplxdat.c10; sol:AA-bplxdat.c26 | "for that word (16/32/64 pixels). The MSB is output first, and" (p.15) | B3: the 16-pixel word (FMODE = 0). B5-32: the 32-pixel word (FMODE = 0x0001). B5-64: the 64-pixel word (FMODE = 0x0003). |
 
 **Contrasting case.** The contrasting case of any part makes that part fail, and with it the joint assertion.
 
@@ -1372,7 +1442,8 @@ Every run sets `chipset_config = 0x10` (AA selected), except the ECS runs of S16
 | `test_aa_integ_s3.cpp` | `main()`, the header with the `// MUTATION` records |
 | `s3_run.h`, `s3_std.h` | run description, Copper list and sprite list builders, execution on the harness, frames, tags, output lines |
 | `s3_check.h`, `s3_pre.h`, `s3_vid.h`, `s3_spr.h` | the grading scaffolding, the common preconditions PC-SETUP, PC-FRAME, PC-TAG, PC-PIXEL, pixel and column analysis |
-| `s3_props_*.h` | the propositions B1-B4, S1-S16, C1-C5 and the fixture and joint assertions |
+| `s3_props_*.h` | the propositions B1-B5, S1-S16, C1-C5, LF and the fixture and joint assertions |
+| `s3_withdrawn.h` | the runtime `RECORDED:` line of every claim id declined in section 1, with its reason |
 
 ### 5.3 Programs and tables
 
@@ -1397,7 +1468,8 @@ These are measurements of the final run, not oracles:
 - The columns of S3 and S4 are placed at 48 output pixels (24 lores pixels) from the leftmost cS pixel of the first graded line; a column pattern is compared pixel for pixel inside its 32 pixels.
 - PC-SPR(x) accepts reads after the end pair of a list: with the long frame the sprite pointer is read again at line 1024; only the reads up to the end pair are the list.
 - C1-C5 read CLXDAT with a type of event whose routine consists of one `MOVE.W CLXDAT(A1),<result>` so that the read lies near H = `0x08`; with eight bit planes and the DMA of the specification the 68000 is slow enough that a longer routine reads one line late.
-- J1-J4 take the verdicts of the parts from the same run. J-CONTROL applies the same conjunction to S1-S4, which are graded and green.
+- J1-J5 take the verdicts of the parts from the same run. J-CONTROL applies the same conjunction to S1-S4, which are graded and green.
+- Every claim id declined in section 1 is printed on a `RECORDED:` line of every normal run, with its reason (`s3_withdrawn.h`); no assertion carries one.
 
 ### 5.6 Mutations
 
