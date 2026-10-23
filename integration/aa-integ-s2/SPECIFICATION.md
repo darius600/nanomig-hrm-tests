@@ -10,9 +10,9 @@ Hardware Reference Manual. Every expected value comes from an AA page. HRM pages
 are cited only for context and for procedures the AA pages take for granted,
 never as the source of an expected value.
 
-The package has 81 claims. 56 of them support the propositions P1-P14 in
+The package has 81 claims. 54 of them support the propositions P1-P14 in
 section 3; P11 carries none of them and is the measurement P12 needs. The
-other 25 cannot be graded whole by any proposition; section 1 lists them with
+other 27 cannot be graded whole by any proposition; section 1 lists them with
 the reason for each. Section 5 maps every claim id to where it is used.
 
 ---
@@ -23,6 +23,7 @@ the reason for each. Section 5 maps every claim id to where it is used.
 |---|---|
 | opus:AA-bltxmod.c3, opus:AA-bltxpth.c3, opus:AA-bltxptl.c3, sol:AA-bltxmod.c3, sol:AA-bltxpth.c3, sol:AA-bltxptl.c3 | The chip column "A" (p.13; legend p.6 and p.10 "A=Agnus/Alice chip") says which chip holds the register. No output a test can see shows which chip a register lives in. A register at the right address that has the right effect is equally correct in any chip. |
 | opus:AA-bltxpth.c4, opus:AA-bltxptl.c7 | These record revision marks. p.13 marks `BLTxPTH  h`, but the p.7 rows `BLTAPTH`...`BLTDPTH` carry no h, `BLTxPTL` carries none, and the two legends define h differently (p.6 "h=new for HiRes chip set", p.10 "h= stuff added or changed in hires chips"). A revision mark is a statement about the document's history, and no output shows it. Both legend readings place the marked feature in the chip set under test. That feature is the 5-bit high word (p.6: "PTL,PTH=20 bit Pointer ... (old chips- 18 bits)"), and P2 tests it from other claims. |
+| opus:AA-bltxpth.c5, opus:AA-bltxptl.c4 | These record the `+` mark ("Address register pair", p.6) as a document conflict: the p.7 address-list rows print `+` and the p.13 alphabetical entry does not. P2's walking-one and walking-zero observations establish the functional 20-bit pointer-pair interpretation (PTH bits 4-0 and PTL bits 15-1), which the functional pointer ids grade, but no output shows which printed table carries the mark, so a difference between two printed tables is not established by any observation. The test prints a `RECORDED:` line for the two ids. |
 | opus:AA-beamcon0.b15, sol:AA-beamcon0.c6 | "15     (unused)" (p.12). The page gives the bit no function and no value. A test must not invent one: neither "writing it has no effect" nor any read-back value is stated. |
 | opus:AA-beamcon0.b3, sol:AA-beamcon0.c18 | "3     (unused, formerly BLANKEN)" (p.12). This gives no function and no value, for the same reason. p.29 still refers to BLANKEN as a live bit (section 4, item 4). |
 | opus:AA-beamcon0.c37, sol:AA-beamcon0.c54 | "VARCSYEN= enable CSY* from the variable decoders to come out the CSY*" (p.13). The CSY* pin is not among the outputs a test can see: the harness shows 4-bit RGB, horizontal sync and vertical sync only. |
@@ -36,7 +37,8 @@ Several claims are tagged CONFLICT but are used all the same:
 
 - **The `~` mark:** opus:AA-bltxmod.c4, opus:AA-bltxpth.c6 and
   opus:AA-bltxptl.c5 are used in P7.
-- **The `+` mark:** opus:AA-bltxpth.c5 and opus:AA-bltxptl.c4 are used in P2.
+- **The `+` mark:** opus:AA-bltxpth.c5 and opus:AA-bltxptl.c4 are not used (section 1): P2 grades the functional
+  20-bit pointer pair and not the printed difference between the two tables.
 
 In both cases the "conflict" is that the p.7 address list prints the mark and
 the p.13 alphabetical entry does not. The alphabetical list has no column in
@@ -517,8 +519,7 @@ would establish only its own channel.
 ### P2: A pointer pair is one 20-bit address: PTH bits 4-0 are address bits 20-16, PTL bits 15-1 are address bits 15-1
 
 **Claims:** opus:AA-bltxpth.c7, opus:AA-bltxptl.c6, opus:AA-bltxpth.c8,
-sol:AA-bltxpth.c4, sol:AA-bltxptl.c4, sol:AA-bltxpt.c1, opus:AA-bltxpth.c5,
-opus:AA-bltxptl.c4. **Pages:** p.13, p.6, p.7.
+sol:AA-bltxpth.c4, sol:AA-bltxptl.c4, sol:AA-bltxpt.c1. **Pages:** p.13, p.6, p.7.
 
 **Proposition.** For every channel `x`, the word address of the channel's
 first access equals `PTH[4:0] * 2^15 + PTL[15:1]`. This holds for each of the
@@ -618,7 +619,10 @@ further anchor is needed.
 **The conflicts.** p.7 prints `+` on each member's row. The p.13 entry does not,
 because that list has no column for it (section 1). Its own text, "High 5 bits"
 and "Low 15 bits", states the same split. The expectation above is what both
-pages agree on.
+pages agree on. The two ids that state the conflict itself, opus:AA-bltxpth.c5 and
+opus:AA-bltxptl.c4, are not used: the walking observations establish the 20-bit
+interpretation and cannot show which printed table carries the mark. The test
+prints them on a `RECORDED:` line.
 
 ### P3: The first access of every enabled channel is at the address its pointer was preloaded with
 
@@ -1872,7 +1876,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-bltxpth.c2 | not used (section 1) |
 | opus:AA-bltxpth.c3 | not used (section 1) |
 | opus:AA-bltxpth.c4 | not used (section 1) |
-| opus:AA-bltxpth.c5 | P2 |
+| opus:AA-bltxpth.c5 | not used (section 1) |
 | opus:AA-bltxpth.c6 | P7 |
 | opus:AA-bltxpth.c7 | P2 |
 | opus:AA-bltxpth.c8 | P2 |
@@ -1880,7 +1884,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-bltxptl.c1 | P1 |
 | opus:AA-bltxptl.c2 | not used (section 1) |
 | opus:AA-bltxptl.c3 | not used (section 1) |
-| opus:AA-bltxptl.c4 | P2 |
+| opus:AA-bltxptl.c4 | not used (section 1) |
 | opus:AA-bltxptl.c5 | P7 |
 | opus:AA-bltxptl.c6 | P2 |
 | opus:AA-bltxptl.c7 | not used (section 1) |
@@ -2176,7 +2180,7 @@ Every mutation leaves the comparator and the expected values alone and changes o
 | P8-TRIGGER | stimulus red | NMH_MUTATE=P8-TRIGGER: the pulse is scheduled and timed as in the normal run and the fire inputs are not driven (they stay released); repository build: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-TRIGGER; NOT GRADED 6; fx68k: FAIL P8-TRIGGER; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build |
 | P8-ALIGN | stimulus red | NMH_MUTATE=P8-ALIGN: the pulse runs use the program with four more instructions in the sample loop (prog_lpen_slow); repository build: TG68K: FAIL P8-ALIGN; NOT GRADED 6; NOT CHECKABLE 1; fx68k: FAIL P8-ALIGN; NOT GRADED 6; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-ALIGN; NOT GRADED 6; fx68k: FAIL P8-ALIGN; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build |
 | P8-LPE | stimulus red | NMH_MUTATE=P8-LPE: BPLCON0 bit 3 set in the control run, so that the pulse freezes the samples again; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-LPE; NOT GRADED 6; fx68k: FAIL P8-LPE; NOT GRADED 6; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build |
-| P8-HHRUN | stimulus red | NMH_MUTATE=P8-HHRUN: the dry run that must show HHPOSR running takes one sample, in which HHPOSR cannot take two values; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; fx68k: no FAIL; NOT GRADED 3; NOT CHECKABLE 1; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT CHECKABLE on TG68K and NOT CHECKABLE on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control |
+| P8-HHRUN | none impossible | P8-HHRUN is an optional observability anchor: when HHPOSR does not run across the pulse in the dry run it prints NOT CHECKABLE and never FAIL, so the anchor itself cannot be made to print FAIL, and no graded liveness contrast exists at this boundary without changing what the anchor is; NMH_MUTATE=P8-HHRUN, in which the dry run that must show HHPOSR running takes one sample so that HHPOSR cannot take two values, is kept as a demonstration and is not a mutation red through P8-HHRUN: the anchor prints NOT CHECKABLE 1 and the HHPOSR lines NOT GRADED 3 on TG68K and on fx68k, in the repository build and in the private build of 6.6, and the one-sample dry run also makes P8-0-VH and P8 print FAIL in the repository build on both cores |
 | P8-0-VH | stimulus red | NMH_MUTATE=P8-0-VH: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8; fx68k: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and FAIL on TG68K and FAIL on fx68k on the repository build; the private results of P8-0-HH, P8-1-HH and P8 in this record rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control |
 | P8-0-HH | stimulus red | NMH_MUTATE=P8-0-HH: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and NOT GRADED on TG68K and NOT GRADED on fx68k on the repository build; the private results of this line rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control |
 | P8-1-VH | stimulus red | NMH_MUTATE=P8-1-VH: LPENDIS = 0 in the P8-1 run; repository build: TG68K: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; fx68k: FAIL P8-0-VH, P8; NOT GRADED 3; NOT CHECKABLE 1; private build of 6.6: TG68K: FAIL P8-1-VH, P8-1-HH, P8; fx68k: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build on TG68K and PASS on fx68k, and PASS on TG68K and PASS on fx68k on the repository build; the private results of P8-0-HH, P8-1-HH and P8 in this record rest on an alternate counter that follows the main counter with DUAL clear, which the pages do not state: they are recorded and are not an implementation-green control |
