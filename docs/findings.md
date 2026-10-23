@@ -248,7 +248,7 @@ Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY, not the Hardware
 Reference Manual, and the tests that hold them up live in `aa/` rather than
 `hrm/`. Mixing the two counts would make both harder to read.
 
-**Three of the ten are filed against the printed page, and all three are held
+**Three of the eleven are filed against the printed page, and all three are held
 up by GREEN assertions.** That is the shape a document defect takes here: the
 RTL does something sensible, the test says so, and what is in question is
 whether the document can be cited for that register at all. There is no red to
@@ -267,8 +267,8 @@ rather than by consulting a table of marks; and all four take `bltcon0[15:12]`
 as one field, two of them naming it ASH. **What that settles is narrow and
 worth stating: nothing downstream was misled by any of the three defects.**
 
-**The other seven are filed against the RTL, and for those the four were read.**
-NM-AA-006, NM-AA-007 and NM-AA-008 are the reds of `integration/aa-integ-s1`, NM-AA-009 and NM-AA-010 reds of `integration/aa-integ-s2`, which also reaches NM-AA-005 and NM-AA-008; their verdicts are in the table. Two of the readings came out sharper than the column has room for. On NM-AA-004 every
+**The other eight are filed against the RTL, and for those the four were read.**
+NM-AA-006, NM-AA-007 and NM-AA-008 are the reds of `integration/aa-integ-s1`, NM-AA-009 and NM-AA-010 reds of `integration/aa-integ-s2`, which also reaches NM-AA-005 and NM-AA-008, and NM-AA-011 the reds of `integration/aa-integ-s3`; their verdicts are in the table. Two of the readings came out sharper than the column has room for. On NM-AA-004 every
 implementation that models the identifier at all gives the RTL's `$23` and none
 gives the document's `$22`, and two of them separately doubt the neighbouring
 row of the same list. On NM-AA-005 the four disagree with each other about the
@@ -290,6 +290,7 @@ decides about the RTL, never a second oracle.
 | [NM-AA-008](findings/NM-AA-008.md) | HHPOSR reads $0000 with DUAL set: the secondary beam counter of AA p. 24 is not there [RTL review] | open · RTL · **red** | `integration/aa-integ-s1` · `P14-U1`, `P14-U2`, `P14-REL`, `P14-AGG` on fx68k and TG68K; `integration/aa-integ-s2` · `P11-HHRUN`, `P12-K` on fx68k and TG68K | **split: one of four has the counter, none bounds it by HTOTAL alone**: WinUAE (`custom.cpp:11148-11154`) has a second horizontal counter that restarts where the main line ends; vAmiga (`Memory.cpp:2508-2509`) and Denise (`register.cpp:112-125`) decode no HHPOSR; Copperline (`custom_regs.rs:109-111`) returns the last HHPOSW value. MiSTer and TC64, descendants, have no counter |
 | [NM-AA-009](findings/NM-AA-009.md) | with CSCBEN set, VSY* keeps the vertical sync and VBSTRT never reaches it, where AA pp. 12 and 29 put the variable composite blank on that pin [RTL review] | open · RTL · **red** | `integration/aa-integ-s2` · `P9-BV`, `P9-B`, `P9-ID` on fx68k and TG68K | **none of the four puts a composite blank on VSY\***: WinUAE (`custom.cpp:9799-9803`) takes its vertical sync signal from the vertical sync alone and reads CSCBEN only to blank its display for a monitor on separate syncs; vAmiga (`AgnusRegs.cpp:550-568`) names the bit in a comment; Denise (`agnus.cpp:1-13`) has no constant for it and no VSY* signal; Copperline (`agnus.rs:21-25`) latches it without output. MiSTer and TC64, descendants, form `_vsync` from the vertical sync as NanoMig does |
 | [NM-AA-010](findings/NM-AA-010.md) | the UHRES pointers never come out: with BPLCON0 bit 7 and DMAEN set, no BPLHPT or SPRHPT access reaches Chip memory, where AA pp. 15 and 27 give them the first three free cycles of each line [RTL review] | open · RTL · **red** | `integration/aa-integ-s2` · `P12-UHRES` on fx68k and TG68K | **split, one against three**: WinUAE (`custom.cpp:9259-9285`) runs the chain in the free slots after each line start, with an ECS or an AGA Agnus; vAmiga (`Memory.cpp:3086-3112`), Denise (`agnus.h:15-21`) and Copperline (`agnus.rs:1305-1307`) have no UHRES DMA. MiSTer and TC64, descendants, have NanoMig's bus multiplexer, with no UHRES source |
+| [NM-AA-011](findings/NM-AA-011.md) | SPRxCTL bits 4 and 3 (SH1, SH0) do not move a sprite: its start keeps the 140 ns step, where AA p. 28 gives them 70 ns and 35 ns [RTL review] | open · RTL · **red**, contested | `integration/aa-integ-s3` · `S5-SH1`, `S6`, `J2`, `J3` on fx68k and TG68K | **split, one of four**: WinUAE (`drawing.cpp:2822-2837`) stores bit 3 as a 35 ns step in AGA mode and matches it when its own display runs at SuperHires resolution, bit 4 at Hires and SuperHires; vAmiga (`Denise.cpp:168-177`) and Copperline (`sprite.rs:1853-1859`) model the AA chip set and read bit 3 nowhere, and apply bit 4 only to 70 ns and 35 ns sprites (vAmiga) or on a SuperHires display (Copperline); Denise (`denise.h:22`) has no AA Denise and casts no vote. MiSTer and TC64, descendants, keep bits 7 and 0 of SPRxCTL as NanoMig does |
 
 **33 AA packages carry 184 graded assertions. 5 are red, in 4 packages,
 answering 4 keys** -- three counts that are easy to collapse into one and are
@@ -308,7 +309,7 @@ reaches NM-HRM-032, and `aa-disk-status-bits` reaches NM-HRM-041 on **both** of
 its reds, which that page states in its own words. A second document saying the
 same thing is not a second key.
 
-NM-AA-001 to NM-AA-005 are what the `aa/` suite has turned up so far; NM-AA-006 to NM-AA-008 come from `integration/aa-integ-s1`, and NM-AA-009 and NM-AA-010 from `integration/aa-integ-s2`. A package that
+NM-AA-001 to NM-AA-005 are what the `aa/` suite has turned up so far; NM-AA-006 to NM-AA-008 come from `integration/aa-integ-s1`, NM-AA-009 and NM-AA-010 from `integration/aa-integ-s2`, and NM-AA-011 from `integration/aa-integ-s3`. A package that
 finds nothing has still done its work: it says the document and the silicon
 agree on those rows.
 

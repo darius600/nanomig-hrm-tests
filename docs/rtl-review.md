@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**59 findings ask for a review, in 29 modules.** They are listed by the
+**60 findings ask for a review, in 30 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -172,6 +172,12 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | [NM-HRM-016](findings/NM-HRM-016.md) | SuperHires sprite colour encoding is not implemented | a test fails against the page; the implementations split |
 | [NM-HRM-019](findings/NM-HRM-019.md) | SPRxCTL bit 4 (SHSH1) is not implemented | a test fails against the page |
 | [NM-HRM-023](findings/NM-HRM-023.md) | the ATTACH bit is honoured in the even sprite, not only the odd | a test fails against the page |
+
+## [`src/minimig-aga/denise_sprites_shifter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites_shifter.v) — 1
+
+| finding | subject | evidence |
+|---|---|---|
+| [NM-AA-011](findings/NM-AA-011.md) | SPRxCTL bits 4 and 3 (SH1, SH0) do not move a sprite: its start keeps the 140 ns step, where AA p. 28 gives them 70 ns and 35 ns | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/gary.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v) — 1
 
