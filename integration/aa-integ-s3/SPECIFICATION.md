@@ -439,14 +439,15 @@ Page quotes:
 
 Quantifier: every graded line of every plane. The first and last fetch of a line may be cut by the window edge, and the pages say nothing about that edge, so they are not graded.
 
-**Preconditions.** PC-SETUP, PC-FRAME, PC-TAG, PC-PIXEL, PC-BPL({1..8}) as in B3, and:
+**Preconditions.** PC-SETUP, PC-FRAME, PC-TAG and PC-PIXEL as in B3, and:
 
-- B5-PC-STRIDE: on every graded line the reads of P_x lie at byte offsets from P_x that are multiples of the fetch increment (4 resp. 8 bytes), and consecutive reads differ by exactly that increment (p.23, "Bitplane Fetch Increment": the pointer starts at P_x and advances by the increment per fetch).
-- B5-PC-WORDS: at least 3 reads of P_x on every graded line.
+- B5-PC-STRIDE-32 and B5-PC-STRIDE-64: on every graded line the reads of P_x lie at byte offsets from P_x that are multiples of the fetch increment (4 resp. 8 bytes), and consecutive reads differ by exactly that increment (p.23, "Bitplane Fetch Increment": the pointer starts at P_x and advances by the increment per fetch).
+- B5-PC-WORDS-32 and B5-PC-WORDS-64: at least 3 reads of P_x on every graded line.
+- B5-PC-BPL-32 and B5-PC-BPL-64 are PC-BPL({1..8}) of the run of each FMODE value.
 
 **Contrasting case.** Fill P_x with zeros: no cON pixel appears, and the expected run is absent.
 
-For the preconditions: clear BPLEN (PC-BPL fails); FMODE = 0 in both runs (the reads step by 2 bytes: PC-STRIDE fails); remove the tag MOVEs (PC-TAG fails).
+For the preconditions: clear BPLEN (PC-BPL fails); FMODE = 0 in the run of that FMODE value (the reads step by 2 bytes: PC-STRIDE fails); DDFSTOP = `0x0040` (two words per line: PC-WORDS fails); remove the tag MOVEs (PC-TAG fails).
 
 **Reference frame.** Chip lines by line anchor; output lines by tag.
 
@@ -1379,7 +1380,7 @@ For the preconditions: add a CLXCON write (the static check fails).
 
 **Control.** LF-CONTROL: the same stimulus with VTOTAL = `0x04FF`. The page's sentence ties the field length to VTOTAL line for line, so the field is exactly 256 lines shorter than with `0x05FF`: N(`0x05FF`) - N(`0x04FF`) = 256. The control passes on a field length that does not equal VTOTAL + 1; it shows that the measure follows the stimulus.
 
-**Preconditions.** PC-SETUP; PC-FRAME (t_F(1)..t_F(3) exist and are equally spaced); PC-TAG; LF-PC-LINES: both field lengths are whole numbers of lines within P/8 (2.11).
+**Preconditions.** PC-SETUP; PC-FRAME (t_F(1)..t_F(3) exist and are equally spaced, and the spacing is a whole number of lines within P/8, so that the length is a measure, 2.11); PC-TAG.
 
 **Contrasting case.** VTOTAL = `0x04FF`: the expected count is 1280 in place of 1536 (LF-FRAME with the stimulus's own VTOTAL).
 
