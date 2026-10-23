@@ -23,7 +23,7 @@ the reason for each. Section 5 maps every claim id to where it is used.
 |---|---|
 | opus:AA-bltxmod.c3, opus:AA-bltxpth.c3, opus:AA-bltxptl.c3, sol:AA-bltxmod.c3, sol:AA-bltxpth.c3, sol:AA-bltxptl.c3 | The chip column "A" (p.13; legend p.6 and p.10 "A=Agnus/Alice chip") says which chip holds the register. No output a test can see shows which chip a register lives in. A register at the right address that has the right effect is equally correct in any chip. |
 | opus:AA-bltxpth.c4, opus:AA-bltxptl.c7 | These record revision marks. p.13 marks `BLTxPTH  h`, but the p.7 rows `BLTAPTH`...`BLTDPTH` carry no h, `BLTxPTL` carries none, and the two legends define h differently (p.6 "h=new for HiRes chip set", p.10 "h= stuff added or changed in hires chips"). A revision mark is a statement about the document's history, and no output shows it. Both legend readings place the marked feature in the chip set under test. That feature is the 5-bit high word (p.6: "PTL,PTH=20 bit Pointer ... (old chips- 18 bits)"), and P2 tests it from other claims. |
-| opus:AA-bltxpth.c5, opus:AA-bltxptl.c4 | These record the `+` mark ("Address register pair", p.6) as a document conflict: the p.7 address-list rows print `+` and the p.13 alphabetical entry does not. P2's walking-one and walking-zero observations establish the functional 20-bit pointer-pair interpretation (PTH bits 4-0 and PTL bits 15-1), which the functional pointer ids grade, but no output shows which printed table carries the mark, so a difference between two printed tables is not established by any observation. The test prints a `RECORDED:` line for the two ids. |
+| opus:AA-bltxpth.c5, opus:AA-bltxptl.c4 | These record the `+` mark ("Address register pair", p.6) as a document conflict: the p.7 address-list rows print `+` and the p.13 alphabetical entry does not. P2's walking-one and walking-zero observations establish the functional 20-bit pointer-pair interpretation (PTH bits 4-0 and PTL bits 15-1), which the functional pointer ids grade, but no output shows which printed table carries the mark, so a difference between two printed tables is not established by any observation. The test prints a `RECORDED: DECLINED-PLUS` line for the two ids. |
 | opus:AA-beamcon0.b15, sol:AA-beamcon0.c6 | "15     (unused)" (p.12). The page gives the bit no function and no value. A test must not invent one: neither "writing it has no effect" nor any read-back value is stated. |
 | opus:AA-beamcon0.b3, sol:AA-beamcon0.c18 | "3     (unused, formerly BLANKEN)" (p.12). This gives no function and no value, for the same reason. p.29 still refers to BLANKEN as a live bit (section 4, item 4). |
 | opus:AA-beamcon0.c37, sol:AA-beamcon0.c54 | "VARCSYEN= enable CSY* from the variable decoders to come out the CSY*" (p.13). The CSY* pin is not among the outputs a test can see: the harness shows 4-bit RGB, horizontal sync and vertical sync only. |
@@ -622,7 +622,7 @@ and "Low 15 bits", states the same split. The expectation above is what both
 pages agree on. The two ids that state the conflict itself, opus:AA-bltxpth.c5 and
 opus:AA-bltxptl.c4, are not used: the walking observations establish the 20-bit
 interpretation and cannot show which printed table carries the mark. The test
-prints them on a `RECORDED:` line.
+prints them on the line `RECORDED: DECLINED-PLUS`.
 
 ### P3: The first access of every enabled channel is at the address its pointer was preloaded with
 
