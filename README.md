@@ -87,8 +87,8 @@ commit.
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
-| graded packages, `integration/` | **35**, each run on both CPU cores: 10 green, 25 carrying a red; 27 against the manual, 8 against the AA specification |
-| assertions, `integration/` | **6519** on fx68k — 6159 pass, **360 fail**; **6583** on TG68K — 6223 pass, **360 fail** |
+| graded packages, `integration/` | **35**, each run on both CPU cores: 11 green, 24 carrying a red; 27 against the manual, 8 against the AA specification |
+| assertions, `integration/` | **6517** on fx68k — 6159 pass, **358 fail**; **6581** on TG68K — 6223 pass, **358 fail** |
 | registered findings | **88**, all open — 75 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA); 79 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **13** — ten are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
