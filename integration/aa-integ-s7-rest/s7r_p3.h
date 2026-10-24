@@ -99,14 +99,12 @@ inline void run_uhres(Checks& ck, Shared& sh) {
 
     std::string bd1 = "prog_d1.bin", bd0 = "prog_d0.bin", bdh = "prog_dh.bin";
     if (mut("PR-9c")) bdh = "prog_dh_slow.bin";
-    if (mut("P9-E1b")) bdh = "prog_dh0.bin";
     if (mut("PR-9b")) bd1 = "prog_d1_nohead.bin";
     if (mut("FIXTURE-D")) bd1 = "prog_d1_nofix.bin";
     if (mut("PR-9-U1")) bd1 = "prog_d1_noend.bin";
     if (mut("PR-9-U2")) bd1 = "prog_d1_skip.bin";
     if (mut("PR-9-U3")) bd1 = "prog_d1_late.bin";
     if (mut("PR-9a")) bd1 = "prog_d1_var.bin";
-    if (mut("P9-E1a")) bd1 = "prog_d0.bin";
     if (mut("P9-E2")) bd1 = "prog_d1_m16.bin";
     if (mut("PR-9-U5")) bd1 = "prog_d1_nobit.bin";
     if (mut("P9-D0")) bd0 = "prog_d1.bin";
@@ -350,7 +348,7 @@ inline void run_uhres(Checks& ck, Shared& sh) {
         if (o1) ck.note("P9: D1 has " + dec((long long)k1) + " BPLH accesses between t($51) and t($6F); D0 has " + dec((long long)k0) + " (" + cap_core() + ")");
         const bool q5 = o1 && k1 >= 2;
         ck.expect(q5, "PR-9-U5: D1 has at least two BPLH accesses between t($51) and t($6F), so that a step between two of them exists");
-        // E9.1a: some horizontal line of $52..$6F, by the H counter, has two or more BPLH accesses
+        // E9.1a (not graded): the lines of $52..$6F, by the H counter, with two or more BPLH accesses are counted
         std::map<int, int> perline;
         if (o1) {
             const uint64_t t0 = tmark(D1, 0x51), t1 = tmark(D1, 0x6F);
@@ -358,10 +356,9 @@ inline void run_uhres(Checks& ck, Shared& sh) {
         }
         int nl2 = 0, maxl = 0;
         for (int v = 0x52; v <= 0x6F; ++v) { const int c = perline.count(v) ? perline[v] : 0; maxl = std::max(maxl, c); if (c >= 2) ++nl2; }
-        ck.note("P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: " + dec(nl2) + " of 30, most on one line " + dec(maxl) + " (" + cap_core() + ")");
-        graded(ck, pre9 && o1, nl2 >= 1,
-               "P9-E1a: in DUAL mode at least one horizontal line of $52..$6F, taken from the H counter, has two or more BPLH accesses in D1 (AA p.12 DUAL: 'allows the UHRES pointers to come out more than once in a horizontal line')", unmet9);
-        // E9.1b: between two consecutive BPLH accesses of DH the alternate counter is reset exactly once
+        ck.note("P9-E1a (not graded): D1 lines of $52..$6F with two or more BPLH accesses: " + dec(nl2) + " of 30, most on one line " + dec(maxl) + " (" + cap_core() + ")");
+        ck.record("P9-E1a: not graded. AA p.12 DUAL: \"This allows the UHRES pointers to come out more than once in a horizontal line, assuming there is some memory bandwidth left\"; no precondition of this package establishes that bandwidth. The absence of the UHRES chain is graded by P3-E6, P6-E6, P5 and P7.");
+        // E9.1b (not graded): the alternate-counter resets between consecutive BPLH accesses of DH are counted
         std::vector<Acc> ah;
         if (sdh.full) for (auto& x : DH.bplh) if (x.t > sdh.t.front() && x.t < sdh.t.back()) ah.push_back(x);
         auto phase = [&](uint64_t a) {
@@ -369,18 +366,14 @@ inline void run_uhres(Checks& ck, Shared& sh) {
             i = i ? i - 1 : 0;                                                                         // the last sample with T < a
             return std::fmod(double(sdh.r[i] & 0xFF) + double(a - sdh.t[i]) / K, double(0x71 + 1));
         };
-        bool e91b = false;
         std::string nk;
-        if (ah.size() >= 3) e91b = true;
         for (size_t k = 0; ah.size() >= 3 && k + 1 < ah.size(); ++k) {
             const double v = phase(ah[k].t) + double(ah[k + 1].t - ah[k].t) / K - phase(ah[k + 1].t);
             const long n = std::lround(v / double(0x71 + 1));
             nk += " " + dec(n);
-            if (n != 1) e91b = false;
         }
-        ck.note("P9-E1b: DH has " + dec((long long)ah.size()) + " BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses:" + (nk.empty() ? " none" : nk) + " (" + cap_core() + ")");
-        graded(ck, pre9, e91b,
-               "P9-E1b: in DUAL mode the alternate counter is reset exactly once between every two consecutive BPLH accesses of DH, three accesses at least, the resets counted from HHPOSR (AA p.12 DUAL: 'starts the UHRES pointer chain with the reset of this counter'; p.24 HHPOSR 'triggering the UHRES pointers')", unmet9);
+        ck.note("P9-E1b (not graded): DH has " + dec((long long)ah.size()) + " BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses:" + (nk.empty() ? " none" : nk) + " (" + cap_core() + ")");
+        ck.record("P9-E1b: not graded. AA p.12 DUAL: the alternate counter reset starts the UHRES pointer chain; the reset count is reconstructed from HHPOSR by interpolation with the measured conversion, no graded bound shows the rounded count is exact, and nothing in the run establishes the memory bandwidth that p.12 makes the condition of the chain giving accesses (DUAL = 0 defines no HHPOSR on p.24, so no contrast exists). The absence of the UHRES chain is graded by P3-E6, P6-E6, P5 and P7.");
         graded(ck, pre9 && o1 && q5, a1,
                "P9-E2: in D1, whose BPLHMOD is 0, each BPLH address is the previous one + 2, for every consecutive pair between t($51) and t($6F) (AA p.15 BPLHMOD 'Its modulo is added every time it comes out'; the pointer advances by 2 after each access)", unmet9 + " / PR-9-U5");
         graded(ck, pre9 && o0, k0 == 30,

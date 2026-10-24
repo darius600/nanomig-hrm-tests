@@ -112,11 +112,11 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     const double K = kok ? hv.conv.K : 1.0;
     HRun A, B, C, D, W;
     A.nm = "HA"; B.nm = "HB"; C.nm = "HC"; D.nm = "HD"; W.nm = "HW";
-    A.N = 0x71; A.X = 0x10; B.N = 0x71; B.X = 0x40; C.N = 0x51; C.X = 0x10; D.N = 0x71; D.X = 0x10; W.N = 0x71; W.X = 0x69;
+    A.N = 0x71; A.X = 0x10; B.N = 0x71; B.X = 0x40; C.N = 0x51; C.X = 0x10; D.N = 0x71; D.X = 0x10; W.N = 0x0A; W.X = 0x05;
     const std::string binA = pick(pick(pick("prog_ha.bin", "PR-8b", "prog_ha_slow.bin"), "PR-8c", "prog_ha_noend.bin"), "PR-8d", "prog_ha_wait.bin");
     const std::string binB = pick(pick(pick("prog_hb.bin", "P8-E1", "prog_ha.bin"), "P8-AGG", "prog_ha.bin"), "PR-8a", "prog_hb_nop.bin");
     const std::string binC = pick(pick(pick("prog_hc.bin", "P8-E3", "prog_hc_x.bin"), "P8-E4", "prog_hc_v.bin"), "FIXTURE-P8", "prog_hc_nofix.bin");
-    const std::string binW = pick("prog_hw.bin", "P8-E2", "prog_hw_n.bin");
+    const std::string binW = pick(pick("prog_hw.bin", "P8-E2", "prog_hw_n.bin"), "P8-E2-REACH", "prog_hw_lo.bin");
     const std::string binD = pick("prog_ha.bin", "P8-HD", "prog_hb.bin");
     A.bin = binA; B.bin = binB; C.bin = binC; D.bin = binD; W.bin = binW;
     A.cap = runbin(binA); B.cap = runbin(binB); C.cap = runbin(binC); D.cap = runbin(binD); W.cap = runbin(binW);
@@ -130,16 +130,15 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     bool pr8a = traces_agree(A.cap, B.cap, pd, kBuf, kBuf + 128);
     ck.expect(pr8a, "PR-8a: HA and HB agree in time, address and direction for every port access; their data differ only in the fetch of the immediate operand X and in the sample stores, so the counter is read at the same moments in both runs (R3)");
     bool pr8b = kok;
-    for (HRun* h : {&A, &B, &C, &W})
+    for (HRun* h : {&A, &B, &C})
         pr8b = pr8b && h->s.full && h->max_iv < double(h->N + 1) / 2.0;
-    ck.expect(pr8b, "PR-8b: the largest interval between two sample stores is below (N+1)/2 memory cycles in HA, HB, HC and HW, so each count difference is unambiguous");
+    ck.expect(pr8b, "PR-8b: the largest interval between two sample stores is below (N+1)/2 memory cycles in HA, HB and HC, so each count difference is unambiguous");
     bool pr8c = true;
     for (HRun* h : {&A, &B, &C, &W}) pr8c = pr8c && h->stores_ok;
     ck.expect(pr8c, "PR-8c: HA, HB, HC and HW end with the end marker and 64 sample stores are seen");
     bool pr8d = kok;
-    for (HRun* h : {&A, &B, &C, &W}) pr8d = pr8d && h->lat > 0 && h->lat < double(h->N + 1) / 2.0;
-    pr8d = pr8d && W.lat > double(W.N - W.X);       // HW: the counter passes N before the first read
-    ck.expect(pr8d, "PR-8d: in HA, HB, HC and HW the port shows the fetch of the last word of the instruction that writes HHPOSW, the first sample store follows it, and the latency from that fetch to the first sample store is below (N+1)/2 memory cycles; in HW it is also more than N - X = 8 memory cycles");
+    for (HRun* h : {&A, &B, &C}) pr8d = pr8d && h->lat > 0 && h->lat < double(h->N + 1) / 2.0;
+    ck.expect(pr8d, "PR-8d: in HA, HB and HC the port shows the fetch of the last word of the instruction that writes HHPOSW, the first sample store follows it, and the latency from that fetch to the first sample store is below (N+1)/2 memory cycles");
     if (kok)
         ck.note("P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA " + num3(A.lat) + " HB " + num3(B.lat) + " HC " + num3(C.lat) + " HW " + num3(W.lat) + " (" + cap_core() + ")");
     if (kok)
@@ -170,18 +169,24 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
            "PR-8a / PR-8b / PR-8c / the conversion");
 
     // E8.2: HTOTAL is the highest count, and the count after it is 0
-    bool e2 = pre3 && W.s.full;
+    bool e2 = pre && W.s.full;
     if (e2) {
         for (HRun* h : {&A, &B, &C, &W}) for (size_t i = 0; i < h->s.r.size(); ++i) if (int(h->s.r[i] & 0xFF) > h->N) e2 = false;     // (i)
-        const int r0 = int(W.s.r[0] & 0xFF);
-        if (!(r0 < W.X && double(mod_(r0 - W.X, W.N + 1)) <= W.lat + 1.0)) e2 = false;                                                // (ii) the counter passed N and started again
-        for (size_t i = 0; i + 1 < 64; ++i)                                                                                           // (iii) the counter moves
-            if (mod_(int(W.s.r[i + 1] & 0xFF) - int(W.s.r[i] & 0xFF), W.N + 1) < 1) e2 = false;
-        ck.note("P8-E2: HW writes X = $" + hex(unsigned(W.X), 2) + " (N - 8), first sample $" + hex(W.s.r[0] & 0xFF, 2) + ", measured latency " + num3(W.lat) + " memory cycles (" + cap_core() + ")");
+        // (ii) reach and wrap, read from the sampled stream of HW alone: some sample (not the last) is N, and the sample after every such sample is lower
+        bool reach = false, lower = true;
+        for (size_t i = 0; i + 1 < W.s.r.size(); ++i)
+            if (int(W.s.r[i] & 0xFF) == W.N) { reach = true; if (!(int(W.s.r[i + 1] & 0xFF) < W.N)) lower = false; }
+        if (!(reach && lower)) e2 = false;
     }
-    graded(ck, pre3, e2,
-           "P8-E2: the counter counts up to HTOTAL and then starts again at 0: every sample of HA, HB, HC and HW (bits 7-0) is at most the run's HTOTAL, N = $71 for HA, HB and HW and $51 for HC; HW, which writes X = N - 8 = $69, has passed N and restarted before its first read (first sample below X, modulo N+1 within the latency plus one) and its count moves between every two samples (AA p.24: HTOTAL 'Highest color clock count in horiz line', 'Horiz line has this many + 1 280ns increments', 'Active if VARBEAMEN=1 or DUAL=1')",
-           "PR-8b / PR-8c / PR-8d / the conversion");
+    if (W.s.full) {
+        std::set<int> seen; int hits = 0, hmax = 0;
+        for (size_t i = 0; i < W.s.r.size(); ++i) { const int v = int(W.s.r[i] & 0xFF); seen.insert(v); hmax = std::max(hmax, v); if (v == W.N) ++hits; }
+        ck.note("P8-E2: HW writes HTOTAL = $" + hex(unsigned(W.N), 2) + " and X = $" + hex(unsigned(W.X), 2) + ": its 64 samples show " + dec((long long)seen.size()) + " distinct values; the line has N+1 = " + dec(W.N + 1) + " counts," +
+                " the highest sample is $" + hex(unsigned(hmax), 2) + ", N is sampled " + dec(hits) + " times (" + cap_core() + ")");
+    }
+    graded(ck, pre, e2,
+           "P8-E2: the counter counts up to HTOTAL and then starts again lower: every sample of HA, HB, HC and HW (bits 7-0) is at most the run's HTOTAL, N = $71 for HA and HB, $51 for HC and $0A for HW; within the 64 samples of HW the counter takes its highest value N = HTOTAL, and the sample after each sample at N is lower (AA p.24: HTOTAL 'Highest color clock count in horiz line', 'Horiz line has this many + 1 280ns increments', 'Active if VARBEAMEN=1 or DUAL=1')",
+           "PR-8b / PR-8c / the conversion");
 
     // E8.3: the write is the starting point
     bool e3 = pre3;
