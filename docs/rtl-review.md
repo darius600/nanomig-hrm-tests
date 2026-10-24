@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**60 findings ask for a review, in 30 modules.** They are listed by the
+**61 findings ask for a review, in 30 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -44,7 +44,7 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
 | [NM-HRM-092](findings/NM-HRM-092.md) | below the minimum period a pass of audio DMA does not always start again at AUDxLC: channel 0 reads past its table, fetches the first word twice or ends a pass one word short, where pp. 139 and 147 restart it each time | a test fails against the page; the implementations split |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v) — 9
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v) — 10
 
 | finding | subject | evidence |
 |---|---|---|
@@ -52,6 +52,7 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | [NM-AA-005](findings/NM-AA-005.md) | the long-line toggle runs, but no line is a colour clock longer | a test fails against the page |
 | [NM-AA-008](findings/NM-AA-008.md) | HHPOSR reads $0000 with DUAL set: the secondary beam counter of AA p. 24 is not there | a test fails against the page; the implementations split |
 | [NM-AA-009](findings/NM-AA-009.md) | with CSCBEN set, VSY* keeps the vertical sync and VBSTRT never reaches it, where AA pp. 12 and 29 put the variable composite blank on that pin | a test fails against the page |
+| [NM-AA-012](findings/NM-AA-012.md) | with VARBEAMEN set and LACE clear, a field lasts VTOTAL + 2 lines while the long-frame bit is set, where AA p. 29 gives VTOTAL + 1 | a test fails against the page; the implementations split |
 | [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | a test fails against the page |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a test fails against the page |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
