@@ -22,7 +22,8 @@
 ;   8 STORE hi,lo,val          MOVE.W #val,<long address>
 ;   9 COPYW hi,lo,n,w1..wn     copy n words from the list to <long address>
 ;  10 FILLL hi,lo,n,phi,plo    n longwords from <long address>, first value p, step $00010001
-;  11 RUN20 size,n            BLTSIZE <- size, then n times  MOVE.W d0,(a1)+ ; ADDQ.W #1,d0 ; DBRA
+;  11 RUN20 size,n            MOVE.W #$5A01,MARK+6, BLTSIZE <- size, then n times
+;                             MOVE.W d0,(a1)+ ; ADDQ.W #1,d0 ; DBRA, then MOVE.W #$5A02,MARK+8
 ;  12 WBLT reg,val,idx        MOVE.W #val,reg(a3) then MOVE.W #idx,MARK
 ;  13 WSAMP reg,val,n         MOVE.W #val,reg(a3) then n times MOVE.W $DFF002,(a1)+
 ;  14 ZERO hi,lo,n            n longwords of zero from <long address>
@@ -137,10 +138,12 @@ op_run20:       move.w  (a0)+,d3
                 subq.w  #1,d1
                 lea     SCR,a1
                 moveq   #0,d0
+                move.w  #$5A01,MARK+6
                 move.w  d3,BLTSIZE_(a3)
 .r:             move.w  d0,(a1)+
                 addq.w  #1,d0
                 dbra    d1,.r
+                move.w  #$5A02,MARK+8
                 bra     next
 
 op_wblt:        move.w  (a0)+,d0

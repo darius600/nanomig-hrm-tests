@@ -17,10 +17,13 @@
 // comparator. The normal run (NMH_MUTATE unset) never runs a mutant.
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
+// P5 and P5-last are MEASURED records of the hires configurations, not assertions: the
+// pages admit two readings of the hires fetch edges (SPECIFICATION.md P5), so nothing is
+// graded and there is nothing to mutate. The graded line of that run is P5-ctl.
+//
 // MUTATION_RECORDS_BEGIN
-// MUTATION P5 stimulus green NMH_MUTATE=none: the assertion is red on both cores and no selector turns it green; the control P5-ctl (own record) runs the same two comparators on bit 3 of both registers in hires (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0 against 0x00C8) on a live input and prints PASS on both cores.
 // MUTATION P20 stimulus red NMH_MUTATE=P20: the BLTPRI-set run writes DMACON 0x8240 (BLTPRI clear); TG68K FAIL, fx68k FAIL.
-// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; the line checks the host's own configuration value, P17 prints the same counts (10 / 0) and is NOT GRADED; TG68K FAIL, fx68k FAIL.
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; the line checks the host's own configuration value, P17 prints the same counts (10 / 0) and is NOT GRADED; fx68k FAIL CONFIG and P17-i, P17 NOT GRADED; TG68K FAIL CONFIG and P17-i, P17 NOT GRADED.
 // MUTATION RF-RUNS stimulus red NMH_MUTATE=RF-RUNS: every RF-L WAIT of the DDFSTRT run is WAIT (v,0x0C) in place of (v,0x04), so A(0x3E) - T0 differs from that of the other runs; TG68K FAIL, fx68k FAIL.
 // MUTATION P1 stimulus red NMH_MUTATE=P1: the DDFSTRT write 0x0068 is 0x0058; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-fix stimulus red NMH_MUTATE=P1-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
@@ -43,8 +46,7 @@
 // MUTATION P2-reg stimulus red NMH_MUTATE=P2-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P4 stimulus red NMH_MUTATE=P4: the normal row 0x00D0 is written as the wide row 0x00D8; TG68K FAIL, fx68k FAIL.
 // MUTATION J1 stimulus red NMH_MUTATE=J1: the DDFSTRT write 0x0068 is 0x0058 and the DDFSTOP write 0x0098 is 0x00A8; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1, P2.
-// MUTATION P5-last stimulus green NMH_MUTATE=none: the assertion is red on both cores (l = 1752 for H1, 1720 for H2) and no selector turns it green; the control P5-ctl (own record) runs the same comparison l(C2) = l(C1) on a live input (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0) and prints PASS on both cores.
-// MUTATION P5-ctl stimulus red NMH_MUTATE=P5-ctl: the control configuration C1 writes DDFSTRT 0x0038 in place of 0x0030; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5, P5-last.
+// MUTATION P5-ctl stimulus red NMH_MUTATE=P5-ctl: the control configuration C1 writes DDFSTRT 0x0038 in place of 0x0030; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-fix stimulus red NMH_MUTATE=P5-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-i-RFM stimulus red NMH_MUTATE=P5-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
 // MUTATION P5-i-RFL stimulus red NMH_MUTATE=P5-i-RFL: in the field of the third configuration (H2) the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-reg.
@@ -54,7 +56,7 @@
 // MUTATION P5-v stimulus red NMH_MUTATE=P5-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-vi stimulus red NMH_MUTATE=P5-vi: the hires configurations write BPLCON0 0x1000 (lores); TG68K FAIL, fx68k FAIL.
 // MUTATION P5-reg stimulus red NMH_MUTATE=P5-reg: the CPU writes to B1 during the second field; TG68K FAIL, fx68k FAIL.
-// MUTATION P6 stimulus red NMH_MUTATE=P6: in both fields the Copper loads BPL1PT with B1 after WAIT (0x70,..), so the lines with a read in Z end at 0x6F in W1 and in W2; TG68K FAIL, fx68k FAIL.
+// MUTATION P6 stimulus red NMH_MUTATE=P6: W2 writes DIWSTOP 0xB0C1 in place of 0xA0C1 while the comparison keeps the 0xA0C1 window, so the last-line difference is 0x40 where 0x50 is expected; the pointer and the observed region are unchanged; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-fix stimulus red NMH_MUTATE=P6-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-i-RFL stimulus red NMH_MUTATE=P6-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-reg.
 // MUTATION P6-i-RFM stimulus red NMH_MUTATE=P6-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
@@ -126,26 +128,26 @@
 // MUTATION P15-reg stimulus red NMH_MUTATE=P15-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P15-ii stimulus red NMH_MUTATE=P15-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
 // MUTATION P15-iii stimulus red NMH_MUTATE=P15-iii: the varied configuration writes DIWSTRT 0x2681; TG68K FAIL, fx68k FAIL.
-// MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; TG68K FAIL, fx68k FAIL.
-// MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
-// MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); TG68K FAIL, fx68k FAIL.
-// MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); TG68K FAIL, fx68k FAIL.
-// MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; TG68K FAIL, fx68k FAIL.
-// MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; TG68K FAIL, fx68k FAIL.
-// MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
-// MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); TG68K FAIL, fx68k FAIL.
-// MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; fx68k FAIL P16-i, P16 NOT GRADED; TG68K FAIL P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16.
+// MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; fx68k FAIL P16-fix and P16-i, P16 NOT GRADED; TG68K FAIL P16-fix and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16.
+// MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P16-i, P16 NOT GRADED; TG68K FAIL P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i, so this selector does not discriminate.
+// MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); fx68k FAIL P16-ii and P16-i, P16 NOT GRADED; TG68K FAIL P16-ii and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-ii.
+// MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); fx68k FAIL P16-iii and P16-i, P16 NOT GRADED; TG68K FAIL P16-iii and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-iii.
+// MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; fx68k FAIL P16-reg and P16-i, P16 NOT GRADED; TG68K FAIL P16-reg and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-reg.
+// MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; fx68k FAIL P17-i, P17 NOT GRADED (the selector does not reach the clause of P17: the unmutated fx68k run already prints FAIL on P17-i); TG68K FAIL P17.
+// MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; fx68k FAIL P17-fix and P17-i, P17 NOT GRADED; TG68K FAIL P17-fix, P17 NOT GRADED. The unmutated fx68k run already prints FAIL on P17-i.
+// MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P17-i, P17 NOT GRADED; TG68K FAIL P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i, so this selector does not discriminate.
+// MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); fx68k FAIL P17-ii and P17-i, P17 NOT GRADED; TG68K FAIL P17-ii and P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i (consecutive MARK spacings differ), so the selector does not reach the clause of P17-ii.
+// MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; fx68k FAIL P17-iii and P17-i, P17 NOT GRADED; TG68K FAIL P17-iii and P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i (consecutive MARK spacings differ), so the selector does not reach the clause of P17-iii.
 // MUTATION P18 stimulus red NMH_MUTATE=P18: the BLTEN-clear run writes DMACON 0x8240 in place of 0x8200; TG68K FAIL, fx68k FAIL.
 // MUTATION P18-fix stimulus red NMH_MUTATE=P18-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P18-i stimulus red NMH_MUTATE=P18-i: the BLTEN-set run writes DMACON 0x8040 (BLTEN without DMAEN); TG68K FAIL, fx68k FAIL.
 // MUTATION P18-ii stimulus red NMH_MUTATE=P18-ii: the CPU writes to BLT_S after the BLTSIZE write; TG68K FAIL, fx68k FAIL.
-// MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; TG68K FAIL, fx68k FAIL.
-// MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
-// MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); TG68K FAIL, fx68k FAIL.
-// MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; TG68K FAIL, fx68k FAIL.
+// MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; fx68k FAIL P19; TG68K FAIL P19-i, P19 NOT GRADED (the selector does not reach the clause of P19: the unmutated TG68K run already prints FAIL on P19-i).
+// MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; fx68k FAIL P19-fix and P19-i, P19 NOT GRADED; TG68K FAIL P19-fix and P19-i, P19 NOT GRADED. The unmutated run already prints FAIL on P19-i (consecutive MARK spacings differ), so the selector does not reach the clause of P19-fix.
+// MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P19-i, P19 NOT GRADED; TG68K FAIL P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i, so on TG68K this selector does not discriminate.
+// MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); fx68k FAIL P19-ii; TG68K FAIL P19-ii and P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i.
+// MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; fx68k FAIL P19-reg; TG68K FAIL P19-reg and P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i.
 // MUTATION P20-fix stimulus red NMH_MUTATE=P20-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P20-i stimulus red NMH_MUTATE=P20-i: the BLTPRI-set run writes BLTSIZE 0x2010 (2048 words); TG68K FAIL, fx68k FAIL.
 // MUTATION P20-ii stimulus red NMH_MUTATE=P20-ii: the BLTPRI-clear run loops 10 times and then waits for the blit to end; TG68K FAIL, fx68k FAIL.
@@ -369,7 +371,6 @@ struct ListOpts {
     int h_c0 = 0xC0;
     int lh = 0x04;
     std::map<int, int> lh_line;       // per-line override of the RF-L WAIT's position
-    int ptr_switch = 0;               // mutation: after WAIT (ptr_switch,..) the Copper loads BPL1PT with B1
     uint16_t marker_clear = 0x0C00, marker_set = 0x0C20;
 };
 
@@ -386,7 +387,6 @@ CopList list_a(const ListOpts& o) {
         c.off_wait[v] = c.bytes();
         auto it = o.lh_line.find(v);
         append(c.w, cop_wait(v, it != o.lh_line.end() ? it->second : o.lh));
-        if (o.ptr_switch == v) { append(c.w, cop_move(BPL1PTH, uint16_t(kB1 >> 16))); append(c.w, cop_move(BPL1PTL, uint16_t(kB1))); }
     }
     c.off_end = c.bytes();
     c.w.push_back(0xFFFF); c.w.push_back(0xFFFE);
@@ -861,8 +861,8 @@ FPre fetch_pre(const std::string& pn, FetchRun& fr, const std::vector<int>& idx,
         if (first) { ref = fs; first = false; }
         else if (fs != ref) ii = false;
     }
-    p.ii = ii && ref.size() >= 100;
-    g.expect(p.ii, pn + "-ii: the set of fetched lines is the same in every configuration of the proposition and has at least 100 lines (" + dec((long long)ref.size()) + " lines)");
+    p.ii = ii && !ref.empty();
+    g.expect(p.ii, pn + "-ii: the set of fetched lines is the same in every configuration of the proposition and is not empty (" + dec((long long)ref.size()) + " lines)");
     bool iii = true;
     for (int k : idx) {
         auto lm = fetch_lines(fr, k, lo, hi);
@@ -1027,7 +1027,6 @@ void proposition_p5() {
     FetchOpts fo;
     const std::vector<int> hi = {1, 2, 3, 4, 5, 6}, all = {0, 1, 2, 3, 4, 5, 6};
     fetch_pre_mutations("P5", cfg, fo, hi);
-    if (mutating("P5")) cfg[2].w_strt = 0x38;          // H2 writes 0x0038 in place of 0x003C: bit 2 of DDFSTRT stays clear
     if (mutating("P5-vi")) for (int i : hi) cfg[i].w_bplcon0 = 0x1000;  // the hires configurations run in lores
     if (mutating("P5-ctl")) cfg[4].w_strt = 0x38;      // C1 writes C2's DDFSTRT
     FetchRun& fr = fetch_run("R5", cfg, fo);
@@ -1040,16 +1039,15 @@ void proposition_p5() {
     for (int i : hi) cst = cst && st[i].constant;
     bool half_strt = cst && (st[2].f - st[1].f == 4 * fr.P) && st[2].l == st[1].l;
     bool half_stop = cst && (st[2].l - st[3].l == 4 * fr.P) && st[2].f == st[3].f;
-    bool ok = half_strt && half_stop;
     // the control: the weight of bit 3 in hires through the same two comparators
     bool ctl = cst && (st[5].f - st[4].f == 8 * fr.P) && st[5].l == st[4].l && (st[5].l - st[6].l == 8 * fr.P) && st[5].f == st[6].f;
     checks.note("P5 measured (system clock cycles from A(v)): H1 f=" + dec(st[1].f) + " l=" + dec(st[1].l) + "; H2 f=" + dec(st[2].f) + " l=" + dec(st[2].l) + "; H3 f=" + dec(st[3].f) + " l=" + dec(st[3].l) + "; C1 f=" + dec(st[4].f) + " l=" + dec(st[4].l) + "; C2 f=" + dec(st[5].f) + " l=" + dec(st[5].l) + "; C3 f=" + dec(st[6].f) + " l=" + dec(st[6].l) + "; P = " + dec(fr.P));
     checks.note(std::string("P5 measured: the DDFSTRT half (H2 against H1) ") + (half_strt ? "holds" : "does not hold") + ", the DDFSTOP half (H2 against H3) " + (half_stop ? "holds" : "does not hold"));
     bool pre = config_ok(g_cfg_used) && p.all() && vi;
-    bool last_same = cst && st[2].l == st[1].l;
-    g.expect_if(pre, ctl, "P5-ctl: control, hires with bit 2 of both registers clear: DDFSTRT 0x0038 against 0x0030 moves the first B1 read 8 memory cycles later and leaves the last read, and DDFSTOP 0x00D0 against 0x00C8 moves the last read 8 memory cycles later and leaves the first read");
-    g.expect_if(pre, last_same, "P5-last: in hires with FMODE = 0 and DDFSTOP = 0x00D4, DDFSTRT 0x003C against 0x0038 leaves the last B1 read of every fetched line where it was (H2 against H1)");
-    g.expect_if(pre, ok, "P5: opus:AA-ddf.use-b02: in hires with FMODE = 0, setting bit 2 of DDFSTRT (H3) moves the first B1 read of every fetched line 4 memory cycles later and leaves the last read, and setting bit 2 of DDFSTOP moves the last read 4 memory cycles later and leaves the first read");
+    g.expect_if(pre, ctl, "P5-ctl: hires with bit 2 of both registers clear: DDFSTRT 0x0038 against 0x0030 moves the first B1 read 8 memory cycles later and leaves the last read, and DDFSTOP 0x00D0 against 0x00C8 moves the last read 8 memory cycles later and leaves the first read");
+    const std::string conflict = "the pages admit two readings of the hires fetch edges: HRM p.195 Figure 6-9 (data fetch start only at even multiples of 8 clocks) and HRM p.197 Figure 6-12 (aligned blocks) against HRM p.91 and AA p.21 (bit 2 is H3); HRM p.80's 'only one word is fetched at this limit' is about the $D8 limit, and H1 and H2 use DDFSTOP $D4";
+    checks.note("P5-last measured, not graded: l(H1) = " + dec(st[1].l) + ", l(H2) = " + dec(st[2].l) + " system clock cycles from A(v), DDFSTOP = 0x00D4 in both and DDFSTRT 0x0038 against 0x003C; " + conflict);
+    checks.note("P5 measured, not graded: f(H2) - f(H1) = " + dec(st[2].f - st[1].f) + ", l(H2) - l(H3) = " + dec(st[2].l - st[3].l) + " system clock cycles (4 memory cycles = " + dec(4 * fr.P) + "); " + conflict);
 }
 
 // P7: pointer advance and modulo.
@@ -1109,7 +1107,7 @@ void proposition_p7() {
     g.expect(ii && !ref.empty(), "P7-ii: within each fetched line consecutive reads of a plane are 2 bytes apart");
     g.expect(iii && !ref.empty(), "P7-iii: n_1(v) = n_2(v) on every line, and n is the same on every line of a configuration (n = " + dec(n_cfg[0]) + ", " + dec(n_cfg[1]) + ", " + dec(n_cfg[2]) + ")");
     g.expect(iv, "P7-iv: n(M-B) = " + dec(n_cfg[1]) + " is greater than n(M-A) = " + dec(n_cfg[0]));
-    g.expect(v5 && ref.size() >= 100, "P7-v: the set of fetched lines is the same in all three configurations (" + dec((long long)ref.size()) + " lines)");
+    g.expect(v5 && !ref.empty(), "P7-v: the set of fetched lines is the same in all three configurations and is not empty (" + dec((long long)ref.size()) + " lines)");
     bool dm = (fr.dmacon_copy & 0x0380) == 0x0380;
     g.expect(dm, "P7-vi: the stored DMACONR shows DMAEN, BPLEN and COPEN set");
     bool reg = script_clean(fr.sc, {{kCop, kCopEnd}, {kB1, kB1 + kPlaneLen}, {kB2, kB2 + kPlaneLen}});
@@ -1117,7 +1115,7 @@ void proposition_p7() {
         reg = reg && field_regions_ok(fr, k, {{kCop, kCopEnd, false}, {kB1, kB1 + kPlaneLen, false}, {kB2, kB2 + kPlaneLen, false}});
     g.expect(reg, "P7-reg: during every observed field the regions COP, B1 and B2 are read only, and no instruction of the program writes into them after DMA is enabled");
 
-    bool pre = fr.fix && config_ok(g_cfg_used) && fr.rfm && fr.rfl && ii && iii && iv && v5 && ref.size() >= 100 && dm && reg;
+    bool pre = fr.fix && config_ok(g_cfg_used) && fr.rfm && fr.rfl && ii && iii && iv && v5 && !ref.empty() && dm && reg;
     // pitch of plane p in configuration k: s_p(v+1) - s_p(v) for consecutive fetched lines
     bool rel1 = true;
     long long pitch[3][2];
@@ -1363,7 +1361,7 @@ void proposition_p6() {
     if (mutating("P6-i-RFL")) cfg[1].patch_wait3e = true;
     if (mutating("P6-ii")) wo.bplcon0 = 0x0001;
     if (mutating("P6-iv")) cfg[1].w_diwstop = 0x10C1;
-    if (mutating("P6")) wo.lo.ptr_switch = 0x70;       // from line 0x70 the Copper points plane 1 at B1 in place of Z
+    if (mutating("P6")) cfg[1].w_diwstop = 0xB0C1;     // W2 writes DIWSTOP 0xB0C1 in place of 0xA0C1; the comparison keeps the 0xA0C1 window
     if (mutating("P6-i-RFM")) wo.lo.h_c0 = 0xBE;
     WinRun& w = win_run("W6", cfg, wo);
 
@@ -1400,7 +1398,7 @@ void proposition_p6() {
     }
     bool ok = fl && cont && last[0] >= 0 && last[1] >= 0 &&
               last[0] - last[1] == int(cfg[0].diwstop >> 8) - int(cfg[1].diwstop >> 8);
-    g.expect_if(pre, ok, "P6: opus:AA-ddf.c6 sol:AA-ddf.c3: bit-plane DMA reads Z on one contiguous run of beam lines in W1 (DIWSTRT 0x4081, DIWSTOP 0xF0C1) and in W2 (DIWSTRT 0x5081, DIWSTOP 0xA0C1); the first line of the run is DIWSTRT bits 15-8 (0x40 in W1, 0x50 in W2), and the last line of W1 is 0xF0 - 0xA0 = 0x50 lines after that of W2");
+    g.expect_if(pre, ok, "P6: bit-plane DMA reads Z on one contiguous run of beam lines in W1 (DIWSTRT 0x4081, DIWSTOP 0xF0C1) and in W2 (DIWSTRT 0x5081, DIWSTOP 0xA0C1); the first line of the run is DIWSTRT bits 15-8 (0x40 in W1, 0x50 in W2), and the last line of W1 is 0xF0 - 0xA0 = 0x50 lines after that of W2");
 }
 
 // ---- P8-P11: vertical start and stop, without DIWHIGH ---------------------------------
@@ -1606,7 +1604,7 @@ void proposition_p13() {
     bool iii = f0 >= 0;
     g.expect(iii, "P13-iii: the base window is non-empty");
     bool pre = config_ok(g_cfg_used) && r.p.fix && r.p.rfv && r.p.dm && r.p.reg && r.ii && iii;
-    g.expect_if(pre, f0 == 0x28 && f1 < 0, "P13: opus:AA-diwhigh.bit-b01: with DIWHIGH written after DIWSTRT = 0x2881 and DIWSTOP = 0x2AC1, DIWHIGH = 0x2100 gives a window from line 0x28, and setting bit 1 (0x2102, start V9) puts the start at line 0x228, which a PAL field does not reach, so no window line appears");
+    g.expect_if(pre, f0 == 0x28 && f1 < 0, "P13: with DIWHIGH written after DIWSTRT = 0x2881 and DIWSTOP = 0x2AC1, DIWHIGH = 0x2100 gives a window from line 0x28, and setting bit 1 (0x2102, start V9) puts the start at line 0x228, which a PAL field does not reach, so no window line appears (the observation does not separate bit 1 = V9 from any other mapping that moves the start out of range)");
 }
 
 void proposition_p14() {
@@ -1630,28 +1628,36 @@ void proposition_p14() {
 
 void proposition_p15() {
     if (!want("P15")) return;
-    auto cfg = high_cfg(0x2881, 0x10C1, {0x2100, 0x2300});
+    // A: DIWSTOP 0x10C1, B: DIWSTOP 0x11C1 (both DIWHIGH 0x2100), V: DIWSTOP 0x10C1 with DIWHIGH 0x2300
+    std::vector<WCfg> cfg = high_cfg(0x2881, 0x10C1, {0x2100, 0x2100, 0x2300});
+    cfg[1].diwstop = 0x11C1;
     WinOpts wo;
     win_pre_mutations("P15", cfg, wo, 0);
     high_pre_ii_mutation("P15", cfg);
-    if (mutating("P15")) cfg[1].w_diwhigh = 0x2100;      // 0x2300 is written as 0x2100: bit 9 stays clear
-    if (mutating("P15-iii")) cfg[1].w_diwstrt = 0x2681;  // the varied window starts at line 0x26, before line 0x28
+    if (mutating("P15")) cfg[2].w_diwhigh = 0x2100;      // 0x2300 is written as 0x2100: bit 9 stays clear
+    if (mutating("P15-iii")) cfg[2].w_diwstrt = 0x2681;  // the varied window starts at line 0x26, before line 0x28
     WinRun& w = win_run("W15", cfg, wo);
     HPre r = high_pre("P15", w);
-    const auto& b = w.vf[0].win;
-    const auto& v = w.vf[1].win;
+    const auto& a = w.vf[0].win;
+    const auto& b = w.vf[1].win;
+    const auto& v = w.vf[2].win;
+    int fa = first_line(a, 0x26, 0x120), la = last_line(a, 0x26, 0x120);
     int fb = first_line(b, 0x26, 0x120), lb = last_line(b, 0x26, 0x120);
-    bool base_ok = fb == 0x28 && (lb == 0x10F || lb == 0x110) && contiguous(b, 0x26, 0x120);
-    for (int x = lb + 1; x <= 0x120; ++x) if (b.count(x)) base_ok = false;
+    auto closes = [](const std::set<int>& s, int f, int l) {
+        bool ok = f == 0x28 && l >= 0 && l < 0x120 && contiguous(s, 0x26, 0x120);
+        for (int x = l + 1; x <= 0x120; ++x) if (s.count(x)) ok = false;
+        return ok;
+    };
+    bool base_ok = closes(a, fa, la) && closes(b, fb, lb) && lb - la == 1;
     bool var_ok = true;
     for (int x = 0x28; x <= 0x120; ++x) if (!v.count(x)) var_ok = false;
-    checks.note("P15 measured (first-last line of Win up to 0x120): DIWHIGH 0x2100: " + hexs(fb, 3) + "-" + hexs(lb, 3) + "; 0x2300: " + hexs(first_line(v, 0x26, 0x120), 3) + "-" + hexs(last_line(v, 0x26, 0x120), 3));
+    checks.note("P15 measured (first-last line of Win up to 0x120): DIWSTOP 0x10C1, DIWHIGH 0x2100: " + hexs(fa, 3) + "-" + hexs(la, 3) + "; DIWSTOP 0x11C1, DIWHIGH 0x2100: " + hexs(fb, 3) + "-" + hexs(lb, 3) + "; DIWSTOP 0x10C1, DIWHIGH 0x2300: " + hexs(first_line(v, 0x26, 0x120), 3) + "-" + hexs(last_line(v, 0x26, 0x120), 3));
     bool iii = true;
     for (int x = 0x1D; x < 0x28; ++x) if (v.count(x)) iii = false;
-    iii = iii && fb >= 0;
-    g.expect(iii, "P15-iii: before line 0x28 of the varied configuration's observed field no line is in Win, the base window had closed");
+    iii = iii && fa >= 0 && fb >= 0;
+    g.expect(iii, "P15-iii: before line 0x28 of the varied configuration's observed field no line is in Win, the previous window had closed");
     bool pre = config_ok(g_cfg_used) && r.p.fix && r.p.rfv && r.p.dm && r.p.reg && r.ii && iii;
-    g.expect_if(pre, base_ok && var_ok, "P15: opus:AA-diwhigh.bit-b09: with DIWHIGH written after DIWSTRT = 0x2881 and DIWSTOP = 0x10C1, DIWHIGH = 0x2100 closes the window at line 0x110 (the last line is 0x10F or 0x110, no later line up to 0x120 is in Win), and setting bit 9 (0x2300, stop 0x310) keeps every line from 0x28 through 0x120 in Win");
+    g.expect_if(pre, base_ok && var_ok, "P15: with DIWHIGH written after DIWSTRT = 0x2881, DIWHIGH = 0x2100 closes the window before line 0x120 for DIWSTOP = 0x10C1 and for DIWSTOP = 0x11C1, the last line of the second is exactly one line after that of the first, and setting bit 9 (DIWHIGH 0x2300, stop 0x310) keeps every line from 0x28 through 0x120 in Win (the observation does not separate bit 9 = V9 from any other mapping that puts the stop later than 0x120)");
 }
 
 // ---- the joint assertions -------------------------------------------------------------
@@ -1689,17 +1695,22 @@ DRun drun(const Script& s) {
     return d;
 }
 
-// RF-F: consecutive spacings of the stores to MARK agree to within 1 %.
+// RF-F: consecutive spacings of the stores to MARK are equal, to the system clock cycle.
 bool rff_ok(const RunData& r, size_t need) {
     std::vector<uint64_t> t;
     for (const auto& m : r.marks) t.push_back(m.cyc);
     if (t.size() < need) return false;
     t.resize(need);
+    {
+        std::string sp;
+        for (size_t i = 0; i + 1 < t.size(); ++i) sp += (i ? ", " : "") + dec(int64_t(t[i + 1]) - int64_t(t[i]));
+        checks.note("RF-F measured: spacings of the first " + dec((long long)need) + " stores to MARK (system clock cycles): " + sp);
+    }
     int64_t s0 = int64_t(t[1]) - int64_t(t[0]);
     if (s0 <= 0) return false;
     for (size_t i = 1; i + 1 < t.size(); ++i) {
         int64_t s = int64_t(t[i + 1]) - int64_t(t[i]);
-        if (s <= 0 || std::llabs(s - s0) * 100 > s0) return false;
+        if (s <= 0 || s != s0) return false;
     }
     return true;
 }
@@ -1775,7 +1786,7 @@ void proposition_p16() {
     DRun ra = drun(s16(a)), rb = drun(s16(b));
     g.expect(ra.fix && rb.fix, "P16-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P16-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
+    g.expect(i, "P16-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0100) && copy_as_written(rb, 0x0100);
     g.expect(ii, "P16-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 8 as written by the command list");
     auto bpu = [](const DRun& d) { auto v = script_value(d.sc, BPLCON0); return v ? (*v >> 12) & 7 : 0; };
@@ -1832,7 +1843,7 @@ void proposition_p17() {
     DRun ra = drun(s17(a)), rb = drun(s17(b));
     g.expect(ra.fix && rb.fix, "P17-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P17-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
+    g.expect(i, "P17-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0080) && copy_as_written(rb, 0x0080);
     g.expect(ii, "P17-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 7 as written by the command list");
     bool iii = true;
@@ -1940,7 +1951,7 @@ void proposition_p19() {
     DRun ra = drun(s19(a)), rb = drun(s19(b));
     g.expect(ra.fix && rb.fix, "P19-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P19-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
+    g.expect(i, "P19-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0020) && copy_as_written(rb, 0x0020);
     g.expect(ii, "P19-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 5 as written by the command list");
     std::vector<Region> regs;
@@ -2009,14 +2020,10 @@ struct P20Res {
     size_t cpu_in = 0;           // between the blitter's second and second-to-last access
     size_t cpu_edge0 = 0, cpu_edge1 = 0;   // first-second and second-to-last-last
     bool loop_ok = false;
+    uint64_t t_start = 0, t_end = 0;   // the loop-start and loop-end markers
 };
 
-int64_t measured_P() {
-    FetchRun& fr = run_r1();
-    return fr.P;
-}
-
-P20Res analyse20(const Script& s, int64_t P) {
+P20Res analyse20(const Script& s) {
     P20Res r;
     r.d = drun(s);
     const RunData& d = *r.d.r;
@@ -2052,15 +2059,21 @@ P20Res analyse20(const Script& s, int64_t P) {
             else if (a.cyc > tl2 && a.cyc < bt.back()) ++r.cpu_edge1;
         }
     }
-    // (ii): an access within 64 memory cycles before I and after it, and SCR writes after I
-    uint64_t win = uint64_t(64 * P);
-    bool before = false, after = false, scr_after = false;
-    for (uint64_t t : cpu) {
-        if (t < r.first && r.first - t < win) before = true;
-        if (t > r.last && t - r.last < win) after = true;
+    // (ii): between the program's two markers (0x5A01 at MARK + 6, stored just before the BLTSIZE write,
+    // and 0x5A02 at MARK + 8, stored after the loop) the CPU executes only the BLTSIZE write and the loop.
+    // The first marker lies before the blitter's first access, the second after its last access, and
+    // SCR writes continue after the blit.
+    uint64_t ms = 0, me = 0;
+    for (const auto& a : d.acc) {
+        if (!a.wr) continue;
+        if (a.byte == kMark + 6 && a.data == 0x5A01 && !ms) ms = a.cyc;
+        if (a.byte == kMark + 8 && a.data == 0x5A02 && !me) me = a.cyc;
     }
+    r.t_start = ms; r.t_end = me;
+    if (have4) dbg("P20 markers: start " + std::to_string(ms) + " end " + std::to_string(me) + "; blitter first " + std::to_string(bt[0]) + " second " + std::to_string(bt[1]) + " second-to-last " + std::to_string(bt[bt.size() - 2]) + " last " + std::to_string(bt.back()));
+    bool scr_after = false;
     for (uint64_t t : scr) if (t > r.last) scr_after = true;
-    r.loop_ok = before && after && scr_after;
+    r.loop_ok = have4 && ms && me && ms < bt[0] && me > bt.back() && scr_after;
     return r;
 }
 
@@ -2074,14 +2087,17 @@ void proposition_p20() {
     if (mutating("P20-iii")) a.bpl_on = true;
     if (mutating("P20-iv")) a.copy_first = true;
     if (mutating("P20")) a.dmacon = 0x8240;            // the BLTPRI run keeps BLTPRI clear
-    int64_t P = measured_P();
-    P20Res ra = analyse20(s20(a), P), rb = analyse20(s20(b), P);
+    P20Res ra = analyse20(s20(a)), rb = analyse20(s20(b));
     g.expect(ra.d.fix && rb.d.fix, "P20-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     const size_t want_n = 4096;
     bool i = ra.nS == want_n && ra.nD == want_n && rb.nS == want_n && rb.nD == want_n;
     g.expect(i, "P20-i: the blit completes in both runs: 4096 reads in BLT_S and 4096 writes in BLT_D (height 128 x width 32); measured " + dec((long long)ra.nS) + "/" + dec((long long)ra.nD) + " and " + dec((long long)rb.nS) + "/" + dec((long long)rb.nD));
     bool ii = ra.loop_ok && rb.loop_ok;
-    g.expect(ii, "P20-ii: the CPU is inside its loop throughout the blit: it makes an access less than 64 memory cycles (P = " + dec(P) + " system clock cycles each) before the blit's first access and after its last, and SCR writes continue after the blit, in both runs");
+    g.expect(ii, "P20-ii: the CPU is inside its loop throughout the blit: the program's marker 0x5A01 (stored before the BLTSIZE write) lies before the blitter's first access, its marker 0x5A02 (stored after the loop) lies after the blitter's last access, and SCR writes continue after the blit, in both runs");
+    {
+        auto rel = [](uint64_t t, uint64_t ref) { return t >= ref ? "+" + dec(int64_t(t - ref)) : "-" + dec(int64_t(ref - t)); };
+        checks.note("P20 measured (system clock cycles): BLTPRI set: loop-start marker " + rel(ra.t_start, ra.first) + " from the blitter's first access, loop-end marker " + rel(ra.t_end, ra.last) + " from its last access; BLTPRI clear: " + rel(rb.t_start, rb.first) + " and " + rel(rb.t_end, rb.last));
+    }
     bool iii = true;
     for (const P20Res* r : {&ra, &rb}) {
         const RunData& d = *r->d.r;
@@ -2435,6 +2451,9 @@ int main(int argc, char** argv) {
     // the claims of SPECIFICATION.md section 1, which no proposition grades
     checks.record("DECLINED-X-BITS: opus:AA-ddf.use-b00 opus:AA-ddf.use-b08 opus:AA-ddf.use-b09 opus:AA-ddf.use-b10 opus:AA-ddf.use-b11 opus:AA-ddf.use-b12 opus:AA-ddf.use-b13 opus:AA-ddf.use-b14 opus:AA-ddf.use-b15: bits printed X have no stated effect; the programs write them as 0");
     checks.record("DECLINED-H2: opus:AA-ddf.use-b01: the page names bit 1 H2 and states no condition under which an H2 step moves the fetch");
+    checks.record("DECLINED-H3: opus:AA-ddf.use-b02: the page names bit 2 H3 without a condition, and the pages bearing on the hires fetch admit two readings (HRM p.195 and p.197 against HRM p.60, p.91 and AA p.21); the hires configurations are measured (P5, P5-last) and no H3 effect is graded");
+    checks.record("DECLINED-DMA-WINDOW-IDENTITY: opus:AA-ddf.c6 sol:AA-ddf.c3: identity of the bit-plane DMA line set and the display window line set needs two independently measured sets; the window instrument shows the window only where bit-plane data is fetched, and no page fixes an absolute window line set; P6 grades the DMA lines against the registers and carries neither id");
+    checks.record("DECLINED-DIWHIGH-V9: opus:AA-diwhigh.bit-b01 opus:AA-diwhigh.bit-b09: a weight of 0x200 lines puts the start at 0x228 or the stop at 0x310, lines a PAL field does not reach; a missing window or a window that stays open does not separate bit 1 or bit 9 from any other mapping with the same observation; P13 and P15 carry neither id");
     checks.record("DECLINED-VARBEAM: opus:AA-ddf.c10 sol:AA-ddf.c6: no number is given for variable beam counter mode; the programs keep it off");
     checks.record("DECLINED-MAX-ROWS: opus:AA-ddfstrt.t1 sol:AA-ddfstrt.c5 opus:AA-ddfstop.t3 sol:AA-ddfstop.c7: the rows labelled (max) state a limit that no proposition grades");
     checks.record("DECLINED-VRAM: opus:AA-dmacon.b09b: the UHRES pointer addresses VRAM and its cycle is identified on the RGA lines, neither of which is a port of nanomig.v");

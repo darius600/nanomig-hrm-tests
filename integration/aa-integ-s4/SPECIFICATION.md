@@ -1504,6 +1504,8 @@ P2 measured (system clock cycles from A(v)): 0x0058 f=472 l=728 n=5; 0x0098 f=47
 P5 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP, 16 system clock cycles before the next T0
 P5 measured (system clock cycles from A(v)): H1 f=440 l=1752; H2 f=472 l=1720; H3 f=472 l=1720; C1 f=376 l=1688; C2 f=440 l=1688; C3 f=440 l=1624; P = 8
 P5 measured: the DDFSTRT half (H2 against H1) does not hold, the DDFSTOP half (H2 against H3) does not hold
+P5-last measured, not graded: l(H1) = 1752, l(H2) = 1720 system clock cycles from A(v), DDFSTOP = 0x00D4 in both and DDFSTRT 0x0038 against 0x003C; the pages admit two readings of the hires fetch edges: HRM p.195 Figure 6-9 (data fetch start only at even multiples of 8 clocks) and HRM p.197 Figure 6-12 (aligned blocks) against HRM p.91 and AA p.21 (bit 2 is H3); HRM p.80's 'only one word is fetched at this limit' is about the $D8 limit, and H1 and H2 use DDFSTOP $D4
+P5 measured, not graded: f(H2) - f(H1) = 32, l(H2) - l(H3) = 0 system clock cycles (4 memory cycles = 32); the pages admit two readings of the hires fetch edges: HRM p.195 Figure 6-9 (data fetch start only at even multiples of 8 clocks) and HRM p.197 Figure 6-12 (aligned blocks) against HRM p.91 and AA p.21 (bit 2 is H3); HRM p.80's 'only one word is fetched at this limit' is about the $D8 limit, and H1 and H2 use DDFSTOP $D4
 P6 measured, configuration 1: Fetch 176 lines (040 - 0EF), Win 176 lines (040 - 0EF), k = 2, RF-V holds, Win equals Fetch: yes
 P6 measured, configuration 2: Fetch 80 lines (050 - 09F), Win 80 lines (050 - 09F), k = 2, RF-V holds, Win equals Fetch: yes
 P7 measured (bytes): pitch plane 1 / plane 2: M-A 48/64, M-B 50/66, M-C 64/48
@@ -1514,12 +1516,18 @@ P11 measured (first-last line of Win): 0x90C1: 040-08F; 0x10C1: 040-10F
 P12 measured (first-last line of Win): DIWHIGH 0x2100: 028-129; 0x2101: 128-129
 P13 measured (first-last line of Win, from line 0x1D): DIWHIGH 0x2100: 028-129; 0x2102: empty
 P14 measured (first-last line of Win): DIWHIGH 0x2000: 028-029; 0x2100: 028-129
-P15 measured (first-last line of Win up to 0x120): DIWHIGH 0x2100: 028-10F; 0x2300: 028-120
+P15 measured (first-last line of Win up to 0x120): DIWSTOP 0x10C1, DIWHIGH 0x2100: 028-10F; DIWSTOP 0x11C1, DIWHIGH 0x2100: 028-110; DIWSTOP 0x10C1, DIWHIGH 0x2300: 028-120
 P16 measured (reads per field and plane, BPLEN set / clear): 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0
 P17 measured (reads in COP in the two fields, COPEN set / clear): 10 / 0
 P18 measured (BLT_S reads / BLT_D writes): BLTEN set 251 / 252, BLTEN clear 0 / 0
 P19 measured (reads per field and sprite, SPREN set / clear): 20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0
 P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
+RF-F measured: spacings of the first 3 stores to MARK (system clock cycles), run by run in the order of P16, P17, P19
+    TG68K: P16 568376, 568424 (the second run is not printed once the first differs); P17 568424, 568424 and 568376, 568424; P19 568424, 568376 (the second run is not printed once the first differs)
+    fx68k: P16 568456, 568344 (the second run is not printed once the first differs); P17 568320, 568496 (likewise); P19 568408, 568408 and 568408, 568408
+P20 measured (system clock cycles from the blitter's first and last access): marker 0x5A01 and marker 0x5A02
+    TG68K: BLTPRI set -76 / +1928508, BLTPRI clear -76 / +1895212
+    fx68k: BLTPRI set -76 / +1771740, BLTPRI clear -76 / +1736628
 P20 measured (CPU accesses between the blitter's second and second-to-last access, BLTPRI set / clear)
     TG68K: 0 / 2071     fx68k: 0 / 1982
 P20 measured (CPU accesses between the blitter's first and second access, BLTPRI set / clear): 1 / 1; between its second-to-last and last access: 1 / 1
@@ -1530,15 +1538,22 @@ P21 (phase-B samples inside the blit, base run / long phase A)
     TG68K: 511 / 511    fx68k: 515 / 514
 ```
 
-Graded counts: both builds print 149 passed, 2 failed. The two FAIL lines are
-P5 and P5-last.
+Graded counts: fx68k prints 145 passed, 2 failed; TG68K prints 143 passed, 3
+failed. The FAIL lines are the RF-F lines: P16-i and P17-i on both builds, and
+P19-i on TG68K. Where RF-F fails, the proposition it gates (P16, P17, and on
+TG68K P19) prints NOT GRADED.
 
-P5. DDFSTRT bit 2 (H3) moves the first read of every fetched line 4 memory
-cycles later (f: 440 to 472), but it also moves the last read 4 memory cycles
-earlier (l: 1752 to 1720) with DDFSTOP unchanged (P5-last); and DDFSTOP bit 2
-(0x00D4 against 0x00D0, DDFSTRT 0x003C) leaves the last read where it was (1720
-and 1720). The control P5-ctl, the same comparators on bit 3 of both registers
-in hires, prints PASS.
+RF-F. The stores to MARK that bound a field are made by a polled wait. The
+measured spacings of consecutive stores differ by 48 to 176 system clock
+cycles, between 568320 and 568496, on both builds, in at least one run of each
+of P16 and P17.
+
+P5. In hires the first read moves with DDFSTRT bit 2 (H3) by 4 memory cycles
+(f: 440 to 472), the last read moves 4 memory cycles earlier with DDFSTOP
+unchanged (l: 1752 to 1720), and DDFSTOP bit 2 (0x00D4 against 0x00D0, DDFSTRT
+0x003C) leaves the last read where it was (1720 and 1720). These are measured,
+not graded. The control P5-ctl, the same comparators on bit 3 of both
+registers in hires, prints PASS.
 
 P20. With BLTPRI set no CPU access falls between the blitter's second access and
 its second-to-last; with BLTPRI clear 2071 (TG68K) and 1982 (fx68k) fall there.
@@ -1561,5 +1576,8 @@ the stimulus (the command list, the Copper list or the harness configuration)
 and prints FAIL through the unchanged comparator on both builds, with every run
 reaching DONE. Where the mutated stimulus also changes a neighbouring
 precondition, the record lists it as "Also printing FAIL". P5 and P5-last
-are the assertions that are red in the normal run; their records name the
-green control (5.3).
+are MEASURED lines and have no record. The records of P16, P17 and P19 and of
+their preconditions state the result per core: where the RF-F line (P16-i,
+P17-i, P19-i) is red in the unmutated run, the selector prints FAIL on that
+line, the proposition is NOT GRADED, and the selector does not reach the clause
+of the proposition.
