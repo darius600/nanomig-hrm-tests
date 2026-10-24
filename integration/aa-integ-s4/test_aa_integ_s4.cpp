@@ -23,7 +23,7 @@
 //
 // MUTATION_RECORDS_BEGIN
 // MUTATION P20 stimulus red NMH_MUTATE=P20: the BLTPRI-set run writes DMACON 0x8240 (BLTPRI clear); TG68K FAIL, fx68k FAIL.
-// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; the line checks the host's own configuration value, P17 prints the same counts (10 / 0) and is NOT GRADED; fx68k FAIL CONFIG and P17-i, P17 NOT GRADED; TG68K FAIL CONFIG and P17-i, P17 NOT GRADED.
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; the line checks the host's own configuration value, P17 prints the same counts (10 / 0) and is NOT GRADED; TG68K FAIL, fx68k FAIL.
 // MUTATION RF-RUNS stimulus red NMH_MUTATE=RF-RUNS: every RF-L WAIT of the DDFSTRT run is WAIT (v,0x0C) in place of (v,0x04), so A(0x3E) - T0 differs from that of the other runs; TG68K FAIL, fx68k FAIL.
 // MUTATION P1 stimulus red NMH_MUTATE=P1: the DDFSTRT write 0x0068 is 0x0058; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-fix stimulus red NMH_MUTATE=P1-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
@@ -128,26 +128,29 @@
 // MUTATION P15-reg stimulus red NMH_MUTATE=P15-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P15-ii stimulus red NMH_MUTATE=P15-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
 // MUTATION P15-iii stimulus red NMH_MUTATE=P15-iii: the varied configuration writes DIWSTRT 0x2681; TG68K FAIL, fx68k FAIL.
-// MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; fx68k FAIL P16-i, P16 NOT GRADED; TG68K FAIL P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16.
-// MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; fx68k FAIL P16-fix and P16-i, P16 NOT GRADED; TG68K FAIL P16-fix and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16.
-// MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P16-i, P16 NOT GRADED; TG68K FAIL P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i, so this selector does not discriminate.
-// MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); fx68k FAIL P16-ii and P16-i, P16 NOT GRADED; TG68K FAIL P16-ii and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-ii.
-// MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); fx68k FAIL P16-iii and P16-i, P16 NOT GRADED; TG68K FAIL P16-iii and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-iii.
-// MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; fx68k FAIL P16-reg and P16-i, P16 NOT GRADED; TG68K FAIL P16-reg and P16-i, P16 NOT GRADED. The unmutated run already prints FAIL on P16-i (consecutive MARK spacings differ), so the selector does not reach the clause of P16-reg.
-// MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; fx68k FAIL P17-i, P17 NOT GRADED (the selector does not reach the clause of P17: the unmutated fx68k run already prints FAIL on P17-i); TG68K FAIL P17.
-// MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; fx68k FAIL P17-fix and P17-i, P17 NOT GRADED; TG68K FAIL P17-fix, P17 NOT GRADED. The unmutated fx68k run already prints FAIL on P17-i.
-// MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P17-i, P17 NOT GRADED; TG68K FAIL P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i, so this selector does not discriminate.
-// MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); fx68k FAIL P17-ii and P17-i, P17 NOT GRADED; TG68K FAIL P17-ii and P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i (consecutive MARK spacings differ), so the selector does not reach the clause of P17-ii.
-// MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; fx68k FAIL P17-iii and P17-i, P17 NOT GRADED; TG68K FAIL P17-iii and P17-i, P17 NOT GRADED. The unmutated run already prints FAIL on P17-i (consecutive MARK spacings differ), so the selector does not reach the clause of P17-iii.
+// MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-i stimulus red NMH_MUTATE=P16-i-lace: BPLCON0 is 0x4004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566696 and 568304 (fx68k), 566576 and 568376 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 600 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P16-i), fx68k FAIL (P16-i).
+// MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); TG68K FAIL, fx68k FAIL.
+// MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; TG68K FAIL, fx68k FAIL.
+// MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-i stimulus red NMH_MUTATE=P17-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566680 and 568320 (fx68k), 566624 and 568424 (TG68K), against a longest polling-loop pass of 400 (fx68k) and 280 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P17-i), fx68k FAIL (P17-i).
+// MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P18 stimulus red NMH_MUTATE=P18: the BLTEN-clear run writes DMACON 0x8240 in place of 0x8200; TG68K FAIL, fx68k FAIL.
 // MUTATION P18-fix stimulus red NMH_MUTATE=P18-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P18-i stimulus red NMH_MUTATE=P18-i: the BLTEN-set run writes DMACON 0x8040 (BLTEN without DMAEN); TG68K FAIL, fx68k FAIL.
 // MUTATION P18-ii stimulus red NMH_MUTATE=P18-ii: the CPU writes to BLT_S after the BLTSIZE write; TG68K FAIL, fx68k FAIL.
-// MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; fx68k FAIL P19; TG68K FAIL P19-i, P19 NOT GRADED (the selector does not reach the clause of P19: the unmutated TG68K run already prints FAIL on P19-i).
-// MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; fx68k FAIL P19-fix and P19-i, P19 NOT GRADED; TG68K FAIL P19-fix and P19-i, P19 NOT GRADED. The unmutated run already prints FAIL on P19-i (consecutive MARK spacings differ), so the selector does not reach the clause of P19-fix.
-// MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; fx68k FAIL P19-i, P19 NOT GRADED; TG68K FAIL P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i, so on TG68K this selector does not discriminate.
-// MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); fx68k FAIL P19-ii; TG68K FAIL P19-ii and P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i.
-// MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; fx68k FAIL P19-reg; TG68K FAIL P19-reg and P19-i, P19 NOT GRADED. The unmutated TG68K run already prints FAIL on P19-i.
+// MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-i stimulus red NMH_MUTATE=P19-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566632 and 568456 (fx68k), 566576 and 568376 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 600 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P19-i), fx68k FAIL (P19-i).
+// MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; TG68K FAIL, fx68k FAIL.
 // MUTATION P20-fix stimulus red NMH_MUTATE=P20-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P20-i stimulus red NMH_MUTATE=P20-i: the BLTPRI-set run writes BLTSIZE 0x2010 (2048 words); TG68K FAIL, fx68k FAIL.
 // MUTATION P20-ii stimulus red NMH_MUTATE=P20-ii: the BLTPRI-clear run loops 10 times and then waits for the blit to end; TG68K FAIL, fx68k FAIL.
@@ -1695,22 +1698,53 @@ DRun drun(const Script& s) {
     return d;
 }
 
-// RF-F: consecutive spacings of the stores to MARK are equal, to the system clock cycle.
+// The byte address of the first instruction of the program's vertical-blank polling loop
+// (op_wvb: MOVE.W VPOSR(a3),d0 ; BTST #0,d0), found in the assembled program.
+uint32_t poll_head() {
+    static uint32_t head = 0;
+    static bool done = false;
+    if (done) return head;
+    done = true;
+    FILE* f = std::fopen((g_dir + "/prog_s4.bin").c_str(), "rb");
+    if (!f) return 0;
+    std::vector<uint8_t> b;
+    int c;
+    while ((c = std::fgetc(f)) != EOF) b.push_back(uint8_t(c));
+    std::fclose(f);
+    const uint8_t pat[8] = {0x30, 0x2B, 0x00, 0x04, 0x08, 0x00, 0x00, 0x00};
+    for (size_t i = 0; i + 8 <= b.size(); i += 2)
+        if (std::memcmp(&b[i], pat, 8) == 0) { head = 0x080400 + uint32_t(i); break; }
+    return head;
+}
+
+// RF-F: consecutive spacings of the stores to MARK are equal to within Q, the longest pass of
+// the polling loop that precedes each store (the instrument resolution, measured in the run).
 bool rff_ok(const RunData& r, size_t need) {
     std::vector<uint64_t> t;
     for (const auto& m : r.marks) t.push_back(m.cyc);
     if (t.size() < need) return false;
     t.resize(need);
+    const uint32_t head = poll_head();
+    int64_t q = 0;
+    long npass = 0;
+    for (size_t i = 0; head && i + 1 < t.size(); ++i) {
+        uint64_t prev = 0;
+        for (const auto& a : reads(r, t[i], t[i + 1], head, head + 2)) {
+            if (prev) { q = std::max(q, int64_t(a.cyc) - int64_t(prev)); ++npass; }
+            prev = a.cyc;
+        }
+    }
     {
         std::string sp;
         for (size_t i = 0; i + 1 < t.size(); ++i) sp += (i ? ", " : "") + dec(int64_t(t[i + 1]) - int64_t(t[i]));
-        checks.note("RF-F measured: spacings of the first " + dec((long long)need) + " stores to MARK (system clock cycles): " + sp);
+        checks.note("RF-F measured: spacings of the first " + dec((long long)need) + " stores to MARK (system clock cycles): " + sp + "; longest pass of the polling loop at 0x" + hexs(head) + " over " + dec(npass) + " passes: " + dec(q) + " system clock cycles");
     }
+    if (npass == 0 || q <= 0 || q >= 1816) return false;
     int64_t s0 = int64_t(t[1]) - int64_t(t[0]);
     if (s0 <= 0) return false;
     for (size_t i = 1; i + 1 < t.size(); ++i) {
         int64_t s = int64_t(t[i + 1]) - int64_t(t[i]);
-        if (s <= 0 || s != s0) return false;
+        if (s <= 0 || std::llabs(s - s0) > q) return false;
     }
     return true;
 }
@@ -1779,6 +1813,7 @@ void proposition_p16() {
     a.dmacon = 0x8300; b.dmacon = 0x8200;
     if (mutating("P16-fix")) { a.fix = false; b.fix = false; }
     if (mutating("P16-i")) a.skip_wl30 = true;
+    if (mutating("P16-i-lace")) { a.bplcon0 = 0x4004; b.bplcon0 = 0x4004; }
     if (mutating("P16-ii")) a.dmacon = 0x8100;
     if (mutating("P16-iii")) { a.bplcon0 = 0x0000; b.bplcon0 = 0x0000; }
     if (mutating("P16-reg")) a.stray = true;
@@ -1786,7 +1821,7 @@ void proposition_p16() {
     DRun ra = drun(s16(a)), rb = drun(s16(b));
     g.expect(ra.fix && rb.fix, "P16-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P16-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
+    g.expect(i, "P16-i: the spacings of the stores to MARK in the vertical-blank loop are equal to within Q, the longest pass of the program's polling loop measured in the run (the instrument resolution), in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0100) && copy_as_written(rb, 0x0100);
     g.expect(ii, "P16-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 8 as written by the command list");
     auto bpu = [](const DRun& d) { auto v = script_value(d.sc, BPLCON0); return v ? (*v >> 12) & 7 : 0; };
@@ -1819,13 +1854,14 @@ void proposition_p16() {
 
 // ---- P17 COPEN ----
 
-struct P17Opts { uint16_t dmacon; bool fix = true; bool skip_wl30 = false; bool stray = false; };
+struct P17Opts { uint16_t dmacon; bool fix = true; bool skip_wl30 = false; bool stray = false; bool lace = false; };
 
 Script s17(const P17Opts& o) {
     Script s;
     if (o.fix) script_start(s);
     s.COPYW(kCop, {COLOR00, 0x0000, 0xFFFF, 0xFFFE});
     s.W(COP1LCH, uint16_t(kCop >> 16)); s.W(COP1LCL, uint16_t(kCop)); s.W(COPJMP1, 0);
+    if (o.lace) s.W(BPLCON0, 0x0004);
     s.W(DMACON, o.dmacon); s.CPYD();
     vb_loop(s, 3, [](Script&) {}, o.skip_wl30, o.stray);
     return s;
@@ -1837,13 +1873,14 @@ void proposition_p17() {
     a.dmacon = 0x8280; b.dmacon = 0x8200;
     if (mutating("P17-fix")) { a.fix = false; b.fix = false; }
     if (mutating("P17-i")) a.skip_wl30 = true;
+    if (mutating("P17-i-lace")) { a.lace = true; b.lace = true; }
     if (mutating("P17-ii")) a.dmacon = 0x8080;
     if (mutating("P17-iii")) a.stray = true;
     if (mutating("P17")) b.dmacon = 0x8280;
     DRun ra = drun(s17(a)), rb = drun(s17(b));
     g.expect(ra.fix && rb.fix, "P17-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P17-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
+    g.expect(i, "P17-i: the spacings of the stores to MARK in the vertical-blank loop are equal to within Q, the longest pass of the program's polling loop measured in the run (the instrument resolution), in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0080) && copy_as_written(rb, 0x0080);
     g.expect(ii, "P17-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 7 as written by the command list");
     bool iii = true;
@@ -1919,7 +1956,7 @@ void proposition_p18() {
 
 // ---- P19 SPREN ----
 
-struct P19Opts { uint16_t dmacon; bool fix = true; bool skip_wl30 = false; bool stray = false; };
+struct P19Opts { uint16_t dmacon; bool fix = true; bool skip_wl30 = false; bool stray = false; bool lace = false; };
 
 Script s19(const P19Opts& o) {
     Script s;
@@ -1931,6 +1968,7 @@ Script s19(const P19Opts& o) {
         s.COPYW(kSprBase + x * kSprStep, d);
     }
     s.W(BPLCON3, 0x0C00); s.W(FMODE, 0);
+    if (o.lace) s.W(BPLCON0, 0x0004);
     s.W(DMACON, o.dmacon); s.CPYD();
     vb_loop(s, 3, [](Script& t) {
         for (int x = 0; x < 8; ++x) { uint32_t a = kSprBase + x * kSprStep; t.W(SPR0PTH + 4 * x, uint16_t(a >> 16)); t.W(SPR0PTH + 4 * x + 2, uint16_t(a)); }
@@ -1945,13 +1983,14 @@ void proposition_p19() {
     a.dmacon = 0x8220; b.dmacon = 0x8200;
     if (mutating("P19-fix")) { a.fix = false; b.fix = false; }
     if (mutating("P19-i")) a.skip_wl30 = true;
+    if (mutating("P19-i-lace")) { a.lace = true; b.lace = true; }
     if (mutating("P19-ii")) a.dmacon = 0x8020;
     if (mutating("P19-reg")) a.stray = true;
     if (mutating("P19")) b.dmacon = 0x8220;
     DRun ra = drun(s19(a)), rb = drun(s19(b));
     g.expect(ra.fix && rb.fix, "P19-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
-    g.expect(i, "P19-i: the spacings of the stores to MARK in the vertical-blank loop are equal, to the system clock cycle, in both runs (RF-F)");
+    g.expect(i, "P19-i: the spacings of the stores to MARK in the vertical-blank loop are equal to within Q, the longest pass of the program's polling loop measured in the run (the instrument resolution), in both runs (RF-F)");
     bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0020) && copy_as_written(rb, 0x0020);
     g.expect(ii, "P19-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 5 as written by the command list");
     std::vector<Region> regs;

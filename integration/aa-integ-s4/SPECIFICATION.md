@@ -1535,9 +1535,10 @@ P17 measured (reads in COP in the two fields, COPEN set / clear): 10 / 0
 P18 measured (BLT_S reads / BLT_D writes): BLTEN set 251 / 252, BLTEN clear 0 / 0
 P19 measured (reads per field and sprite, SPREN set / clear): 20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0
 P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
-RF-F measured: spacings of the first 3 stores to MARK (system clock cycles), run by run in the order of P16, P17, P19
-    TG68K: P16 568376, 568424 (the second run is not printed once the first differs); P17 568424, 568424 and 568376, 568424; P19 568424, 568376 (the second run is not printed once the first differs)
-    fx68k: P16 568456, 568344 (the second run is not printed once the first differs); P17 568320, 568496 (likewise); P19 568408, 568408 and 568408, 568408
+RF-F measured: spacings of the first 3 stores to MARK (system clock cycles) / longest pass Q of the polling loop (system clock cycles), run by run (set run, clear run) in the order P16, P17, P19
+    TG68K: P16 568376, 568424 / 600 and 568376, 568424 / 600; P17 568424, 568424 / 280 and 568376, 568424 / 280; P19 568424, 568376 / 600 and 568424, 568376 / 600
+    fx68k: P16 568456, 568344 / 768 and 568392, 568408 / 768; P17 568320, 568496 / 400 and 568288, 568408 / 400; P19 568408, 568408 / 760 and 568408, 568408 / 752
+    The polling loop is at 0x080472; the passes counted per run are between 3507 and 4698.
 P20 measured (system clock cycles from the blitter's first and last access): marker 0x5A01 and marker 0x5A02
     TG68K: BLTPRI set -76 / +1928508, BLTPRI clear -76 / +1895212
     fx68k: BLTPRI set -76 / +1771740, BLTPRI clear -76 / +1736628
@@ -1551,15 +1552,15 @@ P21 (phase-B samples inside the blit, base run / long phase A)
     TG68K: 511 / 511    fx68k: 515 / 514
 ```
 
-Graded counts: fx68k prints 145 passed, 2 failed; TG68K prints 143 passed, 3
-failed. The FAIL lines are the RF-F lines: P16-i and P17-i on both builds, and
-P19-i on TG68K. Where RF-F fails, the proposition it gates (P16, P17, and on
-TG68K P19) prints NOT GRADED.
+Graded counts: both builds print 149 passed, 0 failed.
 
 RF-F. The stores to MARK that bound a field are made by a polled wait. The
-measured spacings of consecutive stores differ by 48 to 176 system clock
-cycles, between 568320 and 568496, on both builds, in at least one run of each
-of P16 and P17.
+measured spacings of consecutive stores differ by up to 176 system clock
+cycles (568288 to 568496); Q, the longest pass of the polling loop, is 280 to
+768 system clock cycles, shorter than a line (1816). Every RF-F line prints
+PASS on both builds. With LACE = 1 the two spacings are 566576 to 566696 and
+568304 to 568456, a difference of 1608 to 1824 system clock cycles, and the RF-F
+lines print FAIL (mutations P16-i-lace, P17-i-lace, P19-i-lace).
 
 P5. In hires the first read moves with DDFSTRT bit 2 (H3) by 4 memory cycles
 (f: 440 to 472), the last read moves 4 memory cycles earlier with DDFSTOP
@@ -1589,8 +1590,6 @@ the stimulus (the command list, the Copper list or the harness configuration)
 and prints FAIL through the unchanged comparator on both builds, with every run
 reaching DONE. Where the mutated stimulus also changes a neighbouring
 precondition, the record lists it as "Also printing FAIL". P5 and P5-last
-are MEASURED lines and have no record. The records of P16, P17 and P19 and of
-their preconditions state the result per core: where the RF-F line (P16-i,
-P17-i, P19-i) is red in the unmutated run, the selector prints FAIL on that
-line, the proposition is NOT GRADED, and the selector does not reach the clause
-of the proposition.
+are MEASURED lines and have no record. The RF-F lines P16-i, P17-i and P19-i
+each have a second record, selector P16-i-lace, P17-i-lace and P19-i-lace,
+that sets LACE = 1.
