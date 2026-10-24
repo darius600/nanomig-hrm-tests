@@ -219,11 +219,24 @@ was.
 
 **RF-F: fields for propositions without a Copper list (P16-P23).** Field k
 is the interval between the CPU's k-th and (k+1)-th store to MARK in the
-vertical-blank loop of 2.2. Check: consecutive spacings are equal, to the
-system clock cycle. The simulation is deterministic, and the page supplies
-no tolerance.
-Contrast for the check: leaving out the "wait until V7-V0 >= 0x30" step puts
-two stores into one vertical blank, and the check fails.
+vertical-blank loop of 2.2. Check: consecutive spacings are equal to within
+Q, the instrument resolution. The page basis for equal fields is "there are
+also long and short fields (interlace only)" (HRM p.24): with LACE = 0 all
+fields have the same length. Each store follows a polled wait for the
+vertical blank, so the store's time is known only to within one pass of the
+program's polling loop. Q is that duration. It is derived from the run, not
+from a page: Q is the longest interval between two consecutive instruction
+fetches of the polling loop's first instruction on the RAM-port log, over
+the polling stretches of the two fields, and the test prints Q and the
+spacings as MEASURED lines. A tolerance of Q says only that the instrument
+cannot resolve the field boundary more finely. Q is required to be shorter
+than a line (1816 system clock cycles, the line period RF-L measures).
+Contrasts for the check: leaving out the "wait until V7-V0 >= 0x30" step
+puts two stores into one vertical blank, and the check fails; and
+BPLCON0 bit 2 (LACE) = 1 makes alternate fields differ by one line
+(HRM p.24: 262 then 263 lines, PAL 312 then 313), far more than Q, so the
+check fails through the equality clause while the other preconditions of the
+proposition hold.
 
 **RF-V: video rows and beam lines.** This frame uses the window instrument
 of 2.5, in which the display window shows red and the border shows black.
