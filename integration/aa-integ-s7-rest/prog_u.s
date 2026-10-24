@@ -7,7 +7,10 @@
 ; Optional: U_HTOT, U_BEAM (P9: HTOTAL and BEAMCON0 written between setup steps 3 and 4),
 ; U_VTOT (VTOTAL written before BEAMCON0), U_LATE (wait for line $60 before the setup),
 ; U_STEP (marker line step, default 1), U_GLO and U_GW (marker gate, default $60 and $30),
-; NOEND, NOFIX.
+; NOEND, NOFIX, U_NOHEAD (a NOP after the marker loop's first instruction).
+; U_WALK (run UW): with U_WLO and U_WHI, the marker loop writes the pointer words of walk.i.
+; U_HSAMP (run DH): instead of the marker loop, wait for line U_HLINE and read HHPOSR 64 times,
+; storing each word to BUF + 2i; U_HDELAY adds a delay loop of that many passes to each read.
 
         include "s7r.i"
 
@@ -70,5 +73,29 @@ BPLN    set     BPLN+4
         move.w  #U_DMA,DMACON(a0)
         ; step 6: the setup-done record, the marker loop, the epilogue
         SETUPDONE
+        ifd     U_HSAMP
+.hw:    move.w  VPOSR(a0),d1
+        and.w   #7,d1
+        bne.s   .hgo
+        move.w  VHPOSR(a0),d0
+        lsr.w   #8,d0
+        cmp.b   #U_HLINE,d0
+        blo.s   .hw
+.hgo:   lea     BUF,a1
+        moveq   #63,d7
+.hl:    move.w  HHPOSR(a0),(a1)+
+        ifd     U_HDELAY
+        moveq   #U_HDELAY,d6
+.hd:    dbra    d6,.hd
+        endc
+        dbra    d7,.hl
+        else
+        ifd     U_WALK
+        lea     WALKTAB,a4
+        endc
         MARKLOOP U_VLO,U_VHI,U_STEP,U_GLO,U_GW
+        endc
         EPILOGUE
+        ifd     U_WALK
+        include "walk.i"
+        endc

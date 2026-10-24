@@ -60,24 +60,6 @@ inline void measure_ref(RefRun& r) {
     r.cl = cop_list(r.cap, r.tend ? r.tend : ~0ull);
 }
 
-// PR-1c: every line of the interval [t0, t1] has refresh accesses. The refresh slots of one
-// line come as a group (AA p.29: four refresh time slots); the spacing of the groups is a
-// line, at most 228 memory cycles (the long line, AA p.29), plus one for the conversion.
-inline bool refresh_every_line(const Cap& c, uint64_t t0, uint64_t t1, double K) {
-    RSeq s = refresh_seq(c, t0, t1);
-    if (s.t.empty() || K <= 0) return false;
-    const double gap = 4.0 * K;          // within a group the slots are two memory cycles apart
-    const double line = 229.0 * K;
-    std::vector<uint64_t> gs;            // group start times
-    gs.push_back(s.t[0]);
-    for (size_t i = 1; i < s.t.size(); ++i)
-        if (double(s.t[i] - s.t[i - 1]) > gap) gs.push_back(s.t[i]);
-    if (double(gs.front() - t0) > line) return false;
-    if (double(t1 - gs.back()) > line) return false;
-    for (size_t i = 1; i < gs.size(); ++i) if (double(gs[i] - gs[i - 1]) > line) return false;
-    return true;
-}
-
 inline void run_refptr(Checks& ck, Shared& sh) {
     const bool kok = sh.hv.conv.ok;
     const double K = kok ? sh.hv.conv.K : 0.0;
@@ -147,10 +129,17 @@ inline void run_refptr(Checks& ck, Shared& sh) {
     }
     ck.expect(pr1b, "PR-1b: up to the Copper's fetch of L+6 the traces of RA and RB agree in time, address and direction for every access and in data except at the value word; after it every non-refresh access and every refresh slot agrees in time and address (R3)");
 
-    // PR-1c: every line of the interval has refresh accesses
-    bool pr1c = kok && pr1a && RA.cap.done && RB.cap.done &&
-                refresh_every_line(RA.cap, RA.cl.t[3], RA.tend, K) && refresh_every_line(RB.cap, RB.cl.t[3], RB.tend, K);
-    ck.expect(pr1c, "PR-1c: every line from the Copper's fetch of L+6 to the end marker has refresh accesses in RA and RB (AA p.29: 'There are 4 refresh time slots')");
+    // PR-1c: every line of the interval has refresh accesses; the lines are those of run UR, with their starts read from its H fields
+    RefLines la, lb;
+    const bool urref = sh.ur_ok && sh.ur.an.all && sh.ur.an.lines && sh.ur.an.window && sh.ur.an.mono && !sh.ur.heads.empty();
+    if (kok && pr1a && urref) {
+        la = refresh_per_line(RA.cap, sh.ur, K, RA.cl.t[3], RA.tend);
+        lb = refresh_per_line(RB.cap, sh.ur, K, RB.cl.t[3], RB.tend);
+        ck.note("PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA " + dec(la.lines) + " lines with " + dec(la.minc) + " to " + dec(la.maxc) +
+                " refresh accesses per line, RB " + dec(lb.lines) + " lines with " + dec(lb.minc) + " to " + dec(lb.maxc) + " (" + cap_core() + ")");
+    }
+    bool pr1c = kok && pr1a && urref && RA.cap.done && RB.cap.done && la.ok && lb.ok;
+    ck.expect(pr1c, "PR-1c: every complete line from the Copper's fetch of L+6 to the end marker, with its start read from the H field of run UR's markers, has at least one refresh access in RA and in RB (AA p.29: 'There are 4 refresh time slots')");
     if (pr1a) ck.note("P1: refresh accesses between the fetch of L+6 and the end marker: RA " + dec((long long)sA.a.size()) + ", RB " + dec((long long)sB.a.size()) +
                       "; first RA address $" + hex(sA.a.empty() ? 0 : sA.a[0], 6) + " RB $" + hex(sB.a.empty() ? 0 : sB.a[0], 6) + " (" + cap_core() + ")");
 
@@ -195,7 +184,7 @@ inline void run_refptr(Checks& ck, Shared& sh) {
         // the joint assertion: an effective MOVE with COPCON bit 1 set (PR-2a) is what a MOVE with the bit clear is measured against
         const bool pre = xc && pr1a && pr1b && pr1c && pr2a && pr2b && comparable;
         graded(ck, pre, seq_identical(a0, b0),
-               "P1P2-JOINT: the Copper may not write REFPTR unless COPCON bit 1 is set: where a MOVE to REFPTR with the bit set is effective (PR-2a: the refresh address sequences of RA and RB differ), the refresh address sequences of RA0 (data $5555) and RB0 (data $AAAA), whose MOVE is made with the bit clear, are identical in every position (AA p.6 row 028 '~' and legend '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true'; AA p.19 '(if 0, access to RGA>7E)') opus:AA-refptr.c5 sol:AA-refptr.c5",
+               "P1P2-JOINT: where a MOVE to REFPTR with COPCON bit 1 set is effective (PR-2a: the refresh address sequences of RA and RB differ), the refresh address sequences of RA0 (data $5555) and RB0 (data $AAAA), whose MOVE is made with the bit clear, are identical in every position; one MOVE at one beam position, no claim id (AA p.6 row 028 '~' and legend '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true'; AA p.19 '(if 0, access to RGA>7E)')",
                "R2-XCHK-REF / PR-1a / PR-1b / PR-1c / PR-2a / PR-2b / equal refresh counts");
     }
 }

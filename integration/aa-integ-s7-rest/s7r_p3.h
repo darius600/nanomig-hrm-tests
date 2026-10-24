@@ -93,68 +93,83 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     if (mut("P6-CTRL")) b1 = "prog_u1_sstrt50.bin";
     if (mut("P7")) b1 = "prog_u1_ss60.bin";
 
-    std::string bd1 = "prog_d1.bin", bd0 = "prog_d0.bin";
+    std::string bw = "prog_uw.bin";
+    if (mut("P3-E6")) bw = "prog_uw_mb.bin";    // case 7 of the bit-plane pointer walks bit 8 instead of bit 7
+    if (mut("P6-E6")) bw = "prog_uw_ms.bin";    // case 7 of the sprite pointer walks bit 8 instead of bit 7
+
+    std::string bd1 = "prog_d1.bin", bd0 = "prog_d0.bin", bdh = "prog_dh.bin";
+    if (mut("PR-9c")) bdh = "prog_dh_slow.bin";
+    if (mut("P9-E1b")) bdh = "prog_dh0.bin";
+    if (mut("PR-9b")) bd1 = "prog_d1_nohead.bin";
     if (mut("FIXTURE-D")) bd1 = "prog_d1_nofix.bin";
     if (mut("PR-9-U1")) bd1 = "prog_d1_noend.bin";
     if (mut("PR-9-U2")) bd1 = "prog_d1_skip.bin";
     if (mut("PR-9-U3")) bd1 = "prog_d1_late.bin";
     if (mut("PR-9a")) bd1 = "prog_d1_var.bin";
-    if (mut("P9-E1")) bd1 = "prog_d0.bin";
+    if (mut("P9-E1a")) bd1 = "prog_d0.bin";
     if (mut("P9-E2")) bd1 = "prog_d1_m16.bin";
     if (mut("PR-9-U5")) bd1 = "prog_d1_nobit.bin";
-    if (mut("PR-9b")) bd1 = "prog_d1_pad.bin";
     if (mut("P9-D0")) bd0 = "prog_d1.bin";
     URun U1 = urun("U1", b1), U2 = urun("U2", b2), U3 = urun("U3", b3), U4 = urun("U4", b4), U0 = urun("U0", b0), U0d = urun("U0d", b0d);
-    URun D1 = urun("D1", bd1), D0 = urun("D0", bd0);
-    measure_u(D1); measure_u(D0);
+    URun UW = urun("UW", bw);
+    URun D1 = urun("D1", bd1), D0 = urun("D0", bd0), DH = urun("DH", bdh);
+    measure_u(D1); measure_u(D0); measure_u(DH);
     U1.d.glo = glo1;
-    std::vector<URun*> all = {&U1, &U2, &U3, &U4, &U0, &U0d};
+    std::vector<URun*> all = {&U1, &U2, &U3, &U4, &U0, &U0d, &UW};
     for (URun* r : all) measure_u(*r);
-    const std::vector<URun*> ui = {&U1, &U2, &U3, &U4};          // the runs with UHRES enabled
-    const std::vector<URun*> uall = {&U1, &U2, &U3, &U4, &U0, &U0d, &sh.ur};
+    const std::vector<URun*> ui = {&U1, &U2, &U3, &U4};          // the runs with UHRES enabled and expected ranges
+    const std::vector<URun*> uline = {&U1, &U2, &U3, &U4, &UW};  // the runs whose UHRES accesses are assigned to lines (PR-U5)
+    const std::vector<URun*> uall = {&U1, &U2, &U3, &U4, &U0, &U0d, &UW, &sh.ur};
 
     bool fx = true;
     for (URun* r : all) fx = fx && r->cap.loaded && r->cap.released && r->cap.fixture == 0xBEEF;
-    ck.expect(fx, "FIXTURE-U: runs U1, U2, U3, U4, U0 and U0d loaded, booted and stored the constant $BEEF at their fixture address before any access is classified");
+    ck.expect(fx, "FIXTURE-U: runs U1, U2, U3, U4, U0, U0d and UW loaded, booted and stored the constant $BEEF at their fixture address before any access is classified");
 
     bool xc = sh.ur_ok && sh.anchor;
     for (URun* r : all) xc = xc && xcheck(*r, sh.ur);
-    ck.expect(xc, "R2-XCHK-U: in U1, U2, U3, U4, U0 and U0d, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
+    ck.expect(xc, "R2-XCHK-U: in U1, U2, U3, U4, U0, U0d and UW, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
 
     bool pu1 = true;
     for (URun* r : uall) pu1 = pu1 && r->cap.done && r->tend != 0;
-    ck.expect(pu1, "PR-U1: the end marker is present in U1, U2, U3, U4, U0, U0d and UR");
+    ck.expect(pu1, "PR-U1: the end marker is present in U1, U2, U3, U4, U0, U0d, UW and UR");
 
     bool pu2 = true;
     for (URun* r : uall) pu2 = pu2 && r->an.all && r->an.lines && r->an.window && r->an.mono;
-    ck.expect(pu2, "PR-U2: in U1, U2, U3, U4, U0, U0d and UR a marker exists for every V of the run's window, its line number equals V, its H field lies in the loop's gate and the marker times strictly increase (R1)");
+    ck.expect(pu2, "PR-U2: in U1, U2, U3, U4, U0, U0d, UW and UR a marker exists for every V of the run's window, its line number equals V, its H field lies in the loop's gate and the marker times strictly increase (R1)");
 
     bool pu3 = true;
     for (URun* r : uall) pu3 = pu3 && r->setup_line >= 0 && r->setup_line < r->d.vlo;
-    ck.expect(pu3, "PR-U3: the line in the setup-done record is below Vlo in U1, U2, U3, U4, U0, U0d and UR (the setup finished before the marker window)");
+    ck.expect(pu3, "PR-U3: the line in the setup-done record is below Vlo in U1, U2, U3, U4, U0, U0d, UW and UR (the setup finished before the marker window)");
 
     const bool pu4 = U0.tend != 0 && U0.uh.empty();
     ck.expect(pu4, "PR-U4: from the setup-done record to the end marker every access of U0, whose UHRES bit is clear, is a refresh, CPU or zero-block access (AA p.16 BPLCON0 bit 7 'UHRES= ultrahi res enables the UHRES pointers')");
 
+    // PR-U5: every UHRES access lies on the line R1 assigns it to, by the H counter: before the sample of that line's marker,
+    // at a non-negative beam position
     bool pu5d = true;
     size_t nuh = 0;
-    for (URun* r : ui) {
+    double pmin = 1e18, pmax = -1e18;
+    for (URun* r : uline) {
+        const uint64_t tlast = (r->m.have.size() && r->m.have.back()) ? r->m.t.back() : r->tend;
         for (auto& x : r->uh) {
+            if (x.t > tlast) continue;
             ++nuh;
-            for (size_t i = 0; i < r->m.t.size(); ++i) {
-                if (!r->m.have[i]) continue;
-                double dist = double(x.t > r->m.t[i] ? x.t - r->m.t[i] : r->m.t[i] - x.t) / K;
-                if (dist < 32.0) pu5d = false;
-            }
+            const int v = line_of(r->m, x.t);
+            const uint64_t ts = v >= 0 ? sample_time(*r, v) : 0;
+            if (!kok || v < 0 || !ts) { pu5d = false; continue; }
+            const double p = beam_pos(*r, v, x.t, K);
+            pmin = std::min(pmin, p); pmax = std::max(pmax, p);
+            if (!(x.t < ts) || p < 0.0) pu5d = false;
         }
     }
-    const bool pu5 = kok && pu5d;       // what the lines below need: the distance holds wherever there is an access
+    const bool pu5 = kok && pu5d;       // what the lines below need: the line of every access holds wherever there is an access
     if (nuh > 0)
-        ck.expect(pu5, "PR-U5: every UHRES access of U1, U2, U3 and U4 lies at least $20 memory cycles from every marker time, so the line assignment of R1 is unambiguous");
+        ck.expect(pu5, "PR-U5: every UHRES access of U1, U2, U3, U4 and UW lies on the line R1 assigns it to: before the sample of that line's marker, and at a beam position, read from the H field of the marker, that is not negative (AA p.29 H8-H1 'RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)')");
     else
-        ck.record("NOT GRADED PR-U5: U1, U2, U3 and U4 have no UHRES access, so there is no distance to grade");
-    ck.note("PR-U5 population: " + dec((long long)nuh) + " UHRES accesses in U1, U2, U3 and U4 (" + cap_core() + ")");
-    for (URun* r : all) ck.note(u_summary(*r) + " (" + cap_core() + ")");
+        ck.record("NOT GRADED PR-U5: U1, U2, U3, U4 and UW have no UHRES access, so there is no line to grade");
+    ck.note("PR-U5 population: " + dec((long long)nuh) + " UHRES accesses in U1, U2, U3, U4 and UW" +
+            (nuh > 0 && pmax >= pmin ? "; beam positions from " + num3(pmin) + " to " + num3(pmax) + " memory cycles after the line start" : std::string()) + " (" + cap_core() + ")");
+    for (URun* r : all) if (r != &UW) ck.note(u_summary(*r) + " (" + cap_core() + ")");
 
     bool pu6 = true, pu7 = true;
     for (URun* r : {&U1, &U2, &U3}) {
@@ -189,8 +204,15 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     bool e35 = true;
     for (URun* r : ui) e35 = e35 && r->stray.empty();
     graded(ck, pre && nuh > 0, e35, "P3-E5: no UHRES access of U1, U2, U3 or U4 lies outside the BPLH and SPRH ranges of its run (no stray access)", unmet + " / U1 to U4 have UHRES accesses");
-    graded(ck, pre, e31 && e32 && e34 && e35,
-           "P3-AGG: BPLHPTH and BPLHPTL hold the UHRES bit-plane pointer: with UHRES enabled its address is accessed exactly once on every line of the range, starting at the written address (AA p.10 rows 1EC and 1EE, p.15) " + ids3, unmet);
+    std::string wdet_b, wdet_s;
+    const bool e36 = walk_ok(UW, false, wdet_b);
+    const bool e66 = walk_ok(UW, true, wdet_s);
+    ck.note("E3.6 (BPLH walking cases in UW):" + wdet_b + " (" + cap_core() + ")");
+    ck.note("E6.6 (SPRH walking cases in UW):" + wdet_s + " (" + cap_core() + ")");
+    graded(ck, pre, e36,
+           "P3-E6: in UW each of the 40 walking-one and walking-zero cases of the bit-plane pointer, which set or clear each of DB1-DB15 of BPLHPTL and DB0-DB4 of BPLHPTH alone, has a UHRES access at its address (BPLHPTH bits 4-0) << 16 | (BPLHPTL & $FFFE) on its line $51 + n (AA p.6 legend '+=Address register pair.Low word uses DB1-DB15,High word DB0-DB4.')", unmet);
+    graded(ck, pre, e31 && e32 && e34 && e35 && e36,
+           "P3-AGG: BPLHPTH and BPLHPTL hold the UHRES bit-plane pointer: with UHRES enabled its address is accessed exactly once on every line of the range, starting at the written address, and each used pointer bit drives its address bit (AA p.10 rows 1EC and 1EE, p.15) " + ids3, unmet);
     {
         bool c0 = fx && xc && pu1 && pu2 && pu3 && U0.tend && U0.bplh.empty() && U0.sprh.empty() && U0.stray.empty();
         graded(ck, fx && xc && pu1 && pu2 && pu3, c0,
@@ -202,20 +224,22 @@ inline void run_uhres(Checks& ck, Shared& sh) {
 
     // ---- P4 ----
     {
-        const bool pre4 = pre && one_per_line(U1, 0x51, 0x6F) && one_per_line(U2, 0x51, 0x6F);
-        bool ok = pre4;
+        // E3.1 over $51..$6F in U1 and U2 is a clause of the line: an empty BPLH population has no modulo to show
+        const bool pop4 = one_per_line(U1, 0x51, 0x6F) && one_per_line(U2, 0x51, 0x6F);
+        bool ok = pop4;
         std::string m;
         for (URun* r : {&U1, &U2}) {
-            if (!pre4) break;
+            if (!pop4) break;
             for (int v = 0x51; v < 0x6F; ++v)
                 if (int64_t(on_line(r->bl, v + 1)[0].a) - int64_t(on_line(r->bl, v)[0].a) != r->bstep) ok = false;
             m += " " + r->d.nm + ": " + dec(r->bstep) + " expected, first steps";
             for (int v = 0x51; v < 0x54; ++v) m += " " + dec(int64_t(on_line(r->bl, v + 1)[0].a) - int64_t(on_line(r->bl, v)[0].a));
         }
-        if (pre4) ck.note("P4 steps between the BPLH addresses of consecutive lines:" + m + " (" + cap_core() + ")");
-        graded(ck, pre4, ok,
-               "P4: from line to line the BPLH address advances by the sign-extended BPLHMOD plus 2: +18 in U1 (BPLHMOD $0010) and -14 in U2 (BPLHMOD $FFF0), for every pair of consecutive lines $51..$6F (AA p.15 BPLHMOD 'every line, and then another 2 is added') opus:AA-bplhmod.c1 opus:AA-bplhmod.c2 opus:AA-bplhmod.c5 sol:AA-bplhmod.c1 sol:AA-bplhmod.c2",
-               unmet + " / E3.1 over $51..$6F in U1 and U2");
+        ck.note(pop4 ? "P4 steps between the BPLH addresses of consecutive lines:" + m + " (" + cap_core() + ")"
+                     : "P4: U1 and U2 do not have exactly one BPLH access on every line $51..$6F; BPLH accesses U1 " + dec((long long)U1.bplh.size()) + ", U2 " + dec((long long)U2.bplh.size()) + " (" + cap_core() + ")");
+        graded(ck, pre, ok,
+               "P4: every line $51..$6F of U1 and U2 has exactly one BPLH access, and from line to line the BPLH address advances by the sign-extended BPLHMOD plus 2: +18 in U1 (BPLHMOD $0010) and -14 in U2 (BPLHMOD $FFF0), for every pair of consecutive lines (AA p.15 BPLHMOD 'every line, and then another 2 is added') opus:AA-bplhmod.c1 opus:AA-bplhmod.c2 opus:AA-bplhmod.c5 sol:AA-bplhmod.c1 sol:AA-bplhmod.c2",
+               unmet);
     }
 
     // ---- P5 ----
@@ -246,8 +270,9 @@ inline void run_uhres(Checks& ck, Shared& sh) {
         graded(ck, pre, ctrl, "P6-CTRL: lines $51 to $56 of U1, inside the BPLH range but at or below SPRHSTRT-2, carry one BPLH access and no SPRH access", unmet);
         const bool c0 = fx && xc && pu1 && pu2 && pu3 && U0.tend && U0.sprh.empty() && U0.bplh.empty() && U0.stray.empty();
         graded(ck, fx && xc && pu1 && pu2 && pu3, c0, "P6-U0: U0, run as U1 with the UHRES bit of BPLCON0 clear, has no SPRH access", "FIXTURE-U / R2-XCHK-U / PR-U1 to PR-U3");
-        graded(ck, pre, e61 && e62 && e63 && e64 && e65,
-               "P6-AGG: SPRHPTH and SPRHPTL hold the UHRES sprite pointer: it comes out twice on each line of its range, before and after the bit-plane pointer, starting at the written address and moving to higher addresses on each following line (AA p.10 rows 1E8 and 1EA, p.27) opus:AA-sprhpth.c1 opus:AA-sprhpth.c2 opus:AA-sprhpth.c4 opus:AA-sprhpth.c6 opus:AA-sprhptl.c1 opus:AA-sprhptl.c2 opus:AA-sprhptl.c4 opus:AA-sprhptl.c6 sol:AA-sprhpth.c1 sol:AA-sprhpth.c2 sol:AA-sprhpth.c4 sol:AA-sprhpth.c6 sol:AA-sprhptl.c1 sol:AA-sprhptl.c2 sol:AA-sprhptl.c4 sol:AA-sprhptl.c6",
+        graded(ck, pre, e66, "P6-E6: in UW each of the 40 walking-one and walking-zero cases of the sprite pointer, which set or clear each of DB1-DB15 of SPRHPTL and DB0-DB4 of SPRHPTH alone, has a UHRES access at its address (SPRHPTH bits 4-0) << 16 | (SPRHPTL & $FFFE) on its line $51 + n (AA p.6 legend '+')", unmet);
+        graded(ck, pre, e61 && e62 && e63 && e64 && e65 && e66,
+               "P6-AGG: SPRHPTH and SPRHPTL hold the UHRES sprite pointer: it comes out twice on each line of its range, before and after the bit-plane pointer, starting at the written address and moving to higher addresses on each following line, and each used pointer bit drives its address bit (AA p.10 rows 1E8 and 1EA, p.27) opus:AA-sprhpth.c1 opus:AA-sprhpth.c2 opus:AA-sprhpth.c4 opus:AA-sprhpth.c6 opus:AA-sprhptl.c1 opus:AA-sprhptl.c2 opus:AA-sprhptl.c4 opus:AA-sprhptl.c6 sol:AA-sprhpth.c1 sol:AA-sprhpth.c2 sol:AA-sprhpth.c4 sol:AA-sprhpth.c6 sol:AA-sprhptl.c1 sol:AA-sprhptl.c2 sol:AA-sprhptl.c4 sol:AA-sprhptl.c6",
                unmet);
     }
 
@@ -261,53 +286,58 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     // ---- P9 ----
     {
         bool fxd = true;
-        for (URun* r : {&D1, &D0}) fxd = fxd && r->cap.loaded && r->cap.released && r->cap.fixture == 0xBEEF;
-        ck.expect(fxd, "FIXTURE-D: runs D1 and D0 loaded, booted and stored the constant $BEEF at their fixture address before any access is classified");
+        for (URun* r : {&D1, &D0, &DH}) fxd = fxd && r->cap.loaded && r->cap.released && r->cap.fixture == 0xBEEF;
+        ck.expect(fxd, "FIXTURE-D: runs D1, D0 and DH loaded, booted and stored the constant $BEEF at their fixture address before any access is classified");
         bool xcd = sh.ur_ok && sh.anchor;
-        for (URun* r : {&D1, &D0}) xcd = xcd && xcheck(*r, sh.ur);
-        ck.expect(xcd, "R2-XCHK-D: in D1 and D0, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
-        bool q1 = true, q2 = true, q3 = true;
+        for (URun* r : {&D1, &D0, &DH}) xcd = xcd && xcheck(*r, sh.ur);
+        ck.expect(xcd, "R2-XCHK-D: in D1, D0 and DH, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
+        bool q1 = DH.cap.done && DH.tend != 0, q2 = true, q3 = true;
         for (URun* r : {&D1, &D0}) {
             q1 = q1 && r->cap.done && r->tend != 0;
             q2 = q2 && r->an.all && r->an.lines && r->an.window && r->an.mono;
             q3 = q3 && r->setup_line >= 0 && r->setup_line < r->d.vlo;
         }
-        ck.expect(q1, "PR-9-U1: the end marker is present in D1 and D0");
+        ck.expect(q1, "PR-9-U1: the end marker is present in D1, D0 and DH");
         ck.expect(q2, "PR-9-U2: in D1 and D0 a marker exists for every V of the window, its line number equals V, its H field lies in the loop's gate and the marker times strictly increase (R1)");
         ck.expect(q3, "PR-9-U3: the line in the setup-done record is below Vlo in D1 and D0");
         ck.expect(pu4, "PR-9-U4: run U0, with the UHRES bit clear, has no UHRES and no stray access from the setup-done record to the end marker");
-        // PR-9b: the marker loop's pass, measured (the sampling phase of the loop is the noise of every marker interval)
-        const LoopPass lpu = loop_pass(U1), lp1 = loop_pass(D1), lp0 = loop_pass(D0);
-        const double pass_mc = double(std::max({lpu.maxiv, lp1.maxiv, lp0.maxiv})) / K;
-        const bool p9b = kok && lpu.n >= 64 && lp1.n >= 64 && lp0.n >= 64 && 2.0 * pass_mc <= 228.0;
-        ck.note("PR-9b: marker-loop head fetches between the first and the last marker: U1 " + dec(lpu.n) + ", D1 " + dec(lp1.n) + ", D0 " + dec(lp0.n) +
-                "; largest pass " + num3(pass_mc) + " memory cycles (" + cap_core() + ")");
-        ck.expect(p9b, "PR-9b: the marker loop of U1, D1 and D0 is found in its program and fetched at least 64 times between the first and the last marker, and twice its largest pass (the interval between two fetches of its first instruction) is at most 228 memory cycles, one long line (AA p.29 '228 CC')");
-        // PR-9a: the ordinary line length is unchanged by DUAL
-        const bool pre9a = kok && p9b && U1.an.all && D1.an.all && D0.an.all;
+        // PR-9b: the sample times t_s of R1 exist for the markers $40 and $80 of D1 and D0
+        const bool p9b = kok && sample_time(D1, 0x40) && sample_time(D1, 0x80) && sample_time(D0, 0x40) && sample_time(D0, 0x80);
+        ck.expect(p9b, "PR-9b: the marker loop's first instruction is found in the programs of D1 and D0 and is fetched before the stores of markers $40 and $80, so that the sample times of R1 exist");
+        // PR-9c: DH has 64 sample stores whose largest interval is below (N+1)/2 memory cycles
+        const Samples sdh = samples(DH.cap);
+        double dh_max = 0;
+        if (sdh.full && kok)
+            for (size_t i = 0; i + 1 < sdh.t.size(); ++i) dh_max = std::max(dh_max, double(sdh.t[i + 1] - sdh.t[i]) / K);
+        const bool p9c = kok && sdh.full && dh_max < double(0x71 + 1) / 2.0;
+        ck.note("PR-9c: DH has " + std::string(sdh.full ? "64" : "fewer than 64") + " sample stores, largest sample interval " + num3(dh_max) + " memory cycles (" + cap_core() + ")");
+        ck.expect(p9c, "PR-9c: DH has 64 sample stores of HHPOSR and the largest interval between two of them is below (N+1)/2 = 57 memory cycles, so each phase step of the alternate counter is unambiguous");
+        // PR-9a: the ordinary line length is unchanged by DUAL, from the H counter and the markers $40 and $80
+        auto linelen = [&](const URun& r) {
+            const double span = (double(sample_time(r, 0x80)) - double(sample_time(r, 0x40))) / K;
+            return (span - double(marker_h(r, 0x80) - marker_h(r, 0x40))) / 64.0;
+        };
+        const bool pre9a = p9b && D1.an.all && D0.an.all;
         bool c9a = false;
         if (pre9a) {
-            const double span_u = double(tmark(U1, 0x80) - tmark(U1, 0x40));
-            const double span_1 = double(tmark(D1, 0x80) - tmark(D1, 0x40));
-            const double span_0 = double(tmark(D0, 0x80) - tmark(D0, 0x40));
-            const double worst = std::max(std::fabs(span_1 - span_u), std::fabs(span_0 - span_u));
-            ck.note("PR-9a: t($80) - t($40) in memory cycles: U1 " + num3(span_u / K) + ", D1 " + num3(span_1 / K) + ", D0 " + num3(span_0 / K) +
-                    "; largest difference of D1 or D0 from U1 " + num3(worst / K) + ", bound twice the largest pass " + num3(2.0 * pass_mc) + " (" + cap_core() + ")");
-            c9a = worst / K <= 2.0 * pass_mc;
+            const double l1 = linelen(D1), l0 = linelen(D0);
+            const bool uok = U1.an.all && sample_time(U1, 0x40) && sample_time(U1, 0x80);
+            ck.note("PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 " + num3(l1) + ", D0 " + num3(l0) +
+                    (uok ? ", U1 " + num3(linelen(U1)) : std::string(", U1 not measured")) + "; rounded to whole steps D1 " + dec(std::llround(l1)) + ", D0 " + dec(std::llround(l0)) + " (" + cap_core() + ")");
+            c9a = std::llround(l1) == std::llround(l0);
         }
         graded(ck, pre9a, c9a,
-               "PR-9a: the ordinary line length is unchanged by DUAL: t($80) - t($40) of D1 and of D0 differs from that of U1 by at most twice the largest marker-loop pass of PR-9b (AA p.12 DUAL: 'Run the horizontal comparators with the alternate horizontal beam counter')",
-               "the R1 anchors of U1, D1 and D0 / PR-9b");
+               "PR-9a: the ordinary line length is unchanged by DUAL: the main counter's line length, measured from the H fields of markers $40 and $80, is the same whole number of 280 ns steps in D1 and in D0 (AA p.12 DUAL: 'Run the horizontal comparators with the alternate horizontal beam counter'; p.24 'this many + 1 280ns increments')",
+               "the R1 anchors of D1 and D0 / PR-9b");
         const bool p9a = pre9a && c9a;
 
-        const bool pre9 = fxd && xcd && q1 && q2 && q3 && pu4 && p9a && kok && sh.ur_ok;
-        const std::string unmet9 = "FIXTURE-D / R2-XCHK-D / PR-9-U1 to PR-9-U4 / PR-9b / PR-9a";
+        const bool pre9 = fxd && xcd && q1 && q2 && q3 && pu4 && p9a && p9c && kok && sh.ur_ok;
+        const std::string unmet9 = "FIXTURE-D / R2-XCHK-D / PR-9-U1 to PR-9-U4 / PR-9b / PR-9c / PR-9a";
         // the observation: BPLH accesses strictly between t($51) and t($6F)
-        auto obs = [&](const URun& r, size_t& kcount, double& W, bool& adj2) {
-            kcount = 0; W = 0; adj2 = true;
+        auto obs = [&](const URun& r, size_t& kcount, bool& adj2) {
+            kcount = 0; adj2 = true;
             uint64_t t0 = tmark(r, 0x51), t1 = tmark(r, 0x6F);
             if (!t0 || !t1) return false;
-            W = double(t1 - t0) / K;
             std::vector<Acc> in;
             for (auto& x : r.bplh) if (x.t > t0 && x.t < t1) in.push_back(x);
             kcount = in.size();
@@ -315,14 +345,42 @@ inline void run_uhres(Checks& ck, Shared& sh) {
             if (in.size() < 2) adj2 = false;
             return true;
         };
-        size_t k1 = 0, k0 = 0; double w1 = 0, w0 = 0; bool a1 = false, a0 = false;
-        const bool o1 = obs(D1, k1, w1, a1), o0 = obs(D0, k0, w0, a0);
-        if (o1) ck.note("P9: D1 has " + dec((long long)k1) + " BPLH accesses in a window of " + num3(w1) + " memory cycles (HTOTAL+1 = 114); D0 has " + dec((long long)k0) + " in " + num3(w0) + " (" + cap_core() + ")");
+        size_t k1 = 0, k0 = 0; bool a1 = false, a0 = false;
+        const bool o1 = obs(D1, k1, a1), o0 = obs(D0, k0, a0);
+        if (o1) ck.note("P9: D1 has " + dec((long long)k1) + " BPLH accesses between t($51) and t($6F); D0 has " + dec((long long)k0) + " (" + cap_core() + ")");
         const bool q5 = o1 && k1 >= 2;
         ck.expect(q5, "PR-9-U5: D1 has at least two BPLH accesses between t($51) and t($6F), so that a step between two of them exists");
-        const double n1 = std::floor(w1 / 114.0), n2 = std::ceil(w1 / 114.0);
-        graded(ck, pre9 && o1, double(k1) >= n1 - 1 && double(k1) <= n2 + 1,
-               "P9-E1: in DUAL mode the UHRES bit-plane pointer comes out once every HTOTAL+1 = 114 memory cycles: between t($51) and t($6F) D1 has floor(W/114) - 1 <= K <= ceil(W/114) + 1 BPLH accesses (AA p.12 DUAL: 'allows the UHRES pointers to come out more than once in a horizontal line', AA p.24 HHPOSR/HHPOSW 'triggering the UHRES pointers')", unmet9);
+        // E9.1a: some horizontal line of $52..$6F, by the H counter, has two or more BPLH accesses
+        std::map<int, int> perline;
+        if (o1) {
+            const uint64_t t0 = tmark(D1, 0x51), t1 = tmark(D1, 0x6F);
+            for (auto& x : D1.bplh) if (x.t > t0 && x.t < t1) ++perline[beam_line(D1, x, K)];
+        }
+        int nl2 = 0, maxl = 0;
+        for (int v = 0x52; v <= 0x6F; ++v) { const int c = perline.count(v) ? perline[v] : 0; maxl = std::max(maxl, c); if (c >= 2) ++nl2; }
+        ck.note("P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: " + dec(nl2) + " of 30, most on one line " + dec(maxl) + " (" + cap_core() + ")");
+        graded(ck, pre9 && o1, nl2 >= 1,
+               "P9-E1a: in DUAL mode at least one horizontal line of $52..$6F, taken from the H counter, has two or more BPLH accesses in D1 (AA p.12 DUAL: 'allows the UHRES pointers to come out more than once in a horizontal line')", unmet9);
+        // E9.1b: between two consecutive BPLH accesses of DH the alternate counter is reset exactly once
+        std::vector<Acc> ah;
+        if (sdh.full) for (auto& x : DH.bplh) if (x.t > sdh.t.front() && x.t < sdh.t.back()) ah.push_back(x);
+        auto phase = [&](uint64_t a) {
+            size_t i = size_t(std::upper_bound(sdh.t.begin(), sdh.t.end(), a - 1) - sdh.t.begin());    // the first sample with T >= a
+            i = i ? i - 1 : 0;                                                                         // the last sample with T < a
+            return std::fmod(double(sdh.r[i] & 0xFF) + double(a - sdh.t[i]) / K, double(0x71 + 1));
+        };
+        bool e91b = false;
+        std::string nk;
+        if (ah.size() >= 3) e91b = true;
+        for (size_t k = 0; ah.size() >= 3 && k + 1 < ah.size(); ++k) {
+            const double v = phase(ah[k].t) + double(ah[k + 1].t - ah[k].t) / K - phase(ah[k + 1].t);
+            const long n = std::lround(v / double(0x71 + 1));
+            nk += " " + dec(n);
+            if (n != 1) e91b = false;
+        }
+        ck.note("P9-E1b: DH has " + dec((long long)ah.size()) + " BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses:" + (nk.empty() ? " none" : nk) + " (" + cap_core() + ")");
+        graded(ck, pre9, e91b,
+               "P9-E1b: in DUAL mode the alternate counter is reset exactly once between every two consecutive BPLH accesses of DH, three accesses at least, the resets counted from HHPOSR (AA p.12 DUAL: 'starts the UHRES pointer chain with the reset of this counter'; p.24 HHPOSR 'triggering the UHRES pointers')", unmet9);
         graded(ck, pre9 && o1 && q5, a1,
                "P9-E2: in D1, whose BPLHMOD is 0, each BPLH address is the previous one + 2, for every consecutive pair between t($51) and t($6F) (AA p.15 BPLHMOD 'Its modulo is added every time it comes out'; the pointer advances by 2 after each access)", unmet9 + " / PR-9-U5");
         graded(ck, pre9 && o0, k0 == 30,

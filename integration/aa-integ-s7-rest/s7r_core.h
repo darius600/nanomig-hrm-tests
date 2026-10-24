@@ -59,7 +59,7 @@ constexpr uint32_t kFixture = 0x0C0800;
 constexpr uint32_t kDone = 0x0C0FFE;
 constexpr uint64_t kBootBudget = 4'000'000;
 
-inline bool in_prog(uint32_t b) { return b >= 0x080000 && b < 0x090000; }
+inline bool in_prog(uint32_t b) { return b >= 0x080400 && b < 0x090000; }   // the program image: PROGRAM_ORG to the end of the program block
 inline bool in_res(uint32_t b) { return b >= 0x0C0000 && b < 0x0C1000; }
 inline bool in_stack(uint32_t b) { return b >= 0x0FF000 && b < 0x0FFF00; }
 

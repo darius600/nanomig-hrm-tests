@@ -450,7 +450,7 @@ Run to wrapper: HV `prog_hv`; HA, HB, HC, HW `prog_ha`, `prog_hb`, `prog_hc`, `p
 
 ### 7.4 Measured (the final run of every core)
 
-Shipped design (`make -k -B test`): TG68K 36 passed, 18 failed, fx68k 36 passed, 18 failed. Page-built copy (7.5): TG68K 66 passed, 0 failed, fx68k 66 passed, 0 failed. A precondition that fails is counted as a failed line; a graded line whose preconditions fail prints `NOT GRADED`.
+Shipped design (`make -k -B test`): TG68K 36 passed, 23 failed, fx68k 36 passed, 23 failed. Page-built copy (7.5): TG68K 70 passed, 0 failed, fx68k 70 passed, 0 failed. A precondition that fails is counted as a failed line; a graded line whose preconditions fail prints `NOT GRADED`.
 
 | line | shipped TG68K | shipped fx68k | copy TG68K | copy fx68k |
 |---|---|---|---|---|
@@ -483,10 +483,11 @@ Shipped design (`make -k -B test`): TG68K 36 passed, 18 failed, fx68k 36 passed,
 | P3-E2 | NOT GRADED | NOT GRADED | PASS | PASS |
 | P3-E4 | NOT GRADED | NOT GRADED | PASS | PASS |
 | P3-E5 | NOT GRADED | NOT GRADED | PASS | PASS |
+| P3-E6 | FAIL | FAIL | PASS | PASS |
 | P3-AGG | FAIL | FAIL | PASS | PASS |
 | P3-U0 | PASS | PASS | PASS | PASS |
 | P3-U0d | PASS | PASS | PASS | PASS |
-| P4 | NOT GRADED | NOT GRADED | PASS | PASS |
+| P4 | FAIL | FAIL | PASS | PASS |
 | P5 | FAIL | FAIL | PASS | PASS |
 | P6-E1 | FAIL | FAIL | PASS | PASS |
 | P6-E2 | NOT GRADED | NOT GRADED | PASS | PASS |
@@ -495,6 +496,7 @@ Shipped design (`make -k -B test`): TG68K 36 passed, 18 failed, fx68k 36 passed,
 | P6-E5 | NOT GRADED | NOT GRADED | PASS | PASS |
 | P6-CTRL | FAIL | FAIL | PASS | PASS |
 | P6-U0 | PASS | PASS | PASS | PASS |
+| P6-E6 | FAIL | FAIL | PASS | PASS |
 | P6-AGG | FAIL | FAIL | PASS | PASS |
 | P7 | FAIL | FAIL | PASS | PASS |
 | FIXTURE-D | PASS | PASS | PASS | PASS |
@@ -504,9 +506,11 @@ Shipped design (`make -k -B test`): TG68K 36 passed, 18 failed, fx68k 36 passed,
 | PR-9-U3 | PASS | PASS | PASS | PASS |
 | PR-9-U4 | PASS | PASS | PASS | PASS |
 | PR-9b | PASS | PASS | PASS | PASS |
+| PR-9c | PASS | PASS | PASS | PASS |
 | PR-9a | PASS | PASS | PASS | PASS |
 | PR-9-U5 | FAIL | FAIL | PASS | PASS |
-| P9-E1 | FAIL | FAIL | PASS | PASS |
+| P9-E1a | FAIL | FAIL | PASS | PASS |
+| P9-E1b | FAIL | FAIL | PASS | PASS |
 | P9-E2 | NOT GRADED | NOT GRADED | PASS | PASS |
 | P9-D0 | FAIL | FAIL | PASS | PASS |
 | FIXTURE-P8 | PASS | PASS | PASS | PASS |
@@ -515,7 +519,7 @@ Shipped design (`make -k -B test`): TG68K 36 passed, 18 failed, fx68k 36 passed,
 | PR-8c | PASS | PASS | PASS | PASS |
 | PR-8d | PASS | PASS | PASS | PASS |
 | P8-E1 | FAIL | FAIL | PASS | PASS |
-| P8-E2 | PASS | PASS | PASS | PASS |
+| P8-E2 | FAIL | FAIL | PASS | PASS |
 | P8-E3 | FAIL | FAIL | PASS | PASS |
 | P8-E4 | FAIL | FAIL | PASS | PASS |
 | P8-HD | PASS | PASS | PASS | PASS |
@@ -528,21 +532,29 @@ shipped design, TG68K:
 ```text
 MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.001 memory cycles; conversion 7.990 clk_sys cycles per memory cycle (tg68k)
 MEASURED: UR: 66497 accesses, markers 226 of 226 (tg68k)
+MEASURED: PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA 31 lines with 4 to 4 refresh accesses per line, RB 31 lines with 4 to 4 (tg68k)
 MEASURED: P1: refresh accesses between the fetch of L+6 and the end marker: RA 129, RB 129; first RA address $000000 RB $000000 (tg68k)
-MEASURED: PR-U5 population: 0 UHRES accesses in U1, U2, U3 and U4 (tg68k)
+MEASURED: PR-U5 population: 0 UHRES accesses in U1, U2, U3, U4 and UW (tg68k)
 MEASURED: U1: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
 MEASURED: U2: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
 MEASURED: U3: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
 MEASURED: U4: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 15, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $0F8), first SPRH access on line none (SPRHSTRT $100) (tg68k)
 MEASURED: U0: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
 MEASURED: U0d: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
-MEASURED: PR-9b: marker-loop head fetches between the first and the last marker: U1 841, D1 841, D0 841; largest pass 56.069 memory cycles (tg68k)
-MEASURED: PR-9a: t($80) - t($40) in memory cycles: U1 14543.889, D1 14543.889, D0 14543.889; largest difference of D1 or D0 from U1 0.000, bound twice the largest pass 112.138 (tg68k)
-MEASURED: P9: D1 has 0 BPLH accesses in a window of 6828.399 memory cycles (HTOTAL+1 = 114); D0 has 0 in 6828.399 (tg68k)
-MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.025 HB 20.025 HC 20.025 (tg68k)
-MEASURED: P8: largest sample interval in memory cycles HA 15.018 HB 15.018 HC 15.018, smallest HA 14.017 (tg68k)
-MEASURED: P8: first samples (bits 7-0) HA: 00 00 00 00 00 00 HB: 00 00 00 00 00 00 HC: 00 00 00 00 00 00 HD: 00 00 00 00 00 00
-MEASURED: P8-E4 values (memory cycles), S_HV 5 J_HV 1.001: HA: sum d 0 elapsed 887.091 J 1.001 tolerance 11.919 HB: sum d 0 elapsed 887.091 J 1.001 tolerance 11.919 HC: sum d 0 elapsed 887.091 J 1.001 tolerance 11.919 (tg68k)
+MEASURED: E3.6 (BPLH walking cases in UW): line $051: expected $000002, seen none; line $052: expected $000004, seen none; line $053: expected $000008, seen none; cases without their address: 40 of 40 (tg68k)
+MEASURED: E6.6 (SPRH walking cases in UW): line $051: expected $1FFFFC, seen none; line $052: expected $1FFFFA, seen none; line $053: expected $1FFFF6, seen none; cases without their address: 40 of 40 (tg68k)
+MEASURED: P4: U1 and U2 do not have exactly one BPLH access on every line $51..$6F; BPLH accesses U1 0, U2 0 (tg68k)
+MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 15.018 memory cycles (tg68k)
+MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.280, D0 227.280, U1 227.280; rounded to whole steps D1 227, D0 227 (tg68k)
+MEASURED: P9: D1 has 0 BPLH accesses between t($51) and t($6F); D0 has 0 (tg68k)
+MEASURED: P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: 0 of 30, most on one line 0 (tg68k)
+MEASURED: P9-E1b: DH has 0 BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses: none (tg68k)
+MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.025 HB 20.025 HC 20.025 HW 20.025 (tg68k)
+MEASURED: P8: largest sample interval in memory cycles HA 15.018 HB 15.018 HC 15.018 HW 15.018, smallest HA 14.017 (tg68k)
+MEASURED: P8: first samples (bits 7-0) HA: 00 00 00 00 00 00 HB: 00 00 00 00 00 00 HC: 00 00 00 00 00 00 HD: 00 00 00 00 00 00 HW: 00 00 00 00 00 00
+MEASURED: P8: bits 15-8 of the samples (not graded): HA 00 00 00 00 00 00
+MEASURED: P8-E2: HW writes X = $69 (N - 8), first sample $00, measured latency 20.025 memory cycles (tg68k)
+MEASURED: P8-E4 rate (not graded): HA: sum d 0 counts, elapsed 887.091 memory cycles HB: sum d 0 counts, elapsed 887.091 memory cycles HC: sum d 0 counts, elapsed 887.091 memory cycles (tg68k)
 ```
 
 shipped design, fx68k:
@@ -550,21 +562,29 @@ shipped design, fx68k:
 ```text
 MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.000 memory cycles; conversion 8.000 clk_sys cycles per memory cycle (fx68k)
 MEASURED: UR: 58429 accesses, markers 226 of 226 (fx68k)
+MEASURED: PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA 31 lines with 4 to 4 refresh accesses per line, RB 31 lines with 4 to 4 (fx68k)
 MEASURED: P1: refresh accesses between the fetch of L+6 and the end marker: RA 129, RB 129; first RA address $000000 RB $000000 (fx68k)
-MEASURED: PR-U5 population: 0 UHRES accesses in U1, U2, U3 and U4 (fx68k)
+MEASURED: PR-U5 population: 0 UHRES accesses in U1, U2, U3, U4 and UW (fx68k)
 MEASURED: U1: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
 MEASURED: U2: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
 MEASURED: U3: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
 MEASURED: U4: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 15, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $0F8), first SPRH access on line none (SPRHSTRT $100) (fx68k)
 MEASURED: U0: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
 MEASURED: U0d: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
-MEASURED: PR-9b: marker-loop head fetches between the first and the last marker: U1 682, D1 683, D0 683; largest pass 81.000 memory cycles (fx68k)
-MEASURED: PR-9a: t($80) - t($40) in memory cycles: U1 14517.000, D1 14532.000, D0 14532.000; largest difference of D1 or D0 from U1 15.000, bound twice the largest pass 162.000 (fx68k)
-MEASURED: P9: D1 has 0 BPLH accesses in a window of 6810.000 memory cycles (HTOTAL+1 = 114); D0 has 0 in 6810.000 (fx68k)
-MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.000 HB 20.000 HC 20.000 (fx68k)
-MEASURED: P8: largest sample interval in memory cycles HA 14.000 HB 14.000 HC 14.000, smallest HA 13.000 (fx68k)
-MEASURED: P8: first samples (bits 7-0) HA: 00 00 00 00 00 00 HB: 00 00 00 00 00 00 HC: 00 00 00 00 00 00 HD: 00 00 00 00 00 00
-MEASURED: P8-E4 values (memory cycles), S_HV 5 J_HV 1.000: HA: sum d 0 elapsed 820.000 J 1.000 tolerance 11.875 HB: sum d 0 elapsed 820.000 J 1.000 tolerance 11.875 HC: sum d 0 elapsed 820.000 J 1.000 tolerance 11.875 (fx68k)
+MEASURED: E3.6 (BPLH walking cases in UW): line $051: expected $000002, seen none; line $052: expected $000004, seen none; line $053: expected $000008, seen none; cases without their address: 40 of 40 (fx68k)
+MEASURED: E6.6 (SPRH walking cases in UW): line $051: expected $1FFFFC, seen none; line $052: expected $1FFFFA, seen none; line $053: expected $1FFFF6, seen none; cases without their address: 40 of 40 (fx68k)
+MEASURED: P4: U1 and U2 do not have exactly one BPLH access on every line $51..$6F; BPLH accesses U1 0, U2 0 (fx68k)
+MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 15.000 memory cycles (fx68k)
+MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.000, D0 227.000, U1 227.000; rounded to whole steps D1 227, D0 227 (fx68k)
+MEASURED: P9: D1 has 0 BPLH accesses between t($51) and t($6F); D0 has 0 (fx68k)
+MEASURED: P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: 0 of 30, most on one line 0 (fx68k)
+MEASURED: P9-E1b: DH has 0 BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses: none (fx68k)
+MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.000 HB 20.000 HC 20.000 HW 20.000 (fx68k)
+MEASURED: P8: largest sample interval in memory cycles HA 14.000 HB 14.000 HC 14.000 HW 14.000, smallest HA 13.000 (fx68k)
+MEASURED: P8: first samples (bits 7-0) HA: 00 00 00 00 00 00 HB: 00 00 00 00 00 00 HC: 00 00 00 00 00 00 HD: 00 00 00 00 00 00 HW: 00 00 00 00 00 00
+MEASURED: P8: bits 15-8 of the samples (not graded): HA 00 00 00 00 00 00
+MEASURED: P8-E2: HW writes X = $69 (N - 8), first sample $00, measured latency 20.000 memory cycles (fx68k)
+MEASURED: P8-E4 rate (not graded): HA: sum d 0 counts, elapsed 820.000 memory cycles HB: sum d 0 counts, elapsed 820.000 memory cycles HC: sum d 0 counts, elapsed 820.000 memory cycles (fx68k)
 ```
 
 page-built copy, TG68K:
@@ -572,22 +592,29 @@ page-built copy, TG68K:
 ```text
 MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.001 memory cycles; conversion 7.990 clk_sys cycles per memory cycle (tg68k)
 MEASURED: UR: 66497 accesses, markers 226 of 226 (tg68k)
+MEASURED: PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA 31 lines with 4 to 4 refresh accesses per line, RB 31 lines with 4 to 4 (tg68k)
 MEASURED: P1: refresh accesses between the fetch of L+6 and the end marker: RA 129, RB 129; first RA address $00AAAA RB $015554 (tg68k)
-MEASURED: PR-U5 population: 240 UHRES accesses in U1, U2, U3 and U4 (tg68k)
+MEASURED: PR-U5 population: 366 UHRES accesses in U1, U2, U3, U4 and UW; beam positions from 4.373 to 6.390 memory cycles after the line start (tg68k)
 MEASURED: U1: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (tg68k)
 MEASURED: U2: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (tg68k)
 MEASURED: U3: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (tg68k)
 MEASURED: U4: BPLH 16 SPRH 32 stray 0; lines with one BPLH access 15 of 15, with two SPRH accesses 15 of 15; first BPLH access on line $0F9 (BPLHSTRT $0F8), first SPRH access on line $101 (SPRHSTRT $100) (tg68k)
 MEASURED: U0: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
 MEASURED: U0d: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (tg68k)
+MEASURED: E3.6 (BPLH walking cases in UW): cases without their address: 0 of 40 (tg68k)
+MEASURED: E6.6 (SPRH walking cases in UW): cases without their address: 0 of 40 (tg68k)
 MEASURED: P4 steps between the BPLH addresses of consecutive lines: U1: 18 expected, first steps 18 18 18 U2: -14 expected, first steps -14 -14 -14 (tg68k)
-MEASURED: PR-9b: marker-loop head fetches between the first and the last marker: U1 839, D1 840, D0 841; largest pass 57.070 memory cycles (tg68k)
-MEASURED: PR-9a: t($80) - t($40) in memory cycles: U1 14547.894, D1 14541.887, D0 14543.889; largest difference of D1 or D0 from U1 6.007, bound twice the largest pass 114.140 (tg68k)
-MEASURED: P9: D1 has 60 BPLH accesses in a window of 6826.397 memory cycles (HTOTAL+1 = 114); D0 has 30 in 6828.399 (tg68k)
-MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.025 HB 20.025 HC 20.025 (tg68k)
-MEASURED: P8: largest sample interval in memory cycles HA 15.018 HB 15.018 HC 15.018, smallest HA 14.017 (tg68k)
-MEASURED: P8: first samples (bits 7-0) HA: 1E 2C 3A 48 56 64 HB: 4E 5C 6A 06 14 22 HC: 1E 2C 3A 48 04 12 HD: 1E 2C 3A 48 56 64
-MEASURED: P8-E4 values (memory cycles), S_HV 5 J_HV 1.001: HA: sum d 886 elapsed 887.091 J 1.001 tolerance 11.919 HB: sum d 886 elapsed 887.091 J 1.001 tolerance 11.919 HC: sum d 886 elapsed 887.091 J 1.001 tolerance 11.919 (tg68k)
+MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 15.018 memory cycles (tg68k)
+MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.279, D0 227.280, U1 227.280; rounded to whole steps D1 227, D0 227 (tg68k)
+MEASURED: P9: D1 has 60 BPLH accesses between t($51) and t($6F); D0 has 30 (tg68k)
+MEASURED: P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: 30 of 30, most on one line 2 (tg68k)
+MEASURED: P9-E1b: DH has 8 BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses: 1 1 1 1 1 1 1 (tg68k)
+MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.025 HB 20.025 HC 20.025 HW 20.025 (tg68k)
+MEASURED: P8: largest sample interval in memory cycles HA 15.018 HB 15.018 HC 15.018 HW 15.018, smallest HA 14.017 (tg68k)
+MEASURED: P8: first samples (bits 7-0) HA: 1E 2C 3A 48 56 64 HB: 4E 5C 6A 06 14 22 HC: 1E 2C 3A 48 04 12 HD: 1E 2C 3A 48 56 64 HW: 05 13 21 2F 3D 4B
+MEASURED: P8: bits 15-8 of the samples (not graded): HA 00 00 00 00 00 00
+MEASURED: P8-E2: HW writes X = $69 (N - 8), first sample $05, measured latency 20.025 memory cycles (tg68k)
+MEASURED: P8-E4 rate (not graded): HA: sum d 886 counts, elapsed 887.091 memory cycles HB: sum d 886 counts, elapsed 887.091 memory cycles HC: sum d 886 counts, elapsed 887.091 memory cycles (tg68k)
 ```
 
 page-built copy, fx68k:
@@ -595,22 +622,29 @@ page-built copy, fx68k:
 ```text
 MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.000 memory cycles; conversion 8.000 clk_sys cycles per memory cycle (fx68k)
 MEASURED: UR: 58429 accesses, markers 226 of 226 (fx68k)
+MEASURED: PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA 31 lines with 4 to 4 refresh accesses per line, RB 31 lines with 4 to 4 (fx68k)
 MEASURED: P1: refresh accesses between the fetch of L+6 and the end marker: RA 129, RB 129; first RA address $00AAAA RB $015554 (fx68k)
-MEASURED: PR-U5 population: 240 UHRES accesses in U1, U2, U3 and U4 (fx68k)
+MEASURED: PR-U5 population: 366 UHRES accesses in U1, U2, U3, U4 and UW; beam positions from 4.500 to 6.500 memory cycles after the line start (fx68k)
 MEASURED: U1: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (fx68k)
 MEASURED: U2: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (fx68k)
 MEASURED: U3: BPLH 32 SPRH 32 stray 0; lines with one BPLH access 31 of 31, with two SPRH accesses 15 of 15; first BPLH access on line $051 (BPLHSTRT $050), first SPRH access on line $059 (SPRHSTRT $058) (fx68k)
 MEASURED: U4: BPLH 16 SPRH 32 stray 0; lines with one BPLH access 15 of 15, with two SPRH accesses 15 of 15; first BPLH access on line $0F9 (BPLHSTRT $0F8), first SPRH access on line $101 (SPRHSTRT $100) (fx68k)
 MEASURED: U0: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
 MEASURED: U0d: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with two SPRH accesses 0 of 15; first BPLH access on line none (BPLHSTRT $050), first SPRH access on line none (SPRHSTRT $058) (fx68k)
+MEASURED: E3.6 (BPLH walking cases in UW): cases without their address: 0 of 40 (fx68k)
+MEASURED: E6.6 (SPRH walking cases in UW): cases without their address: 0 of 40 (fx68k)
 MEASURED: P4 steps between the BPLH addresses of consecutive lines: U1: 18 expected, first steps 18 18 18 U2: -14 expected, first steps -14 -14 -14 (fx68k)
-MEASURED: PR-9b: marker-loop head fetches between the first and the last marker: U1 680, D1 682, D0 683; largest pass 82.000 memory cycles (fx68k)
-MEASURED: PR-9a: t($80) - t($40) in memory cycles: U1 14527.000, D1 14532.000, D0 14532.000; largest difference of D1 or D0 from U1 5.000, bound twice the largest pass 164.000 (fx68k)
-MEASURED: P9: D1 has 60 BPLH accesses in a window of 6811.000 memory cycles (HTOTAL+1 = 114); D0 has 30 in 6810.000 (fx68k)
-MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.000 HB 20.000 HC 20.000 (fx68k)
-MEASURED: P8: largest sample interval in memory cycles HA 14.000 HB 14.000 HC 14.000, smallest HA 13.000 (fx68k)
-MEASURED: P8: first samples (bits 7-0) HA: 1E 2B 38 45 52 5F HB: 4E 5B 68 03 10 1D HC: 1E 2B 38 45 00 0D HD: 1E 2B 38 45 52 5F
-MEASURED: P8-E4 values (memory cycles), S_HV 5 J_HV 1.000: HA: sum d 820 elapsed 820.000 J 1.000 tolerance 11.875 HB: sum d 820 elapsed 820.000 J 1.000 tolerance 11.875 HC: sum d 820 elapsed 820.000 J 1.000 tolerance 11.875 (fx68k)
+MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 14.000 memory cycles (fx68k)
+MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.000, D0 227.000, U1 227.000; rounded to whole steps D1 227, D0 227 (fx68k)
+MEASURED: P9: D1 has 60 BPLH accesses between t($51) and t($6F); D0 has 30 (fx68k)
+MEASURED: P9-E1a: D1 lines of $52..$6F with two or more BPLH accesses: 30 of 30, most on one line 2 (fx68k)
+MEASURED: P9-E1b: DH has 7 BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses: 1 1 1 1 1 1 (fx68k)
+MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.000 HB 20.000 HC 20.000 HW 20.000 (fx68k)
+MEASURED: P8: largest sample interval in memory cycles HA 14.000 HB 14.000 HC 14.000 HW 14.000, smallest HA 13.000 (fx68k)
+MEASURED: P8: first samples (bits 7-0) HA: 1E 2B 38 45 52 5F HB: 4E 5B 68 03 10 1D HC: 1E 2B 38 45 00 0D HD: 1E 2B 38 45 52 5F HW: 05 12 1F 2C 39 46
+MEASURED: P8: bits 15-8 of the samples (not graded): HA 00 00 00 00 00 00
+MEASURED: P8-E2: HW writes X = $69 (N - 8), first sample $05, measured latency 20.000 memory cycles (fx68k)
+MEASURED: P8-E4 rate (not graded): HA: sum d 820 counts, elapsed 820.000 memory cycles HB: sum d 820 counts, elapsed 820.000 memory cycles HC: sum d 820 counts, elapsed 820.000 memory cycles (fx68k)
 ```
 
 ### 7.5 Implementation record
@@ -621,19 +655,19 @@ On the shipped design the refresh addresses are the same whatever the Copper wri
 - **UHRES pointers** (p.16, p.22, p.15, p.27, p.28, p.12): BPLCON0 bit 7 together with DMACON bit 9 enables the chain. The chain starts at the reset of the beam counter in use (the normal one; with BEAMCON0 DUAL the alternate one: "starts the UHRES pointer chain with the reset of this counter", p.12): it is armed in the tick in which that counter's count falls back, and a write of HHPOSW does not arm it. It then takes the next three "free" memory cycles, those that no refresh, disk, audio, bit-plane or sprite channel uses: the first for the sprite pointer, the second for the bit-plane pointer, the third for the sprite pointer again. The vertical comparisons (BPLHSTRT <= V < BPLHSTOP, SPRHSTRT <= V < SPRHSTOP) are made when the chain is armed, with the vertical counter as it stands there, so the first access of a run lies on line start+1 in the numbering of R1 (the page's line start is open, R1). Each pointer is a pair of 5 and 15 bits (p.6 `+`). The bit-plane pointer advances after each access by 2 plus the sign-extended BPLHMOD, the sprite pointer by 2.
 - **HHPOSW and HHPOSR** (p.24): a counter of memory cycles that HHPOSW sets, that counts up to HTOTAL and then starts again, and that HHPOSR returns in bits 7-0.
 
-Against this copy `make test` prints, for every line of the table in 7.4, the verdict of the "copy" columns: every line prints PASS, on TG68K and on fx68k, including the lines that are FAIL or NOT GRADED on the shipped design (P1, PR-2a, P2, P1P2-JOINT, PR-U5, PR-U6, PR-U7, P3-E1, P3-E2, P3-E4, P3-E5, P3-AGG, P4, P5, P6-E1, P6-E2, P6-E3, P6-E4, P6-E5, P6-CTRL, P6-AGG, P7, PR-9-U5, P9-E1, P9-E2, P9-D0, P8-E1, P8-E3, P8-E4, P8-AGG).
+Against this copy `make test` prints, for every line of the table in 7.4, the verdict of the "copy" columns: every line prints PASS, 70 passed and 0 failed on TG68K and on fx68k, including the lines that are FAIL or NOT GRADED on the shipped design (P1, PR-2a, P2, P1P2-JOINT, PR-U5, PR-U6, PR-U7, P3-E1, P3-E2, P3-E4, P3-E5, P3-E6, P3-AGG, P4, P5, P6-E1, P6-E2, P6-E3, P6-E4, P6-E5, P6-E6, P6-CTRL, P6-AGG, P7, PR-9-U5, P9-E1a, P9-E1b, P9-E2, P9-D0, P8-E1, P8-E2, P8-E3, P8-E4, P8-AGG).
 
-Further copies change one sentence each (they differ from the first in the file `agnus_refresh.v` only, and `agnus_beamcounter.v` for the last):
+Further copies change one sentence each:
 
-- A copy whose chain is armed at the count 0 of the counter in use instead of at the fall of its count (the first free cycle comes one colour clock later): every line prints PASS, 66 passed and 0 failed on TG68K and on fx68k, as on the first copy. Its first BPLH access lies on line BPLHSTRT+1 and its first SPRH access on line SPRHSTRT+1, as on the first copy.
-- A copy whose chain is armed at the count 3, after the vertical counter has stepped: every line prints PASS, 66 passed and 0 failed on TG68K and on fx68k, with the first BPLH and SPRH accesses on the lines BPLHSTRT and SPRHSTRT themselves. The same lines are green whether the first access lies on line start or on line start+1 (R1, "The line start is open").
-- A copy in which the bit-plane pointer comes out on the first free cycle and the sprite pointer on the second and third (the pages give the order sprite, bit plane, sprite: p.27 "1st & 3rd", p.15 "2nd"): P6-E4 and P6-AGG print FAIL on TG68K and on fx68k, and every other line prints PASS (part `U`: 41 passed, 2 failed on each core).
-- A copy without refresh accesses (part `REF`): PR-1c, R2-UR and R2-XCHK-REF print FAIL on TG68K and on fx68k, PR-2a prints FAIL, and P1, P1-RE, P1-RN, P2 and P1P2-JOINT print NOT GRADED (7 passed, 4 failed on each core).
-- A copy in which bit 6 of the H field of VHPOSR is inverted (`agnus_beamcounter.v`), so that the H field falls back twice inside a line (part `HV`): HV-ANCHOR prints FAIL on TG68K and on fx68k through its clause on decreasing pairs alone (at least 16 pairs remain, each with an advance of at least 1; the measured line prints the decreasing pairs, three for one V value on fx68k) and FIXTURE-HV prints PASS (3 passed, 1 failed on each core).
+- A copy whose chain is armed two ticks of the 7 MHz enable (one colour clock) after the fall of the count (`agnus_refresh.v` only): every line prints PASS, 70 passed and 0 failed on TG68K and on fx68k. Its first BPLH access lies on line BPLHSTRT+1 and its first SPRH access on line SPRHSTRT+1, as on the first copy; the beam positions of PR-U5 run from 5.374 (TG68K) and 5.500 (fx68k) to 7.391 and 7.500 memory cycles.
+- A copy whose chain is armed six ticks after the fall of the count, after the vertical counter has stepped (`agnus_refresh.v` only): every line prints PASS, 70 passed and 0 failed on TG68K and on fx68k, with the first BPLH and SPRH accesses on the lines BPLHSTRT and SPRHSTRT themselves; the beam positions of PR-U5 run from 7.376 (TG68K) and 7.500 (fx68k) to 11.396 and 11.500 memory cycles. The same lines are green whether the first access lies on line start or on line start+1 (R1, "The line start is open").
+- A copy in which the bit-plane pointer comes out on the first free cycle and the sprite pointer on the second and third (the pages give the order sprite, bit plane, sprite: p.27 "1st & 3rd", p.15 "2nd"): P6-E4 prints FAIL and P6-AGG, which carries E6.4, prints FAIL, on TG68K and on fx68k, and every other line prints PASS (part `U`: 45 passed, 2 failed on each core).
+- A copy without refresh accesses (part `REF`): PR-1c prints FAIL, and so do R2-UR, R2-XCHK-REF and PR-2a; P1, P1-RE, P1-RN, P2 and P1P2-JOINT print NOT GRADED (7 passed, 4 failed on each core, TG68K and fx68k).
+- A copy in which bit 6 of the H field of VHPOSR is inverted (`agnus_beamcounter.v`), so that the H field falls back twice inside a line (part `HV`): HV-ANCHOR prints FAIL on TG68K and on fx68k through its clause on decreasing pairs alone (at least 16 pairs remain, each with an advance of at least 1; the measured line prints the decreasing pairs) and FIXTURE-HV prints PASS (3 passed, 1 failed on each core).
 
 ### 7.6 Mutations
 
-Each mutant changes the stimulus (a program, or which program a run uses) and leaves the comparator and the expected values alone. Every mutant program reaches its end marker, except those whose point is a missing end marker (PR-U1, PR-8c, PR-9-U1). `NMH_MUTATE=<selector>` with `NMH_ONLY` of the line's family runs a mutant. The columns give the verdict of the labelled line in the mutant run on the shipped design and on the page-built copy of 7.5, whose unchanged run prints PASS on every line (7.4). A mutant that needs a REFPTR, UHRES or HHPOSR effect cannot change a verdict on the shipped design, which shows none of them; there the column repeats the unchanged verdict. PR-1c and P6-E4 have no stimulus mutant (the pages give no stimulus that removes refresh or reorders the free cycles); their mutants are the private copies of 7.5, `IMPL-NOREF` and `IMPL-E4` below, and the clause of HV-ANCHOR on decreasing pairs, which no stimulus produces, has `IMPL-HBACK`. The contrast of P1+P2 with COPCON = $0000 for RA and RB (`P1P2-JOINT-A`) prints NOT GRADED (7.2 item 12). Several mutants turn other lines red or NOT GRADED as well, because the runs they change (U1, UR, D1, HB, RB) are shared by several lines; the `// MUTATION` records in the test header list, per selector, every other line that moves on the page-built copy.
+Each mutant changes the stimulus (a program, or which program a run uses) and leaves the comparator and the expected values alone; no mutant changes a gate, an expected value or a comparator. Every mutant program reaches its end marker, except those whose point is a missing end marker (PR-U1, PR-8c, PR-9-U1). `NMH_MUTATE=<selector>` with `NMH_ONLY` of the line's family runs a mutant. The columns give the verdict of the labelled line in the mutant run on the shipped design and on the page-built copy of 7.5, whose unchanged run prints PASS on every line (7.4). A mutant that needs a REFPTR, UHRES or HHPOSR effect cannot change a verdict on the shipped design, which shows none of them; there the column repeats the unchanged verdict. PR-1c and P6-E4 have no stimulus mutant (the pages give no stimulus that removes refresh or reorders the free cycles); their mutants are the private copies of 7.5, `IMPL-NOREF` and `IMPL-E4` below, and the clause of HV-ANCHOR on decreasing pairs, which no stimulus produces, has `IMPL-HBACK`. The contrast of P1+P2 with COPCON = $0000 for RA and RB (`P1P2-JOINT-A`) prints NOT GRADED (7.2 item 12). Several mutants turn other lines red or NOT GRADED as well, because the runs they change (U1, UR, UW, D1, DH, HB, RB) are shared by several lines; the `// MUTATION` records in the test header list, per selector, every other line that moves on the page-built copy, and for the three private copies of 7.5 every line that moves on the copy.
 
 | line | selector | what changes | shipped TG68K | shipped fx68k | copy TG68K | copy fx68k |
 |---|---|---|---|---|---|---|
@@ -659,7 +693,7 @@ Each mutant changes the stimulus (a program, or which program a run uses) and le
 | PR-8c | `PR-8c` | HA leaves out the end-marker store (prog_ha_noend) | FAIL | FAIL | FAIL | FAIL |
 | PR-8d | `PR-8d` | HA waits about 100 memory cycles between the HHPOSW write and its first read (prog_ha_wait) | FAIL | FAIL | FAIL | FAIL |
 | P8-E1 | `P8-E1` | HB runs HA's program (HHPOSW = $0010 in both) | FAIL | FAIL | FAIL | FAIL |
-| P8-E2 | `P8-E2` | HC writes HTOTAL = $00A1 (prog_hc_n) while the expectation stays N = $51 | PASS | PASS | FAIL | FAIL |
+| P8-E2 | `P8-E2` | HW writes HTOTAL = $00A1 (prog_hw_n) while the expectation stays N = $71 | FAIL | FAIL | FAIL | FAIL |
 | P8-E3 | `P8-E3` | HC writes HHPOSW = $0030 (prog_hc_x) while the expectation stays X = $10 | FAIL | FAIL | FAIL | FAIL |
 | P8-E4 | `P8-E4` | HC samples VPOSR instead of HHPOSR (prog_hc_v); bits 7-0 of VPOSR do not count | FAIL | FAIL | FAIL | FAIL |
 | P8-HD | `P8-HD` | HD runs HB's program (HHPOSW = $0040) instead of HA's | PASS | PASS | FAIL | FAIL |
@@ -677,15 +711,17 @@ Each mutant changes the stimulus (a program, or which program a run uses) and le
 | P3-E2 | `P3-E2` | U1 writes BPLHPTL = $AAEB (prog_u1_bpl40): its first BPLH address is $15AAEA, 0x40 bytes beyond the expected $15AAAA and still inside the run's BPLH range | NOT GRADED | NOT GRADED | FAIL | FAIL |
 | P3-E4 | `P3-E4` | U3 writes BPLHPTL = $AAEB (prog_u3_bpl40), so its BPLH addresses differ from U1's | NOT GRADED | NOT GRADED | FAIL | FAIL |
 | P3-E5 | `P3-E5` | U1 writes SPRHPTH = $0016 (prog_u1_sph16), so its SPRH accesses lie outside the SPRH range of the run | NOT GRADED | NOT GRADED | FAIL | FAIL |
+| P3-E6 | `P3-E6` | UW writes case 7 of the bit-plane pointer with bit 8 set instead of bit 7 (prog_uw_mb) while the expectation stays bit 7 | FAIL | FAIL | FAIL | FAIL |
 | P3-AGG | `P3-AGG` | U1 runs U0's program (BPLCON0 UHRES bit clear) | FAIL | FAIL | FAIL | FAIL |
 | P3-U0 | `P3-U0` | U0 runs U1's program (UHRES bit set) | PASS | PASS | FAIL | FAIL |
 | P3-U0d | `P3-U0d` | U0d runs U1's program (DMAEN set) | PASS | PASS | FAIL | FAIL |
-| P4 | `P4` | U2 writes BPLHMOD = $0000 (prog_u2_m0) while the expectation stays -14 | NOT GRADED | NOT GRADED | FAIL | FAIL |
+| P4 | `P4` | U2 writes BPLHMOD = $0000 (prog_u2_m0) while the expectation stays -14 | FAIL | FAIL | FAIL | FAIL |
 | P5 | `P5` | U1 writes BPLHSTRT = $0058 (prog_u1_s58) while the expectation stays start $50 | FAIL | FAIL | FAIL | FAIL |
 | P6-E1 | `P6-E1` | U1 runs U0's program (BPLCON0 UHRES bit clear) | FAIL | FAIL | FAIL | FAIL |
 | P6-E2 | `P6-E2` | U1 writes SPRHPTL = $24A9 (prog_u1_spl40): its first SPRH address is $1324A8, 0x40 bytes beyond the expected $132468 | NOT GRADED | NOT GRADED | FAIL | FAIL |
 | P6-E3 | `P6-E3` | U1 writes SPRHPTH, SPRHPTL = $0013, $2469 again right after the marker of line $5F (prog_u1_rw), so the SPRH addresses fall back to the start | NOT GRADED | NOT GRADED | FAIL | FAIL |
 | P6-E5 | `P6-E5` | U3 writes SPRHPTL = $24A9 (prog_u3_spl40), so its SPRH addresses differ from U1's | NOT GRADED | NOT GRADED | FAIL | FAIL |
+| P6-E6 | `P6-E6` | UW writes case 7 of the sprite pointer with bit 8 clear instead of bit 7 (prog_uw_ms) while the expectation stays bit 7 | FAIL | FAIL | FAIL | FAIL |
 | P6-CTRL | `P6-CTRL` | U1 writes SPRHSTRT = $0050 (prog_u1_sstrt50), so lines $51 to $56 are inside the SPRH range | FAIL | FAIL | FAIL | FAIL |
 | P6-U0 | `P6-U0` | U0 runs U1's program (UHRES bit set) | PASS | PASS | FAIL | FAIL |
 | P6-AGG | `P6-AGG` | U1 runs U0's program (BPLCON0 UHRES bit clear) | FAIL | FAIL | FAIL | FAIL |
@@ -697,9 +733,11 @@ Each mutant changes the stimulus (a program, or which program a run uses) and le
 | PR-9-U3 | `PR-9-U3` | D1 waits for line $60 before its setup (prog_d1_late) | FAIL | FAIL | FAIL | FAIL |
 | PR-9-U4 | `PR-9-U4` | U0 runs U1's program (UHRES bit set) | PASS | PASS | FAIL | FAIL |
 | PR-9-U5 | `PR-9-U5` | D1 runs with the UHRES bit clear (prog_d1_nobit), so it has no BPLH access | FAIL | FAIL | FAIL | FAIL |
-| PR-9b | `PR-9b` | the marker loop of D1 waits about 70 memory cycles after the gate test (prog_d1_pad) | FAIL | FAIL | FAIL | FAIL |
+| PR-9b | `PR-9b` | the marker loop of D1 has one NOP after its first instruction (prog_d1_nohead), so the loop's first instruction is not found in the program | FAIL | FAIL | FAIL | FAIL |
+| PR-9c | `PR-9c` | DH waits about 100 memory cycles in each loop pass (prog_dh_slow) | FAIL | FAIL | FAIL | FAIL |
 | PR-9a | `PR-9a` | D1 runs with BEAMCON0 = $28E0 (VARBEAMEN set as well) after VTOTAL = $0100 (prog_d1_var) | FAIL | FAIL | FAIL | FAIL |
-| P9-E1 | `P9-E1` | D1 runs D0's program (DUAL = 0) | FAIL | FAIL | FAIL | FAIL |
+| P9-E1a | `P9-E1a` | D1 runs D0's program (DUAL = 0) | FAIL | FAIL | FAIL | FAIL |
+| P9-E1b | `P9-E1b` | DH runs prog_dh0 (BEAMCON0 = $2820, DUAL = 0) while the expectation stays one reset between consecutive accesses | FAIL | FAIL | FAIL | FAIL |
 | P9-E2 | `P9-E2` | D1 writes BPLHMOD = $0010 (prog_d1_m16) | NOT GRADED | NOT GRADED | FAIL | FAIL |
 | P9-D0 | `P9-D0` | D0 runs D1's program (DUAL = 1) | FAIL | FAIL | FAIL | FAIL |
 | HV-ANCHOR | `IMPL-HBACK` | private copy in which bit 6 of the H field of VHPOSR is inverted, so that the H field falls back twice inside a line (part HV) | - | - | FAIL | FAIL |

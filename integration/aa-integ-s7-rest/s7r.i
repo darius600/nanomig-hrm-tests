@@ -86,6 +86,9 @@ EPILOGUE        macro
 ; store v, then h, at MK + 4*(V - Vlo). With U_RWV defined, the UHRES sprite pointer is
 ; written again (U_SPH, U_SPL) right after the marker of line U_RWV. With U_PAD defined, a delay of
 ; U_PAD passes of DBRA follows the gate test (the pass that finds a marker takes longer).
+; With U_NOHEAD defined, a NOP follows the loop's first instruction. With U_WALK defined, the four UHRES
+; pointer registers are written from the table at A4 (BPLHPTH, BPLHPTL, SPRHPTH, SPRHPTL of the next
+; case) after the marker store of each line V with U_WLO <= V < U_WHI.
 MARKLOOP        macro
                 lea     $DFF006,a2
                 lea     $DFF004,a3
@@ -94,6 +97,9 @@ MARKLOOP        macro
                 moveq   #\5,d6
                 move.w  #\1,d3
 .rep\@          move.w  (a2),d0
+                ifd     U_NOHEAD
+                nop
+                endc
                 move.b  d0,d1
                 sub.b   d5,d1
                 cmp.b   d6,d1
@@ -119,6 +125,17 @@ MARKLOOP        macro
                 move.w  #U_SPH,SPRHPTH(a0)
                 move.w  #U_SPL,SPRHPTL(a0)
 .nrw\@
+                endc
+                ifd     U_WALK
+                cmp.w   #U_WLO,d3
+                blo.s   .nw\@
+                cmp.w   #U_WHI,d3
+                bhs.s   .nw\@
+                move.w  (a4)+,BPLHPTH(a0)
+                move.w  (a4)+,BPLHPTL(a0)
+                move.w  (a4)+,SPRHPTH(a0)
+                move.w  (a4)+,SPRHPTL(a0)
+.nw\@
                 endc
                 addq.l  #4*\3,a1
                 addq.w  #\3,d3
