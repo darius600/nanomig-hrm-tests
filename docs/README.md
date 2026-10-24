@@ -9,7 +9,7 @@ three rows below answer that.
 
 | | |
 |---|---|
-| [`findings.md`](findings.md) | **The register.** The register tables of all **87** open findings — key, subject, status, package, verdict of the four. 75 are against the Hardware Reference Manual; the 12 against the AA specification sit in a section of their own, so neither count has to be read twice. |
+| [`findings.md`](findings.md) | **The register.** The register tables of all **88** open findings — key, subject, status, package, verdict of the four. 75 are against the Hardware Reference Manual; the 13 against the AA specification sit in a section of their own, so neither count has to be read twice. |
 | [`findings/`](findings/) | One page per finding, readable without anything outside this repository: what the printed page says, what NanoMig does and how it was measured, what the other implementations do, and what is asked of you. [`findings/README.md`](findings/README.md) says how a page is built and why NanoMig's two Minimig ancestors are listed but not counted as witnesses. Withdrawn findings are kept apart, with their own list, in [`findings/withdrawn/`](findings/withdrawn/). |
 | [`rtl-review.md`](rtl-review.md) | Every finding that asks an Amiga specialist to review the RTL, grouped by the module it is about, so a reader who knows one part of the chip set can start with their own. |
 
