@@ -2,15 +2,14 @@
 ; modulates ch1's volume (SQ, target, left). ch2/ch3 are tripwires
 ; (W_V, silent). See SPECIFICATION.md, P6.
 ;
-; SWAP set: the second and third modulator words are exchanged (P6-A's contrast:
-; every value is still a word of the modulator's data set, the order is not).
-; EXTRA set: ch3 (the tripwire on ch0's own side) is given a non-zero
-; starting AUDxVOL (48) instead of 0, with the ordinary attach write
-; ($8001) unchanged: ch3 becomes audible on its own, so the "other side
-; constant" check must fail -- clause (c)'s own honest contrast.
-; TGTPER set: ch1 (the target)'s own AUDxPER is rewritten from 200 to 300
-; halfway through the session, with the attach write unchanged -- clause (b)'s
-; own contrast (the target's durations leave D_1(200)).
+; Each define below changes the program of the session and nothing else:
+; SWAP: the second and third modulator words are exchanged (P6-A's contrast:
+;   every value is still a word of the modulator's data set, the order is not).
+; TGTPER: ch1 (the target)'s own AUDxPER is rewritten from 200 to 300 halfway through
+;   the session, with the attach write unchanged (P6-B's contrast: the target's
+;   durations leave D_1(200)).
+; ADKW: the ADKCON write of step 4 is this word instead of $8001 (P6-C's contrast:
+;   Table 5-5 makes the added bit route another channel's data to a tripwire).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -41,12 +40,12 @@ desc:
         dc.l    wv_data2
         dc.w    2,1800,0
         dc.l    wv_data3
-        ifd     EXTRA
-        dc.w    2,2000,48
-        else
         dc.w    2,2000,0
-        endif
+        ifd     ADKW
+        dc.w    ADKW
+        else
         dc.w    $8001
+        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    110000

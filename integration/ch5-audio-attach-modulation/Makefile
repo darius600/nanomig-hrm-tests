@@ -13,15 +13,15 @@ PROGS    := prog_fixture prog_fixture_mut prog_fixture_noplay \
             prog_s_ap prog_s_ap_per6000 prog_s_ap_swap prog_s_ap_short \
             prog_s_both prog_s_both_per6000 prog_s_both_volonly prog_s_both_volonly_per \
             prog_s_both_swap prog_s_both_v32 prog_s_both_perconst prog_s_both_short \
-            prog_s_p2 prog_s_p2_swap \
-            prog_s_pair0 prog_s_pair0_swap prog_s_pair0_extra prog_s_pair0_tgtper \
-            prog_s_pair1 prog_s_pair1_swap \
-            prog_s_pair2 prog_s_pair2_swap prog_s_pair2_extra \
-            prog_s_pair4 prog_s_pair4_swap prog_s_pair4_extra prog_s_pair4_tgtvol \
-            prog_s_pair5 prog_s_pair5_swap prog_s_pair5_extra \
-            prog_s_pair6 prog_s_pair6_swap prog_s_pair6_extra \
-            prog_s_ch3v prog_s_ch3v_extra \
-            prog_s_ch3p prog_s_ch3p_extra \
+            prog_s_p2 prog_s_p2_swap prog_s_p2_ramp prog_s_p2_w129 \
+            prog_s_pair0 prog_s_pair0_swap prog_s_pair0_tgtper prog_s_pair0_attc \
+            prog_s_pair1 prog_s_pair1_swap prog_s_pair1_attc \
+            prog_s_pair2 prog_s_pair2_swap prog_s_pair2_attc \
+            prog_s_pair4 prog_s_pair4_swap prog_s_pair4_tgtvol prog_s_pair4_attc prog_s_pair4_attd \
+            prog_s_pair5 prog_s_pair5_swap prog_s_pair5_attc prog_s_pair5_attd \
+            prog_s_pair6 prog_s_pair6_swap prog_s_pair6_attc prog_s_pair6_attd \
+            prog_s_ch3v prog_s_ch3v_att \
+            prog_s_ch3p prog_s_ch3p_att \
             prog_s_dac3v prog_s_dac3p \
             prog_s_lena prog_s_lena_len10 prog_s_lena_swap prog_s_lena_ch1len2 \
             prog_s_lena_per1write prog_s_lena_ch1len1000 \

@@ -14,131 +14,116 @@
 // A label starts with its assertion id, and the id is the token the
 // // MUTATION records below name. NMH_MUTATE selects a mutated program (or a
 // substituted capture of another session) in place of the ordinary one: the
-// ordinary line of the same id then prints its verdict through the unchanged
-// comparator. A selector changes the program (or the captured session) and nothing
-// else: no expected value, window, observed channel or population depends on it.
-// The contrast of a precondition replaces the capture of the line it grades and the
-// lines gated on it print NOT GRADED. None is exercised by a plain `make test` and
-// none is counted in its summary. "Page model" below is the private copy of the audio RTL built by
-// `make pm-test-fx68k` / `make pm-test-tg68k` (page_model.patch), which
-// implements the attach bits as pages 149-151 and 164-165 describe them; the
-// attach bits have no measured effect on the repository RTL, so the lines that grade attach
-// behaviour are red or not evaluated on it before and after a stimulus change, and a record that
-// can only move on the page model says so. Per-core results of every record are
-// in SPECIFICATION.md, "Measured values".
+// line of that id then prints its verdict through the unchanged comparator. A selector
+// changes the program (or the captured session) and nothing else: no expected value,
+// window, observed channel, population or gate depends on it. The contrast of a
+// precondition replaces the capture of the line it grades and the lines gated on it
+// print NOT GRADED. None is exercised by a plain `make test` and none is counted in its
+// summary. "PM" below is the private copy of the audio RTL built by
+// `make pm-test-fx68k` / `make pm-test-tg68k` (page_model.patch), which implements the
+// attach bits as pages 149-151 and 164-165 describe them; a run against it is a positive
+// control and is not a mutation record. NMH_CAPCACHE=<dir> stores each session's capture
+// on disk and reads it back (one directory per build); it changes no verdict.
+// Each record names the line (or lines, one record each) that the selector moves and
+// gives "before -> after" per core on the repository RTL and on PM; "#n" is the n-th line
+// printed with that id.
 //
-// MUTATION FIXTURE-STORE stimulus red the program stores $DEAD in place of $BEEF (prog_fixture_mut) (NMH_MUTATE=FIXTURE-STORE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION FIXTURE-ACTIVITY stimulus red AUD0EN is left out of the enable, so channel 0 never plays (prog_fixture_noplay) (NMH_MUTATE=FIXTURE-ACTIVITY); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC1 stimulus red the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach); the line keeps expecting the session's $01 mask and the lines gated on it print NOT GRADED (NMH_MUTATE=PC1); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC2 stimulus red R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) replaces the capture of the R-MOD line (NMH_MUTATE=PC2); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC3 stimulus red R-MOD with AUD0LEN = 7 (prog_rmod_len7) replaces the capture of the R-MOD line, graded with LEN 8 (NMH_MUTATE=PC3); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC4-VOL stimulus red R-VOL-1 writes 40 in the step labelled 60 (prog_rvol1_mut); R-VOL-2 and R-VOL-3 are graded by the same call and have no contrast of their own (NMH_MUTATE=PC4-VOL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC4-DUR stimulus red R-PER-1 writes 500 in the step labelled 700 (prog_rper1_mut); R-PER-2, R-PER-3 and R-RAMP are graded by the same call and have no contrast of their own (NMH_MUTATE=PC4-DUR); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC5-VOL stimulus red R-VOL-1's capture is graded as R-VOL-3's, so "channel 3's" output is channel 1's (NMH_MUTATE=PC5-VOL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC5-PER stimulus red R-VOL-3's capture is graded as R-PER-1's, so "channel 1's" output is channel 3's (NMH_MUTATE=PC5-PER); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC6 stimulus red AUD0PER = 5000 is written halfway through R-MOD (prog_rmod_pc6) (NMH_MUTATE=PC6); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC7-CAL stimulus red R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the calibration fails and PC7-LOOP, PC7-N3 and every P10 line print NOT GRADED (NMH_MUTATE=PC7-CAL); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC7-FRAME stimulus red M_on is written late, after a delay following the DMACON enable (prog_rmod_pc7frame), so a fetch occurs before it (NMH_MUTATE=PC7-FRAME); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC7-LOOP stimulus red AUD0PER = 3000 is written halfway through R-MOD (prog_rmod_pc7) (NMH_MUTATE=PC7-LOOP); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION PC7-N3 stimulus red S-AP's capture is graded through the same comparator: with napnav = 0 the figure prints no request on 101->010 (NMH_MUTATE=PC7-N3); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P1-WINDOW implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k PASS; RTL/TG68K PASS; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-WINDOW stimulus red channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts, and the lines gated on the window print NOT GRADED (NMH_MUTATE=P1-WINDOW); RTL/fx68k PASS -> PRECONDITION NOT MET; RTL/TG68K PASS -> PRECONDITION NOT MET; PM/fx68k PASS -> PRECONDITION NOT MET; PM/TG68K PASS -> PRECONDITION NOT MET
-// MUTATION P1-A implementation green the ordinary run of the page model, where the attach bits are implemented (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-A stimulus red the second and third modulator words are exchanged (prog_s_av_swap) (NMH_MUTATE=P1-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P1-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-B stimulus red the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33) (NMH_MUTATE=P1-MV33); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P1-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-C stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write) (NMH_MUTATE=P1-PER1WRITE); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P1-JOINT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P1-JOINT stimulus red ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half (NMH_MUTATE=P1-JOINT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P1-JOINT stimulus red the second and third modulator words are exchanged (prog_s_av_swap): the destination half (NMH_MUTATE=P1-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P2-A implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P2-A stimulus red the eighth and ninth modulator words are exchanged (prog_s_p2_swap) (NMH_MUTATE=P2-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P2-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P2-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P3-PRE stimulus red R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte (NMH_MUTATE=P3-PRE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P3-SILENT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P3-SILENT stimulus red every modulator word is 0 (prog_s_av_zero) (NMH_MUTATE=P3-SILENT); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P3-WHOLE implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P3-WHOLE stimulus red channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) (NMH_MUTATE=P3-WHOLE); RTL/fx68k NOT EVALUATED -> FAIL; RTL/TG68K NOT EVALUATED -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P3-SP2 implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-A implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-A stimulus red the volume words 56 and 8 are exchanged (prog_s_both_swap) (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P4-B implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-B stimulus red the last volume word is 32 instead of 40 (prog_s_both_v32) (NMH_MUTATE=P4-B); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P4-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-C stimulus red every period word is 300 (prog_s_both_perconst) (NMH_MUTATE=P4-C); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P4-VOLONLY stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per) (NMH_MUTATE=P4-VOLONLY); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P4-JOINT implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P4-JOINT stimulus red the volume words 56 and 8 are exchanged (prog_s_both_swap): the half that P4-A grades (NMH_MUTATE=P4-A); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P4-JOINT stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per): the half that P4-VOLONLY grades (NMH_MUTATE=P4-VOLONLY); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-POP-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-AV stimulus red the session lasts 35000 ticks (prog_s_av_short) (NMH_MUTATE=P5-POP-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-POP-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-AP stimulus red the session lasts 25500 ticks (prog_s_ap_short) (NMH_MUTATE=P5-POP-AP); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-POP-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-POP-BOTH stimulus red the session lasts 17500 ticks (prog_s_both_short) (NMH_MUTATE=P5-POP-BOTH); RTL/fx68k NOT EVALUATED -> NOT GRADED; RTL/TG68K NOT EVALUATED -> NOT GRADED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-AV implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-AV stimulus red AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P5-AV); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-AP stimulus red AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P5-AP); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P5-BOTH stimulus red AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P5-BOTH); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A implementation green bit 0, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A implementation green bit 1, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A implementation green bit 2, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A implementation green bit 4, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A implementation green bit 5, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A implementation green bit 6, the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P6-A stimulus red bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) (NMH_MUTATE=P6-0); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) (NMH_MUTATE=P6-1); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap) (NMH_MUTATE=P6-2); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 4, the second and third modulator words are exchanged (prog_s_pair4_swap) (NMH_MUTATE=P6-4); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) (NMH_MUTATE=P6-5); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-A stimulus red bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) (NMH_MUTATE=P6-6); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-B stimulus red bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper) (NMH_MUTATE=P6-TGT-0); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-B stimulus red bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol) (NMH_MUTATE=P6-TGT-4); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-C stimulus red bit 0: a tripwire (ch3) is given a non-zero starting AUDxVOL (prog_s_pair0_extra) (NMH_MUTATE=P6-0-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-C stimulus red bit 2: a tripwire (ch1) is given a non-zero starting AUDxVOL (prog_s_pair2_extra) (NMH_MUTATE=P6-2-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-D stimulus red bit 4: a tripwire's (ch3) AUDxPER is rewritten halfway through (prog_s_pair4_extra) (NMH_MUTATE=P6-4-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-D stimulus red bit 5: a tripwire's (ch3) AUDxPER is rewritten halfway through (prog_s_pair5_extra) (NMH_MUTATE=P6-5-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P6-D stimulus red bit 6: a tripwire's (ch1) AUDxPER is rewritten halfway through (prog_s_pair6_extra) (NMH_MUTATE=P6-6-EXTRA); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-CONST stimulus red a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra) (NMH_MUTATE=P7V); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-SPACING stimulus red a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra) (NMH_MUTATE=P7P); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-JOINT-V implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P7-JOINT-V stimulus red a tripwire (ch0) is given a non-zero starting AUDxVOL (prog_s_ch3v_extra): the half that P7-CONST grades (NMH_MUTATE=P7V); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-JOINT-V stimulus red the attach write is omitted: R-DAC3-V takes S-DAC3-V's place: the half that P8-ATT grades (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-JOINT-P implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P7-JOINT-P stimulus red a tripwire's (ch0) AUDxPER is rewritten halfway through (prog_s_ch3p_extra): the half that P7-SPACING grades (NMH_MUTATE=P7P); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P7-JOINT-P stimulus red the attach write is omitted: R-DAC3-P takes S-DAC3-P's place: the half that P8-ATT grades (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (line 1 of the five, S-AV) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 1 of the five, S-AV) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (line 2 of the five, S-AP) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 2 of the five, S-AP) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (line 3 of the five, S-BOTH) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 3 of the five, S-BOTH) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (line 4 of the five, S-DAC3-V) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 4 of the five, S-DAC3-V) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-ATT implementation green the ordinary run of the page model (line 5 of the five, S-DAC3-P) (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-ATT stimulus red the attach write is omitted: the matching unattached session takes the attached one's place (line 5 of the five, S-DAC3-P) (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-PRE stimulus red R-MOD with AUD0VOL = 0 (prog_rmod_vol0) (NMH_MUTATE=P8-PRE); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-JOINT-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P8-JOINT-AP stimulus red the attach write is omitted in the source half: R-DAC-P4 takes S-AP's place (NMH_MUTATE=P8-OMIT); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P8-JOINT-AP stimulus red the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half (NMH_MUTATE=P8-JOINT-AP); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P9-WINDOW stimulus red AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart, and P9-A to P9-D print NOT GRADED (NMH_MUTATE=P9-WINDOW); RTL/fx68k PASS -> PRECONDITION NOT MET; RTL/TG68K PASS -> PRECONDITION NOT MET; PM/fx68k PASS -> PRECONDITION NOT MET; PM/TG68K PASS -> PRECONDITION NOT MET
-// MUTATION P9-A stimulus red AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with the page's L_m = 5 (NMH_MUTATE=P9-A); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P9-B stimulus red AUD1LEN = 2 in S-LEN-A (prog_s_lena_ch1len2), graded with the page's L_c = 3 (NMH_MUTATE=P9-B); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P9-C implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k NOT EVALUATED; RTL/TG68K NOT EVALUATED; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P9-C stimulus red the third and fourth words of M_LA are exchanged (prog_s_lena_swap), graded with the page's M_LA (NMH_MUTATE=P9-C); RTL/fx68k NOT EVALUATED -> NOT EVALUATED; RTL/TG68K NOT EVALUATED -> NOT EVALUATED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P9-D stimulus red channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-LEN-A (prog_s_lena_per1write) (NMH_MUTATE=P9-D); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P10-AV stimulus red AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod (NMH_MUTATE=P10-AV); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P10-AV stimulus red S-AP's capture in place of S-AV's: the phase alone (NMH_MUTATE=P10-AV-PHASE); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P10-AP implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P10-AP stimulus red S-AV's capture in place of S-AP's (NMH_MUTATE=P10-AP); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P10-BOTH implementation green the ordinary run of the page model (the ordinary run); RTL/fx68k FAIL; RTL/TG68K FAIL; PM/fx68k PASS; PM/TG68K PASS
-// MUTATION P10-BOTH stimulus red S-AV's capture in place of S-BOTH's (NMH_MUTATE=P10-BOTH); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION FIXTURE-STORE stimulus red NMH_MUTATE=FIXTURE-STORE: the program stores $DEAD in place of $BEEF (prog_fixture_mut); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION FIXTURE-ACTIVITY stimulus red NMH_MUTATE=FIXTURE-ACTIVITY: AUD0EN is left out of the enable, so channel 0 never plays (prog_fixture_noplay); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC1 stimulus red NMH_MUTATE=PC1: the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach); the line keeps expecting the session's $01 mask; RTL/fx68k PASS -> FAIL #13; RTL/TG68K PASS -> FAIL #13; PM/fx68k PASS -> FAIL #13; PM/TG68K PASS -> FAIL #13
+// MUTATION PC2 stimulus red NMH_MUTATE=PC2: R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) replaces the capture of the R-MOD line; RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION PC3 stimulus red NMH_MUTATE=PC3: R-MOD with AUD0LEN = 7 (prog_rmod_len7) replaces the capture of the R-MOD line, graded with LEN 8; RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION PC4-VOL stimulus red NMH_MUTATE=PC4-VOL: R-VOL-1 writes 40 in the step labelled 60 (prog_rvol1_mut); RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION PC4-DUR stimulus red NMH_MUTATE=PC4-DUR: R-PER-1 writes 500 in the step labelled 700 (prog_rper1_mut); RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION PC5-VOL stimulus red NMH_MUTATE=PC5-VOL: R-VOL-1's capture is graded as R-VOL-3's, so channel 3's output is channel 1's; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC5-PER stimulus red NMH_MUTATE=PC5-PER: R-VOL-3's capture is graded as R-PER-1's, so channel 1's output is channel 3's; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC6 stimulus red NMH_MUTATE=PC6: AUD0PER = 5000 is written halfway through R-MOD (prog_rmod_pc6); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC7-CAL stimulus red NMH_MUTATE=PC7-CAL: R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC7-FRAME stimulus red NMH_MUTATE=PC7-FRAME: M_on is written late, after a delay following the DMACON enable (prog_rmod_pc7frame), so a fetch occurs before it; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC7-LOOP stimulus red NMH_MUTATE=PC7-LOOP: AUD0PER = 3000 is written halfway through R-MOD (prog_rmod_pc7); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION PC7-N3 stimulus red NMH_MUTATE=PC7-N3: S-AP's capture is graded through the same comparator; RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-WINDOW stimulus red NMH_MUTATE=P1-WINDOW: channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts; RTL/fx68k PASS -> PRECONDITION NOT MET; RTL/TG68K PASS -> PRECONDITION NOT MET; PM/fx68k PASS -> PRECONDITION NOT MET; PM/TG68K PASS -> PRECONDITION NOT MET
+// MUTATION P1-A stimulus red NMH_MUTATE=P1-WINDOW: channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P1-A stimulus red NMH_MUTATE=P1-A: the second and third modulator words are exchanged (prog_s_av_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-JOINT stimulus red NMH_MUTATE=P1-A: the second and third modulator words are exchanged (prog_s_av_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P1-A: the second and third modulator words are exchanged (prog_s_av_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-B stimulus red NMH_MUTATE=P1-MV33: the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-A stimulus red NMH_MUTATE=P1-MV33: the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-C stimulus red NMH_MUTATE=P1-PER1WRITE: channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P1-JOINT stimulus red NMH_MUTATE=P1-JOINT: ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-A stimulus red NMH_MUTATE=P2-A: the eighth and ninth modulator words are exchanged (prog_s_p2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-JOINT stimulus red NMH_MUTATE=P2-A: the eighth and ninth modulator words are exchanged (prog_s_p2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P2-A: the eighth and ninth modulator words are exchanged (prog_s_p2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-B stimulus red NMH_MUTATE=P2-B: the eighth and ninth modulator words are exchanged (prog_s_p2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-C stimulus red NMH_MUTATE=P2-C: the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-JOINT stimulus red NMH_MUTATE=P2-C: the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-PRE stimulus red NMH_MUTATE=P3-PRE: R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-SILENT stimulus red NMH_MUTATE=P3-SILENT: every modulator word is 0 (prog_s_av_zero); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-WHOLE stimulus red NMH_MUTATE=P3-WHOLE: channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-JOINT stimulus red NMH_MUTATE=P3-WHOLE: channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-SP2 stimulus red NMH_MUTATE=P3-SP2: the modulator word 144 is 129 (prog_s_p2_w129); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P3-JOINT stimulus red NMH_MUTATE=P3-SP2: the modulator word 144 is 129 (prog_s_p2_w129); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-VOLONLY stimulus red NMH_MUTATE=P4-VOLONLY: channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per); RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-JOINT stimulus red NMH_MUTATE=P4-VOLONLY: channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-A stimulus red NMH_MUTATE=P4-A: the volume words 56 and 8 are exchanged (prog_s_both_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-JOINT stimulus red NMH_MUTATE=P4-A: the volume words 56 and 8 are exchanged (prog_s_both_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-B stimulus red NMH_MUTATE=P4-B: the last volume word is 32 instead of 40 (prog_s_both_v32); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-A stimulus red NMH_MUTATE=P4-B: the last volume word is 32 instead of 40 (prog_s_both_v32); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-C stimulus red NMH_MUTATE=P4-C: every period word is 300 (prog_s_both_perconst); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P4-A stimulus red NMH_MUTATE=P4-C: every period word is 300 (prog_s_both_perconst); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-POP-AV stimulus red NMH_MUTATE=P5-POP-AV: the session lasts 35000 ticks (prog_s_av_short); RTL/fx68k PASS -> NOT GRADED; RTL/TG68K PASS -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-AV stimulus red NMH_MUTATE=P5-POP-AV: the session lasts 35000 ticks (prog_s_av_short); RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-POP-AP stimulus red NMH_MUTATE=P5-POP-AP: the session lasts 25500 ticks (prog_s_ap_short); RTL/fx68k PASS -> NOT GRADED; RTL/TG68K PASS -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-AP stimulus red NMH_MUTATE=P5-POP-AP: the session lasts 25500 ticks (prog_s_ap_short); RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-POP-BOTH stimulus red NMH_MUTATE=P5-POP-BOTH: the session lasts 17500 ticks (prog_s_both_short); RTL/fx68k PASS -> NOT GRADED; RTL/TG68K PASS -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-BOTH stimulus red NMH_MUTATE=P5-POP-BOTH: the session lasts 17500 ticks (prog_s_both_short); RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
+// MUTATION P5-AV stimulus red NMH_MUTATE=P5-AV: AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-AP stimulus red NMH_MUTATE=P5-AP: AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-BOTH stimulus red NMH_MUTATE=P5-BOTH: AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-0: bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-1: bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #2; PM/TG68K PASS -> FAIL #2
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P6-1: bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-2: bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #3; PM/TG68K PASS -> FAIL #3
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P6-2: bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-4: bit 4, the second and third modulator words are exchanged (prog_s_pair4_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #4; PM/TG68K PASS -> FAIL #4
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-5: bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #5; PM/TG68K PASS -> FAIL #5
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P6-5: bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-A stimulus red NMH_MUTATE=P6-6: bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #6; PM/TG68K PASS -> FAIL #6
+// MUTATION P6-JOINT stimulus red NMH_MUTATE=P6-6: bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P6-B stimulus red NMH_MUTATE=P6-TGT-0: bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper); RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P6-B stimulus red NMH_MUTATE=P6-TGT-4: bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol); RTL/fx68k PASS -> FAIL #4; RTL/TG68K PASS -> FAIL #4; PM/fx68k PASS -> FAIL #4; PM/TG68K PASS -> FAIL #4
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-0-ATTC: bit 0 with bit 2 added: ch2 routes its words to the volume of ch3, a tripwire ($8005, prog_s_pair0_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-1-ATTC: bit 1 with bit 2 added: ch2, the target, routes its words to the volume of ch3, a tripwire ($8006, prog_s_pair1_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #2; PM/TG68K PASS -> FAIL #2
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-2-ATTC: bit 2 with bit 0 added: ch0 routes its words to the volume of ch1, a tripwire ($8005, prog_s_pair2_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #3; PM/TG68K PASS -> FAIL #3
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-4-ATTC: bit 4 with bit 2 added: ch2 routes its words to the volume of ch3, a tripwire ($8014, prog_s_pair4_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #4; PM/TG68K PASS -> FAIL #4
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-5-ATTC: bit 5 with bit 2 added: ch2, the target, routes its words to the volume of ch3, a tripwire ($8024, prog_s_pair5_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #5; PM/TG68K PASS -> FAIL #5
+// MUTATION P6-C stimulus red NMH_MUTATE=P6-6-ATTC: bit 6 with bit 0 added: ch0 routes its words to the volume of ch1, a tripwire ($8041, prog_s_pair6_attc); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #6; PM/TG68K PASS -> FAIL #6
+// MUTATION P6-D stimulus red NMH_MUTATE=P6-4-ATTD: bit 4 with bit 6 added: ch2 routes its words to the period of ch3, a tripwire ($8050, prog_s_pair4_attd); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #4; PM/TG68K PASS -> FAIL #4
+// MUTATION P6-D stimulus red NMH_MUTATE=P6-5-ATTD: bit 5 with bit 4 added: ch0 routes its words to the period of ch1, the modulator ($8030, prog_s_pair5_attd); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #5; PM/TG68K PASS -> FAIL #5
+// MUTATION P6-D stimulus red NMH_MUTATE=P6-6-ATTD: bit 6 with bit 4 added: ch0 routes its words to the period of ch1, a tripwire ($8050, prog_s_pair6_attd); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #6; PM/TG68K PASS -> FAIL #6
+// MUTATION P7-CONST stimulus red NMH_MUTATE=P7V: S-CH3-V with bit 2 in place of bit 3: ch2 routes its words to the volume of ch3 ($8004, prog_s_ch3v_att); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P7-JOINT-V stimulus red NMH_MUTATE=P7V: S-CH3-V with bit 2 in place of bit 3: ch2 routes its words to the volume of ch3 ($8004, prog_s_ch3v_att); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-SPACING stimulus red NMH_MUTATE=P7P: S-CH3-P with bit 6 in place of bit 7: ch2 routes its words to the period of ch3 ($8040, prog_s_ch3p_att); RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL #2; PM/TG68K PASS -> FAIL #2
+// MUTATION P7-JOINT-P stimulus red NMH_MUTATE=P7P: S-CH3-P with bit 6 in place of bit 7: ch2 routes its words to the period of ch3 ($8040, prog_s_ch3p_att); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-ATT stimulus red NMH_MUTATE=P8-OMIT: the attach write is omitted: the matching unattached session takes the attached one's place; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #1; PASS -> FAIL #2; PASS -> FAIL #3; PASS -> FAIL #4; PASS -> FAIL #5; PM/TG68K PASS -> FAIL #1; PASS -> FAIL #2; PASS -> FAIL #3; PASS -> FAIL #4; PASS -> FAIL #5
+// MUTATION P8-JOINT-AP stimulus red NMH_MUTATE=P8-OMIT: the attach write is omitted: the matching unattached session takes the attached one's place; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-V stimulus red NMH_MUTATE=P8-OMIT: the attach write is omitted: the matching unattached session takes the attached one's place; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P7-JOINT-P stimulus red NMH_MUTATE=P8-OMIT: the attach write is omitted: the matching unattached session takes the attached one's place; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P8-PRE stimulus red NMH_MUTATE=P8-PRE: R-MOD with AUD0VOL = 0 (prog_rmod_vol0); RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P8-JOINT-AP stimulus red NMH_MUTATE=P8-JOINT-AP: the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P9-WINDOW stimulus red NMH_MUTATE=P9-WINDOW: AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart; RTL/fx68k PASS -> PRECONDITION NOT MET #2; RTL/TG68K PASS -> PRECONDITION NOT MET #2; PM/fx68k PASS -> PRECONDITION NOT MET #2; PM/TG68K PASS -> PRECONDITION NOT MET #2
+// MUTATION P9-A stimulus red NMH_MUTATE=P9-WINDOW: AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart; RTL/fx68k PASS -> NOT GRADED #1; RTL/TG68K PASS -> NOT GRADED #1; PM/fx68k PASS -> NOT GRADED #1; PM/TG68K PASS -> NOT GRADED #1
+// MUTATION P9-C stimulus red NMH_MUTATE=P9-WINDOW: AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart; RTL/fx68k FAIL -> NOT GRADED #1; RTL/TG68K FAIL -> NOT GRADED #1; PM/fx68k PASS -> NOT GRADED #1; PM/TG68K PASS -> NOT GRADED #1
+// MUTATION P9-A stimulus red NMH_MUTATE=P9-A: AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with L_m = 5; RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P9-B stimulus red NMH_MUTATE=P9-B: AUD1LEN = 2 in S-LEN-A (prog_s_lena_ch1len2), graded with L_c = 3; RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P9-C stimulus red NMH_MUTATE=P9-C: the third and fourth words of M_LA are exchanged (prog_s_lena_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P9-D stimulus red NMH_MUTATE=P9-D: channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-LEN-A (prog_s_lena_per1write); RTL/fx68k PASS -> FAIL #1; RTL/TG68K PASS -> FAIL #1; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
+// MUTATION P10-AV stimulus red NMH_MUTATE=P10-AV: AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P10-AV stimulus red NMH_MUTATE=P10-AV-PHASE: S-AP's capture in place of S-AV's: the phase alone; RTL/fx68k PASS -> PASS; RTL/TG68K PASS -> PASS; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P10-AP stimulus red NMH_MUTATE=P10-AP: S-AV's capture in place of S-AP's; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P10-BOTH stimulus red NMH_MUTATE=P10-BOTH: S-AV's capture in place of S-BOTH's; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 //
-// Not built, and why: see SPECIFICATION.md, "Mutation scope".
+// Lines without a contrast of their own, and why: SPECIFICATION.md, "Mutation scope".
 
 #include <algorithm>
 #include <cmath>
@@ -237,13 +222,87 @@ Capture simulate(const std::string& bin, uint64_t run_budget) {
     return c;
 }
 
+// Optional on-disk store of captures: when NMH_CAPCACHE names a directory, a capture is
+// read from it, or simulated and written to it, under a name made from the program image
+// and the run budget. It changes no verdict (a stored capture is the capture the same
+// image and budget produced on the same build); a directory must hold the captures of one
+// build only. It is unset in the ordinary run.
+uint64_t fnv_file(const std::string& path) {
+    uint64_t h = 1469598103934665603ULL;
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return 0;
+    unsigned char buf[4096];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof buf, f)) > 0)
+        for (size_t i = 0; i < n; ++i) { h ^= buf[i]; h *= 1099511628211ULL; }
+    std::fclose(f);
+    return h;
+}
+template <class T> void put_pod(FILE* f, const T& v) { std::fwrite(&v, sizeof v, 1, f); }
+template <class T> bool get_pod(FILE* f, T& v) { return std::fread(&v, sizeof v, 1, f) == 1; }
+void put_opt16(FILE* f, const std::optional<uint16_t>& o) { put_pod<uint8_t>(f, o.has_value()); put_pod<uint16_t>(f, o.value_or(0)); }
+bool get_opt16(FILE* f, std::optional<uint16_t>& o) {
+    uint8_t has; uint16_t v;
+    if (!get_pod(f, has) || !get_pod(f, v)) return false;
+    o = has ? std::optional<uint16_t>(v) : std::nullopt;
+    return true;
+}
+bool cache_read(const std::string& path, Capture& c) {
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    bool ok = true;
+    uint32_t magic = 0; uint8_t b8 = 0; uint64_t n = 0, d = 0;
+    ok = ok && get_pod(f, magic) && magic == 0x4E4D4831u;
+    ok = ok && get_pod(f, b8); c.loaded = b8;
+    ok = ok && get_pod(f, b8); c.released = b8;
+    ok = ok && get_pod(f, b8) && get_pod(f, d); c.done = b8 ? std::optional<uint64_t>(d) : std::nullopt;
+    ok = ok && get_opt16(f, c.adkr) && get_opt16(f, c.dmacr) && get_opt16(f, c.fixture);
+    ok = ok && get_pod(f, n);
+    if (ok) { c.log.resize(n); ok = n == 0 || std::fread(c.log.data(), sizeof(nmh::RamAccess), n, f) == n; }
+    ok = ok && get_pod(f, n);
+    if (ok) { c.audio.resize(n); ok = n == 0 || std::fread(c.audio.data(), sizeof(nmh::AudioSample), n, f) == n; }
+    std::fclose(f);
+    return ok;
+}
+void cache_write(const std::string& path, const Capture& c) {
+    const std::string tmp = path + ".part";
+    FILE* f = std::fopen(tmp.c_str(), "wb");
+    if (!f) return;
+    put_pod<uint32_t>(f, 0x4E4D4831u);
+    put_pod<uint8_t>(f, c.loaded); put_pod<uint8_t>(f, c.released);
+    put_pod<uint8_t>(f, c.done.has_value()); put_pod<uint64_t>(f, c.done.value_or(0));
+    put_opt16(f, c.adkr); put_opt16(f, c.dmacr); put_opt16(f, c.fixture);
+    put_pod<uint64_t>(f, c.log.size());
+    if (!c.log.empty()) std::fwrite(c.log.data(), sizeof(nmh::RamAccess), c.log.size(), f);
+    put_pod<uint64_t>(f, c.audio.size());
+    if (!c.audio.empty()) std::fwrite(c.audio.data(), sizeof(nmh::AudioSample), c.audio.size(), f);
+    std::fclose(f);
+    std::rename(tmp.c_str(), path.c_str());
+}
+
 // A program image and run budget determine the run, so each is simulated once
 // per process; every session below may be graded by several lines.
 Capture run_capture(const std::string& bin, uint64_t run_budget) {
     static std::map<std::string, Capture> memo;
     const std::string key = bin + "#" + std::to_string(run_budget);
     auto it = memo.find(key);
-    if (it == memo.end()) it = memo.emplace(key, simulate(bin, run_budget)).first;
+    if (it == memo.end()) {
+        const char* cdir = std::getenv("NMH_CAPCACHE");
+        Capture c;
+        bool have = false;
+        std::string cpath;
+        if (cdir && *cdir) {
+            const size_t slash = bin.find_last_of('/');
+            cpath = std::string(cdir) + "/" + (slash == std::string::npos ? bin : bin.substr(slash + 1)) + "." +
+                    std::to_string(run_budget) + "." + std::to_string(fnv_file(bin)) + ".cap";
+            have = cache_read(cpath, c);
+        }
+        if (!have) {
+            c = simulate(bin, run_budget);
+            if (!cpath.empty() && c.loaded) cache_write(cpath, c);
+        }
+        it = memo.emplace(key, std::move(c)).first;
+    }
     return it->second;
 }
 
@@ -474,7 +533,7 @@ std::optional<uint64_t> latest_fetch_before(const std::vector<FetchRec>& fr, uin
 }
 // PC3 grades cyclic stepping from the channel's first restart (the first
 // fetch at offset 0 after the first fetch of the record) on; the first pass is
-// graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here.
+// graded in hrm/ch5-audio-dma-first-pass, not here.
 // Returns: -1 if there is no restart, or if a fetch after the restart
 // breaks the cyclic step (a genuine PC3 violation); otherwise the number
 // of complete post-restart cycles found (0 if the stepping itself holds
@@ -569,9 +628,10 @@ bool pc2_eval(Checks* out, const std::string& tag, const Capture& c, uint16_t ex
 }
 // min_cycles: the specification's population for PC3's modulator clause --
 // two complete cycles after the first restart, or one in S-P2 (the only
-// caller that passes 1). Short of that population, PC3 prints "not
-// evaluated" (RECORDED), never PASS or FAIL; a broken step (stepping_cycles
-// == -1) is always FAIL, whatever the population.
+// caller that passes 1). Short of that population, PC3 is unmet: it prints
+// RECORDED (never PASS or FAIL), returns false, and the lines gated on it
+// print NOT GRADED; a broken step (stepping_cycles == -1) is always FAIL,
+// whatever the population.
 bool pc3_eval(Checks* out, const std::string& tag, const Capture& c, const std::vector<ChSpan>& enabled,
               bool have_bounds, uint64_t lo, uint64_t hi, uint32_t min_cycles = 2) {
     bool all_ok = true;
@@ -591,8 +651,11 @@ bool pc3_eval(Checks* out, const std::string& tag, const Capture& c, const std::
             all_ok = false;
             if (out) out->expect(false, label);
         } else if ((uint32_t)cycles < min_cycles) {
-            if (out) out->record(label + " [not evaluated: only " + std::to_string(cycles) +
-                " complete cycle(s) after the first restart in this window]");
+            // The stepping holds but the population the precondition needs is not there: the precondition
+            // is unmet (neither PASS nor FAIL), and every line gated on it prints NOT GRADED.
+            all_ok = false;
+            if (out) out->record(label + " [precondition not met: only " + std::to_string(cycles) +
+                " complete cycle(s) after the first restart in this window; the lines gated on PC3 print NOT GRADED]");
         } else if (out) {
             out->expect(true, label);
         }
@@ -693,8 +756,6 @@ int main(int argc, char** argv) {
     checks.note("D_mod (R-MOD, AUD0PER=4000, channel 0's own measured side) = " +
         std::to_string(d_mod) + " clk_sys cycles");
     auto ticks = [&](double t) { return d_mod * t / 4000.0; };
-    double lambda = ticks(300);
-
     // PC6: the spread of channel 0's complete samples about D_mod.
     auto pc6_spread_ok = [&](const Capture& c, const std::vector<uint64_t>& b) -> bool {
         if (!(d_mod > 0 && side0.ok && b.size() >= 2)) return false;
@@ -703,7 +764,7 @@ int main(int argc, char** argv) {
         auto comp = complete_runs(runs, lo, hi);
         bool ok = !comp.empty();
         for (auto& r : comp)
-            if (std::fabs((double)(r.end - r.start) - d_mod) > d_mod / 4000.0 + kClkRes) { ok = false; break; }
+            if (std::fabs((double)(r.end - r.start) - d_mod) > kClkRes) { ok = false; break; }
         return ok;
     };
     {
@@ -711,8 +772,8 @@ int main(int argc, char** argv) {
         mut_note("PC6", "prog_rmod_pc6.bin", pc6c);
         auto b = sweep_bounds(pc6c, {});
         checks.expect(pc6c.loaded && pc6c.done.has_value() && pc6_spread_ok(pc6c, b),
-            "PC6 [p.141,p.164]: in R-MOD, channel 0's sample durations differ from D_mod by at "
-            "most 1 part in 4000");
+            "PC6 [p.140,p.141,p.164]: in R-MOD, every complete sample duration of channel 0 equals "
+            "D_mod within the apparatus resolution (one clk_sys cycle)");
     }
 
     // ================= PC7: the fetch record of channel 0 and its frame ====
@@ -760,16 +821,15 @@ int main(int argc, char** argv) {
         }
         cal.dist = bd;
         cal.offset = rec[cal.r].offset;
-        // One line is 227.5 ticks (p.141, as in "Units"); requests go out once
-        // each line (p.164), so the fetch nearest to the instant is unambiguous
-        // within half a line. The page's "first data word ... thrown away" is at
-        // most one fetch before F_2. F_2 is the first word of the data set: Table 5-4
-        // (p.150) and p.265 make the first word of a data set the volume under attach
-        // volume, and Figure 5-8 loads the word that arrives on 101->010, F_2, with
-        // pbufld1, the volume (p.164's "reset the pointer to the beginning of the
-        // table of data" is the restart at the end of the length, p.147, not the
-        // start-up).
-        cal.ok = bd <= ticks(227.5) / 2.0 && cal.r <= 1 && cal.offset == 0;
+        // The fetch nearest to the instant 010 was entered is the page's F_2 when the two are the same
+        // event: the page puts the arrival of the word and the entry to 010 together ("When the data
+        // arrives, state 010 is entered"). No address of the word thrown away is assumed: the entry is
+        // found by time alone, and it is unambiguous when the instant lies nearer to that entry than the
+        // entry lies to any other fetch of the record.
+        double gap_min = 1e18;
+        if (cal.r > 0) gap_min = std::min(gap_min, (double)rec[cal.r].cycle - (double)rec[cal.r - 1].cycle);
+        if (cal.r + 1 < rec.size()) gap_min = std::min(gap_min, (double)rec[cal.r + 1].cycle - (double)rec[cal.r].cycle);
+        cal.ok = rec.size() > cal.r + 1 && bd < gap_min;
         return cal;
     };
     // The calibration is made once, on R-MOD; a contrast of PC7-CAL replaces the capture it is
@@ -778,6 +838,17 @@ int main(int argc, char** argv) {
     mut_note("PC7-CAL", "prog_rmod_per6000.bin", cal_cap);
     const Cal cal = calibrate(cal_cap);
     const bool cal_ok = cal_cap.loaded && cal_cap.done.has_value() && cal.ok;
+    // One horizontal line: p.164 says requests are transferred to Agnus once each horizontal line, and the
+    // request made when F_2 arrives (Figure 5-8, 101->010) is the next one, so F_3 - F_2 in R-MOD is one
+    // line, measured here on the ordinary R-MOD whichever capture a contrast of PC7-CAL replaces. A
+    // counter-driven interval between two fetches of one channel is realised to within less than one line
+    // (each fetch follows its request by less than a line plus a constant delay): every comparison of two
+    // fetch times of one channel, or of the same two fetches in two sessions, uses `< ell`.
+    const Cal cal_ord = mutating("PC7-CAL") ? calibrate(rmod) : cal;
+    const auto rec_rmod = rec_of(rmod);
+    const double ell = (cal_ord.ok && rec_rmod.size() > cal_ord.r + 1)
+        ? (double)rec_rmod[cal_ord.r + 1].cycle - (double)rec_rmod[cal_ord.r].cycle : 0.0;
+    checks.note("one horizontal line (F_3 - F_2 of the ordinary R-MOD) = " + std::to_string(ell) + " clk_sys cycles");
     auto cal_bounds = sweep_bounds(cal_cap, {});
     checks.note("PC7-CAL measured: the lower byte of the first word is output at M_on+" +
         std::to_string(cal.t010 + d_mod - (cal_bounds.size() == 2 ? (double)cal_bounds[0] : 0.0)) +
@@ -786,9 +857,8 @@ int main(int argc, char** argv) {
         " (offset " + std::to_string(cal.offset) + ") " + std::to_string(cal.dist) + " clk away");
     checks.expect(cal_ok,
         "PC7-CAL [p.164]: in R-MOD, the fetch whose arrival enters state 010 is calibrated from channel "
-        "0's own output; it is the fetch nearest to that instant, within half a line of it, it is the "
-        "data set's first word (Table 5-4, p.265 and Figure 5-8: F_2 is loaded by pbufld1, the volume), "
-        "and at most one fetch (the one thrown away) precedes it -- it is the page's F_2");
+        "0's own output: the instant 010 was entered lies nearer to one fetch than that fetch lies to any "
+        "other fetch of the record -- it is the page's F_2");
     // The frame -- no read of channel 0's region before M_on.
     {
         const Capture& fc = mutating("PC7-FRAME") ? run_capture(dir + "/prog_rmod_pc7frame.bin", budget_for(200000)) : rmod;
@@ -798,14 +868,14 @@ int main(int argc, char** argv) {
         checks.expect(fc.loaded && fc.done.has_value() && b.size() == 2 && no_early,
             "PC7-FRAME [p.164]: no read of channel 0's data region occurs before M_on");
     }
-    // PC7-LOOP: every consecutive pair of fetches from the page's F_3 on is 2*D_mod apart, within
-    // lambda ("Transitions such as 010->011->010 occur whenever the period counter counts down to
-    // one"; one request per 010->011->010 loop).
+    // PC7-LOOP: every consecutive pair of fetches from the page's F_3 on is 2*D_mod apart, to within
+    // less than one line ("Transitions such as 010->011->010 occur whenever the period counter counts
+    // down to one"; one request per 010->011->010 loop; requests are transferred once each line).
     auto pc7_loop_ok = [&](const std::vector<FetchRec>& rec, size_t r) -> bool {
         if (d_mod <= 0 || rec.size() < r + 4) return false;
         for (size_t i = r + 2; i < rec.size(); ++i) {
             double gap = (double)rec[i].cycle - (double)rec[i - 1].cycle;
-            if (std::fabs(gap - 2.0 * d_mod) > lambda) return false;
+            if (!(std::fabs(gap - 2.0 * d_mod) < ell)) return false;
         }
         return true;
     };
@@ -814,22 +884,24 @@ int main(int argc, char** argv) {
         mut_note("PC7-LOOP", "prog_rmod_pc7.bin", lc);
         dep_expect(checks, cal_ok, lc.loaded && lc.done.has_value() && side0.ok && pc7_loop_ok(rec_of(lc), cal.r),
             "PC7-LOOP [p.164,Fig.5-8 011->010]: loop anchor -- in R-MOD, every consecutive pair of fetches "
-            "from the page's F_3 on is D_mod*2 apart, within lambda",
+            "from the page's F_3 on is D_mod*2 apart, to within less than one line",
             "PC7-CAL");
     }
     // PC7-N3: Figure 5-8's 101->010 bracket, "AUDxDR if napnav" (napnav = 1 with no attach bit): the
-    // request made when F_2 arrives is fetched one line later, so F_3 - F_2 lies within lambda of 0. No
-    // claim id in either claims file names this transition.
+    // request made when F_2 arrives is fetched before the first time-out of the period counter, which
+    // enters 011 one period after 010, so 0 < F_3 - F_2 < D_mod. No claim id in either claims file names
+    // this transition.
     auto pc7_n3_ok = [&](const std::vector<FetchRec>& rec, size_t r) -> bool {
-        return d_mod > 0 && rec.size() > r + 1 &&
-               std::fabs((double)rec[r + 1].cycle - (double)rec[r].cycle) <= lambda;
+        if (!(d_mod > 0 && rec.size() > r + 1)) return false;
+        const double gap = (double)rec[r + 1].cycle - (double)rec[r].cycle;
+        return gap > 0 && gap < d_mod;
     };
     {
         Capture nc = mutating("PC7-N3") ? run_capture(dir + "/prog_s_ap.bin", budget_for(110000)) : rmod;
         mut_note("PC7-N3", "prog_s_ap.bin", nc);
         dep_expect(checks, cal_ok, nc.loaded && nc.done.has_value() && pc7_n3_ok(rec_of(nc), cal.r),
-            "PC7-N3 [Fig.5-8 101->010 'AUDxDR if napnav']: F_3 - F_2 lies within lambda of 0 (the request "
-            "made on 101->010 is one line behind F_2)",
+            "PC7-N3 [Fig.5-8 101->010 'AUDxDR if napnav']: 0 < F_3 - F_2 < D_mod (the request made on "
+            "101->010 is fetched before the first time-out of the period counter)",
             "PC7-CAL");
     }
 
@@ -1119,6 +1191,11 @@ int main(int argc, char** argv) {
     // index 0 is bit 3 (ATVOL3), index 1 is bit 7 (ATPER3).
     bool p7_const_ok[2] = {false, false}, p7_spacing_ok[2] = {false, false};
     Pre p7_pre[2];
+    // The verdicts of the lines that the joint lines printed after them contain: P1-A (bit 0), P2-A (bit 4),
+    // P6-A (bits 1, 2, 5, 6; indexed by bit number).
+    bool p1a_ok = false, p1a_gate = false, p2a_ok = false, p2a_gate = false;
+    bool p6a_ok[8] = {false, false, false, false, false, false, false, false};
+    bool p6a_gate[8] = {false, false, false, false, false, false, false, false};
 
     // S-P2's window on channel 1's output (P2, P3-SP2): from the modulator's first restart to the
     // end of play (see Measurements).
@@ -1159,7 +1236,7 @@ int main(int argc, char** argv) {
             double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
             // Match against DR (R-RAMP), not D1 (R-PER-1).
             int found = -1;
-            for (auto& kv : DR) if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; }
+            for (auto& kv : DR) if (std::fabs(kv.second - mean) <= kClkRes) { found = kv.first; break; }
             r.periods.push_back(found);
             r.means.push_back(mean);
             i = j;
@@ -1254,34 +1331,29 @@ int main(int argc, char** argv) {
             std::string(cyclic_consecutive(applied, m_v_order) ? "yes" : "no") +
             "; every level pair matched a reference=" + std::string(level_ok ? "yes" : "no"));
 
+        p1a_ok = gate && a_ok;
+        p1a_gate = gate;
         dep_expect(checks, gate, a_ok,
-            "P1-A [p.149,p.150,p.265] 5-hw.c3,5-p136.c3,5-p149.c5,5-mod.c3,5-p149.c7,5-mod.c20,5-p150.c23,"
+            "P1-A [p.149,p.150,p.265] 5-hw.c3,5-p136.c3,5-p149.c5,5-mod.c3,5-p149.c7,"
             "5-mod.c15,5-p150.c2,5-p150.c8,5-p150.c12,5-p150.c16,5-p150.c20,5-t54.w1.c4,5-t54.w2.c4,"
             "5-t54.w3.c4,5-t54.w4.c4,5-p151.c8,5-t55.b0,5-appA-p265.c29,A-adkcon.b00: the applied volumes in "
             "the window are cyclically consecutive in M_V, n>=17, every value from M_V", unmet);
-        // P1-B and P1-C grade what the words that reach channel 1 do, so their population is the applied
-        // changes; with none, no word has reached the volume and nothing can be said about its levels or
-        // about the period "not being reached".
+        // P1-B and P1-C grade what the words that reach channel 1 do. The window and the complete samples
+        // exist whatever channel 1 receives, so they are the populations that gate; a window without an
+        // applied volume is a window in which no word reached the volume, and the two clauses fail with it.
         if (!gate) {
             not_graded(checks, "P1-B", unmet);
-        } else if (applied.empty()) {
-            checks.record("P1-B [p.149,p.165]: not evaluated -- the window's applied-volume "
-                "population is empty (measured population: " + std::to_string(applied.size()) + ")");
         } else {
-            checks.expect(c.loaded && level_ok,
-                "P1-B [p.149,p.165]: every level pair in the window is channel 1's own reference "
-                "pair L_1(v) of the current applied volume");
+            checks.expect(c.loaded && !applied.empty() && level_ok,
+                "P1-B [p.149,p.165]: the window holds applied volumes and every level pair in it is "
+                "channel 1's own reference pair L_1(v) of the current applied volume");
         }
         if (!gate) {
             not_graded(checks, "P1-C", unmet);
-        } else if (applied.empty() || dur_pop == 0) {
-            checks.record("P1-C [Table 5-4 Modulating Volume Only]: not evaluated -- the "
-                "window's applied-volume population is empty or it has no complete sample (measured populations: " +
-                std::to_string(applied.size()) + " applied volumes, " + std::to_string(dur_pop) + " complete samples)");
         } else {
-            checks.expect(c.loaded && dur_ok,
-                "P1-C [Table 5-4 Modulating Volume Only]: every channel 1 duration (graded at "
-                "SQ's sign alternations) in the window equals D_1(200) -- no word reaches the "
+            checks.expect(c.loaded && !applied.empty() && dur_pop > 0 && dur_ok,
+                "P1-C [Table 5-4 Modulating Volume Only]: with applied volumes in the window, every channel 1 "
+                "duration (graded at SQ's sign alternations) equals D_1(200) -- no word reaches the "
                 "period");
         }
         checks.record("5-mod.c12, 5-p149.c18: V6 is withdrawn from P1-A; the pages disagree on "
@@ -1293,11 +1365,7 @@ int main(int argc, char** argv) {
             "into a proposition).");
         checks.record("5-mod.c1, 5-mod.c5, 5-p149.c10, 5-mod.c7, 5-p149.c13: each bundles a clause no single "
             "line here establishes (both kinds of modulation; every attach bit; the output ceasing and the "
-            "data modulating the next channel for every bit), so none is asserted; the volume half for "
-            "bit 0 is P1-A and the AUDxAV joint line below.");
-        checks.record("Scope of the claim that each attach bit modulates what it names: graded here for channel 0's "
-            "bit 0 only (P1-A); bits 1 and 2 and the three period bits are graded by P6-A for the parameter each "
-            "names (half graded: 5-mod.c20, 5-p150.c23).");
+            "data modulating the next channel for every bit), so none is asserted.");
 
         // Joint AUDxAV assertion: the destination effect (channel
         // 1 follows M_V, established above) and the source DAC bypass
@@ -1312,20 +1380,27 @@ int main(int argc, char** argv) {
             }
         }
         dep_expect(checks, gate, a_ok && ch0_const,
-            "P1-JOINT [p.165] 5-p165.c19,5-sig.audxav: in S-AV, channel 1 follows channel 0's "
+            "P1-JOINT [p.165]: in S-AV, channel 1 follows channel 0's "
             "data (destination half) AND channel 0's own side holds one value once its data is "
-            "flowing (source half) -- both halves of the AUDxAV claim, one session", unmet);
-        checks.record("Scope of AUDxAV: graded jointly for channel 0 attached to channel 1 "
-            "(S-AV) only; for the other channels the destination half is P6-A (bits 1 and 2) and the converter "
-            "half is P8-ATT for channel 3 (S-DAC3-V), with no line holding both halves for x = 1, 2 "
-            "(half graded: 5-p165.c19, 5-sig.audxav).");
+            "flowing (source half) -- both halves of the AUDxAV sentence for channel 0, one session", unmet);
+        checks.record("5-p165.c19, 5-sig.audxav: the sentence is generic in the channel x. Its two halves are "
+            "held in one session for channel 0 only (P1-JOINT). Channel 1's converter half cannot be observed "
+            "in a session that also shows its destination: channels 1 and 2 share one output, so channel 1's "
+            "own output and channel 2's modulated output cannot be told apart. For channel 2 the destination "
+            "half is P6-A (bit 2), whose modulator is silent at volume 0, and no session holds its converter "
+            "half. The claim quantifies over every x, so neither id is asserted.");
     }
 
     // ================= P2: ATPER0 =========================================
     {
-        std::string bin = dir + (mutating("P2-A") ? "/prog_s_p2_swap.bin" : "/prog_s_p2.bin");
+        // P2-A and P2-B read the data-set order (prog_s_p2_swap); P2-C reads the waveform order
+        // (prog_s_p2_ramp); P2-JOINT contains both. Each selector replaces the one session all three read.
+        std::string bin = dir + ((mutating("P2-A") || mutating("P2-B")) ? "/prog_s_p2_swap.bin"
+                                 : mutating("P2-C") ? "/prog_s_p2_ramp.bin" : "/prog_s_p2.bin");
         Capture c = run_capture(bin, budget_for(2700000));
         mut_note("P2-A", bin, c);
+        mut_note("P2-B", bin, c);
+        mut_note("P2-C", bin, c);
         int side = side_of[1];
         const Pre pre = sess_pre(&checks, kSP2, c);
 
@@ -1336,22 +1411,31 @@ int main(int argc, char** argv) {
         const bool win_ok = pr.w.ok;
         const uint64_t win_start = pr.w.ws, win_end = pr.w.we;
         const std::vector<int> applied_periods = pr.applied();      // the runs after the one in force at the edge
-        const std::vector<double> run_means = pr.applied_means();   // for (b)'s own 0.5-tick check
+        const std::vector<double> run_means = pr.applied_means();   // for (b)'s own check
         // (a): the applied periods are cyclically consecutive in the 17 words of M_P, from at least
         // 18 runs (one full cycle of M_P plus one).
         bool cyclic_ok = win_ok && applied_periods.size() >= 18 &&
             std::find(applied_periods.begin(), applied_periods.end(), -1) == applied_periods.end() &&
             cyclic_consecutive(applied_periods, m_p_order);
-        // (b) is its own assertion, 0.5 tick only.
+        // (b) is its own assertion: the mean complete-sample duration of every run equals R-RAMP's
+        // reference duration of the word the data set holds at that position (the first run is aligned to
+        // its own word, the data set is cyclic), within the apparatus resolution.
         bool dur_ok = win_ok && !applied_periods.empty() && applied_periods.size() == run_means.size();
-        if (dur_ok) for (size_t i = 0; i < applied_periods.size(); ++i) {
-            if (applied_periods[i] < 0 || !DR.count(applied_periods[i])) { dur_ok = false; break; }
-            if (std::fabs(run_means[i] - DR[applied_periods[i]]) > 0.5 * ticks(1)) { dur_ok = false; break; }
+        if (dur_ok) {
+            int r0 = -1;
+            for (size_t i = 0; i < m_p_order.size(); ++i) if (m_p_order[i] == applied_periods[0]) r0 = (int)i;
+            if (r0 < 0) dur_ok = false;
+            for (size_t i = 0; dur_ok && i < applied_periods.size(); ++i) {
+                const int word = m_p_order[(r0 + i) % m_p_order.size()];
+                if (!DR.count(word) || std::fabs(run_means[i] - DR[word]) > kClkRes) dur_ok = false;
+            }
         }
         checks.note("P2: window has " + std::to_string(applied_periods.size()) + " applied-period "
             "runs (need >=18); cyclic-consecutive-in-M_P (via DR)=" + std::string(cyclic_ok ? "yes" : "no"));
 
         const std::string unmet = pre.unmet("S-P2");
+        p2a_ok = pre.ok() && c.loaded && c.done.has_value() && cyclic_ok;
+        p2a_gate = pre.ok();
         dep_expect(checks, pre.ok(), c.loaded && c.done.has_value() && cyclic_ok,
             "P2-A [p.149 Table 5-4 Modulating Period Only] 5-mod.c4,5-p149.c8,5-p149.c4,"
             "5-mod.c13,5-p149.c19,5-mod.c16,5-p150.c3,5-p150.c7,5-p150.c11,5-p150.c15,5-p150.c19,"
@@ -1359,15 +1443,15 @@ int main(int argc, char** argv) {
             "5-appA-p265.c25,A-adkcon.b04: the applied periods of the runs are "
             "cyclically consecutive in the 17 words of M_P (matched against R-RAMP's own durations), "
             "from at least 18 runs", unmet);
+        // The window exists whatever channel 1 receives; with no applied-period run in it no word has reached
+        // the period, and (b) fails.
         if (!pre.ok()) {
             not_graded(checks, "P2-B", unmet);
-        } else if (applied_periods.empty()) {
-            checks.record("P2-B [p.149]: not evaluated -- the window's applied-period-run "
-                "population is empty (measured population: " + std::to_string(applied_periods.size()) + ")");
         } else {
             checks.expect(c.loaded && win_ok && dur_ok,
-                "P2-B [p.149]: the mean complete-sample duration of each run equals D_c(P) of "
-                "that run's word (R-RAMP), within 0.5 tick");
+                "P2-B [p.149]: the window holds applied-period runs and the mean complete-sample "
+                "duration of each run equals D_c(P) of the word the data set holds at that position "
+                "(R-RAMP), within the apparatus resolution");
         }
         // (c): RAMP's sixteen bytes in the order the data set holds them
         // (SPECIFICATION.md, Data sets), against channel 1's raw output
@@ -1402,7 +1486,7 @@ int main(int argc, char** argv) {
         }
         bool ramp_seq_ok = false;
         size_t p2c_pop = 0;
-        if (win_ok && pr.changes() > 0 && ramp_order.size() == 16) {
+        if (win_ok && ramp_order.size() == 16) {
             auto runs = runs_in_window(c.audio, win_start, win_end, side);
             auto comp = complete_runs(runs, win_start, win_end);
             std::vector<int> seq;
@@ -1410,16 +1494,20 @@ int main(int argc, char** argv) {
             p2c_pop = seq.size();
             ramp_seq_ok = seq.size() >= 32 && cyclic_consecutive(seq, ramp_order);
         }
+        // The complete runs exist whatever channel 1 receives, so this line grades the waveform on its own.
         if (!pre.ok()) {
             not_graded(checks, "P2-C", unmet);
-        } else if (p2c_pop == 0) {
-            checks.record("P2-C [p.149,Table 5-4] 5-p149.c9: not evaluated -- the window's "
-                "complete-run population is empty (measured population: " + std::to_string(p2c_pop) + ")");
         } else {
-            checks.expect(c.loaded && win_ok && ramp_order.size() == 16 && ramp_seq_ok,
-                "P2-C [p.149,Table 5-4] 5-p149.c9: channel 1's output follows RAMP's sixteen "
-                "bytes in order at volume 48, none skipped or repeated, although the pitch changes");
+            checks.expect(c.loaded && win_ok && ramp_order.size() == 16 && p2c_pop > 0 && ramp_seq_ok,
+                "P2-C [p.149,Table 5-4]: channel 1's output follows RAMP's sixteen "
+                "bytes in order at volume 48, none skipped or repeated");
         }
+        // 5-p149.c9 says both that the pitch changes and that the waveform stays: one line holds both.
+        dep_expect(checks, pre.ok(),
+            c.loaded && c.done.has_value() && cyclic_ok && win_ok && ramp_order.size() == 16 && p2c_pop > 0 && ramp_seq_ok,
+            "P2-JOINT [p.149,Table 5-4] 5-p149.c9: in S-P2 the pitch of channel 1 follows channel 0's period "
+            "words (P2-A) AND its output follows RAMP's sixteen bytes in order (P2-C) -- the pitch is changed "
+            "by frequency modulation and the basic waveform remains the same", unmet);
     }
 
     // ================= P3: whole word, not two bytes ======================
@@ -1474,44 +1562,36 @@ int main(int argc, char** argv) {
         const P3Eval e_sil = p3_eval(sil_c), e_who = p3_eval(who_c);
         const Pre pre_sil = sess_pre(nullptr, kSAV, sil_c), pre_who = sess_pre(nullptr, kSAV, who_c);
 
+        const bool p3_whole_line_ok = who_c.loaded && e_who.win_ok && e_who.pop > 0 && e_who.one_pair_ok;
         if (!pre_sil.ok()) {
             not_graded(checks, "P3-SILENT", pre_sil.unmet("S-AV"));
-        } else if (e_sil.pop == 0) {
-            checks.record("P3-SILENT [p.149]: not evaluated -- the P1 window's word-interval population "
-                "is empty (measured population: " + std::to_string(e_sil.pop) + ")");
         } else {
-            checks.expect(sil_c.loaded && e_sil.win_ok && e_sil.no_silent,
-                "P3-SILENT [p.149]: in the P1 window, no word interval is silent (volume 0 never occurs)");
+            checks.expect(sil_c.loaded && e_sil.win_ok && e_sil.pop > 0 && e_sil.no_silent,
+                "P3-SILENT [p.149]: the P1 window holds word intervals and none is silent (volume 0 never "
+                "occurs)");
         }
         if (!pre_who.ok()) {
             not_graded(checks, "P3-WHOLE", pre_who.unmet("S-AV"));
-        } else if (e_who.pop == 0) {
-            checks.record("P3-WHOLE [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: not evaluated -- "
-                "the P1 window's word-interval population is empty (measured population: " +
-                std::to_string(e_who.pop) + ")");
         } else {
-            checks.expect(who_c.loaded && e_who.win_ok && e_who.one_pair_ok,
-                "P3-WHOLE [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: every word interval in the P1 "
-                "window has exactly one level pair, the whole word's reference pair L_1(v) -- the "
-                "modulator's whole word reaches the modulated channel and no intermediate byte-split value "
-                "ever appears");
+            checks.expect(p3_whole_line_ok,
+                "P3-WHOLE [p.149]: the P1 window holds word intervals and every one has exactly one level "
+                "pair, the whole word's reference pair L_1(v) -- the modulator's whole word reaches the "
+                "modulated channel and no intermediate byte-split value ever appears");
         }
-        checks.record("Scope of the claim that a modulator word is used whole: P3-WHOLE grades it in volume mode "
-            "(S-AV) only; the period half is P3-SP2, which carries no id (half graded: 5-mod.c8, 5-mod.c9, "
-            "5-p149.c14, 5-p149.c15).");
 
         // The S-P2 half ("never a byte's D_1(P)") -- reuse P2's own
         // window (from the modulator's first restart to the end of play of channel 1's output);
-        // verify no run duration matches any byte-split period.
+        // verify the window holds applied-period runs and no run duration matches any byte-split period.
         {
-            std::string p2bin = dir + "/prog_s_p2.bin";
+            std::string p2bin = dir + (mutating("P3-SP2") ? "/prog_s_p2_w129.bin" : "/prog_s_p2.bin");
             Capture p2c = run_capture(p2bin, budget_for(2700000));
+            mut_note("P3-SP2", p2bin, p2c);
             const Pre pre_p2 = sess_pre(nullptr, kSP2, p2c);
             const P2Runs pr3 = p2_runs(p2c);
             const P2Win& w3 = pr3.w;
             bool no_byte_split = w3.ok;
             size_t p3sp2_pop = 0;
-            if (w3.ok && pr3.changes() > 0) {
+            if (w3.ok) {
                 auto runs = runs_in_window(p2c.audio, w3.ws, w3.we, side_of[1]);
                 auto comp = complete_runs(runs, w3.ws, w3.we);
                 p3sp2_pop = comp.size();
@@ -1522,16 +1602,22 @@ int main(int argc, char** argv) {
                     if (!no_byte_split) break;
                 }
             }
+            const bool p3_sp2_line_ok = p2c.loaded && w3.ok && pr3.changes() > 0 && p3sp2_pop > 0 && no_byte_split;
             if (!pre_p2.ok()) {
                 not_graded(checks, "P3-SP2", pre_p2.unmet("S-P2"));
-            } else if (p3sp2_pop == 0) {
-                checks.record("P3-SP2 [p.149,Table 5-4]: not evaluated -- the S-P2 window's run "
-                    "population is empty (measured population: " + std::to_string(p3sp2_pop) + ")");
             } else {
-                checks.expect(p2c.loaded && w3.ok && no_byte_split,
-                    "P3-SP2 [p.149,Table 5-4]: in S-P2, no run's duration matches a byte-split period "
-                    "(65,129,3,33,5,17,9 ticks) -- a whole word is used, never its high byte alone");
+                checks.expect(p3_sp2_line_ok,
+                    "P3-SP2 [p.149,Table 5-4]: in S-P2, the window holds applied-period runs and no run's "
+                    "duration matches a byte-split period (65,129,3,33,5,17,9 ticks) -- a whole word is used, "
+                    "never its high byte alone");
             }
+            // 5-mod.c8 .. 5-p149.c15 say the words are used whole in a modulator, whatever they carry: one
+            // line holds the volume mode (P3-WHOLE) and the period mode (P3-SP2).
+            dep_expect(checks, pre_who.ok() && pre_p2.ok(), p3_whole_line_ok && p3_sp2_line_ok,
+                "P3-JOINT [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: a modulator's words are used whole, "
+                "not as two bytes, in volume mode (P3-WHOLE, S-AV) AND in period mode (P3-SP2, S-P2)",
+                std::string(pre_who.ok() ? "" : pre_who.unmet("S-AV")) + ((!pre_who.ok() && !pre_p2.ok()) ? " and " : "") +
+                (pre_p2.ok() ? "" : pre_p2.unmet("S-P2")));
         }
         // R-MOD precondition (p.138) -- the unattached control DOES show
         // byte-level playback, proving the apparatus could detect it.
@@ -1597,7 +1683,7 @@ int main(int argc, char** argv) {
                 size_t j = i; uint64_t dur0 = comp[i].end - comp[i].start;
                 while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end-comp[j].start)-(long long)dur0) <= (uint64_t)kClkRes) ++j;
                 double mean = 0; for (size_t k=i;k<j;++k) mean += (double)(comp[k].end-comp[k].start); mean /= (double)(j-i);
-                for (auto& kv : D1) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)) {
+                for (auto& kv : D1) if (std::fabs(kv.second - mean) <= kClkRes) {
                     if (kv.first != last_per) { per_events.push_back({comp[i].start, kv.first}); last_per = kv.first; }
                     break;
                 }
@@ -1624,18 +1710,14 @@ int main(int argc, char** argv) {
             "5-t54.w1.c2,5-t54.w2.c2,5-t54.w3.c2,5-t54.w4.c2,5-appA-p265.c30,5-appA-p265.c32,"
             "A-adkcon.note1: the merged sequence (events start only after the first genuine change) is "
             "cyclically consecutive in M_VP, alternating volume then period", unmet);
-        // P4-B grades what the changes carry: it has a population only where a change of either kind
-        // occurred.
+        // P4-B grades what the changes carry. The session and its window exist whatever channel 1 receives;
+        // a window with no applied change of either kind is one in which no word has reached channel 1.
         if (!pre.ok()) {
             not_graded(checks, "P4-B", unmet);
-        } else if (vol_events.empty() && per_events.empty()) {
-            checks.record("P4-B [p.150]: not evaluated -- no applied volume and no applied period change in "
-                "the window (measured populations: volume changes " + std::to_string(vol_events.size()) +
-                ", period changes " + std::to_string(per_events.size()) + ")");
         } else {
-            checks.expect(c.loaded && have_bounds && set_b,
-                "P4-B [p.150]: after the first change of each kind, no applied volume lies outside "
-                "{24,56,8,40} and no applied period lies outside {300,700,500,900}");
+            checks.expect(c.loaded && have_bounds && (!vol_events.empty() || !per_events.empty()) && set_b,
+                "P4-B [p.150]: the window holds applied changes and, after the first change of each kind, no "
+                "applied volume lies outside {24,56,8,40} and no applied period lies outside {300,700,500,900}");
         }
         dep_expect(checks, pre.ok(), c.loaded && have_bounds && vol_events.size() >= 8 && per_events.size() >= 8,
             "P4-C [p.149]: both parameters change in the window, each at least 8 times", unmet);
@@ -1714,51 +1796,55 @@ int main(int argc, char** argv) {
         const Pre pre_av = sess_pre(nullptr, kSAV, av), pre_ap = sess_pre(nullptr, kSAP, ap),
                   pre_both = sess_pre(nullptr, kSBOTH, both);
         int side = side_of[1];
-        // Delta = C - F_k, graded per spec, against the page's relation (an
-        // integer multiple of D_mod, within lambda plus a *measured*
-        // granularity bound -- the largest reference duration in play,
-        // never an invented additive constant).
+        // eps5 is the granularity at which a period change can first be observed (p.164: "The period counter
+        // is reloaded at these transitions"): the largest reference duration in play, measured in R-PER-1.
         double eps5 = D1.count(900) ? D1[900] : (D1.count(700) ? D1[700] : 0);
-        auto grid_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, // (time, pos, value) -- volume-only or period-only
-                           const std::vector<FetchRec>& fr, double dmod) {
-            if (changes.empty() || dmod <= 0) return false;
+        using Changes = std::vector<std::tuple<uint64_t,int,int>>;   // (time, data-set position, value)
+        // Ordering (p.149: a word takes effect only at a time-out after it was fetched): for every change the
+        // latest fetch of the offset of the word it carries, before the change, exists and strictly precedes it.
+        auto ordered_ok = [&](Changes& changes, const std::vector<FetchRec>& fr) {
+            if (changes.empty()) return false;
             for (auto& [ctime, pos, val] : changes) {
                 if (pos < 0) return false;
                 auto fk = latest_fetch_before(fr, (uint32_t)pos, ctime);
-                if (!fk) return false;
-                double delta = (double)ctime - (double)*fk;
-                long m = (long)std::llround(delta / dmod);
-                if (m < 1) m = 1;
-                double lo = m * dmod - lambda, hi = m * dmod + lambda + eps5;
-                if (!(delta >= lo && delta <= hi)) return false;
+                if (!fk || !(*fk < ctime)) return false;
             }
             return true;
         };
-        // Consecutive-change spacing: S P5.4's own ordering -- successive
-        // changes are 2*D_mod apart with one attach bit, D_mod apart with
-        // both, within lambda + eps (a changed period shows only in the first sample that has it).
-        auto consec_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, double step) {
+        // Spacing: consecutive changes lie `step` apart (2*D_mod with one attach bit, D_mod with both: p.164),
+        // to within `tol`. The time-outs lie on the period counter's own grid, which a line-quantised request
+        // does not move, so a volume change (visible at once) is graded to the apparatus resolution and a
+        // period change (visible at the first sample that has the new period) to eps5.
+        double max_gap_dev = 0;
+        auto consec_ok = [&](Changes& changes, double step, double tol) {
             if (changes.size() < 2 || step <= 0) return false;
+            bool ok = true;
+            max_gap_dev = 0;
             for (size_t i = 1; i < changes.size(); ++i) {
                 double gap = (double)std::get<0>(changes[i]) - (double)std::get<0>(changes[i - 1]);
-                if (std::fabs(gap - step) > lambda + eps5) return false;
+                max_gap_dev = std::max(max_gap_dev, std::fabs(gap - step));
+                if (std::fabs(gap - step) > tol) ok = false;
             }
-            return true;
+            return ok;
         };
         // Phase (010->011 only, S-AP): in the frame PC7-CAL calibrates, state 010 is entered with F_2 and the
-        // period counter times out every D_mod after it; the 010->011 transitions are the odd time-outs.
-        // Every change carried by pbufld2 lands an odd multiple of D_mod after F_2, within lambda plus eps.
-        auto odd_phase_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, const std::vector<FetchRec>& rec) {
+        // period counter times out every D_mod after it; the 010->011 transitions are the odd time-outs. Each
+        // change carried by pbufld2 lies nearer to an odd multiple of D_mod after F_2 than to an even one
+        // (the two alternatives are D_mod apart).
+        double phase_min = 0, phase_max = 0;
+        auto odd_phase_ok = [&](Changes& changes, const std::vector<FetchRec>& rec) {
             if (changes.empty() || d_mod <= 0 || rec.size() <= cal.r) return false;
             const double f2 = (double)rec[cal.r].cycle;
+            bool ok = true, first = true;
             for (auto& [ctime, pos, val] : changes) {
                 double delta = (double)ctime - f2;
-                long j = (long)std::llround((delta / d_mod - 1.0) / 2.0);
-                if (j < 0) return false;
-                double centre = (2.0 * j + 1.0) * d_mod;
-                if (!(delta >= centre - lambda && delta <= centre + lambda + eps5)) return false;
+                long m = (long)std::llround(delta / d_mod);
+                double dev = delta - (double)m * d_mod;
+                if (first) { phase_min = phase_max = dev; first = false; }
+                phase_min = std::min(phase_min, dev); phase_max = std::max(phase_max, dev);
+                if (m < 1 || m % 2 == 0) ok = false;
             }
-            return true;
+            return ok;
         };
         auto mk_a = markers(av); auto on_a = m_on(mk_a), off_a = m_off(mk_a);
         auto mk_p = markers(ap); auto on_p = m_on(mk_p), off_p = m_off(mk_p);
@@ -1780,7 +1866,6 @@ int main(int argc, char** argv) {
         // "Changes" are departures from the value in force: the first segment or period run of the window
         // shows the value in force at the window's edge and is not a change, and neither is a later one that
         // merely repeats it; an unchanging channel 1 has no changes (an empty population of real events).
-        using Changes = std::vector<std::tuple<uint64_t,int,int>>;
         auto vol_changes = [&](const Capture& cap, uint64_t ws, uint64_t we, int init, const std::function<int(int)>& posf) {
             Changes out;
             auto runs = runs_in_window(cap.audio, ws, we, side);
@@ -1807,7 +1892,7 @@ int main(int argc, char** argv) {
                 size_t j = i; uint64_t dur0 = comp[i].end - comp[i].start;
                 while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end-comp[j].start)-(long long)dur0) <= (uint64_t)kClkRes) ++j;
                 double mean = 0; for (size_t k=i;k<j;++k) mean += (double)(comp[k].end-comp[k].start); mean /= (double)(j-i);
-                for (auto& kv : D1) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)) {
+                for (auto& kv : D1) if (std::fabs(kv.second - mean) <= kClkRes) {
                     if (in_force) { last_per = kv.first; in_force = false; break; }
                     if (kv.first != last_per) { out.push_back({comp[i].start, posf(kv.first), kv.first}); last_per = kv.first; }
                     break;
@@ -1858,94 +1943,118 @@ int main(int argc, char** argv) {
             sap_dest_ok = dcap.loaded && dcap.done.has_value() && dwin && seqp.size() >= 8 && cyclic_consecutive(seqp, m_p4_order);
         }
 
-        // Population precondition (S P5.5): at least 2L changes of
-        // channel 1 (L=4, SQ's own length) in the window. An empty
-        // population (0 genuine changes) is "not evaluated", never FAIL.
+        // Population precondition (P5-POP-*): the modulator delivers at least 2L = 8 words (L = 4, channel
+        // 1's own length) in the window, counted on channel 0's own fetches from its third fetch to M_off.
+        // It does not depend on what channel 1 receives.
+        auto fetch_pop = [&](const Capture& cap, std::optional<uint64_t> on, std::optional<uint64_t> off, uint32_t span, bool win,
+                             uint64_t ws) -> size_t {
+            if (!win || !on || !off) return 0;
+            return fetch_cycles(cap.log, ch_base(0), span, ws, *off).size();
+        };
+        const size_t pop_av = fetch_pop(av, on_a, off_a, 8, av_win, av_ws),
+                     pop_ap = fetch_pop(ap, on_p, off_p, 4, ap_win, ap_ws),
+                     pop_both = fetch_pop(both, on_b, off_b, 8, both_win, both_ws);
+        const bool popok_av = av.loaded && av_win && pop_av >= 8, popok_ap = ap.loaded && ap_win && pop_ap >= 8,
+                   popok_both = both.loaded && both_win && pop_both >= 8;
         if (!pre_av.ok()) {
             not_graded(checks, "P5-POP-AV", pre_av.unmet("S-AV"));
-        } else if (av_changes.empty()) {
-            checks.record("P5-POP-AV [p.149]: not evaluated -- S-AV's applied-change "
-                "population is empty (measured population: 0)");
         } else {
-            checks.expect(av.loaded && av_win && av_changes.size() >= 8,
-                "P5-POP-AV [p.149]: S-AV -- the window (from channel 0's third fetch) has "
-                ">=2L=8 changes of channel 1");
+            checks.expect(popok_av,
+                "P5-POP-AV [p.149]: S-AV -- the window (from channel 0's third fetch) holds at least 2L=8 fetches "
+                "of the modulator's words");
         }
         if (!pre_ap.ok()) {
             not_graded(checks, "P5-POP-AP", pre_ap.unmet("S-AP"));
-        } else if (ap_changes.empty()) {
-            checks.record("P5-POP-AP [p.149]: not evaluated -- S-AP's applied-change "
-                "population is empty (measured population: 0)");
         } else {
-            checks.expect(ap.loaded && ap_win && ap_changes.size() >= 8,
-                "P5-POP-AP [p.149]: S-AP -- the window has >=2L=8 changes of channel 1");
+            checks.expect(popok_ap,
+                "P5-POP-AP [p.149]: S-AP -- the window holds at least 2L=8 fetches of the modulator's words");
         }
         if (!pre_both.ok()) {
             not_graded(checks, "P5-POP-BOTH", pre_both.unmet("S-BOTH"));
-        } else if (both_changes.empty()) {
-            checks.record("P5-POP-BOTH [p.149]: not evaluated -- S-BOTH's applied-change population is "
-                "empty (measured population: 0)");
         } else {
-            checks.expect(both.loaded && both_win && both_changes.size() >= 8,
-                "P5-POP-BOTH [p.149]: S-BOTH -- the window has >=2L=8 changes of channel 1");
+            checks.expect(popok_both,
+                "P5-POP-BOTH [p.149]: S-BOTH -- the window holds at least 2L=8 fetches of the modulator's words");
         }
 
-        // The start-up frame of S-AP (record entry r of channel 0 is F_2, at offset 0), for the phase.
+        // The start-up frame of S-AP (record entry r of channel 0 is F_2), for the phase.
         auto rec_ap = rec_of(ap);
-        const bool ap_frame = cal_ok && d_mod > 0 && rec_ap.size() > cal.r + 3 && rec_ap[cal.r].offset == 0;
-        bool av_ok = grid_ok(av_changes, fr_av, d_mod) && consec_ok(av_changes, 2.0 * d_mod);
-        bool ap_grid = grid_ok(ap_changes, fr_ap, d_mod) && consec_ok(ap_changes, 2.0 * d_mod);
-        bool ap_ok = ap_grid && odd_phase_ok(ap_changes, rec_ap);
-        bool both_ok = grid_ok(both_changes, fr_both, d_mod) && consec_ok(both_changes, d_mod);
-        checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes, S-AP " +
-            std::to_string(ap_changes.size()) + ", S-BOTH " + std::to_string(both_changes.size()) +
-            "; av_ok=" + std::to_string(av_ok) + " ap_ok=" + std::to_string(ap_ok) +
-            " (grid and spacing " + std::to_string(ap_grid) + ") both_ok=" + std::to_string(both_ok));
-        if (!pre_av.ok()) {
-            not_graded(checks, "P5-AV", pre_av.unmet("S-AV"));
-        } else if (av_changes.empty()) {
-            checks.record("P5-AV [p.149,p.164]: not evaluated -- S-AV's "
-                "applied-change population is empty (measured population: 0)");
-        } else {
-            checks.expect(av.loaded && av_win && av_ok,
-                "P5-AV [p.149,p.164]: S-AV -- for every change, Delta=C-F_k lies "
-                "within [m*D_mod-lambda, m*D_mod+lambda+eps] for some integer m>=1, and consecutive "
-                "changes are 2*D_mod apart (as normal, 011->010)");
+        const bool ap_frame = cal_ok && d_mod > 0 && rec_ap.size() > cal.r + 3;
+        max_gap_dev = 0;
+        const bool av_ok = av_changes.size() >= 8 && ordered_ok(av_changes, fr_av) && consec_ok(av_changes, 2.0 * d_mod, kClkRes);
+        const double av_dev = max_gap_dev;
+        max_gap_dev = 0;
+        const bool ap_ok = ap_changes.size() >= 8 && ordered_ok(ap_changes, fr_ap) && consec_ok(ap_changes, 2.0 * d_mod, eps5) &&
+                           ap_frame && odd_phase_ok(ap_changes, rec_ap);
+        const double ap_dev = max_gap_dev;
+        max_gap_dev = 0;
+        const bool both_ok = both_changes.size() >= 8 && ordered_ok(both_changes, fr_both) && consec_ok(both_changes, d_mod, eps5);
+        const double both_dev = max_gap_dev;
+        checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes (largest deviation of a gap from 2*D_mod: " +
+            std::to_string(av_dev) + " clk), S-AP " + std::to_string(ap_changes.size()) + " (" + std::to_string(ap_dev) +
+            " clk; offset of a change from the nearest multiple of D_mod after F_2: " + std::to_string(phase_min) + " .. " +
+            std::to_string(phase_max) + " clk), S-BOTH " + std::to_string(both_changes.size()) + " (largest deviation of a gap from D_mod: " +
+            std::to_string(both_dev) + " clk); eps = " + std::to_string(eps5) + " clk");
+        // The delay between a request and its fetch is given by the page as one line plus about 14 clock
+        // cycles (p.164) and not as a bound, so the offset of a change from the fetch of its word is
+        // measured, not graded.
+        {
+            double dmin = 1e18, dmax = -1e18;
+            auto span = [&](Changes& ch, const std::vector<FetchRec>& fr) {
+                for (auto& [ctime, pos, val] : ch) {
+                    if (pos < 0) continue;
+                    auto fk = latest_fetch_before(fr, (uint32_t)pos, ctime);
+                    if (!fk) continue;
+                    double dl = (double)ctime - (double)*fk;
+                    dmin = std::min(dmin, dl); dmax = std::max(dmax, dl);
+                }
+            };
+            span(av_changes, fr_av); span(ap_changes, fr_ap); span(both_changes, fr_both);
+            if (dmin <= dmax)
+                checks.note("P5: C - F_k, the delay from the fetch of a word to its change, over the three sessions: " +
+                    std::to_string(dmin) + " .. " + std::to_string(dmax) + " clk (not graded: the page gives the request-to-data "
+                    "delay only as one line plus about 14 clock cycles)");
         }
-        if (!pre_ap.ok() || (!ap_changes.empty() && !ap_frame)) {
-            not_graded(checks, "P5-AP", !pre_ap.ok() ? pre_ap.unmet("S-AP") : std::string("PC7-CAL and a start-up frame in S-AP"));
-        } else if (ap_changes.empty()) {
-            checks.record("P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: not evaluated -- S-AP's "
-                "applied-change population is empty (measured population: 0)");
+        if (!pre_av.ok() || !popok_av) {
+            not_graded(checks, "P5-AV", !pre_av.ok() ? pre_av.unmet("S-AV") : std::string("P5-POP-AV"));
         } else {
-            checks.expect(ap.loaded && ap_win && ap_ok,
-                "P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- Delta=C-F_k on the same grid, "
-                "consecutive changes 2*D_mod apart, and every change an odd multiple of D_mod after F_2, "
-                "within lambda+eps (on the 010->011 transition only)");
+            checks.expect(av_ok,
+                "P5-AV [p.149,p.164]: S-AV -- the window holds at least 2L=8 applied changes of channel 1, "
+                "each after the fetch of its word, and consecutive changes are 2*D_mod apart (as normal, 011->010)");
         }
-        if (!pre_both.ok()) {
-            not_graded(checks, "P5-BOTH", pre_both.unmet("S-BOTH"));
-        } else if (both_changes.empty()) {
-            checks.record("P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: not evaluated -- S-BOTH's applied-change population is "
-                "empty (measured population: 0)");
+        if (!pre_ap.ok() || !popok_ap || (!ap_frame)) {
+            not_graded(checks, "P5-AP", !pre_ap.ok() ? pre_ap.unmet("S-AP") : !popok_ap ? std::string("P5-POP-AP") :
+                std::string("PC7-CAL and a start-up frame in S-AP"));
         } else {
-            checks.expect(both.loaded && both_win && both_ok,
-                "P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- Delta=C-F_k on the same grid, consecutive "
-                "changes D_mod apart, alternating volume and period: a word lands at every time-out of the "
-                "modulator's period (both transitions)");
+            checks.expect(ap_ok,
+                "P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- the window holds at least 2L=8 applied "
+                "changes of channel 1, each after the fetch of its word, consecutive changes are 2*D_mod apart, "
+                "and every change lies at an odd multiple of D_mod after F_2 (on the 010->011 transition only)");
+        }
+        if (!pre_both.ok() || !popok_both) {
+            not_graded(checks, "P5-BOTH", !pre_both.ok() ? pre_both.unmet("S-BOTH") : std::string("P5-POP-BOTH"));
+        } else {
+            checks.expect(both_ok,
+                "P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- the window holds at least 2L=8 applied "
+                "changes of channel 1, each after the fetch of its word, consecutive changes are D_mod apart, "
+                "alternating volume and period: a word lands at every time-out of the modulator's period (both "
+                "transitions)");
         }
     }
 
     // ================= P6: each attach bit pairs x with x+1 ================
     {
-        struct Pair6 { int b; int mod_ch, tgt_ch, trip_a, trip_b; bool is_vol; std::string bin, swap, extra, tgt; std::string extra_clause; };
+        // swap: P6-A's contrast. tgt: P6-B's contrast (bits 0 and 4). attc / attd: P6-C's and P6-D's contrasts,
+        // each a second attach bit that Table 5-5 makes route a tripwire's data to the next channel (attc to
+        // its volume, attd to its period); PC1 then expects the combined mask (attc_mask / attd_mask).
+        struct Pair6 { int b; int mod_ch, tgt_ch, trip_a, trip_b; bool is_vol; std::string bin, swap, tgt, attc, attd;
+                       uint16_t attc_mask, attd_mask; };
         std::vector<Pair6> cases = {
-            {0,0,1,2,3,true,"/prog_s_pair0.bin","/prog_s_pair0_swap.bin","/prog_s_pair0_extra.bin","/prog_s_pair0_tgtper.bin","(c)"},
-            {1,1,2,0,3,true,"/prog_s_pair1.bin","/prog_s_pair1_swap.bin","","",""},
-            {2,2,3,0,1,true,"/prog_s_pair2.bin","/prog_s_pair2_swap.bin","/prog_s_pair2_extra.bin","","(c)"},
-            {4,0,1,2,3,false,"/prog_s_pair4.bin","/prog_s_pair4_swap.bin","/prog_s_pair4_extra.bin","/prog_s_pair4_tgtvol.bin","(d)"},
-            {5,1,2,0,3,false,"/prog_s_pair5.bin","/prog_s_pair5_swap.bin","/prog_s_pair5_extra.bin","","(d)"},
-            {6,2,3,0,1,false,"/prog_s_pair6.bin","/prog_s_pair6_swap.bin","/prog_s_pair6_extra.bin","","(d)"},
+            {0,0,1,2,3,true,"/prog_s_pair0.bin","/prog_s_pair0_swap.bin","/prog_s_pair0_tgtper.bin","/prog_s_pair0_attc.bin","",0x05,0},
+            {1,1,2,0,3,true,"/prog_s_pair1.bin","/prog_s_pair1_swap.bin","","/prog_s_pair1_attc.bin","",0x06,0},
+            {2,2,3,0,1,true,"/prog_s_pair2.bin","/prog_s_pair2_swap.bin","","/prog_s_pair2_attc.bin","",0x05,0},
+            {4,0,1,2,3,false,"/prog_s_pair4.bin","/prog_s_pair4_swap.bin","/prog_s_pair4_tgtvol.bin","/prog_s_pair4_attc.bin","/prog_s_pair4_attd.bin",0x14,0x50},
+            {5,1,2,0,3,false,"/prog_s_pair5.bin","/prog_s_pair5_swap.bin","","/prog_s_pair5_attc.bin","/prog_s_pair5_attd.bin",0x24,0x30},
+            {6,2,3,0,1,false,"/prog_s_pair6.bin","/prog_s_pair6_swap.bin","","/prog_s_pair6_attc.bin","/prog_s_pair6_attd.bin",0x41,0x50},
         };
         // Claim ids per bit (Table 5-5 / p.265), matching the bit numbers the ids' own quotes name.
         // Bits 0 and 4 carry theirs on P1-A and P2-A.
@@ -1963,15 +2072,17 @@ int main(int argc, char** argv) {
             "establishes both, so neither id is asserted.");
         for (auto& pc : cases) {
             std::string tag = "P6-" + std::to_string(pc.b);
+            const bool m_attc = mutating(tag + "-ATTC") && !pc.attc.empty(), m_attd = mutating(tag + "-ATTD") && !pc.attd.empty();
             std::string bin = mutating(tag) ? pc.swap
-                            : (mutating(tag + "-EXTRA") && !pc.extra.empty()) ? pc.extra
+                            : m_attc ? pc.attc : m_attd ? pc.attd
                             : (mutating("P6-TGT-" + std::to_string(pc.b)) && !pc.tgt.empty()) ? pc.tgt : pc.bin;
             Capture c = run_capture(dir + bin, budget_for(110000));
             mut_note(tag, bin, c);
-            mut_note(tag + "-EXTRA", bin, c);
+            mut_note(tag + "-ATTC", bin, c);
+            mut_note(tag + "-ATTD", bin, c);
             mut_note("P6-TGT-" + std::to_string(pc.b), bin, c);
             int tside = side_of[pc.tgt_ch], oside = other_side(pc.tgt_ch);
-            uint16_t bitval = (uint16_t)(1u << pc.b);
+            uint16_t bitval = m_attc ? pc.attc_mask : m_attd ? pc.attd_mask : (uint16_t)(1u << pc.b);
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             // Length per channel: the modulator (M6V/M_P4, 4 words) and the
@@ -2026,7 +2137,7 @@ int main(int argc, char** argv) {
                         while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end-comp[j].start)-(long long)dur0) <= (uint64_t)kClkRes) ++j;
                         double mean = 0; for (size_t k=i;k<j;++k) mean += (double)(comp[k].end-comp[k].start); mean /= (double)(j-i);
                         int found = -1;
-                        for (auto& kv : dtable) if (std::fabs(kv.second - mean) <= 0.5*ticks(1)+kClkRes) { found = kv.first; break; }
+                        for (auto& kv : dtable) if (std::fabs(kv.second - mean) <= kClkRes) { found = kv.first; break; }
                         if (found < 0) level_ok = false;
                         if (in_force) in_force = false; else applied.push_back(found);
                         i = j;
@@ -2038,6 +2149,8 @@ int main(int argc, char** argv) {
             checks.note("P6 bit " + std::to_string(pc.b) + ": the window has " + std::to_string(applied.size()) +
                 (pc.is_vol ? " applied volumes" : " applied periods") + " (need >=9)");
             std::string ids = bit_ids.count(pc.b) ? bit_ids[pc.b] : "";
+            p6a_gate[pc.b] = pre.ok();
+            p6a_ok[pc.b] = pre.ok() && c.loaded && win_ok && cyclic_ok;
             dep_expect(checks, pre.ok(), c.loaded && win_ok && cyclic_ok,
                 pc.is_vol
                 ? ("P6-A [p.149,p.150,p.151,p.265]" + (ids.empty() ? "" : (" " + ids)) + " bit " + std::to_string(pc.b) +
@@ -2084,7 +2197,7 @@ int main(int argc, char** argv) {
                     auto fc = fetch_cycles(c.log, ch_base(ch), span, win_start, fetch_end);
                     if (fc.size() < 2) return false;
                     for (size_t i = 1; i < fc.size(); ++i)
-                        if (std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(per)) > lambda) return false;
+                        if (!(std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(per)) < ell)) return false;
                     return true;
                 };
                 double pers[4] = {1400,1600,1800,2000};
@@ -2094,8 +2207,23 @@ int main(int argc, char** argv) {
             }
             dep_expect(checks, pre.ok(), c.loaded && win_ok && spacing_ok,
                 "P6-D [p.164] bit " + std::to_string(pc.b) + ": every non-target channel's fetch spacing (the "
-                "modulator's and both tripwires', from the modulator's first restart) equals 2*AUDxPER within lambda",
+                "modulator's and both tripwires', from the modulator's first restart) equals 2*AUDxPER to within less "
+                "than one line",
                 unmet);
+        }
+        // 5-mod.c20 and 5-p150.c23 say that setting a channel's attach bit to 1 attaches it as a modulator,
+        // for every attach bit: one line holds all eight cases the package can show. Bit 0 (volume, P1-A) and
+        // bit 4 (period, P2-A) come from their sessions, bits 1, 2, 5 and 6 from P6-A. Bits 3 and 7 attach
+        // nothing (p.151) and are P7's.
+        {
+            bool all_gate = p1a_gate && p2a_gate, all_ok = p1a_ok && p2a_ok;
+            for (int b : {1, 2, 5, 6}) { all_gate = all_gate && p6a_gate[b]; all_ok = all_ok && p6a_ok[b]; }
+            dep_expect(checks, all_gate, all_ok,
+                "P6-JOINT [p.150,p.151] 5-mod.c20,5-p150.c23: setting an attach bit to 1 attaches the channel as a "
+                "modulator, for each of the six bits 0, 1, 2 (volume) and 4, 5, 6 (period): the next channel's "
+                "volume (P1-A for bit 0, P6-A for bits 1 and 2) or period (P2-A for bit 4, P6-A for bits 5 and 6) "
+                "follows the channel's data words in every session",
+                "PC1-PC3 of S-AV, S-P2 or an S-PAIR session");
         }
     }
 
@@ -2106,10 +2234,12 @@ int main(int argc, char** argv) {
         // volume makes an output move); bit 7 modulates a period, which P7-SPACING sees (a modulated
         // period changes a fetch spacing) and P7-CONST cannot. The A-adkcon ids bundle "modulates nothing"
         // with "disables channel 3's audio output": they sit on the joint lines printed after P8.
-        struct P7Case { std::string bin, mutbin; uint16_t mask; std::string tag, const_ids, spacing_ids; };
+        // The contrast writes the attach bit that Table 5-5 makes route channel 2's data to channel 3 (bit 2,
+        // volume; bit 6, period) in place of channel 3's own; PC1 then expects that mask (mutmask).
+        struct P7Case { std::string bin, mutbin; uint16_t mask, mutmask; std::string tag, const_ids, spacing_ids; };
         std::vector<P7Case> cases = {
-            {"/prog_s_ch3v.bin", "/prog_s_ch3v_extra.bin", 0x08, "P7V", "5-appA-p265.c26", ""},
-            {"/prog_s_ch3p.bin", "/prog_s_ch3p_extra.bin", 0x80, "P7P", "", "5-appA-p265.c22"},
+            {"/prog_s_ch3v.bin", "/prog_s_ch3v_att.bin", 0x08, 0x04, "P7V", "5-appA-p265.c26", ""},
+            {"/prog_s_ch3p.bin", "/prog_s_ch3p_att.bin", 0x80, 0x40, "P7P", "", "5-appA-p265.c22"},
         };
         checks.record("5-mod.c23, 5-p150.c26: the sentence says an attached channel always modulates the next "
             "higher channel, so channel 3 cannot be attached, and p.150 adds that its modulate bits only disable "
@@ -2120,7 +2250,7 @@ int main(int argc, char** argv) {
             std::string bin = mutating(pc.tag) ? pc.mutbin : pc.bin;
             Capture c = run_capture(dir + bin, budget_for(60000));
             mut_note(pc.tag, bin, c);
-            uint16_t expect = pc.mask;
+            uint16_t expect = mutating(pc.tag) ? pc.mutmask : pc.mask;
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             const Pre pre = run_pre(&checks, pc.tag, c, expect, 0x000F, {{0,2},{1,2},{2,2},{3,2}}, have_bounds,
@@ -2142,12 +2272,12 @@ int main(int argc, char** argv) {
                     auto fc = fetch_cycles(c.log, ch_base(ch), 2, win_start, win_end);
                     if (fc.size() < 2) { spacing_ok = false; continue; }
                     for (size_t i = 1; i < fc.size(); ++i)
-                        if (std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(pers[ch])) > lambda) spacing_ok = false;
+                        if (!(std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(pers[ch])) < ell)) spacing_ok = false;
                 }
             }
             dep_expect(checks, pre.ok(), c.loaded && win_ok && spacing_ok,
                 "P7-SPACING [p.164]" + (pc.spacing_ids.empty() ? "" : (" " + pc.spacing_ids)) + ": every channel's "
-                "consecutive fetch spacing equals 2*AUDxPER within lambda (2800,3200,3600,4000 ticks)", unmet);
+                "consecutive fetch spacing equals 2*AUDxPER to within less than one line (2800,3200,3600,4000 ticks)", unmet);
             p7_pre[bit_idx] = pre;
             p7_const_ok[bit_idx] = c.loaded && win_ok && both_const;
             p7_spacing_ok[bit_idx] = c.loaded && win_ok && spacing_ok;
@@ -2233,16 +2363,17 @@ int main(int argc, char** argv) {
         {
             const Pre pre_sap = sess_pre(nullptr, kSAP, sap_cap);
             dep_expect(checks, pre_sap.ok() && ctrl_pass[1], sap_dest_ok && sap_src_const,
-                "P8-JOINT-AP [p.165] 5-p165.c20,5-sig.audxap: in S-AP, channel 1's applied periods follow "
+                "P8-JOINT-AP [p.165]: in S-AP, channel 1's applied periods follow "
                 "channel 0's words cyclically in M_P4 (destination half, measured applied-period changes: " +
                 std::to_string(sap_dest_pop) + ") AND channel 0's own side holds one value once its data is "
                 "flowing (source half) -- both halves of the AUDxAP claim, one session",
                 std::string(pre_sap.ok() ? "" : pre_sap.unmet("S-AP")) + ((!pre_sap.ok() && !ctrl_pass[1]) ? " and " : "") +
                 (ctrl_pass[1] ? "" : "P8-PRE (R-DAC-P4)"));
-            checks.record("Scope of AUDxAP: graded jointly for channel 0 attached to channel 1 (S-AP) only; "
-                "for the other channels the destination half is P6-A (bits 5 and 6) and the converter half is "
-                "P8-ATT for channel 3 (S-DAC3-P), with no line holding both halves for x = 1, 2 "
-                "(half graded: 5-p165.c20, 5-sig.audxap).");
+            checks.record("5-p165.c20, 5-sig.audxap: the sentence is generic in the channel x. Its two halves are held "
+                "in one session for channel 0 only (P8-JOINT-AP). Channel 1's converter half cannot be observed in a "
+                "session that also shows its destination: channels 1 and 2 share one output. For channel 2 the "
+                "destination half is P6-A (bit 6), whose modulator is silent at volume 0, and no session holds its "
+                "converter half. The claim quantifies over every x, so neither id is asserted.");
         }
         // Channel 3's two bits, each bundling "modulates nothing" (P7) with "disables channel 3's audio
         // output" (P8-ATT): one joint line per bit.
@@ -2377,13 +2508,9 @@ int main(int argc, char** argv) {
             }
             if (!gate) {
                 not_graded(checks, "P9-C", unmet);
-            } else if (applied.empty()) {
-                checks.record("P9-C [p.150] 5-mod.c18,5-p150.c21: not evaluated -- the window's "
-                    "applied-volume-change population is empty (measured population: " +
-                    std::to_string(applied.size()) + ") (" + bin + ")");
             } else {
-                checks.expect(c.loaded && cyclic_ok,
-                    "P9-C [p.150] 5-mod.c18,5-p150.c21: channel 1's applied volumes are cyclically "
+                checks.expect(c.loaded && !applied.empty() && cyclic_ok,
+                    "P9-C [p.150]: the window holds applied volumes of channel 1 and they are cyclically "
                     "consecutive across the modulator's own restarts, none skipped or repeated (" + bin + ")");
             }
             if (!gate) {
@@ -2397,9 +2524,10 @@ int main(int argc, char** argv) {
                     "(" + bin + ")");
             }
         }
-        checks.record("Scope of the claim that the data-set lengths are completely independent: graded for two "
-            "length pairs, 5 and 3 (S-LEN-A) and 2 and 7 (S-LEN-B), the modulator once longer and once "
-            "shorter than the modulated channel's (half graded: 5-mod.c18, 5-p150.c21).");
+        checks.record("5-mod.c18, 5-p150.c21: the lengths of the data sets are 'completely independent'. Two "
+            "length pairs are observed, 5 and 3 (S-LEN-A) and 2 and 7 (S-LEN-B), the modulator once longer and "
+            "once shorter than the modulated channel's; two ratios do not establish 'completely', so neither id "
+            "is asserted.");
     }
 
     // ================= P10: DMA-request phase ==============================
@@ -2409,14 +2537,17 @@ int main(int argc, char** argv) {
     // in that frame, and prints NOT GRADED where the frame is not established or PC1-PC3 of its session fail.
     {
         auto frame_met = [&](const std::vector<FetchRec>& rec) -> bool {
-            return cal_ok && d_mod > 0 && rec.size() > cal.r + 3 && rec[cal.r].offset == 0;
+            return cal_ok && d_mod > 0 && ell > 0 && rec.size() > cal.r + 3;
         };
-        // F_n - F_2 = k(n) * D_mod, within lambda, from n = 3 on; k(n) = 2(n-3) (as in normal operation).
-        auto phase_normal_ok = [&](const std::vector<FetchRec>& rec) -> bool {
-            for (size_t i = cal.r + 1; i < rec.size(); ++i) {
+        // Rate (as in normal operation, 011->010): F_n - F_3 = 2(n-3)*D_mod for every n >= 4, to within less than
+        // one line. The requests from F_3 on lie on the period counter's own grid, 2*D_mod apart, and each
+        // fetch follows its request by less than a line plus a constant delay.
+        auto rate_normal_ok = [&](const std::vector<FetchRec>& rec) -> bool {
+            if (rec.size() < cal.r + 3) return false;
+            for (size_t i = cal.r + 2; i < rec.size(); ++i) {
                 double n = (double)(i - cal.r) + 2.0;
-                double o = (double)rec[i].cycle - (double)rec[cal.r].cycle - 2.0 * (n - 3.0) * d_mod;
-                if (std::fabs(o) > lambda) return false;
+                double o = (double)rec[i].cycle - (double)rec[cal.r + 1].cycle - 2.0 * (n - 3.0) * d_mod;
+                if (!(std::fabs(o) < ell)) return false;
             }
             return true;
         };
@@ -2428,21 +2559,24 @@ int main(int argc, char** argv) {
             return out;
         };
         const double rmod_phase = median_d(phases(rec_of(rmod)));
-        // Attach period: the phase is R-MOD's plus D_mod (mod 2*D_mod), each fetch within lambda.
-        auto phase_ap_ok = [&](const std::vector<FetchRec>& rec) -> bool {
-            for (double ph : phases(rec)) {
-                double d = std::fmod(ph - rmod_phase - d_mod, 2.0 * d_mod);
-                if (d > d_mod) d -= 2.0 * d_mod;
-                if (d <= -d_mod) d += 2.0 * d_mod;
-                if (std::fabs(d) > lambda) return false;
+        // The page names two phases: the requests of normal operation (011->010) and those of attach period
+        // (010->011), one period later. A fetch has R-MOD's phase when it lies nearer to it than to R-MOD's
+        // phase plus D_mod (modulo 2*D_mod); it has the attach-period phase in the opposite case.
+        auto circ = [&](double x) { x = std::fmod(x, 2.0 * d_mod); if (x < 0) x += 2.0 * d_mod; return std::min(x, 2.0 * d_mod - x); };
+        auto phase_is = [&](const std::vector<FetchRec>& rec, bool normal) -> bool {
+            auto ph = phases(rec);
+            if (ph.empty()) return false;
+            for (double p : ph) {
+                const double d0 = circ(p - rmod_phase), d1 = circ(p - rmod_phase - d_mod);
+                if (normal ? !(d0 < d1) : !(d1 < d0)) return false;
             }
             return true;
         };
-        // Both bits: consecutive fetches from the page's F_3 on are D_mod apart, within lambda.
+        // Both bits: consecutive fetches from the page's F_3 on are D_mod apart, to within less than one line.
         auto spacing_both_ok = [&](const std::vector<FetchRec>& rec) -> bool {
             for (size_t i = cal.r + 2; i < rec.size(); ++i) {
                 double gap = (double)rec[i].cycle - (double)rec[i - 1].cycle;
-                if (std::fabs(gap - d_mod) > lambda) return false;
+                if (!(std::fabs(gap - d_mod) < ell)) return false;
             }
             return true;
         };
@@ -2466,16 +2600,19 @@ int main(int argc, char** argv) {
             return std::string(pre.ok() ? "" : pre.unmet(sess)) + ((!pre.ok() && !frame) ? " and " : "") +
                    (frame ? "" : "PC7-CAL and a start-up frame in " + sess);
         };
-        dep_expect(checks, pre_av.ok() && frame_met(av_rec), av.loaded && av.done.has_value() && phase_normal_ok(av_rec),
-            "P10-AV [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- in the calibrated frame F_n - F_2 lies within lambda of "
-            "2(n-3)*D_mod for every n >= 3, 'as they do in normal operation' (011->010)",
+        dep_expect(checks, pre_av.ok() && frame_met(av_rec),
+            av.loaded && av.done.has_value() && rate_normal_ok(av_rec) && phase_is(av_rec, true),
+            "P10-AV [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- in the calibrated frame F_n - F_3 equals "
+            "2(n-3)*D_mod to within less than one line for every n >= 4, and every fetch has R-MOD's phase "
+            "(nearer to it than to the attach-period phase), 'as they do in normal operation' (011->010)",
             p10_unmet(pre_av, "S-AV", frame_met(av_rec)));
         // F58.loop.attach kept only here (the attach-period bracket S-AP
         // alone exercises); napnav's DMA-half is recorded, not
         // re-asserted (it is the same formula PC7 already grades).
-        dep_expect(checks, pre_ap.ok() && frame_met(ap_rec), ap.loaded && ap.done.has_value() && phase_ap_ok(ap_rec),
+        dep_expect(checks, pre_ap.ok() && frame_met(ap_rec), ap.loaded && ap.done.has_value() && phase_is(ap_rec, false),
             "P10-AP [p.164] 5-p164.c34,5-sm.c34,F58.loop.attach: S-AP -- the phase of the fetches (F_n - F_2 mod "
-            "2*D_mod, n >= 3) is R-MOD's plus D_mod, within lambda (010->011)",
+            "2*D_mod, n >= 3) is the attach-period phase, R-MOD's plus D_mod: every fetch lies nearer to it than "
+            "to R-MOD's own (010->011)",
             p10_unmet(pre_ap, "S-AP", frame_met(ap_rec)));
         checks.record("5-p165.c22, 5-sig.napnav: the DMA-request half is graded only through the phases above "
             "(P10-AV, P10-AP, P10-BOTH); no assertion isolates napnav's own contribution beyond them, and the "
@@ -2487,7 +2624,7 @@ int main(int argc, char** argv) {
             "proposition).");
         dep_expect(checks, pre_both.ok() && frame_met(both_rec), both.loaded && both.done.has_value() && spacing_both_ok(both_rec),
             "P10-BOTH [p.164] 5-p164.c35,5-sm.c35: S-BOTH -- the fetches from the page's F_3 on are D_mod apart, "
-            "within lambda (both transitions)",
+            "to within less than one line (both transitions)",
             p10_unmet(pre_both, "S-BOTH", frame_met(both_rec)));
     }
 

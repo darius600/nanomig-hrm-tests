@@ -2,12 +2,11 @@
 ; modulates ch3's period (SQ, target, right). ch0/ch1 are tripwires
 ; (W_P, silent). See SPECIFICATION.md, P6.
 ;
-; SWAP set: the second and third modulator words are exchanged (P6-A's contrast:
-; every value is still a word of the modulator's data set, the order is not).
-; EXTRA set: ch1's own AUDxPER is
-; rewritten from 1600 to 800 halfway through the session, with the
-; ordinary attach write ($8040) unchanged: ch1's fetch spacing leaves
-; 3200 -- clause (d)'s own honest contrast.
+; Each define below changes the program of the session and nothing else:
+; SWAP: the second and third modulator words are exchanged (P6-A's contrast:
+;   every value is still a word of the modulator's data set, the order is not).
+; ADKW: the ADKCON write of step 4 is this word instead of $8040 (P6-C's and P6-D's
+;   contrasts: Table 5-5 makes the added bit route another channel's data to a tripwire).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -39,7 +38,11 @@ desc:
         dc.w    4,4000,0
         dc.l    sq_data
         dc.w    4,200,40
+        ifd     ADKW
+        dc.w    ADKW
+        else
         dc.w    $8040
+        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    110000
@@ -50,11 +53,5 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$00FF,ADKCON(a0)
         lea     desc,a2
-        ifd     EXTRA
-        move.w  #1,d5
-        move.w  #800,d6
-        bsr     run_session_mut_ch_per
-        else
         bsr     run_session
-        endif
         DONE

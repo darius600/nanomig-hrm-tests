@@ -2,8 +2,11 @@
 ; modulates ch2's volume (SQ, target, left). ch0/ch3 are tripwires
 ; (W_V, silent). See SPECIFICATION.md, P6.
 ;
-; SWAP set: the second and third modulator words are exchanged (P6-A's contrast:
-; every value is still a word of the modulator's data set, the order is not).
+; Each define below changes the program of the session and nothing else:
+; SWAP: the second and third modulator words are exchanged (P6-A's contrast:
+;   every value is still a word of the modulator's data set, the order is not).
+; ADKW: the ADKCON write of step 4 is this word instead of $8002 (P6-C's contrast:
+;   Table 5-5 makes the added bit route another channel's data to a tripwire).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -35,7 +38,11 @@ desc:
         dc.w    4,200,40
         dc.l    wv_data3
         dc.w    2,2000,0
+        ifd     ADKW
+        dc.w    ADKW
+        else
         dc.w    $8002
+        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    110000

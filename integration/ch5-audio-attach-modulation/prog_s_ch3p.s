@@ -2,9 +2,9 @@
 ; modulates nothing; all four channels are silent tripwires playing W_P.
 ; See SPECIFICATION.md, P7.
 ;
-; EXTRA set: ch0's own AUDxPER is rewritten from 1400 to 700 halfway
-; through the session, with the ordinary attach write ($8080) unchanged:
-; ch0's fetch spacing leaves 2800 -- the honest contrast for P7P.
+; ADKW: the ADKCON write of step 4 is this word instead of $8080 (the contrast of
+; P7-SPACING: bit 6 is ch2's attach-period bit, which Table 5-5 makes route ch2's
+; words to ch3's period).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -31,7 +31,11 @@ desc:
         dc.w    2,1800,0
         dc.l    wp_data3
         dc.w    2,2000,0
+        ifd     ADKW
+        dc.w    ADKW
+        else
         dc.w    $8080
+        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    60000
@@ -42,11 +46,5 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$00FF,ADKCON(a0)
         lea     desc,a2
-        ifd     EXTRA
-        move.w  #0,d5
-        move.w  #700,d6
-        bsr     run_session_mut_ch_per
-        else
         bsr     run_session
-        endif
         DONE
