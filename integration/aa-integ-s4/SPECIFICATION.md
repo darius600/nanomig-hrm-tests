@@ -14,8 +14,10 @@ no expected value below is taken from it. The quoted lines of p.21 and p.22
 were compared with the page scans and read the same there.
 
 The package has 23 propositions (P1 to P23), and three joint assertions
-(J1 to J3, 2.7) for the claims that name two registers at once. Twenty
-claims give no proposition. They are listed first.
+(J1 to J3, 2.7) for the claims that name two registers at once. Twenty-five
+claims are asserted by no line. They are listed first. P5 is a record of
+measurements and asserts nothing about bit 2; P6, P13 and P15 are graded
+lines that carry no claim id.
 
 ---
 
@@ -31,6 +33,9 @@ claims give no proposition. They are listed first.
 | opus:AA-ddfstrt.t1, sol:AA-ddfstrt.c5, opus:AA-ddfstop.t3, sol:AA-ddfstop.c7 | 21 | Each claim is a row that the table labels "(max)": "Extra wide (max) * 0 0 1 0 1" and "wide (max) 1 1 0 1 1". "(max)" states a limit: no DDFSTRT value starts the fetch earlier than the extra-wide row, and no DDFSTOP value ends it later than the wide row. No proposition grades that limit. Grading it would need values beyond the rows, and for DDFSTRT the manual the page builds on puts the limit elsewhere ("a leftmost limit to DDFSTRT of ($18)", HRM p.80). The claims are declined whole. The two rows' bits (0x0028, 0x00D8) remain configurations of P1-P4, as the rows against which the other rows are placed. |
 | opus:AA-dmacon.b10c | 22 | "(disables /BLS pin, preventing micro from stealing any bus cycles while blitter DMA is running)". /BLS is a pin, not a port of `nanomig.v` (port list), so the clause about the pin cannot be graded at this boundary, and the claim is declined whole. P20 grades BLTPRI under opus:AA-dmacon.b10. |
 | opus:AA-dmacon.c6 | 22 | "This register controls all of the DMA channels, and contains Blitter DMA status bits." The page prints two status bits, BBUSY (bit 14) and BZERO (bit 13). P21 grades BBUSY's status behaviour. BZERO's status behaviour, that the bit follows the blitter's zero result, is only a precondition of P23 ((ii)), and no proposition grades it. The claim is declined whole. |
+| opus:AA-ddf.use-b02 (bit 02 is H3) | 21 | The page names bit 2 H3 and states no condition. The pages that bear on the hires fetch do not give one reading (section 4, item 3). HRM p.91 puts H3 into force in hires and HRM p.60 gives "DDFSTRT = DDFSTOP - (4 * (word count - 2)) for high resolution", while HRM p.195 Figure 6-9 says "Data fetch start can only be specified at even multiples of 8 clocks" and HRM p.197 Figure 6-12 draws the hires fetch in aligned blocks; HRM p.80's "only one word is fetched at this limit" belongs to the `$D8` limit, which the hires configurations of P5 do not use. No exact movement of either fetch edge, and no unchanged opposite edge, follows from every one of these readings. P5 records what the hires configurations show and asserts nothing about bit 2. |
+| opus:AA-ddf.c6, sol:AA-ddf.c3 | 21 | "The vertical Bit Plane DMA timing is identical to the Display windows described above." Identity needs two line sets that are measured independently: the lines on which bit-plane DMA fetches, and the lines of the display window. The window instrument (2.4, RF-V) shows the window only where bit-plane data is fetched (5.5), so its line set is not independent of the fetch, and no page fixes an absolute window line set (the stop line's convention is open, section 4, item 9). No assertion that grades equality of the complete DMA line set and the complete window line set fits, and the claims are declined whole. P6 grades the DMA lines against the registers and carries neither id. |
+| opus:AA-diwhigh.bit-b01, opus:AA-diwhigh.bit-b09 | 22 | Bit 1 is V9 of the start and bit 9 is V9 of the stop. A weight of 0x200 lines puts the start at 0x228 or the stop at 0x310, lines that a PAL field (about 312 lines) never reaches. The only observation is whether the window is present, or stays open to a given line. A missing window does not separate bit 1 from any other mapping that moves the start out of range (V10, a larger position, or another disabling condition), and a window that stays open does not separate bit 9 from any mapping that puts the stop later than the last line graded. No observation at the ports distinguishes an exact weight of 0x200 lines, and variable beam counter mode, which could lengthen the field, has no page-given numbers (opus:AA-ddf.c10 above). The claims are declined whole. P13 and P15 grade the consequence the page predicts and carry neither id. |
 
 None of the package's claims needs a disk surface.
 
@@ -126,7 +131,7 @@ byte addresses:
 | BLT_D | $09C000, 8 KB | blitter destination | blitter writes |
 | SCR | $0A0000, 40 000 bytes | scratch area (P20) | CPU writes |
 | B1 | $0B0000, 32 KB | bit-plane data | bit-plane DMA reads |
-| MARK | $0C0000, at most 2 KB | configuration indices, DMACONR copies, end marker | CPU writes |
+| MARK | $0C0000, at most 2 KB | configuration indices, DMACONR copies, end marker, the loop markers of P20 | CPU writes |
 | SAMP | $0C2000, 16 KB | DMACONR samples (P21-P23) | CPU writes |
 | B2 | $0C8000, 32 KB | bit-plane data | bit-plane DMA reads |
 | B3 | $0D1000, 32 KB | bit-plane data | bit-plane DMA reads |
@@ -214,7 +219,9 @@ was.
 
 **RF-F: fields for propositions without a Copper list (P16-P23).** Field k
 is the interval between the CPU's k-th and (k+1)-th store to MARK in the
-vertical-blank loop of 2.2. Check: consecutive spacings agree to within 1 %.
+vertical-blank loop of 2.2. Check: consecutive spacings are equal, to the
+system clock cycle. The simulation is deterministic, and the page supplies
+no tolerance.
 Contrast for the check: leaving out the "wait until V7-V0 >= 0x30" step puts
 two stores into one vertical blank, and the check fails.
 
@@ -425,7 +432,7 @@ DDFSTRT and DDFSTOP together are carried by J1 (2.7).
 5. **Preconditions.**
    - (i) The RF-M and RF-L checks hold in every configuration.
    - (ii) The set of fetched lines is the same in all seven configurations
-     and has at least 100 lines.
+     and is not empty.
    - (iii) Within every fetched line, consecutive B1 reads are at
      consecutive word addresses, "by 2 bytes (as before)" (p.23), which
      shows that FMODE = 0 is in force.
@@ -547,62 +554,65 @@ sol:AA-ddfstop.c7) are declined (section 1).
    contrasts as in P1.
 7. **Reference frame.** RF-M and RF-L.
 
-### P5. In hires, bit 2 of DDFSTRT and DDFSTOP (H3) moves the fetch edge by 4 memory cycles
+### P5. Hires, bit 2 of DDFSTRT and DDFSTOP (H3): measured, not graded
 
-Claim: opus:AA-ddf.use-b02. Page 21.
+Record: opus:AA-ddf.use-b02 (declined, section 1). Page 21. P5 asserts
+nothing about bit 2. It measures the hires configurations below and prints
+the result as MEASURED lines. The only graded line of this run that is not
+a precondition is P5-ctl.
 
-1. **Proposition.** In hires with FMODE = 0, setting H3 moves the first
-   fetch (for DDFSTRT) or the last fetch (for DDFSTOP) of every fetched line
-   exactly 4 memory cycles later.
-2. **Stimulus.** S-FETCH with four configurations:
+1. **Record.** In hires with FMODE = 0, the first and the last bit-plane
+   fetch of every fetched line are measured for configurations that differ
+   in bit 2 (H3) of DDFSTRT or of DDFSTOP, and the differences are printed.
+2. **Stimulus.** S-FETCH with seven configurations:
    - L0: BPLCON0 = 0x1000 (lores), DDFSTRT = 0x0038, DDFSTOP = 0x00D0.
    - H1: BPLCON0 = 0x9000 (HIRES = 1, one plane), DDFSTRT = 0x0038,
      DDFSTOP = 0x00D4.
    - H2: BPLCON0 = 0x9000, DDFSTRT = 0x003C, DDFSTOP = 0x00D4.
    - H3: BPLCON0 = 0x9000, DDFSTRT = 0x003C, DDFSTOP = 0x00D0.
-3. **Observation.** f_c and l_c as in P1. n_c is the number of B1 reads per
-   fetched line.
-4. **Expected.**
-   - f(H2) - f(H1) = 4 x P (the first read, DDFSTRT half).
-   - l(H2) = l(H1): a DDFSTRT change alone leaves the last read. This is
-     graded as a line of its own (P5-last), because no reading of the pages
-     escapes it: DDFSTOP is the same in H1 and H2, and AA p.21 gives the end
-     of the fetch to DDFSTOP ("DDFSTOP(Right edge of display data fetch)").
-     A configuration that fetches a second hires word in the block at $D8
-     contradicts HRM p.80, "the rightmost limit remains ($D8) and only one
-     word is fetched at this limit".
-   - l(H2) - l(H3) = 4 x P, and f(H2) = f(H3) (the DDFSTOP half).
-
-   The weight 4 is that of H3 (2.4), and it agrees with HRM p.60: "DDFSTRT =
-   DDFSTOP - (4 * (word count - 2)) for high resolution", with the normal
-   hires values $3C and $D4. The proposition is stated
-   for hires only, where the AA page and the HRM agree. The AA page names bit
-   2 H3 without any condition. For the original chips, the manual it builds on
-   says "Bits 7-2 - pixel position H8-H3 (bit H3 only respected in Hires
-   Mode.)" (HRM p.91). No page states an expected value for H3 in lores, so
-   none is graded. The HRM figures put the DDF resolution elsewhere (section 4
-   item 3).
-5. **Preconditions.**
-   - (i)-(v) of P1 for H1, H2 and H3.
+   - C1: BPLCON0 = 0x9000, DDFSTRT = 0x0030, DDFSTOP = 0x00D0.
+   - C2: BPLCON0 = 0x9000, DDFSTRT = 0x0038, DDFSTOP = 0x00D0.
+   - C3: BPLCON0 = 0x9000, DDFSTRT = 0x0038, DDFSTOP = 0x00C8.
+3. **Observation.** f_c, l_c and n_c as in P1, for every configuration.
+4. **Recorded.** The MEASURED line "P5" prints f_c and l_c per
+   configuration and whether f(H2) - f(H1) = 4 x P with l(H2) = l(H1) (the
+   DDFSTRT half), and whether l(H2) - l(H3) = 4 x P with f(H2) = f(H3) (the
+   DDFSTOP half). The MEASURED line "P5-last" prints l(H1) and l(H2). The
+   lines state why nothing is graded: AA p.21 prints bit 2 as H3, HRM p.91
+   says H3 is respected in hires and HRM p.60 gives the hires relation
+   "DDFSTRT = DDFSTOP - (4 * (word count - 2))", while HRM p.195 Figure 6-9
+   says "Data fetch start can only be specified at even multiples of 8
+   clocks" and HRM p.197 Figure 6-12 draws the hires fetch in aligned
+   blocks, so a DDFSTRT change across a block boundary may move the last
+   fetch too; HRM p.80's "only one word is fetched at this limit" is the
+   statement about the `$D8` limit, and H1 and H2 use DDFSTOP = `$D4`. The
+   pages therefore give no exact fetch-edge or word-count oracle for bit 2,
+   and neither measured half is a verdict on the implementation.
+5. **Control, graded.** P5-ctl: with bit 2 clear in both registers, in
+   hires, bit 3 (H4) weighs 8 memory cycles: f(C2) - f(C1) = 8 x P and
+   l(C2) = l(C1) (DDFSTRT 0x0038 against 0x0030), and l(C2) - l(C3) = 8 x P
+   and f(C2) = f(C3) (DDFSTOP 0x00D0 against 0x00C8). This is the weight of
+   H4 from 2.4 applied in hires; the line carries no claim id.
+6. **Preconditions** (they gate P5-ctl).
+   - (i)-(v) of P1, for H1, H2, H3, C1, C2 and C3.
    - (vi) Hires is in force: n in each hires configuration is greater than
      n(L0). The mode doubles the pixels per line, "HIRES=High
      resolution(640*200/640*400interlace) mode" (p.16), so it needs more
      data per line.
-6. **Contrasting case.** H1 against H2, and H3 against H2. An implementation
-   that ignored H3 in hires gives a difference of 0 where 4 x P is
-   predicted. The green control of P5-last is P5-ctl, which runs the same
-   comparison l(a) = l(b) on C2 against C1 (bit 3 of DDFSTRT changed alone). Contrast for (vi): BPLCON0 = 0x1000 in H2 gives n equal to
-   the lores count, and (vi) fails.
-7. **Reference frame.** RF-M and RF-L.
+7. **Contrasting case.** P5-ctl: C1 writes DDFSTRT 0x0038, the value of C2,
+   and the f difference of 8 x P fails. Contrast for (vi): BPLCON0 = 0x1000
+   in the hires configurations gives n equal to the lores count, and (vi)
+   fails.
+8. **Reference frame.** RF-M and RF-L.
 
-### P6. Bit-plane DMA runs on exactly the lines of the display window the registers give
+### P6. Bit-plane DMA runs on the lines of the display window the registers give
 
-Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
+Claims: none asserted. opus:AA-ddf.c6 and sol:AA-ddf.c3 are declined
+(section 1). Page 21.
 
-1. **Proposition.** The set of beam lines on which bit-plane DMA fetches is
-   the set of lines of the display window that DIWSTRT and DIWSTOP give: it
+1. **Proposition.** The set of beam lines on which bit-plane DMA fetches
    starts at the line DIWSTRT bits 15-8 name, and its last line moves with
-   DIWSTOP bits 15-8 as P8 and P9 state for the window.
+   DIWSTOP bits 15-8 as P9 states for the window.
 2. **Stimulus.** S-WIN with list L-A including the marker block (the
    pointer MOVEs load Z). Two configurations:
    - W1: DIWSTRT = 0x4081, DIWSTOP = 0xF0C1.
@@ -615,21 +625,21 @@ Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
 4. **Expected.** Fetch is one contiguous run of lines in W1 and in W2; its
    first line is 0x40 in W1 and 0x50 in W2 (DIWSTRT bits 15-8, as in P8); and
    last(Fetch, W1) - last(Fetch, W2) = 0xF0 - 0xA0 = 0x50 lines (DIWSTOP bits
-   15-8, as in P9, whose rule grades differences only). Source: "The vertical
-   Bit Plane DMA timing is identical to the Display windows described
-   above." (p.21). "Above" refers to DIWSTRT and DIWSTOP, whose description
-   in this document follows on p.21-p.22: the window those two registers
-   give is the window P8 and P9 state. P6 grades the fetched lines against
-   that window as the registers give it, and not against the window
-   instrument: on this design the instrument follows the fetch (it shows no
-   window with BPU = 0, 5.5), so a comparison with it would compare two sets
-   that both come from the fetch.
+   15-8, as in P9, whose rule grades differences only). Context: "The
+   vertical Bit Plane DMA timing is identical to the Display windows
+   described above." (p.21). "Above" refers to DIWSTRT and DIWSTOP, whose
+   description in this document follows on p.21-p.22. P6 grades the fetched
+   lines against the registers and not against the window instrument: on
+   this design the instrument follows the fetch (it shows no window with
+   BPU = 0, 5.5), so a comparison with it would compare two sets that both
+   come from the fetch.
 
-   P6 is not the same assertion as P8 and P9. P8 and P9 grade the display
-   window as the video output shows it against the registers; P6 grades the
-   bit-plane DMA lines against the registers. The ids of P6 stay on P6,
-   because the claim says the DMA lines follow the window the two registers
-   describe, and P6 is the line that grades the DMA lines.
+   What P6 grades is limited. A contiguous run, two exact first lines and
+   the difference of the two last lines do not establish that the DMA line
+   set equals the display window line set: the same constant displacement of
+   both last lines would pass. For that reason P6 carries neither claim id.
+   P8 and P9 grade the display window as the video output shows it; P6
+   grades the bit-plane DMA lines against the registers.
 5. **Preconditions.**
    - (i) The RF-L checks hold.
    - (ii) Fetch is non-empty, and every Z read lies within
@@ -639,11 +649,15 @@ Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
      configurations DIWSTRT bits 15-8 are at least 0x3E, and DIWSTOP bits 15-8
      lie in 0x80-0xF1 (so that V8 = not V7 puts the stop inside the
      observation).
-6. **Contrasting case.** W2 against W1. The page predicts that the first and
-   the last fetched line follow the registers. An implementation that fetched
-   a fixed range of lines, or followed only one of the two registers, would
-   fail the first-line or the last-line difference in one of the two
-   configurations. Contrasts for the preconditions:
+6. **Contrasting case.** The pointer and the observed region stay as they
+   are and a page-defined window position changes: W2 writes
+   DIWSTOP = 0xB0C1 in place of 0xA0C1, while the comparison keeps the
+   0xA0C1 window. DIWSTOP bits 15-8 weigh one line per unit (P9), so the DMA
+   lines of W2 end 0x10 lines later, the last-line difference is 0x40 where
+   the comparison expects 0x50, and P6 fails through the unchanged
+   comparator. An implementation that fetched a fixed range of lines, or
+   followed only one of the two registers, would fail the first-line or the
+   last-line difference in the same way. Contrasts for the preconditions:
    - (ii): BPLCON0 <- 0x0001 (BPU = 000, ECSENA = 1) empties Fetch: "BPUx
      =Bit plane use code 0000-1000 (NONE thru 8 inclusive)" (p.16).
    - (iii): the DMACONR copy stored before the DMACON write, as in P1.
@@ -696,7 +710,8 @@ p.16 and p.23.
      of a configuration.
    - (iv) n(M-B) > n(M-A): the "wide" right edge fetches more than the
      "normal" one.
-   - (v) The set of fetched lines is the same in all three configurations.
+   - (v) The set of fetched lines is the same in all three configurations
+     and is not empty.
 6. **Contrasting case.** M-B (larger fetch window, same modulos) predicts a
    larger pitch. M-C (modulos swapped) predicts swapped pitches. An
    implementation that added the modulo of the wrong plane, or ignored it,
@@ -863,9 +878,10 @@ Claim: opus:AA-diwhigh.bit-b00. Page 22.
    not-written rule for the stop or leaves a zero stop V8 (section 4).
 7. **Reference frame.** RF-V.
 
-### P13. DIWHIGH bit 1 is V9 of the vertical start
+### P13. With DIWHIGH bit 1 set, a start at line 0x228 leaves a PAL field without a window
 
-Claim: opus:AA-diwhigh.bit-b01. Page 22.
+Claims: none asserted. opus:AA-diwhigh.bit-b01 is declined (section 1).
+Page 22.
 
 1. **Proposition.** When DIWHIGH is written last, setting its bit 1 puts
    the vertical start at 0x228, a line a PAL field never reaches, so no
@@ -876,7 +892,11 @@ Claim: opus:AA-diwhigh.bit-b01. Page 22.
 4. **Expected.** Base: Win runs from 0x28 to about 0x12A. Varied: Win is
    empty. Sources as in P12. V9 is the start position's bit of weight
    0x200. The start line 0x228 lies beyond the last line of a PAL field, so
-   the upper-left corner is never reached.
+   the upper-left corner is never reached. This is a graded consequence of
+   the page. It does not establish that bit 1 is V9: a missing window shows
+   only that the effective start is out of range, and a mapping of bit 1 to
+   V10, to a larger position or to another disabling condition would give
+   the same observation. The line therefore carries no claim id.
 5. **Preconditions.** (i)-(ii) of P12. (iii) The base window is non-empty.
 6. **Contrasting case.** The base configuration. An implementation that
    ignored V9 opens the window at 0x28. One that took bit 1 as V8 opens it
@@ -901,32 +921,51 @@ Claim: opus:AA-diwhigh.bit-b08. Page 22.
    bit 8 gives equal last lines. Contrast for (ii) as in P12.
 7. **Reference frame.** RF-V.
 
-### P15. DIWHIGH bit 9 is V9 of the vertical stop
+### P15. With DIWHIGH bits 8 and 9 set, a stop at line 0x310 keeps the window open
 
-Claim: opus:AA-diwhigh.bit-b09. Page 22.
+Claims: none asserted. opus:AA-diwhigh.bit-b09 is declined (section 1).
+Page 22.
 
-1. **Proposition.** When DIWHIGH is written last, setting its bit 9 (with
-   bit 8 set) moves the stop from 0x110 to 0x310, a line a PAL field never
-   reaches, so the window stays open past line 0x110.
-2. **Stimulus.** As P12, with DIWSTRT = 0x2881 and DIWSTOP = 0x10C1. Base
-   DIWHIGH = 0x2100 (stop 0x110); varied DIWHIGH = 0x2300 (stop V9 = V8 = 1:
-   0x310). The varied configuration is the last of its run (2.2).
+1. **Proposition.** When DIWHIGH is written last, with bit 8 set the window
+   closes at the stop the registers give, and with bits 8 and 9 set (stop
+   0x310) the window stays open past line 0x110, to the end of the graded
+   range. With bit 8 set, one step of DIWSTOP bits 15-8 moves the last line
+   by exactly one line.
+2. **Stimulus.** As P12, with DIWSTRT = 0x2881. Three configurations, in this
+   order:
+   - A: DIWSTOP = 0x10C1, DIWHIGH = 0x2100 (stop V8 = 1: stop 0x110).
+   - B: DIWSTOP = 0x11C1, DIWHIGH = 0x2100 (stop 0x111).
+   - V: DIWSTOP = 0x10C1, DIWHIGH = 0x2300 (stop V9 = V8 = 1: 0x310).
+
+   V is the last configuration of its run (2.2).
 3. **Observation.** Win (RF-V), lines 0x26-0x120.
-4. **Expected.** Base: Win is 0x28 through last_b, with last_b between
-   0x10F and 0x110, and lines last_b+1 through 0x120 are not in Win.
-   Varied: every line from 0x28 through 0x120 is in Win. Sources as in P12.
-   Grading stops at line 0x120, clear of the end of the field. The pages do
-   not say where a window whose stop is never reached ends, nor whether the
-   hardwired limits that BEAMCON0's HARDDIS disables ("This bit is used to
-   disable the hardwire vertical and horizontal window limits", p.12) cut
-   it off near the end of the field.
+4. **Expected.**
+   - A: Win starts at line 0x28 and is one contiguous run that ends before
+     line 0x120, with last line l_A; lines l_A + 1 through 0x120 are not in
+     Win.
+   - B: the same shape, with last line l_B = l_A + 1 exactly.
+   - V: every line from 0x28 through 0x120 is in Win.
+
+   Sources as in P12. No absolute last line is graded: the pages do not say
+   whether the line numbered VSTOP is inside the window or the first line
+   outside it (section 4, item 9), so only the difference of the stops is
+   graded. Grading stops at line 0x120, clear of the end of the field. The
+   pages do not say where a window whose stop is never reached ends, nor
+   whether the hardwired limits that BEAMCON0's HARDDIS disables ("This bit
+   is used to disable the hardwire vertical and horizontal window limits",
+   p.12) cut it off near the end of the field. A window that stays open
+   to line 0x120 does not establish that bit 9 is V9: any mapping that puts
+   the stop later than 0x120 gives the same observation. The line therefore
+   carries no claim id.
 5. **Preconditions.**
    - (i)-(ii) of P12.
-   - (iii) Before line 0x28 of the varied configuration's observed field,
-     no line is in Win: the base window had closed.
-6. **Contrasting case.** The base configuration. An implementation that
-   ignored bit 9 closes the window at 0x110. One that took bit 9 as V8 does
-   too, because V8 is already set. Contrast for (ii) as in P12.
+   - (iii) Before line 0x28 of the V configuration's observed field, no line
+     is in Win: the window of the previous configuration had closed. A is
+     non-empty.
+6. **Contrasting case.** The pair A and B shows that the stop moves with
+   DIWSTOP while DIWHIGH is in force. An implementation that ignored bit 9
+   closes the window in V as in A. One that took bit 9 as V8 does too,
+   because V8 is already set. Contrast for (ii) as in P12.
 7. **Reference frame.** RF-V.
 
 ### P16. DMACON bit 8 (BPLEN) enables bit-plane DMA
@@ -1065,15 +1104,17 @@ section 1: /BLS is not a port.) The id stays on P20 for what b10 says:
      access in two memory cycles in between.
    - DMACON <- 0x8640 (SET, BLTPRI, DMAEN, BLTEN) before the blitter
      registers. In the contrast: DMACON <- 0x8240.
-   - Right after the BLTSIZE write the CPU runs this loop, 20 000 times,
-     with a1 = SCR:
+   - The CPU stores 0x5A01 to MARK + 6 immediately before the BLTSIZE write,
+     and right after the BLTSIZE write runs this loop, 20 000 times, with
+     a1 = SCR:
 
          loop: move.w d0,(a1)+
                addq.w #1,d0
                dbra   d1,loop
 
      Every iteration fetches instructions from PROG and writes to SCR.
-   - Then an end marker. No other DMA is on.
+   - After the loop the CPU stores 0x5A02 to MARK + 8. Then an end marker.
+     No other DMA is on.
 3. **Observation.** The blitter's accesses (reads in BLT_S and writes in
    BLT_D after the BLTSIZE write) are taken in time order. I is the open
    interval between the second access and the second-to-last. The test
@@ -1092,11 +1133,12 @@ section 1: /BLS is not a port.) The id stays on P20 for what b10 says:
 5. **Preconditions.**
    - (i) The blit completes: 4096 reads in BLT_S and 4096 writes in BLT_D
      (height x width, p.14).
-   - (ii) The CPU is inside its loop throughout the blit. It makes an access
-     less than 64 memory cycles before the blitter's first access and less
-     than 64 after its last, and SCR writes continue after the blit. A
-     memory cycle here is P system clock cycles, with P as RF-M measures it
-     in P1 on the same system.
+   - (ii) The CPU is inside its loop throughout the blit. Between the store
+     of 0x5A01 to MARK + 6 and the store of 0x5A02 to MARK + 8 the program
+     executes only the BLTSIZE write and the loop, so the CPU has a pending
+     access at every time in between. (ii) holds when the first store lies
+     before the blitter's first access, the second store lies after the
+     blitter's last access, and SCR writes continue after the blit.
    - (iii) No bit-plane, sprite, Copper, disk or audio access occurs between
      the blitter's first and last access.
    - (iv) The stored DMACONR shows bits 10, 9 and 6 as written.
@@ -1111,8 +1153,8 @@ section 1: /BLS is not a port.) The id stays on P20 for what b10 says:
      blit is still bounded by blitter accesses. (DMACON <- 0x8600, without
      BLTEN, would leave I empty.)
    - (ii): in the BLTPRI = 0 configuration, a loop of 10 iterations ends
-     while the blit is still running, no SCR write follows the blit, and (ii)
-     fails. This contrast is run without BLTPRI: with it, the priority under
+     while the blit is still running, the store of 0x5A02 lies before the
+     blitter's last access, no SCR write follows the blit, and (ii) fails. This contrast is run without BLTPRI: with it, the priority under
      test would itself hold the loop back until the blit ends.
 7. **Reference frame.** I, bounded by the blitter's own accesses.
 
@@ -1277,18 +1319,20 @@ section 1: BZERO's status behaviour is only precondition (ii) here.)
    1-0 are unused (HRM p.91). No page says in which mode H2 acts, so no
    proposition grades it.
 3. **H3.** The AA page gives no condition. The HRM says "bit H3 only
-   respected in Hires Mode" (HRM p.91). The package specifies H3 only for
-   hires, where both pages agree. The HRM itself is not consistent on the
-   hires data-fetch resolution. For P5: HRM p.60 ("DDFSTRT = DDFSTOP - (4 *
-   (word count - 2)) for high resolution", normal hires $3C and $D4), HRM p.91
-   (H3 respected in hires) and HRM p.80 ("only one word is fetched at this
-   limit"). Against P5: HRM p.195 Figure 6-9 ("Data fetch start can only be
-   specified at even multiples of 8 clocks. This is the clock position which
-   should be specified for the normal width display. (20 word fetch for 320
-   pixel, 40 word fetch for 640 pixel width)") and p.197 Figure 6-12 (the hires
-   timing cycle T..T+7, every plane fetched twice), which put the hires fetch
-   on a resolution of 8 clocks. P5 follows the AA USE line with HRM p.60 and
-   p.91; a design that followed p.195 would fail P5's first-read clause.
+   respected in Hires Mode" (HRM p.91). The HRM itself is not consistent on
+   the hires data-fetch resolution. For a weight of 4 clocks: HRM p.60
+   ("DDFSTRT = DDFSTOP - (4 * (word count - 2)) for high resolution", normal
+   hires $3C and $D4) and HRM p.91 (H3 respected in hires). Against it: HRM
+   p.195 Figure 6-9 ("Data fetch start can only be specified at even
+   multiples of 8 clocks. This is the clock position which should be
+   specified for the normal width display. (20 word fetch for 320 pixel, 40
+   word fetch for 640 pixel width)") and p.197 Figure 6-12 (the hires timing
+   cycle T..T+7, every plane fetched twice), which put the hires fetch on a
+   resolution of 8 clocks. HRM p.80 ("only one word is fetched at this
+   limit") is the statement about the `$D8` limit and does not apply to a
+   DDFSTOP of `$D4`. The pages admit two readings of the hires fetch edges,
+   so no exact edge movement, and no unchanged opposite edge, is graded for
+   H3 (P5 is a record, and opus:AA-ddf.use-b02 is declined).
 4. **"(max)", the asterisk, and "maxes & mins".**
    - The extra-wide row carries "(max) *", but the page has no footnote for
      that asterisk. The next asterisks on the pages belong to DIWSTRT and
@@ -1385,14 +1429,16 @@ enabled), RUN20 (the blit-time loop of P20) and WBLT, WSAMP (a register write
 immediately followed by a MARK store or by the sampling loop).
 
 MARK words: + 0 the configuration index, + 2 the constant $BEEF (the fixture,
-stored first), + 4 the end marker, + $100 and up the DMACONR copies. The program
+stored first), + 4 the end marker, + 6 and + 8 the loop markers of P20 ($5A01,
+$5A02), + $100 and up the DMACONR copies. The program
 is assembled for the 68000. Z is written with zeros by the CPU (ZERO) before DMA is
 enabled; the planes B1-B4 are written with a counting pattern.
 
 ### 5.2 Labels
 
 The first token of an expect label is the label that NMH_MUTATE selects. A
-proposition is `Pn`, a joint assertion `Jn`, a control `Pn-ctl`. `P5-last` is the line of P5 that grades l(H2) = l(H1) on its own; it carries no claim id. Preconditions:
+proposition is `Pn`, a joint assertion `Jn`, a control `Pn-ctl`. `P5` and
+`P5-last` are MEASURED lines (5.4), not assertions. Preconditions:
 `Pn-fix` (the fixture constant read back at the end of each run), `Pn-i-RFM`,
 `Pn-i-RFL` (the two parts of precondition (i) of the fetch propositions),
 `Pn-i-RFV` (RF-V), `Pn-ii` ... `Pn-vi` (the numbered preconditions of the
@@ -1431,13 +1477,17 @@ A(0x3E) - T0 are the same in every run.
    DMACONR is compared with the bits of the last DMACON write of the command
    list, so that the mutations of the assertions (which change the written
    value) leave the precondition true.
-4. **The mutation of P6.** In both fields the Copper loads BPL1PT with B1
-   after WAIT (0x70,..), so that the lines with a read in Z end at 0x6F in W1 and
-   in W2 (Fetch 040-06F in W1, 050-06F in W2). The last-line difference of the two
-   configurations is then 0 where the registers give 0x50, and P6 fails through the
-   unchanged comparator.
-5. **The mutation of P5 and P5-last**, whose assertions are red, is the control
-   P5-ctl, which runs the same comparators on a live input.
+4. **The mutation of P6.** The pointer and the observed region stay as they
+   are. W2 writes DIWSTOP = 0xB0C1 in place of 0xA0C1, a page-defined window
+   position, while the comparator keeps the 0xA0C1 window. The last-line
+   difference is then 0x40 where the comparison expects 0x50, and P6 fails
+   through the unchanged comparator.
+5. **P5 and P5-last** are MEASURED lines. They have no mutation, because no
+   assertion is graded; the green line of that run is P5-ctl, which has its own
+   record.
+6. **The loop markers of P20.** The program stores $5A01 to MARK + 6 before
+   the BLTSIZE write and $5A02 to MARK + 8 after the loop; P20 (ii) compares
+   their times with the blitter's first and last access.
 
 ### 5.4 Measured values
 
