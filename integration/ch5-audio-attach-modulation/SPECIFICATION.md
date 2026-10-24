@@ -1255,3 +1255,168 @@ restart and do not depend on the last item; P4-A, P4-B, P4-C, P4-JOINT and P5-BO
 line can pass. It is never a mutation record, and no expected value was taken from
 it. `PM_PATCH` and `PM_NAME` build the same targets against another patch file in
 directories of their own.
+
+**Lines without a contrast of their own, and why.** A line graded by the same call as one
+that has a record has none of its own.
+- PC1, PC2 and PC3 are one function each; their records run it on one session.
+  PC4-VOL for R-VOL-2 and R-VOL-3, PC4-DUR for R-PER-2, R-PER-3 and R-RAMP, P6-B for
+  bits 1, 2, 5 and 6, P6-D for bits 0, 1 and 2, and P9-A to P9-D for S-LEN-B are the same
+  calls as the ones that have records. P6-D has no contrast for bits 0, 1 and 2: their
+  data are volume words, which are not valid periods.
+- P7-CONST for bit 7 and P7-SPACING for bit 3 are the same calls as the ones that have
+  records (P7-CONST for bit 3, P7-SPACING for bit 7).
+- P5-POP-AV, P5-POP-AP, P5-POP-BOTH, P1-JOINT, P2-JOINT, P3-JOINT, P4-JOINT, P6-JOINT,
+  P7-JOINT-V, P7-JOINT-P and P8-JOINT-AP are joint lines: each records the contrast of each
+  half it contains.
+- P2-C, P2-JOINT and P3-SP2 replay the 2.7 M tick S-P2 capture with another data set
+  (prog_s_p2_ramp, prog_s_p2_w129); P3-SP2's contrast is a whole word of 129 ticks, the
+  signature of a byte-wise reading of $8190, not a byte-wise reading itself, which no
+  stimulus can make a page-conforming channel perform.
+
+## Measured values
+
+Everything below is printed by `make -k -B test` (the MEASURED lines, the counts) or by
+one `NMH_MUTATE=<value>` run (the records). RTL is the pinned submodule's audio RTL
+(4315acba); PM is the page model (`make pm-test-fx68k`, `make pm-test-tg68k`). Every
+bound is one line (Units), the apparatus resolution (Units), ε (Units), or a reference
+measured in the same run.
+
+**Counts of the ordinary run** (`make -k -B test`; the test exits 1 while a line is red,
+so make exits 2): RTL 177 passed, 37 failed on fx68k and on TG68K, every verdict equal on
+the two cores; PM 214 passed, 0 failed on fx68k and on TG68K. The 37 reds of the RTL are
+P1-A, P1-B, P1-C, P1-JOINT, P2-A, P2-B, P2-JOINT, P3-SILENT, P3-WHOLE, P3-SP2, P3-JOINT,
+P4-A, P4-B, P4-C, P4-JOINT, P5-AV, P5-AP, P5-BOTH, P6-A for bits 0, 1, 2, 4, 5 and 6,
+P6-JOINT, P8-ATT for S-AV, S-AP, S-BOTH, S-DAC3-V and S-DAC3-P, P8-JOINT-AP, P7-JOINT-V,
+P7-JOINT-P, P9-C for S-LEN-A and S-LEN-B, P10-AP and P10-BOTH.
+
+**Verdicts that moved against the previous population gating** (identical on fx68k and
+TG68K): P1-B, P1-C, P2-B, P3-SILENT, P3-WHOLE, P3-SP2, P4-B, P5-AV, P5-AP, P5-BOTH and P9-C
+(both sessions) NOT EVALUATED -> FAIL; P2-C NOT EVALUATED -> PASS (the waveform is graded on
+its own); P5-POP-AV, P5-POP-AP, P5-POP-BOTH NOT EVALUATED -> PASS (they count the
+modulator's fetches); P2-JOINT, P3-JOINT and P6-JOINT are new lines and FAIL.
+
+**Apparatus constants.**
+
+| Constant | RTL/fx68k | RTL/TG68K | PM/fx68k | PM/TG68K |
+|---|---|---|---|---|
+| D_mod (R-MOD, AUD0PER=4000), clk_sys cycles | 32000 | 32000 | 32000 | 32000 |
+| 1 tick = D_mod / 4000, clk_sys cycles | 8 | 8 | 8 | 8 |
+| one line (F_3 − F_2 of R-MOD), clk_sys cycles | 1816 | 1816 | 1816 | 1816 |
+| PC5 measured sides (0=left, 1=right) | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 |
+| L_a (R-VOL-1, channel 1), clk_sys cycles | -77 | -77 | -77 | -77 |
+| PC7-CAL: state 010 entered at M_on+, clk | 2647 | 2271 | 2647 | 2271 |
+| PC7-CAL: nearest record entry / entries, offset, distance | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk |
+| ε = D_1(900), clk_sys cycles | 7200 | 7200 | 7200 | 7200 |
+| S-AV: the window of channel 1 ends before M_off by, clk | 80 | 1528 | 80 | 1528 |
+| P5: applied changes in S-AV / S-AP / S-BOTH | 0 / 0 / 0 | 0 / 0 / 0 | 43 / 22 / 47 | 43 / 22 / 47 |
+| P5: largest deviation of a gap from 2·D_mod (S-AV, volume) / S-AP / from D_mod (S-BOTH), clk | - | - | 0 / 4000 / 4816 | 0 / 4000 / 4816 |
+| P5: offset of an S-AP change from the nearest multiple of D_mod after F_2, clk | - | - | 27 .. 4827 | 27 .. 4827 |
+| P5: C − F_k over the three sessions, clk (measured, not graded) | - | - | 30107 .. 68523 | 30107 .. 68523 |
+
+The audio output of a channel goes idle before M_off when the DMA stop is written (the
+window of S-AV's channel 1 ends that many clk before M_off, inside the sample the stop cuts
+short; the sample differs between the cores).
+
+**Records.** One row per record, line and run; "A -> B" is the line's verdict without and
+with the contrast (a "#n" names the n-th line printed with that id: for P6 the n-th
+S-PAIR session in the order bits 0, 1, 2, 4, 5, 6; for P8-ATT the sessions S-AV, S-AP,
+S-BOTH, S-DAC3-V, S-DAC3-P; for PC1 the S-AV session). A contrast of a precondition ends
+in NOT GRADED or FAIL; a contrast of a window precondition ends in PRECONDITION NOT MET.
+A verdict that stays FAIL on the RTL is a line that is red with and without the contrast.
+
+| Line | NMH_MUTATE | Change | RTL/fx68k | RTL/TG68K | PM/fx68k | PM/TG68K |
+|---|---|---|---|---|---|---|
+| FIXTURE-STORE | FIXTURE-STORE | the program stores $DEAD in place of $BEEF (prog_fixture_mut) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| FIXTURE-ACTIVITY | FIXTURE-ACTIVITY | AUD0EN is left out of the enable, so channel 0 never plays (prog_fixture_noplay) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC1 | PC1 | the step-4 ADKCON write is omitted in S-AV (prog_s_av_noattach); the line keeps expecting the session's $01 mask | PASS -> FAIL #13 | PASS -> FAIL #13 | PASS -> FAIL #13 | PASS -> FAIL #13 |
+| PC2 | PC2 | R-MOD with the enable $8001: AUD0EN without DMAEN (prog_rmod_nodma) replaces the capture of the R-MOD line | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| PC3 | PC3 | R-MOD with AUD0LEN = 7 (prog_rmod_len7) replaces the capture of the R-MOD line, graded with LEN 8 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| PC4-VOL | PC4-VOL | R-VOL-1 writes 40 in the step labelled 60 (prog_rvol1_mut) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| PC4-DUR | PC4-DUR | R-PER-1 writes 500 in the step labelled 700 (prog_rper1_mut) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| PC5-VOL | PC5-VOL | R-VOL-1's capture is graded as R-VOL-3's, so channel 3's output is channel 1's | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC5-PER | PC5-PER | R-VOL-3's capture is graded as R-PER-1's, so channel 1's output is channel 3's | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC6 | PC6 | AUD0PER = 5000 is written halfway through R-MOD (prog_rmod_pc6) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC7-CAL | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC7-FRAME | PC7-FRAME | M_on is written late, after a delay following the DMACON enable (prog_rmod_pc7frame), so a fetch occurs before it | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC7-LOOP | PC7-LOOP | AUD0PER = 3000 is written halfway through R-MOD (prog_rmod_pc7) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| PC7-N3 | PC7-N3 | S-AP's capture is graded through the same comparator | PASS -> PASS | PASS -> PASS | PASS -> FAIL | PASS -> FAIL |
+| P1-WINDOW | P1-WINDOW | channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET |
+| P1-A | P1-WINDOW | channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P1-A | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-JOINT | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-JOINT | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-B | P1-MV33 | the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-A | P1-MV33 | the last modulator word is 33, a volume with no reference level pair (prog_s_av_mv33) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-C | P1-PER1WRITE | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-JOINT | P1-JOINT | ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-A | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-JOINT | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-JOINT | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-B | P2-B | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-C | P2-C | the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-JOINT | P2-C | the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-PRE | P3-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-SILENT | P3-SILENT | every modulator word is 0 (prog_s_av_zero) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-WHOLE | P3-WHOLE | channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-JOINT | P3-WHOLE | channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-SP2 | P3-SP2 | the modulator word 144 is 129 (prog_s_p2_w129) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P3-JOINT | P3-SP2 | the modulator word 144 is 129 (prog_s_p2_w129) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-VOLONLY | P4-VOLONLY | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-JOINT | P4-VOLONLY | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-BOTH-volonly (prog_s_both_volonly_per) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-A | P4-A | the volume words 56 and 8 are exchanged (prog_s_both_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-JOINT | P4-A | the volume words 56 and 8 are exchanged (prog_s_both_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-B | P4-B | the last volume word is 32 instead of 40 (prog_s_both_v32) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-A | P4-B | the last volume word is 32 instead of 40 (prog_s_both_v32) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-C | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P4-A | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-POP-AV | P5-POP-AV | the session lasts 35000 ticks (prog_s_av_short) | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-AV | P5-POP-AV | the session lasts 35000 ticks (prog_s_av_short) | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-POP-AP | P5-POP-AP | the session lasts 25500 ticks (prog_s_ap_short) | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-AP | P5-POP-AP | the session lasts 25500 ticks (prog_s_ap_short) | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-POP-BOTH | P5-POP-BOTH | the session lasts 17500 ticks (prog_s_both_short) | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-BOTH | P5-POP-BOTH | the session lasts 17500 ticks (prog_s_both_short) | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-AV | P5-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-AP | P5-AP | AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-BOTH | P5-BOTH | AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-0 | bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P6-A | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #2 | PASS -> FAIL #2 |
+| P6-JOINT | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-2 | bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #3 | PASS -> FAIL #3 |
+| P6-JOINT | P6-2 | bit 2, the second and third modulator words are exchanged (prog_s_pair2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-4 | bit 4, the second and third modulator words are exchanged (prog_s_pair4_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #4 | PASS -> FAIL #4 |
+| P6-A | P6-5 | bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #5 | PASS -> FAIL #5 |
+| P6-JOINT | P6-5 | bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-A | P6-6 | bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #6 | PASS -> FAIL #6 |
+| P6-JOINT | P6-6 | bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-B | P6-TGT-0 | bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P6-B | P6-TGT-4 | bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol) | PASS -> FAIL #4 | PASS -> FAIL #4 | PASS -> FAIL #4 | PASS -> FAIL #4 |
+| P6-C | P6-0-ATTC | bit 0 with bit 2 added: ch2 routes its words to the volume of ch3, a tripwire ($8005, prog_s_pair0_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P6-C | P6-1-ATTC | bit 1 with bit 2 added: ch2, the target, routes its words to the volume of ch3, a tripwire ($8006, prog_s_pair1_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #2 | PASS -> FAIL #2 |
+| P6-C | P6-2-ATTC | bit 2 with bit 0 added: ch0 routes its words to the volume of ch1, a tripwire ($8005, prog_s_pair2_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #3 | PASS -> FAIL #3 |
+| P6-C | P6-4-ATTC | bit 4 with bit 2 added: ch2 routes its words to the volume of ch3, a tripwire ($8014, prog_s_pair4_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #4 | PASS -> FAIL #4 |
+| P6-C | P6-5-ATTC | bit 5 with bit 2 added: ch2, the target, routes its words to the volume of ch3, a tripwire ($8024, prog_s_pair5_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #5 | PASS -> FAIL #5 |
+| P6-C | P6-6-ATTC | bit 6 with bit 0 added: ch0 routes its words to the volume of ch1, a tripwire ($8041, prog_s_pair6_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #6 | PASS -> FAIL #6 |
+| P6-D | P6-4-ATTD | bit 4 with bit 6 added: ch2 routes its words to the period of ch3, a tripwire ($8050, prog_s_pair4_attd) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #4 | PASS -> FAIL #4 |
+| P6-D | P6-5-ATTD | bit 5 with bit 4 added: ch0 routes its words to the period of ch1, the modulator ($8030, prog_s_pair5_attd) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #5 | PASS -> FAIL #5 |
+| P6-D | P6-6-ATTD | bit 6 with bit 4 added: ch0 routes its words to the period of ch1, a tripwire ($8050, prog_s_pair6_attd) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #6 | PASS -> FAIL #6 |
+| P7-CONST | P7V | S-CH3-V with bit 2 in place of bit 3: ch2 routes its words to the volume of ch3 ($8004, prog_s_ch3v_att) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P7-JOINT-V | P7V | S-CH3-V with bit 2 in place of bit 3: ch2 routes its words to the volume of ch3 ($8004, prog_s_ch3v_att) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-SPACING | P7P | S-CH3-P with bit 6 in place of bit 7: ch2 routes its words to the period of ch3 ($8040, prog_s_ch3p_att) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #2 | PASS -> FAIL #2 |
+| P7-JOINT-P | P7P | S-CH3-P with bit 6 in place of bit 7: ch2 routes its words to the period of ch3 ($8040, prog_s_ch3p_att) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-ATT | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #1; PASS -> FAIL #2; PASS -> FAIL #3; PASS -> FAIL #4; PASS -> FAIL #5 | PASS -> FAIL #1; PASS -> FAIL #2; PASS -> FAIL #3; PASS -> FAIL #4; PASS -> FAIL #5 |
+| P8-JOINT-AP | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-V | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P7-JOINT-P | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P8-PRE | P8-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P8-JOINT-AP | P8-JOINT-AP | the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P9-WINDOW | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 |
+| P9-A | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 |
+| P9-C | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | FAIL -> NOT GRADED #1 | FAIL -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 |
+| P9-A | P9-A | AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with L_m = 5 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P9-B | P9-B | AUD1LEN = 2 in S-LEN-A (prog_s_lena_ch1len2), graded with L_c = 3 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P9-C | P9-C | the third and fourth words of M_LA are exchanged (prog_s_lena_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P9-D | P9-D | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through S-LEN-A (prog_s_lena_per1write) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
+| P10-AV | P10-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-AV | P10-AV-PHASE | S-AP's capture in place of S-AV's: the phase alone | PASS -> PASS | PASS -> PASS | PASS -> FAIL | PASS -> FAIL |
+| P10-AP | P10-AP | S-AV's capture in place of S-AP's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-BOTH | P10-BOTH | S-AV's capture in place of S-BOTH's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
