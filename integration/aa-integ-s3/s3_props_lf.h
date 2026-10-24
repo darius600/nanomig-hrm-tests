@@ -43,12 +43,12 @@ inline LfRun lf_run(uint16_t vtotal, Pre& pre) {
 inline void prop_LF() {
     if (!want("LF")) return;
     Pre pre("LF");
-    const uint16_t vt = mutating("LF-FRAME") ? 0x04FF : 0x05FF;
+    const uint16_t vt = mutating("LF-FRAME") ? 0x05FE : 0x05FF;
     LfRun a = lf_run(vt, pre);
     // the PC-FRAME of LF also asks for whole lines: the field length is a measure only then (2.11)
     if (!a.lines_ok) pre.frame = false;
-    const long want_n = long(vt) + 1;
-    g.note("LF: VTOTAL = 0x" + hexs(vt) + ": the field of F1 lasts " + dec(a.n[1]) + " lines, the field of F2 lasts " + dec(a.n[2]) + " lines (p.29: VTOTAL + 1 = " + dec(want_n) + ")");
+    const long want_n = 1536;  // p.29 for VTOTAL = 0x05FF; fixed, the LF-FRAME mutation changes the stimulus only
+    g.note("LF: VTOTAL = 0x" + hexs(vt) + ": the field of F1 lasts " + dec(a.n[1]) + " lines, the field of F2 lasts " + dec(a.n[2]) + " lines (LF-FRAME expects " + dec(want_n) + ")");
     const bool run_control = !g_mutate || mutating("LF-CONTROL");
     LfRun c;
     if (run_control) {
