@@ -101,7 +101,7 @@ statements, and is incomplete without them:**
 
 - its **Module** row ends *NanoMig's own* and says there is no counterpart in
   MiSTer, naming where upstream does the same work instead;
-- its **Report to** row says *NanoMig only*, because a reader who takes it as a
+- its **Report to** row says `NanoMig direct`, because a reader who takes it as a
   statement about Minimig will be wrong.
 
 Which layer answers for a page is decided by what the page specifies, not by a
