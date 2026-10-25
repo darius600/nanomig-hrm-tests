@@ -41,27 +41,29 @@ names three findings to start with and what each takes.
 ## Run it
 
 ```sh
-git clone --recursive <this repo>
+git clone --recursive https://github.com/darius600/nanomig-hrm-tests.git
 cd nanomig-hrm-tests
 ./run_all.sh
 ```
 
 `./run_all.sh --jobs 8` runs up to eight packages of each tree at a time and
 prints the same lines in the same order. A full run that way took 6990 s (about two hours) on
-a 16-thread machine, most of it the integration packages. One package runs in
+a 16-thread machine, most of it the integration packages. One `hrm/` package runs in
 seconds: `make -C hrm/<package> test` (each finding page's Test row gives its
-command).
+command); one `integration/` package can take a quarter of an hour or more
+(measured: 18 minutes and 12 minutes).
 
 Requires Verilator (last verified with **5.052**), a C++ compiler and `make`.
-On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020,
-with which the `hrm/` and `aa/` suites print the counts below after rerunning
-any single `BUILD` line, as described below. The tests at
+On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020;
+with it a package may report `BUILD`, and rerunning that package alone with
+`make -B -C hrm/<package> test` prints its count. The tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
 with 2.0f; `make CPU=m68k SYNTAX=mot` in the unpacked archive builds it) on the
 PATH. If *every* package reports a build error, the
 toolchain is missing rather than the tree broken; on Windows these usually
-live only inside WSL. A single package that reports a build error is rerun alone
+live only inside WSL. In `integration/` a build error prints as
+`FAIL ... no summary: build error`. A single package that reports a build error is rerun alone
 with `make -B -C hrm/<package> test`.
 
 NanoMig comes in as a submodule, pinned to the commit the tests were verified
@@ -73,7 +75,7 @@ Against another Minimig core,
 name the RTL file on the command line, for example
 `make -B -C hrm/ch5-audio-location-pointer SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test`,
 after looking up the variable in the package's `Makefile` (most use `SRC`,
-`SRC_DIR` or `RTL`). A red against another core is not a finding here.
+`SRC_DIR` or `RTL`; where the `Makefile` lists several files, name them all). A red against another core is not a finding here.
 File:line references printed in PASS and FAIL text are to NanoMig at the pinned
 commit.
 
@@ -89,7 +91,8 @@ commit.
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **35**, each run on both CPU cores: 11 green, 24 carrying a red; 27 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **6533** on fx68k — 6160 pass, **373 fail**; **6597** on TG68K — 6224 pass, **373 fail** |
-| registered findings | **88**, all open — 75 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA); 79 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
+| registered findings | **88**, all open — 75 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA) |
+| what the registered findings rest on | 79 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **13** — ten are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |

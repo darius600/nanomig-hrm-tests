@@ -23,9 +23,6 @@ others ask for no RTL review:
 | 24 | filed against the printed page or the classification: no RTL change follows |
 | 2 | filed against the RTL, but seen in the RTL source and not red at any pin: no test yet, or measured only inside the module |
 
-The marks and this list are derived from each page's header table by
-`hrm-testpipeline/tools/write_rtl_review.py`, which lives in the separate
-`hrm-testpipeline` repository, and are rewritten whenever a header changes.
 Module links point at the NanoMig revision the pages cite, `4315acb`.
 
 ## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v) — 5
@@ -250,3 +247,7 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 |---|---|---|
 | [NM-HRM-037](findings/NM-HRM-037.md) | the right controller port's X potentiometer input does not exist | a test fails against the page |
 | [NM-HRM-038](findings/NM-HRM-038.md) | after POTGO START, the pot counters are not held in reset and the input lines are not dumped | a test fails against the page; the implementations split |
+
+The marks and this list are derived from each page's header table by
+`hrm-testpipeline/tools/write_rtl_review.py`, which lives in the separate
+`hrm-testpipeline` repository, and are rewritten whenever a header changes.

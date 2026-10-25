@@ -14,6 +14,18 @@ Run one package from the repository root, with Verilator and vasm
 make -k -C integration/ch8-light-pen-beam test   # both cores; -k runs the second after a red
 ```
 
+One package builds `nanomig.v` once per CPU core and can take a quarter of an hour
+or more (measured: 18 minutes for `appK-autoconfig`, 12 minutes for
+`aa-integ-s7-rest`).
+
+A package that carries `*.patch` files also has a `<copy>-test` target
+(`<copy>-test-fx68k` and `<copy>-test-tg68k` for one core). It builds and runs the
+package against a private copy of the chip set with that patch applied; the
+submodule is never modified. A finding page whose suggested change has a patch
+names the target in its Test row, for example
+`make -k -C integration/ch8-light-pen-beam latch-test`, which runs NM-HRM-087's
+suggested latch. The package's `Makefile` lists its copies.
+
 Each core writes `out_fx68k.txt` or `out_tg68k.txt` in the package directory,
 in the line format the root [`README.md`](../README.md#where-the-suite-stands)
 describes. `./run_all.sh --jobs 8` runs every package and prints one line per

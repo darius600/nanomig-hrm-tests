@@ -10,14 +10,7 @@ withdrawn findings are kept apart, with their own list, in
 [`withdrawn/`](withdrawn/README.md).
 
 This page is the contract every finding page follows: one header table, five
-body sections, and a few rules about what goes where. `tools/check_findings_shape.py`
-in `hrm-testpipeline` enforces the header, the routing value and what follows it, the five headings and
-the link limit, and reports each page by the row or heading it lacks. It also
-checks that the Module row ends with one of the values below, that the Verdict of the four
-ends with its `Hardware:` clause, that no retired phrase appears, and that a withdrawn
-page's Evidence is a withdrawal evidence. It checks the route against the
-Module value, the form of the Effort row, the claim-id count of the Chapter row and
-the title of a withdrawn page.
+body sections, and a few rules about what goes where.
 
 ## The header of an open page
 
@@ -38,7 +31,7 @@ After the thirteen rows only the optional ones follow.
 | 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell with more than 12 claim ids holds them in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line; at 12 or fewer they stand in the cell |
 | 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, each link text naming its commit (``[NanoMig `4315acb`](…)``), and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not; row 5 then routes `NanoMig direct`), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow, and may say that the cited code declares the behaviour not implemented, with the file:line of that declaration. A bare `fixed` is not a value |
 | 10 | **Test** | every package the page names, each with its exact command, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
-| 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead |
+| 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead. In `hrm/` an assertion id names the deviation observed (`DSKBYT-NOT-CLEARED-ON-READ`), in `aa/` the requirement (`DSKBYT-IS-CLEARED-BY-THE-READ`); in `integration/` it is a short code (`P1`, `LF-FRAME`) |
 | 12 | **Verdict of the four** | what WinUAE, vAmiga, Denise and Copperline do: split, unanimous or no vote, and, last, `Hardware:` and the hardware status |
 | 13 | **Effort** | the size of the RTL change the page asks for, in exactly one of three forms: `S`, `M` or `L`, then ` — ` and what changes; `none — ` and one clause, for example no RTL change; or `none; if <condition>, S|M|L: <what changes>`. `unknown` is not a value of this row |
 
@@ -140,6 +133,7 @@ headings are free.
 - **One witness matrix**, in the order WinUAE, vAmiga, Denise, Copperline, MiSTer, TC64.
   MiSTer and TC64 are marked *descendant* and never counted among the four. A source
   nobody read is written *not read*.
+- **`[n/3]`, *corpus* and *Developer CD reading*.** The *corpus* is this project's verbatim text of the AA specification, one page per file, merged from three readings of the page: Tesseract OCR, the 1993 `AGA.guide` typing and a model reading of the rendered page. `[3/3]` marks a line all three produced, `[1/3]` a line only one produced, with nothing to corroborate it. The *Developer CD reading* is the text of a printed-manual page as the Amiga Developer CD's edition of the manual gives it, as against the scan's text layer.
 - **"Identical" means the cited lines.** A claim about a whole file says *file*.
 - **No method prose on a page.** The oracle statement, the mutation and gate
   explanation, the private-copy narrative, the revision ledger and the second-documents
@@ -314,3 +308,11 @@ are in neither repository.
 ## The list of findings is one file
 
 [`../findings.md`](../findings.md) lists every open finding, once. This page does not repeat it.
+
+`tools/check_findings_shape.py` in `hrm-testpipeline`, a separate repository, enforces the header, the routing value and what follows it, the five headings and
+the link limit, and reports each page by the row or heading it lacks. It also
+checks that the Module row ends with one of the values above, that the Verdict of the four
+ends with its `Hardware:` clause, that no retired phrase appears, and that a withdrawn
+page's Evidence is a withdrawal evidence. It checks the route against the
+Module value, the form of the Effort row, the claim-id count of the Chapter row and
+the title of a withdrawn page.

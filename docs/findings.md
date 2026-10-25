@@ -1,5 +1,27 @@
 # Findings
 
+## If you have one evening
+
+**If you have one evening: 52 of these 75 ask you to decide whether the RTL
+should change.** The other 23 are open too and ask for no RTL change: 20 question
+the printed page, 1 the classification, and 2 are source observations: no test yet, or measured only inside the module. The table below
+is sorted by key, not by how much it wants from you — so the first row is not
+the place to start. Start at one of these, whichever is nearest your own
+interest:
+
+| start here | because | what it takes |
+|---|---|---|
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
+| [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
+| [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
+
+The 29 pages whose Effort row is `S`, a small change, are [NM-AA-006](findings/NM-AA-006.md), [NM-AA-007](findings/NM-AA-007.md), [NM-AA-012](findings/NM-AA-012.md), [NM-HRM-019](findings/NM-HRM-019.md), [NM-HRM-020](findings/NM-HRM-020.md), [NM-HRM-021](findings/NM-HRM-021.md), [NM-HRM-023](findings/NM-HRM-023.md), [NM-HRM-025](findings/NM-HRM-025.md), [NM-HRM-032](findings/NM-HRM-032.md), [NM-HRM-033](findings/NM-HRM-033.md), [NM-HRM-035](findings/NM-HRM-035.md), [NM-HRM-037](findings/NM-HRM-037.md), [NM-HRM-040](findings/NM-HRM-040.md), [NM-HRM-046](findings/NM-HRM-046.md), [NM-HRM-049](findings/NM-HRM-049.md), [NM-HRM-050](findings/NM-HRM-050.md), [NM-HRM-051](findings/NM-HRM-051.md), [NM-HRM-064](findings/NM-HRM-064.md), [NM-HRM-066](findings/NM-HRM-066.md), [NM-HRM-069](findings/NM-HRM-069.md), [NM-HRM-072](findings/NM-HRM-072.md), [NM-HRM-073](findings/NM-HRM-073.md), [NM-HRM-075](findings/NM-HRM-075.md), [NM-HRM-080](findings/NM-HRM-080.md), [NM-HRM-084](findings/NM-HRM-084.md), [NM-HRM-086](findings/NM-HRM-086.md), [NM-HRM-088](findings/NM-HRM-088.md), [NM-HRM-091](findings/NM-HRM-091.md), [NM-HRM-092](findings/NM-HRM-092.md).
+
+**[NM-HRM-002](findings/NM-HRM-002.md) sorts first and asks for no RTL change**:
+the manual assigns the stereo sides twice and the two disagree, and NanoMig,
+three of the four implementations, the 8364R7 silicon and Commodore's A500,
+A2000 and B2000 schematics all side with p. 326 against p. 137.
+
 **52 of the 75 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding lives in [`findings/`](findings/).** Each starts
@@ -21,10 +43,7 @@
 > finding is inherited
 > ([why](findings/README.md#the-two-minimig-lines-are-ancestors-not-witnesses--and-nothing-merges-them-down)).
 >
-> This file stays as the **register**: the table below is what
-> `hrm-testpipeline/tools/list_reds.py` reads — that script lives in the
-> separate `hrm-testpipeline` repository, not this one. The table is readable
-> without it.
+> This file stays as the **register**.
 
 > **Deciding what to do about these:** start at [`rtl-review.md`](rtl-review.md),
 > the findings that ask for an RTL review by module. For six of them, chapter 2's
@@ -128,27 +147,6 @@ never disagree. Eight values occur:
 | `open · page · none` | the same, with no test built against it yet | none |
 | `open · page · green with an inverse control` | **no RTL change**; the printed page is the likely defect, and the assertion that holds NanoMig's reading is green | a test passes; the page's other reading fails |
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested | a test fails against the page |
-
-### If you have one evening
-
-**If you have one evening: 52 of these 75 ask you to decide whether the RTL
-should change.** The other 23 are open too and ask for no RTL change: 20 question
-the printed page, 1 the classification, and 2 are source observations: no test yet, or measured only inside the module. The table below
-is sorted by key, not by how much it wants from you — so the first row is not
-the place to start. Start at one of these, whichever is nearest your own
-interest:
-
-| start here | because | what it takes |
-|---|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
-| [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
-| [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
-
-**[NM-HRM-002](findings/NM-HRM-002.md) sorts first and asks for no RTL change**:
-the manual assigns the stereo sides twice and the two disagree, and NanoMig,
-three of the four implementations, the 8364R7 silicon and Commodore's A500,
-A2000 and B2000 schematics all side with p. 326 against p. 137.
-
 
 | Key | Subject | Status | Package | Verdict of the four |
 |---|---|---|---|---|
@@ -329,3 +327,5 @@ A red test is closed by a decision about the RTL, never by relaxing the
 assertion. If a deviation turns out to be intentional, the assertion stays and
 the reason is written down beside it — a test whose expectation was quietly moved
 to match the implementation stops being evidence about anything.
+
+The table of the register is what `hrm-testpipeline/tools/list_reds.py` reads. That script lives in the separate `hrm-testpipeline` repository, not this one; the table is readable without it.
