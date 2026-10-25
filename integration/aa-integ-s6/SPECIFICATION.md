@@ -616,7 +616,9 @@ Three propositions, one assertion each:
   | B | $CCCC | $3C3C | $03FC | $FFFC | 9 10 11 12 13 14 15 0 |
 
   (Bit order from HRM p.121: odd high-order word = bit 3, odd low-order = bit
-  2, even high-order = bit 1, even low-order = bit 0; DATA = low-order.)
+  2, even high-order = bit 1, even low-order = bit 0; DATA = low-order.) The
+  Copper list has the SHRES marker of 3.6 in the A-S-* runs and no other
+  case-specific part.
 - **Stimulus, width runs AW-01, AW-10, AW-11:** skeleton 3.3 on LORES (BPLCON0
   = $1200), SPRES = 00 (140 ns pixels), BPLCON4 = $0011, FMODE = $0004, $0008,
   $000C (SPAGEM,SPR32 = 01, 10, 11; AA p.23-24). The same four pairs, lines and
