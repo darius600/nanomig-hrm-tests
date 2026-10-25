@@ -1,17 +1,13 @@
 # Specification: AA sprite modes, sprite widths, attachment, sprite colour banks and their reset values (unit aa-s6)
 
-This document specifies one integration test package. It was written from the
-package's claims (`claims-spec-stage.jsonl`) and from the pages of Commodore's
-*Functional Specification for the Advanced Amiga Chip Set (AA)* (cited as
-"AA p.N", N being the corpus page number; the document prints none), with the
-*Amiga Hardware
-Reference Manual*, 3rd edition (cited as "HRM p.N", printed page) read only
-where the AA specification builds on the original chip set. Its author never
-saw the implementation or any test. The oracle for every expected value is the
-AA specification; a Manual page is cited only for behaviour the AA page takes
-over unchanged (the sprite data structure, the colour-register grouping of
-sprite pairs, the attached-sprite colour numbers, standard display-window and
-data-fetch values).
+This document specifies one integration test package. The oracle for every
+expected value is the pages of Commodore's *Functional Specification for the
+Advanced Amiga Chip Set (AA)* (cited as "AA p.N", N being the corpus page
+number; the document prints none); a page of the *Amiga Hardware Reference
+Manual*, 3rd edition (cited as "HRM p.N", printed page) is cited only for
+behaviour the AA page takes over unchanged (the sprite data structure, the
+colour-register grouping of sprite pairs, the attached-sprite colour numbers,
+standard display-window and data-fetch values).
 
 The package has seventeen propositions: P1 to P12, and P2a, P5a, P6a, P6b and
 P6c, each of which grades one cell or one width of P2, P5 or P6 on its own.
@@ -277,7 +273,9 @@ at every vertical blank (AA p.21).
   rows number 8r. Runs without a HIRES screen use the r of the package's HIRES
   runs (M-H-*); C7 confirms it in every LORES run (20 words per line, "DDFSTRT
   = DDFSTOP - (8 * (word count - 1)) for low resolution": 16 beam lines, 16r
-  rows). Beam line m of a band is its rows [m*r, (m+1)*r), counted from the
+  rows). The pages give no word count for SHRES, so C7 takes the words per row
+  from the SHRES calibration rows themselves and requires the row count to
+  follow from it. Beam line m of a band is its rows [m*r, (m+1)*r), counted from the
   band's first row.
 - **Graded frame.** The last complete frame of the run.
 - **u.** The number of samples per 70 ns of display, a harness constant. It is
@@ -321,8 +319,8 @@ CPU reads only its closing loop.
 | C2 | The display is in steady state. | The graded frame and the frame before it are identical in every calibration row and every band row. | CP-2: case M-S-01 where, after step 6's write and in place of the branch to itself, the program polls INTREQR ($01E) bit 5 (VERTB), clears it via INTREQ ($09C) = $0020, and toggles COLOR00 between colour(0) and colour(2) in every vertical blank. |
 | C3 | The display resolution is the case's, and the colour path is direct. | The calibration rows contain only colour(0) and colour(1) between the first and last colour(1) sample, alternating in runs of 4u (LORES), 2u (HIRES) or u (SHRES), ignoring the first and last run of each row. | CP-3: case M-S-01 with BPLCON0 = $9200 (HIRES) instead of $1240: runs of 2u where C3 expects u. |
 | C4 | Sprite DMA used the prepared structures. | For every sprite structure of the case, the trace of the graded frame holds a read at the address of its first word. | CP-4: case M-S-01 with DMACON = $8380 (SPREN missing): no such reads. |
-| C5 | No sprite is clipped by the display window. | Sample indices compare across rows (C7). In the calibration rows, the first colour(1) sample lies left of the leftmost sprite segment's L, and the last colour(1) sample lies at or right of the rightmost segment's L plus its expected length (from the proposition). | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, inside the sprites that start at $A0): the calibration pattern starts right of the sprites' L. |
-| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
+| C5 | No sprite is clipped by the display window. | Sample indices compare across rows (C7). The window is observed in the calibration rows: W_L is the index of their first colour(1) sample and W_R the smallest index of their last colour(1) sample. The window's left edge is DIWSTRT's horizontal value and a sprite's left edge is its HSTART, in the same units (HRM p.59, HRM p.99-100: a sprite's X value is counted from the window's left edge, $81); one LORES pixel of 140 ns is 2u samples (3.7). For every one of the eight sprites of the case, whether or not it shows in the output, the programmed left edge W_L + (HSTART - DIWSTRT_H)*2u lies at or right of W_L, and the programmed right edge, that plus the expected length (from the proposition), lies at or left of W_R. The sprites in the output are not read. | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, to the right of the sprites' HSTART $A0): the programmed left edge lies left of W_L. |
+| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. SHRES runs: every calibration row holds the same number n of runs between its first and last colour(1) sample, and n + 1 (those runs and the colour(0) pair that follows the last of them) is eight times a whole number w, since each word $CCCC gives eight runs of two SHRES pixels; a row then shows w words, the 320 words of the 640 bytes of 3.4 fill 320/w beam lines, and the calibration rows number (320/w)*r, with the r of the HIRES runs. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7a-S: case M-S-01 with 1280 bytes of $CCCC: twice the rows where C7 expects (320/w)*r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
 
 The CP cases need only to be run once each, on the case named.
 
@@ -632,7 +630,8 @@ Three propositions, one assertion each:
   own, with all four pairs; the cell A-S-00 is the one the parenthesis says was
   formerly impossible.
 - **Preconditions:** C1-C5, C7 (in the width runs C5 with the expected length
-  64u for AW-01 and AW-10, 128u for AW-11); 4 bands present.
+  64u for AW-01 and AW-10, 128u for AW-11). A missing pair is a failure of the
+  proposition, not of a precondition: the comparator requires four bands.
 - **Contrasting case:** runs AX-S-00 and AX-L-11: the same as A-S-00 and A-L-11
   with ATT = 0. The sprites are then unattached; each pixel shows the lower
   numbered sprite if its 2-bit value is non-zero (HRM p.118: lowest number has
@@ -687,9 +686,11 @@ Three propositions, one assertion each:
     b;
   - quantifier "any bank": all 16 banks for the even field, all 16 for the odd
     field, all 16 for attached pairs, in all rows of every band.
-- **Preconditions:** C1-C5, C7; exactly 16 bands; 8 (B-N) or 4 (B-A) segments in
-  every graded row; and **C6**: the trace of the graded frame holds the Copper
-  fetches of all sixteen MOVE instructions of the list, in list order.
+- **Preconditions:** C1-C5, C7, and **C6**: the trace of the graded frame holds
+  the Copper fetches of all sixteen MOVE instructions of the list, in list
+  order. Sixteen bands, and 8 (B-N) or 4 (B-A) segments in every graded row, are
+  part of the proposition: a missing band or segment is a failure of P8, not of
+  a precondition.
 - **Contrasting case:** BX-N and BX-A: as B-N and B-A with band 5's MOVE data
   replaced by band 4's value ($004B). The page predicts band 5 in bank 4 / 11
   instead of 5 / 10, so P8 fails on band 5 and passes on the others; C6 still
@@ -728,17 +729,23 @@ Three propositions, one assertion each:
     RP-1: a prologue at PROGRAM_ORG, executed first, that enables Copper DMA
     on a one-instruction list at $088100 (3.9) and then jumps to the entry,
     placed after it: the first instruction fetch is no longer at the entry,
-    and reads of that list precede it; R1 fails.
+    and reads of that list precede it; R1 fails, and so does R2, because the
+    Copper has read a list other than the case's.
   - **R2** Nothing wrote BPLCON4: the program has no write to $DFF10C (its
     listing); the Copper list has no MOVE whose first word is $010C (its words
-    in memory at the end of the run); and the program writes COP1LC only with
-    the list's address and never writes COP2LCH, COP2LCL ($084, $086) or
-    COPJMP2 ($08A) (its listing), so the Copper runs no other list (AA p.21:
-    COP1LC "is automatically used at the beginning of each vertical blank
-    time"). Contrast RP-2: add `MOVE $010C,$0011` to the list: R2 fails
-    although the value written equals the default, which shows R2 checks the
-    write, not the outcome.
-  - 8 segments in every row of the band.
+    in memory at the end of the run); and the Copper runs no list other than
+    the case's (AA p.21: COP1LC "is automatically used at the beginning of each
+    vertical blank time"). The register writes are not visible at the ports of
+    `nanomig.v`; the lists the Copper runs are, as its reads in the RAM-port
+    log. R2 therefore grades both the register list the program carries out
+    (COP1LCH and COP1LCL written only with the list's address, COP2LCH, COP2LCL
+    ($084, $086) and COPJMP2 ($08A) never written) and the log of the whole
+    run: no read at an address of the Copper area ($088000-$0881FF) beyond the
+    words of the case's own list. Contrast RP-2: add `MOVE $010C,$0011` to the
+    list: R2 fails although the value written equals the default, which shows
+    R2 checks the write, not the outcome.
+  The proposition itself requires one band and 8 segments in every row of it; a
+  missing band or segment is a failure of P9, not of a precondition.
 - **Contrasting case:** RX-E, case R with BPLCON4 = $0001 written in step 3
   (ESPRM = 0000, OSPRM = 0001): the even sprites' indices become (k>>1)*4 + v,
   bit 4 = 0, and P9 must fail; the odd sprites are unchanged, so P10 still
@@ -757,7 +764,8 @@ Three propositions, one assertion each:
   every odd sprite (bit 4 is OSPRM4, AA p.18). Full index per AA p.16: 16 +
   (k>>1)*4 + v; bits 7-5 recorded separately as in P9. Graded separately from
   P9, because each field can be wrong alone.
-- **Preconditions:** as P9 (C1-C5, C7, R1, R2, 8 segments).
+- **Preconditions:** as P9 (C1-C5, C7, R1, R2). The band and its 8 segments per
+  row are graded by the proposition, as in P9.
 - **Contrasting case:** RX-O, case R with BPLCON4 = $0010 (ESPRM = 0001, OSPRM
   = 0000): the odd sprites' bit 4 becomes 0 and P10 must fail; P9 still passes
   in RX-O. R2 reads in RX-O as in RX-E (P9), and every other precondition
@@ -868,9 +876,9 @@ frame was captured), `C1-<g>`, `C2-<g>`, `C3-<g>`, `C4-<g>`, `C5-<g>`,
 twelve A runs and AW-01, AW-10, AW-11), B (B-N, B-A) and R (R). Each line is
 PASS when the check holds in every run of the group that the process ran; a
 FAIL line is followed by a MEASURED line naming the runs. The other
-preconditions: `BANDS-A` (four bands, P7), `BANDS-B` (sixteen bands and 8 or 4
-segments in every graded row, P8), `C6-B`, `SEGS-R` (one band and 8 segments in
-every row, P9 and P10), `R1-R`, `R2-R`. A proposition is graded when every run
+preconditions: `C6-B`, `R1-R`, `R2-R`. The bands and segments of P7 to P10 are
+graded by the comparators of the propositions and have no precondition line.
+A proposition is graded when every run
 it uses holds all common preconditions and its own; otherwise its line is a
 `RECORDED: NOT GRADED` line, never PASS or FAIL. The comparator of a
 proposition reports its first deviation per run in a MEASURED line.
@@ -896,9 +904,10 @@ M-H-00 run; the normal run ignores it.
    colour of the second run of an alternating row, equal in all odd runs and
    different from c3.
 4. **Band rows.** A band must have exactly the row count of its table (6r in
-   4.1 and 5, 8r in P7, 7r in P8, 8r in case R), and the number of bands must
-   be the one the proposition names; a band with another count, or a missing
-   band, is a failure of the proposition.
+   4.1 and 5, 8r in P7, 7r in P8, 8r in case R), the number of bands must
+   be the one the proposition names, and the segments of a row those of the
+   table (4 or 8 in P8, 8 in case R); a band with another count, a missing
+   band or a missing segment is a failure of the proposition.
 5. **P6.** The measured width of a case is the length of the solid-row
    segment divided by 2u; the assertion also asks that the four widths are
    16, 32, 32 and 64 and so the set {16, 32, 64}.
@@ -914,11 +923,12 @@ M-H-00 run; the normal run ignores it.
 8. **R1.** While the CPU is held in reset the RAM port reads word address 0;
    the check starts at the first read of a reset vector and takes the first
    Chip memory read after the vector reads. **R2** is evaluated on the
-   register list and on the Copper list as the run ended. R2 reads the
-   register list because it is the only path by which prog_main.s writes a
-   custom register. The prologue of RP-1
-   (prog_pro.s) writes COP1LC in code, and R2 is not graded there: the R1-R
-   contrast prints R2-R PASS.
+   register list, on the Copper list as the run ended, and on the RAM-port log
+   of the whole run (the Copper area $088000-$0881FF read only within the
+   words of the case's own list). The register list is the only path by which
+   prog_main.s writes a custom register; the prologue of RP-1 (prog_pro.s)
+   writes COP1LC in code, and the Copper then reads its list, which the log
+   shows: the R1-R contrast prints R2-R FAIL.
 9. **C5.** The expected length of a sprite is the page's: pixels times
    nanoseconds per pixel of the proposition's cell; for the W runs it is the
    widest sprite, 64 pixels of 140 ns.
@@ -929,17 +939,15 @@ M-H-00 run; the normal run ignores it.
     in a run that is not HIRES and $1200 (LORES) in a HIRES run. CP-7a places
     1280 bytes (32 lines) of $CCCC where the first sprite starts at line $50; the
     first band of B-N starts at line $41, so there it places 800 bytes (20
-    lines), which end above the band. The contrasts of `BANDS-A`, `BANDS-B` and
+    lines), which end above the band. CP-7a-S places 1280 bytes where the
+    SHRES run M-S-01 is graded. The contrasts of `BANDS-A`, `BANDS-B` and
     `SEGS-R` remove the sprites 6 and 7 (A), 7 (B) and 7 (R) from the structures:
-    their lines hold no data. The contrast of `C6-B` ends the Copper list with its
-    end-of-list WAIT after band 9's MOVE. CP-3, CP-4 and CP-5 also move a
-    neighbouring precondition in some groups, in the groups other than the case
-    the specification names (M-S-01 for CP-3, M-L-00 for CP-5) and, for CP-4,
-    in every group: CP-3 moves C7 in W, B and R; CP-4 moves C5 in M, W, A, B
-    and R, and BANDS in A and B or SEGS in R; CP-5 moves BANDS in A and B or
-    SEGS in R. The records of these selectors list the lines under "Also
-    printing FAIL"; the line under test fails through its own clause in each of
-    them.
+    their lines hold no data, every precondition stays met, and the comparator of
+    P7, of P8, and of P9 and P10 prints FAIL. The contrast of `C6-B` ends the
+    Copper list with its end-of-list WAIT after band 9's MOVE. A contrast of a
+    common precondition may move a neighbouring precondition too; the records of
+    the selectors list the lines under "Also printing FAIL", and the line under
+    test fails through its own clause in each of them.
 11. **C6.** The addresses of the sixteen MOVE instructions are those of the
     case's own list (the first band's WAIT is $4007,$FFFE; band b's MOVE lies
     4b + 2 words after it); the check reads the fetches of the graded frame, in
