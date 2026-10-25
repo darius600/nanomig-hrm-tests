@@ -1338,9 +1338,8 @@ one `NMH_MUTATE=<value>` run (the records). RTL is the pinned submodule's audio 
 bound is one line (Units), the apparatus resolution (Units), ε (Units), or a reference
 measured in the same run.
 
-**Counts of the ordinary run** (`wsl.exe bash -l -c '... make -k -B test'` returns status 1
-while a line is red): RTL 177 passed, 37 failed on fx68k and on TG68K, every verdict equal on
-the two cores; PM 214 passed, 0 failed on fx68k and on TG68K. The 37 reds of the RTL are
+**Counts of the ordinary run** (`make -k -B test`): RTL 174 passed, 37 failed on fx68k and on TG68K, every verdict equal on
+the two cores; PM 211 passed, 0 failed on fx68k and on TG68K. The 37 reds of the RTL are
 P1-A, P1-B, P1-C, P1-JOINT, P2-A, P2-B, P2-JOINT, P3-SILENT, P3-WHOLE, P3-SP2, P3-JOINT,
 P4-A, P4-B, P4-C, P4-JOINT, P5-AV, P5-AP, P5-BOTH, P6-A for bits 0, 1, 2, 4, 5 and 6,
 P6-JOINT, P8-ATT for S-AV, S-AP, S-BOTH, S-DAC3-V and S-DAC3-P, P8-JOINT-AP, P7-JOINT-V,
@@ -1361,8 +1360,9 @@ P7-JOINT-P, P9-C for S-LEN-A and S-LEN-B, P10-AP and P10-BOTH.
 | S-AV: the window of channel 1 ends before M_off by, clk | 80 | 1528 | 80 | 1528 |
 | P5: applied changes in S-AV / S-AP / S-BOTH | 0 / 0 / 0 | 0 / 0 / 0 | 43 / 22 / 47 | 43 / 22 / 47 |
 | P5: largest deviation of a gap from 2·D_mod (S-AV, volume) / S-AP / from D_mod (S-BOTH), clk | - | - | 0 / 4000 / 4816 | 0 / 4000 / 4816 |
-| P5: offset of an S-AP change from the nearest multiple of D_mod after F_2, clk | - | - | 27 .. 4827 | 27 .. 4827 |
+| P5: largest distance of a change from the time-out grid: S-AV volume (even) / S-AP period (odd) / S-BOTH volume, period, clk | - | - | 0 / 4816 / 0, 4816 | 0 / 4816 / 0, 4816 |
 | P5: C − F_k over the three sessions, clk (measured, not graded) | - | - | 30107 .. 68523 | 30107 .. 68523 |
+| P10: largest circular distance of a fetch from its phase grid: S-AV / S-AP / S-BOTH, clk | 888 / 31992 / 888 | 888 / 31992 / 888 | 888 / 904 / 904 | 888 / 904 / 904 |
 
 The audio output of a channel goes idle before M_off when the DMA stop is written (the
 window of S-AV's channel 1 ends that many clk before M_off, inside the sample the stop cuts
@@ -1394,15 +1394,20 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P1-WINDOW | P1-WINDOW | channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET | PASS -> PRECONDITION NOT MET |
 | P1-A | P1-WINDOW | channel 1's DMA is stopped after one eighth of the session (prog_s_av_stop): channel 1's output ends before channel 0 restarts | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P1-A | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-A | P1-VOL1WRITE | channel 1's own AUDxVOL is rewritten from 40 to 24 halfway through (prog_s_av_vol1write): 24 has a reference level pair and is no word of M_V | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P1-JOINT | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-JOINT | P1-A | the second and third modulator words are exchanged (prog_s_av_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P1-C | P1-PER1WRITE | channel 1's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_av_per1write) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P1-JOINT | P1-JOINT | ch3 also plays, audibly, on the output channel 0 is observed on (prog_s_av_ch3): the source half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-JOINT | P1-VOL1WRITE | channel 1's own AUDxVOL is rewritten from 40 to 24 halfway through (prog_s_av_vol1write): 24 has a reference level pair and is no word of M_V | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-A | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-A | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-JOINT | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-JOINT | P2-A | the eighth and ninth modulator words are exchanged (prog_s_p2_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-C | P2-C | the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp) | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-JOINT | P2-C | the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-JOINT | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-B | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-PRE | P3-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-SILENT | P3-SILENT | every modulator word is 0 (prog_s_av_zero) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-WHOLE | P3-WHOLE | channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
@@ -1418,7 +1423,14 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P4-C | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-A | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-AV | P5-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-AV | P5-AV-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_av_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-AV | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P5-AP | P5-AP | AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-AP | P5-AP-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_ap_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-AP | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
+| P5-BOTH | P5-BOTH | AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-BOTH | P5-BOTH-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_both_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-BOTH | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P6-A | P6-0 | bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #1 | PASS -> FAIL #1 |
 | P6-A | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #2 | PASS -> FAIL #2 |
 | P6-JOINT | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
@@ -1429,6 +1441,8 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P6-JOINT | P6-5 | bit 5, the second and third modulator words are exchanged (prog_s_pair5_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-A | P6-6 | bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #6 | PASS -> FAIL #6 |
 | P6-JOINT | P6-6 | bit 6, the second and third modulator words are exchanged (prog_s_pair6_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-JOINT | P1-VOL1WRITE | channel 1's own AUDxVOL is rewritten from 40 to 24 halfway through (prog_s_av_vol1write): 24 has a reference level pair and is no word of M_V | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P6-JOINT | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P6-B | P6-TGT-0 | bit 0: the target's own AUDxPER is rewritten from 200 to 300 halfway through (prog_s_pair0_tgtper) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
 | P6-B | P6-TGT-4 | bit 4: the target's own AUDxVOL is rewritten from 40 to 20 halfway through (prog_s_pair4_tgtvol) | PASS -> FAIL #4 | PASS -> FAIL #4 | PASS -> FAIL #4 | PASS -> FAIL #4 |
 | P6-C | P6-0-ATTC | bit 0 with bit 2 added: ch2 routes its words to the volume of ch3, a tripwire ($8005, prog_s_pair0_attc) | PASS -> PASS | PASS -> PASS | PASS -> FAIL #1 | PASS -> FAIL #1 |
@@ -1450,7 +1464,7 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P7-JOINT-P | P8-OMIT | the attach write is omitted: the matching unattached session takes the attached one's place | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P8-PRE | P8-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
 | P8-JOINT-AP | P8-JOINT-AP | the second and third words of M_P4 are exchanged in S-AP (prog_s_ap_swap): the destination half | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P9-WINDOW | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 | PASS -> PRECONDITION NOT MET #2 |
+| P9-WINDOW | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | PASS -> PRECONDITION NOT MET #1 | PASS -> PRECONDITION NOT MET #1 | PASS -> PRECONDITION NOT MET #1 | PASS -> PRECONDITION NOT MET #1 |
 | P9-A | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 |
 | P9-C | P9-WINDOW | AUD1LEN = 1000 in S-LEN-A (prog_s_lena_ch1len1000): channel 1 does not restart | FAIL -> NOT GRADED #1 | FAIL -> NOT GRADED #1 | PASS -> NOT GRADED #1 | PASS -> NOT GRADED #1 |
 | P9-A | P9-A | AUD0LEN = 10 over a table that holds M_LA twice, 260000 ticks (prog_s_lena_len10), graded with L_m = 5 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 | PASS -> FAIL #1 |
@@ -1460,4 +1474,8 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P10-AV | P10-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P10-AV | P10-AV-PHASE | S-AP's capture in place of S-AV's: the phase alone | PASS -> PASS | PASS -> PASS | PASS -> FAIL | PASS -> FAIL |
 | P10-AP | P10-AP | S-AV's capture in place of S-AP's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-AP | P10-AP-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_ap_shift): the requests lie 1000 ticks off the grid of R-MOD, 2*D_mod apart | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-AP | P10-AP-RATE | AUD0PER rewritten to 12000 about 1000 ticks after M_on and to 4000 about 4500 ticks later (prog_s_ap_pulse): one half-loop lasts 12000 ticks, the later requests come 2*D_mod late | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P10-BOTH | P10-BOTH | S-AV's capture in place of S-BOTH's | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P10-BOTH | P10-BOTH-GRID | AUD0PER = 4050 (prog_s_both_per4050), graded with R-MOD's D_mod: the requests are 4050 ticks apart and drift off the grid of R-MOD | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P1-B | P1-VOL1WRITE | channel 1's own AUDxVOL is rewritten from 40 to 24 halfway through (prog_s_av_vol1write): 24 has a reference level pair and is no word of M_V | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
