@@ -5,8 +5,13 @@
 ; NOATTACH: the ADKCON $8001 write is omitted (PC1's contrast: the stored mask is $00).
 ; PER6000: AUD0PER=6000 instead of 4000 (P5's and P10's contrast: the page-predicted
 ;   spacing becomes wrong against the check's own D_mod from R-MOD).
-; MV33: the last modulator word is 33 instead of 21, a volume with no reference
-;   level pair (P1-B's contrast).
+; VOL1WRITE: ch1's own AUDxVOL is rewritten from 40 to 24 halfway through the
+;   session (P1-B's contrast: 24 has a reference level pair in R-VOL-1 and is not a
+;   word of M_V).
+; SHIFT: AUD0PER=5000 at the start, rewritten to 4000 about 1000 ticks after M_on
+;   (the contrast of the time-out grid lines of P5 and P10: the first time-out comes
+;   5000 ticks after state 010 was entered, every later one 4000 ticks after the one
+;   before, so the time-outs lie 1000 ticks off the grid of R-MOD).
 ; PER1WRITE: ch1's own AUDxPER is rewritten from 200 to 300 halfway through the
 ;   session (P1-C's contrast).
 ; SWAP: the second and third modulator words are exchanged (P1-A's contrast: every
@@ -18,16 +23,12 @@
 ; ZERO: every modulator word is 0 (P3-SILENT's contrast).
 ; CH1BYTES: ch1 plays the first four words of M_V as its own data (P3-WHOLE's
 ;   contrast: its words reach the output as two bytes each).
-; SHORT: the session lasts 35000 ticks (P5-POP-AV's contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
 
         org     CH0_DATA
 mv_data:
-        ifd     MV33
-        dc.w    $0020,$0001,$0002,$0004,$0008,$0010,$003F,$0021
-        else
         ifd     SWAP
         dc.w    $0020,$0002,$0001,$0004,$0008,$0010,$003F,$0015
         else
@@ -35,7 +36,6 @@ mv_data:
         dc.w    $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000
         else
         dc.w    $0020,$0001,$0002,$0004,$0008,$0010,$003F,$0015
-        endif
         endif
         endif
         org     CH1_DATA
@@ -59,7 +59,11 @@ desc:
         ifd     PER6000
         dc.w    8,6000,63
         else
+        ifd     SHIFT
+        dc.w    8,5000,63
+        else
         dc.w    8,4000,63
+        endif
         endif
         dc.l    sq_data
         dc.w    4,200,40
@@ -84,11 +88,7 @@ desc:
         dc.w    $8203
         dc.w    $0003
         endif
-        ifd     SHORT
-        dc.l    35000
-        else
         dc.l    200000
-        endif
 
 start:
         lea     CUSTOM,a0
@@ -101,6 +101,15 @@ start:
         move.w  #300,d6
         bsr     run_session_mut_ch_per
         else
+        ifd     VOL1WRITE
+        move.w  #1,d5
+        move.w  #24,d6
+        bsr     run_session_mut_ch_vol
+        else
+        ifd     SHIFT
+        move.w  #4000,d6
+        bsr     run_session_shift
+        else
         ifd     STOP
         move.w  #$0002,d6
         bsr     run_session_stop_ch
@@ -108,7 +117,13 @@ start:
         bsr     run_session
         endif
         endif
+        endif
+        endif
         DONE
+
+        ifd     SHIFT
+        include "ch5_shift.i"
+        endif
 
         ifd     STOP
 ; Like run_session, but after one eighth of the step-7 duration the DMACON bits in

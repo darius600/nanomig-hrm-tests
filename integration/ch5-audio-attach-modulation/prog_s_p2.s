@@ -4,7 +4,11 @@
 ;
 ; Each define below changes the program of the session and nothing else:
 ; SWAP: the eighth and ninth modulator words (464 and 272) are exchanged (the
-;   contrast of P2-A and P2-B: every value is still a word of M_P, the order is not).
+;   contrast of P2-A: every value is still a word of M_P, the order is not).
+; PER1WRITE: ch1's own AUDxPER is rewritten to 700 halfway through the session (the
+;   contrast of P2-B: 700 is R-RAMP's own settle period and is not a word of M_P, so the
+;   run it starts lasts the duration of 700, not of the word the data set holds at that
+;   position).
 ; RAMPSWAP: the second and third words of ch1's own data (RAMP) are exchanged (the
 ;   contrast of P2-C: the periods are those of M_P, the waveform order is not RAMP's).
 ; W129: the modulator word 144 ($0090) is 129 ($0081), a whole-word period equal to the
@@ -52,7 +56,7 @@ desc:
         dc.w    $8010
         dc.w    $8203
         dc.w    $0003
-        dc.l    2600000
+        dc.l    2700000
 
 start:
         lea     CUSTOM,a0
@@ -60,5 +64,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$00FF,ADKCON(a0)
         lea     desc,a2
+        ifd     PER1WRITE
+        move.w  #1,d5
+        move.w  #700,d6
+        bsr     run_session_mut_ch_per
+        else
         bsr     run_session
+        endif
         DONE

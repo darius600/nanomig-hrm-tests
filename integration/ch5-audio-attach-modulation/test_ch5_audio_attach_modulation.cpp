@@ -1215,8 +1215,9 @@ int main(int argc, char** argv) {
 
     // The applied periods of S-P2's channel 1 in its window: runs of equal durations, each matched to the
     // reference duration of a word (R-RAMP), -1 for a run no word explains. The first run shows the period in
-    // force at the window's edge, applied before the window opened; the changes are the runs after it, and a window without one has an empty
-    // population of changes (P2-B, P2-C and P3-SP2 print "not evaluated").
+    // force at the window's edge, applied before the window opened; the changes are the runs after it. A window
+    // without one has an empty population of applied changes: P2-B and P3-SP2 print FAIL for it (an applied-event
+    // population), and P2-C grades the waveform on the window's complete runs, which exist whatever channel 1 receives.
     struct P2Runs { P2Win w; std::vector<int> periods; std::vector<double> means; size_t changes() const { return periods.size() > 1 ? periods.size() - 1 : 0; }
         std::vector<int> applied() const { return periods.size() > 1 ? std::vector<int>(periods.begin() + 1, periods.end()) : std::vector<int>{}; }
         std::vector<double> applied_means() const { return means.size() > 1 ? std::vector<double>(means.begin() + 1, means.end()) : std::vector<double>{}; } };
@@ -1250,14 +1251,14 @@ int main(int argc, char** argv) {
                                  : mutating("P1-A") ? "/prog_s_av_swap.bin"
                                  : mutating("P1-JOINT") ? "/prog_s_av_ch3.bin"
                                  : mutating("P1-WINDOW") ? "/prog_s_av_stop.bin"
-                                 : mutating("P1-MV33") ? "/prog_s_av_mv33.bin"
+                                 : mutating("P1-VOL1WRITE") ? "/prog_s_av_vol1write.bin"
                                  : mutating("P1-PER1WRITE") ? "/prog_s_av_per1write.bin" : "/prog_s_av.bin");
         Capture c = run_capture(bin, budget_for(200000));
         mut_note("PC1", bin, c);
         mut_note("P1-A", bin, c);
         mut_note("P1-JOINT", bin, c);
         mut_note("P1-WINDOW", bin, c);
-        mut_note("P1-MV33", bin, c);
+        mut_note("P1-VOL1WRITE", bin, c);
         mut_note("P1-PER1WRITE", bin, c);
         int side = side_of[1];
         auto mk = markers(c);
@@ -1344,9 +1345,14 @@ int main(int argc, char** argv) {
         if (!gate) {
             not_graded(checks, "P1-B", unmet);
         } else {
-            checks.expect(c.loaded && !applied.empty() && level_ok,
+            // Every level pair in the window is the reference pair L_1(v) of a word v the modulator's data
+            // set holds: a pair that is no reference pair, and a reference pair of a volume no word of the
+            // data set carries (the CPU's own write to AUD1VOL), both fail.
+            bool applied_in_mv = true;
+            for (int v : applied) if (m_v_pos(v) < 0) applied_in_mv = false;
+            checks.expect(c.loaded && !applied.empty() && level_ok && applied_in_mv,
                 "P1-B [p.149,p.165]: the window holds applied volumes and every level pair in it is "
-                "channel 1's own reference pair L_1(v) of the current applied volume");
+                "channel 1's own reference pair L_1(v) of a word v of the modulator's data set M_V");
         }
         if (!gate) {
             not_graded(checks, "P1-C", unmet);
@@ -1393,9 +1399,11 @@ int main(int argc, char** argv) {
 
     // ================= P2: ATPER0 =========================================
     {
-        // P2-A and P2-B read the data-set order (prog_s_p2_swap); P2-C reads the waveform order
-        // (prog_s_p2_ramp); P2-JOINT contains both. Each selector replaces the one session all three read.
-        std::string bin = dir + ((mutating("P2-A") || mutating("P2-B")) ? "/prog_s_p2_swap.bin"
+        // P2-A reads the data-set order (prog_s_p2_swap); P2-B the duration of the run at each position
+        // (prog_s_p2_per1write: the CPU writes channel 1's own period); P2-C the waveform order
+        // (prog_s_p2_ramp); P2-JOINT contains P2-A and P2-C. Each selector replaces the one session all of them read.
+        std::string bin = dir + (mutating("P2-A") ? "/prog_s_p2_swap.bin"
+                                 : mutating("P2-B") ? "/prog_s_p2_per1write.bin"
                                  : mutating("P2-C") ? "/prog_s_p2_ramp.bin" : "/prog_s_p2.bin");
         Capture c = run_capture(bin, budget_for(2700000));
         mut_note("P2-A", bin, c);
@@ -1782,17 +1790,18 @@ int main(int argc, char** argv) {
         sess_pre(&checks, kSAP, sap_cap);
 
         Capture av = run_capture(dir + (mutating("P5-AV") ? "/prog_s_av_per6000.bin"
-                                        : mutating("P5-POP-AV") ? "/prog_s_av_short.bin" : "/prog_s_av.bin"), budget_for(200000));
+                                        : mutating("P5-AV-GRID") ? "/prog_s_av_shift.bin" : "/prog_s_av.bin"), budget_for(200000));
         Capture ap = mutating("P5-AP") ? run_capture(dir + "/prog_s_ap_per6000.bin", budget_for(110000))
-                   : mutating("P5-POP-AP") ? run_capture(dir + "/prog_s_ap_short.bin", budget_for(110000)) : sap_cap;
-        Capture both = run_capture(dir + (mutating("P5-BOTH") ? "/prog_s_both_per6000.bin"
-                                          : mutating("P5-POP-BOTH") ? "/prog_s_both_short.bin" : "/prog_s_both.bin"), budget_for(110000));
+                   : mutating("P5-AP-GRID") ? run_capture(dir + "/prog_s_ap_shift.bin", budget_for(110000)) : sap_cap;
+        Capture both = mutating("P5-BOTH") ? run_capture(dir + "/prog_s_both_per6000.bin", budget_for(250000))
+                     : mutating("P5-BOTH-GRID") ? run_capture(dir + "/prog_s_both_shift.bin", budget_for(110000))
+                     : run_capture(dir + "/prog_s_both.bin", budget_for(110000));
         mut_note("P5-AV", "prog_s_av_per6000.bin", av);
-        mut_note("P5-POP-AV", "prog_s_av_short.bin", av);
+        mut_note("P5-AV-GRID", "prog_s_av_shift.bin", av);
         mut_note("P5-AP", "prog_s_ap_per6000.bin", ap);
-        mut_note("P5-POP-AP", "prog_s_ap_short.bin", ap);
+        mut_note("P5-AP-GRID", "prog_s_ap_shift.bin", ap);
         mut_note("P5-BOTH", "prog_s_both_per6000.bin", both);
-        mut_note("P5-POP-BOTH", "prog_s_both_short.bin", both);
+        mut_note("P5-BOTH-GRID", "prog_s_both_shift.bin", both);
         const Pre pre_av = sess_pre(nullptr, kSAV, av), pre_ap = sess_pre(nullptr, kSAP, ap),
                   pre_both = sess_pre(nullptr, kSBOTH, both);
         int side = side_of[1];
@@ -1827,22 +1836,34 @@ int main(int argc, char** argv) {
             }
             return ok;
         };
-        // Phase (010->011 only, S-AP): in the frame PC7-CAL calibrates, state 010 is entered with F_2 and the
-        // period counter times out every D_mod after it; the 010->011 transitions are the odd time-outs. Each
-        // change carried by pbufld2 lies nearer to an odd multiple of D_mod after F_2 than to an even one
-        // (the two alternatives are D_mod apart).
-        double phase_min = 0, phase_max = 0;
-        auto odd_phase_ok = [&](Changes& changes, const std::vector<FetchRec>& rec) {
-            if (changes.empty() || d_mod <= 0 || rec.size() <= cal.r) return false;
-            const double f2 = (double)rec[cal.r].cycle;
-            bool ok = true, first = true;
-            for (auto& [ctime, pos, val] : changes) {
-                double delta = (double)ctime - f2;
-                long m = (long)std::llround(delta / d_mod);
-                double dev = delta - (double)m * d_mod;
-                if (first) { phase_min = phase_max = dev; first = false; }
-                phase_min = std::min(phase_min, dev); phase_max = std::max(phase_max, dev);
-                if (m < 1 || m % 2 == 0) ok = false;
+        // The time-out grid (p.164): state 010 is entered when F_2 arrives, and "transitions such as
+        // 010->011->010 occur whenever the period counter counts down to one", so the time-outs lie at
+        // t010 + m*D_mod for m = 1, 2, ...; odd m are the 010->011 transitions and even m the 011->010
+        // transitions. t010 of a session is its own F_2 (record entry r) shifted by the offset between F_2 and
+        // the instant 010 was entered that PC7-CAL measured in R-MOD.
+        const auto cal_rec = rec_of(cal_cap);
+        const double t010_off = (cal_rec.size() > cal.r) ? cal.t010 - (double)cal_rec[cal.r].cycle : 0.0;
+        // The distance from t to the nearest grid point t010 + m*D_mod with m >= 1 of the given parity
+        // (0 even, 1 odd, -1 every m).
+        auto grid_dist = [&](double t, double t010, int parity) -> double {
+            const double step = parity < 0 ? d_mod : 2.0 * d_mod;
+            const double first = t010 + (parity == 0 ? 2.0 : 1.0) * d_mod;
+            double k = (double)std::llround((t - first) / step);
+            if (k < 0) k = 0;
+            return std::fabs(t - (first + k * step));
+        };
+        // Every change lies within `tol` of the grid (volume changes to the apparatus resolution, period
+        // changes to eps5); `grid_max` returns the largest distance. An empty list is not on the grid.
+        double grid_max = 0;
+        auto grid_ok = [&](const Changes& ch, const std::vector<FetchRec>& rec, int parity, double tol) -> bool {
+            grid_max = 0;
+            if (ch.empty() || d_mod <= 0 || rec.size() <= cal.r || cal_rec.size() <= cal.r) return false;
+            const double t010 = (double)rec[cal.r].cycle + t010_off;
+            bool ok = true;
+            for (auto& [ctime, pos, val] : ch) {
+                const double d = grid_dist((double)ctime, t010, parity);
+                grid_max = std::max(grid_max, d);
+                if (d > tol) ok = false;
             }
             return ok;
         };
@@ -1901,15 +1922,16 @@ int main(int argc, char** argv) {
             }
             return out;
         };
-        Changes av_changes, ap_changes, both_changes;
+        Changes av_changes, ap_changes, both_changes, both_vol_changes, both_per_changes;
         if (av_win && side >= 0)
             av_changes = vol_changes(av, av_ws, av_we, 40, [&](int v) { return m_v_pos(v); });
         if (ap_win && side >= 0)
             ap_changes = per_changes(ap, ap_ws, ap_we, 200, [&](int v) { return m_p4_pos(v); });
         if (both_win && side >= 0) {
-            both_changes = vol_changes(both, both_ws, both_we, 63, [&](int v) { return m_vp_pos(false, v); });
-            auto pc = per_changes(both, both_ws, both_we, 200, [&](int v) { return m_vp_pos(true, v); });
-            both_changes.insert(both_changes.end(), pc.begin(), pc.end());
+            both_vol_changes = vol_changes(both, both_ws, both_we, 63, [&](int v) { return m_vp_pos(false, v); });
+            both_per_changes = per_changes(both, both_ws, both_we, 200, [&](int v) { return m_vp_pos(true, v); });
+            both_changes = both_vol_changes;
+            both_changes.insert(both_changes.end(), both_per_changes.begin(), both_per_changes.end());
             std::sort(both_changes.begin(), both_changes.end());
         }
         // F_k is looked up in the whole record of channel 0's own data set (from M_on): the word a change
@@ -1943,57 +1965,43 @@ int main(int argc, char** argv) {
             sap_dest_ok = dcap.loaded && dcap.done.has_value() && dwin && seqp.size() >= 8 && cyclic_consecutive(seqp, m_p4_order);
         }
 
-        // Population precondition (P5-POP-*): the modulator delivers at least 2L = 8 words (L = 4, channel
-        // 1's own length) in the window, counted on channel 0's own fetches from its third fetch to M_off.
-        // It does not depend on what channel 1 receives.
-        auto fetch_pop = [&](const Capture& cap, std::optional<uint64_t> on, std::optional<uint64_t> off, uint32_t span, bool win,
-                             uint64_t ws) -> size_t {
-            if (!win || !on || !off) return 0;
-            return fetch_cycles(cap.log, ch_base(0), span, ws, *off).size();
-        };
-        const size_t pop_av = fetch_pop(av, on_a, off_a, 8, av_win, av_ws),
-                     pop_ap = fetch_pop(ap, on_p, off_p, 4, ap_win, ap_ws),
-                     pop_both = fetch_pop(both, on_b, off_b, 8, both_win, both_ws);
-        const bool popok_av = av.loaded && av_win && pop_av >= 8, popok_ap = ap.loaded && ap_win && pop_ap >= 8,
-                   popok_both = both.loaded && both_win && pop_both >= 8;
-        if (!pre_av.ok()) {
-            not_graded(checks, "P5-POP-AV", pre_av.unmet("S-AV"));
-        } else {
-            checks.expect(popok_av,
-                "P5-POP-AV [p.149]: S-AV -- the window (from channel 0's third fetch) holds at least 2L=8 fetches "
-                "of the modulator's words");
-        }
-        if (!pre_ap.ok()) {
-            not_graded(checks, "P5-POP-AP", pre_ap.unmet("S-AP"));
-        } else {
-            checks.expect(popok_ap,
-                "P5-POP-AP [p.149]: S-AP -- the window holds at least 2L=8 fetches of the modulator's words");
-        }
-        if (!pre_both.ok()) {
-            not_graded(checks, "P5-POP-BOTH", pre_both.unmet("S-BOTH"));
-        } else {
-            checks.expect(popok_both,
-                "P5-POP-BOTH [p.149]: S-BOTH -- the window holds at least 2L=8 fetches of the modulator's words");
-        }
-
-        // The start-up frame of S-AP (record entry r of channel 0 is F_2), for the phase.
-        auto rec_ap = rec_of(ap);
+        // The start-up frame of each session (record entry r of channel 0 is F_2), for the time-out grid.
+        const auto rec_av = rec_of(av), rec_ap = rec_of(ap), rec_both = rec_of(both);
+        const bool av_frame = cal_ok && d_mod > 0 && rec_av.size() > cal.r + 3;
         const bool ap_frame = cal_ok && d_mod > 0 && rec_ap.size() > cal.r + 3;
+        const bool both_frame = cal_ok && d_mod > 0 && rec_both.size() > cal.r + 3;
         max_gap_dev = 0;
-        const bool av_ok = av_changes.size() >= 8 && ordered_ok(av_changes, fr_av) && consec_ok(av_changes, 2.0 * d_mod, kClkRes);
+        grid_max = 0;
+        const bool av_grid = av_frame && grid_ok(av_changes, rec_av, 0, kClkRes);
+        const double av_grid_max = grid_max;
+        const bool av_ok = av_changes.size() >= 8 && ordered_ok(av_changes, fr_av) && consec_ok(av_changes, 2.0 * d_mod, kClkRes) &&
+                           av_grid;
         const double av_dev = max_gap_dev;
         max_gap_dev = 0;
+        grid_max = 0;
+        const bool ap_grid = ap_frame && grid_ok(ap_changes, rec_ap, 1, eps5);
+        const double ap_grid_max = grid_max;
         const bool ap_ok = ap_changes.size() >= 8 && ordered_ok(ap_changes, fr_ap) && consec_ok(ap_changes, 2.0 * d_mod, eps5) &&
-                           ap_frame && odd_phase_ok(ap_changes, rec_ap);
+                           ap_grid;
         const double ap_dev = max_gap_dev;
         max_gap_dev = 0;
-        const bool both_ok = both_changes.size() >= 8 && ordered_ok(both_changes, fr_both) && consec_ok(both_changes, d_mod, eps5);
+        grid_max = 0;
+        const bool both_vol_grid = both_frame && (both_vol_changes.empty() || grid_ok(both_vol_changes, rec_both, -1, kClkRes));
+        const double both_vol_max = grid_max;
+        grid_max = 0;
+        const bool both_per_grid = both_frame && (both_per_changes.empty() || grid_ok(both_per_changes, rec_both, -1, eps5));
+        const double both_per_max = grid_max;
+        const bool both_ok = both_changes.size() >= 8 && ordered_ok(both_changes, fr_both) && consec_ok(both_changes, d_mod, eps5) &&
+                             both_vol_grid && both_per_grid;
         const double both_dev = max_gap_dev;
         checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes (largest deviation of a gap from 2*D_mod: " +
-            std::to_string(av_dev) + " clk), S-AP " + std::to_string(ap_changes.size()) + " (" + std::to_string(ap_dev) +
-            " clk; offset of a change from the nearest multiple of D_mod after F_2: " + std::to_string(phase_min) + " .. " +
-            std::to_string(phase_max) + " clk), S-BOTH " + std::to_string(both_changes.size()) + " (largest deviation of a gap from D_mod: " +
-            std::to_string(both_dev) + " clk); eps = " + std::to_string(eps5) + " clk");
+            std::to_string(av_dev) + " clk; largest distance of a change from the even time-out grid: " +
+            std::to_string(av_grid_max) + " clk), S-AP " + std::to_string(ap_changes.size()) + " (" + std::to_string(ap_dev) +
+            " clk; largest distance from the odd time-out grid: " + std::to_string(ap_grid_max) +
+            " clk), S-BOTH " + std::to_string(both_changes.size()) + " (largest deviation of a gap from D_mod: " +
+            std::to_string(both_dev) + " clk; largest distance from the time-out grid, volume changes " +
+            std::to_string(both_vol_max) + " clk, period changes " + std::to_string(both_per_max) +
+            " clk); eps = " + std::to_string(eps5) + " clk");
         // The delay between a request and its fetch is given by the page as one line plus about 14 clock
         // cycles (p.164) and not as a bound, so the offset of a change from the fetch of its word is
         // measured, not graded.
@@ -2014,30 +2022,36 @@ int main(int argc, char** argv) {
                     std::to_string(dmin) + " .. " + std::to_string(dmax) + " clk (not graded: the page gives the request-to-data "
                     "delay only as one line plus about 14 clock cycles)");
         }
-        if (!pre_av.ok() || !popok_av) {
-            not_graded(checks, "P5-AV", !pre_av.ok() ? pre_av.unmet("S-AV") : std::string("P5-POP-AV"));
+        if (!pre_av.ok() || !av_frame) {
+            not_graded(checks, "P5-AV", std::string(pre_av.ok() ? "" : pre_av.unmet("S-AV")) + ((!pre_av.ok() && !av_frame) ? " and " : "") +
+                (av_frame ? "" : "PC7-CAL and a start-up frame in S-AV"));
         } else {
             checks.expect(av_ok,
                 "P5-AV [p.149,p.164]: S-AV -- the window holds at least 2L=8 applied changes of channel 1, "
-                "each after the fetch of its word, and consecutive changes are 2*D_mod apart (as normal, 011->010)");
+                "each after the fetch of its word, consecutive changes are 2*D_mod apart, and every change lies "
+                "on the 011->010 time-out grid of the calibrated state 010 (even time-outs), to the apparatus "
+                "resolution");
         }
-        if (!pre_ap.ok() || !popok_ap || (!ap_frame)) {
-            not_graded(checks, "P5-AP", !pre_ap.ok() ? pre_ap.unmet("S-AP") : !popok_ap ? std::string("P5-POP-AP") :
-                std::string("PC7-CAL and a start-up frame in S-AP"));
+        if (!pre_ap.ok() || !ap_frame) {
+            not_graded(checks, "P5-AP", std::string(pre_ap.ok() ? "" : pre_ap.unmet("S-AP")) + ((!pre_ap.ok() && !ap_frame) ? " and " : "") +
+                (ap_frame ? "" : "PC7-CAL and a start-up frame in S-AP"));
         } else {
             checks.expect(ap_ok,
                 "P5-AP [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- the window holds at least 2L=8 applied "
                 "changes of channel 1, each after the fetch of its word, consecutive changes are 2*D_mod apart, "
-                "and every change lies at an odd multiple of D_mod after F_2 (on the 010->011 transition only)");
+                "and every change lies within eps of the 010->011 time-out grid of the calibrated state 010 "
+                "(odd time-outs)");
         }
-        if (!pre_both.ok() || !popok_both) {
-            not_graded(checks, "P5-BOTH", !pre_both.ok() ? pre_both.unmet("S-BOTH") : std::string("P5-POP-BOTH"));
+        if (!pre_both.ok() || !both_frame) {
+            not_graded(checks, "P5-BOTH", std::string(pre_both.ok() ? "" : pre_both.unmet("S-BOTH")) + ((!pre_both.ok() && !both_frame) ? " and " : "") +
+                (both_frame ? "" : "PC7-CAL and a start-up frame in S-BOTH"));
         } else {
             checks.expect(both_ok,
                 "P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- the window holds at least 2L=8 applied "
                 "changes of channel 1, each after the fetch of its word, consecutive changes are D_mod apart, "
-                "alternating volume and period: a word lands at every time-out of the modulator's period (both "
-                "transitions)");
+                "alternating volume and period, and every volume change (to the apparatus resolution) and "
+                "every period change (to eps) lies on the time-out grid of the calibrated state 010: a word lands "
+                "at the time-outs of the modulator's period (both transitions)");
         }
     }
 
@@ -2560,17 +2574,23 @@ int main(int argc, char** argv) {
         };
         const double rmod_phase = median_d(phases(rec_of(rmod)));
         // The page names two phases: the requests of normal operation (011->010) and those of attach period
-        // (010->011), one period later. A fetch has R-MOD's phase when it lies nearer to it than to R-MOD's
-        // phase plus D_mod (modulo 2*D_mod); it has the attach-period phase in the opposite case.
-        auto circ = [&](double x) { x = std::fmod(x, 2.0 * d_mod); if (x < 0) x += 2.0 * d_mod; return std::min(x, 2.0 * d_mod - x); };
-        auto phase_is = [&](const std::vector<FetchRec>& rec, bool normal) -> bool {
+        // (010->011), one period later. The phase grid of a session is R-MOD's phase (normal operation), R-MOD's
+        // phase plus D_mod (attach period), or both (both bits: every D_mod). A fetch lies on a grid when its
+        // circular distance from the grid's phase (modulo 2*D_mod, or modulo D_mod for both bits) is less than
+        // one line.
+        auto circ = [&](double x, double m) { x = std::fmod(x, m); if (x < 0) x += m; return std::min(x, m - x); };
+        double phase_max_dist = 0;
+        auto phase_on_grid = [&](const std::vector<FetchRec>& rec, double shift, double modulus) -> bool {
             auto ph = phases(rec);
+            phase_max_dist = 0;
             if (ph.empty()) return false;
+            bool ok = true;
             for (double p : ph) {
-                const double d0 = circ(p - rmod_phase), d1 = circ(p - rmod_phase - d_mod);
-                if (normal ? !(d0 < d1) : !(d1 < d0)) return false;
+                const double d = circ(p - rmod_phase - shift, modulus);
+                phase_max_dist = std::max(phase_max_dist, d);
+                if (!(d < ell)) ok = false;
             }
-            return true;
+            return ok;
         };
         // Both bits: consecutive fetches from the page's F_3 on are D_mod apart, to within less than one line.
         auto spacing_both_ok = [&](const std::vector<FetchRec>& rec) -> bool {
@@ -2583,15 +2603,21 @@ int main(int argc, char** argv) {
         Capture av = mutating("P10-AV") ? run_capture(dir + "/prog_s_av_per6000.bin", budget_for(200000))
                    : mutating("P10-AV-PHASE") ? sap_cap
                    : run_capture(dir + "/prog_s_av.bin", budget_for(200000));
-        Capture ap = mutating("P10-AP") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000)) : sap_cap;
+        Capture ap = mutating("P10-AP") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000))
+                   : mutating("P10-AP-GRID") ? run_capture(dir + "/prog_s_ap_shift.bin", budget_for(110000))
+                   : mutating("P10-AP-RATE") ? run_capture(dir + "/prog_s_ap_pulse.bin", budget_for(110000)) : sap_cap;
         Capture both = mutating("P10-BOTH") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000))
-                                            : run_capture(dir + "/prog_s_both.bin", budget_for(110000));
+                     : mutating("P10-BOTH-GRID") ? run_capture(dir + "/prog_s_both_per4050.bin", budget_for(110000))
+                     : run_capture(dir + "/prog_s_both.bin", budget_for(110000));
         mut_note("P10-AV", "prog_s_av_per6000.bin", av);
         mut_note("P10-AV-PHASE", "prog_s_ap.bin in place of prog_s_av.bin", av);
         mut_note("P10-AP", "prog_s_av.bin in place of prog_s_ap.bin", ap);
+        mut_note("P10-AP-GRID", "prog_s_ap_shift.bin", ap);
+        mut_note("P10-AP-RATE", "prog_s_ap_pulse.bin", ap);
         mut_note("P10-BOTH", "prog_s_av.bin in place of prog_s_both.bin", both);
-        // Each session's own PC lines gate its P10 line; a contrast that replaces a capture is graded
-        // against the session it stands in for.
+        mut_note("P10-BOTH-GRID", "prog_s_both_per4050.bin", both);
+        // Each session's own PC lines gate its P10 line; a contrast that replaces a capture with another
+        // session's is graded against the session it stands in for.
         const Pre pre_av = sess_pre(nullptr, kSAV, mutating("P10-AV-PHASE") ? run_capture(dir + "/prog_s_av.bin", budget_for(200000)) : av);
         const Pre pre_ap = sess_pre(nullptr, kSAP, mutating("P10-AP") ? sap_cap : ap);
         const Pre pre_both = sess_pre(nullptr, kSBOTH, mutating("P10-BOTH") ? run_capture(dir + "/prog_s_both.bin", budget_for(110000)) : both);
@@ -2600,19 +2626,31 @@ int main(int argc, char** argv) {
             return std::string(pre.ok() ? "" : pre.unmet(sess)) + ((!pre.ok() && !frame) ? " and " : "") +
                    (frame ? "" : "PC7-CAL and a start-up frame in " + sess);
         };
+        const bool av_rate = rate_normal_ok(av_rec), ap_rate = rate_normal_ok(ap_rec);
+        const bool av_phase = phase_on_grid(av_rec, 0.0, 2.0 * d_mod);
+        const double av_phase_dist = phase_max_dist;
+        const bool ap_phase = phase_on_grid(ap_rec, d_mod, 2.0 * d_mod);
+        const double ap_phase_dist = phase_max_dist;
+        const bool both_phase = phase_on_grid(both_rec, 0.0, d_mod);
+        const double both_phase_dist = phase_max_dist;
+        const bool both_spacing = spacing_both_ok(both_rec);
+        checks.note("P10: largest circular distance of a fetch from the phase grid: S-AV " + std::to_string(av_phase_dist) +
+            " clk, S-AP " + std::to_string(ap_phase_dist) + " clk, S-BOTH " + std::to_string(both_phase_dist) +
+            " clk (one line = " + std::to_string(ell) + " clk); rate: S-AV " + std::to_string((int)av_rate) + ", S-AP " +
+            std::to_string((int)ap_rate) + "; spacing: S-BOTH " + std::to_string((int)both_spacing));
         dep_expect(checks, pre_av.ok() && frame_met(av_rec),
-            av.loaded && av.done.has_value() && rate_normal_ok(av_rec) && phase_is(av_rec, true),
+            av.loaded && av.done.has_value() && av_rate && av_phase,
             "P10-AV [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- in the calibrated frame F_n - F_3 equals "
-            "2(n-3)*D_mod to within less than one line for every n >= 4, and every fetch has R-MOD's phase "
-            "(nearer to it than to the attach-period phase), 'as they do in normal operation' (011->010)",
+            "2(n-3)*D_mod to within less than one line for every n >= 4, and every fetch lies less than one "
+            "line from R-MOD's phase (F_n - F_2 mod 2*D_mod, n >= 3), 'as they do in normal operation' (011->010)",
             p10_unmet(pre_av, "S-AV", frame_met(av_rec)));
         // F58.loop.attach kept only here (the attach-period bracket S-AP
         // alone exercises); napnav's DMA-half is recorded, not
         // re-asserted (it is the same formula PC7 already grades).
-        dep_expect(checks, pre_ap.ok() && frame_met(ap_rec), ap.loaded && ap.done.has_value() && phase_is(ap_rec, false),
-            "P10-AP [p.164] 5-p164.c34,5-sm.c34,F58.loop.attach: S-AP -- the phase of the fetches (F_n - F_2 mod "
-            "2*D_mod, n >= 3) is the attach-period phase, R-MOD's plus D_mod: every fetch lies nearer to it than "
-            "to R-MOD's own (010->011)",
+        dep_expect(checks, pre_ap.ok() && frame_met(ap_rec), ap.loaded && ap.done.has_value() && ap_rate && ap_phase,
+            "P10-AP [p.164] 5-p164.c34,5-sm.c34,F58.loop.attach: S-AP -- one request per 010->011->010 loop (F_n - "
+            "F_3 equals 2(n-3)*D_mod to within less than one line for every n >= 4) and every fetch lies less than "
+            "one line from the attach-period phase, R-MOD's plus D_mod (F_n - F_2 mod 2*D_mod, n >= 3; 010->011)",
             p10_unmet(pre_ap, "S-AP", frame_met(ap_rec)));
         checks.record("5-p165.c22, 5-sig.napnav: the DMA-request half is graded only through the phases above "
             "(P10-AV, P10-AP, P10-BOTH); no assertion isolates napnav's own contribution beyond them, and the "
@@ -2622,9 +2660,11 @@ int main(int argc, char** argv) {
             "or register value in this package distinguishes one way of combining from another, "
             "so this is not turned into an assertion (SPECIFICATION.md, claims not turned into a "
             "proposition).");
-        dep_expect(checks, pre_both.ok() && frame_met(both_rec), both.loaded && both.done.has_value() && spacing_both_ok(both_rec),
+        dep_expect(checks, pre_both.ok() && frame_met(both_rec),
+            both.loaded && both.done.has_value() && both_spacing && both_phase,
             "P10-BOTH [p.164] 5-p164.c35,5-sm.c35: S-BOTH -- the fetches from the page's F_3 on are D_mod apart, "
-            "to within less than one line (both transitions)",
+            "to within less than one line, and every fetch lies less than one line from R-MOD's phase grid "
+            "(F_n - F_2 modulo D_mod, n >= 3; both transitions)",
             p10_unmet(pre_both, "S-BOTH", frame_met(both_rec)));
     }
 

@@ -8,12 +8,14 @@ PROGS    := prog_fixture prog_fixture_mut prog_fixture_noplay \
             prog_rvol1 prog_rvol1_mut prog_rvol2 prog_rvol3 \
             prog_rper1 prog_rper1_mut prog_rper2 prog_rper3 \
             prog_rramp \
-            prog_s_av prog_s_av_noattach prog_s_av_per6000 prog_s_av_mv33 prog_s_av_per1write \
-            prog_s_av_swap prog_s_av_ch3 prog_s_av_stop prog_s_av_zero prog_s_av_ch1bytes prog_s_av_short \
-            prog_s_ap prog_s_ap_per6000 prog_s_ap_swap prog_s_ap_short \
+            prog_s_av prog_s_av_noattach prog_s_av_per6000 prog_s_av_per1write \
+            prog_s_av_vol1write prog_s_av_shift \
+            prog_s_av_swap prog_s_av_ch3 prog_s_av_stop prog_s_av_zero prog_s_av_ch1bytes \
+            prog_s_ap prog_s_ap_per6000 prog_s_ap_swap prog_s_ap_shift prog_s_ap_pulse \
             prog_s_both prog_s_both_per6000 prog_s_both_volonly prog_s_both_volonly_per \
-            prog_s_both_swap prog_s_both_v32 prog_s_both_perconst prog_s_both_short \
-            prog_s_p2 prog_s_p2_swap prog_s_p2_ramp prog_s_p2_w129 \
+            prog_s_both_swap prog_s_both_v32 prog_s_both_perconst prog_s_both_shift \
+            prog_s_both_per4050 \
+            prog_s_p2 prog_s_p2_swap prog_s_p2_per1write prog_s_p2_ramp prog_s_p2_w129 \
             prog_s_pair0 prog_s_pair0_swap prog_s_pair0_tgtper prog_s_pair0_attc \
             prog_s_pair1 prog_s_pair1_swap prog_s_pair1_attc \
             prog_s_pair2 prog_s_pair2_swap prog_s_pair2_attc \
