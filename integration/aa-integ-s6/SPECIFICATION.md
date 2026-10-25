@@ -255,6 +255,20 @@ word = VP7-0 in bits 15-8, HP8-2 in bits 7-1, bit 0 = 1; second word $FFFE
 above $7E, so COPCON's CDANG is not needed (AA p.19). COP1LC restarts the list
 at every vertical blank (AA p.21).
 
+**SHRES marker.** The Copper list of every SHRES run of P1 to P5, P11, P12 and
+P7 (the M-S-* and A-S-* runs) begins its case-specific part with
+
+    WAIT $3807,$FFFE
+    MOVE $0180,$0C3B                  COLOR00 = $0C3B
+    WAIT $3A07,$FFFE
+    MOVE $0180,$000A                  COLOR00 = colour(0)
+
+so that the beam lines $38 and $39 show the background $0C3B across the whole
+window, and every later line colour(0) again (AA p.20, p.21: Copper WAIT and
+MOVE). The blue gun of $0C3B is not $A, so no sample of it decodes to a palette
+colour and none is opaque (3.2, 3.7): the marker adds no band. The lines lie
+below the calibration rows and above the first sprite line $50.
+
 ### 3.7 Reference frame
 
 - **Frame, row, sample.** A frame of the video output lies between two vertical
@@ -273,9 +287,9 @@ at every vertical blank (AA p.21).
   rows number 8r. Runs without a HIRES screen use the r of the package's HIRES
   runs (M-H-*); C7 confirms it in every LORES run (20 words per line, "DDFSTRT
   = DDFSTOP - (8 * (word count - 1)) for low resolution": 16 beam lines, 16r
-  rows). The pages give no word count for SHRES, so C7 takes the words per row
-  from the SHRES calibration rows themselves and requires the row count to
-  follow from it. Beam line m of a band is its rows [m*r, (m+1)*r), counted from the
+  rows). The pages give no word count for SHRES, so the SHRES runs carry a
+  Copper marker (3.6) that spans a known number of beam lines, and C7 counts
+  its rows. Beam line m of a band is its rows [m*r, (m+1)*r), counted from the
   band's first row.
 - **Graded frame.** The last complete frame of the run.
 - **u.** The number of samples per 70 ns of display, a harness constant. It is
@@ -320,7 +334,7 @@ CPU reads only its closing loop.
 | C3 | The display resolution is the case's, and the colour path is direct. | The calibration rows contain only colour(0) and colour(1) between the first and last colour(1) sample, alternating in runs of 4u (LORES), 2u (HIRES) or u (SHRES), ignoring the first and last run of each row. | CP-3: case M-S-01 with BPLCON0 = $9200 (HIRES) instead of $1240: runs of 2u where C3 expects u. |
 | C4 | Sprite DMA used the prepared structures. | For every sprite structure of the case, the trace of the graded frame holds a read at the address of its first word. | CP-4: case M-S-01 with DMACON = $8380 (SPREN missing): no such reads. |
 | C5 | No sprite is clipped by the display window. | Sample indices compare across rows (C7). The window is observed in the calibration rows: W_L is the index of their first colour(1) sample and W_R the smallest index of their last colour(1) sample. The window's left edge is DIWSTRT's horizontal value and a sprite's left edge is its HSTART, in the same units (HRM p.59, HRM p.99-100: a sprite's X value is counted from the window's left edge, $81); one LORES pixel of 140 ns is 2u samples (3.7). For every one of the eight sprites of the case, whether or not it shows in the output, the programmed left edge W_L + (HSTART - DIWSTRT_H)*2u lies at or right of W_L, and the programmed right edge, that plus the expected length (from the proposition), lies at or left of W_R. The sprites in the output are not read. | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, to the right of the sprites' HSTART $A0): the programmed left edge lies left of W_L. |
-| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. SHRES runs: every calibration row holds the same number n of runs between its first and last colour(1) sample, and n + 1 (those runs and the colour(0) pair that follows the last of them) is eight times a whole number w, since each word $CCCC gives eight runs of two SHRES pixels; a row then shows w words, the 320 words of the 640 bytes of 3.4 fill 320/w beam lines, and the calibration rows number (320/w)*r, with the r of the HIRES runs. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7a-S: case M-S-01 with 1280 bytes of $CCCC: twice the rows where C7 expects (320/w)*r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
+| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. SHRES runs: the rows whose sample at W_L + 100 (W_L as in C5) is the marker value $0C3B (3.6) are consecutive, lie below the calibration rows, and number 2r, the two beam lines $38 and $39 at r rows each. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7a-S: case M-S-01 whose marker ends with WAIT $3C07 in place of $3A07: four beam lines, 4r marker rows where C7 expects 2r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
 
 The CP cases need only to be run once each, on the case named.
 
@@ -337,7 +351,7 @@ placed below $080000.
 |---|---|---|
 | Program image (`PROGRAM_ORG`, `nanomig.i`) | $080400-$087FFF | code; data assembled into the image sits only at the addresses below |
 | Copper list | $088000-$0880FF | at most 204 bytes (3.6 with P8's sixteen WAIT/MOVE pairs) |
-| Prologue Copper list (RP-1 only) | $088100 | one instruction |
+| Prologue Copper list (RP-1 only) | $088100-$0881FF | one instruction; no other run reads here |
 | Sprite structure of sprite k (k = 0..7) | $089000 + $400*k | at most 520 bytes (B-N, B-A); every start a multiple of 8 (3.5) |
 | Bitplane area (3.4) | $090000-$09BFFF | 48 KiB |
 | RESULTS, DONE_ADDR (`nanomig.i`) | $0C0000-$0C0FFF | the done word at $0C0FFE |
@@ -366,7 +380,8 @@ VSTART + 6, HSTART = $A0, ATT = 0. Its six lines are:
 - lines 3-5 (**alternating rows**): DATA = $FFFF, DATB = $AAAA (values 3,1,3,1,…
   from the left; pixel 0 is value 3).
 
-The Copper list is 3.6 with no case-specific part.
+The Copper list is 3.6; its case-specific part is empty, except for the SHRES
+marker of 3.6 in the S runs.
 
 **Observation.** Graded frame, bands 0..7 (band k = sprite k). A band's row
 count is 6r (r from 3.7, confirmed by C7); its beam lines 0-2 (rows [0, 3r))
@@ -740,8 +755,8 @@ Three propositions, one assertion each:
     log. R2 therefore grades both the register list the program carries out
     (COP1LCH and COP1LCL written only with the list's address, COP2LCH, COP2LCL
     ($084, $086) and COPJMP2 ($08A) never written) and the log of the whole
-    run: no read at an address of the Copper area ($088000-$0881FF) beyond the
-    words of the case's own list. Contrast RP-2: add `MOVE $010C,$0011` to the
+    run: no read at an address of $088100-$0881FF, the area that 3.9 keeps
+    for a Copper list other than the case's own. Contrast RP-2: add `MOVE $010C,$0011` to the
     list: R2 fails although the value written equals the default, which shows
     R2 checks the write, not the outcome.
   The proposition itself requires one band and 8 segments in every row of it; a
@@ -924,8 +939,8 @@ M-H-00 run; the normal run ignores it.
    the check starts at the first read of a reset vector and takes the first
    Chip memory read after the vector reads. **R2** is evaluated on the
    register list, on the Copper list as the run ended, and on the RAM-port log
-   of the whole run (the Copper area $088000-$0881FF read only within the
-   words of the case's own list). The register list is the only path by which
+   of the whole run (no read at $088100-$0881FF, which 3.9 keeps for another
+   Copper list). The register list is the only path by which
    prog_main.s writes a custom register; the prologue of RP-1 (prog_pro.s)
    writes COP1LC in code, and the Copper then reads its list, which the log
    shows: the R1-R contrast prints R2-R FAIL.
