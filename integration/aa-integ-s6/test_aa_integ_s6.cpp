@@ -40,15 +40,16 @@
 // MUTATION C1-M stimulus red NMH_MUTATE=C1-M: the M-S-01 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION C2-M stimulus red NMH_MUTATE=C2-M: the M-S-01 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION C3-M stimulus red NMH_MUTATE=C3-M: the M-S-01 run writes BPLCON0 = $9200 in place of $1240 (CP-3); TG68K FAIL, fx68k FAIL.
-// MUTATION C4-M stimulus red NMH_MUTATE=C4-M: the M-S-01 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-M.
+// MUTATION C4-M stimulus red NMH_MUTATE=C4-M: the M-S-01 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL.
 // MUTATION C5-M stimulus red NMH_MUTATE=C5-M: the M-L-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-M stimulus red NMH_MUTATE=C7-M: the M-L-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-M stimulus red NMH_MUTATE=C7S-M: the M-S-01 run's SHRES marker ends with WAIT $3C07 in place of $3A07 (CP-7a-S): twice the marker rows; TG68K FAIL, fx68k FAIL.
 // MUTATION C7-M stimulus red NMH_MUTATE=C7B-M: the M-L-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
 // MUTATION FIX-W stimulus red NMH_MUTATE=FIX-W: the W-00 run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
 // MUTATION C1-W stimulus red NMH_MUTATE=C1-W: the W-00 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION C2-W stimulus red NMH_MUTATE=C2-W: the W-00 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION C3-W stimulus red NMH_MUTATE=C3-W: the W-00 run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-W.
-// MUTATION C4-W stimulus red NMH_MUTATE=C4-W: the W-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-W.
+// MUTATION C4-W stimulus red NMH_MUTATE=C4-W: the W-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL.
 // MUTATION C5-W stimulus red NMH_MUTATE=C5-W: the W-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-W stimulus red NMH_MUTATE=C7-W: the W-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-W stimulus red NMH_MUTATE=C7B-W: the W-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
@@ -56,31 +57,32 @@
 // MUTATION C1-A stimulus red NMH_MUTATE=C1-A: the A-S-00 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION C2-A stimulus red NMH_MUTATE=C2-A: the A-S-00 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION C3-A stimulus red NMH_MUTATE=C3-A: the A-S-00 run writes BPLCON0 = $9200 in place of $1240 (CP-3); TG68K FAIL, fx68k FAIL.
-// MUTATION C4-A stimulus red NMH_MUTATE=C4-A: the A-S-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-A, C5-A.
-// MUTATION C5-A stimulus red NMH_MUTATE=C5-A: the A-L-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-A.
+// MUTATION C4-A stimulus red NMH_MUTATE=C4-A: the A-S-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL.
+// MUTATION C5-A stimulus red NMH_MUTATE=C5-A: the A-L-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-A stimulus red NMH_MUTATE=C7-A: the A-L-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-A stimulus red NMH_MUTATE=C7B-A: the A-L-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
 // MUTATION FIX-B stimulus red NMH_MUTATE=FIX-B: the B-N run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
 // MUTATION C1-B stimulus red NMH_MUTATE=C1-B: the B-N run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION C2-B stimulus red NMH_MUTATE=C2-B: the B-N run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION C3-B stimulus red NMH_MUTATE=C3-B: the B-N run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-B.
-// MUTATION C4-B stimulus red NMH_MUTATE=C4-B: the B-N run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-B, C5-B.
-// MUTATION C5-B stimulus red NMH_MUTATE=C5-B: the B-N run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-B.
+// MUTATION C4-B stimulus red NMH_MUTATE=C4-B: the B-N run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL.
+// MUTATION C5-B stimulus red NMH_MUTATE=C5-B: the B-N run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-B stimulus red NMH_MUTATE=C7-B: the B-N run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-B stimulus red NMH_MUTATE=C7B-B: the B-N run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
 // MUTATION FIX-R stimulus red NMH_MUTATE=FIX-R: the R run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
 // MUTATION C1-R stimulus red NMH_MUTATE=C1-R: the R run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION C2-R stimulus red NMH_MUTATE=C2-R: the R run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION C3-R stimulus red NMH_MUTATE=C3-R: the R run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-R.
-// MUTATION C4-R stimulus red NMH_MUTATE=C4-R: the R run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-R, SEGS-R.
-// MUTATION C5-R stimulus red NMH_MUTATE=C5-R: the R run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: SEGS-R.
+// MUTATION C4-R stimulus red NMH_MUTATE=C4-R: the R run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL.
+// MUTATION C5-R stimulus red NMH_MUTATE=C5-R: the R run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-R stimulus red NMH_MUTATE=C7-R: the R run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
 // MUTATION C7-R stimulus red NMH_MUTATE=C7B-R: the R run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
-// MUTATION BANDS-A stimulus red NMH_MUTATE=BANDS-A: the A-S-00 run's sprites 6 and 7 have no lines, so three bands show; TG68K FAIL, fx68k FAIL.
-// MUTATION BANDS-B stimulus red NMH_MUTATE=BANDS-B: the B-N run's sprite 7 has no lines, so every row has 7 segments; TG68K FAIL, fx68k FAIL.
+// MUTATION P7 stimulus red NMH_MUTATE=BANDS-A: the A-S-00 run's sprites 6 and 7 have no lines (AB-S-00), so three bands show, graded through the unchanged comparator of P7; every precondition holds; TG68K FAIL, fx68k FAIL.
+// MUTATION P8 stimulus red NMH_MUTATE=BANDS-B: the B-N run's sprite 7 has no lines (BB-N), so every row has 7 segments, graded through the unchanged comparator of P8; every precondition holds; TG68K FAIL, fx68k FAIL.
 // MUTATION C6-B stimulus red NMH_MUTATE=C6-B: the B-N run's Copper list ends with its end-of-list WAIT after band 9's MOVE, so the fetches of MOVEs 10 to 15 are absent; TG68K FAIL, fx68k FAIL.
-// MUTATION SEGS-R stimulus red NMH_MUTATE=SEGS-R: case R's sprite 7 has no lines, so every row has 7 segments; TG68K FAIL, fx68k FAIL.
-// MUTATION R1-R stimulus red NMH_MUTATE=R1-R: case R runs prog_pro.bin: a prologue at PROGRAM_ORG enables Copper DMA on a one-instruction list at $088100 and jumps to the entry at PROGRAM_ORG + $40 (RP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION P9 stimulus red NMH_MUTATE=SEGS-R: case R's sprite 7 has no lines (RS), so every row has 7 segments, graded through the unchanged comparator of P9; every precondition holds; TG68K FAIL, fx68k FAIL.
+// MUTATION P10 stimulus red NMH_MUTATE=SEGS-R: the same run RS, graded through the unchanged comparator of P10; every precondition holds; TG68K FAIL, fx68k FAIL.
+// MUTATION R1-R stimulus red NMH_MUTATE=R1-R: case R runs prog_pro.bin: a prologue at PROGRAM_ORG enables Copper DMA on a one-instruction list at $088100 and jumps to the entry at PROGRAM_ORG + $40 (RP-1); TG68K FAIL, fx68k FAIL. Also printing FAIL: R2-R (the Copper read the prologue's list).
 // MUTATION R2-R stimulus red NMH_MUTATE=R2-R: case R's Copper list adds MOVE BPLCON4 = $0011 (RP-2); TG68K FAIL, fx68k FAIL.
 // MUTATION P7 stimulus red NMH_MUTATE=P7-W01: the AW-01 run's sprites have ATT = 0 in place of ATT = 1 (AWX-01) and are graded through the unchanged comparator of P7; TG68K FAIL, fx68k FAIL.
 // MUTATION P7 stimulus red NMH_MUTATE=P7-W10: the AW-10 run's sprites have ATT = 0 in place of ATT = 1 (AWX-10) and are graded through the unchanged comparator of P7; TG68K FAIL, fx68k FAIL.
@@ -128,15 +130,16 @@ GroupSel group_sel() {
     if (p == std::string::npos || m.size() != p + 2) return s;
     std::string kind = m.substr(0, p);
     char grp = m[p + 1];
-    static const std::set<std::string> kinds = {"FIX", "C1", "C2", "C3", "C4", "C5", "C7", "C7B", "BANDS", "SEGS", "R1", "R2", "C6"};
+    static const std::set<std::string> kinds = {"FIX", "C1", "C2", "C3", "C4", "C5", "C7", "C7B", "C7S", "R1", "R2", "C6"};
     if (!kinds.count(kind) || std::string("MWABR").find(grp) == std::string::npos) return s;
+    if (kind == "C7S" && grp != 'M') return s;
     s.on = true; s.kind = kind; s.group = grp;
     return s;
 }
 
 std::string designated(const GroupSel& s) {
     switch (s.group) {
-    case 'M': return (s.kind == "C5" || s.kind == "C7" || s.kind == "C7B") ? "M-L-00" : "M-S-01";
+    case 'M': return (s.kind == "C5" || s.kind == "C7" || s.kind == "C7B") ? "M-L-00" : "M-S-01";   // C7S: the SHRES run
     case 'W': return "W-00";
     case 'A': return (s.kind == "C5" || s.kind == "C7" || s.kind == "C7B") ? "A-L-00" : "A-S-00";
     case 'B': return "B-N";
@@ -156,10 +159,8 @@ void apply_group_sel(Case& c) {
     else if (s.kind == "C4") apply_cp(c, Cp::C4);
     else if (s.kind == "C5") apply_cp(c, Cp::C5);
     else if (s.kind == "C7") apply_cp(c, Cp::C7a);
+    else if (s.kind == "C7S") apply_cp(c, Cp::C7s);
     else if (s.kind == "C7B") apply_cp(c, Cp::C7b);
-    else if (s.kind == "BANDS" && s.group == 'A') { clear_sprite(c, 6); clear_sprite(c, 7); }
-    else if (s.kind == "BANDS" && s.group == 'B') { clear_sprite(c, 7); }
-    else if (s.kind == "SEGS" && s.group == 'R') { clear_sprite(c, 7); }
     else if (s.kind == "C6" && s.group == 'B') { c.cop_extra.resize(40); }                 // the end-of-list WAIT follows band 9's MOVE
     else if (s.kind == "R1" && s.group == 'R') { c.prog = "prog_pro.bin"; c.prologue_list = true; c.entry = kProEntry; }
     else if (s.kind == "R2" && s.group == 'R') { append(c.cop_extra, cop_move(R_BPLCON4, 0x0011)); }
@@ -195,20 +196,6 @@ const Pre& pre_of(const Run& r) {
     if (it != g_pre.end()) return it->second;
     return g_pre[r.name] = compute_pre(r, geom());
 }
-
-bool a_bands_ok(const Run& r) { return r.frames_ok && bands_of(r).size() == 4; }
-
-bool bands_segs_ok(const Run& r, size_t nbands, size_t nseg) {
-    if (!r.frames_ok) return false;
-    auto bs = bands_of(r);
-    if (bs.size() != nbands) return false;
-    for (auto& b : bs)
-        for (size_t i = 0; i < b.count; ++i)
-            if (segs_of(r.g[b.first + i]).size() != nseg) return false;
-    return true;
-}
-bool b_bands_ok(const Run& r) { return bands_segs_ok(r, 16, r.name.find('A') != std::string::npos ? 4 : 8); }
-bool r_segs_ok(const Run& r) { return bands_segs_ok(r, 1, 8); }
 
 // ---- group lines (SPECIFICATION.md 3.8): printed before the line that depends on them ---------------------
 void group_line(const std::string& label, const char* text, char grp, const std::function<bool(const Run&)>& pred) {
@@ -249,17 +236,14 @@ void print_group_lines() {
         group_line("C2-" + t, "the display is in steady state: the graded frame and the frame before it are identical in every calibration row and every band row (C2)", grp, [](const Run& r) { return pre_of(r).c2; });
         group_line("C3-" + t, "the display resolution is the case's and the colour path is direct: the calibration rows alternate colour(0) and colour(1) in runs of 4u, 2u or u samples (C3)", grp, [](const Run& r) { return pre_of(r).c3; });
         group_line("C4-" + t, "sprite DMA used the prepared structures: the graded frame holds a read at the address of every sprite structure (C4)", grp, [](const Run& r) { return pre_of(r).c4; });
-        group_line("C5-" + t, "no sprite is clipped by the display window: the first colour(1) sample lies left of the leftmost segment and the last at or right of the rightmost segment's end (C5)", grp, [](const Run& r) { return pre_of(r).c5; });
-        group_line("C7-" + t, "the row grid holds: the calibration rows number 8r (HIRES) or 16r (LORES) and the first colour(1) sample has the same index in every calibration row (C7)", grp, [](const Run& r) { return pre_of(r).c7; });
-        if (grp == 'A') group_line("BANDS-A", "four bands (one per attached pair) lie below the calibration rows (P7 precondition)", grp, a_bands_ok);
+        group_line("C5-" + t, "no sprite is clipped by the display window: the programmed extent of every sprite lies inside the window observed in the calibration rows (C5)", grp, [](const Run& r) { return pre_of(r).c5; });
+        group_line("C7-" + t, "the row grid holds: the calibration rows number 8r (HIRES) or 16r (LORES), the SHRES marker rows number 2r, and the first colour(1) sample has the same index in every calibration row (C7)", grp, [](const Run& r) { return pre_of(r).c7; });
         if (grp == 'B') {
-            group_line("BANDS-B", "sixteen bands lie below the calibration rows and every graded row has 8 (B-N) or 4 (B-A) segments (P8 precondition)", grp, b_bands_ok);
             group_line("C6-B", "the graded frame holds the Copper fetches of all sixteen MOVE instructions of the list, in list order (C6)", grp, c6_ok);
         }
         if (grp == 'R') {
-            group_line("SEGS-R", "one band lies below the calibration rows and every one of its rows has 8 segments (P9 and P10 precondition)", grp, r_segs_ok);
             group_line("R1-R", "no code ran before the test program: the reset vectors are followed by an instruction fetch at the program's entry and no data of the case was read first (R1)", grp, r1_ok);
-            group_line("R2-R", "nothing wrote BPLCON4 other than the case's own register-list entry, COP1LC holds only the list's address, COP2LC and COPJMP2 are not written, and the Copper list has no MOVE to BPLCON4 (R2)", grp, r2_ok);
+            group_line("R2-R", "nothing wrote BPLCON4 other than the case's own register-list entry, COP1LC holds only the list's address, COP2LC and COPJMP2 are not written, the Copper list has no MOVE to BPLCON4, and the Copper read no list other than the case's (R2)", grp, r2_ok);
         }
     }
 }
@@ -325,11 +309,17 @@ bool awsub(int idx, const std::string& who) {
     if (!g_mutate || who != g_mutate) return false;
     return (who == "P7-W01" && idx == 1) || (who == "P7-W10" && idx == 2) || (who == "P7-W11" && idx == 3);
 }
-std::shared_ptr<Run> cellA(char res, int spres, const std::string& who) { return get(make_a(res, spres, !asub(res, spres, who))); }
+bool abands(char res, int spres, const std::string& who) { return g_mutate && who == g_mutate && who == "BANDS-A" && res == 'S' && spres == 0; }
+std::shared_ptr<Run> cellA(char res, int spres, const std::string& who) {
+    Case c = make_a(res, spres, !asub(res, spres, who));
+    if (abands(res, spres, who)) { clear_sprite(c, 6); clear_sprite(c, 7); c.name = "AB-S-00"; }   // sprites 6 and 7 carry no lines
+    return get(c);
+}
 std::shared_ptr<Run> cellAW(int idx, const std::string& who) { return get(make_aw(idx, !awsub(idx, who))); }
 
 std::shared_ptr<Run> cellB(bool att, const std::string& who) {
     Case c = make_b(att);
+    if (g_mutate && who == "BANDS-B" && who == g_mutate && !att) { clear_sprite(c, 7); c.name = "BB-N"; }   // sprite 7 carries no lines
     if (g_mutate && ((who == "P8" && !att) || (who == "P8-A" && att)) && who == g_mutate) {
         c.cop_extra[4 * 5 + 3] = 0x004B;     // band 5's MOVE writes band 4's value
         c.name = att ? "BX-A" : "BX-N";
@@ -339,6 +329,7 @@ std::shared_ptr<Run> cellB(bool att, const std::string& who) {
 
 std::shared_ptr<Run> cellR(const std::string& who) {
     Case c = make_r();
+    if (g_mutate && std::string(g_mutate) == "SEGS-R") { clear_sprite(c, 7); c.name = "RS"; }   // sprite 7 carries no lines
     if (g_mutate && who == g_mutate) {
         if (who == "P9") { c.bplcon4 = uint16_t(0x0001); c.name = "RX-E"; }
         if (who == "P10") { c.bplcon4 = uint16_t(0x0010); c.name = "RX-O"; }
@@ -506,7 +497,7 @@ void prop_p7(const std::string& who) {
     std::vector<bool> in_ctl;     // the cells of the control: every cell but the two 32-bit fetch widths
     for (char r : std::string("LHS"))
         for (int s = 0; s < 4; ++s) {
-            if (g_mutate && !asub(r, s, who)) continue;
+            if (g_mutate && !asub(r, s, who) && !abands(r, s, who)) continue;
             runs.push_back(cellA(r, s, who));
             gsamp.push_back(2 * pixel_ns(r, s) * G.u / 70);
             parts.push_back(1);
@@ -523,7 +514,6 @@ void prop_p7(const std::string& who) {
     print_group_lines();
     std::string unmet;
     bool deps = deps_ok(runs, &unmet);
-    for (auto& r : runs) if (!a_bands_ok(*r)) { deps = false; unmet += " " + r->name; }
     const bool ctl_only = who == "P7-ctl" || who == "P7-L11" || who == "P7-W11";
     const bool contrast_only = who == "P7-W01" || who == "P7-W10";
     if (!deps) { not_graded(ctl_only ? "P7-ctl" : "P7", unmet); return; }
@@ -547,7 +537,7 @@ void prop_p8(const std::string& who) {
     print_group_lines();
     std::string unmet;
     bool deps = deps_ok({n, a}, &unmet);
-    for (auto& r : {n, a}) if (!b_bands_ok(*r) || !c6_ok(*r)) { deps = false; unmet += " " + r->name; }
+    for (auto& r : {n, a}) if (!c6_ok(*r)) { deps = false; unmet += " " + r->name; }
     if (!deps) { not_graded("P8", unmet); return; }
     CellRes rn = grade_b(*n, false, G), ra = grade_b(*a, true, G);
     cell_note("P8", *n, rn);
@@ -561,8 +551,8 @@ void prop_p9_p10(bool p10) {
     auto r = cellR(who);
     print_group_lines();
     std::string unmet;
-    bool deps = deps_ok({r}, &unmet) && r_segs_ok(*r) && r1_ok(*r) && r2_ok(*r);
-    if (!deps) { not_graded(who, unmet + " (or R1, R2, segments)"); return; }
+    bool deps = deps_ok({r}, &unmet) && r1_ok(*r) && r2_ok(*r);
+    if (!deps) { not_graded(who, unmet + " (or R1, R2)"); return; }
     std::string bits;
     CellRes cr = grade_r(*r, p10, G, &bits);
     cell_note(who, *r, cr);
@@ -623,10 +613,11 @@ void mutated_run() {
     else if (m == "P6a") prop_p6a();
     else if (m == "P6b") prop_p6b();
     else if (m == "P6c") prop_p6c();
-    else if (m == "P7-ctl" || m == "P7-L11" || m == "P7-W01" || m == "P7-W10" || m == "P7-W11") prop_p7(m);
-    else if (m == "P8" || m == "P8-A") prop_p8(m);
+    else if (m == "P7-ctl" || m == "P7-L11" || m == "P7-W01" || m == "P7-W10" || m == "P7-W11" || m == "BANDS-A") prop_p7(m);
+    else if (m == "P8" || m == "P8-A" || m == "BANDS-B") prop_p8(m);
     else if (m == "P9") prop_p9_p10(false);
     else if (m == "P10") prop_p9_p10(true);
+    else if (m == "SEGS-R") { prop_p9_p10(false); prop_p9_p10(true); }
     else std::cout << "NMH_MUTATE=" << m << " names no selector\n";
 }
 
@@ -648,6 +639,11 @@ void dump_run(const std::string& n) {
     const Geom& G = geom();
     std::printf("DUMP u=%d r=%d\n", G.u, G.r);
     auto gs = groups_of(r->g);
+    if (!gs.empty()) {
+        std::printf("DUMP cal rows=%zu:", gs[0].count);
+        for (size_t i = 0; i < gs[0].count && i < 40; ++i) { CalRow c = cal_row(r->g[gs[0].first + i]); std::printf(" [%d..%d n=%zu ok=%d]", c.first1, c.last1, c.runs.size(), c.ok); }
+        std::printf("\n");
+    }
     for (size_t b = 0; b < gs.size(); ++b) {
         std::printf("DUMP group %zu first=%zu rows=%zu\n", b, gs[b].first, gs[b].count);
         if (b == 0 || b > 2) continue;
@@ -665,6 +661,9 @@ void dump_run(const std::string& n) {
         }
     }
     { const Pre& p = pre_of(*r); std::printf("DUMP pre: fix=%d c1=%d c2=%d c3=%d c4=%d c5=%d c7=%d r1=%d r2=%d c6=%d %s %s %s\n", p.fix, p.c1, p.c2, p.c3, p.c4, p.c5, p.c7, r1_ok(*r), r2_ok(*r), c6_ok(*r), p.c3why.c_str(), p.c5why.c_str(), p.c7why.c_str()); }
+    std::printf("DUMP reads in the area of another Copper list:");
+    for (auto a : r->other_list_reads) std::printf(" %06X", a);
+    std::printf("\n");
     std::printf("DUMP early:");
     for (size_t i = 0; i < r->early.size() && i < 40; ++i) std::printf(" %c%06X", r->early[i].is_write ? 'w' : 'r', r->early[i].word_addr * 2);
     std::printf("\n");

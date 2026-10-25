@@ -987,7 +987,7 @@ P10 bits 7-5 of the index (recorded, not graded): 0 of 1536 samples differ from 
 the CPU read of LISAID ($DFF07C) at the end of the register list returned $00F8 in every run
 ```
 
-Graded counts: both builds print 59 passed, 0 failed.
+Graded counts: both builds print 56 passed, 0 failed.
 
 P7. The twelve cells A-<res>-<spres> and the three width runs AW-01, AW-10 and
 AW-11 show every group of every row in the colours of the table (P7 and P7-ctl
@@ -1003,3 +1003,9 @@ neighbouring precondition, the record lists it as "Also printing FAIL". The
 records of P7 are NMH_MUTATE=P7-W01 and P7-W10 (ATT = 0 in the AW-01 and AW-10
 runs). The control P7-ctl has three records of its own (P7-ctl, P7-L11,
 P7-W11).
+The bands and segments of P7 to P10 have their records on the propositions:
+NMH_MUTATE=BANDS-A (P7: sprites 6 and 7 without lines), BANDS-B (P8: sprite 7
+without lines) and SEGS-R (P9 and P10: sprite 7 without lines). Every
+precondition holds in these runs and the comparator of the proposition prints
+FAIL. NMH_MUTATE=C7S-M is the contrast of the SHRES clause of C7 (CP-7a-S), and
+R1-R also prints FAIL for R2-R.

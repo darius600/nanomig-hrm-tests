@@ -6,6 +6,14 @@ namespace s6 {
 
 constexpr int kMVstart0 = 0x50, kMPitch = 10;
 
+// The SHRES marker (SPECIFICATION.md 3.6): beam lines $38 and $39 show kMarker, every later line colour(0).
+inline void add_shres_marker(Case& c) {
+    append(c.cop_extra, cop_wait(0x38, 0x07));
+    append(c.cop_extra, cop_move(R_COLOR00, kMarker));
+    append(c.cop_extra, cop_wait(0x3A, 0x07));
+    append(c.cop_extra, cop_move(R_COLOR00, colour(0)));
+}
+
 inline Case make_m(char res, int spres) {
     Case c;
     set_res(c, res);
@@ -18,6 +26,7 @@ inline Case make_m(char res, int spres) {
         for (int j = 0; j < 3; ++j) s.lines.push_back(line_all(0xFFFF, 0xAAAA, 1));
     }
     c.c5_px = 16; c.c5_ns = pixel_ns(res, spres);
+    if (res == 'S') add_shres_marker(c);
     return c;
 }
 
@@ -76,6 +85,7 @@ inline Case make_a_common(char res, int spres, int fmode_idx, bool att) {
         }
     }
     c.c5_px = 16 * c.n; c.c5_ns = pixel_ns(res, spres);
+    if (res == 'S') add_shres_marker(c);
     c.bands_expected = 4;
     return c;
 }
@@ -147,7 +157,7 @@ inline Case make_r() {
 }
 
 // The contrasting variants of the common preconditions (SPECIFICATION.md 3.8), applied to any case.
-enum class Cp { None, C1, C2, C3, C4, C5, C7a, C7b };
+enum class Cp { None, C1, C2, C3, C4, C5, C7a, C7b, C7s };
 
 inline void apply_cp(Case& c, Cp k) {
     switch (k) {
@@ -166,6 +176,9 @@ inline void apply_cp(Case& c, Cp k) {
         c.cop_extra = x;
         break;
     }
+    case Cp::C7s:
+        for (auto& w : c.cop_extra) if (w == 0x3A07) { w = 0x3C07; break; }   // the marker ends two beam lines later
+        break;
     default: break;
     }
 }

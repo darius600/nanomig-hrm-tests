@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <algorithm>
 #include <iostream>
 
@@ -40,6 +41,7 @@ inline std::string hexs(uint32_t v, int digits = 4) { char b[16]; std::snprintf(
 constexpr uint32_t kProgOrg   = 0x080400;
 constexpr uint32_t kCopper    = 0x088000;
 constexpr uint32_t kProLst    = 0x088100;
+constexpr uint16_t kMarker    = 0x0C3B;     // COLOR00 value of the SHRES marker (SPECIFICATION.md 3.6)
 constexpr uint32_t kSprBase   = 0x089000;
 constexpr uint32_t kSprStride = 0x400;
 constexpr uint32_t kBpl       = 0x090000;
@@ -211,6 +213,7 @@ struct Run {
     std::vector<nmh::RamAccess> gframe;             // accesses of the graded frame in $088000-$08FFFF
     std::vector<uint16_t> list_mem;                 // the register list as the run ended
     std::vector<uint16_t> cop_mem;                  // the Copper list as the run ended
+    std::vector<uint32_t> other_list_reads;         // byte addresses read in the area that 3.9 keeps for another Copper list, whole run
     size_t frames_total = 0;
 };
 
@@ -291,6 +294,13 @@ inline std::shared_ptr<Run> execute(const Case& c) {
     for (const auto& a : lg)
         if (a.cycle >= r->gb && a.cycle < r->ge && a.word_addr >= 0x044000 && a.word_addr < 0x048000)
             r->gframe.push_back(a);
+    {
+        const uint32_t area_lo = kProLst / 2, area_hi = (kProLst + 0x100) / 2;
+        std::set<uint32_t> extra;
+        for (const auto& a : lg)
+            if (!a.is_write && a.word_addr >= area_lo && a.word_addr < area_hi) extra.insert(a.word_addr * 2);
+        r->other_list_reads.assign(extra.begin(), extra.end());
+    }
     for (int i = 0; i < 700; ++i) r->list_mem.push_back(h.peek_word(kRList / 2 + i));
     for (int i = 0; i < 128; ++i) r->cop_mem.push_back(h.peek_word(kCopper / 2 + i));
     return r;

@@ -117,20 +117,34 @@ inline Pre compute_pre(const Run& r, const Geom& G) {
     }
     if (c7 && r.c.res == 'H' && cg.count != size_t(8 * G.r)) { c7 = false; p.c7why = "calibration rows " + dec(cg.count) + ", expected " + dec(8 * G.r); }
     if (c7 && r.c.res == 'L' && cg.count != size_t(16 * G.r)) { c7 = false; p.c7why = "calibration rows " + dec(cg.count) + ", expected " + dec(16 * G.r); }
+    if (c7 && r.c.res == 'S') {
+        // SHRES: the rows that show the marker are consecutive, lie below the calibration rows and number 2r (SPECIFICATION.md 3.8 C7).
+        int wl = cal[0].first1;
+        for (auto& c : cal) wl = std::max(wl, c.first1);
+        const size_t q = size_t(wl + 100);
+        std::vector<size_t> mk;
+        for (size_t i = 0; i < r.g.size(); ++i) if (q < r.g[i].size() && r.g[i][q] == kMarker) mk.push_back(i);
+        if (mk.empty()) { c7 = false; p.c7why = "no row shows the marker"; }
+        else if (mk.back() - mk.front() + 1 != mk.size()) { c7 = false; p.c7why = "the marker rows are not consecutive"; }
+        else if (mk.front() < cg.first + cg.count) { c7 = false; p.c7why = "the marker rows start at row " + dec(mk.front()) + ", inside the calibration rows"; }
+        else if (mk.size() != size_t(2 * G.r)) { c7 = false; p.c7why = "marker rows " + dec(mk.size()) + ", expected " + dec(2 * G.r); }
+    }
     p.c7 = c7;
 
-    // C5: no sprite is clipped by the display window.
-    bool c5 = allok && gs.size() >= 2;
+    // C5: no sprite is clipped by the display window. The window is observed in the calibration rows; the sprites'
+    // programmed extent is placed against it (SPECIFICATION.md 3.8 C5). The sprites in the output are not read.
+    bool c5 = allok && !cal.empty();
     if (c5) {
-        int leftL = 1 << 30, rightL = -1;
-        for (size_t b = 1; b < gs.size(); ++b)
-            for (size_t i = 0; i < gs[b].count; ++i)
-                for (auto& s : segs_of(r.g[gs[b].first + i])) { leftL = std::min(leftL, s.L); rightL = std::max(rightL, s.L); }
-        int exp_len = r.c.c5_px * r.c.c5_ns * u / 70;
-        for (auto& c : cal) {
-            if (!(c.first1 < leftL)) { c5 = false; p.c5why = "first colour(1) sample " + dec(c.first1) + " is not left of the leftmost segment start " + dec(leftL); break; }
-            if (!(c.last1 >= rightL + exp_len)) { c5 = false; p.c5why = "last colour(1) sample " + dec(c.last1) + " is left of " + dec(rightL + exp_len); break; }
-        }
+        int wl = cal[0].first1, wr = cal[0].last1;
+        for (auto& c : cal) { wl = std::max(wl, c.first1); wr = std::min(wr, c.last1); }
+        const int diw_h = r.c.diwstrt & 0xFF;
+        int hmin = 1 << 30, hmax = -1;
+        for (int k = 0; k < 8; ++k) { hmin = std::min(hmin, r.c.spr[k].hstart); hmax = std::max(hmax, r.c.spr[k].hstart); }
+        const int exp_len = r.c.c5_px * r.c.c5_ns * u / 70;
+        const int left = wl + (hmin - diw_h) * 2 * u;
+        const int right = wl + (hmax - diw_h) * 2 * u + exp_len;
+        if (left < wl) { c5 = false; p.c5why = "the leftmost sprite starts at sample " + dec(left) + ", left of the window's first colour(1) sample " + dec(wl); }
+        else if (right > wr) { c5 = false; p.c5why = "the rightmost sprite ends at sample " + dec(right) + ", right of the window's last colour(1) sample " + dec(wr); }
     }
     p.c5 = c5;
     return p;
@@ -194,6 +208,7 @@ inline bool r2_ok(const Run& r) {
     if (n10c != (want_write ? 1 : 0)) return false;
     if (want_write && v10c != *r.c.bplcon4) return false;
     if (!cop1_ok || other) return false;
+    if (!r.other_list_reads.empty()) return false;   // the Copper ran a list other than the case's
     // the Copper list as the run ended: no MOVE to BPLCON4
     for (size_t k = 0; k + 1 < r.cop_mem.size();) {
         uint16_t w = r.cop_mem[k];
