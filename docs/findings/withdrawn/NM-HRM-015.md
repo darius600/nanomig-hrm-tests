@@ -41,7 +41,7 @@ document and no implementation does.
 gives BRDNTRAN an effect on the colour the border is drawn in. A claim about the
 other genlock keying controls p. 307 prints (BPLCON2's `ZDBPSEL2`-`ZDBPSEL0`,
 `ZDBPEN`, `ZDCTEN`) meets the same absence: NanoMig acts on none of them, since BPLCON2's bits 14-10 are read nowhere and BPLCON3's
-`BRDNTRAN` is decoded and read nowhere; it has no genlock output for them to drive. `hrm/ch7-bplcon2-live-bits-and-ecs` records the BPLCON2 ones on ECS
+`BRDNTRAN` is decoded (`denise.v:254`) but read nowhere; it has no genlock output for them to drive. `hrm/ch7-bplcon2-live-bits-and-ecs` records the BPLCON2 ones on ECS
 without asserting them, and `aa/aa-bplcon-bits-at-denise` declines its claims
 about the `ZD` pin and other chip pins as absent at this boundary. The genlock
 attaches at the 23-pin connector, and the register does not take a claim about

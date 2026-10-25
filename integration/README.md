@@ -21,10 +21,17 @@ or more (measured: 18 minutes for `appK-autoconfig`, 12 minutes for
 A package that carries `*.patch` files also has a `<copy>-test` target
 (`<copy>-test-fx68k` and `<copy>-test-tg68k` for one core). It builds and runs the
 package against a private copy of the chip set with that patch applied; the
-submodule is never modified. A finding page whose suggested change has a patch
-names the target in its Test row, for example
-`make -k -C integration/ch8-light-pen-beam latch-test`, which runs NM-HRM-087's
-suggested latch. The package's `Makefile` lists its copies.
+submodule is never modified. The packages that ship a patch, with their copies, are
+`appF-cia-system` (`conf`, `sp`), `ch2-copper-beam` (`op`, `rn`, `lc`, `cs`),
+`ch4-sprite-registers` (`sh`, `bc`), `ch5-audio-attach-modulation` (`pm`),
+`ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`); each
+`Makefile` lists its copies. `aa-integ-s2` is the exception: its patches are in
+`private/`, its targets are `private-uhres`, `private-longline`,
+`private-novbrelease` and `private-laterelease`, and it has no per-core variants
+of them. A finding page whose suggested change has a patch names the target in its
+Test row, for example `make -k -C integration/ch8-light-pen-beam latch-test`, which
+runs NM-HRM-087's suggested latch, or in its body, as NM-HRM-038 (`sm-test-fx68k`)
+and NM-HRM-078 (`conf-test-fx68k`) do.
 
 Each core writes `out_fx68k.txt` or `out_tg68k.txt` in the package directory,
 in the line format the root [`README.md`](../README.md#where-the-suite-stands)

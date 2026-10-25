@@ -2,10 +2,9 @@
 
 ## If you have one evening
 
-**If you have one evening: 52 of these 75 ask you to decide whether the RTL
-should change.** The other 23 are open too and ask for no RTL change: 20 question
-the printed page, 1 the classification, and 2 are source observations: no test yet, or measured only inside the module. The table below
-is sorted by key, not by how much it wants from you — so the first row is not
+The register below holds 75 HRM findings.
+**If you have one evening: 52 of these 75 ask you to decide whether the RTL should change.** The other 23 are open too and ask for no RTL change: 20 question the printed page, 1 the classification, and 2 are source observations: no test yet, or measured only inside the module. The table below
+is sorted by key, not by how much it wants from you, so its first row is not
 the place to start. Start at one of these, whichever is nearest your own
 interest:
 
@@ -16,6 +15,8 @@ interest:
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
 The 29 pages whose Effort row is `S`, a small change, are [NM-AA-006](findings/NM-AA-006.md), [NM-AA-007](findings/NM-AA-007.md), [NM-AA-012](findings/NM-AA-012.md), [NM-HRM-019](findings/NM-HRM-019.md), [NM-HRM-020](findings/NM-HRM-020.md), [NM-HRM-021](findings/NM-HRM-021.md), [NM-HRM-023](findings/NM-HRM-023.md), [NM-HRM-025](findings/NM-HRM-025.md), [NM-HRM-032](findings/NM-HRM-032.md), [NM-HRM-033](findings/NM-HRM-033.md), [NM-HRM-035](findings/NM-HRM-035.md), [NM-HRM-037](findings/NM-HRM-037.md), [NM-HRM-040](findings/NM-HRM-040.md), [NM-HRM-046](findings/NM-HRM-046.md), [NM-HRM-049](findings/NM-HRM-049.md), [NM-HRM-050](findings/NM-HRM-050.md), [NM-HRM-051](findings/NM-HRM-051.md), [NM-HRM-064](findings/NM-HRM-064.md), [NM-HRM-066](findings/NM-HRM-066.md), [NM-HRM-069](findings/NM-HRM-069.md), [NM-HRM-072](findings/NM-HRM-072.md), [NM-HRM-073](findings/NM-HRM-073.md), [NM-HRM-075](findings/NM-HRM-075.md), [NM-HRM-080](findings/NM-HRM-080.md), [NM-HRM-084](findings/NM-HRM-084.md), [NM-HRM-086](findings/NM-HRM-086.md), [NM-HRM-088](findings/NM-HRM-088.md), [NM-HRM-091](findings/NM-HRM-091.md), [NM-HRM-092](findings/NM-HRM-092.md).
+
+## About the register
 
 **[NM-HRM-002](findings/NM-HRM-002.md) sorts first and asks for no RTL change**:
 the manual assigns the stereo sides twice and the two disagree, and NanoMig,
@@ -101,8 +102,10 @@ statements, and is incomplete without them:**
 
 - its **Module** row ends *NanoMig's own* and says there is no counterpart in
   MiSTer, naming where upstream does the same work instead;
-- its **Report to** row says `NanoMig direct`, because a reader who takes it as a
-  statement about Minimig will be wrong.
+- when it is filed against the RTL, its **Report to** row says `NanoMig direct`,
+  because a reader who takes it as a statement about Minimig will be wrong (a page
+  that routes `no RTL action`, such as NM-HRM-052 and NM-HRM-061, has no RTL to
+  report to).
 
 Which layer answers for a page is decided by what the page specifies, not by a
 directory. Appendix G specifies the keyboard as a device with its own

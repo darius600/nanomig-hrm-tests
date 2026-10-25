@@ -11,7 +11,7 @@ diverging from Minimig-AGA.
 
 | | revision |
 |---|---|
-| NanoMig (the submodule this suite builds) | [`4495f86`](https://github.com/harbaum/NanoMig/tree/4495f86fbb0611e53649165faa36f1125e062f18) · v0.14-beta-55 |
+| NanoMig (the revision this comparison was measured at) | [`4495f86`](https://github.com/harbaum/NanoMig/tree/4495f86fbb0611e53649165faa36f1125e062f18) · v0.14-beta-55 |
 | Minimig-AGA on MiSTer | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) · 2026-09-11 |
 | Minimig-AGA on MiST/TC64 | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
 

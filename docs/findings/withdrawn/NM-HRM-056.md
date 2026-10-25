@@ -9,7 +9,7 @@
 | **Withdrawal reason** | No page requires TBE to read 0 after a write from an idle transmitter; p. 257's clear TBE is the waiting-word case, which NanoMig keeps |
 | **Error class** | **a silence read as a requirement** |
 | **Replacement** | Green: `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in [`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) (TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0); `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit) (TBE back at 1 within 3 ticks of a write from idle) |
-| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L149); inherited (line 149 is MiSTer's and TC64's line 139 with `&& !tx_hold` added; `tx_hold` is the constant 0 unless `ENABLE_AT_MODEM` is defined, and both Tang Nano 20K top files define it) |
+| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L149); inherited (line 149 is MiSTer's and TC64's line 139 with `&& !tx_hold` added; `tx_hold` is the constant 0 unless `ENABLE_AT_MODEM` is defined, and of the three Tang Nano 20K top files, `top.sv` and `top_020.sv` define it and `top_lcd.sv` does not) |
 | **Test** | `make -C hrm/ch8-serdatr-read-word test` (`12 passed, 2 failed`) and `make -C hrm/ch8-serdat-transmit test` (`17 passed, 1 failed`); the other reds are `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ` ([NM-HRM-057](../NM-HRM-057.md)) and `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10` ([NM-HRM-058](../NM-HRM-058.md)) in the first, `ALLZERO-NO-TX` ([NM-HRM-055](../NM-HRM-055.md)) in the second, and an expected red exits nonzero |
 | **Chapter** | 8 — Interface Hardware, printed pp. 257–258 (SERDATR TBE and TSRE rows; SERDAT); Appendix A, printed p. 283 (SERDAT, SERDATR) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: <details><summary>claim ids by assertion (21)</summary> `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`: `sol:8-serdatr.c25`, `sol:8-serdatr.c27`, `sol:8-serdatr.c31`, p. 257; `DOUBLE-BUFFER-AND-TBE`: `sol:8-serdat.c6`, `sol:8-serdat.c7`, `sol:8-serdat.c8`, p. 258, and `opus:8-serdat.c7`, `opus:8-serdat.c8`, `sol:8-serdat.c44`, `sol:8-serdat.c45`, p. 283; `TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`: `sol:8-serdatr.c33`, `sol:8-serdatr.c35`, `sol:8-serdatr.c36`, `sol:8-serdatr.c37`, `sol:8-serdatr.c38`, `sol:8-serdatr.c39`, p. 257, and `opus:8-serdatr.c20`, `opus:8-serdatr.c21`, `sol:8-serdatr.c99`, `sol:8-serdatr.c101`, `sol:8-serdatr.c102`, p. 283</details> |
 | **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` green; `DOUBLE-BUFFER-AND-TBE` green, measured `tbe_duration=1 ticks, tsre_duration=374 ticks`; on the read just after one write from idle SERDATR reads `0x2800`, TBE already 1 (`TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`, green, which grades bit 12 only) |
@@ -66,10 +66,10 @@ is 0, and SERDATR bit 13 is `tx_tbe` itself
 ([`:258`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L258)).
 `tx_hold` is the constant 0 unless `ENABLE_AT_MODEM` is defined
 ([`:40-41`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L40-L41)).
-Both Tang Nano 20K top files define it
+Of the three Tang Nano 20K top files, `top.sv` and `top_020.sv` define it
 ([`top.sv#L23`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top.sv#L23),
-[`top_020.sv#L23`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top_020.sv#L23)),
-and the AT-modem bridge then drives `tx_hold` while its FIFO is full, so that no
+[`top_020.sv#L23`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top_020.sv#L23));
+`top_lcd.sv` does not. Where it is defined, the AT-modem bridge drives `tx_hold` while its FIFO is full, so that no
 frame starts (`:101`) and TBE stays 0. The `hrm/` packages and the integration
 build do not define it; what follows describes that build.
 

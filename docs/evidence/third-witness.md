@@ -108,7 +108,7 @@ puts channels 0 and 3 fully right.
 The two emulators split: WinUAE plays channels 0 and 3 on the left, as the pin
 list prints, and vAmiga on the right, as chapter 5 prints.
 `paula_audio_mixer.v` follows the pin list
-([L76–L77](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L76-L77)):
+([L76–L77](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v#L76-L77)):
 
 ```verilog
   ldatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
