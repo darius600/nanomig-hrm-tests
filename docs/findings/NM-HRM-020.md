@@ -13,7 +13,7 @@
 | **Module** | `agnus_blitter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_blitter.v#L546-L549) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569); inherited |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs): `make -C hrm/ch6-blitter-ecs test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`: expected the height loaded with `ecs = 0` to differ from the one loaded with `ecs = 1`, observed 7 and 7; the package reports `12 passed, 4 failed`, the other three reds being other findings |
-| **Verdict of the four** | **all four gate it on ECS. NanoMig alone does not.** Hardware: not measured |
+| **Verdict of the four** | **all four gate it on ECS. NanoMig, like MiSTer and TC64, does not.** Hardware: not measured |
 | **Effort** | S — one `&& ecs` on the `BLTSIZV` decode at `agnus_blitter.v:548` |
 
 ---

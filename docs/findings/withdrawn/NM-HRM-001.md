@@ -9,7 +9,7 @@
 | **Withdrawal reason** | The test graded 312 positions with the long-frame bit at its reset value 1; NanoMig counts 313 then, which p. 216 prints, and 312 with the bit cleared |
 | **Error class** | none |
 | **Replacement** | Green: `PAL-FIELD-312-NTSC-FIELD-262-LINES` (PAL) in [`hrm/ch3-beam-counters-and-blanking`](../../../hrm/ch3-beam-counters-and-blanking), two fields of exactly 312 lines with the bit cleared first; `CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES` in [`hrm/ch3-field-geometry`](../../../hrm/ch3-field-geometry), 313 end-of-line pulses from reset to the first end-of-frame |
-| **Module** | `agnus_beamcounter.v` — [NanoMig `4495f86` `:87`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L87), [NanoMig `4495f86` `:344`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L344); MiSTer and TC64 have the same `VTOTAL_PAL_VAL` and the same reset default: inherited |
+| **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb` `:87`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L87), [NanoMig `4315acb` `:344`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L344); MiSTer and TC64 have the same `VTOTAL_PAL_VAL` and the same reset default: inherited |
 | **Test** | `make -C hrm/ch3-field-geometry test` (`10 passed, 0 failed`); `make -C hrm/ch3-beam-counters-and-blanking test` (`28 passed, 5 failed`; the five reds are other assertions, and an expected red exits nonzero) |
 | **Chapter** | 3 — Playfield, printed p. 40, and 7 — System Control Hardware, printed p. 216 (Table 7-5) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `PAL-FIELD-312-NTSC-FIELD-262-LINES`: `opus:3-video.c04`, `opus:3-video.c06`, `opus:3-video.c08`, `opus:3-video.c11`, `sol:3-video.c11`, `sol:3-video.c14`, `sol:3-video.c7`, `sol:3-video.c9`, p. 40. `CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES` and `PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET` carry no claim id. The p. 216 sentence below is `sol:7-beam.c8` and `opus:7-bp.c9`, which no assertion of the two packages carries (recorded-only in the coverage ledger) |
 | **Assertions** | `PAL-FIELD-312-NTSC-FIELD-262-LINES` (PAL) green; `CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES` green; `PRECONDITION-LONG-FRAME-DEFAULT-AT-RESET` green |
@@ -31,7 +31,7 @@ The test asserted that a normal PAL non-interlace field is 312 positions, `vpos`
 > With a PAL system, the beam produces 312 lines, of which 256 are normally visible. Each complete set of lines (262/NTSC or 312/PAL) is called a display field.
 
 NanoMig gives both: the long-frame bit is set at reset
-([`:344`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L344)),
+([`:344`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L344)),
 which makes 313 lines, and with it cleared by a VPOSW write
 `PAL-FIELD-312-NTSC-FIELD-262-LINES` measures 312.
 

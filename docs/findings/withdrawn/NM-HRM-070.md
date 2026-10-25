@@ -9,7 +9,7 @@
 | **Withdrawal reason** | Pages 249 and 265 time the stream on Paula's write-data pin, which `nanomig.v` does not have, and no page ties the rate of the disk DMA's Chip-memory reads to that clock |
 | **Error class** | **a proxy graded as the page's quantity** |
 | **Replacement** | None graded green. The seven lines are declined as RECORDED and the measured durations stay as MEASURED lines in [`integration/ch5-audio-output-scanrate`](../../../integration/ch5-audio-output-scanrate) and [`integration/ch8-disk-serial`](../../../integration/ch8-disk-serial); [`hrm/ch8-adkcon-disk-control-bits`](../../../hrm/ch8-adkcon-disk-control-bits) records bit 8 stored, read back and routed nowhere |
-| **Module** | `paula.v`, `paula_floppy.v` — [NanoMig `4495f86` `paula.v#L132`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132), [NanoMig `4495f86` `paula_floppy.v#L1002`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L1002); inherited (MiSTer and TC64 leave bit 8 unrouted and carry the same request and 2048-word FIFO; both differ around a write, its start and drain, and TC64's slot table has one more term, see their rows) |
+| **Module** | `paula.v`, `paula_floppy.v` — [NanoMig `4315acb` `paula.v#L137`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L137), [NanoMig `4315acb` `paula_floppy.v#L1002`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L1002); inherited (MiSTer and TC64 leave bit 8 unrouted and carry the same request and 2048-word FIFO; both differ around a write, its start and drain, and TC64's slot table has one more term, see their rows) |
 | **Test** | `make -k -C integration/ch5-audio-output-scanrate test`; `make -k -C integration/ch8-disk-serial test`; `make -C hrm/ch8-adkcon-disk-control-bits test`. `integration/ch8-disk-serial` has reds of other assertions and exits nonzero; `integration/ch5-audio-output-scanrate` and `hrm/ch8-adkcon-disk-control-bits` have none; the seven lines of this page are RECORDED, not red |
 | **Chapter** | 8 — Interface Hardware, printed pp. 247, 249, 250; Appendix A, printed pp. 265, 279; Appendix J, printed pp. 380, 381; p. 194 is quoted and p. 164 cited in *Why it was withdrawn* · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids as the packages' RECORDED lines print them: `G1` and `G2`: `A-adkcon.b08`, `5-appA-p265.c21`, pp. 265, 249; the four `P4-*` lines: `opus:8-adkcon.c33`, pp. 265, 249; `G3` carries no claim id (pp. 265, 249) |
 | **Assertions** | `G1`, `G2`, `G3` in `integration/ch5-audio-output-scanrate` and `P4-NTSC-FAST1`, `P4-PAL-FAST1`, `P4-NTSC-FAST0`, `P4-PAL-FAST0` in `integration/ch8-disk-serial`: all seven declined, none graded; no red |
@@ -56,8 +56,8 @@ declines "because no page states one".
 **The measurements stand as measurements.** Disk write DMA reads 512 words in
 310520 cycles, three a line in the disk slots, the same to the cycle with
 ADKCON bit 8 set and clear, on both cores. In the source, bit 8 is stored,
-read back and routed nowhere ([`paula.v#L132`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132),
-[`#L198`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L198)),
+read back and routed nowhere ([`paula.v#L137`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L137),
+[`#L203`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L203)),
 which [`hrm/ch8-adkcon-disk-control-bits`](../../../hrm/ch8-adkcon-disk-control-bits)
 records. None of this contradicts a printed sentence that a test at
 `nanomig.v` can show: the function p. 265 gives the bit acts on a stream this
@@ -88,8 +88,8 @@ bit 8, and what paces the words a write takes from memory?
 write has started.** They differ from NanoMig around a write, not in it. Each
 waits for its host to start a write, where NanoMig starts one as soon as
 DSKLEN's second write, DMACON and a nonzero length allow it,
-[`paula_floppy.v#L1002`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L1002), `if (dma_active)`, with
-[`#L248`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L248), `wire dma_active = dmaen && !lenzero && enable;`,
+[`paula_floppy.v#L1002`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L1002), `if (dma_active)`, with
+[`#L248`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L248), `wire dma_active = dmaen && !lenzero && enable;`,
 and each lets its host empty the FIFO that NanoMig's SD-card path empties.
 NanoMig's drain takes up to two words a colour clock unless its sector parser
 waits for the SD card, and the lines' take a word whenever the host reads one.

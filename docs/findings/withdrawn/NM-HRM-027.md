@@ -9,7 +9,7 @@
 | **Withdrawal reason** | p. 157's "after one data word has been output" describes the interrupt at the word transition; it does not forbid the one Figure 5-8 draws at the write |
 | **Error class** | **a sentence graded without the figure that completes it** |
 | **Replacement** | Green: `5-p157.c13` / `5-direct.c4` in [`hrm/ch5-audio-direct-output`](../../../hrm/ch5-audio-direct-output) requires an `AUDxIR` pulse at the word transition that ends word 1 (p. 157, p. 164, Figure 5-8's 011→010 arc), measured at tick 176 |
-| **Module** | `paula_audio_channel.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285); inherited (identical in MiSTer at the same lines, the same two branches in TC64) |
+| **Module** | `paula_audio_channel.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285); inherited (identical in MiSTer at the same lines, the same two branches in TC64) |
 | **Test** | `make -C hrm/ch5-audio-direct-output test`; `12 passed, 0 failed` |
 | **Chapter** | 5 — Audio Hardware, printed pp. 147, 157, 164, 166 (Figure 5-8); Appendix A — Register Summary, printed p. 265 · *Amiga Hardware Reference Manual*, 3rd ed., 1991; claim ids `5-p157.c13` and `5-direct.c4` (p. 157) belong to the one assertion below; pp. 147, 164, 166 and 265 are quoted or tabulated on this page and carry no claim id here |
 | **Assertions** | `5-p157.c13` `5-direct.c4`: green, `AUDxIR` after the low byte (tick 136) and no later than the next high byte (tick 184), measured at tick 176; its diagnostic (the pulse at 176 is a later event than the write's pulse at 80) green |
@@ -95,7 +95,7 @@ which p. 157 itself sets apart ("this changes the timing of the interrupts"):
 The branch leaving the idle state on a CPU write to `AUDxDAT` raises the
 interrupt request in the same step, as Figure 5-8's arc does:
 
-[`src/minimig-aga/paula_audio_channel.v#L281-L285`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L281-L285)
+[`src/minimig-aga/paula_audio_channel.v#L281-L285`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L281-L285)
 
 ```verilog
 else if (AUDxDAT && !AUDxON && !AUDxIP) begin
@@ -107,7 +107,7 @@ else if (AUDxDAT && !AUDxON && !AUDxIP) begin
 The return from the low-byte state to the high-byte state raises it again,
 unconditionally while DMA is off:
 
-[`src/minimig-aga/paula_audio_channel.v#L421-L427`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L421-L427)
+[`src/minimig-aga/paula_audio_channel.v#L421-L427`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L421-L427)
 
 ```verilog
 if (perfin && (AUDxON || !AUDxIP)) //period counter expired and audio DMA active
@@ -121,7 +121,7 @@ begin
 
 NanoMig numbers that low-byte state `110`, not the figure's `011`
 ([NM-HRM-026](../NM-HRM-026.md)); the transition is the same one. `AUDxIR` is the
-interrupt port itself ([`#L133`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L133)),
+interrupt port itself ([`#L133`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_channel.v#L133)),
 and `intreq` and `sample` are both top-level ports.
 
 ### Measured

@@ -9,7 +9,7 @@
 | **Withdrawal reason** | No printed page gives BPLCON3 bit 4 an effect on the colour the border is drawn in: pp. 296, 297 and 307 name it among the genlock features, whose signal is Denise's `ZD*` pin |
 | **Error class** | none |
 | **Replacement** | Green control: `G11-BRDRBLNK-WORKS` in [`hrm/ch3-horizontal-display-window`](../../../hrm/ch3-horizontal-display-window), bit 5 of the same register blanking the border on the same fixture; `D-BRDNTRAN-HAS-NO-EFFECT` in the same package is now a `record()` |
-| **Module** | `denise.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v); inherited (MiSTer has the same code, both lines commented out; TC64 differs: both lines are live, and `brdntran` appears nowhere else in its file) |
+| **Module** | `denise.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v); inherited (MiSTer has both lines commented out; TC64 and NanoMig at `4315acb` have both lines live, and `brdntran` appears nowhere else in the file) |
 | **Test** | `make -C hrm/ch3-horizontal-display-window test` — `13 passed, 0 failed`; `D-BRDNTRAN-HAS-NO-EFFECT` is a `record()` that declines its seven claims as absent at this boundary, because BRDNTRAN acts on the `ZD*` background indicator (p. 380), which the `denise` fixture does not have. Related packages: `make -C hrm/ch7-bplcon2-live-bits-and-ecs test`, `make -C aa/aa-bplcon-bits-at-denise test` |
 | **Chapter** | 3 — Playfield, printed pp. 46 and 89; 8 — Interface Hardware, p. 260; Appendix C, pp. 296, 297 and 307; Appendix J, p. 380 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `D-BRDNTRAN-HAS-NO-EFFECT`: `opus:C-gen.c09` p. 296, `sol:C-genlock.c4` p. 296, `opus:C-gen.c12` p. 297, `sol:C-genlock-ext.c16` p. 307, `opus:C-ecsbit.b04` p. 307, `sol:C-genlock-ext.c3` p. 307, `opus:C-gen.c15` p. 307. `G11-BRDRBLNK-WORKS`: `opus:C-gen.c08` p. 296, `sol:C-genlock.c3` p. 296, `opus:C-ecsbit.b05` p. 307, `sol:C-genlock-ext.c4` p. 307 |
 | **Assertions** | `D-BRDNTRAN-HAS-NO-EFFECT`: was an `expect()` requiring the border's colour with BPLCON3 = `$0010` to differ from the colour with `$0000`, red; now a `record()` with no pass/fail state. `G11-BRDRBLNK-WORKS`: green |
@@ -31,7 +31,7 @@ has an output for that background, `ZD*` (p. 380). An opaque border is one the
 external video does not replace. Its colour is still COLOR00, with or without
 the bit.
 
-NanoMig's Denise drives `red`, `green` and `blue`, the bus and two mode bits,
+NanoMig's Denise drives `red`, `green` and `blue`, the bus, the blanking and two mode bits,
 and has no `ZD` pin, so at its outputs the manual predicts no change when bit 4
 is set. Wiring `brdntran` into the border composition the way `brdrblnk` reaches
 `t_blank` would change the border's colour, which no page, no Commodore
@@ -40,8 +40,8 @@ document and no implementation does.
 **Condition for filing again.** A printed page or a Commodore document that
 gives BRDNTRAN an effect on the colour the border is drawn in. A claim about the
 other genlock keying controls p. 307 prints (BPLCON2's `ZDBPSEL2`-`ZDBPSEL0`,
-`ZDBPEN`, `ZDCTEN`) meets the same absence: NanoMig decodes none of them, nor
-BPLCON3's `BRDNTRAN`, because it has no genlock output for them to drive. `hrm/ch7-bplcon2-live-bits-and-ecs` records the BPLCON2 ones on ECS
+`ZDBPEN`, `ZDCTEN`) meets the same absence: NanoMig acts on none of them, since BPLCON2's bits 14-10 are read nowhere and BPLCON3's
+`BRDNTRAN` is decoded and read nowhere; it has no genlock output for them to drive. `hrm/ch7-bplcon2-live-bits-and-ecs` records the BPLCON2 ones on ECS
 without asserting them, and `aa/aa-bplcon-bits-at-denise` declines its claims
 about the `ZD` pin and other chip pins as absent at this boundary. The genlock
 attaches at the 23-pin connector, and the register does not take a claim about
@@ -100,21 +100,21 @@ No page gives `BRDNTRAN` an effect on the colour the border is drawn in.
 
 ## RTL and measurement
 
-`brdntran` is commented out at its declaration
-([`src/minimig-aga/denise.v#L234-L235`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L234-L235))
-and at its assignment, `//assign brdntran = bplcon3[4] & ecsena;`
-([`src/minimig-aga/denise.v#L253-L254`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L253-L254)),
-while its neighbour `brdrblnk` is live and paints the border black at the colour
+`brdntran` is declared
+([`src/minimig-aga/denise.v#L234-L235`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L234-L235))
+and assigned, `assign brdntran = bplcon3[4] & ecsena;`
+([`src/minimig-aga/denise.v#L253-L254`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L253-L254)),
+but the file reads it nowhere, while its neighbour `brdrblnk` reaches `t_blank` and paints the border black at the colour
 outputs
-([`src/minimig-aga/denise.v#L515-L518`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L515-L518)).
+([`src/minimig-aga/denise.v#L562-L565`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L562-L565)).
 
 The module has no output a genlock could key on. Its outputs are the bus, the
-colour, and two mode bits
-([`src/minimig-aga/denise.v#L42-L51`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L42-L51)),
+blanking, the colour, and two mode bits
+([`src/minimig-aga/denise.v#L42-L52`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L42-L52)),
 and BPLCON2's genlock bits 14-10 are read nowhere: the file uses bits 8 and 9
-([`denise.v#L219-L226`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L219-L226))
+([`denise.v#L221-L226`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L221-L226))
 and 6-0
-([`denise.v#L383`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L383))
+([`denise.v#L418`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L418))
 only.
 
 `G11-BRDRBLNK-WORKS`, green in
@@ -131,8 +131,8 @@ shows bit 5 of the same register blanking the border on the same fixture.
 | **vAmiga** | does not read the bit and models no genlock. Its only BPLCON3 border control is bit 5, `static bool brdrblnk(u16 v) { return !!GET_BIT(v, 5); }` ([`Core/Components/Denise/Denise.h:1068`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.h#L1068)), which draws the border black ([`Denise.cpp:1324-1325`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1324-L1325)) |
 | **Denise** | does not read the bit and models no genlock. It decodes two bits of BPLCON3, `brdrblnk = ecsena() && (bplCon3 & 0x20);` and `extblanken = ecsena() && (bplCon3 & 1);` ([`emulation/libami/video/denise.cpp:414-415`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L414-L415)) |
 | **Copperline** | **implements it**, with its own test, as genlock keying only: while it is set the border is never genlock-transparent ([`src/video/bitplane.rs:997`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L997)); the test ([`src/video/bitplane/tests.rs:1389-1415`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L1389-L1415)) expects the border's colour unchanged and only its alpha opaque |
-| **MiSTer** | descendant — [`rtl/denise.v:197-198`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L197-L198), [`:216-217`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L216-L217) — same as NanoMig: `brdntran` is declared and assigned but both lines stay commented out |
-| **TC64** | descendant — [`rtl/minimig/denise.v:205`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L205), [`:224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L224) — both lines are live, `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;`, and `brdntran` appears nowhere else in the file; its Denise has no genlock output either |
+| **MiSTer** | descendant — [`rtl/denise.v:197-198`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L197-L198), [`:216-217`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L216-L217) — `brdntran` is declared and assigned, and both lines stay commented out; NanoMig at `4315acb` has both lines live, `denise.v:235` and `:254`, and reads `brdntran` nowhere |
+| **TC64** | descendant — [`rtl/minimig/denise.v:205`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L205), [`:224`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L224) — both lines are live, as in NanoMig at `4315acb`, `wire brdntran;` and `assign brdntran = bplcon3[4] & ecsena;`, and `brdntran` appears nowhere else in the file; its Denise has no genlock output either |
 
 **No implementation changes the border's colour for this bit.** WinUAE and
 Copperline implement `BRDNTRAN` as genlock keying: the border stops being

@@ -140,6 +140,7 @@ headings are free.
 - **One witness matrix**, in the order WinUAE, vAmiga, Denise, Copperline, MiSTer, TC64.
   MiSTer and TC64 are marked *descendant* and never counted among the four. A source
   nobody read is written *not read*.
+- **"Identical" means the cited lines.** A claim about a whole file says *file*.
 - **No method prose on a page.** The oracle statement, the mutation and gate
   explanation, the private-copy narrative, the revision ledger and the second-documents
   paragraph are stated once, here and in *Second documents* below.
@@ -172,13 +173,15 @@ a reader can follow the thread without going back to the register.
 
 | what | repository | revision · commit date |
 |---|---|---|
-| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`4315acb`](https://github.com/harbaum/NanoMig/tree/4315acba5e9f1e15103037627aa78b3460cae8af) · v0.14-beta-114 · 2026-10-16 |
+| **NanoMig** — the design under test | [harbaum/NanoMig](https://github.com/harbaum/NanoMig) | [`4315acb`](https://github.com/harbaum/NanoMig/tree/4315acba5e9f1e15103037627aa78b3460cae8af) · v0.14-beta-114-g4315acb · 2026-10-16 |
 | **Minimig-AGA** — what NanoMig descends from | [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer) | [`da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/tree/da7632e44498840850e78966947f8770166e6e77) · 2026-09-11 |
 | **Minimig-AGA on MiST/TC64** — the second maintained line | [minimig-dev/MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) | [`9e8e308`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/tree/9e8e30844fe134dca54cea65f1bd38539dfc15ad) · 2025-05-03 |
 | WinUAE | [tonioni/WinUAE](https://github.com/tonioni/WinUAE) | [`ccc407e`](https://github.com/tonioni/WinUAE/tree/ccc407e9c636668b99b5f19d6e9aa03ea04b3052) · 2026-09-06 |
 | vAmiga | [dirkwhoffmann/vAmiga](https://github.com/dirkwhoffmann/vAmiga) | [`35de004`](https://github.com/dirkwhoffmann/vAmiga/tree/35de004a2f1502c2811b9a8ebcde4d0979a98937) · 2026-09-06 |
 | Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) · 2026-09-11 |
 | Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) · 2026-09-11 |
+
+NanoMig has moved on since `4315acb`; open the permalinks, not a current checkout.
 
 ### The two Minimig lines are ancestors, not witnesses — and nothing merges them down
 

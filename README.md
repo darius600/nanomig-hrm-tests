@@ -98,6 +98,10 @@ commit.
 measurement against the value the page gives; only they count, and the summary
 `N passed, M failed` counts them. `MEASURED:` prints a value compared with
 nothing; `RECORDED:` names a claim the test deliberately does not check, and why.
+A `RECORDED:` line that begins `DECLINED` names a claim the package cannot
+observe at its boundary, with the reason after it. One that begins `NOT GRADED`
+names a check whose preconditions did not hold in that run, so it is neither
+passed nor failed. Neither is in the `N passed, M failed` count.
 
 **What each state of a finding asks of you.** An *open* finding asks for the
 decision its page names: mostly whether the RTL should change, or, for one filed

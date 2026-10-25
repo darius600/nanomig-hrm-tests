@@ -9,7 +9,7 @@
 | **Withdrawal reason** | p. 344 stops the clock on a write to "the register" and names none, so no page requires a write to $9 to stop it, and the next sentence rules out the claim's requirement that a lone write to $8 leave it stopped |
 | **Error class** | **a silence read as a requirement** |
 | **Replacement** | Green, in [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm): `TOD-WRITE-STOPS-CLOCK` (a write to $A stops a clock started by a write to $8 and seen to count; a lone write to $8 leaves it counting; a write to $9 is measured and not graded, because p. 344 names no register for the stop), `TOD-WRITE-STARTS-LSB-ONLY` and `TOD-WRITE-STARTS-ATOMIC-VALUE` |
-| **Module** | `cia_timerd.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L68-L80) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timerd.v#L81-L96); inherited (MiSTer has the same block; TC64 has the same stop and differs in the restart and the reset, see *Independent evidence*) |
+| **Module** | `cia_timerd.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerd.v#L68-L80) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timerd.v#L81-L96); inherited (MiSTer has the same block; TC64 has the same stop and differs in the restart and the reset, see *Independent evidence*) |
 | **Test** | `make -C hrm/appF-cia-tod-clock-and-alarm test`; `TOD-WRITE-STOPS-CLOCK` is at `test_ciaa.cpp:792-869`; the package reads `44 passed, 0 failed`, its fixture-liveness check included, so nothing exits nonzero |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 344 (*Time of Day Clock*, and the table *BIT NAMES for WRITE TIME/ALARM or READ TIME*), 346, 349 (Control Register B), 350, 354 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `TOD-WRITE-STOPS-CLOCK`: `opus:F-tod.c9`, `sol:F-tod.c10`, p. 344; `TOD-WRITE-STARTS-LSB-ONLY`: `opus:F-tod.c10`, `sol:F-tod.c11`, p. 344; `TOD-WRITE-STARTS-ATOMIC-VALUE`: `opus:F-tod.c11`, `sol:F-tod.c12`, p. 344. All three assertions carry a claim id |
 | **Assertions** | all green. `TOD-WRITE-STOPS-CLOCK` starts three fresh fixtures, writes $000000 with $8 last and gives one tick, so each clock reads $000001, then writes $00 to one register and gives one more tick: after the write to $A the count stayed at $000001, after the lone write to $8 it counted on from $000000 to $000001, and after the write to $9, recorded and not graded, it counted on to $000002. `TOD-WRITE-STARTS-LSB-ONLY` reads a write to $9 after one to $A leaving the clock stopped and the following write to $8 restarting it; `TOD-WRITE-STARTS-ATOMIC-VALUE` lands the sequence $A, $9, $8 on the value written with ticks between the writes |
@@ -124,7 +124,7 @@ p. 354 says nothing of the clock running or stopped.
 
 **It stops the clock on a write to $A and on nothing else, and restarts it on
 a write to $8.**
-[`src/minimig-aga/cia_timerd.v#L68-L80`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L68-L80):
+[`src/minimig-aga/cia_timerd.v#L68-L80`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerd.v#L68-L80):
 
 ```verilog
 else if (wr && !crb7) // crb7==0 enables writing to TOD counter
@@ -137,16 +137,16 @@ end
 ```
 
 `count_ena` gates the count,
-[`#L98-L99`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L98-L99).
+[`#L98-L99`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerd.v#L98-L99).
 The middle byte's term is there and commented out, `/* || tme*/`, so a write to
 $9 sets `tod[15:8]` and nothing else,
-[`#L93-L94`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L93-L94).
+[`#L93-L94`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/cia_timerd.v#L93-L94).
 The three selects are the address decoder's registers 8, 9 and A,
-[`src/minimig-aga/ciaa.v#L144-L146`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L144-L146),
+[`src/minimig-aga/ciaa.v#L144-L146`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L144-L146),
 wired to the module as `.tlo(tdlo)`, `.tme(tdme)`, `.thi(tdhi)`
-([`ciaa.v#L376-L378`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L376-L378));
+([`ciaa.v#L376-L378`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciaa.v#L376-L378));
 CIA-B wires the same module the same way
-([`ciab.v#L240-L242`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v#L240-L242)).
+([`ciab.v#L240-L242`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/ciab.v#L240-L242)).
 
 **Measured.** [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm)
 builds `ciaa` alone and drives its register bus and its TOD pin; the

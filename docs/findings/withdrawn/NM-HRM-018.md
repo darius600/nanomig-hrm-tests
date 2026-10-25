@@ -9,7 +9,7 @@
 | **Withdrawal reason** | The manual gives bit 4 a name and no behaviour, so the claim that the bit has no effect has nothing printed to fail against |
 | **Error class** | **a name read as a requirement** |
 | **Replacement** | none; the package declines both claims instead of grading them |
-| **Module** | `denise.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L181); inherited (the same statement is at line 146 in MiSTer and line 153 in TC64) |
+| **Module** | `denise.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise.v#L183); inherited (the same statement is at line 146 in MiSTer and line 153 in TC64) |
 | **Test** | [`hrm/ch3-bplcon0-display-modes`](../../../hrm/ch3-bplcon0-display-modes), `make -C hrm/ch3-bplcon0-display-modes test`; `233 passed, 0 failed`, and the two claims on this bit are declined |
 | **Chapter** | Appendix C — ECS Hardware and the Graphics Library, printed p. 300 (BPLCON0 bit table) · *Amiga Hardware Reference Manual*, 3rd ed., 1991; claim ids `opus:C-bplcon0.b04` and `sol:C-shres.c18`, both p. 300; the package grades no assertion on either |
 | **Assertions** | none graded; `opus:C-bplcon0.b04` and `sol:C-shres.c18` print `[SKIP] ... not asserted in this package` |
@@ -39,7 +39,7 @@ The package declines both claims on this bit, with that reason printed in its
 
 ## What remains true
 
-A source observation: `denise.v:181` gives the bit its **AGA** meaning
+A source observation: `denise.v:183` gives the bit its **AGA** meaning
 (`bplcon0[4] & aga`) and no ECS meaning. This is not a conformance failure,
 because the manual covers OCS and ECS and prints no ECS behaviour for the bit.
 

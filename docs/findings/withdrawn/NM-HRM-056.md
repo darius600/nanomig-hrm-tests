@@ -9,7 +9,7 @@
 | **Withdrawal reason** | No page requires TBE to read 0 after a write from an idle transmitter; p. 257's clear TBE is the waiting-word case, which NanoMig keeps |
 | **Error class** | **a silence read as a requirement** |
 | **Replacement** | Green: `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in [`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) (TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0); `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit) (TBE back at 1 within 3 ticks of a write from idle) |
-| **Module** | `paula_uart.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139); inherited (line 139 identical in MiSTer and TC64) |
+| **Module** | `paula_uart.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L149); inherited (line 149 is MiSTer's and TC64's line 139 with `&& !tx_hold` added; `tx_hold` is the constant 0 unless `ENABLE_AT_MODEM` is defined, and both Tang Nano 20K top files define it) |
 | **Test** | `make -C hrm/ch8-serdatr-read-word test` (`12 passed, 2 failed`) and `make -C hrm/ch8-serdat-transmit test` (`17 passed, 1 failed`); the other reds are `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ` ([NM-HRM-057](../NM-HRM-057.md)) and `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10` ([NM-HRM-058](../NM-HRM-058.md)) in the first, `ALLZERO-NO-TX` ([NM-HRM-055](../NM-HRM-055.md)) in the second, and an expected red exits nonzero |
 | **Chapter** | 8 — Interface Hardware, printed pp. 257–258 (SERDATR TBE and TSRE rows; SERDAT); Appendix A, printed p. 283 (SERDAT, SERDATR) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: <details><summary>claim ids by assertion (21)</summary> `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`: `sol:8-serdatr.c25`, `sol:8-serdatr.c27`, `sol:8-serdatr.c31`, p. 257; `DOUBLE-BUFFER-AND-TBE`: `sol:8-serdat.c6`, `sol:8-serdat.c7`, `sol:8-serdat.c8`, p. 258, and `opus:8-serdat.c7`, `opus:8-serdat.c8`, `sol:8-serdat.c44`, `sol:8-serdat.c45`, p. 283; `TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`: `sol:8-serdatr.c33`, `sol:8-serdatr.c35`, `sol:8-serdatr.c36`, `sol:8-serdatr.c37`, `sol:8-serdatr.c38`, `sol:8-serdatr.c39`, p. 257, and `opus:8-serdatr.c20`, `opus:8-serdatr.c21`, `sol:8-serdatr.c99`, `sol:8-serdatr.c101`, `sol:8-serdatr.c102`, p. 283</details> |
 | **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` green; `DOUBLE-BUFFER-AND-TBE` green, measured `tbe_duration=1 ticks, tsre_duration=374 ticks`; on the read just after one write from idle SERDATR reads `0x2800`, TBE already 1 (`TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`, green, which grades bit 12 only) |
@@ -41,7 +41,7 @@ TBE row names:
 
 > This bit is normally used for full-duplex operation.
 
-NanoMig does both: after a write from idle its TBE returns to 1 on the next
+NanoMig does both in the build the packages test: after a write from idle its TBE returns to 1 on the next
 `clk7_en` edge, when the word moves into the shift register; after a write while
 a frame is shifting its TBE stays 0 until that frame has gone. A flag that is
 cleared for as long as a word waits is a flag software can use, and p. 258
@@ -60,16 +60,24 @@ nor p. 258 does.
 ## What NanoMig does
 
 A SERDAT write clears `tx_tbe`
-([`paula_uart.v#L139`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139));
-it is set again only on an edge at which `tx_state` is `TX_IDLE`, and SERDATR
-bit 13 is `tx_tbe` itself
-([`:248`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L248)).
+([`paula_uart.v#L149`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L149));
+it is set again only on an edge at which `tx_state` is `TX_IDLE` and `tx_hold`
+is 0, and SERDATR bit 13 is `tx_tbe` itself
+([`:258`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L258)).
+`tx_hold` is the constant 0 unless `ENABLE_AT_MODEM` is defined
+([`:40-41`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_uart.v#L40-L41)).
+Both Tang Nano 20K top files define it
+([`top.sv#L23`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top.sv#L23),
+[`top_020.sv#L23`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tang/nano20k/top_020.sv#L23)),
+and the AT-modem bridge then drives `tx_hold` while its FIFO is full, so that no
+frame starts (`:101`) and TBE stays 0. The `hrm/` packages and the integration
+build do not define it; what follows describes that build.
 
-- **From idle**, the next `clk7_en` edge loads the shift register and sets
+- **From idle**, with `tx_hold` at 0, the next `clk7_en` edge loads the shift register and sets
   `tx_tbe` again: TBE is 0 for one `clk7_en` period, the transfer p. 258 puts at
   the start of the operation.
 - **While a frame is shifting**, `tx_state` is `TX_SHIFT` and `tx_tbe` keeps its
-  0 until the frame ends (`:111-117`); the edge after that loads the waiting
+  0 until the frame ends (`:121-127`); the edge after that loads the waiting
   word and sets it again.
 
 ---
@@ -82,8 +90,8 @@ bit 13 is `tx_tbe` itself
 | **vAmiga** | **as NanoMig.** [`UART.cpp:108`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.cpp#L108) derives TBE live from `transmitBuffer == 0`; schedules `SLOT_TXD` with no delay ([`:134-139`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.cpp#L134-L139)), and while the shifter is busy the guard at [`:137`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/UART/UART.cpp#L137) fails and TBE reads 0 |
 | **Denise** | **as NanoMig.** [`uart.cpp:39`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L39) `setSerdat` calls `prepareTransfer()` at once when the shift register is empty ([`:42`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L42)), which zeroes `serDat` ([`:112`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/uart.cpp#L112)); with the shift register busy `serDat` keeps the word and TBE reads 0 |
 | **Copperline** | **as NanoMig.** [`paula.rs:1520-1524`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1520-L1524) `load_serial_shift_if_idle` empties the buffer in the same call as the write when the shift register is idle, and returns before the `take` while it is busy |
-| **MiSTer** | descendant — [`rtl/paula_uart.v:139`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L139) is identical to NanoMig's |
-| **TC64** | descendant — [`rtl/minimig/paula_uart.v:139`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L139) is identical to NanoMig's |
+| **MiSTer** | descendant — [`rtl/paula_uart.v:139`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L139) is NanoMig's line 149 with no `&& !tx_hold` term |
+| **TC64** | descendant — [`rtl/minimig/paula_uart.v:139`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_uart.v#L139) is NanoMig's line 149 with no `&& !tx_hold` term |
 
 **All four keep TBE at 0 while a second word waits, the case p. 257 describes.**
 After a write from idle, three move the word into the shift register at once, as

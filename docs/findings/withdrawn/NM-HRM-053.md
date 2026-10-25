@@ -9,7 +9,7 @@
 | **Withdrawal reason** | Appendix B's `*` names no chipset, and p. 310 extends the rule for ECS with CDANG set, the one corner where a Copper MOVE to SERDATR, SERDAT or SERPER is not blocked |
 | **Error class** | **a legend graded without the appendix that extends it** |
 | **Replacement** | Green: `SWEEP ecs=1 cdang=1 vs Appendix C` in [`hrm/ch2-copper-move-sweep`](../../../hrm/ch2-copper-move-sweep) (256 of 256 destinations accepted); `T10` in [`hrm/ch2-copper-move-range`](../../../hrm/ch2-copper-move-range) (the Copper writes COPCON at ECS with CDANG set); `SERDAT-CDANG0`, `SERPER-CDANG0`, `SERDATR-CDANG0` and `CTRL-BLTCON0` in [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks) |
-| **Module** | `agnus_copper.v` — [NanoMig `4495f86`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225); inherited (line 225 is identical in MiSTer and TC64) |
+| **Module** | `agnus_copper.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L225); inherited (line 225 is identical in MiSTer and TC64) |
 | **Test** | `make -C hrm/ch8-appb-copper-access-marks test` (`5 passed, 0 failed`); `make -C hrm/ch2-copper-move-sweep test` (`97 passed, 1 failed`: the red is `SWEEP ecs=1 cdang=0`, [NM-HRM-004](../NM-HRM-004.md)'s); `make -C hrm/ch2-copper-move-range test` (`14 passed, 2 failed`: `T9` and `T16`, expected reds tagged NM-HRM-004). An expected red exits nonzero. |
 | **Chapter** | 8 — Interface Hardware, Appendix B printed pp. 287 (legend), 288 (`(E)`) and 289 (rows `$018`, `$02E`, `$030`, `$032`); Appendix C pp. 298 and 310; chapter 2 pp. 26 and 36; Appendix A pp. 265, 274 and 283 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids, each with the assertion that carries it, p. 289 with the legend on p. 287: `SERDAT-CDANG0` and `SERDAT-CDANG1`: `sol:8-serdat.c78`, `opus:8-regsum.c13`; `SERPER-CDANG0` and `SERPER-CDANG1`: `sol:8-serper.c33`, `opus:8-regsum.c19`; `SERDATR-CDANG0` and `SERDATR-CDANG1`: `opus:8-regsum.c7`; the recorded line `sol:8-serdatr.c145`; the recorded line `opus:8-regsum.c25`. `LIVENESS` and `CTRL-BLTCON0` carry no claim id. |
 | **Assertions** | none red: 5 graded, all green (`5 passed, 0 failed`): `LIVENESS`, `CTRL-BLTCON0` (BLTCON0, `~`-marked, blocked with CDANG clear and admitted with it set, which separates the two printed marks), `SERDAT-CDANG0`, `SERPER-CDANG0`, `SERDATR-CDANG0`; RECORDED, not graded: `SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1`, each naming p. 310 as the governing text and pointing to `SWEEP ecs=1 cdang=1 vs Appendix C`, and the lines for `sol:8-serdatr.c145` and `opus:8-regsum.c25`, which the package declines as graded in `hrm/ch2-copper-move-sweep` |
@@ -156,12 +156,12 @@ none of the three here.
 
 It keeps the band closed on OCS and opens it with ECS and CDANG, as p. 26,
 Appendix B and p. 310 together describe. In
-[`agnus_copper.v#L220-L228`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L220-L228),
+[`agnus_copper.v#L220-L228`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L220-L228),
 `$000`–`$03E` is `ir2[8:6]==3'b000`, and `ir2[8:6]==3'b000 && !ecs` makes it
 illegal whenever `ecs` is low, whatever CDANG holds; with `ecs` high it is
 illegal only while CDANG is clear (`ir2[8:7]==2'b00 && !cdang`). An illegal MOVE
 halts the Copper at
-[`:421`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L421).
+[`:421`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L421).
 
 **Measured.** [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks),
 `ecs` high: a Copper MOVE to SERDATR, SERDAT and SERPER is blocked with CDANG

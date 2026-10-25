@@ -52,8 +52,7 @@ address this module does not decode returns `0x0000`
 ([`paula_floppy.v#L699`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_floppy.v#L699)):
 
 ```verilog
-assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1]
-               ? {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;   // :699
+assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;
 ```
 
 `sync_match` already exists further down the same file
