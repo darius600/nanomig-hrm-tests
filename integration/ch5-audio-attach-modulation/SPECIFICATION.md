@@ -765,7 +765,7 @@ PC1, PC2 and PC3 of the session stay green.
   every 12,000 ticks on an implementation that ignores the attach bit, still
   completes two cycles of its data set after its first restart). The page then
   predicts changes 12,000 (6000 for both bits) ticks apart, and the spacing clause
-  fails.
+  fails (the changes then lie off the grid of R-MOD as well).
 - Grid: AUD0PER = 5000 at the start and rewritten to 4000 about 1000 ticks after M_on,
   after state 010 was entered and before its first time-out (prog_s_av_shift,
   selector P5-AV-GRID; prog_s_ap_shift, P5-AP-GRID; prog_s_both_shift, P5-BOTH-GRID).
@@ -1189,14 +1189,27 @@ one D_mod later, so the line fails by the phase alone. P10-AP and P10-BOTH: S-AV
 capture (attach write $8001, M_V) in place of S-AP's or S-BOTH's. The page predicts
 the attach-period phase for S-AP and the doubled fetch rate for S-BOTH, so S-AV's
 capture fails each comparator.
-Grid and rate, each through the line's own comparator: the SHIFT sessions of P5
-(AUD0PER = 5000 rewritten to 4000 about 1000 ticks after M_on; prog_s_av_shift, selector
-P10-AV-GRID; prog_s_ap_shift, P10-AP-GRID; prog_s_both_shift, P10-BOTH-GRID). Every
-time-out, and the request it carries, lies 1000 ticks (8000 clk, more than ℓ) after R-MOD's
-grid; the spacing of the fetches is unchanged, so only the phase clause fails. S-AP with
-AUD0PER = 6000 (prog_s_ap_per6000, selector P10-AP-RATE): the fetches of an
-implementation that follows the page are 12,000 ticks apart, not 8000, and the rate
-clause of P10-AP fails.
+
+Grid and rate, each through the line's own comparator and each with the other clause of
+its line holding:
+- P10-AP, grid: S-AP with AUD0PER = 5000 rewritten to 4000 about 1000 ticks after M_on
+  (prog_s_ap_shift, selector P10-AP-GRID). p.164, "The period counter is reloaded at
+  these transitions": the first time-out comes 5000 ticks after 010 was entered, so
+  every request lies 1000 ticks (8000 clk, more than ℓ) after R-MOD's grid, and the
+  requests stay 2·D_mod apart.
+- P10-AP, rate: S-AP with AUD0PER rewritten to 12000 about 1000 ticks after M_on and to
+  4000 again about 4500 ticks later (prog_s_ap_pulse, selector P10-AP-RATE). The
+  half-loop that starts at the first time-out lasts 12,000 ticks, so every request after it
+  comes 2·D_mod = 8000 ticks late, which is the same phase of the 2·D_mod loop.
+- P10-BOTH, grid: S-BOTH with AUD0PER = 4050 (prog_s_both_per4050, selector
+  P10-BOTH-GRID). Consecutive requests are 4050 ticks apart, which is less than ℓ from
+  D_mod, and each lies 50 ticks further from R-MOD's grid than the one before.
+- P10-AV has no contrast of its own for the reduction of the phase window from "nearer
+  than the attach-period phase" to less than ℓ from R-MOD's phase. Its fetches from F_3 on
+  are held to 2(n−3)·D_mod from F_3 by the rate clause, and the page puts F_3 one line
+  after F_2 (the request made on 101->010), so a stimulus that moves them by more than ℓ
+  from R-MOD's phase moves them out of the rate clause as well: the SHIFT session of S-AV
+  fails both. The page-opposite phase, one D_mod later, is P10-AV-PHASE.
 
 **7. Reference frame.** The loop entry F_2 comes from p.164's start-up
 description and is calibrated by PC7-CAL on normal operation. D_mod comes from
