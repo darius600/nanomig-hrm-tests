@@ -6,7 +6,7 @@ This document specifies one integration test package for an FPGA re-implementati
 
 ## 0. Claims not turned into a proposition
 
-The package has 160 claims. 80 of them are graded whole by the propositions C1-C11, F1, F4, F5 and F7 in sections 2 and 3. The 80 below are declined: 36 support no proposition (0.1, 0.2), 38 support a proposition that grades only part of them (0.3), and 6 say something the ports cannot show (0.4). C12, F2, F3, F6, F8 and F9 grade what can be graded and carry no claim id.
+The package has 160 claims. 66 of them are graded whole by the propositions C2, C6, C7 (BLTCON0L), C9, C10, F1, F4, F5 and F7 in sections 2 and 3. The 94 below are declined: 36 support no proposition (0.1, 0.2), 38 support a proposition that grades only part of them (0.3), 6 say something the ports cannot show (0.4), and 14 are withdrawn because the proposition observes only some of the bits of their register (0.5). C1, C3, C4, C5, C7 (BLTCON0), C8, C11, C12, F2, F3, F6, F8 and F9 grade what can be graded and carry no claim id.
 
 ### 0.1 `~` on a read address or a dummy address: no effect of a write is stated anywhere (28 claims)
 
@@ -59,6 +59,20 @@ A claim id goes on a proposition only if the proposition grades the whole claim.
 |---|---|---|---|
 | BLTSIZV, BLTSIZH `h` | opus:AA-bltsizv.c4, sol:AA-bltsizv.c4, opus:AA-bltsizh.c4, sol:AA-bltsizh.c4 | With the AA chip set selected the registers work as p.14 describes (F2) | The claims read the mark as "a register new in the hires chip set" (p.6) or "an existing register with something added or changed for the hires chips" (p.10); p.14 prints capital `H`, "new register in hires chips" (p.10). Whether a register is new or changed relative to an earlier chip set is not observable at the ports of one chip set (section 4, D2). |
 | BLTCON0L `h` | opus:AA-bltcon0l.c4, sol:AA-bltcon0l.c4 | With the AA chip set selected the register replaces the minterm byte of BLTCON0 as p.13 describes (F3) | The same. |
+
+### 0.5 `~` on a register of which the proposition observes only some bits (14 claims)
+
+Each of these claims says the Copper cannot write the register's address unless COPCON bit 1 is set. A proposition establishes that for the bits whose effect it observes: it writes the walking values (section 1.9) with the Copper and compares the observation with the value of the CPU's own write. A bit with no observed effect is not established, so the claim, which names the address, is declined whole. The propositions stay and are graded on the bits they observe.
+
+| Register | Claims | Tested (proposition) | Not observed, and why |
+|---|---|---|---|
+| DSKLEN | opus:AA-dsklen.c4, sol:AA-dsklen.c4 | The 32 walking values (C1). DSKBYTR bit 13 mirrors bit 14 (WRITE): bit 14 is checked for each of the 32 values, set in 16 of them. | Bit 15 (DMAEN): its effect needs DSKEN, a second write and a disk DMA. Bits 13-0 (LENGTH): the length of that DMA, up to 16383 words. |
+| VPOSW | opus:AA-vposw.c4, sol:AA-vposw.c4 | The value 0x8000 (C3): VPOSR bit 15, the frame flop LOF. | Bits 14-8 (chip identification), bit 7 (LOL, the line length) and bits 2-0 (V10-V8, which move the beam counter) are not written with 1: the pages state no value to expect. |
+| VHPOSW | opus:AA-vhposw.c4, sol:AA-vhposw.c4 | The value 0xC000 (C4): V7, VHPOSR bit 15, at the first poll past line 0x40. | V6-V0 and H8-H1: the write moves the beam counter and the poll reads it while it runs on, so the pages give no value for them. |
+| POTGO | opus:AA-potgo.c4, sol:AA-potgo.c4 | The 16 walking values of bits 15-8 (C5): the level of every pin the value drives, in POTINP. | Bit 0 (START, the pot counters, whose count depends on the controllers) and bits 7-1 (unused) are not written with 1. |
+| BLTCON0 | opus:AA-bltcon0.c4, sol:AA-bltcon0.c4 | The value 0x01FF against 0x0100 (C7): USED and LF = 0xFF against LF = 0x00, four words written. | The other bits one by one: a walking-one value has USED clear, and the blit writes nothing. ASH, USEA-USEC and LF7-LF0 need a set-up in which the value has USED set. BLTCON0L carries LF7-LF0 and the upper byte (C7). |
+| BLTCON1 | opus:AA-bltcon1.c4, sol:AA-bltcon1.c4 | The value 0x0002 (C8): DESC, the direction of two words written. | BSH3-0, EFE, IFE, FCI and LINE are not written with 1: LINE selects line drawing, which changes the meaning of BLTSIZE and of the pointers, and the shift and fill bits need other set-ups. |
+| BLTSIZV | opus:AA-bltsizv.c5, sol:AA-bltsizv.c5 | The heights 1, 2, 4, ..., 128, bits 7-0 one at a time (C11): the number of words written. | Bits 14-8 and the walking-zero values: their heights (up to 32766 lines) make a blit longer than the frame in which the Copper list runs. |
 
 ---
 
@@ -121,14 +135,14 @@ The Copper stays on in every proposition. `0xFFFF, 0xFFFE` is a WAIT (p.20: IR1 
 The RAM-port log gives, for each access, the cycle, the word address, the data, read or write, and the byte lanes (`nanomig_harness.h`, `RamAccess`). It does not say which requester made the access. Accesses are attributed by address and by nanomig.v's `refresh` output:
 
 - **CPU:** reads of the program image, [0x080400, image end + 16), and of the script it executes, [script start, script end + 16), each of which covers the instruction or operand prefetch past its last word and holds nothing else; and accesses to the stack, MK and RES. Inside any window a proposition grades, the program accesses nothing else.
-- **Refresh:** a read sampled while the `refresh` output is high. The harness does not log that output; the test reads it through `ports()` while stepping with `run_cycles(1)`, at the cycle of each log entry.
+- **Refresh:** a read at whose clk_sys cycle the `refresh` output is high (the same cycle as the log entry, no wider window). The harness does not log that output; the test reads it through `ports()` while stepping with `run_cycles(1)` and takes its value in the cycle of each log entry.
 - **Copper:** reads of a Copper list the proposition names (IDLE, CASE, the F6 list).
 - **A DMA channel:** accesses to a region the proposition assigns to that channel. "Blitter write" means a write to one of the proposition's blitter destination regions, "audio read" a read of its audio region, "disk read" a read of its disk region, and so on.
 - **Stray DMA read:** a read that is none of the above. In each window a proposition grades, only the DMA channels it enables in DMACON run (the prologue clears the others), so a stray read is one of those channels reading outside the regions assigned to it.
 
 Where a proposition says that every read of a channel lies in its regions, the check is that the window holds no stray DMA read. Where a proposition needs to know that a channel ran at all, whatever address it used, it counts the channel's region reads plus the stray DMA reads.
 
-Precondition wherever stray DMA reads are graded: the refresh-flagged reads of the window come in groups of four, one group per line ("There are 4 refresh time slots", p.29; "4 cycles for memory refresh" per line, HRM p.194). This shows that the `refresh` output marks the refresh reads, so that none of them is counted as stray.
+Precondition wherever stray DMA reads are graded (the refresh precondition): the window holds at least 4 x (k - 1) reads at whose cycle the `refresh` output is high, where the window contains the k line starts of one LINES(k) wait (section 1.5). A line holds four refresh slots ("There are 4 refresh time slots", p.29; "4 cycles for memory refresh" per line, HRM p.194), so k line starts bound at least k - 1 whole lines inside the window. This shows that the `refresh` output marks the refresh reads, so that none of them is counted as stray. Not graded: that the four refresh reads of a line form one group, and that no line holds more than four. No stimulus changes how many refresh reads a line holds, so that clause is unfalsifiable at this boundary. The population clause, the bound above, is the one a stimulus can move: a window that holds fewer line starts than the precondition names holds fewer refresh reads.
 
 ### 1.7 Outcomes
 
@@ -172,6 +186,15 @@ C4 uses a different list (see C4).
 
 A DMACON enable or ADKCON setting a C proposition names is written once, before frame A: frame A's observation runs the same DMA as frame B's, and DMA runs only with its channel bit and DMAEN set (p.22).
 
+**Walking values (C1, C2, C5, C6, C7, C9, C10, C11; C3 and C8 run their one value in the same way).** For these registers V1 is not one value but a list of values, one case per value. The values are the walking values of the bits the proposition names: 1 << k, and the complement of 1 << k within the mask of those bits, for k in the range of the bits. Every case has its own list and its own expected observation, derived from the page for that value (section 2). The page says "Allows coprocessor access to all RGA registers if true" (p.19) for COPCON bit 1 set, so the observation with COPCON = 0x0002 is the observation of the value written, and with COPCON bit 1 clear it is the observation of V0. The cases run in batches, each batch in one frame A and, for each COPCON value, one frame B:
+
+- **Case list** of case i: {0x2001, 0xFFFE, reg, V1, 0xFFFF, 0xFFFE} at 0x090100 + 16 i (the list is 12 bytes; the word after its final WAIT, at + 12, stays free).
+- **Frame A, calibration** of the batch: VBL_SYNC; then, for each case, the calibration of the next paragraph. The Copper runs IDLE.
+- **Frame B** of the batch, once for each COPCON value c: COP1LC = IDLE; VBL_SYNC; WAIT_LINE(0x30); COPCON = c; then, for each case: establish V0 with CPU writes; COP1LC = the case's list; M_start; write COPJMP1 (p.20 "Coprocessor restart at first location", a strobe that makes the Copper jump to COP1LC); LINES(2); M_wait; observation; M_end. After the last case: COP1LC = IDLE; COPCON = 0; store INTREQR bit 5 as F_vb.
+- The strobe makes every case start its own list, whatever the Copper did after the MOVE of the case before (p.10 mentions "the restart of the COPPER after lockup" without saying what causes a lockup; the strobe restarts the Copper in whatever state it is). Every MOVE is therefore tried.
+- PC1 is checked for every case. PC2 is checked once for the batch: F_vb = 0 shows that no vertical blank started while the batch ran. The batch is short enough, in lines, for that: from line 0x30 on, a case takes a few lines.
+- PC4 is checked for every case: R_cal1 = W and R_cal0 = U, with W the page-derived observation of the value, and W differs from U for some of the cases (a value whose observed effect equals U, such as a bit that no output shows, is a case in which the write must still leave the observation as it is).
+
 **Frame A, calibration** (once per register; the Copper runs IDLE):
 
 1. VBL_SYNC.
@@ -200,7 +223,7 @@ V0 comes first in step 2 because V1 writes one register, while the observation a
 - PC2: F_vb = 0, so no vertical blank started during the case and the case list ran exactly once.
 - PC3: no timeout.
 - PC4: R_cal1 = W and R_cal0 = U from frame A, where W and U are the proposition's "written" and "unwritten" values, and W ≠ U. This proves the observation can tell the two apart.
-- PC5 (blitter cases only): DMA_CHECK(BLTEN). No blitter access lies between t(M_end) of one case and t(M_start) of the next, so every blit completed inside its case. The only blitter accesses between t(M_start) and t(M_end) are the ones the proposition names.
+- PC5 (blitter cases only): DMA_CHECK(BLTEN). From t(M_start) of the first case on, no blitter access lies between t(M_end) of one case and t(M_start) of the next, so every blit completed inside its case. The only blitter accesses between t(M_start) and t(M_end) are the ones the proposition names.
 
 **Expected (C1-C11):** c = 0x0000 gives U; c = 0xFFFD gives U; c = 0x0002 gives W.
 
@@ -210,48 +233,67 @@ V0 comes first in step 2 because V1 writes one register, while the observation a
 **Contrasting cases for the procedure:**
 
 - c = 0x0002 and c = 0x0000 each contrast the other: the page predicts W for one and U for the other.
-- PC1: clear COPEN (DMACON = 0x0080) after step 1 and set it again after step 11. There is no Copper fetch, so PC1 fails and the program still finishes.
+- PC1: in C4, clear COPEN (DMACON = 0x0080) after step 1 and set it again after step 11. There is no Copper fetch, so PC1 fails and the program still finishes. In the propositions that run the procedure of "Walking values" (C1-C3, C5-C11), write COPJMP1 after M_wait in place of before M_start: the Copper reads the MOVE after the window of PC1, so PC1 fails, and the case lists are still read to their end.
 - PC2: between steps 7 and 8, wait for a full frame by polling INTREQR bit 5 without clearing it. F_vb = 1, so PC2 fails.
 - PC4: calibrate with V1 replaced by V0. Then W = U, so PC4 fails.
-- PC5: DMACON without BLTEN. DMA_CHECK fails.
+- PC5: DMACONR is read after DMACON = 0x8200 (without BLTEN) and DMACON = 0x8240 (with BLTEN) is written after the read. DMA_CHECK fails, and the rest of the run is the normal run.
 
 **Why the check does not depend on the Copper's behaviour after a refused write:** each case runs one protected MOVE. The next case starts from a fresh vertical-blank restart at a newly written COP1LC. A Copper that stops after the refused MOVE and one that continues give the same observation.
 
 **Note on the manual.** HRM p.310 (Appendix C) says that on the ECS, with the danger bit clear, "the Copper can access the address range from $DFF03E through $DFF07E". The AA specification says the opposite for 040-07E. The package follows p.19 and p.6 (see section 4, D4).
 
+### 1.10 The Copper's final WAIT (used by C1-C12, F5 and F9)
+
+Every list the Copper runs in a proposition ends with the WAIT {0xFFFF, 0xFFFE} (section 1.3): the idle list IDLE, and the case lists of section 1.9 and the C4 list. The pages say what the Copper does at that WAIT:
+
+- p.20, WAIT: "Wait until beam counter is equal to, or greater than. (keeps Coprocessor off of bus until beam position has been reached)".
+- p.21: "All instructions require 2 bus cycles (and two instruction words)."
+- p.29, STRLONG: a line has at most 228 colour clocks, so the horizontal position 0xFE of the final WAIT is never reached, and the WAIT never ends.
+
+So the Copper reads the two words of the final WAIT, and then it keeps off the bus: it reads no word after them. A read of the word after the final WAIT is a read of something that is not part of any instruction of the list.
+
+Assertion `<id>-FW`, with the precondition `<id>-FWA`, for each of C1-C12 and F5, and for F9 as the control:
+
+- **Lists.** IDLE (the final WAIT at 0x090000, the word after it at 0x090004) and, in C1-C11, the case list of each register case (the final WAIT at the case list's address + 8, the word after it at + 12). C12 grades IDLE only: its case lists are run with COPCON bit 1 clear, and no read of their final WAIT is observed (section 7).
+- **Precondition `<id>-FWA`.** The Copper read both words of the final WAIT of every list named above, at least once each in the run. (The assertion is NOT GRADED when this fails or the fixture fails.) This shows that the Copper ran the list to its end, so that a count of zero reads after it is not an empty observation. The case lists are run to their end only in the frame with COPCON = 0x0002.
+- **Expected `<id>-FW`.** The Copper read the word after the final WAIT of every list named above zero times in the whole run. Every nonzero count is a FAIL. The Copper is the only reader of these words. A read at whose cycle the `refresh` output is high is not counted.
+- **Claims:** none. The assertion is the page's WAIT, not one of the 160 claims.
+- **Contrasting cases.** C1-C11: the frame that writes COPCON = 0x0002 writes 0x0000 instead, so the MOVE is refused in every frame and the case list is not run to its end (FWA fails, FW is not graded). F5 and F9: DMACON = 0x8200 in the prologue, so Copper DMA is never turned on and no list is read (FWA fails). C12: not exercised, by a scope decision: the anchor on IDLE holds whenever the Copper runs at all, and C12-PC1 contrasts that. F9: the idle list starts with a WAIT that ends at once ({0x0001, 0xFFFE, 0xFFFF, 0xFFFE}), so the word at IDLE + 4, the word the assertion names, is the first word of the final WAIT of the list and is read: the assertion fails through its comparator, with its precondition holding. In the normal run C1-C12-FW and F5-FW are red (section 7); F9-FW is the same comparator on an input that reads the word zero times, and it passes.
+
 ---
 
 ## 2. Propositions C1-C12: `~`, "Address not writable by the Coprocessor unless COPCON bit 1 is set true" (p.6)
 
-All C propositions rest on the p.6 legend line quoted above and on the COPCON entry, p.19-20. Each follows section 1.9. Only the parts specific to each register are given below.
+All C propositions rest on the p.6 legend line quoted above and on the COPCON entry, p.19-20. Each follows section 1.9. Only the parts specific to each register are given below. Each of C1-C12 also carries the final-WAIT assertion of section 1.10 (`Cn-FW`, with `Cn-FWA`), which grades the Copper's lists and not the register.
 
 ### C1. DSKLEN (024)
 
-1. **Proposition.** A Copper MOVE to DSKLEN does not change DSKLEN while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-dsklen.c4, sol:AA-dsklen.c4 (p.6).
-2. **Stimulus.** V0: DSKLEN = 0x0000. V1 = 0x4000 (bit 14 WRITE = 1, bit 15 DMAEN = 0, LENGTH = 0). After step 11: DSKLEN = 0x0000. DMAEN stays 0 throughout, so no disk DMA can start. p.23 gives DMAON = "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)".
+1. **Proposition.** A Copper MOVE to DSKLEN does not change DSKLEN while COPCON bit 1 is clear, and does change it while bit 1 is set, for each of 32 values of V1. Claims: none. The ids opus:AA-dsklen.c4 and sol:AA-dsklen.c4 are withdrawn (section 0.5).
+2. **Stimulus.** V0: DSKLEN = 0x0000. V1: the 32 walking values 1 << k and 0xFFFF - (1 << k) for k = 0-15 (section 1.9). After each case: DSKLEN = 0x0000 (V0 of the next case). DMACON has no DSKEN, so no disk DMA can start whatever DSKLEN holds. p.23 gives DMAON = "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)".
 3. **Observation.** Step 8: read DSKBYTR and store bit 13.
-4. **Expected.** U = 0, W = 1. From p.23: "13 DISKWRITE Mirror of bit 14 (WRITE) in DSKLEN", and DSKLEN "14 WRITE Disk Write(RAM to Disk ) if 1".
+4. **Expected.** U = 0 for every value. W = bit 14 of V1 (1 for the 16 values that have bit 14 set, 0 for the other 16). From p.23: "13 DISKWRITE Mirror of bit 14 (WRITE) in DSKLEN", and DSKLEN "14 WRITE Disk Write(RAM to Disk ) if 1". Bit 14 is the one bit of DSKLEN whose effect is observed (section 0.5).
 5. **Preconditions.** PC1-PC4.
 6. **Contrasting cases.** As in section 1.9.
-7. **Reference frame.** The markers and the case list (section 1.9).
+7. **Reference frame.** The markers and the case lists (section 1.9).
 
 ### C2. DSKPTH (020), DSKPTL (022)
 
 Drive 0 is configured and no disk image is mounted (section 1.1). If no documented `floppy_config` value configures a drive at all, C2 is NOT-CHECKABLE.
 
-1. **Proposition.** A Copper MOVE to DSKPTH or DSKPTL does not change the address disk DMA reads while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-dskpth.c5, sol:AA-dskpth.c5, opus:AA-dskptl.c5, sol:AA-dskptl.c5 (p.6).
+1. **Proposition.** A Copper MOVE to DSKPTH or DSKPTL does not change the address disk DMA reads while COPCON bit 1 is clear, and does change it while bit 1 is set, for each of 32 values of V1 of each register. Claims: opus:AA-dskpth.c5, sol:AA-dskpth.c5, opus:AA-dskptl.c5, sol:AA-dskptl.c5 (p.6).
 2. **Stimulus.**
    - Before frame A: DMACON = 0x8210 (SET, DMAEN, DSKEN); ADKCON = 0x9100 (SET, MFMPREC, FAST, p.10-11).
-   - Regions: Rd holds 4 words. Re = Rd + 0x10000 holds 4 words; choose Rd with A16 = 0 so the two addresses differ in A16. Re' = Rd + 0x0100 holds 4 words; choose Rd with (Rd & 0xFFFF) ≤ 0xFEF8, so that Re' has Rd's high word and the DSKPTL case changes only the low word. Rd, Re and Re' are the disk regions of section 1.6.
+   - Rd = 0x0E0000, the address V0 puts into the pointer. The reads at the addresses that the values below put into the pointer (the pointer reaches 0x000000 to 0x1F0000 and 0x0E0000 to 0x0EFFFE) are attributed to the disk channel by the window and the register, as section 1.6 says for a stray read.
    - V0: DSKPTH/DSKPTL = Rd.
-   - DSKPTH case: V1 = Re >> 16. DSKPTL case: V1 = Re' & 0xFFFF.
+   - DSKPTH case: V1 = each of the 32 walking values (section 1.9). DSKPTL case: V1 = each of the 32 walking values.
    - Step 8 starts a disk write DMA with the sequence HRM p.247 prescribes ("the DMAEN bit in the DSKLEN register must be turned on twice"; the AA pages give no procedure):
      1. DSKLEN = 0x4000.
      2. DSKLEN = 0xC004.
      3. DSKLEN = 0xC004.
      4. Read DSKBYTR and store bit 14 (DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", p.23).
-     5. Poll INTREQR bit 1 (DSKBLK) until set. Timeout: 20 lines.
+     5. Poll INTREQR bit 1 (DSKBLK) until set. Timeout: 20 lines (220 reads of INTREQR).
      6. DSKLEN = 0x4000; INTREQ = 0x0002.
+     7. LINES(8).
    - Frame A's observations run the same sequence.
    - A timeout of the DSKBLK poll is stored in RES and does not make the case NOT-CHECKABLE (section 1.7). Disk DMA that never runs would otherwise hide behind that timeout; the reads are graded instead ("Disk DMA runs" below).
    - No drive is selected; the CIAs are not touched. p.23's DMAON has no drive term, so selection does not enter.
@@ -259,23 +301,25 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 4. **Expected.**
    - Disk DMA runs: every run of the step-8 sequence with DMAON = 1, in frame A and in frame B, shows at least one disk read or stray DMA read. A run with DMAON = 1 and no such read is a FAIL of C2. It is graded first, because PC4 needs frame A's reads.
    - U: at Rd.
-   - W: at Re for the DSKPTH case, at Re' for the DSKPTL case.
-   - From p.23: "This pair of registers contains the 20 bit address of Disk DMA data." p.6 row function: "Disk pointer (High 5 bits)" / "(Low 15 bits)".
-   - Calibration (frame A, V0 first as section 1.9 says): R_cal1, with the CPU writing DSKPTH/DSKPTL = Rd and then V1, first reads at Re (resp. Re'); R_cal0, with the CPU writing DSKPTH/DSKPTL = Rd, first reads at Rd.
+   - W for the DSKPTH case: at ((V1 & 0x1F) << 16) | (Rd & 0xFFFF). The pointer holds the "High 5 bits" (p.6 row function "Disk pointer (High 5 bits)", "+=Address register pair.Low word uses DB1-DB15,High word DB0-DB4."), so bits 15-5 of V1 are not part of it.
+   - W for the DSKPTL case: at (Rd & 0xFFFF0000) | (V1 & 0xFFFE). The pointer holds the "Low 15 bits" (p.6 "Disk pointer (Low 15 bits)", DB1-DB15), so bit 0 of V1 is not part of it.
+   - From p.23: "This pair of registers contains the 20 bit address of Disk DMA data."
+   - Calibration (frame A, V0 first as section 1.9 says): R_cal1, with the CPU writing DSKPTH/DSKPTL = Rd and then V1, first reads at W; R_cal0, with the CPU writing DSKPTH/DSKPTL = Rd, first reads at Rd.
 5. **Preconditions.**
    - PC1-PC5, with the disk channel in place of the blitter in PC5, and DMA_CHECK(DSKEN).
    - PC6: DMAON = 1 in every run (the stored DSKBYTR bit 14).
    - A drive is configured (section 1.1).
-   - The refresh precondition of section 1.6.
+   - The refresh precondition of section 1.6 (PCR): every window holds at least 28 refresh reads, the window holding the 8 line starts of the LINES(8) wait that ends the step 8 sequence.
 6. **Contrasting cases.**
    - As in section 1.9.
    - PC6, in frame B only: DSKLEN's DMAEN is written once, not twice. DMAON reads 0 (HRM p.247: "the DMAEN bit in the DSKLEN register must be turned on twice in order to actually enable the disk DMA hardware"; HRM p.248: DMAON "Indicates when DMA is actually enabled"), the stored bit 14 reads 0 and PC6 fails.
-  - PC5: DMACON without DSKEN: DMA_CHECK fails.
+  - PC5: DMACONR is read after DMACON = 0x8200 (without DSKEN) and DMACON = 0x8210 is written after the read: DMA_CHECK fails, and the disk DMA of the run is the normal one.
+  - PCR, in frame B only: the LINES(8) wait is left out of the step 8 sequence, so the window holds fewer than 28 refresh reads and still holds the whole disk DMA.
 7. **Reference frame.** The markers.
 
 ### C3. VPOSW (02A)
 
-1. **Proposition.** A Copper MOVE to VPOSW does not change the frame flop LOF while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-vposw.c4, sol:AA-vposw.c4 (p.6).
+1. **Proposition.** A Copper MOVE to VPOSW does not change the frame flop LOF while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: none. The ids opus:AA-vposw.c4 and sol:AA-vposw.c4 are withdrawn (section 0.5).
 2. **Stimulus.** V0: VPOSW = 0x0000. V1 = 0x8000.
    - Both writes, the case list's MOVE (line 0x20) and the calibration writes happen at lines below 256. Writing 0 to bits 2-0 (V10-V8) there leaves the line number unchanged.
    - Bits 14-7 (chip identification and LOL) are written as 0 and not observed.
@@ -287,31 +331,31 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 
 ### C4. VHPOSW (02C)
 
-1. **Proposition.** A Copper MOVE to VHPOSW does not move the beam counter while COPCON bit 1 is clear, and does move it while bit 1 is set. Claims: opus:AA-vhposw.c4, sol:AA-vhposw.c4 (p.6).
+1. **Proposition.** A Copper MOVE to VHPOSW does not move the beam counter while COPCON bit 1 is clear, and does move it while bit 1 is set. Claims: none. The ids opus:AA-vhposw.c4 and sol:AA-vhposw.c4 are withdrawn (section 0.5).
 2. **Stimulus.** The case list is {0x4041, 0xFFFE, 0x002C, 0xC000, 0xFFFF, 0xFFFE}:
    - WAIT for line 0x40, horizontal 0x40;
    - then MOVE VHPOSW = 0xC000, which gives V7-V0 = 0xC0 and H8-H1 = 0.
-   
+
    There is no V0. Step 6 is replaced: the CPU polls VHPOSR until bits 15-8 are ≥ 0x41 and stores that value as R. It starts polling at a line below 0x40.
-3. **Observation.** R.
+3. **Observation.** R & 0x80, the written bit V7 (VHPOSR bit 15).
 4. **Expected.**
-   - U: R ∈ {0x41, 0x42}. W: R ∈ {0xC0, 0xC1}.
-   - p.29 bit usage of VHPOSR/VHPOSW: "V7 V6 V5 V4 V3 V2 V1 V0,H8 H7 H6 H5 H4 H3 H2 H1".
-   - Calibration, frame A, at a line between 0x08 and 0x3F:
-     1. Read VHPOSR; bits 15-8 must be < 0x40 (this is R_cal0).
+   - U: R & 0x80 = 0 (the poll ends on a line from 0x41 on, below 0x80). W: R & 0x80 = 0x80 (the write of 0xC000 sets V7).
+   - p.29 bit usage of VHPOSR/VHPOSW: "V7 V6 V5 V4 V3 V2 V1 V0,H8 H7 H6 H5 H4 H3 H2 H1". No other bit of R is graded: the page gives the position of the beam after the write only as these bits and a resolution of 280 ns, not as a pair of values.
+   - Calibration, frame A, at a line between 0x08 and 0x3F (the frame anchor):
+     1. Read VHPOSR; bits 15-8 must be < 0x40 (this is R_cal0, V7 = 0).
      2. Write VHPOSW = 0xC000.
-     3. Read VHPOSR; bits 15-8 must be in {0xC0, 0xC1} (this is R_cal1).
+     3. Read VHPOSR; bit 15 must be set (this is R_cal1).
 5. **Preconditions.** PC1-PC4. BPLCON0 LPEN = 0 (from the prologue; p.12).
 6. **Contrasting cases.** As in section 1.9.
 7. **Reference frame.** The VHPOSR line number (p.29). The Copper WAIT position (p.20). The 256-line wrap of V7-V0 is never reached, because the case runs at lines below 0x43.
 
 ### C5. POTGO (034)
 
-1. **Proposition.** A Copper MOVE to POTGO does not change the pot-pin drive while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-potgo.c4, sol:AA-potgo.c4 (p.6).
-2. **Stimulus.** V0: POTGO = 0xFF00 (OUTRY, DATRY, OUTRX, DATRX, OUTLY, DATLY, OUTLX, DATLX all 1). V1 = 0xAA00 (all four outputs enabled, data 0). START (bit 0) stays 0. After step 11: POTGO = 0x0000.
+1. **Proposition.** A Copper MOVE to POTGO does not change the pot-pin drive while COPCON bit 1 is clear, and does change it while bit 1 is set, for each of 16 values of V1. Claims: none. The ids opus:AA-potgo.c4 and sol:AA-potgo.c4 are withdrawn (section 0.5).
+2. **Stimulus.** V0: POTGO = 0xFF00 (OUTRY, DATRY, OUTRX, DATRX, OUTLY, DATLY, OUTLX, DATLX all 1). V1: the 16 walking values of bits 15-8 (section 1.9, mask 0xFF00): 1 << k and 0xFF00 - (1 << k) for k = 8-15. START (bit 0) and bits 7-1 stay 0. After each case: POTGO = 0x0000.
    - The harness keeps the second and third buttons of both controller ports released throughout, so no pot line is pulled low from outside.
-3. **Observation.** Step 8: read POTINP and store it ANDed with 0x5500.
-4. **Expected.** U = 0x5500, W = 0x0000. p.26-27 bit table: "15 OUTRY Output enable for Paula pin 33, 14 DATRY I/O data Paula pin 33, ... 08 DATLX I/O data Paula pin 35"; POTINP is "Pot pin data read".
+3. **Observation.** Step 8: read POTINP and store it ANDed with the DAT bits (bits 14, 12, 10, 8) of the pins that V1 drives, i.e. those whose OUT bit (15, 13, 11, 9) is set in V1. A pin that V1 does not drive is not observed: its level is the controller's.
+4. **Expected.** U = that mask: all driven pins high, as V0 left them. W = the DAT bits of V1 at those places. p.26-27 bit table: "15 OUTRY Output enable for Paula pin 33, 14 DATRY I/O data Paula pin 33, ... 08 DATLX I/O data Paula pin 35"; POTINP is "Pot pin data read". W differs from U where V1 drives a pin with its DAT bit 0 (the OUT-bit values, and the DAT-bit complements).
 5. **Preconditions.** PC1-PC4. PC4 also shows that a pin driven low by Paula reads back 0 in this harness.
 6. **Contrasting cases.**
    - As in section 1.9.
@@ -320,12 +364,12 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 
 ### C6. JOYTEST (036)
 
-1. **Proposition.** A Copper MOVE to JOYTEST does not change the mouse counters while COPCON bit 1 is clear, and does change them while bit 1 is set. Claims: opus:AA-joytest.c4, sol:AA-joytest.c4 (p.6).
-2. **Stimulus.** V0: JOYTEST = 0x0000. V1 = 0xFCFC.
+1. **Proposition.** A Copper MOVE to JOYTEST does not change the mouse counters while COPCON bit 1 is clear, and does change them while bit 1 is set, for each of 32 values of V1. Claims: opus:AA-joytest.c4, sol:AA-joytest.c4 (p.6).
+2. **Stimulus.** V0: JOYTEST = 0x0000. V1: the 32 walking values (section 1.9).
    - The harness drives no mouse movement and keeps all direction lines released during frames A and B.
 3. **Observation.** Step 8: read JOY0DAT and JOY1DAT; after LINES(1), read both again. Store each value ANDed with 0xFCFC.
-4. **Expected.** U = 0x0000 for both registers, W = 0xFCFC for both.
-   - p.26: "JOYTEST 036 W D Write to all 4 Joystick-mouse counters at once", with test-data rows "JOY0DAT Y7 Y6 Y5 Y4 Y3 Y2 xx xx X7 X6 X5 X4 X3 X2 xx xx" and the same for JOY1DAT.
+4. **Expected.** U = 0x0000 for both registers. W = V1 & 0xFCFC for both.
+   - p.26: "JOYTEST 036 W D Write to all 4 Joystick-mouse counters at once", with test-data rows "JOY0DAT Y7 Y6 Y5 Y4 Y3 Y2 xx xx X7 X6 X5 X4 X3 X2 xx xx" and the same for JOY1DAT. Each of the 12 counter bits Y7-Y2, X7-X2 is observed in the 32 values; bits 9-8 and 1-0 ("xx") are not part of the counters.
    - Bits 9-8 and 1-0 are masked because they show "the state of the related input signal pair" (p.25).
 5. **Preconditions.** PC1-PC4. PC7: the two reads of each register are equal, so nothing but the write moved the counters.
 6. **Contrasting cases.**
@@ -335,24 +379,22 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 
 ### C7. BLTCON0 (040) and BLTCON0L (05A)
 
-1. **Proposition.** A Copper MOVE to BLTCON0 or BLTCON0L does not change the blitter's logic function while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-bltcon0.c4, sol:AA-bltcon0.c4, opus:AA-bltcon0l.c5, sol:AA-bltcon0l.c5 (p.6, p.7).
+1. **Proposition.** A Copper MOVE to BLTCON0 or BLTCON0L does not change the blitter's logic function while COPCON bit 1 is clear, and does change it while bit 1 is set. BLTCON0: one value. BLTCON0L: 32 values. Claims: opus:AA-bltcon0l.c5, sol:AA-bltcon0l.c5 (p.6, p.7). The ids opus:AA-bltcon0.c4 and sol:AA-bltcon0.c4 are withdrawn (section 0.5).
 2. **Stimulus.**
    - Before frame A: DMACON = 0x8240 (SET, DMAEN, BLTEN).
-   - V0: BLTCON0 = 0x0100 (USED = 1, LF = 0x00), BLTCON1 = 0x0000, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0.
-   - V1: BLTCON0 case, MOVE BLTCON0 = 0x01FF. BLTCON0L case, MOVE BLTCON0L = 0x00FF.
-   - Step 8: BLTDPTH/L = DST; BLTSIZE = 0x0044 (h = 1, w = 4); BLIT_DONE.
+   - BLTCON0 case. V0: BLTCON0 = 0x0100 (USED = 1, LF = 0x00), BLTCON1 = 0x0000, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0. V1: MOVE BLTCON0 = 0x01FF. Step 8: BLTDPTH/L = DST; BLTSIZE = 0x0044 (h = 1, w = 4); BLIT_DONE.
+   - BLTCON0L case. V0: BLTCON0 = 0x0F00 (USEA-USED, ASH = 0, LF = 0x00), BLTCON1 = 0, BLTAFWM = BLTALWM = 0xFFFF, all modulos 0. The sources are the words A = 0xF0F0 (ASRC), B = 0xCCCC (BSRC), C = 0xAAAA (CSRC). V1: MOVE BLTCON0L = each of the 32 walking values (section 1.9). Step 8: BLTAPT/BPT/CPT/DPT = ASRC/BSRC/CSRC/DST; BLTSIZE = 0x0041 (h = 1, w = 1); BLIT_DONE.
 3. **Observation.** Blitter writes in (t(M_wait), t(M_end)).
 4. **Expected.**
-   - Four writes at DST, DST+2, DST+4, DST+6.
-   - U: all data 0x0000. W: all data 0xFFFF.
-   - Why: LF = 0x00 selects no minterm and LF = 0xFF selects all eight, so D is 0 or all ones whatever A, B and C hold. p.14: "LF7-0 Logic function minterm select lines"; BLTCON0L writes the "lower 8 bits(minterms)" (p.7).
-5. **Preconditions.** PC1-PC5. Exactly four blitter writes in the window.
+   - BLTCON0 case: four writes at DST, DST+2, DST+4, DST+6. U: all data 0x0000. W: all data 0xFFFF. Why: LF = 0x00 selects no minterm and LF = 0xFF selects all eight, so D is 0 or all ones whatever A, B and C hold. p.14: "LF7-0 Logic function minterm select lines".
+   - BLTCON0L case: one read in each of ASRC, BSRC, CSRC and one write at DST. U: 0x0000. W: LF7-LF0 of V1 in both bytes, (V1 & 0xFF) * 0x0101. Why: the bits i of A, B and C in the low byte are the index (A, B, C) = (i >= 4, bit 1 of i, bit 0 of i) of the minterm table, so bit i of D is bit i of LF, whatever the other bits are, and the high byte repeats the pattern. BLTCON0L writes the "lower 8 bits(minterms)" (p.7) of BLTCON0 and leaves ASH and USEA-USED as V0 set them ("write lower 8 bits only", p.13); a value whose bits 15-8 changed them would read other sources or shift A and change D or the reads.
+5. **Preconditions.** PC1-PC5. Exactly four blitter writes in the window for the BLTCON0 case; exactly one write and one read in each of ASRC, BSRC, CSRC for the BLTCON0L case.
 6. **Contrasting cases.** As in section 1.9.
 7. **Reference frame.** The markers.
 
 ### C8. BLTCON1 (042)
 
-1. **Proposition.** A Copper MOVE to BLTCON1 does not change the blitter's address direction while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-bltcon1.c4, sol:AA-bltcon1.c4 (p.6).
+1. **Proposition.** A Copper MOVE to BLTCON1 does not change the blitter's address direction while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: none. The ids opus:AA-bltcon1.c4 and sol:AA-bltcon1.c4 are withdrawn (section 0.5).
 2. **Stimulus.**
    - DMACON = 0x8240.
    - V0: BLTCON0 = 0x01FF, BLTCON1 = 0x0000, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0.
@@ -366,56 +408,59 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 
 ### C9. BLTAFWM (044) and BLTALWM (046)
 
-1. **Proposition.** A Copper MOVE to BLTAFWM or BLTALWM does not change the source A masks while COPCON bit 1 is clear, and does change them while bit 1 is set. Claims: opus:AA-bltafwm.c4, sol:AA-bltafwm.c4, opus:AA-bltalwm.c4, sol:AA-bltalwm.c4 (p.6, p.7).
+1. **Proposition.** A Copper MOVE to BLTAFWM or BLTALWM does not change the source A masks while COPCON bit 1 is clear, and does change them while bit 1 is set, for each of 32 values of V1 of each register. Claims: opus:AA-bltafwm.c4, sol:AA-bltafwm.c4, opus:AA-bltalwm.c4, sol:AA-bltalwm.c4 (p.6, p.7).
 2. **Stimulus.**
    - DMACON = 0x8240.
    - V0: BLTAFWM = BLTALWM = 0xFFFF, BLTCON0 = 0x09F0 (USEA, USED, LF = 0xF0, "D = A" per HRM p.177, Table 6-1), BLTCON1 = 0, BLTAMOD = BLTDMOD = 0.
-   - V1 = 0x0F0F, written to BLTAFWM or BLTALWM.
+   - V1: each of the 32 walking values (section 1.9), written to BLTAFWM or to BLTALWM.
    - Step 8: BLTAPTH/L = ASRC (three words, each 0xFFFF); BLTDPTH/L = DST; BLTSIZE = 0x0043 (w = 3, h = 1); BLIT_DONE.
 3. **Observation.** Data of the three blitter writes in (t(M_wait), t(M_end)).
 4. **Expected.**
    - U: 0xFFFF, 0xFFFF, 0xFFFF.
-   - W for BLTAFWM: 0x0F0F, 0xFFFF, 0xFFFF. W for BLTALWM: 0xFFFF, 0xFFFF, 0x0F0F.
-   - From p.13: "The patterns in these two registers are "anded" with the first and last words of each line of data from Source A into the Blitter."
+   - W for BLTAFWM: V1, 0xFFFF, 0xFFFF. W for BLTALWM: 0xFFFF, 0xFFFF, V1.
+   - From p.13: "The patterns in these two registers are "anded" with the first and last words of each line of data from Source A into the Blitter." With A = 0xFFFF the word written is the mask, so each of the 16 bits of each mask is observed in the 32 values.
 5. **Preconditions.** PC1-PC5. Three blitter reads in ASRC and three blitter writes in the window.
 6. **Contrasting cases.** As in section 1.9.
 7. **Reference frame.** The markers. The order of writes gives "first" and "last" word.
 
 ### C10. BLTSIZE (058) and BLTSIZH (05E)
 
-1. **Proposition.** A Copper MOVE to BLTSIZE or BLTSIZH does not start the blitter while COPCON bit 1 is clear, and does start it while bit 1 is set. Claims: opus:AA-bltsize.c4, sol:AA-bltsize.c4, opus:AA-bltsizh.c5, sol:AA-bltsizh.c5 (p.6, p.7).
+1. **Proposition.** A Copper MOVE to BLTSIZE or BLTSIZH does not start the blitter while COPCON bit 1 is clear, and does start it while bit 1 is set, for each of 32 values of V1 of BLTSIZE and 22 of BLTSIZH. Claims: opus:AA-bltsize.c4, sol:AA-bltsize.c4, opus:AA-bltsizh.c5, sol:AA-bltsizh.c5 (p.6, p.7).
 2. **Stimulus.**
    - DMACON = 0x8240.
    - V0, established before M_start: BLTCON0 = 0x01FF, BLTCON1 = 0, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0, BLTDPTH/L = DST. For the BLTSIZH case also BLTSIZV = 1.
-   - V1: BLTSIZE = 0x0044, or BLTSIZH = 0x0004.
+   - V1, BLTSIZE: (h << 6) | w for w = 1 << k, h = 1 (k = 0-5); w = 63 - (1 << k), h = 1 (k = 0-5); h = 1 << k, w = 1 (k = 0-9); h = 1023 - (1 << k), w = 1 (k = 0-9). Each bit of w and of h is set alone and cleared alone, with the other field at 1: the pages leave the value 0 of a field open (F1), so no value has a field of 0.
+   - V1, BLTSIZH: w = 1 << k and w = 2047 - (1 << k) for k = 0-10 (the 11-bit width, "w10 ... w0"). Bits 15-11 are written 0 ("x s should be written to 0", p.14).
    - Step 8: BLIT_DONE only. The CPU starts nothing.
    - Calibration: R_cal1 is the CPU writing the same value (then BLIT_DONE); R_cal0 is no write at all.
 3. **Observation.** Blitter writes in (t(M_start), t(M_end)).
 4. **Expected.**
    - U: no blitter write.
-   - W: four blitter writes at DST to DST+6, data 0xFFFF.
-   - From p.14: "Writing to this register will start the Blitter" (BLTSIZE) and "BLTSIZH, which starts the blitter".
+   - W: w x h blitter writes at DST + 2 i, data 0xFFFF (h = 1 in the BLTSIZH case, from BLTSIZV).
+   - From p.14: "Writing to this register will start the Blitter" (BLTSIZE) and "BLTSIZH, which starts the blitter"; "h=Height=Vertical lines", "w=Width =Horiz pixels".
 5. **Preconditions.** PC1-PC5.
 6. **Contrasting cases.** As in section 1.9.
 7. **Reference frame.** The markers.
 
 ### C11. BLTSIZV (05C)
 
-1. **Proposition.** A Copper MOVE to BLTSIZV does not change the blit height while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-bltsizv.c5, sol:AA-bltsizv.c5 (p.6, p.7).
+1. **Proposition.** A Copper MOVE to BLTSIZV does not change the blit height while COPCON bit 1 is clear, and does change it while bit 1 is set, for the heights 1, 2, 4, ..., 128. Claims: none. The ids opus:AA-bltsizv.c5 and sol:AA-bltsizv.c5 are withdrawn (section 0.5).
 2. **Stimulus.**
    - DMACON = 0x8240.
    - V0: the same blitter set-up as C10, plus BLTSIZV = 2.
-   - V1 = 5.
+   - V1 = 1 << k, k = 0-7.
    - Step 8: BLTDPTH/L = DST; BLTSIZH = 0x0001; BLIT_DONE.
 3. **Observation.** Number of blitter writes in (t(M_wait), t(M_end)).
-4. **Expected.** U = 2 writes, W = 5 writes. From p.14: BLTSIZV holds "h14 ... h0", and "BLTSIZV should be written first, followed by BLTSIZH, which starts the blitter."
+4. **Expected.** U = 2 writes, W = V1 writes. From p.14: BLTSIZV holds "h14 ... h0", and "BLTSIZV should be written first, followed by BLTSIZH, which starts the blitter." Bits 7-0 of the height are observed; the case V1 = 2 leaves the observation as V0 gave it.
 5. **Preconditions.** PC1-PC5.
 6. **Contrasting cases.** As in section 1.9.
 7. **Reference frame.** The markers.
 
+---
+
 ### C12. BLTCDAT (070), BLTBDAT (072), BLTADAT (074): only the COPCON-bit-1-clear half
 
-1. **Proposition.** While COPCON bit 1 is clear, a Copper MOVE to BLTxDAT (x = A, B, C) does not change the data the blitter uses from that source (p.6, p.7). Claims: none. The six `~` claims for these registers also state the COPCON-bit-1-set half, which C12 does not grade, so they are declined whole (section 0.3).
+1. **Proposition.** While COPCON bit 1 is clear, a Copper MOVE of the one value V1 = 0x5A5A to BLTxDAT (x = A, B, C) does not change the data the blitter uses from that source, which the DMA preload set to V0 = 0x3C3C (p.6, p.7). The line is graded for this one value of V1, not for every 16-bit value. Claims: none. The six `~` claims for these registers also state the COPCON-bit-1-set half, which C12 does not grade, so they are declined whole (section 0.3).
 2. **Stimulus.**
    - DMACON = 0x8240. BLTCON1 = 0, BLTAFWM = BLTALWM = 0xFFFF, all modulos 0.
    - Per source x, the minterm codes are from HRM p.177: LF_A = 0xF0, LF_B = 0xCC, LF_C = 0xAA. The use bits are USEA = bit 11, USEB = bit 10, USEC = bit 9 (p.14).
@@ -471,13 +516,15 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - p.13: the pointer "must be preloaded with the starting address".
      - p.6: the modulo is "added to the memory address at the end of each line". With 0, each line follows the previous one.
      - p.14: DESC = 0, so addresses do not decrease.
+   - No blitter write lies outside the windows (t(M_start), t(M_end)) of the cases: every blit finished inside its case, and no case started another transfer. A late write means that a blit did not cover exactly the stated words.
    - Quantifiers: every one of the 16 bits is set alone in some case, and (63,1) and (1,1023) set all bits of each field.
    - Value 0 in either field is not used. "(10 bits=1024 lines max)" and "(6 bits=64 words ...)" do not say what 0 encodes.
-5. **Preconditions.** DMA_CHECK(BLTEN) before the first case. No timeout. No blitter access in (t(M_end), next t(M_start)).
+5. **Preconditions.** DMA_CHECK(BLTEN) before the first case. No timeout.
 6. **Contrasting cases.**
    - Omit the BLTSIZE write: no blitter write, since the page says the write starts the blit.
    - (5,3) changed to (6,3): 18 writes instead of 15.
-   - Precondition: DMACON = 0x8200 (without BLTEN). DMA_CHECK fails, and BLIT_DONE ends on BBUSY or on its timeout, so the program finishes.
+   - A blit of one word started after the last case and not awaited: the late-write clause fails.
+   - Precondition: DMACONR is read after DMACON = 0x8200 (without BLTEN), and DMACON = 0x8240 is written after the read. DMA_CHECK fails, and the blitter of the run works as in the normal run.
 7. **Reference frame.** The markers.
 
 ### F2. BLTSIZV and BLTSIZH, the hires-chip size registers, work with the AA chip set
@@ -511,6 +558,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - No blitter write in (t(M_start), t(M_v)).
    - v·w writes in (t(M_v), t(M_end)) at DST2 + 2i with data 0xFFFF.
    - For the reuse case: 6, then 15.
+   - No blitter write lies outside the windows (t(M_start), t(M_end)) of the cases.
    - Page grounds, p.14:
      - "BLTSIZH H 05E W A Blitter H size & start (11 bit width)", bits "w10 ... w0";
      - "BLTSIZV H 05C W A Blitter V size (15 bit height)", bits "h14 ... h0";
@@ -521,6 +569,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - Omit BLTSIZH: no writes.
    - Rewrite BLTSIZV = 4 before the second reuse blit: 20 instead of 15.
    - v = 8 changed to 9: 9 writes.
+   - A blit started by a BLTSIZH write after the last case and not awaited: the late-write clause fails.
    - Precondition contrast as F1.
    - Not used as a contrast: selecting OCS behaviour. The pages do not say what the harness's OCS selection removes.
 7. **Reference frame.** The markers.
@@ -542,6 +591,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
 4. **Expected.**
    - Exactly two blitter reads, at ASRC and ASRC+2. None in BSRC or CSRC.
    - Two blitter writes, at DST and DST+2, with data 0xFF00 and 0xF0F0: D = NOT A, LF 0x0F per HRM p.177, unshifted.
+   - No blitter write lies outside (t(M_start), t(M_end)).
    - p.13: "BLTCON0L H 05A W A Blitter control register 0 (write lower 8 bits only) This is to speed up software-- the upper bits are often the same."
    - p.7: "Blitter control 0 lower 8 bits(minterms)".
    - p.14 BLTCON0 bits: 15-12 ASH3-0, 11-8 USEA-USED, 7-0 LF7-0.
@@ -549,6 +599,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
 6. **Contrasting cases.**
    - Omit the BLTCON0L write: data 0x00FF, 0x0F0F.
    - Write 0xFF0F to BLTCON0 (040) instead: reads appear in BSRC and CSRC (USEB and USEC set), so the "only A reads" check fails.
+   - A second blit of two words started after the window and not awaited: the late-write clause fails.
 7. **Reference frame.** The markers.
 
 ### F4. AUD0LCH/AUD0LCL and AUD1LCH/AUD1LCL hold A20-A16 and A15-A1 of the channel's start address
@@ -586,12 +637,12 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - Only channel c is enabled: DMACONR reads no enable bit of another audio channel.
    - No audio read and no stray DMA read in (t(M_start), t(M_go)).
    - At least two audio reads or stray DMA reads in (t(M_go), t(M_end)). This counts the channel's reads wherever they go, so a wrong address fails the expected values, not this precondition.
-   - The refresh precondition of section 1.6.
+   - The refresh precondition of section 1.6: at least 76 refresh reads in (t(M_go), t(M_end)), which holds the 20 line starts of its LINES(20) wait.
    - No timeout.
 6. **Contrasting cases.**
    - A bit of the written address flipped (A4, in the second case): every read of the channel lies outside [a, a+8), so the first-or-second clause and the one-stray clause both fail, and the population precondition still holds. Each address and its complement in the family predict different reads.
    - The one-stray clause is moved on its own by F7's STRAY contrast, which uses the same predicate.
-   - Preconditions: omit the channel's DMACON enable (DMA_CHECK fails and there are no audio reads); enable channel 0 too in the second case of channel 1 (ONLY); write the enable before M_start (QUIET); write M_end at once after the enable (POP); write M_end before M_go (REF, an empty window); a wait that ends by its timeout (TMO).
+   - Preconditions: read DMACONR before the channel's enable is written, and write the enable after the read (DMA_CHECK fails; the channel runs); enable channel 0 too in the second case of channel 1 (ONLY); write the enable before M_start (QUIET); write the enable after the LINES(20) of the window and M_end at once after the read of DMACONR, so that fewer than two reads fall in a window that still holds 20 line starts (POP); a window of 8 lines in place of 20, so that it holds fewer than 76 refresh reads (REF); a wait that ends by its timeout (TMO).
 7. **Reference frame.** The markers and the address family S0-S9 with its per-bit codes (section 1.8).
 
 ### F5. SPRxPTH/SPRxPTL hold A20-A16 and A15-A1 of sprite x's DMA address (x = 0-7)
@@ -606,8 +657,9 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      2. M0.
      3. For x = 0-7: SPRxPTH = (Si ^ (x << 6)) >> 16; SPRxPTL = (Si ^ (x << 6)) & 0xFFFF.
      4. M1.
-     5. VBL_SYNC.
-     6. M2.
+     5. LINES(40).
+     6. VBL_SYNC.
+     7. M2.
    - p.28: "These address registers must be initialized by the processor or coprocessor every vertical blank time." The zero control words keep every sprite off the screen.
 3. **Observation.** Sprite reads (reads of the case's eight regions [Si ^ (x << 6), +32)) and stray DMA reads (section 1.6) in (t(M0), t(M2)). Reads of another family member's regions are stray.
 4. **Expected.**
@@ -619,15 +671,20 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - p.6 "PTL,PTH=20 bit Pointer that addresses DMA data";
      - p.28 "This pair of registers contains the 20 bit address of Sprite x (x=0,1,2,3,4,5,6,7) DMA data."
    - The eight regions differ only in A8-A6, so a bit error in one sprite's pointer leaves that sprite's region start unread in at least one family member.
+   - The final-WAIT assertion `F5-FW` of section 1.10, on IDLE.
 5. **Preconditions.**
    - DMA_CHECK(SPREN).
    - No sprite read and no stray DMA read in (t(M0), t(M1)).
    - At least eight reads in (t(M1), t(M2)) that are sprite reads or stray DMA reads. This counts the sprite reads wherever they go, so a wrong address fails the expected values, not this precondition.
-   - The refresh precondition of section 1.6.
+   - The refresh precondition of section 1.6: at least 156 refresh reads in (t(M1), t(M2)), which holds the 40 line starts of its LINES(40) wait.
    - No timeout.
 6. **Contrasting cases.**
    - Si and its complement predict disjoint address sets.
-   - Precondition: DMACON without SPREN. DMA_CHECK fails and there are no sprite reads.
+   - Preconditions, each in the second family:
+     - DMA_CHECK: DMACONR is read after DMACON = 0x8200 (without SPREN) and DMACON = 0x8220 is written after the read.
+     - QUIET: the program waits 60 lines after the pointer writes before M1, so the sprite reads of the frame lie between M0 and M1; the window then runs over the next vertical blank and 30 lines, so that it holds the sprite reads of the next frame.
+     - POP: the program waits 30 lines after the first VBL_SYNC, before M0, so the sprite reads of the frame lie before both windows; the window (t(M1), t(M2)) still holds the 40 line starts of its LINES(40) wait.
+     - REF: the window ends after 30 lines, in place of the 40 lines and the vertical blank, so it holds the sprite reads and fewer than 156 refresh reads.
 7. **Reference frame.** The VERTB frame boundary (p.25, bit 5 "Start of Vertical blank"), the markers, and the address family.
    - Not graded: which of the eight sprite channels made a given read. The AA pages give no sprite slot order, and the port does not report the requester.
    - Not graded: how many reads each sprite makes per frame. The page does not say.
@@ -671,22 +728,24 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - Plane x has weight 2^(x-1) in the colour address: p.17's PF2OF table gives "AFFECTED BITPLANE" 2 an offset of 2, plane 3 an offset of 4, and so on up to plane 8 = 128. p.18 describes BPLAM as XORed with "the 8 bitplane color address".
 5. **Preconditions.**
    - DMA_CHECK(BPLEN).
-   - In each graded frame there are bitplane reads in each of B1-B8.
    - The Copper list was read in the vertical blank before each graded frame.
    - No timeout.
+
+   The fetch is graded with the colours: in each graded frame there are bitplane reads in each of B1-B8. It is part of the clause (the bitplane DMA fetches the data), so a missing fetch is a FAIL.
 6. **Contrasting cases.**
-   - Swap the band rows of planes 3 and 4. The order becomes C2, C4, C3, C5, C6, C7, C8. Every precondition still holds, so the case fails through the band order.
-   - Precondition "reads in each of B1-B8": BPLCON0 = 0x7000 (BPU = 7, p.16). Plane 8 is not fetched, so there are no reads in B8 and the precondition fails. This is a precondition contrast only: it removes a fetch, so it cannot show the colour clause failing.
-   - Precondition: DMACON without BPLEN. DMA_CHECK fails and there are no bitplane reads.
+   - Swap the band rows of planes 3 and 4. The order becomes C2, C4, C3, C5, C6, C7, C8. Every precondition still holds and the fetch holds, so the case fails through the band order.
+   - Fetch: BPLCON0 = 0x7000 (BPU = 7, p.16). Plane 8 is not fetched, so there are no reads in B8 and no band C8: the case fails through the fetch clause, and through the band clause, which a missing fetch cannot leave unaffected.
+   - Precondition DMA_CHECK: DMACONR is read after DMACON = 0x8200 (without BPLEN) and DMACON = 0x8300 is written after the read; the display of the run is the normal one.
+   - Precondition COPPER: the Copper runs a copy of the list at another address. The copy loads the same pointers, so the planes are fetched and the colours appear, and the words of the list at its own address are not read.
 7. **Reference frame.** Frame boundaries come from VSYNC on the video output. Band order is relative, top to bottom; no absolute line or column is graded. Plane memory row r is display line 0x2C + r, because vertical bitplane timing follows the display window (p.21), but this is used only to place the bands.
 
 ### F7. AUD0DAT-AUD3DAT are written by the channel's audio DMA with RAM data, output as signed bytes
 
-1. **Proposition.** With channel c's audio DMA on, the words the channel reads from RAM are written into AUDcDAT and output as two's-complement bytes, so the channel's output level follows the sign and order of the fetched bytes. Claims: opus:AA-aud0dat.c2, sol:AA-aud0dat.c2, opus:AA-aud1dat.c2, sol:AA-aud1dat.c2, opus:AA-aud2dat.c2, sol:AA-aud2dat.c2, opus:AA-aud3dat.c2, sol:AA-aud3dat.c2 (access `W`) (p.7, p.8).
+1. **Proposition.** With channel c's audio DMA on, the words the channel reads from RAM are written into AUDcDAT, and the two bytes of every word are output one after the other as two's-complement bytes, so the channel's output level follows the sign and value of the fetched bytes. Claims: opus:AA-aud0dat.c2, sol:AA-aud0dat.c2, opus:AA-aud1dat.c2, sol:AA-aud1dat.c2, opus:AA-aud2dat.c2, sol:AA-aud2dat.c2, opus:AA-aud3dat.c2, sol:AA-aud3dat.c2 (access `W`) (p.7, p.8).
    - Only the DMA writer is specified. The processor writer is disputed (section 4, D1), so the eight `&` claims for AUD0DAT-AUD3DAT, whose "only" is not graded, are declined whole (section 0.3).
    - The eight `.c2` claims state the access type the address list prints, `W` ("W=Write", p.6), and nothing more. None of them says "only" or "write only", so F7 grades each whole: the register is written, and the written data reaches the output. Reads are not graded; the row gives no `R`, and no page says what a read returns.
 2. **Stimulus.** For each channel c = 0-3 separately:
-   - Region AD holds 0x4040, 0xC0C0, 0x2020, 0x0000. Each word has two equal bytes, because p.11 says the bytes are "outputed sequentially" but not which comes first.
+   - Region AD holds 0x7F01, 0xFF80, 0x40C0, 0x20E0: eight different bytes, $7F, $01, $FF, $80, $40, $C0, $20, $E0. As two's-complement integers they are +127, +1, -1, -128, +64, -64, +32, -32. Read as sign-magnitude, as one's complement or as unsigned numbers the same bytes stand in other orders ($80 is the lowest level in two's complement, but in sign-magnitude $FF, $E0 and $C0 are below it), so the order of their levels tells the encodings apart. Each word has two different bytes, so the output shows that the two bytes are output one after the other; p.11 says the bytes are "outputed sequentially" but not which comes first, so either order within a word is accepted.
    - AUDcLCH/L = AD; AUDcLEN = 4; AUDcPER = 400; AUDcVOL = 0x0040 (bit 6 "Forces volume to max", p.11). The other channels have DMA off and volume 0.
    - ADKCON modulation bits 7-0 are clear (from the prologue).
    - Sequence:
@@ -696,13 +755,13 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      4. LINES(100).
      5. M_end.
      6. DMACON = (1 << c); AUDcVOL = 0.
-   - Why LINES(100): each byte is output for one period ("The minimum period is 124 color clocks ... This corresponds to a maximum sample frequency of 28.86 khz", p.11), so one word lasts 2 × 400 and the four-word data set 3200 color clocks. Three passes, plus up to one pass before the first L1, take 12800 color clocks, besides the start of output, whose latency no page gives. 100 lines of at least 227 color clocks (HRM p.194: "227.5 cycles per horizontal line") are at least 22700.
+   - Why LINES(100): each byte is output for one period ("The minimum period is 124 color clocks ... This corresponds to a maximum sample frequency of 28.86 khz", p.11), so one word lasts 2 × 400 and the four-word data set 3200 color clocks. Three passes, plus up to one pass before the first byte, take 12800 color clocks, besides the start of output, whose latency no page gives. 100 lines of at least 227 color clocks (HRM p.194: "227.5 cycles per horizontal line") are at least 22700.
 3. **Observation.**
    - Audio reads (reads of [AD, AD+8), the audio region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)).
-   - The audio output samples in (t(M_start), t(M_end)), on every output signal the harness provides. On each signal, a run is a maximal stretch of equal samples. Runs shorter than T/4 are dropped, and neighbouring runs of equal value are then merged. T is the mean interval between consecutive audio reads in the window: the time from the first to the last, divided by the number of reads less one. The channel reads one word for every two bytes it outputs (p.11), so a level held for a word lasts about T. T is measured at the ports, so no conversion between clk_sys and color clocks is assumed. T/4 only separates transitions from levels; no expected value depends on it.
+   - The audio output samples in (t(M_start), t(M_end)), on every output signal the harness provides. On each signal, a run is a maximal stretch of equal samples. Every run is kept: no run is dropped for its length and no neighbouring runs are merged.
 4. **Expected.**
-   - On at least one output signal, the runs, taken in time order, contain the sequence (L1, L2, L3, L4) three times in succession (twelve consecutive runs) with the same four values each time, where L1 > L3 > L4 > L2.
-   - These are the levels of bytes +64, -64, +32 and 0.
+   - In the window the channel reads at least eight times from [AD, AD+8), each of its four words at least twice.
+   - On at least one output signal, the runs, taken in time order, contain twenty-four consecutive runs that hold the eight levels of the eight bytes three times in succession: run k + 8 has the level of run k, and the eight levels of the first eight runs stand in the order of the two's-complement values of the bytes (every pair of levels is ordered as the pair of values), the bytes of every word in the memory order or in the reverse order (the same in all words).
    - Page grounds, p.11:
      - "This register is the Audio channel x (x=0,1,2,3) DMA data buffer. It contains 2 bytes of data (each byte is a twos complement signed integer) that are outputed sequentially (with digital to analog conversion) to the audio output pins."
      - "The audio DMA channel controller automatically transfers data to this register from RAM."
@@ -711,17 +770,16 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - absolute amplitude (the page gives only "0.8 volts(peak to peak, typ)");
      - which output carries which channel.
 5. **Preconditions.**
-   - DMA_CHECK(AUDcEN).
-   - At least eight audio reads in the window, and each of the four addresses of [AD, AD+8) at least twice.
-   - At most one read of the window lies outside [AD, AD+8), and if there is one it is the channel's first read after the enable (HRM p.164: "Because of pipelining in Agnus, the first data word must be thrown away."; the pages leave its address open, section 4, D7).
    - DMA_CHECK(AUDcEN) in every case, read from DMACONR after the enable.
-   - The refresh precondition of section 1.6.
+   - At most one read of the window lies outside [AD, AD+8), and if there is one it is the channel's first read after the enable (HRM p.164: "Because of pipelining in Agnus, the first data word must be thrown away."; the pages leave its address open, section 4, D7).
+   - The refresh precondition of section 1.6: at least 396 refresh reads in the window, which holds the 100 line starts of its LINES waits.
    - ADKCONR & 0x00FF = 0, read before M_start (p.11: USExVy / USExPy clear).
    - No timeout.
 6. **Contrasting cases.**
-   - The second word 0xC0C0 changed to 0x6060 (+96): now the second level is the highest, and L1 > L3 > L4 > L2 fails, as the page predicts.
-   - Preconditions: omit the DMACON enable (DMA_CHECK fails and there are no audio reads); set USE0V1 in ADKCON before the read of ADKCONR (ADK); a window of five lines (POP); rewrite AUDcLCL to AD + 0x100 sixty lines after the enable, so that the next restart (AA p.6: the location registers restart the pointer "whenever the audio length count is finished") reads outside [AD, AD+8) (STRAY); write M_end before the enable (REF, an empty window); a wait that ends by its timeout (TMO).
-7. **Reference frame.** The audio reads of the window give the time scale T. No absolute latency between a read and its output is assumed, because the page gives none. The twelve runs may start anywhere in the window, so neither the start of output nor the length of the first pass through the data affects the check.
+   - The byte $C0 (-64) changed to $60 (+96), the word 0x40C0 being 0x4060: the level of that byte is no longer below those of $40 and $20, so the order of the levels is not the order of the two's-complement values of the bytes, in either byte order, as the page predicts.
+   - Population (the reads of the window): the enable is written 95 lines after M_start, so the window holds fewer than eight reads of [AD, AD+8).
+   - Preconditions: DMACONR is read before the enable is written (DMA_CHECK fails; the enable follows, so the rest of the run is the normal run); set USE0V1 in ADKCON before the read of ADKCONR (ADK); rewrite AUDcLCL to AD + 0x100 sixty lines after the enable, so that the next restart (AA p.6: the location registers restart the pointer "whenever the audio length count is finished") reads outside [AD, AD+8) (STRAY); a window of 40 lines in place of 100, so it holds fewer than 396 refresh reads (REF); a wait that ends by its timeout (TMO).
+7. **Reference frame.** The audio output of the window. No absolute latency between a read and its output is assumed, because the page gives none. The twenty-four runs may start anywhere in the window, so neither the start of output nor the length of the first pass through the data affects the check.
 
 ### F8. BLTADAT/BLTBDAT/BLTCDAT are loaded by the blitter's source DMA; BLTDDAT goes to RAM by DMA
 
@@ -746,50 +804,58 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - p.13: BLTxDAT "It is normally loaded by the Blitter DMA channel".
      - p.13: BLTDDAT "holds the data resulting from each word of Blitter operation until it is sent to a RAM destination ... The transfer is automatic during Blitter operation."
      - p.6 ER: "a DMA data transfer to RAM, from either the Disk or from the Blitter ... initiated by Agnus timing".
-5. **Preconditions.** DMA_CHECK(BLTEN). Exactly four blitter reads in SRC_x in the window. No timeout. No blitter access after t(M_end).
+5. **Preconditions.** DMA_CHECK(BLTEN). No timeout.
+   - Graded with the data: exactly four blitter reads in SRC_x in the window of each blit (the blitter loads BLTxDAT from the source words), and no blitter write outside the windows of the three blits, so that no blitter access follows t(M_end) of a case.
 6. **Contrasting cases.**
    - The third source word changed to 0x0000: the third D word is 0x0000.
-   - Precondition: USEx cleared. There are no reads in SRC_x and the precondition fails.
+   - Reads: USEx cleared. There are no reads in SRC_x and the line fails.
+   - A second blit started after t(M_end) of the last case and not awaited: the late-write clause fails.
+   - Precondition DMA_CHECK: DMACONR is read after DMACON = 0x8200 (without BLTEN) and DMACON = 0x8240 is written after the read.
 7. **Reference frame.** The markers. Write order gives word order.
 
-### F9. DSKDAT is fed by the disk DMA channel from RAM for LENGTH words
+### F9. DSKDAT is fed by the disk DMA channel from RAM for LENGTH words (LENGTH = 4 and LENGTH = 3)
 
 Drive 0 is configured and no disk image is mounted (section 1.1). If no documented `floppy_config` value configures a drive at all, F9 is NOT-CHECKABLE.
 
-1. **Proposition.** A disk write DMA of LENGTH words reads exactly LENGTH consecutive words from RAM, starting at DSKPT, into the disk data buffer DSKDAT, and then raises the disk block request (p.6, p.23). Claims: none. The two `&` claims for DSKDAT also state "only", which F9 does not grade, so they are declined whole (section 0.3).
-2. **Stimulus.**
-   - DMACON = 0x8210. ADKCON = 0x9100. INTREQ = 0x0002.
-   - Region DB holds 0x1111, 0x2222, 0x3333, 0x4444, followed by the guard words 0x5555, 0x6666. DSKPTH/L = DB.
-   - Sequence (HRM p.247 order):
-     1. M_start.
-     2. DSKLEN = 0x4000.
-     3. DSKLEN = 0xC004.
-     4. DSKLEN = 0xC004.
-     5. Read DSKBYTR and store bit 14 (DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", p.23).
-     6. Poll INTREQR bit 1 until set. Timeout: 1 frame. Store in RES whether the bit was seen set.
-     7. M_blk.
-     8. DSKLEN = 0x4000.
-     9. LINES(4).
-     10. M_end.
-     11. INTREQ = 0x0002.
+1. **Proposition.** A disk write DMA of LENGTH words reads exactly LENGTH consecutive words from RAM, starting at DSKPT, into the disk data buffer DSKDAT, and then raises the disk block request (p.6, p.23). Graded for the two lengths LENGTH = 4 and LENGTH = 3, not for every 14-bit length. Claims: none. The two `&` claims for DSKDAT also state "only", which F9 does not grade, so they are declined whole (section 0.3).
+2. **Stimulus.** Two cases, one after the other, LENGTH = 4 (region DB4) and LENGTH = 3 (region DB3).
+   - DMACON = 0x8210. ADKCON = 0x9100.
+   - Region DB4 holds 0x1111, 0x2222, 0x3333, 0x4444, followed by the guard words 0x5555, 0x6666. Region DB3 holds 0x7111, 0x7222, 0x7333, followed by the guard words 0x7444, 0x7555, 0x7666. Both are 12 bytes.
+   - Sequence for a case with region DB and length LENGTH (HRM p.247 order):
+     1. INTREQ = 0x0002. DSKPTH/L = DB.
+     2. M_start.
+     3. DSKLEN = 0x4000.
+     4. DSKLEN = 0xC000 | LENGTH.
+     5. DSKLEN = 0xC000 | LENGTH.
+     6. Read DSKBYTR and store bit 14 (DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", p.23).
+     7. Poll INTREQR bit 1 until set. Timeout: 20 lines (220 reads of INTREQR). Store in RES whether the bit was seen set.
+     8. M_blk.
+     9. DSKLEN = 0x4000.
+     10. LINES(4).
+     11. M_end.
+   - After the second case: INTREQ = 0x0002.
    - No drive is selected. p.23's DMAON has no drive term, so selection does not enter.
-   - The timeout of step 6 does not make the case NOT-CHECKABLE (section 1.7), because DSKBLK is part of the clause under test: when the preconditions below hold, a timeout there fails the expected value "INTREQR bit 1 becomes set".
-3. **Observation.** Disk reads (reads of [DB, DB+12), the disk region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)). The polling result.
+   - The timeout of step 7 does not make the case NOT-CHECKABLE (section 1.7), because DSKBLK is part of the clause under test: when the preconditions below hold, a timeout there fails the expected value "INTREQR bit 1 becomes set".
+3. **Observation.** Disk reads (reads of [DB, DB+12), the disk region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)) of each case. The polling result.
 4. **Expected.**
-   - Exactly four disk reads, at DB, DB+2, DB+4, DB+6 in that order, none at the guard words, and no stray DMA read in the window. With DMAON = 1, no read at all is a FAIL: p.23's DMAON has no drive term.
-   - INTREQR bit 1 becomes set, with t(4th read) < t(M_blk).
+   - Exactly LENGTH disk reads, at DB, DB+2, ... in that order, none at the guard words, and no stray DMA read in the window of either case. With DMAON = 1, no read at all is a FAIL: p.23's DMAON has no drive term.
+   - INTREQR bit 1 becomes set, with t(last read) < t(M_blk).
    - Page grounds:
      - p.23 DSKLEN: "13-0 LENGTH Length (# of words) of DMA data".
      - p.23 DSKDAT: "This register is the Disk-DMA data buffer ... The DMA controller automatically transfers data to or from this register and RAM, and when the DMA data is finished (Length=0) it causes a Disk Block Interrupt."
      - p.25: bit 1 "DSKBLK Disk Block finished".
+   - The final-WAIT assertion `F9-FW` of section 1.10, on IDLE, as the control: the word after IDLE's final WAIT is read zero times.
 5. **Preconditions.**
    - DMA_CHECK(DSKEN).
-   - DMAON = 1 (the stored DSKBYTR bit 14).
+   - DMAON = 1 (the stored DSKBYTR bit 14) in both cases.
    - A drive is configured (section 1.1).
-   - The refresh precondition of section 1.6.
+   - The refresh precondition of section 1.6 for each case: at least 12 refresh reads in the window, which holds the 4 line starts of its LINES(4) wait.
 6. **Contrasting cases.**
-   - DSKLEN = 0xC003 (both writes): three reads.
-   - Precondition: DMACON without DSKEN. DMA_CHECK fails, DMAON reads 0, and there are no disk reads.
+   - DSKLEN = 0xC003 (both writes) in the LENGTH = 4 case: three reads where four are expected.
+   - Precondition DMA_CHECK: DMACONR is read before DSKEN is written (the DMA_CHECK fails), and DSKEN is written afterwards, so the rest of the run is the normal run.
+   - Precondition DMAON: in the LENGTH = 4 case DSKLEN's DMAEN is written once, not twice, so DMAON reads 0.
+   - Precondition REF: in the LENGTH = 4 case M_end follows the DSKBYTR read, so the window holds fewer than 12 refresh reads.
+   - Stray reads: DSKPT 0x1000 bytes above DB in the LENGTH = 4 case.
 7. **Reference frame.** The markers.
 
 ---
@@ -885,14 +951,14 @@ Everything lies in the identity-mapped Chip RAM, outside the three places and th
 | Program image, and the script | The image starts at 0x080400 and the script at 0x081000; both end below 0x08CC36, the first byte of the S3 regions. The CPU attribution of section 1.6 is [0x080400, image end + 16) and [0x081000, script end + 16) of the run, the stack, MK and RES. |
 | MK | 0x0B8000 |
 | RES and the log | [0x0C0000, 0x0C1000) |
-| IDLE | 0x090000; the Copper list region is 16 bytes (the two list words and the zero words after them). AA p.20, WAIT: "(keeps Coprocessor off of bus until beam position has been reached)". The Copper nevertheless reads the word after the final WAIT of a list, IDLE + 4 after nearly every vertical-blank restart and the word after the end WAIT of a case list; the 16-byte region keeps these reads in the Copper class, and the runs print their counts per core as MEASURED lines (not graded). |
-| Case lists | 0x090100 + 0x40 k for the k-th register case of a proposition; C12 uses 0x090140, 0x090180, 0x0901C0 for BLTADAT, BLTBDAT, BLTCDAT; each list region is 16 bytes |
+| IDLE | 0x090000; the Copper list region is 16 bytes (the two list words and the zero words after them). The final-WAIT assertion of section 1.10 grades the reads of the word at IDLE + 4; the 16-byte region keeps any such read in the Copper class, and the runs print the counts per list as MEASURED lines. |
+| Case lists | C1, C2, C5-C7, C9-C11 (walking values): 0x090100 + 16 i for the i-th case; C3, C4, C8: 0x090100; C12 uses 0x090140, 0x090180, 0x0901C0 for BLTADAT, BLTBDAT, BLTCDAT; each list is 12 bytes and the 4 bytes after it stay free. The copy of the F6 list that the COPPER contrast of F6 runs lies at 0x090500. |
 | DST (C7-C12, F3, F8), C12's preload destination | 0x1B0200, 0x1B0400. They lie in the top of Chip memory, away from RES, the stack and the S regions, so that a blit that does not stop at its specified size overwrites no result. |
 | DST2 (F1, F2) | 0x1A0000, 65534 bytes |
 | ASRC, BSRC, CSRC, PX | 0x0B2000, 0x0B2100, 0x0B2200, 0x0B2300 |
 | F8 sources | 0x0B3000 + 0x100 (3 x + k) for source k of the case x |
 | Rd, Re, Re' (C2) | 0x0E0000, 0x0F0000, 0x0E0100 |
-| AD (F7), DB (F9) | 0x0D8000, 0x0D2000 |
+| AD (F7), DB (F9, LENGTH = 4 and LENGTH = 3) | 0x0D8000, 0x0D2000 and 0x0D3000 |
 | Bitplanes B1-B8 (F6), the F6 Copper list | 0x180000 + 0x4000 (x - 1), 0x090400 |
 
 A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a blitter write, wherever it lands: the blitter is the only other writer. Every observation of blitter writes counts all of them, so a blit that writes outside the proposition's destination region is seen. The regions of a proposition are used to attribute reads. C12's program writes to PX are the preload of V1 and are not blitter accesses.
@@ -900,11 +966,10 @@ A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a
 ### 6.3 Reading of the pages the build fixes
 
 - Marker windows are open intervals: an access at the cycle of a marker write is in no window.
-- Attribution tolerances of the test, which no page states:
+- Attribution of the test:
   - A bus cycle stretched by wait states appears in the port's log once per bus period. A log entry that repeats the address, direction, data and byte lanes of the entry before it exactly one bus period later continues that cycle and is not a new access; nothing else is merged, so two accesses to one word with equal data that are not exact continuations are two accesses. The bus period is the smallest spacing of two consecutive log entries of the run (4 clk_sys cycles on both cores).
-  - A read counts as a refresh read when the `refresh` output was high in any of the four clk_sys cycles up to its log entry. The refresh precondition below guards this tolerance: a read wrongly flagged would break the groups of four.
-- A *colour clock* K is the median spacing of consecutive refresh-flagged reads of the run divided by two, measured in the run (the four refresh reads of a line are two colour clocks apart, "There are 4 refresh time slots", p.29). It is used only in the refresh precondition, together with 228 colour clocks per line (p.29, STRLONG "(228 CC)").
-- The refresh precondition (labels `C2-PCR`, `F4-REF`, `F5-REF`, `F7-REF` and `F9-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. A window of n lines holds at least n - 1 whole groups. The clause that the groups have four reads, one group per line, is unfalsifiable at this boundary: no stimulus changes how the refresh output groups its reads. The records of the precondition (an empty window) move its population clause, that at least one whole group lies in the window.
+  - A read is a refresh read when the `refresh` output is high at the clk_sys cycle of its log entry. The value is taken in the same cycle, with no window around it. The `refresh` output is the port's own statement that the current bus cycle is a refresh cycle.
+- The refresh precondition (labels `C2-PCR`, `F4-REF`, `F5-REF`, `F7-REF` and `F9-REF`): the window holds at least 4 x (k - 1) refresh reads, k being the number of line starts of the LINES(k) wait that the window holds (section 1.6). The windows and their k: C2 each window of the step 8 sequence, LINES(8) at its end; F4 (t(M_go), t(M_end)), LINES(20); F5 (t(M1), t(M2)), LINES(40); F7 (t(M_start), t(M_end)), LINES(100) (LINES(60) and LINES(40) in the STRAY contrast); F9 each case, LINES(4). The clause that the four reads of a line form one group, and that no line holds more than four, is unfalsifiable at this boundary. The records of the precondition shorten the window, and the contrasts do not empty it.
 - C2's observation is the first read in the window that is a disk read or a stray read. The stray class includes every read that is none of CPU, refresh, Copper and the disk regions.
 - F6's bands. The video output is the scan-doubled output of the harness, so a line is an output line (a rising edge of `hs`). A pixel is black when its three 4-bit components are 0. C2-C8 are (15,0,0), (0,15,0), (0,0,15), (15,15,0), (0,15,15), (15,0,15), (15,15,15) (the 4-bit output of the p.19 extension of the 4-bit values). A band is a maximal run of output lines that hold a non-black pixel; its height is the number of lines; a gap is the number of black lines between two bands; the first and last column of a line are the sample offsets from the start of the line of its first and last non-black pixel.
 - F1 and F2 case (w, h): `BLTSIZE` is written as `(h << 6) | w`; the case (63, 1) and (1, 1023) of F1 and (v = 0x7FFF) and (w = 0x07FF) of F2 set every bit of their fields.
@@ -913,7 +978,7 @@ A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a
 
 Every label starts with the proposition's id. The C propositions print `Cn-FIXTURE`, `Cn-PC1` to `Cn-PC5` as section 1.9 names them (PC5 in the propositions that run a DMA channel), `Cn-PC6` (`C6-PC7` for the counters' stillness, as section 2 names it; `C2-PC6` for DMAON), `C2-PCR` for the refresh precondition, and the proposition's own line `Cn`. The F propositions print `Fn-FIXTURE`, `Fn-DMA` (DMA_CHECK), `Fn-TMO` (no timeout) and the preconditions of their sections, under the names in the mutation records of `test_aa_integ_s7.cpp`.
 
-`NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first register case of the proposition only, and of C12 the first source (BLTADAT) only. The population contrasts of C2 (PC6), C6 (PC7) and C7, C8, C9 (PC6) apply to frame B only. A label may have more than one record when its line has more than one clause a stimulus can move (F5, F9: the stray clause).
+`NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first case of the proposition only (for the propositions that run walking values, a case whose written value changes the observation), and of C12 the first source (BLTADAT) only. The population contrasts of C2 (PC6), C6 (PC7) and C7, C8, C9 (PC6) apply to frame B only. A label may have more than one record when its line has more than one clause a stimulus can move (F5, F9: the stray clause).
 
 
 ---
@@ -924,24 +989,27 @@ The final `make -k -B test` ran on both cores; every run selects the AA chip set
 
 | | fx68k | TG68K |
 |---|---|---|
-| Graded lines (`PASS:` / `FAIL:`) | 142 passed, 0 failed | 142 passed, 0 failed |
-| `RECORDED:` lines | 7 (the seven declined groups of section 0) | 7 |
-| Mutation records in `test_aa_integ_s7.cpp` | 145, each prints `FAIL:` on its label | 145, each prints `FAIL:` on its label |
-| Colour clock K, bus period | 8 and 4 clk_sys cycles | 8 and 4 clk_sys cycles |
-| Claims asserted | 80 of 160 (the 80 of section 0) | 80 of 160 |
+| Graded lines (`PASS:` / `FAIL:`) | 150 passed, 13 failed | 150 passed, 13 failed |
+| `FAIL:` lines | `C1-FW` ... `C12-FW`, `F5-FW` (the final-WAIT assertion, section 1.10) | the same 13 |
+| `RECORDED:` lines | 14 (the seven declined groups of section 0 and the seven withdrawn registers of 0.5) | 14 |
+| Mutation records in `test_aa_integ_s7.cpp` | 173 | 173 |
+| Bus period | 4 clk_sys cycles | 4 clk_sys cycles |
+| Claims asserted | 66 of 160 (section 0) | 66 |
+
+The mutation records: 158 `NMH_MUTATE` selectors, each replayed on both cores with the failure sets printed in its record (the two cores printed the same sets for all 158); 13 `-FW` records of the normal run (C1-C12, F5), whose comparator also passes on F9 (`F9-FW`); the private chip set of C2 whose disk channel never reads (C2 prints FAIL, C2-PC4 prints NOT GRADED, on both cores); and the scope decision of `C12-FWA`. A private chip set whose audio channel reads the location first, built outside the repository, runs F4 and F7 on both cores with 15 passed, 0 failed.
 
 Measured values, per core, in the order of the propositions:
 
-- C1, C3, C5, C6 and C8-C11: for COPCON $0000 and $FFFD the observation equals U and for COPCON $0002 it equals W, on both cores.
-- C2: the first disk read is at Rd (0x0E0000) for COPCON $0000 and $FFFD; with COPCON $0002 it is at Re (0x0F0000) for DSKPTH and at Re' (0x0E0100) for DSKPTL. A disk DMA with DMAON set reads RAM in every run; the window of each case is two lines long and holds two or three whole groups of refresh reads.
-- C4: with COPCON $0000 and $FFFD the poll ends on a line in $41-$42, with COPCON $0002 on a line in $C0-$C1.
-- C7, C9, C10, C12: the blitter writes of every case are those the propositions list, with no write outside the four, three or two words counted; C12's observation blit writes $3C3C twice in both frames B, and $5A5A twice after a DMA preload of V1 in frame A.
-- Copper reads past the final WAIT of a list (AA p.20, not graded), the same count on both cores: the word IDLE + 4 (0x090004) is read 3 times in C2, 4 in C12, 20 in F5 and 0 in F9; the word after the end WAIT of C2's DSKPTH case list (0x09010C) is read once, and the words after the other case lists of C2 and C12 are not read.
-- F1: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE write. F2: the same with v x w words, and nothing before the BLTSIZH write.
+- C1, C2, C3, C5-C11: for COPCON $0000 and $FFFD the observation of every case equals U, and for COPCON $0002 it equals W, on both cores: C1 32 values, C2 32 values of DSKPTH and 32 of DSKPTL, C5 16, C6 32, C7 the one BLTCON0 value and 32 of BLTCON0L, C9 32 of each register, C10 32 of BLTSIZE and 22 of BLTSIZH, C11 8, C3 and C8 one value each. The calibration of frame A gives W for the CPU's own write and U without it in every case.
+- C2: the first disk read of a case is at the address of section 2 for every one of the 64 values (the addresses of DSKPTH walk through A20-A16 of the pointer, those of DSKPTL through A15-A1). A disk DMA with DMAON set reads RAM in every run. Every window holds at least 40 refresh reads on both cores (28 required).
+- C4: the poll ends with V7 clear for COPCON $0000 and $FFFD and with V7 set for $0002, on both cores.
+- C12: the observation blit writes $3C3C twice in both frames B, and $5A5A twice after a DMA preload of V1 in frame A.
+- Copper reads of the word after a list's final WAIT, `-FW` (the same on both cores except where the records name each core). Reads of the word at IDLE + 4: C1 5, C2 53, C3 2, C4 2, C5 5, C6 9, C7 13, C8 2, C9 17, C10 29, C11 5, C12 4, F5 20, F9 0. Reads of the word after the final WAIT of the case lists, in the lists whose count is nonzero: C1 31 of 32 lists, C2 32 of 32 (DSKPTH) and 31 of 32 (DSKPTL), C5 15 of 16, C6 31 of 32, C7 1 of 1 (BLTCON0) and 31 of 32 (BLTCON0L), C9 32 of 32 and 31 of 32, C10 21 of 22 (BLTSIZH), C11 7 of 8 lists; BLTSIZE, C10: 34 reads in 32 lists on fx68k and 32 in 32 on TG68K; C11: 7 reads in 7 lists on fx68k, 8 reads in 7 on TG68K; none in the lists of C3, C4, C8. The final WAIT of the case lists of C12 is not read (they run with COPCON bit 1 clear only). F9 reads IDLE + 4 zero times and its final WAIT once.
+- F1: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE write. F2: the same with v x w words, and nothing before the BLTSIZH write. No blitter write lies outside the windows of the cases.
 - F3: the blit reads ASRC and ASRC + 2 and nothing of BSRC and CSRC, and writes $FF00 and $F0F0.
-- F4: on both cores 0 of 22 cases read the written location first and 22 read it second; the first read is at the address the channel's pointer held before the case ($000000 in the first case), and it is the only read outside [a, a+8). A private copy of the chip set whose channel reads the location first (SPECIFICATION.md 4, D7) also passes: 22 of 22 first reads at the location, no read outside.
-- F5: for each of the ten families every sprite pointer is read at its exact address; there is no stray read.
-- F6: seven bands of 8 output lines in the order C2-C8 in both graded frames, gaps of 8 lines, every band spanning the same columns: 142-780 on fx68k, 141-780 on TG68K; no $555 pixel.
-- F7: each channel's window holds 29 or 30 reads of [AD, AD + 8) and one read outside it, the channel's first, at 0x000000; the level sequence of the proposition is present on one output signal (the left output for channels 0 and 3, the right output for channels 1 and 2). The private copy of the chip set of F4 also passes F7: no read outside [AD, AD + 8).
+- F4: on both cores 0 of 22 cases read the written location first and 22 read it second; the first read is at the address the channel's pointer held before the case ($000000 in the first case), and it is the only read outside [a, a+8). Every window holds 80 refresh reads (76 required). The private chip set whose channel reads the location first reads it first in 22 of 22 cases, with no read outside [a, a+8), and F4 passes.
+- F5: for each of the ten families every sprite pointer is read at its exact address; there is no stray read. Every window holds 1244 refresh reads (156 required).
+- F6: seven bands of 8 output lines in the order C2-C8 in both graded frames, gaps of 8 lines, every band spanning the columns 141-780 on both cores; no $555 pixel. Bitplane reads in each of B1-B8 in each graded frame.
+- F7: each channel's window holds 29 or 30 reads of [AD, AD + 8) and one read outside it, the channel's first, at 0x000000; the twenty-four runs of the eight bytes are present on one output signal (the left output for channels 0 and 3, the right output for channels 1 and 2). Every window holds 400 or 404 refresh reads (396 required). The private chip set of F4 also passes F7: 30 or 31 reads of [AD, AD + 8) and none outside.
 - F8: four reads of SRC_x and the four writes $8001, $4002, $2004, $1008 for each of A, B and C.
-- F9: four disk reads at DB, DB + 2, DB + 4, DB + 6; DSKBYTR bit 14 reads 1; INTREQR bit 1 is set after the fourth read.
+- F9: LENGTH = 4: four disk reads at DB, DB + 2, DB + 4, DB + 6; LENGTH = 3: three disk reads at DB, DB + 2, DB + 4; DSKBYTR bit 14 reads 1; INTREQR bit 1 is set after the last read. 24 or 28 refresh reads in the window of each case (12 required).
