@@ -34,7 +34,6 @@ inline void run_p3(Checks& ck) {
     std::vector<uint16_t> words;
     for (int i = 0; i < 9; ++i) words.push_back(uint16_t(B[i] * 0x0101));
     if (mut("P3-SWAP")) std::swap(words[1], words[2]);
-    if (mut("P3-SCALE")) words[1] = 0x0202;   // contrast: word 2 is 0x02 in place of 0x7F, one data unit above word 4's 0x01
     if (mut("P3-BYTE")) words[1] = 0x7F20;    // contrast: the second byte of word 2 is 0x20 in place of 0x7F
     ARun r = data_run(words, 4, 0x0040, mut("P3-PER") ? 600 : 300, 0,
                     mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) {   // contrast: after every block-finished request of the channel the CPU
@@ -70,29 +69,26 @@ inline void run_p3(Checks& ck) {
         ck.note("P3 pass " + dec(p) + " levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): " + lv);
     }
     // G-P: a pass of nine words of two samples of the period 300 lasts 9 * 600 colour clocks, from one pass anchor to the next
-    if (ok_pass) gp = T0[1] > T0[0] && T0[1] - T0[0] + r.tau >= 9 * WL && T0[1] - T0[0] <= 9 * WL + r.tau;
+    if (ok_pass) gp = T0[1] > T0[0] && T0[1] - T0[0] == 9 * WL;
     ck.note("P3: pass-3 anchor run starts " + dec(ok_pass ? (long long)(T0[1] - T0[0]) : 0LL) + " cycles after the pass-2 anchor run (nine words of 600 colour clocks: " + dec((long long)(9 * WL)) + ")");
     print_std(ck, "P3", agg, 1);
     ck.expect(gd, "P3-G-D: after the start DMACONR bit 9 and bit 0 read 1 (AA p.22)");
     ck.expect(gf, "P3-G-F: the channel fetches at least four times at the location, so passes 2 and 3 are followed by a next anchor (AA p.22 '00 AUD0EN')");
-    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts within tau of either anchor fetch (SPECIFICATION.md 2.10)");
-    ck.expect(ok_pass && gp, "P3-G-P: the anchor run of pass 3 starts nine words of 600 colour clocks within tau after the anchor run of pass 2, so each word spans two samples of the period 300 (AA p.11 AUDxPER, AUDxLEN)");
-    // scale: two bytes that every reading places at 1 and 127
-    bool scale = ok_pass && std::fabs(L1[0][1] - L1[0][3]) >= 126.0;
-    ck.expect(scale, "P3-PRE-SCALE: |L(0x7F) - L(0x01)| >= 126 LSB in pass 2, so the output has at least one LSB per data unit at volume 64 (measured on bytes that no reading of a byte can order differently)");
-    bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && ok_pass && gw && gp && scale;
-    const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W, G-P or the scale";
+    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts in the system clock of either anchor fetch (SPECIFICATION.md 2.10)");
+    ck.expect(ok_pass && gp, "P3-G-P: the anchor run of pass 3 starts exactly nine words of 600 colour clocks after the anchor run of pass 2, so each word spans two samples of the period 300 (AA p.11 AUDxPER, AUDxLEN)");
+    bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && ok_pass && gw && gp;
+    const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W or G-P";
     // the order, by word position: 0x80 < 0xA0 < 0xE0 < 0xFF < 0x00 < 0x01 < 0x20 < 0x60 < 0x7F
     const int order[9] = {2, 6, 7, 4, 0, 3, 8, 5, 1};   // word indexes in increasing level
     bool ord = true, same = true, bytes = true;
     for (int p = 0; p < 2; ++p)
-        for (int k = 0; k + 1 < 9; ++k) ord &= L1[p][order[k + 1]] - L1[p][order[k]] >= 1.0 && L2[p][order[k + 1]] - L2[p][order[k]] >= 1.0;
-    for (int j = 0; j < 9; ++j) same &= within(L1[0][j], L1[1][j], 1.0) && within(L2[0][j], L2[1][j], 1.0);
+        for (int k = 0; k + 1 < 9; ++k) ord &= L1[p][order[k + 1]] > L1[p][order[k]] && L2[p][order[k + 1]] > L2[p][order[k]];
+    for (int j = 0; j < 9; ++j) same &= L1[0][j] == L1[1][j] && L2[0][j] == L2[1][j];
     for (int p = 0; p < 2; ++p)
-        for (int j = 0; j < 9; ++j) bytes &= within(L1[p][j], L2[p][j], 1.0);
-    graded(ck, pre, ord, "P3-ORDER: in passes 2 and 3 the levels are strictly ordered L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) < L(0x60) < L(0x7F), each step by at least 1 LSB, in the first byte position and in the second alike", un);
-    graded(ck, pre, same, "P3-SAME: the same byte gives the same level in pass 2 and in pass 3 (within 1 LSB), in each byte position", un);
-    graded(ck, pre, bytes, "P3-BYTES: in passes 2 and 3 the two byte positions of every word, whose two bytes are equal, give the same level within 1 LSB (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
+        for (int j = 0; j < 9; ++j) bytes &= L1[p][j] == L2[p][j];
+    graded(ck, pre, ord, "P3-ORDER: in passes 2 and 3 the levels are strictly ordered L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) < L(0x60) < L(0x7F), in the first byte position and in the second alike", un);
+    graded(ck, pre, same, "P3-SAME: the same byte gives the same level in pass 2 and in pass 3 (equal), in each byte position", un);
+    graded(ck, pre, bytes, "P3-BYTES: in passes 2 and 3 the two byte positions of every word, whose two bytes are equal, give the same level (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
     graded(ck, pre, ord && same && bytes, "P3 sol:AA-audxdat.c6: each byte of AUDxDAT, in either byte position, is a two's-complement signed integer: the output level increases strictly with the byte's two's-complement value (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
 }
 
@@ -145,11 +141,11 @@ inline void run_p4(Checks& ck) {
             if (Wl[n][0] != Wl[n][1]) continue;
             if (by[size_t(n)].size() != 1) { q.gp = false; continue; }
             const LRun& u = r.runs[by[size_t(n)][0]];
-            if (u.len() + r.tau < WL || u.len() > WL + r.tau) q.gp = false;
+            if (u.len() != WL) q.gp = false;
             cal[Wl[n][0]] = double(u.v) - r.Z;
         }
         q.cal = cal.size() == 4;
-        for (auto& x : cal) for (auto& y : cal) if (x.first != y.first && within(x.second, y.second, 1.0)) q.cal = false;
+        for (auto& x : cal) for (auto& y : cal) if (x.first != y.first && x.second == y.second) q.cal = false;
         if (!(q.gw && q.gp && q.cal)) continue;
         for (int n = 0; n < 10; ++n) {
             if (Wl[n][0] == Wl[n][1]) continue;
@@ -157,16 +153,16 @@ inline void run_p4(Checks& ck) {
             if (ids.size() != 2) { q.two = false; continue; }
             for (size_t id : ids) {
                 const LRun& u = r.runs[id];
-                if (u.len() + r.tau < WL / 2 || u.len() > WL / 2 + r.tau) q.lens = false;
+                if (u.len() != WL / 2) q.lens = false;
             }
             double l1 = double(r.runs[ids[0]].v) - r.Z, l2 = double(r.runs[ids[1]].v) - r.Z;
             double e1 = cal[Wl[n][0]], e2 = cal[Wl[n][1]];
-            bool fwd = within(l1, e1, 1.0) && within(l2, e2, 1.0), rev = within(l1, e2, 1.0) && within(l2, e1, 1.0);
+            bool fwd = l1 == e1 && l2 == e2, rev = l1 == e2 && l2 == e1;
             if (!(fwd || rev)) q.lvl = false;
             // no run in the interval has any other level
             for (size_t id : ids) {
                 double l = double(r.runs[id].v) - r.Z;
-                if (!(within(l, e1, 1.0) || within(l, e2, 1.0))) q.other = false;
+                if (!(l == e1 || l == e2)) q.other = false;
             }
             q.order += fwd ? "H" : (rev ? "L" : "?");
         }
@@ -180,9 +176,9 @@ inline void run_p4(Checks& ck) {
     for (int k = 0; k < 2; ++k) {
         const std::string pn = dec(k + 2);
         PassRes& q = pr[k];
-        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts within tau of its anchor fetch (SPECIFICATION.md 2.10)");
-        ck.expect(q.located && q.gp, "P4-G-P-" + pn + ": each equal-byte word of pass " + pn + " gives one run of 600 colour clocks within tau (AA p.11 AUDxPER)");
-        ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct (more than 1 LSB apart)");
+        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts in the system clock of its anchor fetch (SPECIFICATION.md 2.10)");
+        ck.expect(q.located && q.gp, "P4-G-P-" + pn + ": each equal-byte word of pass " + pn + " gives one run of exactly 600 colour clocks (AA p.11 AUDxPER)");
+        ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct");
         use[k] = pre0 && q.located && q.gw && q.gp && q.cal;
     }
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W, G-P or the calibration of the pass";
@@ -191,7 +187,7 @@ inline void run_p4(Checks& ck) {
         const std::string pn = dec(k + 2);
         PassRes& q = pr[k];
         graded(ck, use[k], q.two, "P4-TWO-" + pn + ": in pass " + pn + " each word whose two bytes differ occupies exactly two runs in its 600-colour-clock interval (AA p.11 'that are outputed sequentially')", un);
-        graded(ck, use[k], q.lens, "P4-LEN-" + pn + ": in pass " + pn + " each of those runs lasts 300 colour clocks within tau, one period per byte (AA p.11 AUDxPER)", un);
+        graded(ck, use[k], q.lens, "P4-LEN-" + pn + ": in pass " + pn + " each of those runs lasts exactly 300 colour clocks, one period per byte (AA p.11 AUDxPER)", un);
         graded(ck, use[k], q.lvl && q.other, "P4-LEVEL-" + pn + ": in pass " + pn + " one run's level equals L(b1), the other's equals L(b2), calibrated in the same pass, and no run has any other level (such as a sum or an average)", un);
         if (use[k]) { any = true; two &= q.two; lens &= q.lens; lvl &= q.lvl && q.other; }
     }

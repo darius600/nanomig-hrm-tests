@@ -12,6 +12,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <numeric>
 #include <map>
 #include <optional>
 #include <set>

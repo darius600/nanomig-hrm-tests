@@ -45,6 +45,7 @@ struct P1Case {
     int m_start = 0, m_stop = 0, i_dmaconr = -1;
     std::vector<Fetch> f;
     Blocks b;
+    Blocks ss;    // the same checks over the fetches from the channel's first return to BUFx on
     bool dmaconr_ok = false;
     uint64_t t_start = 0, t_stop = 0;
 };
@@ -122,6 +123,7 @@ inline void p1_eval(P1Run& r) {
         size_t first_ret = c.f.size();
         for (size_t i = 1; i < c.f.size(); ++i) if (c.f[i].addr == kBuf[c.x]) { first_ret = i; break; }
         c.b = block_check(c.f, kBuf[c.x], c.L, 0, first_ret);
+        c.ss = block_check(c.f, kBuf[c.x], c.L, first_ret, first_ret);
         uint16_t d = logv(r.cap, c.i_dmaconr);
         c.dmaconr_ok = (d & 0x200) && (d & (1u << c.x));
     }
@@ -137,7 +139,7 @@ inline void run_p1(Checks& ck) {
     runs.push_back(p1_all());
     PreAgg agg;
     bool anchor = true, gd = true, gf = true;
-    bool a_ok = true, b_ok = true, c_ok = true, step_ok = true;
+    bool a_ok = true, b_ok = true, c_ok = true, addr_ok = true;
     size_t ncase = 0;
     for (auto& r : runs) {
         p1_eval(r);
@@ -154,7 +156,7 @@ inline void run_p1(Checks& ck) {
             a_ok &= c.b.distinct == c.L;
             b_ok &= c.b.wrap_bad == 0;
             c_ok &= c.b.outside == 0;
-            step_ok &= c.b.step_bad == 0;
+            addr_ok &= c.ss.n >= 4 * size_t(c.L) && c.ss.distinct == c.L && c.ss.wrap_bad == 0 && c.ss.outside == 0 && c.ss.step_bad == 0;
             std::string addrs;
             for (size_t i = 0; i < c.f.size() && i < 24; ++i) addrs += dec((c.f[i].addr - kBuf[c.x]) / 2) + " ";
             ck.note("P1 ch" + dec(c.x) + (c.all4 ? " (all four)" : "") + " L=" + dec(c.L) + " wrote " + dec(c.wrote) + ": fetches=" + dec((long long)c.b.n) +
@@ -172,8 +174,9 @@ inline void run_p1(Checks& ck) {
     graded(ck, pre, a_ok, "P1-A: in every case exactly L distinct addresses are fetched (AA p.11 AUDxLEN 'length (number of words)')", un);
     graded(ck, pre, b_ok, "P1-B: in every case a fetch at the last word of the block (location + 2(L-1)) is followed by a fetch at the location (AA p.6 'Used to automaticall[y] restart pointers ... the Audio sample counter (whenever the audio length count is finished)')", un);
     graded(ck, pre, c_ok, "P1-C: in every case no fetch lies outside [location, location + 2L) (AA p.11 AUDxLEN)", un);
-    graded(ck, pre, a_ok && b_ok && c_ok && step_ok,
-           "P1 sol:AA-audxlen.c1 sol:AA-audxlen.c4: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the number of words of each DMA block: for every channel and every L the fetches lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1), and from the channel's first return to BUFx on form BUFx, BUFx+2, .. BUFx+2(L-1), BUFx, ... (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
+    graded(ck, pre, addr_ok, "P1-ADDR sol:AA-audxlen.c1: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the channel's length register: from the channel's first return to BUFx on, the fetches take exactly the L addresses BUFx, BUFx+2, .. BUFx+2(L-1) of the length L written there, in turn and over again, for every channel and every L (AA p.11 'AUDxLEN 0A4 W P Audio Channel x length')", un);
+    graded(ck, pre, a_ok && b_ok && c_ok,
+           "P1 sol:AA-audxlen.c4: AUDxLEN contains the length, the number of words, of the channel's DMA data: for every channel and every L the fetches of every block, the first included, lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1) (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
 }
 
 } // namespace s5
