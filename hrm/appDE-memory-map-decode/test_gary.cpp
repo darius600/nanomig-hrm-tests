@@ -125,22 +125,23 @@
 //   proposition; where this page states something WIDER or on a different
 //   axis, that part is graded fresh below instead of declined.
 //
-// RESULTS: 7 passed, 0 failed. Every graded assertion is GREEN -- every genuinely new
+// RESULTS: 5 passed, 0 failed. Every graded assertion is GREEN -- every genuinely new
 //   proposition this package found (the two upper slow-memory banks, the
-//   default-build RTC window, the wide $DF0000-$DFFFFF register bank, both
-//   B8-BF/D8-DF panel sweeps, and the $BFE001/$BFE201 address-membership
-//   gap) matches gary's own decode. 17 record()s (declines, all checked
-//   against the CONDITION rule -- same proposition already graded
-//   elsewhere -- plus the one PARTIAL split and the one CONFLICT, neither
-//   graded per NM-HRM-062's own precedent) and 3 note()s (the p.315/p.316
-//   conflict's own two readings, plus the ovl=1 candidate measurement).
+//   wide $DF0000-$DFFFFF register bank, the B8-BF panel sweep, and the
+//   $BFE001/$BFE201 address-membership gap) matches gary's own decode.
+//   19 record()s (declines, all checked against the CONDITION rule -- same
+//   proposition already graded elsewhere -- plus the one PARTIAL split, the
+//   one CONFLICT, and the two source-silent not-asserted rows, the default-
+//   build RTC window and the D8-DF High I/O panel sweep) and 5 note()s (the
+//   p.315/p.316 conflict's own two readings, the ovl=1 candidate
+//   measurement, and the two source-silent measurements).
 //
-// MUTATION LOG (7 entries, one per expect() -- every mutation below was
+// MUTATION LOG (5 entries, one per expect() -- every mutation below was
 //   actually built and run: `make clean; make MUT=<NAME> test`, one at a
 //   time, output read from out.txt, confirmed to turn ONLY the named
-//   assertion red (6 passed / 1 failed in all 7 cases, the failing line
+//   assertion red (4 passed / 1 failed in all 5 cases, the failing line
 //   always the one named), then `make clean; make test` confirmed a clean
-//   return to the 7-passed/0-failed baseline. No oracle/expected value was
+//   return to the 5-passed/0-failed baseline. No oracle/expected value was
 //   ever touched -- every one is a STIMULUS change (a probe address
 //   redirected).
 //
@@ -149,22 +150,17 @@
 //   to one stuck value and the liveness check goes red.
 // MUTATION SLOWMEM-UPPER-BANKS-WIDE stimulus red: the t_sel_slow[2] probe
 //   was redirected from $D00000 to $E10000, well outside any slow bank.
-// MUTATION RTC-WINDOW-DEFAULT-BUILD stimulus red: the control probe (sel_
-//   ide's own, genuinely-excluded window) was collapsed from $DA0000 onto
-//   $DC0000, the window itself.
 // MUTATION CUSTOMREG-WIDE-64K-A3000 stimulus red: the window-top probe was
 //   moved from $DFFFFE to $E00000, one word past the window's own top.
 // MUTATION LOWIOREG-PANEL-SWEEP stimulus red: the sel_cia top-of-panel
 //   probe was moved from $BFFFFE to $C00000, one word past the panel.
-// MUTATION HIGHIOREG-PANEL-SWEEP stimulus red: the sel_reg probe at the
-//   panel's own top was redirected from $DF0000 to $E00000.
 // MUTATION CIAA-PRA-DDRA-ADDRESS-WINDOW stimulus red: the DDRA probe was
 //   redirected from $BFE201 to $BFD201 (bit 13 flipped), CIA-B's own space.
 //
-// Seven assertions, seven independent mutations, each changing exactly one
+// Five assertions, five independent mutations, each changing exactly one
 // assertion's colour and none other (verified: every run above read
-// "6 passed, 1 failed" with the FAIL line matching the named assertion);
-// every one reverted cleanly to the 7-passed/0-failed baseline.
+// "4 passed, 1 failed" with the FAIL line matching the named assertion);
+// every one reverted cleanly to the 5-passed/0-failed baseline.
 
 #include <cstdint>
 #include <cstdio>
@@ -181,17 +177,11 @@
 #ifndef MUT_SLOWUPPER
 #define MUT_SLOWUPPER 0
 #endif
-#ifndef MUT_RTCWIN
-#define MUT_RTCWIN 0
-#endif
 #ifndef MUT_CUSTOMREGWIDE
 #define MUT_CUSTOMREGWIDE 0
 #endif
 #ifndef MUT_LOWIOPANEL
 #define MUT_LOWIOPANEL 0
-#endif
-#ifndef MUT_HIGHIOPANEL
-#define MUT_HIGHIOPANEL 0
 #endif
 #ifndef MUT_CIAPRADDRA
 #define MUT_CIAPRADDRA 0
@@ -445,10 +435,12 @@ int main() {
 
     // =========================================================================
     // GROUP 6 -- RTC-WINDOW-DEFAULT-BUILD (p.314, $DC 0000-$DC FFFF). 2
-    // claims: sol:D-memmap-a1000.c13, opus:D-memmap-a500.c14. NEW: no package
-    // in nanomig-hrm-tests/hrm names $DC0000 or sel_rtc (grep-confirmed
-    // empty over hrm/, and confirmed again while writing this file). The
-    // "not accessable on all systems" qualifier IS the `ifdef ENABLE_RTC
+    // claims: sol:D-memmap-a1000.c13, opus:D-memmap-a500.c14. MEASURED, NOT
+    // GRADED (source-silent): the page prints the clock window and says it
+    // is not accessible on all systems; it does not say which select a
+    // system without the clock asserts there, so sel_reg=1 across the
+    // window is a fact about this build and no printed sentence requires
+    // it. The "not accessable on all systems" qualifier IS the `ifdef ENABLE_RTC
     // conditional itself (gary.v:179-183) -- no Makefile in this suite
     // defines ENABLE_RTC (grep-confirmed: appF-cia-pin-bindings,
     // ch7-overlay-source and three ch8-* Makefiles define DISABLE_IDE, none
@@ -464,29 +456,25 @@ int main() {
         bool win_start = h.top->sel_reg == 1;
         h.cpu_probe(0xDCFFFE);
         bool win_end = h.top->sel_reg == 1;
-        uint32_t control = 0xDA0000;  // sel_ide's own window -- genuinely excluded from sel_reg (gary.v:185).
-#if MUT_RTCWIN
-        control = 0xDC0000;  // MUTATION: control collapsed onto the window itself.
-#endif
-        h.cpu_probe(control);
-        bool control_excluded = h.top->sel_reg == 0;
-        checks.expect(win_start && win_end && control_excluded,
-            "RTC-WINDOW-DEFAULT-BUILD: p.314 prints $DC 0000-$DC FFFF as the "
-            "real-time clock, 'not accessable on all systems'. New here -- no "
-            "package in this suite names $DC0000 or sel_rtc (grep-confirmed "
-            "over hrm/). gary.v:179-183 gate sel_rtc entirely behind `ifdef "
-            "ENABLE_RTC, which no Makefile in this suite defines (grep-"
-            "confirmed), so in this build (and every other) sel_rtc is a "
-            "tied-0 dummy wire (gary.v:182) with no module port at all, and "
-            "gary.v:185's exclusion list leaves the whole window answering as "
-            "sel_reg instead: measured sel_reg=1 across $DC0000-$DCFFFE (" +
-            b(win_start) + "/" + b(win_end) + "), while " + hexaddr(control) +
-            " (sel_ide's own window, a genuine exclusion) reads sel_reg=0 (" +
-            b(control_excluded) + ") -- the printed qualifier is realised "
-            "literally: this system (this default build) does not have the "
-            "clock accessible at all, and the window answers as ordinary "
-            "custom registers instead of being carved out for it. "
-            "[claims: sol:D-memmap-a1000.c13, opus:D-memmap-a500.c14]");
+        h.cpu_probe(0xDA0000);  // sel_ide's window, excluded from sel_reg (gary.v:185).
+        bool ide_window_excluded = h.top->sel_reg == 0;
+        checks.note("RTC-WINDOW-DEFAULT-BUILD-MEASURED: gary.v:179-183 gate "
+            "sel_rtc behind `ifdef ENABLE_RTC, which no Makefile in this "
+            "suite defines, so sel_rtc is a tied-0 dummy wire (gary.v:182) "
+            "with no module port, and gary.v:185's exclusion list leaves the "
+            "window answering as sel_reg: sel_reg=" + b(win_start) +
+            " at $DC0000, sel_reg=" + b(win_end) + " at $DCFFFE, while "
+            "$DA0000 (sel_ide's window) reads sel_reg=" +
+            b(!ide_window_excluded) + ".");
+        checks.record(
+            "RTC-WINDOW-DEFAULT-BUILD (p.314, 2 claims: sol:D-memmap-a1000.c13, "
+            "opus:D-memmap-a500.c14) -- NOT ASSERTED (classify.status: "
+            "not-asserted, reason_kind: source-silent). p.314 prints "
+            "$DC 0000-$DC FFFF as the real-time clock, 'not accessable on all "
+            "systems', and p.315/p.316 print a clock at $DC 0000. No page says "
+            "which select a system without the clock asserts in that window, "
+            "so which line answers there when the clock is absent is open; "
+            "the measurement above is not graded.");
     }
 
     // =========================================================================
@@ -821,11 +809,15 @@ int main() {
     // GROUP 17 -- HIGHIOREG-PANEL-SWEEP (p.316, High I/O Registers panel,
     // $00D8 0000-$00DF FFFF). 4 claims: sol:D-memmap-a3000-32bit.c20,
     // sol:D-memmap-a3000-32bit.c26, opus:D-memmap-a3000-32bit.c19,
-    // opus:D-memmap-a3000-32bit.c26. NEW/GRADED: the panel's own extent --
-    // every select gary puts between $D8 0000 and $DF FFFF partitions the
-    // block: sel_reg claims everything NOT claimed by sel_ide ($DA) or
-    // sel_gayle ($DE1000-$DE1FFF), including $DC0000-$DCFFFF in this
-    // default (no-ENABLE_RTC) build -- see RTC-WINDOW-DEFAULT-BUILD.
+    // opus:D-memmap-a3000-32bit.c26. MEASURED, NOT GRADED (source-silent):
+    // the panel prints Reserved at $D8/$D9/$DA/$DB, the clock at $DC, SCSI
+    // control at $DD and motherboard resources at $DE, and names neither
+    // sel_reg, sel_ide nor sel_gayle; which select a reserved or absent
+    // bank asserts is not printed. Only the $DF0000 bank is page-backed,
+    // and CUSTOMREG-WIDE-64K-A3000 grades it. The measured partition: sel_reg
+    // claims everything NOT claimed by sel_ide ($DA) or sel_gayle
+    // ($DE1000-$DE1FFF), including $DC0000-$DCFFFF in this default
+    // (no-ENABLE_RTC) build.
     // =========================================================================
     {
         Harness h;
@@ -850,33 +842,31 @@ int main() {
         bool de_mid_end_is_gayle = h.top->sel_gayle == 1;
         h.cpu_probe(0xDE2000);
         bool de_high_is_reg = h.top->sel_reg == 1;
-        uint32_t df_probe = 0xDF0000;
-#if MUT_HIGHIOPANEL
-        df_probe = 0xE00000;  // MUTATION: moved one bank past the panel's own top.
-#endif
-        h.cpu_probe(df_probe);
+        h.cpu_probe(0xDF0000);
         bool df_is_reg = h.top->sel_reg == 1;
-        checks.expect(d8_is_reg && da_is_ide && da_end_is_ide && db_is_reg &&
-                          dc_is_reg && dd_is_reg && de_low_is_reg &&
-                          de_mid_is_gayle && de_mid_end_is_gayle &&
-                          de_high_is_reg && df_is_reg,
-            "HIGHIOREG-PANEL-SWEEP: the panel's own extent, $00D80000-"
-            "$00DFFFFF, is new content -- not individually graded elsewhere "
-            "as a whole. gary partitions it as: $D8-$D9FFFF sel_reg (measured " +
-            b(d8_is_reg) + "), $DA0000-$DAFFFE sel_ide (measured " +
-            b(da_is_ide) + "/" + b(da_end_is_ide) + "), $DB0000 sel_reg (" +
-            b(db_is_reg) + "), $DC0000 sel_reg in this default no-ENABLE_RTC "
-            "build (" + b(dc_is_reg) + ", see RTC-WINDOW-DEFAULT-BUILD), "
-            "$DD0000 sel_reg (" + b(dd_is_reg) + "), $DE0000 sel_reg (" +
-            b(de_low_is_reg) + "), $DE1000-$DE1FFE sel_gayle (" +
-            b(de_mid_is_gayle) + "/" + b(de_mid_end_is_gayle) + "), $DE2000 "
-            "sel_reg again (" + b(de_high_is_reg) + "), and " +
-            hexaddr(df_probe) + " sel_reg (" + b(df_is_reg) +
-            ") -- gary's sel_reg 'catch-all' is markedly wider than any "
-            "single page's own row (see CUSTOMREG-WIDE-64K-A3000 and "
-            "CH7-TWO-REDS-STATUS above for the $DF0000 end of this same "
-            "fact). [claims: sol:D-memmap-a3000-32bit.c20, "
-            "opus:D-memmap-a3000-32bit.c19, opus:D-memmap-a3000-32bit.c26]");
+        checks.note("HIGHIOREG-PANEL-SWEEP-MEASURED: gary partitions "
+            "$00D80000-$00DFFFFF as: $D80000 sel_reg=" + b(d8_is_reg) +
+            "; $DA0000/$DAFFFE sel_ide=" + b(da_is_ide) + "/" +
+            b(da_end_is_ide) + "; $DB0000 sel_reg=" + b(db_is_reg) +
+            "; $DC0000 sel_reg=" + b(dc_is_reg) + " (default no-ENABLE_RTC "
+            "build); $DD0000 sel_reg=" + b(dd_is_reg) + "; $DE0000 sel_reg=" +
+            b(de_low_is_reg) + "; $DE1000/$DE1FFE sel_gayle=" +
+            b(de_mid_is_gayle) + "/" + b(de_mid_end_is_gayle) +
+            "; $DE2000 sel_reg=" + b(de_high_is_reg) + "; $DF0000 sel_reg=" +
+            b(df_is_reg) + ".");
+        checks.record(
+            "HIGHIOREG-PANEL-SWEEP (p.316, 3 claims: sol:D-memmap-a3000-32bit.c20, "
+            "opus:D-memmap-a3000-32bit.c19, opus:D-memmap-a3000-32bit.c26) -- "
+            "NOT ASSERTED (classify.status: not-asserted, reason_kind: "
+            "source-silent). The High I/O Registers panel prints Reserved at "
+            "$D8/$D9/$DA and at the fourth low bank (its tick reads $DD 0000 "
+            "twice, $DB 0000 is not printed), the clock at $DC, SCSI "
+            "control at $DD and motherboard resources at $DE; p.315 prints the "
+            "same rows with overlaps. No page names IDE at $DA, a Gayle "
+            "select inside $DE, or says that a reserved, clock, SCSI or "
+            "motherboard bank asserts the custom-register select, so the "
+            "partition above is not graded. Its $DF 0000 'Amiga Chips' bank "
+            "is page-backed and graded by CUSTOMREG-WIDE-64K-A3000.");
     }
 
     // =========================================================================
