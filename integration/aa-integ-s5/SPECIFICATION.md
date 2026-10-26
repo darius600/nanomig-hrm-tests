@@ -28,6 +28,8 @@ needs a disk.
 | `sol:AA-audxdat.c8` | 11 | "With maximum volume, each byte can drive the audio outputs with 0.8 volts(peak to peak, typ)". This is an analog voltage. A test sees the audio output only as digital samples, never as volts. "typ" is a typical value, not a limit, and "can drive" states a capability. No expected value can be derived. |
 | `sol:AA-audxvol.c5` | 11 | "15-07 Not used". The page calls these bits unused, so it gives no expected value for them, and a test must not invent one. Every stimulus writes them as 0 (HRM p.264: "If a bit is described as unused in a write-only register, be sure to keep that bit clear when writing values to that register."). |
 | `sol:AA-serdat.c9` | 27 | "A stop bit must be provided as part of the data word." This is an obligation on the program, not a behaviour of the chip. The page states no outcome for a word that has no stop bit. Every stimulus meets the obligation, and P18 relies on it. The HRM states an outcome for an all-zero word (p.259: "If this register is written with all zeros, no data transmission is initiated"), but the oracle is the AA page, so that outcome is not tested. |
+| `sol:AA-audxdat.c5` | 11 | "This register is the Audio channel x (x=0,1,2,3) DMA data buffer." The ports show the reads of the Chip-memory port and the audio samples. AUDxDAT is write-only and no port shows what it holds, so a transfer of the fetched word into AUDxDAT and a path from the fetched word to the output that bypasses AUDxDAT give the same ports. No assertion tells the two apart, and the claim is withdrawn. P2 grades that the output follows the fetched words in fetch order and carries no claim id. |
+| `sol:AA-audxdat.c9` | 11 | "The audio DMA channel controller automatically transfers data to this register from RAM." Withdrawn for the reason given for `sol:AA-audxdat.c5`: the transfer into the register is not observable at a boundary that distinguishes it from a bypass. |
 | `sol:AA-audxlen.c2` | 11 | "AUDxLEN 0A4 W", which the claim reads as write-only access. The write half is exercised by P1 (a CPU write at 0A4 takes effect, graded under `sol:AA-audxlen.c1` and `sol:AA-audxlen.c4`). The read half has no expected value: the legend (p.6 and p.10) reads "W=Write, R=Read" and says nothing about what a read of a W address returns. A proposition grades a claim whole or not at all, so this claim is declined. |
 | `sol:AA-audxvol.c2` | 11 | "AUDxVOL 0A8 W", write-only access. As for `sol:AA-audxlen.c2`: the write half is exercised by P6, the read half has no expected value. |
 | `sol:AA-audxdat.c2` | 11 | "AUDxDAT 0AA W", write-only access. As for `sol:AA-audxlen.c2`: the write half is exercised by P5, the read half has no expected value. |
@@ -107,14 +109,20 @@ of system clocks per colour clock, which is the length of one memory slot at
 the Chip-memory port.
 
 *Anchor check G-C.* The program reads VHPOSR (offset 006) in a tight loop for
-at least two lines and logs each value (see 2.3). Within one line, fit bits
-7 to 0 (H8 to H1) against the store time. The slope must be one count per c
-system clocks, within 2 %. The slot starts of the DMA reads seen at the port
-must also be congruent modulo c; since the harness does not mark which device
-made a read, these are the reads that 2.4 identifies, the audio fetches and
-the reads at which `refresh` is high. *Contrast:* fit bits 15 to 8 (V7 to V0) instead.
-The page makes that field count lines, not colour clocks, so the slope check
-goes red.
+at least two lines and logs each value (see 2.3). Take the longest run of
+consecutive reads whose bits 7 to 0 (H8 to H1) increase from one read to the
+next, which is one line between two line starts. Read i happened after the log
+store before it and before its own store: at a time r_i with t_(i-1) < r_i <= t_i.
+Bits 7 to 0 count one per c system clocks iff there is a start X of the first count
+such that every read has the count it logged, X + c·d_i <= r_i < X + c·(d_i + 1),
+d_i being the logged value minus the first logged value. Such an X exists iff
+max_i (t_(i-1) − c·(d_i + 1)) < min_i (t_i − c·d_i). The check holds iff X exists.
+No tolerance enters: the bracket is the spacing of the log stores. The slot starts
+of the DMA reads seen at the port must also be congruent modulo c; since the
+harness does not mark which device made a read, these are the reads that 2.4
+identifies, the audio fetches and the reads at which `refresh` is high.
+*Contrast:* read VPOSR (offset 004) in place of VHPOSR. Its low byte is not the
+colour-clock count, there is no run of increasing reads, and the check goes red.
 
 ### 2.3 Poll log and markers (RF-L)
 
@@ -160,32 +168,44 @@ occurs and G-F goes red.
   `nanomig_harness.h`), and O is their sum. The AA pages do not say which channel goes to
   which output, so no check depends on the output side. HRM p.137 assigns
   channels 1 and 2 to the left and 0 and 3 to the right; that is not graded.
-- **s** is the interval between output samples. **τ** = s + c is the
-  tolerance on every measured duration. One **LSB** is the output's smallest
-  step.
+- The capture has the resolution of one system clock: every duration is a count of
+  system clocks and every instant is a system clock. **c** is the number of system
+  clocks per colour clock (2.2). No tolerance is added to a duration, an instant or
+  a level: where a check compares two of them, it compares them for equality or for
+  order, and where the observation brackets an instant (a read and its store, a write
+  and its markers, 2.3), the check uses the bracket.
 - **Zero reference Z** is the mean of O over two lines while all four AUDxVOL are 0
   and no audio DMA runs. p.11: "000000=no output". Every level below is
   measured relative to Z.
 - **Runs.** At volume 64 the page says "64 ones, no zeros", so a sample's
   output does not vary within the sample. A **run** is a maximal interval
-  in which O is constant. Its level is the mean of O − Z over the run,
-  excluding its first and last output sample.
+  in which O is constant. Its level is O − Z over the run. The runs at the two
+  ends of an observed interval are cut by the interval and are not measured.
 - **Levels at volumes below 64.** The page describes those volumes as patterns
-  of ones and zeros ("63 0nes, one zero"). If O inside an interval of constant
-  data repeats a pattern instead of being constant, the level of the interval
-  is the mean over a whole number of pattern repetitions. The pages give neither
-the length of such a pattern nor its phase, so a level over a whole number of
-repetitions cannot be formed from them. This package forms a level only over a
-window in which O is constant (P6-PRE-CONST, P9-PRE-CONST to P11-PRE-CONST); on
-an implementation whose output at a volume below 64 is a pattern, the lines that
-rest on those levels are NOT GRADED, not red.
-- Two levels are **equal** if they differ by at most 1 LSB. The 1 LSB is the
-  quantisation of the measurement, the output's smallest step. It is not a
-  value from the page, and no check widens it into a band of its own.
+  of ones and zeros: "63 0nes, one zero" is 63 ones and one zero in 64 slots. If O
+  inside an interval of constant data repeats a pattern, the level of the interval
+  is the mean of O − Z over a whole number of repetitions. The pages give neither
+  the length of the pattern nor its phase, so the repetition is taken from the
+  capture: the **period** of a measuring window is the smallest distance Π (in
+  system clocks) at which O repeats over the whole window, and the level is the
+  mean over the largest whole number of periods from the start of the window,
+  the exact quotient of a sum and a count. A window has a period only if Π is at
+  most half the window; a window without one is not a whole number of repetitions
+  of anything (the precondition of each proposition that forms such a level names
+  it: P6-PRE-PERIOD, P7-PRE-PERIOD, P9-PRE-PERIOD to P11-PRE-PERIOD). For
+  constant data at volume 64 and at a volume below 64 that the design realises as a
+  constant output, Π is 1 and the level is O − Z.
+- Two levels are **equal** if they are equal as rationals; one level is **above**
+  another if it is greater. The harness documents only the width of the outputs
+  ("15 bits significant", `AudioSample` in `nanomig_harness.h`), not their scale, and
+  no check assumes one.
 
 *Precondition G-FLAT*, for every check that uses runs: at volume 64, a word
 whose two bytes are equal and not 0x00 gives a constant O over its whole
-interval, apart from its first and last output sample. If the implementation
+interval, apart from its first and last output sample. A proposition that needs it
+carries it in an assertion of its own: in the propositions that measure run
+lengths, G-P below is that assertion (every run of the measured play lasts exactly
+the sample period, so each sample is one run), and P5-G-FLAT states it for P5. If the implementation
 filters the audio output, the filter control that HRM p.157 describes (CIA-A
 PRA bit 1, the same bit as the power LED, which the test sees) is set to the
 state in which G-FLAT holds. The HRM does not say which state that is, so the
@@ -207,8 +227,9 @@ sample, which is one byte, lasts P colour clocks.
 
 *Anchor check G-P*, for every check that measures run lengths or places
 windows by samples: with period P and volume 64, every run of a word whose
-two bytes differ lasts P·c ± τ, and a word whose two bytes are equal gives one
-run of 2P·c ± τ. *Contrast:* double AUDxPER. The runs double and G-P goes red
+two bytes differ lasts exactly P·c, and a word whose two bytes are equal gives one
+run of exactly 2P·c. The runs are counted in system clocks at the port, so the
+check compares counts. *Contrast:* double AUDxPER. The runs double and G-P goes red
 against the old P.
 
 ### 2.7 Audio start sequence
@@ -244,10 +265,12 @@ reads 0, G-D goes red, and G-F goes red as well.
 - **Bit-order independence.** Every data byte used below reads the same in
   both bit orders (0x00, 0xFF, 0x18, 0x24, 0x3C, 0x42, 0x5A, 0x66, 0x7E, 0x81,
   0x99, 0xA5, 0xBD, 0xC3). No check depends on the HRM's LSB-first order.
-- *Anchor check G-T*, for every TxD check: every TxD edge lies on a grid of
-  pitch T from the frame's first edge, within ±c, and the measured T equals
-  (N+1)·c within ±c. *Contrast:* set `SERPER ← 0x007F`. The edges then lie on
-  a 128-colour-clock grid and G-T goes red against T = 64.
+- *Anchor check G-T*, for every TxD check: every TxD edge lies, exactly, on a
+  grid of pitch T = (N+1)·c from the frame's first edge, and where a frame has
+  cells of one bit time between edges (P16 and P17) the shortest interval between
+  two edges is T. The page gives T as (N+1) colour clocks of the machine, and c is
+  measured (2.2); no tolerance is added. *Contrast:* set `SERPER ← 0x007F`. The
+  edges then lie on a 128-colour-clock grid and G-T goes red against T = 64.
 - *Precondition G-BRK*, for every TxD check: after S0, ADKCONR (offset 010)
   bit 11 reads 0. p.10: "11 UARTBRK Forces a UART break (clears TXD) if
   true". *Contrast:* write `ADKCON ← 0x8800`. Bit 11 reads 1 and G-BRK goes
@@ -287,8 +310,9 @@ pass 2 on:
   give two runs (P4), word n of the pass occupies the interval of length
   2P·c that starts (n − 1)·2P·c after the anchor run's start (RF-P), and a
   run belongs to the word whose interval holds its midpoint.
-- *Precondition G-W*, wherever RF-W is used: no run starts within τ of an
-  anchor fetch, so the anchor is unambiguous. It compares times only, never
+- *Precondition G-W*, wherever RF-W is used: no run starts in the system clock
+  of an anchor fetch, so that the order of the fetch and of every run start is
+  decided at the port and the anchor is unambiguous. It compares times only, never
   levels, so it does not rest on what the runs carry.
 
 ---
@@ -297,8 +321,9 @@ pass 2 on:
 
 ### P1. AUDxLEN at 0A4 sets the number of words in each DMA block
 
-**Claims.** `sol:AA-audxlen.c1`, `sol:AA-audxlen.c4`, both on p.11.
-(`sol:AA-audxlen.c2` is declined, section 1.)
+**Claims.** `sol:AA-audxlen.c1` (the register at 0A4), `sol:AA-audxlen.c4` (the
+length in words), both on p.11. (`sol:AA-audxlen.c2` is declined, section 1.) Each
+has its own line and its own contrast; the verdict of one is not inherited by the other.
 
 **Proposition.** A CPU write of L to channel x's AUDxLEN (0A4 for channel 0,
 0B4, 0C4, 0D4 for the others) makes the channel's DMA fetch exactly L
@@ -334,6 +359,16 @@ fetch in the interval, the first block included:
 and from the channel's first return to BUFx on:
 - a fetch at BUFx+2k with k < L−1 is followed by a fetch at BUFx+2(k+1).
 
+The three lines over every fetch (P1-A, P1-B, P1-C, and P1 as their aggregate)
+grade `sol:AA-audxlen.c4`: the length is the number of words of the channel's DMA
+data, from the first block on. The line P1-ADDR grades `sol:AA-audxlen.c1`: that
+the register at 0A4 (0B4, 0C4, 0D4) is the channel's length register, shown by the
+fetches from the channel's first return to BUFx on, which for every channel and
+every L take exactly the L addresses BUFx, BUFx+2, .., BUFx+2(L−1), none outside,
+each followed by its successor and the last by BUFx, over at least four blocks.
+The first block is not part of P1-ADDR, so a first block that fetches more words
+than L is a failure of the length clause and does not turn the address line red.
+
 P1 takes no side on what the first block does between the anchor and the first
 return: whether it fetches every word before it starts again is the question of
 section 6, and the first block is graded only by the three lines that hold
@@ -353,24 +388,27 @@ red.
 
 **Contrasting cases.**
 - Write L = 5 instead of 7. The page predicts blocks of 5 words, so the check
-  for 7 goes red.
+  for 7 goes red, in P1-ADDR and in the lines over every fetch.
 - Address contrast: with channel 0 observed, first write AUD0LEN ← 3, then
   write 7 to 0B4 instead of 0A4. The page predicts that channel 0 keeps
-  3-word blocks, so the check for 7 goes red.
+  3-word blocks, so the check for 7 goes red, in P1-ADDR and in the lines over every fetch.
 
 **Left open.** The meaning of AUDxLEN = 0 is not stated on the page, so it
 is not tested. What a read of 0A4 returns is not stated either (section 1).
 
 ---
 
-### P2. AUDxDAT is channel x's DMA data buffer, filled from RAM
+### P2. The output follows the RAM words in fetch order
 
-**Claims.** `sol:AA-audxdat.c5`, `sol:AA-audxdat.c9`, both on p.11.
+**Claims.** None. `sol:AA-audxdat.c5` and `sol:AA-audxdat.c9` (p.11) are
+withdrawn (section 1): no port shows the content of AUDxDAT, so the fetches and
+the output cannot tell a transfer into AUDxDAT from a path that bypasses it. P2
+grades the pairing of fetches and runs that P3 and P4 rest on, as a measurement
+with no claim id.
 
-**Proposition.** For each channel x = 0..3, the audio DMA transfers the words
-it fetches from RAM into channel x's data buffer, so the channel's output
-follows the RAM words in fetch order. A word changed in RAM is output
-changed at its next fetch.
+**Proposition.** For each channel x = 0..3, the channel's output follows the
+RAM words in fetch order. A word changed in RAM is output changed at its next
+fetch.
 
 **Stimulus.** Run S0. For each channel x alone:
 1. Fill `BUFx` with 8 words, each made of two equal bytes, in the order
@@ -387,9 +425,9 @@ changed at its next fetch.
 from the first fetch of pass 2 until two words before the stop marker. Runs
 are paired with fetches by RF-W; pass 1 is not graded (section 6).
 
-**Expected.** p.11: "This register is the Audio channel x (x=0,1,2,3) DMA data
-buffer." "The audio DMA channel controller automatically transfers data to
-this register from RAM."
+**Expected.** p.11: "The audio DMA channel controller automatically transfers data to
+this register from RAM." The claim ids of these sentences are withdrawn; the
+sentences describe what the lines below observe.
 - (a) From the anchor of pass 2 on, the runs pair one to one with the
   fetches, in order: the j-th run from the anchor belongs to the j-th fetch
   from the anchor fetch (RF-W). Two runs are equal in level if and only if
@@ -400,8 +438,8 @@ this register from RAM."
   there gives a run at A's level. Every such fetch before that write gives
   D's level. This holds for every such fetch in the interval.
 
-**Preconditions.** G-S0, G-C, G-D, G-F, G-FLAT, G-W, and G-P (each word one
-run of 600·c ± τ). The fetches show 8-word blocks (the P1 check). At least
+**Preconditions.** G-S0, G-C, G-D, G-F, G-W, and G-P (each word one
+run of exactly 600·c, which carries G-FLAT). The fetches show 8-word blocks (the P1 check). At least
 one fetch of BUFx+10 from pass 2 on falls on each side of the RAM write.
 *Contrast for the last
 precondition:* write RAM before starting the DMA. Then no fetch precedes the
@@ -443,12 +481,12 @@ that starts (j − 1)·600·c after the pass's anchor run begins (RF-W). The lev
 a byte position is the output (relative to Z) in the middle of that position's
 sample, the first sample of the interval for the first byte position and the
 second sample for the second.
-- Both byte positions of every word produce the same level, within 1 LSB
+- Both byte positions of every word produce the same level
   (P3-BYTES): the word's two bytes are equal, and each byte is a
   two's-complement integer, whichever position it takes.
 - In each byte position the levels are strictly ordered as
   L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) <
-  L(0x60) < L(0x7F), each step by at least 1 LSB.
+  L(0x60) < L(0x7F).
 - The same byte gives the same level in both passes, in each byte position.
 
 An unsigned reading would put 0x80 above 0x7F. A sign-magnitude reading would
@@ -456,20 +494,13 @@ put 0xE0 below 0xA0. A ones'-complement reading would make 0xFF equal to 0x00.
 
 **Preconditions.** G-S0, G-C, G-D, G-F, G-W and G-P. G-P is a time check of
 the sample period and rests on no level: the anchor run of pass 3 starts
-9·600·c ± τ after the anchor run of pass 2 (nine words of two samples of the
+exactly 9·600·c after the anchor run of pass 2 (nine words of two samples of the
 period 300), so doubling AUDxPER turns it red (2.6). A byte position that reads
 differently from the other therefore turns P3-BYTES red, not P3 NOT GRADED.
 G-FLAT is not a precondition of P3: whether a word with two equal bytes gives
-one level over its whole interval is what P3-BYTES grades. The output format has
-at least one LSB per data unit at volume 64. The harness documents only the
-width of the outputs ("15 bits significant", `AudioSample` in
-`nanomig_harness.h`), not their scale, so the scale is measured, on two bytes
-that every reading of a byte (unsigned, sign-magnitude, ones' or two's
-complement) places at 1 and at 127: |L(0x7F) − L(0x01)| ≥ 126 LSB. The
-measurement therefore does not depend on the clause under test. Without it,
-the pairs one unit apart (0xFF/0x00/0x01) are not graded and the report says
-so. *Contrast for the scale:* write word 2 as 0x0202 in place of 0x7F7F. The
-levels of 0x02 and 0x01 are one data unit apart, and the precondition goes red.
+one level over its whole interval is what P3-BYTES grades. No resolution of the
+output is assumed: the order is graded as printed, strictly, and an output whose
+scale merged two neighbouring byte values would fail P3-ORDER.
 
 **Contrasting cases.** Swap the words holding 0x7F and 0x80 in RAM. The page
 predicts the lowest level at word 2 and the highest at word 3. The order
@@ -510,13 +541,14 @@ graded (section 6).
 conversion) to the audio output pins." For each word whose two bytes differ,
 (b1, b2):
 - its interval holds exactly two runs;
-- each run lasts 300·c ± τ;
+- each run lasts exactly 300·c;
 - one run's level equals L(b1) and the other's equals L(b2), with those
   levels calibrated in the same pass;
 - no run has any other level, such as a sum or an average of the two.
 
-**Preconditions.** G-S0, G-C, G-D, G-F, G-FLAT, G-P (from the equal-byte
-words), G-W. The four calibration levels are pairwise distinct.
+**Preconditions.** G-S0, G-C, G-D, G-F, G-P (from the equal-byte
+words, each exactly 600·c, which carries G-FLAT), G-W. The four calibration levels
+are pairwise different.
 
 **Contrasting case.** Replace (b,c) with (b,b). The page predicts a single
 run of 600·c at L(b), so the two-run check goes red at that word.
@@ -586,10 +618,13 @@ output".) None of these is graded.
 
 ---
 
-### P6. AUDxVOL at 0A8 gives 65 linear levels, and 000000 gives no output
+### P6. AUDxVOL at 0A8: its address, 65 linear levels, one of 64 levels below 64, and 000000 gives no output
 
-**Claims.** `sol:AA-audxvol.c1`, `sol:AA-audxvol.c4`, `sol:AA-audxvol.c7`,
-all on p.11. (`sol:AA-audxvol.c2` is declined, section 1.)
+**Claims.** `sol:AA-audxvol.c1` (the register at 0A8), `sol:AA-audxvol.c4` (65
+linear levels) and `sol:AA-audxvol.c7` (bits 5 to 0: one of 64 levels, 000000 no
+output, 111111 is 63 ones and one zero), all on p.11. (`sol:AA-audxvol.c2` is
+declined, section 1.) Each has its own line and its own contrast; the verdict of
+one is not inherited by the others.
 
 **Proposition.** For every channel, the output amplitude of constant data is
 proportional to the volume value v written at AUDxVOL, for v = 0..64. Here
@@ -603,51 +638,53 @@ channel gives no output.
    lines, and measure for the next two lines.
 3. Repeat the sweep with the word 0x8080.
 
-**Observation.** For each v, the level A(v) = mean of O − Z over the
-measuring window (RF-O; O is constant over the window, P6-PRE-CONST).
+**Observation.** For each v, the level A(v) over the measuring window (RF-O): the
+mean of O − Z over a whole number of repetitions of the window's output, the exact
+quotient of a sum and a count.
 
 **Expected.** p.11: "Bits 6,5,4,3,2,1,0 specify 65 linear volume levels";
-"05-00 Sets one of 64 levels (000000=no output (111111=63 0nes, one zero)".
-- For each data word and every v in 0..63, and for 0x0040 (= 64):
-  |A(v) − v·A(64)/64| < 1 + v/64 LSB. The bound is the integer quantisation
-  of the two measured levels, not a value from the page. The output is an
-  integer, so each level is the integer part, or the rounding, of an exact
-  linear value: A(v) = v·a + e₁ and A(64) = 64·a + e₂ with |e₁| < 1 and
-  |e₂| < 1 LSB. Then A(v) − v·A(64)/64 = e₁ − (v/64)·e₂, whose magnitude is
-  below 1 + v/64 LSB. The level for 111111 is 63/64 of the maximum.
-  Adjacent levels are |A(64)|/64 apart; where that is less than twice the
-  bound, a one-step error is within the quantisation and not seen. The
-  contrasting cases change the level by 16 steps or more.
-- At v = 0, O equals Z at every output sample of the window, for both data
-  words.
-- A(64) has opposite signs for 0x7F7F and 0x8080.
+"06 Forces volume to max (64 ones, no zeros)"; "05-00 Sets one of 64 levels
+(000000=no output (111111=63 0nes, one zero)". Volume 64 is 64 ones: the level
+A(64) of the write 0x0040 is the level of full output. A volume v below 64 is a
+pattern of 64 slots with v ones, and the mean of the output over whole
+repetitions of the pattern is v/64 of it.
+- `sol:AA-audxvol.c1` (line P6-ADDR): a write at the channel's AUDxVOL address
+  (0A8, 0B8, 0C8, 0D8) takes the output of constant data from the level of
+  0x0000 to a different level, that of 0x0040, which has the sign of the data:
+  positive for 0x7F7F and negative for 0x8080.
+- `sol:AA-audxvol.c4` (line P6-LEVELS, from P6-DISTINCT and P6-LIN): the levels
+  A(0), A(1), …, A(63) and A(64) are 65 pairwise different levels, and they are
+  linear in the volume value: 64·A(v) = v·A(64) for v = 0..63, compared as exact
+  quotients (cross-multiplied sums and counts).
+- `sol:AA-audxvol.c7` (line P6-LOWER, from P6-ZERO and P6-PROP): at v = 0, O
+  equals Z at every output sample of the window (P6-ZERO). Among the volumes
+  v = 1..63 the level is in proportion to v, the number of ones in the 64 slots:
+  A(a)·b = A(b)·a for all a, b in 1..63 (P6-PROP). This line does not use the
+  level of 0x0040, so the verdict of the level-64 clause (63 ones and one zero
+  against 64 ones) is not part of it.
 
 (HRM p.140 agrees with linear amplitude: 48 → −2.5 dB, 32 → −6.0 dB,
 16 → −12.0 dB.)
 
-**Preconditions.** G-S0, G-C, G-D, G-F. For data 0x7F7F, the larger of
-|A(63)| and |A(64)| is at least 126 LSB, so the sweep spans many times the
-quantisation bound of the check. The larger of
-the two is taken because a level written in bits 5 to 0 alone (63) and the
-level written as bit 6 (64) rest on different parts of the clause under test:
-an implementation that ignored bit 6 would leave A(64) near 0, and a
-precondition on A(64) alone would then report P6 and P7 as not graded
-instead of red. Each window starts at least two samples after its write
-marker. In every window of a volume below 64 the output is constant
-(P6-PRE-CONST; 2.5): the data is constant, and a pattern output would make the
-mean over a window of fixed length a mean over a part of a repetition.
-*Contrast for the constant output:* the sweep's data word 0x7F00 (two different
-bytes), whose output alternates within each window, and the precondition goes red.
-*Contrast for the resolution precondition:* use the word 0x0101
-(data 1). The page predicts |A(63)| and |A(64)| as small as one data unit,
-and the precondition goes red.
+**Preconditions.** G-S0, G-C, G-D, G-F. Each measuring window starts two lines
+after its write marker and ends before the next write marker (P6-PRE-WIN).
+Every measuring window holds a whole number of repetitions of its output: its
+output repeats with a period of at most half the window (P6-PRE-PERIOD; 2.5).
+No resolution of the output is assumed. *Contrast for the repetition:* the sweep's
+data word 0x7F00 (two different bytes), whose output alternates with a period
+longer than half the window, and the precondition goes red. *Contrast for the
+windows:* shorten the wait between the writes.
 
 **Contrasting cases.**
-- At the step for v = 32, write 16. The page predicts half the level, and the
-  check for 32 goes red.
 - Address contrast, with channel 0 observed: write the sweep values at 0B8
-  instead of 0A8. The page predicts channel 0's level stays at the last value
-  written at 0A8, and the check goes red.
+  instead of 0A8. The page predicts that channel 0's level stays at the last value
+  written at 0A8, and P6-ADDR goes red.
+- At the step for v = 32, write 16. The page predicts half the level; the
+  levels of 16 and 32 become equal, and P6-DISTINCT, P6-LIN and P6-PROP go red.
+- At the step for v = 0, write 1. The page predicts no output only for 0, so
+  P6-ZERO goes red.
+- Sweep the second data word as 0x7F7F: the page predicts a negative level for
+  0x8080 and the sign check of P6-ADDR goes red.
 
 ---
 
@@ -667,16 +704,16 @@ measuring windows.
 **Observation.** A(0x40|k) as in P6.
 
 **Expected.** p.11: "06 Forces volume to max (64 ones, no zeros)". For every
-k in 0..63, A(0x40|k) equals A(64) (RF-O: within 1 LSB, the quantisation of
-the measurement), where A(64) is the level of 0x0040 from the same sweep. The
-level for bit 6 therefore exceeds the level for 111111 by A(64)/64.
+k in 0..63, A(0x40|k) equals A(64), the level of 0x0040 from the same sweep, as
+exact quotients.
 
-**Preconditions.** Those of P6.
+**Preconditions.** G-S0, G-C, G-D, G-F, the windows of P6 (P7-PRE-WIN) and the
+repetition of the windows of 0x0040 and of every 0x40|k (P7-PRE-PERIOD). P7 does
+not use P6-PRE-PERIOD and is not gated on it.
 
 **Contrasting case.** Write k without bit 6. The page predicts k/64 of the
-maximum. For every k ≤ 63 that differs from the maximum by at least
-|A(64)|/64, about 2 LSB or more under P6's resolution precondition, which is
-more than the 1 LSB of equality, so the check goes red.
+maximum, which is not the maximum for any k below 64 when the maximum is not
+zero, so the check goes red.
 
 ---
 
@@ -686,7 +723,7 @@ more than the 1 LSB of equality, so the check goes red.
 
 **Proposition.** For each channel x, each time the channel's DMA has output
 its Length words and the last word in AUDxDAT has been used, the
-channel's interrupt request bit (INTREQ bit 7 + x) is set.
+channel's interrupt request bit (INTREQ bit 7 + x) is set; before that it is clear.
 
 **Stimulus.** Run S0 (INTENA all clear). For each channel x alone:
 0. Calibration: `BUFx+0x100` holds one word, 0x9090. Following 2.7, set
@@ -706,56 +743,74 @@ channel's interrupt request bit (INTREQ bit 7 + x) is set.
 
 **Observation.** The poll log (RF-L), the fetches (RF-F) and the runs (RF-O).
 An **event** is a read of 1 in bit 7+x whose previous read in the log was 0.
-The event's time is the store time of the read of 1. Block k is the k-th
+The event's time is the store time of the read of 1: the read took place before
+that store, so the request was set at or before it. Block k is the k-th
 sequence of fetches that starts at BUFx, counted from the start marker of
 step 3 (the calibration's fetches at BUFx+0x100 lie before it). Word L is
 the word at BUFx+2(L−1) with L = 6, the stimulus value, which the grader
-keeps even in the contrasting case below. **Word L's run** in
+keeps in every contrasting case. **Word L's run** in
 block k is found by its level, not by counting runs: it is the first run
-that starts after F_k and whose level equals L9 (RF-O).
-
-For each block k = 2..6 there is a window **W_k** = [F_k, E_k + τ + 2R]:
-- F_k is the fetch time of word L (BUFx+10) in block k;
-- E_k is the start of the run that follows word L's run in block k. At E_k
-  the output of word L is over: the data "has been used".
+that starts after F_k and whose level equals L9 (RF-O). For each block k = 2..6:
+- F_k is the fetch time of word L (BUFx+10) in block k, and F_(k+1) that in block k+1;
+- S_k is the start of word L's run in block k: from S_k on the data of word L is
+  in use;
+- E_k is the start of the run that follows word L's run in block k: at E_k the
+  output of word L is over, all L words have been output and the data in the
+  register has been used.
 
 **Expected.** p.11 to 12: "When the DMA data is finished (words outputted=Length)
 and the data in this register has been used, an audio channel interrupt
 request is set." p.25: "07 AUD0 4 Audio channel 0 block finished",
-"08 AUD1", "09 AUD2", "10 AUD3". Every window W_2 … W_6 contains at least
-one event.
+"08 AUD1", "09 AUD2", "10 AUD3". Both conditions of the sentence hold at E_k, the
+instant at which the last word has been output and its data has been used, so
+the request is clear before E_k and set from E_k on; the page names no latency,
+and none is added. Observed through the poll, which has no tolerance but its own
+brackets (a read precedes its store, and the poll clears the request at the first
+read of 1):
+- P8-USED: for every block k = 2..6 no read of 1 is stored from F_k to E_k. A read
+  of 1 stored before E_k was taken before E_k, so the request was set before the
+  page allows it.
+- P8-SET: for every block k = 2..6 a read of 1 is stored from E_k to F_(k+1). It is
+  graded only where P8-USED holds: a request that was set early and cleared by the
+  poll cannot show whether the channel sets one again at E_k.
+- P8-STARTED, recorded as a weaker reading of "has been used" (the data of word L
+  has been taken into use, which is true from S_k): no read of 1 is stored from F_k
+  to S_k. P8-STARTED carries no claim id; the claim is carried by P8-USED and P8-SET.
 
-Why the window has these ends: the pages word the instant differently (see
-section 5.1), and the window covers every reading and nothing more. It opens
-at the fetch of word L: HRM p.220 puts the request "when the last word in an
-audio data stream has been accessed", the earliest of the readings, and HRM
-p.164 puts it later, "just as the last word of the waveform starts its
-output". It closes where the AA page puts it, when word L "has been used",
-at E_k. No latency is added: τ is the resolution of a run start (RF-O), and
-2R that of the poll, since a read of 1 follows the store before it and
-stores are at most R apart (RF-L). Block 1 is not graded, because it is
-pass 1, whose output the pages leave open (section 6). Events outside the
-windows are not graded, including the one HRM p.148 predicts at DMA start:
-the claim says a request is set at block end, not only then.
+The earlier instants that other pages give (section 5.1) lie before E_k and are not
+part of the claim.
 
-**Preconditions.** G-S0, G-C, G-D, G-F, G-FLAT, G-P. G-R with R ≤ P·c/8.
-In each block k = 2..6 exactly one run at level L9 starts between F_k and
-the fetch of word 2 of block k+1, so word L's run is found without doubt.
-INTENAR reads 0 after S0. The fetches show blocks of as many words as the
-program wrote to AUDxLEN (the P1 check). The windows, however, are always
-placed with L = 6, so the contrasting case below keeps this precondition
-green and goes red through the windows. Outside every window, the first poll
-after each clear marker reads 0, so the clear took effect. *Contrasts:*
-- Leave out the clear write in step 4. The next poll reads 1, and the
-  precondition goes red.
-- Write `INTENA ← 0xC000 | 1 << (7+x)` after S0. INTENAR reads non-zero, and
-  the precondition goes red.
+**Preconditions.** G-S0, G-C, G-D, G-F. G-R with R ≤ P·c/8 (so that the poll
+resolves a block). The fetches show blocks of as many words as the program wrote
+to AUDxLEN (the P1 check). In each block k = 2..6 the fetches F_k, F_(k+1) and the
+fetch of word 2 of block k+1 are found and exactly one run at level L9 starts
+between F_k and the fetch of word 2 of block k+1, so that word L's run is found
+without doubt (P8-PRE-L9). The windows are always placed with L = 6. INTENAR reads 0
+after S0. The first poll after each clear reads 0, so the clear took effect
+(P8-PRE-CLEAR). *Contrasts:*
+- Leave out the clear write in step 4. The next poll reads 1, and P8-PRE-CLEAR goes red.
+- Write `INTENA ← 0xC000 | 1 << (7+x)` after S0. INTENAR reads non-zero, and G-S0 goes red.
+- Slow the poll loop so that R exceeds P·c/8. G-R goes red.
+- AUDxLEN ← 7 with six words and a seventh that is 0: the blocks have seven words
+  where the grader keeps six, and P8-PRE-BLOCKS goes red.
+- Replace word 6 by 0x9494: no run at L9 starts in the block, and P8-PRE-L9 goes red.
+- Five words, AUDxLEN ← 5: the word at BUFx+10 is never fetched, and P8-PRE-L9 goes red
+  with the blocks (of five words, as written) still passing P8-PRE-BLOCKS.
 
-**Contrasting case.** Extend the buffer to 9 words (add 0xB0B0, 0xF0F0,
-0x4040) and set AUDxLEN ← 9, while the grader keeps L = 6. The page predicts
-requests at the ends of 9-word blocks. The windows placed around word 6
-(0x9090, still found by L9) then contain no event, and the check goes red;
-0x9090 still occurs once per block, so the L9 precondition holds.
+**Contrasting cases.** The polled request is moved to a bit the channel's DMA never
+sets, and the CPU sets it by software at a time that the test takes from a play of
+the same stimulus (the instants F_k, S_k, E_k of the play and the store times of its
+reads place one set in each block):
+- P8-EARLY: the set falls between F_k and S_k, in the middle of the interval. The
+  page predicts no request before the data is in use, and P8-STARTED, P8-USED and P8
+  go red.
+- P8-MID: the set falls between S_k and E_k, in the middle of the interval. P8-STARTED
+  stays green and P8-USED and P8 go red.
+- P8-LIVE: the set falls between E_k and F_(k+1), in the middle of the interval. This
+  is the input the page predicts, through the same comparators: P8-STARTED, P8-USED,
+  P8-SET and P8 stay green.
+- The polled bit is that of another channel, which is never set by the DMA of channel
+  x (P8-BIT): no read of 1 is stored in any interval and P8-SET goes red.
 
 ---
 
@@ -782,7 +837,8 @@ words hold, in place of the volume the CPU wrote to it.
    depends on how the first pass runs (section 6).
 3. Phase 1 (calibration): start channel n only. Write AUDnVOL ← 64, 16, 40,
    32 in turn, with markers, holding each for three lines. Measure L64, L16,
-   L40 and L32 over the last two lines of each.
+   L40 and L32 over the last two lines of each, each as the mean over a whole
+   number of repetitions of the output (RF-O).
 4. Phase 2: write `ADKCON ← 0x8000 | 1 << m`. Read ADKCONR and log it. Start
    channel m. Run for 24 modulator periods, 24 × 1500 = 36 000 colour clocks
    (at least 160 lines), which is at least 12 modulator words however long a
@@ -794,12 +850,19 @@ words hold, in place of the volume the CPU wrote to it.
    channels.
 
 **Observation.** Channel n's output in phase 2 (channel m's volume is 0, so
-channel m's own output is nothing, p.11). Split it into **segments**: maximal
-intervals of constant level (RF-O). The
-observation starts at the first segment whose level equals L64, L16 or L40
-and ends at the phase-3 marker. The test also prints phase 2 from the start of
-channel m as it is: the number of segments and the level and length of the first
-eight, so that what the channel does before the observation starts is on record.
+channel m's own output is nothing, p.11). Each calibration window has a period
+(RF-O, P9-PRE-PERIOD to P11-PRE-PERIOD), and λ is the least common multiple of the
+four periods, in system clocks. Phase 2 is read through a window of λ samples that
+is slid one sample at a time. A window inside a stretch of one volume repeats that
+volume's pattern a whole number of times and has its level exactly; only a window
+that straddles a change can have another level, and fewer than λ windows straddle
+one change. A **stable stretch** is a run of at least λ windows that have the level
+of one calibrated volume. If the calibrated outputs are constant, λ = 1 and the
+stable stretches are the maximal intervals of constant level. The observation starts
+at the first stable stretch whose level is L64, L16 or L40 and ends at the phase-3
+marker. The test also prints phase 2 from the start of channel m as it is: the
+number of segments and the level and length of the first eight, so that what the
+channel does before the observation starts is on record.
 
 **Expected.** p.11: "00 USE0V1 Use audio channel 0 to modulate volume of
 channel 1" (and "01 USE1V2 …", "02 USE2V3 …" for P10 and P11). For the
@@ -807,27 +870,33 @@ volume field of a modulator word, the same page's NOTE reads "First AUDxDAT
 word is used for V6-V0 of AUDxVOL". The words here have bits 15 to 7 at
 zero, so the result does not depend on which bits the single-modulation mode
 takes. Then:
-- every segment in the observation has a level equal to L64, L16 or L40
-  (RF-O: within 1 LSB, the quantisation of the measurement);
-- no segment has level L32;
-- the segments cycle 64 → 16 → 40 → 64 …, starting anywhere;
+- every stable stretch in the observation has the level L64, L16 or L40;
+- no stable stretch has the level L32;
+- no run of λ or more windows has a level that is none of the four calibrated
+  levels: only windows that straddle a change differ, and there are fewer than λ of
+  them at each change;
+- the stable stretches cycle 64 → 16 → 40 → 64 …, starting anywhere;
 - each value occurs at least three times.
 
 In phase 2 ADKCONR bit m reads 1 and the other bits 7 to 0 read 0. In phase 3
 bit m reads 0 ("Bits written with a zero are always unchanged", p.10).
 
 **Preconditions.** G-S0, G-C, G-D. G-F for both channels: channel m makes at
-least 12 fetches in phase 2. The calibration levels L64, L16, L40 and L32
-differ pairwise by more than 2 LSB, so no level can equal two of them. The output
-is constant over each of the four calibration windows (P9-PRE-CONST, P10-PRE-CONST,
-P11-PRE-CONST; 2.5). *Contrast:* channel n's word 0x7F00 (two different bytes),
-whose output alternates within each window, and the precondition goes red.
+least 12 fetches in phase 2. In each of the four calibration windows the output
+repeats with a period of at most half the window, and the least common multiple of
+the four periods is at most the window (P9-PRE-PERIOD, P10-PRE-PERIOD,
+P11-PRE-PERIOD; 2.5). The calibration levels L64, L16, L40 and L32 are pairwise
+different as exact quotients (PRE-CAL), so no level can equal two of them. No
+resolution of the output is assumed. *Contrast:* channel n's word 0x7F00 (two
+different bytes), whose output alternates with a period longer than half the
+window, and PRE-PERIOD goes red.
 *Contrast:* leave channel
 m's DMA off. There are no modulator fetches, and G-F goes red.
 
 **Contrasting cases.**
 - Leave out the ADKCON write in phase 2. The page predicts no modulation, so
-  channel n stays at L32 and the check goes red.
+  channel n stays at L32 and the check goes red. Write L32 as 40 in the
+  calibration: two calibrated levels are equal and PRE-CAL goes red.
 - Write `ADKCON ← 1 << m` in phase 2, which has SET/CLR = 0 ("Determines if
   bits written with a 1 get set or cleared", p.10). ADKCONR bit m reads 0,
   so the phase-2 readback check goes red, and so does the level check.
@@ -875,29 +944,34 @@ modulator's words hold, in place of the period the CPU wrote to it.
 5. Phase 3: write `ADKCON ← 1 << (4+m)`. Read ADKCONR and log it. Stop.
 
 **Observation.** Channel n's runs (RF-O) in phase 2, from the first run whose
-length is classified (below) until the phase-3 marker. A run is classified
-as 200, 600 or 350 if its length is within ±τ of that many colour clocks
-times c. Otherwise it is transitional. A segment is a maximal sequence of
-runs with the same class. The test also prints the lengths of all runs of phase 2
-from the start of channel m (colour clocks, rounded, and how many runs of each),
-so that what the channel does before the first classified run is on record.
+length is exactly 200, 600 or 350 colour clocks (c system clocks each) until the
+phase-3 marker; the last run is cut by the marker and is left out. A run is
+classified as 200, 600 or 350 if its length is exactly that many colour clocks. A
+segment is a maximal sequence of runs with the same class. The test also prints
+the lengths of all runs of phase 2 from the start of channel m (colour clocks,
+rounded, and how many runs of each), so that what the channel does before the
+first classified run is on record.
 
 **Expected.** p.11: "04 USE0P1 Use audio channel 0 to modulate period of
 channel 1" (and "05 USE1P2 …", "06 USE2P3 …"). For the period field, the
 page's NOTE reads "Second AUDxDAT word is used for P15-P0 of AUDxPER", and
 here every word is a whole 16-bit period. Then:
-- every run in the observation is classified, apart from at most one
-  transitional run at each segment boundary;
+- every run in the observation is classified: it lasts exactly 200, 600 or 350
+  colour clocks, and no run lasts any other time, 400 colour clocks included;
 - the segments cycle 200 → 600 → 350 → 200 …, starting anywhere;
-- each value occurs at least three times;
-- no run lasts 400·c ± τ except as a transitional run.
+- each value occurs at least three times.
+
+The page says that the samples of the attached channel last the periods of the
+words, so every sample is graded as lasting the period of one of them; no run of
+another length is allowed at a boundary between two periods.
 
 ADKCONR bit 4+m reads 1 in phase 2 and 0 in phase 3, and bits 7 to 0 other
 than 4+m read 0 throughout.
 
-**Preconditions.** G-S0, G-C, G-D, G-F for both channels, G-FLAT. G-P in
-phase 1: all runs last 400·c ± τ. *Contrast:* as in P9 to P11, modulator
-DMA left off.
+**Preconditions.** G-S0, G-C, G-D, G-F for both channels. G-P in
+phase 1: all interior runs of channel n last exactly 400·c, so each sample is one run
+(the assertion that carries G-FLAT for this proposition). *Contrast:* as in P9 to
+P11, modulator DMA left off; and AUDnPER ← 800 in phase 1, where G-P goes red.
 
 **Contrasting cases.**
 - Leave out the ADKCON write. The page predicts unmodulated 400-colour-clock
@@ -910,7 +984,8 @@ DMA left off.
 **Left open.** As in P9 to P11: channel m's own output, when a new period
 takes effect, and how many samples each modulator word governs. The AA page
 also says nothing about the length of a sample during which the period
-changes. That is why one transitional run per boundary is allowed.
+changes; the check takes the page's statement that the samples last the periods
+of the words as it stands.
 
 ---
 
@@ -937,18 +1012,23 @@ S0 (2.1), so ADKCON bit 3 is clear at the start of run B.
   lines.
 - Run B: the same without the ADKCON write.
 
-**Observation.** Channel k's runs, from two lines after the start until the
-stop.
+**Observation.** Channel k's runs in each run, from its first fetch to the stop,
+without the run that holds the first fetch and the run that the stop cuts. The
+interval is anchored on the channel's own first fetch, which is independent of the
+clause, and it is the whole of the channel's play in both runs, from the first pass
+on. The data of channel k is one word, so a first pass that is a word short or
+long plays the same runs.
 
-**Expected.** p.11: "03 USE3VN Use audio channel 3 to modulate nothing". In
-run A, every run of channel k lasts 300·c ± τ and has one of the two levels
-of channel k in run B (the levels of 0x7F and 0x80 at volume 64), equal
-under RF-O (within 1 LSB, the quantisation of the measurement). ADKCONR bit 3
-reads 1 in run A and 0 in run B.
+**Expected.** p.11: "03 USE3VN Use audio channel 3 to modulate nothing". Run A
+plays channel k exactly as run B does: the runs of the two plays, taken one by one
+from the first run after the first fetch, have the same level and the same length,
+for as many runs as both have. ADKCONR bit 3 reads 1 in run A and 0 in run B.
 
-**Preconditions.** G-S0, G-C, G-D, G-FLAT, G-F for channels 3 and k in run A.
-*Contrast:* leave channel 3's DMA off. There are no channel-3 fetches, and
-the precondition goes red.
+**Preconditions.** G-S0, G-C, G-D, G-F for channels 3 and k in run A. G-P in run B:
+every run of channel k, from its first fetch on, lasts exactly 300·c, with two levels
+in turn (this carries G-FLAT, and shows that run B is the unmodulated play). *Contrast:*
+leave channel 3's DMA off. There are no channel-3 fetches, and the precondition goes
+red; write AUDkPER ← 600 in run B only, and G-P goes red.
 
 **Contrasting cases.** The page predicts a changed outcome here:
 - for k = 1: set bit 0 (USE0V1) in addition to bit 3 (`ADKCON ← 0x8009`),
@@ -987,13 +1067,16 @@ empty, so its frame follows the previous frame with no idle cell.
 1. Wait 20T with TxD idle, polling INTREQR and logging every read (P17).
 2. Write `SERDAT ← 0x0100 | d1` (stop bit at bit 8, 8 data bits; "S= stop bit
    =1", p.27).
-3. For k = 2..8: poll INTREQR until bit 0 (TBE) reads 1, then write
-   `INTREQ ← 0x0001`, then write `SERDAT ← 0x0100 | dk`, with markers around
-   each write. Each word is written as soon as TBE reads 1, and nothing else
-   delays it. The move of word k−1 sets TBE ("This sets the Interrupt
-   Request TBE", p.27) when frame k−1 has not yet begun, so word k waits in
-   the buffer while frame k−1 is sent. Check (d) rests on this stimulus fact;
-   no precondition measures it.
+3. For k = 2..8: poll INTREQR a fixed number of reads, logging each, then write
+   `INTREQ ← 0x0001`, then write `SERDAT ← 0x0100 | dk`, with markers around each
+   write. The number of reads is fixed in the program and does not depend on what
+   INTREQR reads: word 2 follows word 1 by about 5T and each later word follows its
+   predecessor by about 10T, the length of a frame, so that word k is written in the
+   middle of frame k−1, after it has begun (the buffer is empty) and before it ends
+   (the word waits in the buffer while frame k−1 is sent). The read counts are tuned
+   on this design (14 and 42), and the run prints where each write falls against the
+   start of the frame before it. Check (d) rests on this stimulus fact; the contrast
+   that writes a word late must reach check (d), so no precondition measures it.
 4. Wait 30T and stop.
 
 The data bytes d1..d8 are 0x81, 0x3C, 0x5A, 0x00, 0xFF, 0x66, 0x18, 0xA5.
@@ -1010,9 +1093,10 @@ transmission, whenever it is empty." Over the whole interval:
   No frame is missing, repeated or extra.
 - (c) Frame 1's start cell begins after the first write marker. The page
   names no latency for the move, so only this order is graded.
-- (d) For k = 2..8, frame k's start cell begins no later than T after the
-  end of frame k−1's stop cell. That is, there is no idle cell.
-- (e) After frame 8's stop cell, TxD stays idle until the end.
+- (d) For k = 2..8, frame k's start cell begins no later than the end of frame
+  k−1's stop cell, which is 10T after frame k−1's start cell. That is, there is no
+  idle cell: the word waiting in the buffer moves as soon as the shift register is empty.
+- (e) After frame 8's stop cell, which ends 10T after its start, TxD stays idle until the end.
 
 **Preconditions.** G-S0, G-C, G-BRK, G-T.
 
@@ -1035,7 +1119,9 @@ sets INTREQ bit 0 (TBE), and TBE stays clear while a written word still
 waits in the buffer.
 
 **Stimulus.** The P16 run, with its poll log of INTREQR, including the reads
-of the 20T wait before write 1.
+of the 20T wait before write 1. The writes are at the times that the program fixes,
+whatever INTREQR reads, and each is bracketed by markers, so that every move k = 1..8
+has its write, its clear and its frame in the record whether or not TBE reads 1.
 
 **Observation.** The INTREQR bit-0 reads in the log, placed against the
 writes and the frames on TxD. Move k can happen no earlier than the **earliest
@@ -1053,7 +1139,8 @@ k = 1..8:
 - the first read of 1 stored after the clear is stored no later than the second
   store after the start of frame k's start cell: the word is moved "for output
   transmission", so its move precedes its frame, and the request that the move
-  sets has been read as 1 by then.
+  sets has been read as 1 by then. Frame k has to appear; a frame that does not
+  appear shows no move, and the line is red for that k.
 - Reads between e_k and that read of 1 are not graded. The page names no latency
   for the move or for the request, so only this order is graded.
 
@@ -1111,8 +1198,8 @@ begins at the frame's first falling edge. It spans the start cell and the p
 data cells, all low.
 
 **Expected.**
-- w(p) − w(8) = (p − 8)·T ± c for p = 9, 7, 4.
-- Both repeats of p = 8 and p = 9 agree within c.
+- w(p) − w(8) = (p − 8)·T exactly, for p = 9, 7, 4.
+- Both repeats of p = 8 and p = 9 agree exactly.
 - After each low interval, TxD is at the stop level and stays there until the
   next write.
 
@@ -1120,15 +1207,13 @@ data cells, all low.
 from the HRM and is recorded but not graded.)
 
 **Preconditions.** G-S0, G-C, G-BRK, G-T. TxD is constant for 12T before each
-write. G-T for P18 is built as follows (p.27: "If this number is N, then the Baud
-Rate is 1 bit every (N+1)*.2794 Microseconds"): a P18 frame is a start cell and p
-data cells, all low, then the stop cell, so it has two edges and no single-cell
-pulse, and the shortest interval between edges of a P18 capture is a whole low
-interval of at least 5T, which cannot measure T. T is measured on the single-cell
-pulses of the P16 stimulus with the same SERPER value, in a run of its own, and
-every edge of the P18 capture lies on the grid of that T from its frame's first
-edge, within ±c. The form of G-T that takes the measured T from the capture's own
-shortest interval fails the P18 stimulus on an implementation that follows the page.
+write. G-T for P18 (p.27: "If this number is N, then the Baud Rate is 1 bit every
+(N+1)*.2794 Microseconds"): a P18 frame is a start cell and p data cells, all low,
+then the stop cell, so it has two edges and no single-cell pulse, and the shortest
+interval between edges of a P18 capture is a whole low interval of at least 5T,
+which cannot measure T. Every edge of the P18 capture lies, exactly, on the grid
+of pitch T = (N+1)·c from its frame's first edge, where the page gives T; the
+shortest-interval clause of G-T is not part of P18's G-T.
 *Contrast for the idle precondition:* write the next word 2T after the previous frame's stop
 cell. The idle precondition goes red.
 
@@ -1169,29 +1254,30 @@ times, which the test knows from its own drive schedule. For frame k:
 in this buffer is loaded from a receiving shift register whenever it is
 full." The table reads "07 DB7 Data bit … 00 DB0 Data bit". For every frame
 k:
-- every read stored between σ_k + R and λ_{k+1} reads e_k in bits 7 to 0;
-  for frame 8 the interval runs until the start of the 12T low that the test
+- every read stored between the end of frame k's stop cell plus T plus R and
+  λ_{k+1} reads e_k in bits 7 to 0. The end of the stop cell is start_k + 10T,
+  where start_k is the start of frame k's start cell, which the test drives; the
+  load of frame k has happened by then plus T plus R, whether or not another frame
+  follows, so the whole idle interval after a frame is graded and frame 7, whose
+  successor follows back to back, is graded from the same instant (σ_7 + T + R).
+  For frame 8 the interval runs until the start of the 12T low that the test
   drives after the sequence: RxD is idle throughout, so "loaded from a receiving
-  shift register whenever it is full" predicts e_8 there. The form "until σ_8"
-  gives the interval [σ_8 + R, σ_8), which is empty because R > 0, and grades
-  nothing. For frame 7, whose successor
-  follows back to back, the interval starts at σ_7 + T + R instead. The
-  interval runs up to λ_{k+1} because the buffer is not loaded before the
-  shift register can be full: until then it still holds e_k, not e_{k+1}.
-- Reads stored before σ_1 + R, and for k ≥ 2 between λ_k and σ_k + R
-  (σ_7 + T + R for k = 7), fall where a load may happen and are not graded.
+  shift register whenever it is full" predicts e_8 there. The interval runs up to
+  λ_{k+1} because the buffer is not loaded before the shift register can be full:
+  until then it still holds e_k, not e_{k+1}.
+- Reads stored before the end of frame 1's stop cell plus T plus R, and for k ≥ 2
+  between λ_k and the end of frame k's stop cell plus T plus R, fall where a load
+  may happen and are not graded.
 
-Why frame 7 starts one cell later: the pages do not fix where in a cell the
-receiver samples the pin, only that "N+1 color clocks occur between samples
-of the state of the input pin (for receive)" (HRM p.255) and that the
+Why the interval starts one cell after the stop cell: the pages do not fix where
+in a cell the receiver samples the pin, only that "N+1 color clocks occur between
+samples of the state of the input pin (for receive)" (HRM p.255) and that the
 transfer comes "When the proper number of bit times have elapsed" (HRM
 p.256). A receiver that samples once per cell can see the start edge up to
-one cell late and load at the end of its own stop cell, up to T after σ_7.
-Frames 1 to 6 and 8 are followed by 5T of idle, so σ_k already lies well
-past that point.
+one cell late and load at the end of its own stop cell, up to T after it.
 
-For the back-to-back pair, e7 is read at least once between σ_7 + T + R and
-λ_8.
+For the back-to-back pair, e7 is read at least once between the end of frame 7's
+stop cell plus T plus R, which is σ_7 + T + R, and λ_8.
 
 **Preconditions.** G-S0, G-C, G-RXD, and G-R with R ≤ T/4. The colour clock
 measured from the refresh pattern is the 8 system clocks that the schedule of the
@@ -1216,9 +1302,11 @@ no claim of this package states it.
 
 **Claim.** `sol:AA-serdatr.c8`, p.27.
 
-**Proposition.** SERDATR bit 14 reads the same as INTREQR bit 11 (RBF)
-at all times. SERDATR bit 13 reads the same as INTREQR bit 0 (TBE) in the
-two cases on which the pages agree.
+**Proposition.** SERDATR bit 14 reads the same as INTREQR bit 11 (RBF), and bit 13
+the same as INTREQR bit 0 (TBE), in every stable state: after a frame has been
+received, after a move of the transmit buffer with the buffer empty and with a word
+waiting, and after a software set and a software clear of the request with the
+buffer empty and with a word waiting.
 
 **Stimulus, run A (RBF).**
 1. The test drives one frame with data 0x5A on RxD. The program polls INTREQR
@@ -1234,27 +1322,40 @@ two cases on which the pages agree.
 **Stimulus, run B (TBE).**
 1. Wait until TxD has been idle for 12T.
 2. Write `INTREQ ← 0x0001`, then `SERDAT ← 0x0181`. Poll INTREQR until bit 0
-   reads 1, meaning the word has moved, then take a triple. This is case (a).
+   reads 1, meaning the word has moved, then take a triple. This is case (a): the
+   word has moved and the buffer is empty.
 3. Write `INTREQ ← 0x0001`, then `SERDAT ← 0x01FF`, then take a triple at
    once. This is case (b): the second word waits in the buffer while frame 1
-   is sent. The triple follows the SERDAT write directly, a few instructions
-   into a frame of 10T; this is a stimulus fact, and no precondition
-   measures it.
+   is sent, and the request is clear.
 4. Poll INTREQR until bit 0 reads 1, that is until the second word has moved,
    then take a triple. This is case (a) again.
+5. Write `INTREQ ← 0x0001` and take a triple. This is case (c): the request is
+   cleared by software with the buffer empty (frame 2 is in the shift register).
+6. Write `SERDAT ← 0x01FE`, so that a third word waits in the buffer while frame 2
+   is sent, then write `INTREQ ← 0x8001` and take a triple. This is case (d): the
+   request is set by software with a word waiting.
+7. Write `INTREQ ← 0x0001` and take a triple. This is case (e): the request is
+   cleared by software with a word waiting.
 
-**Observation.** The logged triples. A triple is **valid** if its two SERDATR
-reads agree in the bit concerned.
+**Observation.** The logged triples. TxD in run B, to place the instant at which
+a buffered word can first move.
 
 **Expected.** p.27: "Several interrupt request bits are also read at this
 address, along with the data,as shown below." "14 RBF Serial port Receive
-Buffer Full(mirror)". "13 TBE Serial port Transmit Buffer Empty(mirror)".
-- Run A: in every valid triple, SERDATR bit 14 equals INTREQR bit 11. Triples
-  1 and 3 read (1, 1) and triples 2 and 4 read (0, 0).
-- Run B: in every valid triple, SERDATR bit 13 equals INTREQR bit 0. The
-  step-2 and step-4 triples read (1, 1). The step-3 triple reads (0, 0),
-  unless the move of the second word falls between its reads, in which case
-  it is not valid and not graded.
+Buffer Full(mirror)". "13 TBE Serial port Transmit Buffer Empty(mirror)". Each
+case above is a state that nothing changes while its triple is taken, so the
+INTREQR read between two SERDATR reads is bracketed by them. In every triple the
+two SERDATR reads and the INTREQR read agree in the one request, and no triple is
+skipped: a disagreement between the two SERDATR reads, or between them and INTREQR,
+is a failure of the mirror, not a case that is left out.
+- Run A: SERDATR bit 14 equals INTREQR bit 11 at both reads, and the triples read
+  (1, 1, 1), (0, 0, 0), (1, 1, 1) and (0, 0, 0).
+- Run B: SERDATR bit 13 equals INTREQR bit 0 at both reads, and the triples of the
+  cases (a), (b), (a), (c), (d), (e) read (1, 1, 1), (0, 0, 0), (1, 1, 1), (0, 0, 0),
+  (1, 1, 1) and (0, 0, 0). In the cases (c) and (d) the AA page prints bit 13 as a
+  mirror of the request, so bit 13 follows the software clear with the buffer empty
+  and the software set with a word waiting; HRM p.257 reads bit 13 as the state of the
+  buffer (section 5.2), and the oracle is the AA page.
 
 **Preconditions.**
 - G-S0, G-BRK, G-RXD. G-RXD is read on run A's final poll, which starts before
@@ -1262,25 +1363,27 @@ Buffer Full(mirror)". "13 TBE Serial port Transmit Buffer Empty(mirror)".
   reads inside it. INTENAR reads 0. The colour clock measured from the refresh
   pattern in run A is the 8 system clocks that the RxD schedule is built for
   (P20-PRE-K; *contrast:* build the schedule for 9, and the precondition goes red).
-- In run A, triples 2 and 3 are valid, and INTREQR bit 11 takes both values
-  across the four triples, which confirms that the set and clear took effect.
+- In run A the four triples are taken and INTREQR bit 11 takes both values
+  across them, which confirms that the set and clear took effect (P20-PRE-TRIPLES).
+- In run B the six triples are taken, and the triples of the cases (b), (c), (d)
+  and (e) end before the start of the stop cell of the frame that is in the shift
+  register, the earliest instant at which the waiting word can move: no move can set
+  the request inside them (P20-PRE-STABLE).
 
-*Contrast:* in run A, leave out the INTREQ writes of steps 3, 4 and 5.
-INTREQR bit 11 then reads 1 in all four triples and never 0, and the
+*Contrast for P20-PRE-TRIPLES:* in run A, leave out the INTREQ writes of steps 3, 4
+and 5. INTREQR bit 11 then reads 1 in all four triples and never 0, and the
 precondition goes red. (Changing only step 4 would not do: triples 1 and 2
-would still show both values.)
+would still show both values.) *Contrast for P20-PRE-STABLE:* in run B, take the
+case-(b) triple after waiting 14 bit times, after the second word has moved; the
+precondition goes red.
 
 **Contrasting cases.**
 - Leave out the software set in run A's step 4. The page predicts that bit 14
-  reads 0 at triple 3, so the expectation "(1, 1) at triple 3" goes red.
-- In run B, take the step-3 triple after the second word has moved. The page
-  predicts (1, 1), so the expectation (0, 0) goes red through its own
-  clause; no precondition refers to the time of the triple, so all of them
-  still hold.
-
-**Not tested, because the pages disagree** (section 5.2): SERDATR bit 13 while
-INTREQ TBE is cleared with the buffer empty, and while INTREQ TBE is set by
-software with the buffer full.
+  reads 0 at triple 3, so the expectation (1, 1, 1) at triple 3 goes red.
+- In run B step 3, write `INTREQ ← 0x8001` in place of `0x0001`: the page predicts
+  the request set, (1, 1, 1), where the grader expects (0, 0, 0) for the case (b), and
+  P20-TBE goes red. In the same way, set in place of clear at step 5 (case (c)), clear in
+  place of set at step 6 (case (d)) and set in place of clear at step 7 (case (e)).
 
 ---
 
@@ -1300,11 +1403,15 @@ software with the buffer full.
   interrupt for the 680x0 saying that it has completed retrieving working
   copies of length and location registers."
 
-All readings put one request per block between the fetch of the block's
-last word (the earliest, HRM p.220) and the moment that word has been used,
-when the next word's output begins (the AA page, the latest). P8 grades a
-request inside that span, from block 2 on, and nothing outside it: no event
-at DMA start, and nothing about direct (non-DMA) mode.
+The readings put the request of a block at different instants between the
+fetch of the block's last word (HRM p.220) and the end of that word's output. The
+oracle of P8 is the AA page: the request is set when "words outputted=Length" and
+"the data in this register has been used" both hold, which is true once the last
+word has been output and used, at E_k. P8-USED grades that no request is read
+before E_k from the last word's fetch on; P8-STARTED states the weaker reading in
+which a word is used from the start of its output. P8 grades blocks 2 to 6 and
+nothing outside them: no event at DMA start, and nothing about direct (non-DMA)
+mode.
 
 ### 5.2 SERDATR bit 13, TBE: mirror or not (P20)
 
@@ -1316,9 +1423,13 @@ at DMA start, and nothing about direct (non-DMA) mode.
   word. This is also true when the buffer is empty." The sentence is garbled
   there, and "bit 14" presumably means bit 13.
 
-The readings agree only in two cases: just after a move with the request not
-yet cleared (both 1), and with a word waiting and the request cleared (both
-0). P20 tests only those.
+The readings agree in the cases (a) and (b) of P20: just after a move with the
+request not yet cleared (both 1), and with a word waiting and the request cleared
+(both 0). They differ where software sets or clears the request against the state
+of the buffer, the cases (c) (cleared, buffer empty: the AA page reads 0, HRM p.257
+reads 1) and (d) (set, word waiting: the AA page reads 1, HRM p.257 reads 0). The
+oracle of P20 is the AA page, which prints bit 13 as a mirror, and P20 grades all
+five cases of run B with the AA reading.
 
 ### 5.3 SERDATR bit 8 (not graded)
 
@@ -1358,11 +1469,12 @@ The pages agree that writing 64 gives the maximum, and P6 and P7 follow AA.
   checks use palindromic bytes and differences of lengths, so no expected
   value depends on them.
 - **Latencies.** The AA pages name none, so no check adds one. Where the page
-  gives only an order, only the order is graded: P16 (c) and P17. P8's
-  window ends where the AA page puts the request. P16 (d) uses the cell T of
-  the frame to define "no idle cell", and P19 starts its intervals at the
-  next frame's start, one cell later after a back-to-back frame, because the
-  pages do not fix where in a cell the receiver samples.
+  gives only an order, only the order is graded: P16 (c) and P17. P8 grades the
+  request from the instant at which the AA page makes it true, E_k, and the
+  observation brackets are the store times of the poll. P16 (d) grades that a
+  waiting word's frame starts at the end of the frame before it. P19 starts its
+  intervals one cell after the end of a frame's stop cell, because the pages do not
+  fix where in a cell the receiver samples.
 
 ### 5.6 Wording checked against the print
 
@@ -1386,17 +1498,17 @@ ADKCON attach bits), p.266 (AUDxLEN and AUDxVOL, the latter printed as
 
 | Claim | Page | Proposition |
 |---|---|---|
-| `sol:AA-audxlen.c1` | 11 | P1 |
-| `sol:AA-audxlen.c4` | 11 | P1 |
-| `sol:AA-audxdat.c5` | 11 | P2 |
-| `sol:AA-audxdat.c9` | 11 | P2 |
+| `sol:AA-audxlen.c1` | 11 | P1 (line P1-ADDR) |
+| `sol:AA-audxlen.c4` | 11 | P1 (lines P1-A, P1-B, P1-C, P1) |
+| `sol:AA-audxdat.c5` | 11 | none (section 1; withdrawn, P2 is a measurement) |
+| `sol:AA-audxdat.c9` | 11 | none (section 1; withdrawn, P2 is a measurement) |
 | `sol:AA-audxdat.c6` | 11 | P3 |
 | `sol:AA-audxdat.c7` | 11 | P4 |
 | `sol:AA-audxdat.c1` | 11 | P5 |
 | `sol:AA-audxdat.c10` | 11 | P5 |
-| `sol:AA-audxvol.c1` | 11 | P6 |
-| `sol:AA-audxvol.c4` | 11 | P6 |
-| `sol:AA-audxvol.c7` | 11 | P6 |
+| `sol:AA-audxvol.c1` | 11 | P6 (line P6-ADDR) |
+| `sol:AA-audxvol.c4` | 11 | P6 (line P6-LEVELS) |
+| `sol:AA-audxvol.c7` | 11 | P6 (line P6-LOWER) |
 | `sol:AA-audxvol.c6` | 11 | P7 |
 | `sol:AA-audxdat.c11` | 11 (ends on 12) | P8 |
 | `sol:AA-adkcon.c30` | 11 | P9 |
@@ -1487,28 +1599,30 @@ marker stores (a marker is the running count 1, 2, 3, ... stored at
 | RD, RD3 | read one register, or two registers in the order a, b, a; each value is stored in the log |
 | POLL, WAITB | read one register again and again, each value stored in the log; WAITB ends at the first read whose masked value is not 0 |
 | PACT | POLL that writes a value to a register after every read whose masked value is not 0 (P8: the INTREQ clear) |
-| FEED | POLL that, after each of the first n reads with the bit set, writes the clear to INTREQ and the next word to SERDAT (P16, P17) |
+| FEED | POLL that, after each of the first n reads with the bit set, writes the clear to INTREQ and the next word to SERDAT (the program keeps it; no proposition uses it) |
 | MARK | one marker |
 
-The poll loops of PACT and FEED carry no marker around their writes: the log
-stores before and after a write bracket it, and `R` is measured over the log
-stores of the loop, without the interval that holds the first write of P16 or
-the end of FEED.
+The poll loops of PACT carry no marker around their writes: the log
+stores before and after a write bracket it. `R` is measured over the log stores of
+the loop, without an interval that holds a marker (a write of the CPU is no poll
+interval). The writes of P16 and P17 are made between POLL ops, each with its markers.
 
 ### 7.3 Reference frames as built
 
 - **c** is 8 system clocks, measured from the refresh pattern of every run
   (four reads per line, two colour clocks apart, 226 to 229 colour clocks
-  between line starts) and asserted by G-C against the VHPOSR slope.
+  between line starts) and asserted by G-C against the VHPOSR bracket.
 - **O** is the sum of the two outputs, each read as a 15-bit two's complement
-  value. **s** is one system clock (the capture's resolution) and
-  **tau = s + c** is 9 system clocks. **LSB** is one output unit. **Z** is
-  the mean of O over the first two lines of the VHPOSR poll that follows the
-  baseline. A **run** is a maximal interval over which O is constant, so a
-  word whose two bytes are equal is one run (G-P) and "settles" is a run that
-  lasts two periods or more.
-- **G-FLAT** is carried by those run lengths (G-P of P2 and P4) and by
-  P5-G-FLAT; in P3 the equality of a word's two byte positions is graded by
+  value. A system clock is the resolution of every instant and duration; no
+  tolerance is added. **Z** is the mean of O over the first two lines of the
+  VHPOSR poll that follows the baseline. A **run** is a maximal interval over which O
+  is constant, so a word whose two bytes are equal is one run (G-P) and "settles" in
+  P5 is a run that lasts two periods or more. The **level** of a window of constant
+  data at a volume is the exact quotient of the sum of O − Z over a whole number of
+  repetitions and their length; the period of a window is the smallest distance at
+  which O repeats over it, found in the capture.
+- **G-FLAT** is carried by the run lengths of the G-P lines (P2, P4, P12 to P14, P15)
+  and by P5-G-FLAT; in P3 the equality of a word's two byte positions is graded by
   P3-BYTES. The output of the reset state is flat at volume 64, so no write to
   CIA-A (the filter control of 2.5) is made.
 - **Delays** are `DBRA` loops of at least four colour clocks per iteration;
@@ -1519,11 +1633,12 @@ the end of FEED.
 - **P1** runs every (channel, length) case, and the all-channels case, on a
   machine of its own: the address of the first fetch after a start depends on
   what the channel did before. The fetches are those inside the channel's
-  region; the step check starts at the channel's first return to BUFx and the
-  three lines P1-A, P1-B and P1-C run over every fetch.
-- **P3** measures the two byte positions of a word in the middle of its two
-  samples, from the anchor run of the pass. P3-G-P is the time from the anchor run
-  of pass 2 to that of pass 3, nine words of 600 colour clocks.
+  region; P1-A, P1-B and P1-C run over every fetch, and P1-ADDR over the fetches
+  from the channel's first return to BUFx on.
+- **P2** grades the pairing of fetches and runs without a claim id. **P3** measures
+  the two byte positions of a word in the middle of its two samples, from the anchor
+  run of the pass. P3-G-P is the time from the anchor run of pass 2 to that of pass 3,
+  exactly nine words of 600 colour clocks.
 - **P4** grades each of passes 2 and 3 on its own preconditions
   (`P4-G-W-2`, `P4-G-P-2`, `P4-PRE-CAL-2` and the three with suffix 3); the
   aggregate line is graded on the passes whose preconditions hold, and needs at
@@ -1531,37 +1646,45 @@ the end of FEED.
 - **P5** grades "between them" (the first and the next change of the output)
   and the three settled levels; what the output does after both bytes is not
   graded (section 5.5).
+- **P6** and **P7** read each measuring window as a whole number of repetitions of
+  its output (P6-PRE-PERIOD, P7-PRE-PERIOD); P6-ADDR, P6-DISTINCT, P6-LIN, P6-ZERO,
+  P6-PROP and the aggregates P6-LEVELS and P6-LOWER grade the sweep, each with its own
+  contrast.
 - **P8** places the calibration play and the block play on one machine, as
   specified. On both builds the first fetch of the block play is at
   `BUFx+0x100`, the location of the calibration play, and not at `BUFx`; the
   windows from block 2 on do not use it. The poll that follows the start of the
   block play is 2600 reads long, about twelve blocks in place of the seven that
   the stimulus names: blocks 2 to 6 are graded and what happens after block 7 is not.
-- **P6** and **P9** to **P11** require a constant output in every window of a
-  volume below 64 (P6-PRE-CONST, P9-PRE-CONST to P11-PRE-CONST; 2.5).
-- **P9** to **P14** use the modulator data sets of their stimulus, four words with
-  the last repeated and two words past the set that repeat it, and print
-  phase 2 from the start of the modulator (the segments of P9 to P11, the run
-  lengths of P12 to P14).
+  The contrasts that set the request by software take the instants from a play of
+  the same stimulus; the delay that each set adds to the reads after it is about
+  1000 system clocks, tuned on this design, and the run prints the position of every
+  request against its block.
+- **P9** to **P11** read phase 2 through a window of λ samples (the least common
+  multiple of the calibrated periods) and use the modulator data sets of their
+  stimulus, four words with the last repeated and two words past the set that repeat
+  it, and print phase 2 from the start of the modulator. **P12** to **P14** do the same
+  with run lengths, which have to be exactly 200, 600 or 350 colour clocks.
+- **P15** compares the two plays of channel k from the channel's first fetch to the
+  stop, run by run.
+- **P16** and **P17** write the eight words at read counts that the program fixes
+  (14 reads before word 2 and 42 before each later word, tuned on this design) and
+  prints where each write falls against the start of the frame before it. The
+  precondition `P16-PRE-IDLE`: the wait from the SERPER write to the first write lasts at
+  least 20T. That TxD is constant in the 20T before the first write is the check
+  `P16-A`, not a precondition. **P17-ONE** grades that a read of 1 is stored no later
+  than the second log store that follows the start of frame k's start cell, for every
+  frame. The stimulus clears the request before each write, so a read stored later than
+  the start of the frame plus R can read 0 in an implementation that sets the request
+  long before the frame; the second store after the start reads after the start.
+- **P18-G-T** takes T from the page, (N+1) colour clocks, and checks the edges of the
+  P18 frames against the grid of that T.
 - **P19** and **P20** compare the colour clock measured from refresh with the 8
-  system clocks their RxD schedule is built for (P19-PRE-K, P20-PRE-K). P20 drives
-  its 12T low from a marker that follows triple 4 and polls 201 reads.
-- **P16** has the precondition `P16-PRE-IDLE`: the wait from the SERPER write
-  to the first write lasts at least 20T. That TxD is constant in the 20T
-  before the first write is the check `P16-A`, not a precondition.
-- **P17-ONE** grades that a read of 1 is stored no later than the second log
-  store that follows the start of frame k's start cell. The stimulus clears
-  the request at the first read of 1, so a read stored later than the start of
-  the frame plus R can read 0 in an implementation that sets the request long
-  before the frame; the second store after the start reads after the start.
-- **P18-G-T** measures T on the single-cell pulses of the P16 stimulus with the
-  same SERPER value, in a run of its own (the frames of P18 have no
-  single-cell pulse), and checks the edges of the P18 frames against the grid
-  of that T.
-- **P19**, frame 8: the interval is from sigma_8 + R to the start of the 12T
-  low.
-- **P20**: the triples are located by the markers of the INTREQ writes
-  (run A) and of the INTREQ and SERDAT writes (run B).
+  system clocks their RxD schedule is built for (P19-PRE-K, P20-PRE-K). P19, frame 8:
+  the interval is from the end of its stop cell plus T plus R to the start of the 12T
+  low. P20 drives its 12T low from a marker that follows triple 4 and polls 201 reads;
+  its triples are located by the markers of the INTREQ writes (run A) and of the
+  INTREQ and SERDAT writes (run B).
 
 ### 7.4 Mutations
 
@@ -1573,131 +1696,36 @@ contrasts of 2.2 to 2.9). `NMH_ONLY=P2,P5` restricts a run to the named
 propositions.
 
 A record names every other line that prints FAIL under its selector and the
-lines that become NOT GRADED. The shared selectors move more than the line they
-aim at. `GD` and `GF` stop every audio fetch (DMAEN, or the channel enable bits,
-left out of the DMACON write), so every line of P1 to P15 that needs a fetch
-(G-D, G-F, G-W, G-P, PRE-ANCHOR, PRE-CAL, PRE-SCALE, PRE-BLOCKS) prints FAIL
-with it and the lines that rest on those are NOT GRADED. `GBRK` also moves the
-G-S0 lines of P16, P17, P18 and P20 (ADKCON bit 11 is in their mask), the G-T
-lines of P16 to P18, P17-PRE-CLEAR and P18-PRE-IDLE. `G0` also moves
-P17-PRE-CLEAR. `GT` moves P17-PRE-CLEAR as well, and P18-PRE-IDLE on fx68k only.
+lines that become NOT GRADED, for each core. The shared selectors move more than
+the line they aim at. `GD` and `GF` stop every audio fetch (DMAEN, or the channel
+enable bits, left out of the DMACON write), so every line of P1 to P15 that needs a
+fetch (G-D, G-F, G-W, G-P, PRE-ANCHOR, PRE-CAL, PRE-BLOCKS) prints FAIL with it and
+the lines that rest on those are NOT GRADED. `GBRK` also moves the G-S0 lines of P16,
+P17, P18 and P20 (ADKCON bit 11 is in their mask) and the G-T lines of P16 to P18.
+`G0` also moves P17-PRE-CLEAR. `GT` moves P17-PRE-CLEAR as well.
 `FIXTURE`, `GC` and `GRXD` move exactly the lines of their records.
 
 Live inputs through a comparator that is red without them: `P1-LIVE` (the lengths
-1 and 2) and `P9-LIVE` to `P14-LIVE` (the CPU writes the volumes and periods that
-the modulator words hold). P4 needs none: its data set makes pass 2 gradable, and
-its lines print PASS; `P4-G-P-2` and `P4-PRE-CAL-2` have stimulus mutations that
-print FAIL. `P4-LEN-2` and `P4-LEN-3` have no stimulus mutation: one period governs
-both bytes of a word. `P15-ATT` is the page's contrast for k = 1 and 2 (AA p.11
+1 and 2), `P9-LIVE` to `P14-LIVE` (the CPU writes the volumes and periods that
+the modulator words hold) and `P8-LIVE` (the CPU sets the polled request after the
+data has been used). P4 needs none: its data set makes pass 2 gradable, and
+its lines print PASS. `P4-LEN-2` and `P4-LEN-3` have no stimulus mutation: one period
+governs both bytes of a word. `P15-ATT` is the page's contrast for k = 1 and 2 (AA p.11
 "00 USE0V1 Use audio channel 0 to modulate volume of channel 1"): the page
 predicts that channel k's level changes, so the comparator would print FAIL, and
 this design prints PASS under it because the attach bits reach nothing;
-`P15-VOL` shows P15's comparator live. `P6-IMPL` and `P17-NONE`
-are implementation records on private copies of the design outside the
-repository: in the first the volume path gives bit 6 the level of 64 and P6-LIN
-and P6 print PASS, in the second the TBE request is set at the end of the frame
-and P17-ONE and P17 print FAIL. P17-ONE has no stimulus mutation (the scope
-decision of its record). The selectors `P9-PAT` to `P11-PAT` and `P6-PAT` write
-a word of two different bytes so that the output alternates inside every
-window, `P19-K` and `P20-K` build the RxD schedule for 9 system clocks per colour
-clock, and `P3-BYTE` writes the second byte of word 2 as 0x20.
+`P15-VOL` shows P15's comparator live. The implementation records `P6-IMPL`,
+`P16-IMPL`, `P17-NONE` and `P20-IMPL` build the test against a private copy of the
+design outside the repository (`make test-<core> NANOMIG=<copy>`, then
+`NMH_ONLY=<proposition> NMH_MUTATE=<selector>`; the selector changes no stimulus): in
+`P6-IMPL` the volume path gives bit 6 the level of 64; in `P16-IMPL` a word waiting in
+the buffer starts its frame at the end of the previous one; in `P17-NONE` the TBE
+request is set at the end of the frame; in `P20-IMPL` SERDATR bit 13 follows INTREQ bit 0.
+The selectors `P6-PAT`, `P9-PAT` to `P11-PAT` write a word of two different bytes
+so that the output has no short period, `P19-K` and `P20-K` build the RxD schedule
+for 9 system clocks per colour clock, and `P3-BYTE` writes the second byte of word
+2 as 0x20.
 
 ### 7.5 RECORDED: the final run of each core
 
-Both builds print the same verdict on every line: tg68k: 189 passed, 18 failed; fx68k: 189 passed, 18 failed. The lines that print FAIL on both: P1-A, P1-B, P1-C, P1, P6-LIN, P6, P9-LEVELS, P9, P10-LEVELS, P10, P11-LEVELS, P11, P12-RUNS, P12, P13-RUNS, P13, P14-RUNS, P14.
-
-P4 grades passes 2 and 3: the data set repeats no byte value from the end of a first pass that is one word short (word 9) to the first word of pass 2, so `P4-G-P-2`, `P4-PRE-CAL-2`, `P4-TWO-2`, `P4-LEN-2` and `P4-LEVEL-2` print PASS, like their pass-3 lines, and the aggregate line of P4 is graded on both passes.
-
-Measurements, TG68K (an excerpt of the `MEASURED:` lines of the run: 42 of its 130; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
-
-```text
-P1 ch0 L=1 wrote 1: fetches=8 returns=8 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 0 
-P1 ch0 L=2 wrote 2: fetches=16 returns=8 distinct=2 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 
-P1 ch0 L=3 wrote 3: fetches=23 returns=7 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 
-P1 ch0 L=7 wrote 7: fetches=53 returns=8 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
-P1 ch0 L=16 wrote 16: fetches=121 returns=8 distinct=16 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
-P1 ch0 (all four) L=3 wrote 3: fetches=84 returns=28 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
-P1 ch1 (all four) L=5 wrote 5: fetches=84 returns=17 distinct=5 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 
-P1 ch2 (all four) L=7 wrote 7: fetches=84 returns=13 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
-P1 ch3 (all four) L=11 wrote 11: fetches=84 returns=8 distinct=11 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 10 0 1 2 
-P2 ch0: pass-2 anchor fetch at cycle 2324401, 67 fetches from it, 75 runs in the interval, word-6 fetches before/after the write 3/5, write at cycle 2437389, L(A)=6048 L(D)=-6048
-P3 pass 2 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
-P3 pass 3 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
-P3: pass-3 anchor run starts 43200 cycles after the pass-2 anchor run (nine words of 600 colour clocks: 43200)
-P4 order of the two bytes of a word (H: high byte first, L: low byte first), pass 2: HHHH pass 3: HHHH (recorded, not graded)
-P5 ch0 window of write 4 (levels, lengths in cycles): 0(55) 8001(3200) -8064(46017) 
-P5 ch0 window of write 6 (levels, lengths in cycles): 0(55) -8064(3200) 8001(46017) 
-P5 ch0: H=8001 Lo=-8064 Z0=0 DMACONR=0000 fetches=0
-P6 ch0 word 0x7F7F A(v): 0:0 1:127 16:2032 32:4064 48:6096 62:7874 63:8001 64:8001  | 0x40|k: 0:8001 31:8001 63:8001
-P6 ch0 word 0x8080 A(v): 0:0 1:-128 16:-2048 32:-4096 48:-6144 62:-7936 63:-8064 64:-8064  | 0x40|k: 0:-8064 31:-8064 63:-8064
-P8 ch0: events=12 windows (events inside) W2:1 W3:1 W4:1 W5:1 W6:1  R=184 cycles, L9=-7056
-P9 phase 2 from the start of channel 0: 1 segments in all, the first 1 (level(length in cycles)): 4064(434792) 
-P9: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0001/0000
-P10 phase 2 from the start of channel 1: 1 segments in all, the first 1 (level(length in cycles)): 4064(434792) 
-P10: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0002/0000
-P11 phase 2 from the start of channel 2: 1 segments in all, the first 1 (level(length in cycles)): 4064(434792) 
-P11: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0004/0000
-P12 phase 2 from the start of channel 0: run lengths in colour clocks (length:count) 240:1 349:1 400:270 
-P12: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0010/0000, modulator fetches=20
-P13 phase 2 from the start of channel 1: run lengths in colour clocks (length:count) 242:1 347:1 400:270 
-P13: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0020/0000, modulator fetches=20
-P14 phase 2 from the start of channel 2: run lengths in colour clocks (length:count) 244:1 345:1 400:270 
-P14: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0040/0000, modulator fetches=20
-P15 k=0: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
-P15 k=1: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
-P15 k=2: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
-P16: T=512 cycles, measured shortest edge interval 512, frames found 8, idle before the first write 13192 cycles (25.77 T), R=248 cycles (31.00 CCK), idle level 1
-P16 frames (byte, start in tenths of T after the first write marker): 0081@1 003C@101 005A@201 0000@301 00FF@401 0066@501 0018@601 00A5@701 
-P17: R=248 cycles; reads of 1 followed by a write: 7; per move k: window e_k - first clear read, and the first read of 1 minus the start of frame k (cycles): 1:e-lo=25424,first1-s=666 2:e-lo=3694,first1-s=126 3:e-lo=4242,first1-s=162 4:e-lo=4206,first1-s=54 5:e-lo=4314,first1-s=82 6:e-lo=4286,first1-s=118 7:e-lo=4250,first1-s=154 8:e-lo=3878,first1-s=46 
-P18: T=512 cycles; w(p) for p = 8 9 7 4 8 9: 4608 5120 4096 2560 4608 5120 cycles = 9.00 10.00 8.00 5.00 T (the HRM's single start bit gives (p+1)T, recorded, not graded)
-P19: R=104 cycles (13.00 CCK); frames 1..8 (reads in the interval / reads that differ) 1:41/0 2:41/0 3:42/0 4:41/0 5:41/0 6:42/0 7:36/0 8:79/0 
-P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 3B5A,0000,3B5A | 7B5A,0800,7B5A | 3B5A,0000,3B5A
-P20 run B triples: 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800
-```
-
-Measurements, fx68k (an excerpt of the `MEASURED:` lines of the run: 42 of its 130; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
-
-```text
-P1 ch0 L=1 wrote 1: fetches=7 returns=7 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 
-P1 ch0 L=2 wrote 2: fetches=13 returns=7 distinct=2 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 0 1 0 1 0 1 0 1 0 1 0 
-P1 ch0 L=3 wrote 3: fetches=20 returns=6 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 
-P1 ch0 L=7 wrote 7: fetches=45 returns=7 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
-P1 ch0 L=16 wrote 16: fetches=102 returns=7 distinct=16 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
-P1 ch0 (all four) L=3 wrote 3: fetches=70 returns=23 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
-P1 ch1 (all four) L=5 wrote 5: fetches=70 returns=15 distinct=5 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 
-P1 ch2 (all four) L=7 wrote 7: fetches=70 returns=11 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
-P1 ch3 (all four) L=11 wrote 11: fetches=70 returns=7 distinct=11 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 10 0 1 2 
-P2 ch0: pass-2 anchor fetch at cycle 2322585, 55 fetches from it, 63 runs in the interval, word-6 fetches before/after the write 2/4, write at cycle 2413789, L(A)=6048 L(D)=-6048
-P3 pass 2 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
-P3 pass 3 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
-P3: pass-3 anchor run starts 43200 cycles after the pass-2 anchor run (nine words of 600 colour clocks: 43200)
-P4 order of the two bytes of a word (H: high byte first, L: low byte first), pass 2: HHHH pass 3: HHHH (recorded, not graded)
-P5 ch0 window of write 4 (levels, lengths in cycles): 0(63) 8001(3200) -8064(38265) 
-P5 ch0 window of write 6 (levels, lengths in cycles): 0(63) -8064(3200) 8001(38289) 
-P5 ch0: H=8001 Lo=-8064 Z0=0 DMACONR=0000 fetches=0
-P6 ch0 word 0x7F7F A(v): 0:0 1:127 16:2032 32:4064 48:6096 62:7874 63:8001 64:8001  | 0x40|k: 0:8001 31:8001 63:8001
-P6 ch0 word 0x8080 A(v): 0:0 1:-128 16:-2048 32:-4096 48:-6144 62:-7936 63:-8064 64:-8064  | 0x40|k: 0:-8064 31:-8064 63:-8064
-P8 ch0: events=12 windows (events inside) W2:1 W3:1 W4:1 W5:1 W6:1  R=184 cycles, L9=-7056
-P9 phase 2 from the start of channel 0: 1 segments in all, the first 1 (level(length in cycles)): 4064(364208) 
-P9: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0001/0000
-P10 phase 2 from the start of channel 1: 1 segments in all, the first 1 (level(length in cycles)): 4064(364208) 
-P10: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0002/0000
-P11 phase 2 from the start of channel 2: 1 segments in all, the first 1 (level(length in cycles)): 4064(364208) 
-P11: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0004/0000
-P12 phase 2 from the start of channel 0: run lengths in colour clocks (length:count) 155:1 371:1 400:226 
-P12: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0010/0000, modulator fetches=17
-P13 phase 2 from the start of channel 1: run lengths in colour clocks (length:count) 153:1 373:1 400:226 
-P13: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0020/0000, modulator fetches=17
-P14 phase 2 from the start of channel 2: run lengths in colour clocks (length:count) 153:1 373:1 400:226 
-P14: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0040/0000, modulator fetches=17
-P15 k=0: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
-P15 k=1: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
-P15 k=2: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
-P16: T=512 cycles, measured shortest edge interval 512, frames found 8, idle before the first write 12240 cycles (23.91 T), R=240 cycles (30.00 CCK), idle level 1
-P16 frames (byte, start in tenths of T after the first write marker): 0081@1 003C@101 005A@201 0000@301 00FF@401 0066@501 0018@601 00A5@701 
-P17: R=240 cycles; reads of 1 followed by a write: 7; per move k: window e_k - first clear read, and the first read of 1 minus the start of frame k (cycles): 1:e-lo=23648,first1-s=714 2:e-lo=3654,first1-s=102 3:e-lo=4266,first1-s=106 4:e-lo=4262,first1-s=110 5:e-lo=4258,first1-s=114 6:e-lo=4254,first1-s=118 7:e-lo=4250,first1-s=114 8:e-lo=3854,first1-s=54 
-P18: T=512 cycles; w(p) for p = 8 9 7 4 8 9: 4608 5120 4096 2560 4608 5120 cycles = 9.00 10.00 8.00 5.00 T (the HRM's single start bit gives (p+1)T, recorded, not graded)
-P19: R=96 cycles (12.00 CCK); frames 1..8 (reads in the interval / reads that differ) 1:45/0 2:45/0 3:45/0 4:45/0 5:45/0 6:46/0 7:39/0 8:85/0 
-P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 3B5A,0000,3B5A | 7B5A,0800,7B5A | 3B5A,0000,3B5A
-P20 run B triples: 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800
-```
+The summary line, the lines that print FAIL and the measurements of the final run of each core follow.
