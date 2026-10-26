@@ -1,14 +1,11 @@
 # Specification: audio data, length, volume and attach bits, serial data registers (package aa-s5)
 
-This document specifies an integration test package. It was written from the
-package's claims (`claims-spec-stage.jsonl`) and from the pages of
-Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)*,
-06/07/91, by an author who never saw the implementation under test or any
-test. Where the AA specification builds on the original chip set, pages of
-the *Amiga Hardware Reference Manual*, 3rd edition (HRM), are cited for
-context and for reference frames; every expected value comes from an AA page.
-A builder implements the package from this document and does not change what
-it specifies.
+This document specifies an integration test package. Its expected values come
+from the pages of Commodore's *Functional Specification for the Advanced Amiga
+Chip Set (AA)*, 06/07/91. Where the AA specification builds on the original
+chip set, pages of the *Amiga Hardware Reference Manual*, 3rd edition (HRM),
+are cited for context and for reference frames; every expected value comes
+from an AA page.
 
 The package's 33 claims come from AA page 11 (audio registers and the audio
 bits of ADKCON; one sentence ends on page 12) and AA page 27 (SERDAT,
@@ -192,7 +189,7 @@ interval, apart from its first and last output sample. If the implementation
 filters the audio output, the filter control that HRM p.157 describes (CIA-A
 PRA bit 1, the same bit as the power LED, which the test sees) is set to the
 state in which G-FLAT holds. The HRM does not say which state that is, so the
-builder finds it with this check and reports it. The bit drives its pin only
+test finds it with this check and reports it. The bit drives its pin only
 as an output: HRM p.339 lists "ddra Direction for port A (BFE001);1=output
 (set to 0x03)", so the program writes DDRA (byte address 0xBFE201) ← 0x03
 before it writes PRA (0xBFE001), both with `MOVE.B`. If G-FLAT holds in neither
@@ -1436,8 +1433,8 @@ first included, for the set of addresses (exactly L, all inside the set) and for
 the return to BUFx after BUFx+2(L−1) (P1-A, P1-B, P1-C), and grades the step
 from one address to the next from the channel's first return to BUFx on. The
 first pass of a data set is graded by P1-A, P1-B and P1-C and by nothing else in this
-package; what the first block fetches before it starts again is the subject of
-NM-HRM-084. Every check that
+package; what the first block fetches before it starts again is open on the
+pages. Every check that
 pairs output with fetches starts at pass 2 (RF-W): P2 (a) to (c) grade pass 2
 onward, P3 and P4 passes 2 and 3. P8 grades blocks 2 to 6 and finds word L's
 run by its level, calibrated on a one-word data set that looks the same under
@@ -1594,8 +1591,8 @@ print FAIL. `P4-LEN-2` and `P4-LEN-3` have no stimulus mutation: one period gove
 both bytes of a word. `P15-ATT` is the page's contrast for k = 1 and 2 (AA p.11
 "00 USE0V1 Use audio channel 0 to modulate volume of channel 1"): the page
 predicts that channel k's level changes, so the comparator would print FAIL, and
-this design prints PASS under it because the attach bits reach nothing
-(NM-HRM-028); `P15-VOL` shows P15's comparator live. `P6-IMPL` and `P17-NONE`
+this design prints PASS under it because the attach bits reach nothing;
+`P15-VOL` shows P15's comparator live. `P6-IMPL` and `P17-NONE`
 are implementation records on private copies of the design outside the
 repository: in the first the volume path gives bit 6 the level of 64 and P6-LIN
 and P6 print PASS, in the second the TBE request is set at the end of the frame
