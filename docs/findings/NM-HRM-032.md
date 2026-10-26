@@ -106,6 +106,16 @@ MEASURED: over a line the three sync pins differ in 0 of 260 samples between
 
 The pins pulse (two levels), so the fixture is driving a beam, and the bits change nothing about them. This is corroboration of the same requirement, not a second finding; no new key was issued for it.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS, in part.** [EAB post 1521516](https://eab.abime.net/showpost.php?p=1521516), Toni Wilen, 2021-12-12. Chip set: ECS Agnus with ECS Denise. Known from: "confirmed with a scope".
+
+> "CSYTRUE=1: blanking state gets inverted."
+
+CSYTRUE is not inert on a real ECS Agnus, but what it inverts is the blanking state, which appears on the C-sync pin only with BLANKEN=1; it says nothing about VSYTRUE, HSYTRUE or the default configuration.
+
 ## Decision
 
 Suggested change: uncomment the three declarations and invert the outputs they name:

@@ -170,6 +170,22 @@ takes individual fetches by which planes are fetched. They agree only at one
 lores plane, where the three reds are; with two or more planes NanoMig sides
 with the other three and against Copperline.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 935951](https://eab.abime.net/showpost.php?p=935951), Toni Wilen, 2014-02-02. Chip set: not stated; the discussion is about OCS and ECS Agnus. Known from: "I tested it"; the set-up is not stated.
+
+> "Unfortunately "empty" bitplane slots still count, I tested it, number of planes makes no difference."
+
+This answers a poster who had one bitplane on, the one-plane case of p. 82's sentence that the page calls a reading question: the lost sprite slots do not depend on the number of planes.
+
+**EXPLAINS.** [EAB post 935172](https://eab.abime.net/showpost.php?p=935172), Toni Wilen, 2014-01-28. Chip set: OCS against ECS Agnus. Known from: "I tested all DDFSTRT positions from $18 to $38 with OCS and ECS Agnus"; the machines are not stated.
+
+> "OCS Agnus is always "off by one", DMA slot at DDFSTRT-1 is never used for sprite DMA if OCS"
+
+This is the OCS-versus-ECS difference of one slot behind the OCS blocking one cycle earlier that the Risks give for WinUAE, vAmiga and TC64.
+
 ## Decision
 
 **Question:** does p. 82's "this will disable sprite 7" at DDFSTRT = $0030 hold

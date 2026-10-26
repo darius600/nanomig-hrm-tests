@@ -65,3 +65,13 @@ gave bit 15 a value to read; p. 273 does not.
   <!-- corpus: denise-spec-252126/p007.txt -->
 
   The ECS Denise specification repeats the manual's row under the same heading 'COLLISIONS REGISTERED' and also gives no read value for bit 15.
+
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 208517](https://eab.abime.net/showpost.php?p=208517), Toni Wilen, 2005-09-08. Chip set: not stated. Known from: found in emulation: a game breaks if the bit is not set (post: "Barney and Freddy Mouse").
+
+> "CLXDAT bit 15 is always set."
+
+NanoMig's bit 15 high has a witness beyond the four implementations; the page still records the hardware as not measured.

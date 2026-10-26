@@ -138,6 +138,22 @@ The question put to each: on which line does the hardwired vertical blank end?
 The manual's PAL−NTSC gap is **eight** lines, 29 − 21; p. 219's is five, as
 NanoMig's, WinUAE's, Copperline's and Denise's; vAmiga's is six.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1677675](https://eab.abime.net/showpost.php?p=1677675), ross, 2024-04-04. Chip set: not stated; the hardwired vertical blank. Known from: not stated.
+
+> "usually lines from 0 to 20 NTSC or 25 PAL"
+
+A hardwired PAL blank that ends at line 25 is p. 219's range and NanoMig's, not Table 3-13's $1D; "usually" is the author's hedge.
+
+**SUPPORTS, one step inferred.** [EAB post 628336](https://eab.abime.net/showpost.php?p=628336), yaqube, 2009-12-26. Chip set: OCS Denise, PAL. Known from: tests with a logic analyzer.
+
+> "Then during lines 9 - 25 (PAL) register $03A (STRVBL) is written."
+
+The STRVBL strobe is written up to line 25 in PAL, so the blank does not run to $1D; that the blank ends at the next STRHOR is an inference from the strobe order in post 1677814 and is not stated.
+
 ## Decision
 
 **No RTL change.** The question is Table 3-13's PAL row: somebody with a PAL

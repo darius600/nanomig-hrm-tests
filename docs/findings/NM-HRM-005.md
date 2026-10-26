@@ -86,6 +86,16 @@ Every row counts colour clocks on a free bus, and a colour clock is one memory c
 
   MOVE takes 4 slots and WAIT 6, so WAIT minus MOVE is 2. p027 gives SKIP the non-WAIT figure: 'All instructions (except for WAIT) require 2' bus cycles, so '4 memory cycle times are required per instruction. (memory cycles are 280 ns)'. Those are the manual's 4/6/2 in memory cycles, against NanoMig's 8/8/4.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**EXPLAINS.** [EAB post 1787593](https://eab.abime.net/showpost.php?p=1787593), Toni Wilen, 2026-03-06. Chip set: from the Alice schematics; "all chipset versions" is said only for the two Copper bugs. Known from: the schematics; post 1787687 adds "based on schematics and knowledge of copper's known odd behavior".
+
+> "SKIP also "stops" the copper like WAIT due to LOAD2 "If not MOVE" condition and requires "wakeup" condition."
+
+SKIP and a satisfied WAIT share one longer path through the Copper's states, which fits the 8 and 8 the four implementations give; the post gives no cycle counts, so this is not the real-machine timing the page asks for.
+
 ## Decision
 
 **None, and a patch would be the wrong instrument.** All four emulators produce NanoMig's numbers, so either the manual's cycle figures are wrong or every implementation shares a misreading.

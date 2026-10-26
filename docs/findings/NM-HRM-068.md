@@ -109,6 +109,22 @@ The question put to each: how long is a PAL line?
 | **MiSTer** | [`rtl/agnus_beamcounter.v:86`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86), [`:281-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L281-L285) | descendant — identical to NanoMig: `parameter HTOTAL_VAL      = 8'd227 - 8'd1;`, and the long-line bit held clear in PAL |
 | **TC64** | [`rtl/minimig/agnus_beamcounter.v:102`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L102) | descendant — the same constant, one bit wider, `parameter HTOTAL_VAL      = 9'd227 - 9'd1;` |
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 600609](https://eab.abime.net/showpost.php?p=600609), yaqube, 2009-10-02. Chip set: PAL (the author's hedge: "at least in PAL"). Known from: a bus capture of a Copper program, in a screen shot attached to the post.
+
+> "every scan line has odd number of memory access cycles (at least in PAL)"
+
+An odd cycle count per line fits 227 and not 227.5; the post comes from a Copper-timing discussion, not from a measurement of line length.
+
+**SUPPORTS.** [EAB post 1718467](https://eab.abime.net/showpost.php?p=1718467), Toni Wilen, 2024-12-02. Chip set: Agnus and Alice, all versions. Known from: not stated; the post says the behaviour took reverse-engineering.
+
+> "All Agnus (And Alice) versions generate STRLONG in NTSC mode during long lines. Never in PAL mode."
+
+PAL has no long lines, which is the page's reading of p. 23 against p. 304's 227.5.
+
 ## Decision
 
 Not an RTL change. If no PAL configuration alternates line lengths, p. 304's PAL row is a misprint and the two assertions grade a number

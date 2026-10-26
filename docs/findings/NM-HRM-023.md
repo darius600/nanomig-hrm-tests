@@ -72,6 +72,7 @@ shows the sprite path delivers distinct known values in order before anything re
   only and is a work in progress; the sprite 0/1 cells are traced in the netlist, the
   other three pairs are read from the overview sheet.
 - **Copperline is a source reading, not run.**
+- **A 2005 forum report goes the other way for the ECS chip set.** [EAB post 208156](https://eab.abime.net/showpost.php?p=208156) (Toni Wilen, 2005-09-04) reports that on ECS either sprite's SPRxCTL bit 7 attaches the pair and on AGA only the odd sprite's, and the same author changed WinUAE to the odd sprite only in 2009; the project has not measured this and knows of no measurement of the attach bit on an ECS Denise, and the 8373R4 reading above says the opposite for that chip.
 
 ## Independent evidence
 
@@ -109,6 +110,17 @@ Denise's line is the manual's sentence written as code.
   <!-- drawing: denise-8373r4-dissection/sheet_039.txt -->
 
   The 8373R4 does not store bit 7 of an even sprite's control word, so nothing downstream can attach a pair from it: the manual's rule, not NanoMig's even-sprite term.
+
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**CONTRADICTS.** [EAB post 208156](https://eab.abime.net/showpost.php?p=208156), Toni Wilen, 2005-09-04. Chip set: ECS, "probably OCS too, not tested yet"; AGA is stated separately. Known from: not stated in the post.
+
+> "ECS (probably OCS too, not tested yet): sprite is attached if odd \_or\_ even (or both) sprite SPRxCTL bit 7 is set."
+> "AGA: only odd sprite SPRxCTL bit 7 enables attachment."
+
+The source requirement and the 8373R4 reading above give the attach bit to the odd sprite only for the ECS Denise; this post has either sprite's bit attaching the pair on ECS and only the odd sprite's on AGA, which is the split of the even-sprite term in NanoMig's attach condition, and the thread holds no retraction. The same author changed WinUAE to the odd sprite only in 2009: the changelog of WinUAE 1.6.0 says under Beta 12 ["sprite attachment fixed. Surprisingly it works as documented :)"](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/winuaechangelog.txt#L13429).
 
 ## Decision
 

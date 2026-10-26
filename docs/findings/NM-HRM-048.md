@@ -99,6 +99,16 @@ a mechanism; only WinUAE and Denise agree on this paragraph.
 
   The paper accepts the documented loss and places a silicon cause: 10i closes write gate while bits are still in the 10v/10e delay chain. It calls this a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence ('may not come in') as a drain race, but the finding does not grade that sentence.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**EXPLAINS.** [EAB post 1657241](https://eab.abime.net/showpost.php?p=1657241), Toni Wilen, 2023-12-02. Chip set: Paula. Known from: a test program measuring the horizontal position of the disk-DMA end (post 1655087); the machine is not stated.
+
+> "DSKLEN==0 and buffers are empty condition triggers before new data fills the buffer. DMA ends, DSKBLK interrupt is triggered and last word is lost."
+
+This is the mechanism behind WinUAE's "Paula bug" comment on the read side, the page's other sentence; it does not touch the write-side bits that A11 grades.
+
 ## Decision
 
 **No change.** Do not add the bug. The page describes silicon, not a

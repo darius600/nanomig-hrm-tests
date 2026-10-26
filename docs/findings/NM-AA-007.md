@@ -106,6 +106,16 @@ The question put to each: with an AA chip set and BPLCON0 bit 5 set, what reache
 | **MiSTer** | [`rtl/denise.v:130`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L130), [`:153`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L153), [`:468-477`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L468-L477) | descendant: the wire and its assignment are comments, `//wire          bypass;` and `//assign bypass   = bplcon0[5];`; the `out_rgb` multiplexer is NanoMig's |
 | **TC64** | [`rtl/minimig/denise.v:137`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L137), [`:160`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L160), [`:483-492`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L483-L492) | descendant: declares and assigns the bit, `assign bypass   = bplcon0[5];`, and nothing reads `bypass`; the output multiplexer is NanoMig's |
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1070412](https://eab.abime.net/showpost.php?p=1070412), Toni Wilen, 2016-02-14. Chip set: AGA. Known from: not stated in the post.
+
+> "Output is grayscale, output value is copied to all color component bits, not just red."
+
+Under BYPASS the colour index reaches the output, red included, which is what AA p. 17 prints and what the page's reds grade.
+
 ## Decision
 
 **One option: when the AA chip set is selected and BPLCON0 bit 5 is set, drive the red byte from the colour address instead of the table.** In `denise.v`, qualify the `bypass` of `:190` with the chip set, `bypass = bplcon0[5] & aga`, keep a copy of `clut_data` registered on `clk` so that it lines up with the table's output, which the instance's own comment says is `delayed by one clk28m clock cycle` (`:499`), and select it into the red byte of `out_rgb`, in place of the table's or the HAM generator's, while `bypass` is set; WinUAE turns HAM and EHB off under BYPASS. The page says nothing about green and blue; WinUAE shows the address on all three, and leaving them to the table is the other choice. This option has not been built or run here. On NanoMig the red byte is the video output, so the change puts colour addresses on the screen as red whenever software sets the bit.

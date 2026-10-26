@@ -162,6 +162,22 @@ and, on the same page, VPOSR's `LOL=Long line bit. When low, it indicates short 
 
   The ECS Denise specification says every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1718467](https://eab.abime.net/showpost.php?p=1718467), Toni Wilen, 2024-12-02. Chip set: Agnus and Alice, NTSC. Known from: not stated; the post says the behaviour took reverse-engineering.
+
+> "NTSC has 227.5 CCK scan line length. To simplify logic, NTSC mode Agnus generates alternating 227 and 228 scan line lengths."
+
+A statement about the real chips that backs p. 23's alternation, which the page otherwise finds only in the four implementations.
+
+**SUPPORTS.** [EAB post 601811](https://eab.abime.net/showpost.php?p=601811), yaqube, 2009-10-06. Chip set: not stated; NTSC mode. Known from: "I have made some tests in the NTSC mode"; the set-up is not stated.
+
+> "It seems that during long lines (228 CCK long) there is no "unusable" or "blocked" cycles."
+
+Independent bus-level evidence that a 228-colour-clock line exists in NTSC.
+
 ## Decision
 
 **Let the long-line bit lengthen the line it marks**, as WinUAE (`maxhpos_short + lol`) and Denise (`0xe2 + lol`) do: end a line one colour clock later when `long_line` is set, so that in NTSC consecutive lines last 228 and 227. The bit already alternates in the right standard, so the change is to the end-of-line comparison at `:250`, not to the toggle. A private copy of the chip set whose NTSC lines alternate 228 and 227 colour clocks (the package's `ntsc_long.patch`, not run by `make test`) prints, for `integration/ch2-copper-beam` run A, 46 passed, 0 failed on fx68k and on TG68K: `P2-NTSC`, `PRE-P3COVER` and `P3-NTSC-SET` pass, L(v) is {227,228} over 1908 pairs, and `PRE-P3COVER` reads (320 and 140).

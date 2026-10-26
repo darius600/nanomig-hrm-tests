@@ -137,6 +137,17 @@ The question put to each: after a vertical blank with Copper DMA off, where does
 | **MiSTer** | [`rtl/agnus_copper.v:196-199`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L196-L199), [`:236-237`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L236-L237), [`:253-256`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L253-L256) | descendant — the same latch and the same order, same lines: `if (reg_address_in[8:1]==COPJMP1[8:1] \|\| sof)` sets `copjmp1 = 1;`, `strobe1 = 0;` only `else if (copper_state==RESET && dma_ack)`, and `if (dma_ack && strobe1 && copper_state==RESET)` is tested before `strobe2`. The assignments are blocking where NanoMig's are non-blocking; the latch and its priority are the same |
 | **TC64** | [`rtl/minimig/agnus_copper.v:196-199`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L196-L199), [`:236-237`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L236-L237), [`:253-256`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L253-L256) | descendant — identical to MiSTer's file in these lines: `if (reg_address_in[8:1]==COPJMP1[8:1] \|\| sof)`, `else if (copper_state==RESET && dma_ack)`, `if (dma_ack && strobe1 && copper_state==RESET)`. Neither line clears the vertical blank's strobe when COPJMP2 is written |
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**EXPLAINS, inferred.** [EAB post 1787593](https://eab.abime.net/showpost.php?p=1787593), Toni Wilen, 2026-03-06. Chip set: from the Alice schematics; nothing about an OCS Agnus. Known from: the schematics (see post 1787687).
+
+> "Selects COPxJMP pointer to copy."
+> "Next state = START."
+
+This is the mechanism behind WinUAE, vAmiga and Copperline starting at COP2LC after a COPJMP2: the strobe selects the pointer and the next state is START. For this case the post supersedes the author's 2005 reading that the Copper stops. Its limit: it says the strobe selects the pointer, not whether a pending vertical-blank restart outranks a later COPJMP2.
+
 ## Decision
 
 **One option: let a jump strobe clear the other strobe's pending latch, so the later strobe decides.** In lines 250–266:

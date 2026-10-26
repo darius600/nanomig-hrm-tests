@@ -136,6 +136,16 @@ The question put to each: on a 227-colour-clock line 255, does a WAIT for ($FF,$
 | **MiSTer** | [`rtl/agnus_copper.v:305-312`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L305-L312), [`:342-360`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L342-L360), [`:487-509`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L487-L509), [`rtl/agnus_beamcounter.v:86`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86), [`:296-302`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L296-L302) | descendant — the same comparator, the same `beam_match_wait` and the same `enable`, on the same lines; the file differs from NanoMig's only in the strobe latches' blocking assignments. The same 227-count line and the same `if (hpos==2)` line step |
 | **TC64** | [`rtl/minimig/agnus_copper.v:305-312`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L305-L312), [`:342-360`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L342-L360), [`rtl/minimig/agnus_beamcounter.v:102`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L102), [`:358-361`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L358-L361) | descendant — identical to MiSTer's file on these lines, with the same 227-count line and the same line step. Neither line holds the match |
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**EXPLAINS, inferred.** [EAB post 1787593](https://eab.abime.net/showpost.php?p=1787593), Toni Wilen, 2026-03-06. Chip set: from the Alice schematics; not stated per chip. Known from: the schematics (see post 1787687).
+
+> "Copper enable: DMACON COPEN AND free cycle (BPL and UHRES sequencer didn't select any planes) AND odd cycle."
+
+The post's WAIT wake-up requires Copper enable, so it happens only on odd cycles, as in WinUAE; a short PAL line's last colour clock, $E2, is even, which fits a WAIT for ($FF,$E2) never ending on line 255. The inference is not in the post, which does not mention $E2.
+
 ## Decision
 
 **One option: hold the comparator's result while the WAIT is pending**, so that a match lasting one count is not lost before the state machine can act on it. In line 308:

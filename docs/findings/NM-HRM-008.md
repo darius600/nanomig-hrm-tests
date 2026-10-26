@@ -176,6 +176,16 @@ they are green at the pinned revision and stayed green in that copy.
 
   With DPF clear, in single-playfield mode, the odd-plane match that CLXDAT bits 1 to 4 record fails wherever an enabled even plane misses its match value; with DPF set the even planes drop out. That is NanoMig's playfield-2 term on line 62, and not what pp. 214 and 273 print.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 208517](https://eab.abime.net/showpost.php?p=208517), Toni Wilen, 2005-09-08. Chip set: not stated. Known from: not stated for this sentence.
+
+> "This is not true. There is small but significant difference.."
+
+Toni Wilen, WinUAE's author, says p. 214's single-versus-dual-playfield sentence is not true, which is the question the page asks about the print; he names no gate, so the post does not confirm NanoMig's term.
+
 ## Decision
 
 **No RTL change.** NanoMig already gates playfield 1 on playfield 2 in

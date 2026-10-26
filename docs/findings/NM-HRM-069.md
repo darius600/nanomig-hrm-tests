@@ -234,6 +234,16 @@ constant, two before vAmiga raises BLS — and none of them moves the released
 cycle to an even slot. On this point the four
 side with NanoMig and against p. 196's *only*.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1795712](https://eab.abime.net/showpost.php?p=1795712), Toni Wilen, 2026-04-30. Chip set: Agnus and Alice, all ("since the beginning"). Known from: not stated.
+
+> "Blitter in non-nasty mode gives next blitter cycle for the CPU if CPU has waited at least 3 CCKs"
+
+This backs the count of missed cycles, not a parity, that the Verdict row finds in all four, and p. 198's rule; it says nothing about the parity of p. 196, the page's question.
+
 ## Decision
 
 **One option: withhold the CPU's acknowledge in colour clocks of the fixed-DMA

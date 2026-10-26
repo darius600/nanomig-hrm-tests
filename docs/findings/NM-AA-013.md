@@ -124,6 +124,16 @@ WinUAE and Denise load a pointer from 028 and walk it through the refresh slots,
 
   The technical reference's register summary carries the same entry.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1537859](https://eab.abime.net/showpost.php?p=1537859), Toni Wilen, 2022-03-27. Chip set: OCS, ECS and AGA. Known from: not stated; the post mentions diagrams and test programs by ross.
+
+> "REFPTR can be used to modify internal RDMAPT"
+
+A REFPTR write sets the pointer the refresh slots put on the bus, which the red `P1` expects. For AGA the post says refresh is CBR and that RDMAPT "still exists but it is not incremented anymore"; it does not say that an AGA refresh slot drives it.
+
 ## Decision
 
 **One option: a refresh pointer in `agnus.v`.**

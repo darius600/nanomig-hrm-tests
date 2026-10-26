@@ -145,6 +145,16 @@ The question put to each: which address bits select the CIAs as a pair, and what
 
   One address line per on-board port, as p. 351 marks them, so at A12 and A13 both low both are activated.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1085395](https://eab.abime.net/showpost.php?p=1085395), Toni Wilen, 2016-04-23. Chip set: Gary, Gayle and Akiko, on a CD32. Known from: "poking around with mon and asmone"; how each Gary and Gayle value was found is not stated.
+
+> "CIA address space: Gary: $A00000-$BFFFFF, Gayle: $BFDxxx and $BFExxx, Akiko: $BFE000-$BFFFFF."
+
+Gary answers the CIAs over $A00000-$BFFFFF as p. 353's three bits do, and Gayle answers narrower, the split the Verdict row records.
+
 ## Decision
 
 **One option: compare the three bits p. 353 prints**, in place of line 190:

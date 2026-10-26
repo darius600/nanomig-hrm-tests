@@ -233,3 +233,14 @@ carry NanoMig's stop, the commented-out middle-byte term included.
   <!-- drawing: cia-8520r4-dissection/sheet_009.txt -->
 
   A high-byte write stops the clock until the next low-byte write: p. 344's sequence, the register whose write stops the clock being the MSB. A write to register 9 neither stops nor starts it. The stop acts only with CRB7 clear.
+
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1468737](https://eab.abime.net/showpost.php?p=1468737), Toni Wilen, 2021-03-09. Chip set: CIA TOD, model not stated. Known from: "I remember testing these long time ago, current UAE behavior"; a correction follows in post 1469734.
+
+> "Write TOD LO: enable TOD. Read latch not affected."
+> "Write TOD HI: disable TOD. Read latch not affected."
+
+This matches the page's verdict, the clock stopping on a write to $A and restarting on a write to $8; the correction concerns ALARM reads, which the page does not grade.

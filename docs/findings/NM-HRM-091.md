@@ -207,6 +207,16 @@ point the four side with NanoMig and against p. 278's *any*. MiSTer and TC64,
 descendants, carry NanoMig's code, so the finding is inherited and fixed in
 neither line.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**EXPLAINS, inferred.** [EAB post 579567](https://eab.abime.net/showpost.php?p=579567), Toni Wilen, 2009-08-02. Chip set: not stated. Known from: not stated.
+
+> "All blitter cycles require free bus cycle (=not used by any other Agnus DMA channel), including blitter idle cycles."
+
+Idle cycles are arbitrated like the others, so a cycle the blit does not use is free for the CPU unless something claims it. The post names no BLTPRI, which is the page's condition, so it does not say whether the 68000 gets those cycles with BLTPRI set.
+
 ## Decision
 
 **One option: build the signal `agnus.v`'s header comment describes.** An

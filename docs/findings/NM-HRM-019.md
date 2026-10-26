@@ -154,6 +154,22 @@ expects.
 
   In SuperHires the shift register advances two bits per 140 ns cycle and S0_AF and S0_AG are the sprite's two 70 ns pixels (see [NM-HRM-071](NM-HRM-071.md)), so setting bit 4 moves the sprite one 70 ns pixel to the right: p. 303's "70ns increment", made in the data path rather than in the start compare. Outside SuperHires the register advances one bit per cycle, and bit 14 one cycle earlier is the current bit 15 except in the cycle a new word is loaded. So bit 4 is stored and live on the 8373R4, which NanoMig does not model.
 
+### What practitioners report
+
+Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
+
+**SUPPORTS.** [EAB post 1503541](https://eab.abime.net/showpost.php?p=1503541), Toni Wilen, 2021-08-29. Chip set: ECS Denise. Known from: not stated in the post.
+
+> "ECS Denise SPRxCTL SH1 (sprite horizontal hires positioning bit) only works as documented in superhires."
+
+This agrees with the page that on an ECS Denise the bit's effect on sprite position is confined to SuperHires; the page still records the hardware as not measured.
+
+**EXPLAINS.** [EAB post 1503541](https://eab.abime.net/showpost.php?p=1503541), Toni Wilen, 2021-08-29. Chip set: ECS Denise. Known from: not stated in the post.
+
+> "If SH1=1 and bitplane resolution is lores or hires: first pixel column of sprite becomes transparent (disappears)."
+
+This is the behaviour behind WinUAE's clipping of the sprite's leftmost pixel in ECS hires, which the witness table gives for WinUAE.
+
 ## Decision
 
 Read bit 4 into the sprite's horizontal position as a 70 ns sub-position, and apply it only in SuperHires: Denise's one-liner plus its `_shres` guard is the smallest complete model; Copperline's named predicate is the tidiest. The 8373R4 makes the same move elsewhere: it leaves the start compare alone and, with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to 3. Either form moves the first lit sample by 2 and turns the red green. By a reading of the change it also gives d = 80 + k in `integration/ch4-sprite-registers`, which turns `P1` green. It closes as the *What is asked of a reader* row says.
