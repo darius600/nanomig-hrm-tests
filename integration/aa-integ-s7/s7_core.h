@@ -136,6 +136,9 @@ struct Cap {
     uint64_t done_cycle = 0;
     uint64_t end_cycle = 0;
     uint64_t period = 0;                        // clk_sys cycles per bus period: the smallest spacing of two log entries
+    std::vector<uint64_t> vs_edges;             // clk_sys cycles at which the vs output rises (the frame marker), from base
+    std::vector<uint64_t> strobe_t;             // cycles of the CPU's read of the last operand word of each script op that writes COPJMP1 or COPJMP2
+    std::vector<uint64_t> vbl_seen;             // cycles of the CPU's read of the script word after each VBLSYNC op: the CPU has seen INTREQR bit 5 (the vertical blank) set
     uint32_t prog_end = 0, script_end = 0;      // the CPU spans of this run: image end + 16, script end + 16
 };
 
@@ -199,6 +202,32 @@ inline Cap run(const RunSpec& s) {
         if (d > 0 && (c.period == 0 || d < c.period)) c.period = d;
     }
     for (int i = 0; i < s.sc.logn; ++i) c.log.push_back(h.peek_logical(kLogBase + 2 * uint32_t(i)).value_or(0xDEAD));
+    {   // the frame marker: the cycles of the rising edges of vs (video trace index vbase is the cycle c.base)
+        const auto& vd = h.video();
+        for (size_t i = vbase + 1; i < vd.size(); ++i)
+            if (vd[i].vs && !vd[i - 1].vs) c.vs_edges.push_back(c.base + (i - vbase));
+        // The Copper's restart for a vertical blank can lie before the end of the run while the vs edge that marks it lies after it:
+        // the frame marker follows the frame period of the trace (the spacing of its last two edges) one frame past the end of the run.
+        if (c.vs_edges.size() >= 2) {
+            const uint64_t per = c.vs_edges.back() - c.vs_edges[c.vs_edges.size() - 2];
+            while (per > 0 && c.vs_edges.back() <= h.cycles() + per) c.vs_edges.push_back(c.vs_edges.back() + per);
+        }
+    }
+    {   // the strobe writes: the script ops that write COPJMP1 (0x088) or COPJMP2 (0x08A), found in the script the run was given
+        static const int len[14] = {1, 3, 4, 2, 2, 2, 2, 2, 2, 1, 4, 4, 5, 4};
+        const auto& w = s.sc.w;
+        std::set<uint32_t> lasts, vnext;
+        for (size_t i = 0; i < w.size() && w[i] < 14; i += len[w[i]]) {
+            if (w[i] == 6) vnext.insert(kScript + 2 * uint32_t(i + 2));
+            bool st = (w[i] == 1 && (w[i + 1] == 0x088 || w[i + 1] == 0x08A)) ||
+                      (w[i] == 12 && (w[i + 1] == 0x088 || w[i + 1] == 0x08A || w[i + 3] == 0x088 || w[i + 3] == 0x08A));
+            if (!st) continue;
+            lasts.insert(kScript + 2 * uint32_t(i + len[w[i]] - 1));   // the op's last operand word
+        }
+        for (const auto& a : c.ram) if (!a.is_write && lasts.count(a.word_addr * 2)) c.strobe_t.push_back(a.cycle);
+        std::sort(c.strobe_t.begin(), c.strobe_t.end());
+        for (const auto& a : c.ram) if (!a.is_write && vnext.count(a.word_addr * 2)) c.vbl_seen.push_back(a.cycle);
+    }
     if (s.want_audio) c.audio.assign(h.audio().begin() + vbase, h.audio().end());
     if (s.want_video) c.video.assign(h.video().begin() + vbase, h.video().end());
     scan_marks(c, 0, c.ram.size());
@@ -294,33 +323,82 @@ inline size_t refresh_min(unsigned lines) { return lines >= 1 ? kRefSlots * (lin
 // The final WAIT of a list ($FFFF, $FFFE) and the word after it. AA p.20, WAIT: 'Wait until beam counter is equal to, or
 // greater than. (keeps Coprocessor off of bus until beam position has been reached)'; AA p.21: every instruction is two
 // words (two bus cycles); AA p.29: a line has at most 228 colour clocks, so the horizontal position $FE of the final WAIT
-// is never reached. The Copper therefore reads the two words of the final WAIT and no word after them.
+// is never reached. While the WAIT is waiting the Copper reads no word after its two words. SPECIFICATION.md 1.10 grades
+// that interval, which ends at the next restart of the Copper: a CPU write of COPJMP1 or COPJMP2 (AA p.21 'transfered to the
+// program counter whenever strobe addresses COPJMP1 or COPJMP2 are written'), or the start of the vertical blank (AA p.21
+// 'COP1LC is automatically used at the beginning of each vertical blank time'). The pages do not say what the Copper puts on
+// the bus between a restart and its first fetch from the new address; the reads of that cycle are printed, not graded.
 struct FwList { std::string name; uint32_t wait_at; };   // byte address of the first word of the list's final WAIT
 struct Fw { bool anchor = true, none = true; std::string text; };
 
-// anchor: the Copper read both words of the final WAIT of every list at least once; none: it read no word after it.
-// Lists of one name are summarised together: the lists of a name, the lists whose final WAIT was read, the reads of the word
-// after the final WAIT and the number of lists in which it was read.
+// The restarts of the Copper, as cycles that lie before the restart and are observed without the Copper:
+// - a strobe: the cycle of the CPU's read of the last operand word of the script op that writes COPJMP1 or COPJMP2 (the
+//   write follows it; the Copper acts on the write at least two colour clocks later, 'there is at least 2 CCK delay');
+// - a vertical blank: the rising edge of the vs output (the frame marker) minus the lead of that edge over the CPU's sight of
+//   the vertical blank, plus kVblMargin. The CPU's sight of it is the read of the script word after a VBLSYNC op (the program
+//   polls INTREQR bit 5, which the vertical blank sets in its first line); the lead is the largest distance from such a sight
+//   to the next vs edge, and kVblMargin covers the CPU's polling and the INTREQ write between the start of the blank and the sight.
+constexpr uint64_t kVblMargin = 512;
+inline std::vector<uint64_t> restart_anchors(const Cap& c) {
+    std::vector<uint64_t> a = c.strobe_t;
+    uint64_t lead = 0;
+    bool have = false;
+    for (uint64_t s : c.vbl_seen) {
+        auto it = std::upper_bound(c.vs_edges.begin(), c.vs_edges.end(), s);
+        if (it == c.vs_edges.end()) continue;
+        lead = std::max(lead, *it - s);
+        have = true;
+    }
+    if (have) for (uint64_t e : c.vs_edges) if (e > lead + kVblMargin) a.push_back(e - lead - kVblMargin);
+    for (uint64_t s : c.vbl_seen) if (s > kVblMargin) a.push_back(s - kVblMargin);   // a sight with no later vs edge in the trace (the run ends first) still marks its restart
+    std::sort(a.begin(), a.end());
+    return a;
+}
+
+// anchor: the Copper read both words of the final WAIT of every list at least once; none: it read no word after it while
+// the WAIT was waiting, i.e. between a read of the WAIT's second word and the next restart. Lists of one name are summarised
+// together: the lists of a name, the lists whose final WAIT was read, the reads of the word after the final WAIT in the
+// waiting interval and in a restart cycle, and the number of lists in which each was read.
 inline Fw fw_eval(const Cap& c, const std::vector<Acc>& acc, const std::vector<FwList>& lists) {
     Fw f;
-    std::map<uint32_t, size_t> reads;   // address -> reads of it by anything but a write or a refresh cycle, from the release of the CPU on
-    for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr >= 0x090000 && a.addr < 0x090600) ++reads[a.addr];
-    auto rd = [&](uint32_t a) { auto it = reads.find(a); return it == reads.end() ? size_t(0) : it->second; };
-    f.text = "Copper reads of the two words of a list's final WAIT, and of the word after it:";
+    std::map<uint32_t, std::vector<uint64_t>> reads;   // address -> cycles of its reads by anything but a write or a refresh cycle, from the release of the CPU on
+    for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr >= 0x090000 && a.addr < 0x090600) reads[a.addr].push_back(a.t);
+    const std::vector<uint64_t> none;
+    auto rd = [&](uint32_t a) -> const std::vector<uint64_t>& { auto it = reads.find(a); return it == reads.end() ? none : it->second; };
+    const std::vector<uint64_t> anchors = restart_anchors(c);
+    f.text = "Copper reads of the two words of a list's final WAIT, and of the word after it (in the waiting interval, graded; in the restart cycle after a strobe or the start of the vertical blank, not graded, since no page fixes what the Copper puts on the bus in that cycle):";
     std::vector<std::string> names;
     for (auto& l : lists) if (std::find(names.begin(), names.end(), l.name) == names.end()) names.push_back(l.name);
     for (auto& nm : names) {
-        size_t n = 0, reached = 0, past_total = 0, past_lists = 0;
+        size_t n = 0, reached = 0, wait_total = 0, wait_lists = 0, rst_total = 0, rst_lists = 0;
         uint32_t first = 0;
+        std::string many, wait_at_s;
         for (auto& l : lists) {
             if (l.name != nm) continue;
             if (!n++) first = l.wait_at;
-            size_t w0 = rd(l.wait_at), w1 = rd(l.wait_at + 2), past = rd(l.wait_at + 4);
-            if (w0 != 0 && w1 != 0) ++reached; else f.anchor = false;
-            if (past != 0) { f.none = false; ++past_lists; past_total += past; }
+            const auto& r0 = rd(l.wait_at); const auto& r1 = rd(l.wait_at + 2); const auto& rp = rd(l.wait_at + 4);
+            if (!r0.empty() && !r1.empty()) ++reached; else f.anchor = false;
+            size_t w = 0, rs = 0;
+            std::map<size_t, std::vector<uint64_t>> per_restart;   // index of the restart anchor -> reads in its restart cycle
+            for (uint64_t p : rp) {
+                auto t2 = std::lower_bound(r1.begin(), r1.end(), p);   // the last read of the second word before p
+                const uint64_t from = t2 == r1.begin() ? 0 : *(t2 - 1);
+                auto nx = std::upper_bound(anchors.begin(), anchors.end(), from);   // the next restart after it
+                if (nx == anchors.end() || p < *nx) ++w;
+                else { ++rs; per_restart[size_t(nx - anchors.begin())].push_back(p); }
+            }
+            for (auto& kv : per_restart)
+                if (kv.second.size() > 1) {
+                    many += " $" + hex6(l.wait_at + 4) + " read " + dec((long long)kv.second.size()) + " times after the restart at cycle " + dec((long long)anchors[kv.first]) + " (cycles";
+                    for (uint64_t p : kv.second) many += " " + dec((long long)p);
+                    many += ");";
+                }
+            if (w) { f.none = false; ++wait_lists; wait_total += w; }
+            if (rs) { ++rst_lists; rst_total += rs; }
         }
         f.text += " " + nm + " (" + dec((long long)n) + (n == 1 ? " list" : " lists") + ", the first final WAIT at $" + hex6(first) + "): final WAIT read in " + dec((long long)reached) + ", word after it read " +
-                  dec((long long)past_total) + " times in " + dec((long long)past_lists) + ";";
+                  dec((long long)wait_total) + " times in " + dec((long long)wait_lists) + " in the waiting interval, " + dec((long long)rst_total) + " times in " + dec((long long)rst_lists) + " in a restart cycle" +
+                  (many.empty() ? "" : ", of which more than one in one restart:" + many) + ";";
     }
     return f;
 }
@@ -330,7 +408,7 @@ inline void fw_print(Checks& ck, const std::string& id, bool fixture, const Fw& 
     ck.note(id + " " + f.text);
     ck.expect(f.anchor, id + "-FWA: the Copper read both words of the final WAIT ($FFFF, $FFFE) of every list the run executes, at least once each, so the lists ran to their end (AA p.20 WAIT, p.21)");
     if (!(fixture && f.anchor)) { ck.record("NOT GRADED " + id + "-FW: precondition(s) not met: the fixture or the final WAITs were not read"); return; }
-    ck.expect(f.none, id + "-FW: the Copper reads no word after the final WAIT ($FFFF, $FFFE) of any list the run executes (AA p.20 WAIT 'keeps Coprocessor off of bus until beam position has been reached'; AA p.21 every instruction is two words; AA p.29 a line has at most 228 colour clocks, so the horizontal position $FE is never reached)");
+    ck.expect(f.none, id + "-FW: while the final WAIT ($FFFF, $FFFE) of a list waits, between the Copper's read of its second word and the next restart (a CPU write of COPJMP1 or COPJMP2, or the start of the vertical blank), the Copper reads no word after it (AA p.20 WAIT 'keeps Coprocessor off of bus until beam position has been reached'; AA p.21 every instruction is two words; AA p.29 a line has at most 228 colour clocks, so the horizontal position $FE is never reached)");
 }
 
 } // namespace s7
