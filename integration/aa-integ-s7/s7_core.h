@@ -214,12 +214,11 @@ inline uint16_t logv(const Cap& c, int idx) {
 }
 
 // ---- attribution of the RAM-port reads (SPECIFICATION.md 1.6) -------------------
+// A read is a refresh read when the `refresh` output is high at the clk_sys cycle of its log entry (the same cycle).
 inline bool refresh_at(const Cap& c, uint64_t cycle) {
-    if (cycle < c.base + 3) return false;
+    if (cycle < c.base) return false;
     uint64_t i = cycle - c.base;
-    if (i >= c.refresh.size()) return false;
-    for (int d = 0; d <= 3; ++d) if (c.refresh[i - d]) return true;
-    return false;
+    return i < c.refresh.size() && c.refresh[i];
 }
 
 // One logical access: the first entry of each stretched bus cycle. A bus cycle stretched by wait states appears
@@ -255,11 +254,21 @@ struct Window {
     std::vector<Acc> writes_in;   // every write of the window, any address
 };
 
+// The index of the first access later than t0 (the accesses are in time order).
+inline size_t acc_first_after(const std::vector<Acc>& acc, uint64_t t0) {
+    size_t lo = 0, hi = acc.size();
+    while (lo < hi) {
+        size_t m = (lo + hi) / 2;
+        if (acc[m].t <= t0) lo = m + 1; else hi = m;
+    }
+    return lo;
+}
+
 inline Window classify(const std::vector<Acc>& acc, uint64_t t0, uint64_t t1,
                        const std::vector<Region>& chan, const std::vector<Region>& copper) {
     Window w;
-    for (auto& a : acc) {
-        if (a.t <= t0 || a.t >= t1) continue;
+    for (size_t i = acc_first_after(acc, t0); i < acc.size() && acc[i].t < t1; ++i) {
+        const Acc& a = acc[i];
         if (a.write) { w.writes_in.push_back(a); continue; }
         if (a.refresh) { w.refresh.push_back(a); continue; }
         if (is_cpu(a.addr)) continue;
@@ -270,52 +279,58 @@ inline Window classify(const std::vector<Acc>& acc, uint64_t t0, uint64_t t1,
     return w;
 }
 
-// The refresh precondition of 1.6: the refresh-flagged reads of the window come in groups of four, one
-// group per line. A group cut by the window's edge may hold fewer; at least one whole group must lie in it.
-struct RefreshCheck { bool ok = false; size_t groups = 0, whole = 0; };
-inline RefreshCheck refresh_groups(const std::vector<Acc>& refresh, uint64_t t0, uint64_t t1, uint64_t K) {
-    RefreshCheck r;
-    if (K == 0) return r;
-    std::vector<std::vector<uint64_t>> g;
-    for (auto& a : refresh) {
-        if (g.empty() || a.t - g.back().back() > 8 * K) g.push_back({});
-        g.back().push_back(a.t);
+// The refresh precondition (SPECIFICATION.md 1.6): a line holds four refresh slots (AA p.29 'There are 4 refresh time slots';
+// HRM p.194), so a window that contains k line starts (the program counts them with LINES(k)) holds the four refresh reads of at
+// least k - 1 whole lines. The clause that the four reads of a line form one group, and that no line holds more than four, is
+// unfalsifiable at this boundary: no stimulus changes how many refresh reads a line holds.
+constexpr size_t kRefSlots = 4;
+inline size_t refresh_reads(const std::vector<Acc>& acc, uint64_t t0, uint64_t t1) {
+    size_t n = 0;
+    for (size_t i = acc_first_after(acc, t0); i < acc.size() && acc[i].t < t1; ++i) if (acc[i].refresh) ++n;
+    return n;
+}
+inline size_t refresh_min(unsigned lines) { return lines >= 1 ? kRefSlots * (lines - 1) : 0; }
+
+// The final WAIT of a list ($FFFF, $FFFE) and the word after it. AA p.20, WAIT: 'Wait until beam counter is equal to, or
+// greater than. (keeps Coprocessor off of bus until beam position has been reached)'; AA p.21: every instruction is two
+// words (two bus cycles); AA p.29: a line has at most 228 colour clocks, so the horizontal position $FE of the final WAIT
+// is never reached. The Copper therefore reads the two words of the final WAIT and no word after them.
+struct FwList { std::string name; uint32_t wait_at; };   // byte address of the first word of the list's final WAIT
+struct Fw { bool anchor = true, none = true; std::string text; };
+
+// anchor: the Copper read both words of the final WAIT of every list at least once; none: it read no word after it.
+// Lists of one name are summarised together: the lists of a name, the lists whose final WAIT was read, the reads of the word
+// after the final WAIT and the number of lists in which it was read.
+inline Fw fw_eval(const Cap& c, const std::vector<Acc>& acc, const std::vector<FwList>& lists) {
+    Fw f;
+    std::map<uint32_t, size_t> reads;   // address -> reads of it by anything but a write or a refresh cycle, from the release of the CPU on
+    for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr >= 0x090000 && a.addr < 0x090600) ++reads[a.addr];
+    auto rd = [&](uint32_t a) { auto it = reads.find(a); return it == reads.end() ? size_t(0) : it->second; };
+    f.text = "Copper reads of the two words of a list's final WAIT, and of the word after it:";
+    std::vector<std::string> names;
+    for (auto& l : lists) if (std::find(names.begin(), names.end(), l.name) == names.end()) names.push_back(l.name);
+    for (auto& nm : names) {
+        size_t n = 0, reached = 0, past_total = 0, past_lists = 0;
+        uint32_t first = 0;
+        for (auto& l : lists) {
+            if (l.name != nm) continue;
+            if (!n++) first = l.wait_at;
+            size_t w0 = rd(l.wait_at), w1 = rd(l.wait_at + 2), past = rd(l.wait_at + 4);
+            if (w0 != 0 && w1 != 0) ++reached; else f.anchor = false;
+            if (past != 0) { f.none = false; ++past_lists; past_total += past; }
+        }
+        f.text += " " + nm + " (" + dec((long long)n) + (n == 1 ? " list" : " lists") + ", the first final WAIT at $" + hex6(first) + "): final WAIT read in " + dec((long long)reached) + ", word after it read " +
+                  dec((long long)past_total) + " times in " + dec((long long)past_lists) + ";";
     }
-    r.groups = g.size();
-    bool ok = !g.empty();
-    for (size_t i = 0; i < g.size(); ++i) {
-        bool edge = (i == 0 && g[i].front() - t0 <= 16 * K) || (i + 1 == g.size() && t1 - g[i].back() <= 16 * K);
-        if (g[i].size() == 4) ++r.whole;
-        else if (!(edge && g[i].size() < 4)) ok = false;
-    }
-    r.ok = ok && r.whole >= 1;
-    return r;
+    return f;
 }
 
-// K = clk_sys cycles per colour clock, from the spacing of the four refresh reads of a line
-// ("There are 4 refresh time slots", p.29): consecutive refresh reads are two colour clocks apart.
-inline uint64_t colour_clock(const std::vector<Acc>& refresh) {
-    std::vector<uint64_t> d;
-    for (size_t i = 1; i < refresh.size() && d.size() < 400; ++i) {
-        uint64_t g = refresh[i].t - refresh[i - 1].t;
-        if (g < 200) d.push_back(g);
-    }
-    if (d.empty()) return 0;
-    std::sort(d.begin(), d.end());
-    return d[d.size() / 2] / 2;
-}
-
-// MEASURED, not graded: how often the Copper read the word after the final WAIT of each of its lists. AA p.20, WAIT:
-// '(keeps Coprocessor off of bus until beam position has been reached)'; the final WAIT of a list never ends.
-inline void note_past_wait(Checks& ck, const std::string& id, const Cap& c, const std::vector<Acc>& acc,
-                           const std::vector<std::pair<std::string, uint32_t>>& words) {
-    std::string s = id + " Copper reads of the word after a list's final WAIT (AA p.20 WAIT '(keeps Coprocessor off of bus until beam position has been reached)'; not graded):";
-    for (auto& w : words) {
-        size_t n = 0;
-        for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr == w.second) ++n;
-        s += " " + w.first + " $" + hex6(w.second) + " " + dec((long long)n) + " reads;";
-    }
-    ck.note(s);
+// The two lines of the final-WAIT assertion of a proposition `id`; the second is graded when the first and the fixture hold.
+inline void fw_print(Checks& ck, const std::string& id, bool fixture, const Fw& f) {
+    ck.note(id + " " + f.text);
+    ck.expect(f.anchor, id + "-FWA: the Copper read both words of the final WAIT ($FFFF, $FFFE) of every list the run executes, at least once each, so the lists ran to their end (AA p.20 WAIT, p.21)");
+    if (!(fixture && f.anchor)) { ck.record("NOT GRADED " + id + "-FW: precondition(s) not met: the fixture or the final WAITs were not read"); return; }
+    ck.expect(f.none, id + "-FW: the Copper reads no word after the final WAIT ($FFFF, $FFFE) of any list the run executes (AA p.20 WAIT 'keeps Coprocessor off of bus until beam position has been reached'; AA p.21 every instruction is two words; AA p.29 a line has at most 228 colour clocks, so the horizontal position $FE is never reached)");
 }
 
 } // namespace s7

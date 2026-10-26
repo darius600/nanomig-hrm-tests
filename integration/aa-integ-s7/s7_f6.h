@@ -104,6 +104,7 @@ inline void run_f6(Checks& ck, const std::string& sel) {
     }
     list.push_back(0xFFFF); list.push_back(0xFFFE);
     poke_words(hd.rs.pokes, kList6, list);
+    poke_words(hd.rs.pokes, kList6 + 0x100, list);   // the same list at another address: the Copper of the COPPER contrast runs it instead of the list at kList6
     // palette: 8 banks of 32 entries, LOCT = 0
     auto colour_of = [](int idx) -> uint16_t {
         switch (idx) {
@@ -120,9 +121,10 @@ inline void run_f6(Checks& ck, const std::string& sel) {
     s.w16(BPLCON1, 0); s.w16(BPLCON2, 0); s.w16(BPLCON4, 0x0011); s.w16(FMODE, 0);
     s.w16(DIWSTRT, 0x2C81); s.w16(DIWSTOP, 0x2CC1); s.w16(DDFSTRT, 0x0038); s.w16(DDFSTOP, 0x00D0);
     s.w16(BPL1MOD, 0); s.w16(BPL2MOD, 0);
-    if (sel != id + "-COPPER") s.w32(COP1LCH, kList6);
+    s.w32(COP1LCH, sel == id + "-COPPER" ? kList6 + 0x100 : kList6);   // contrast: the Copper runs a copy of the list at another address, so the words of the list at kList6 are not read
     s.w16(DMACON, sel == id + "-DMA" ? 0x8200 : 0x8300);
     int i_dma = s.rd(DMACONR);
+    if (sel == id + "-DMA") s.w16(DMACON, 0x8300);   // contrast: bitplane DMA is enabled after DMA_CHECK has read DMACONR
     s.vblsync(); s.vblsync();
     int m_ready = s.mark();
     if (sel == id + "-FRAMES") s.vblsync(); else { s.vblsync(); s.vblsync(); s.vblsync(); s.vblsync(); }
@@ -176,15 +178,13 @@ inline void run_f6(Checks& ck, const std::string& sel) {
     ck.expect(dma, id + "-DMA: DMACONR reads DMAEN and BPLEN set (AA p.22)");
     ck.expect(have, id + "-FRAMES: the second and the third complete frames (VSYNC to VSYNC) that begin after M_ready both end before M_done");
     if (have) {
-        ck.expect(reads, id + "-READS: in each graded frame there are bitplane reads in each of B1-B8");
         ck.expect(copper, id + "-COPPER: the Copper list was read in the vertical blank before each graded frame: every pointer word of the list was read in the frame before");
     } else {
-        not_graded(ck, id + "-READS", id + "-FRAMES");
         not_graded(ck, id + "-COPPER", id + "-FRAMES");
     }
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
-    if (!(fixture && dma && have && reads && copper && tmo)) { not_graded(ck, id, "a precondition"); return; }
-    ck.expect(ok, "F6: in an 8-bitplane lores display the data bitplane DMA fetches for plane x (x = 2-8) goes into BPLxDAT and appears on the video output as colour index 2^(x-1): in each of two frames every pixel is black or one of C2-C8 and never $555, exactly seven bands in the order C2, C3, C4, C5, C6, C7, C8 each a single colour, all of one height with equal gaps and the same first and last column, and the two frames are identical (AA p.15 'These registers receive the DMA data fetched from RAM by the Bit Plane address pointers described above ... They act as a 8 word parallel to serial buffer for up to 8 memory Bit Planes'; AA p.16 BPU '0000-1000 (NONE thru 8 inclusive)'; AA p.17 PF2OF table; AA p.18 BPLAM)");
+    if (!(fixture && dma && have && copper && tmo)) { not_graded(ck, id, "a precondition"); return; }
+    ck.expect(ok && reads, "F6: in an 8-bitplane lores display the data bitplane DMA fetches for plane x (x = 2-8) (in each graded frame there are bitplane reads in each of B1-B8) goes into BPLxDAT and appears on the video output as colour index 2^(x-1): in each of two frames every pixel is black or one of C2-C8 and never $555, exactly seven bands in the order C2, C3, C4, C5, C6, C7, C8 each a single colour, all of one height with equal gaps and the same first and last column, and the two frames are identical (AA p.15 'These registers receive the DMA data fetched from RAM by the Bit Plane address pointers described above ... They act as a 8 word parallel to serial buffer for up to 8 memory Bit Planes'; AA p.16 BPU '0000-1000 (NONE thru 8 inclusive)'; AA p.17 PF2OF table; AA p.18 BPLAM)");
     // claims: none (the 14 '&' claims of BPL2DAT-BPL8DAT also state 'only', which is not graded)
 }
 

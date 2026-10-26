@@ -18,6 +18,7 @@ constexpr uint32_t kDst3  = 0x1B0400;   // C12 preload destination
 constexpr uint32_t kRd    = 0x0E0000;   // C2 disk regions: A16 = 0, (Rd & 0xFFFF) <= 0xFEF8
 constexpr uint32_t kRe    = kRd + 0x10000;
 constexpr uint32_t kRe2   = kRd + 0x0100;
+constexpr unsigned kC2Lines = 8;        // the LINES wait that closes every window of C2
 
 // An observation: a list of values; a blitter write is (address << 16) | data, a register read its value.
 using Obs = std::vector<uint64_t>;
@@ -77,12 +78,13 @@ struct Prop {
     uint16_t dma_enable_bit = 0;           // the DMACON enable bit of the channel for DMA_CHECK
     std::function<void(Script&)> extra_once;
     std::vector<Poke> pokes;               // memory the regions hold before the run
+    unsigned batch = 0;                    // 0: one register case per frame (the procedure of SPECIFICATION.md 1.9); n > 0: the cases run n at a time (1.9, walking values)
     std::string pcx = "PC6";               // the label of the population precondition
     bool refresh_pc = false;               // the refresh precondition of 1.6 applies
     bool mouse_contrast = false;           // C6: the population contrast moves the mouse between the two reads
 };
 
-inline void prologue(Script& s) {
+inline void prologue(Script& s, bool copen = true) {
     s.w16(INTENA, 0x7FFF); s.w16(INTREQ, 0x7FFF); s.w16(DMACON, 0x7FFF);
     s.w16(ADKCON, 0x7FFF);
     s.w16(COPCON, 0); s.w16(FMODE, 0); s.w16(BPLCON0, 0); s.w16(BPLCON1, 0); s.w16(BPLCON2, 0);
@@ -91,7 +93,7 @@ inline void prologue(Script& s) {
     for (int x = 0; x < 4; ++x) s.w16(audvol(x), 0);
     s.w32(COP1LCH, kIdle);
     s.w16(COPJMP1, 0);
-    s.w16(DMACON, 0x8280);
+    s.w16(DMACON, copen ? 0x8280 : 0x8200);   // the contrast of the final-WAIT anchor (F5-FWA, F9-FWA): Copper DMA is not turned on
 }
 
 inline std::vector<uint16_t> idle_list() { return {0xFFFF, 0xFFFE}; }
@@ -115,7 +117,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
     rs.bin = (sel == p.id + "-FIXTURE") ? "prog_run_nofix.bin" : "prog_run.bin";
     Script& s = rs.sc;
     const bool m_assert = sel == p.id, m_pc1 = sel == p.id + "-PC1", m_pc2 = sel == p.id + "-PC2",
-               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5", m_pcr = sel == p.id + "-PCR";
+               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5", m_fwa = sel == p.id + "-FWA";
     poke_words(rs.pokes, kIdle, idle_list());
     for (auto& k : p.pokes) rs.pokes.push_back(k);
     prologue(s);
@@ -124,8 +126,72 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
     if (p.adkcon_once) s.w16(ADKCON, p.adkcon_once);
     if (p.extra_once) p.extra_once(s);
     if (p.dma_enable_bit) r.dma_idx = s.rd(DMACONR);   // DMA_CHECK
+    if (m_pc5 && p.dmacon_once) s.w16(DMACON, p.dmacon_once);   // the contrast of PC5: the enable follows the DMA_CHECK, which has read it clear
     const size_t nvar = g_mutate ? std::min<size_t>(1, p.variants.size()) : p.variants.size();
-    for (size_t vi = 0; vi < nvar; ++vi) {
+    if (p.batch > 0) {
+        // The cases run n at a time. Each case has its own list (WAIT, MOVE, final WAIT) at kCase + 16 i; the program writes COP1LC
+        // and the strobe COPJMP1 for every case (AA p.20 'Coprocessor restart at first location'), so each MOVE starts the Copper
+        // anew, whatever the Copper did after the MOVE of the case before. A frame B holds one batch: from line $30 on, the
+        // cases one after the other, then COP1LC = IDLE.
+        std::vector<VarPlan> plans;
+        for (size_t vi = 0; vi < nvar; ++vi) {
+            VarPlan vp; vp.v = p.variants[vi];
+            vp.case_addr = kCase + 16 * uint32_t(vi);
+            poke_words(rs.pokes, vp.case_addr, case_list(vp.v.reg, vp.v.v1));
+            plans.push_back(vp);
+        }
+        for (size_t b0 = 0; b0 < nvar; b0 += p.batch) {
+            const size_t b1 = std::min<size_t>(nvar, b0 + p.batch);
+            s.vblsync();   // frame A: calibration, the Copper runs IDLE
+            for (size_t vi = b0; vi < b1; ++vi) {
+                VarPlan& vp = plans[vi]; const Variant& v = vp.v;
+                if (v.v0) v.v0(s);
+                if (!v.cal1_mark_before_v1 && v.v1cpu && !m_pc4) v.v1cpu(s);
+                vp.c1.ms = s.mark();
+                if (v.cal1_mark_before_v1 && v.v1cpu && !m_pc4) v.v1cpu(s);
+                vp.c1.idx = v.obs(s);
+                vp.c1.me = s.mark();
+                if (v.after) v.after(s);
+                if (v.v0) v.v0(s);
+                vp.c0.ms = s.mark();
+                vp.c0.idx = v.obs(s);
+                vp.c0.me = s.mark();
+                if (v.after) v.after(s);
+            }
+            for (uint16_t c : p.cs) {   // frame B, once for each COPCON value
+                uint16_t cw = (m_assert && c == 0x0000) ? uint16_t(0x0002) : c;
+                if (m_fwa && c == 0x0002) cw = 0x0000;   // the contrast of the final-WAIT anchor: the MOVE is refused in every frame, so the list never reaches its final WAIT
+                s.w32(COP1LCH, kIdle);
+                s.vblsync();
+                s.waitline(0x30);
+                s.w16(COPCON, cw);
+                for (size_t vi = b0; vi < b1; ++vi) {
+                    VarPlan& vp = plans[vi]; const Variant& v = vp.v;
+                    FrameB fb; fb.c = c;
+                    if (v.v0) v.v0(s);
+                    s.w32(COP1LCH, vp.case_addr);
+                    fb.ms = s.mark();
+                    if (!m_pc1) s.w16(COPJMP1, 0);
+                    s.lines(2);
+                    fb.mw = s.mark();
+                    if (m_pc1) s.w16(COPJMP1, 0);   // the contrast of PC1: the strobe follows M_wait, so the Copper reads the MOVE after the window of PC1
+                    if (m_pc2 && vi == b0) s.pollb(INTREQR, 0x0020, 30000);   // the contrast: the program waits for the next vertical blank
+                    g_frame_b = true;
+                    fb.idx = v.obs(s);
+                    g_frame_b = false;
+                    fb.me = s.mark();
+                    if (v.after) v.after(s);
+                    vp.b.push_back(fb);
+                }
+                s.w32(COP1LCH, kIdle);
+                s.w16(COPCON, 0);
+                const int f_vb = s.rd(INTREQR);
+                for (size_t vi = b0; vi < b1; ++vi) plans[vi].b.back().f_vb = f_vb;
+            }
+        }
+        r.plan = plans;
+    }
+    for (size_t vi = 0; vi < (p.batch > 0 ? 0 : nvar); ++vi) {
         VarPlan vp; vp.v = p.variants[vi];
         const Variant& v = vp.v;
         vp.case_addr = kCase + 0x40 * uint32_t(vi);
@@ -152,13 +218,13 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
         for (uint16_t c : p.cs) {
             FrameB fb; fb.c = c;
             uint16_t cw = (m_assert && c == 0x0000) ? uint16_t(0x0002) : c;
+            if (m_fwa && c == 0x0002) cw = 0x0000;   // the contrast of the final-WAIT anchor: the MOVE is refused in every frame, so the list never reaches its final WAIT
             s.w32(COP1LCH, vp.case_addr);
             if (m_pc1) s.w16(DMACON, 0x0080);
             s.vblsync();
             s.w16(COPCON, cw);
             if (v.v0) v.v0(s);
             fb.ms = s.mark();
-            if (m_pcr) fb.me = s.mark();   // the contrast: M_end is written before M_wait, so the observation window is empty
             if (v.obs_replaces_step6) {
                 g_frame_b = true;
                 fb.idx = v.obs(s);
@@ -176,7 +242,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
             s.w32(COP1LCH, kIdle);
             s.w16(COPCON, 0);
             fb.f_vb = s.rd(INTREQR);
-            if (!m_pcr) fb.me = s.mark();
+            fb.me = s.mark();
             if (v.after) v.after(s);
             if (m_pc1) s.w16(DMACON, 0x8080);
             vp.b.push_back(fb);

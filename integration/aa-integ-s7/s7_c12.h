@@ -31,6 +31,7 @@ inline C12Run run_c12(const std::string& sel) {
     if (m_pc3) s.waitb(DMACONR, 0x8000, 50);   // the contrast: a wait that ends by its timeout (DMACONR bit 15 is never set)
     s.w16(DMACON, m_pc5 ? uint16_t(0x8200) : uint16_t(0x8240));
     r.dma_idx = s.rd(DMACONR);
+    if (m_pc5) s.w16(DMACON, 0x8240);   // the contrast of PC5: BLTEN is enabled after the DMA_CHECK has read it clear
     s.w16(BLTCON1, 0); set_masks(s);
     s.w16(BLTAMOD, 0); s.w16(BLTBMOD, 0); s.w16(BLTCMOD, 0); s.w16(BLTDMOD, 0);
     const int nsrc = g_mutate ? 1 : 3;   // a mutation run keeps the first source (BLTADAT)
@@ -86,7 +87,7 @@ inline C12Run run_c12(const std::string& sel) {
         r.plan.push_back(pl);
     }
     s.end();
-    rs.cycles = m_pc5 ? 120'000'000 : 60'000'000;   // the PC5 contrast leaves every blit running until its wait ends by the timeout
+    rs.cycles = 60'000'000;
     r.cap = run(rs);
     r.acc = accesses(r.cap);
     return r;
@@ -99,11 +100,8 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     bool fixture = c.loaded && c.released && c.fixture_ok && c.done;
     bool pc1 = true, pc2 = true, pc3 = c.timeouts == 0, pc4 = true, pc5 = (logv(c, r.dma_idx) & 0x0240) == 0x0240, assert_ok = true;
     Ctx cx{&c, &r.acc};
-    {
-        std::vector<std::pair<std::string, uint32_t>> pw = {{"IDLE", kIdle + 4}};
-        for (size_t i = 0; i < r.plan.size(); ++i) pw.push_back({std::string(r.plan[i].src.name) + " list", kCase + 0x40 * uint32_t(i + 1) + 12});
-        note_past_wait(ck, id, c, r.acc, pw);
-    }
+    // C12 runs its case lists with COPCON bit 1 clear only; no read of their final WAIT is observed, so only IDLE enters C12-FW.
+    const Fw fw = fw_eval(c, r.acc, {{"IDLE", kIdle}});
     const std::vector<Region> px = {{kPx, kPx + 4}}, pxa = {{kPx, kPx + 2}};
     std::vector<Region> chan = {{kDst, kDst + 4}, {kDst3, kDst3 + 2}, {kPx, kPx + 4}};
     std::vector<std::pair<uint64_t, uint64_t>> wins;
@@ -152,8 +150,9 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     ck.expect(pc3, id + "-PC3: no wait of the program ended by its timeout");
     ck.expect(pc4, id + "-PC4: frame A: the DMA preload of V0 gives $3C3C twice and of V1 gives $5A5A twice in the observation blit; every preload blit reads [PX, PX+2) once and no other word of [PX, PX+4), every observation blit reads none of them");
     ck.expect(pc5, id + "-PC5: DMACONR reads DMAEN and BLTEN set, and no blitter access lies outside the windows of the blits, so every blit finished inside its window (AA p.22)");
+    fw_print(ck, id, fixture, fw);
     if (!(fixture && pc1 && pc2 && pc3 && pc4 && pc5)) { not_graded(ck, id, "a precondition"); return; }
-    ck.expect(assert_ok, id + ": with COPCON bit 1 clear (COPCON $0000 and $FFFD) a Copper MOVE of $5A5A to BLTADAT, BLTBDAT or BLTCDAT does not change the data the blitter uses from that source: the observation blit writes $3C3C twice (AA p.6 '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true.'; AA p.19 COPCON bit 01 CDANG; AA p.13 BLTxDAT) " + claims_note);
+    ck.expect(assert_ok, id + ": with COPCON bit 1 clear (COPCON $0000 and $FFFD) a Copper MOVE of the one value V1 = $5A5A (graded for this value against the preloaded V0 = $3C3C, not for every 16-bit value) to BLTADAT, BLTBDAT or BLTCDAT does not change the data the blitter uses from that source: the observation blit writes $3C3C twice (AA p.6 '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true.'; AA p.19 COPCON bit 01 CDANG; AA p.13 BLTxDAT) " + claims_note);
 }
 
 } // namespace s7

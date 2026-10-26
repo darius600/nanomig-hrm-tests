@@ -11,14 +11,23 @@ constexpr uint16_t kDmaBlt = 0x0240;   // DMACONR bits DMAEN and BLTEN
 // ends by its timeout (the contrast of the timeout precondition).
 struct FHead { RunSpec rs; int dma_idx = -1; };
 
-inline FHead f_head(const std::string& id, const std::string& sel, uint16_t dmacon, bool nodma_mut_off = false) {
+// DMACON without the enable bits of the channels a proposition uses (DMAEN stays): what the DMA_CHECK of the contrast reads.
+inline uint16_t dma_reduced(uint16_t dmacon) {
+    return uint16_t(dmacon & ~0x0100 & ~0x0040 & ~0x0020 & ~0x0010 & ~0x0008 & ~0x0004 & ~0x0002 & ~0x0001);
+}
+
+inline FHead f_head(const std::string& id, const std::string& sel, uint16_t dmacon) {
     FHead h;
     h.rs.bin = sel == id + "-FIXTURE" ? "prog_run_nofix.bin" : "prog_run.bin";
     poke_words(h.rs.pokes, kIdle, idle_list());
-    prologue(h.rs.sc);
-    h.rs.sc.w16(DMACON, sel == id + "-DMA" && !nodma_mut_off ? uint16_t(dmacon & ~0x0040 & ~0x0010 & ~0x0020 & ~0x0001 & ~0x0002 & ~0x0004 & ~0x0008) : dmacon);
+    prologue(h.rs.sc, sel != id + "-FWA");
+    // The contrast of the DMA_CHECK (Fn-DMA): DMACONR is read before the enable bits are written, so the check reads them
+    // clear, and the channels are enabled afterwards, so that the rest of the run is the normal run.
+    const bool dma_mut = sel == id + "-DMA";
+    h.rs.sc.w16(DMACON, dma_mut ? dma_reduced(dmacon) : dmacon);
     if (sel == id + "-TMO") h.rs.sc.waitb(DMACONR, 0x8000, 50);
     h.dma_idx = h.rs.sc.rd(DMACONR);
+    if (dma_mut && dma_reduced(dmacon) != dmacon) h.rs.sc.w16(DMACON, dmacon);
     return h;
 }
 
@@ -121,12 +130,11 @@ inline void run_f1_f2(Checks& ck, bool f2, const std::string& sel) {
     ck.expect(fixture, id + "-FIXTURE: the run loaded, booted, stored the $BEEF constant at RESULTS and reached DONE, before any value is read");
     ck.expect(dma, id + "-DMA: DMACONR reads DMAEN and BLTEN set before the first case (AA p.22)");
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
-    ck.expect(idle, id + "-IDLE: no blitter write lies outside the windows of the cases, so every blit finished inside its case");
-    if (!(fixture && dma && tmo && idle)) { not_graded(ck, id, "fixture, DMA, TMO or IDLE"); return; }
+    if (!(fixture && dma && tmo)) { not_graded(ck, id, "fixture, DMA or TMO"); return; }
     if (!f2)
-        ck.expect(ok, "F1: a write to BLTSIZE starts the blitter, and the blit covers w words (bits 5-0) on each of h lines (bits 15-6): no blitter write before the write, exactly w*h writes after it at DST+2i with data $FFFF, in all 18 cases (AA p.14 'Writing to this register will start the Blitter', 'h=Height=Vertical lines', 'w=Width =Horiz pixels (6 bits=64 words=1024 pixels max)'; AA p.7 row function 'Blitter start and size (window width, height)') claims opus:AA-bltsize.c5 sol:AA-bltsize.c5");
+        ck.expect(ok && idle, "F1: a write to BLTSIZE starts the blitter, and the blit covers w words (bits 5-0) on each of h lines (bits 15-6): no blitter write before the write, exactly w*h writes after it at DST+2i with data $FFFF, in all 18 cases, and no blitter write lies outside the windows of the cases (AA p.14 'Writing to this register will start the Blitter', 'h=Height=Vertical lines', 'w=Width =Horiz pixels (6 bits=64 words=1024 pixels max)'; AA p.7 row function 'Blitter start and size (window width, height)') claims opus:AA-bltsize.c5 sol:AA-bltsize.c5");
     else
-        ck.expect(ok, "F2: with the AA chip set selected, BLTSIZV holds a 15-bit height and keeps it for later blits, BLTSIZH holds an 11-bit width and a write to it starts a blit of w words on h lines, a write to BLTSIZV alone starts nothing: no blitter write before the BLTSIZH write, exactly v*w writes after it at DST+2i with data $FFFF, in every case, and 6 then 15 writes in the reuse cases (AA p.14 'BLTSIZH H 05E W A Blitter H size & start (11 bit width)', 'BLTSIZV H 05C W A Blitter V size (15 bit height)', 'BLTSIZV need not be rewritten for subsequent blits if the vertical size is the same'; AA p.7 mark h)");
+        ck.expect(ok && idle, "F2: with the AA chip set selected, BLTSIZV holds a 15-bit height and keeps it for later blits, BLTSIZH holds an 11-bit width and a write to it starts a blit of w words on h lines, a write to BLTSIZV alone starts nothing: no blitter write before the BLTSIZH write, exactly v*w writes after it at DST+2i with data $FFFF, in every case, and 6 then 15 writes in the reuse cases, and no blitter write lies outside the windows of the cases (AA p.14 'BLTSIZH H 05E W A Blitter H size & start (11 bit width)', 'BLTSIZV H 05C W A Blitter V size (15 bit height)', 'BLTSIZV need not be rewritten for subsequent blits if the vertical size is the same'; AA p.7 mark h)");
     (void)total;
 }
 
@@ -166,9 +174,8 @@ inline void run_f3(Checks& ck, const std::string& sel) {
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
     std::vector<std::pair<uint64_t, uint64_t>> wins = {{t0, t1}};
     bool idle = writes_only_in(acc, wins);
-    ck.expect(idle, id + "-IDLE: no blitter write lies outside the window of the blit");
-    if (!(fixture && dma && tmo && idle)) { not_graded(ck, id, "fixture, DMA, TMO or IDLE"); return; }
-    ck.expect(reads_ok && wok, "F3: with the AA chip set selected, a write of $FF0F to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 unchanged: the blit after BLTCON0 = $09F0 reads A only (two reads, ASRC and ASRC+2, none in BSRC or CSRC) and writes $FF00 and $F0F0 at DST and DST+2 (AA p.13 'BLTCON0L H 05A W A Blitter control register 0 (write lower 8 bits only) This is to speed up software-- the upper bits are often the same.'; AA p.7 mark h; AA p.14 BLTCON0 bits)");
+    if (!(fixture && dma && tmo)) { not_graded(ck, id, "fixture, DMA or TMO"); return; }
+    ck.expect(reads_ok && wok && idle, "F3: with the AA chip set selected, a write of $FF0F to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 unchanged: the blit after BLTCON0 = $09F0 reads A only (two reads, ASRC and ASRC+2, none in BSRC or CSRC) and writes $FF00 and $F0F0 at DST and DST+2, and no blitter write lies outside the window of the blit (AA p.13 'BLTCON0L H 05A W A Blitter control register 0 (write lower 8 bits only) This is to speed up software-- the upper bits are often the same.'; AA p.7 mark h; AA p.14 BLTCON0 bits)");
 }
 
 // ---- F8: BLTxDAT loaded by the blitter's source DMA ---------------------------------------
@@ -226,10 +233,8 @@ inline void run_f8(Checks& ck, const std::string& sel) {
     ck.expect(fixture, id + "-FIXTURE: the run loaded, booted, stored the $BEEF constant at RESULTS and reached DONE, before any value is read");
     ck.expect(dma, id + "-DMA: DMACONR reads DMAEN and BLTEN set (AA p.22)");
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
-    ck.expect(reads, id + "-READS: each of the three blits made exactly four blitter reads in its source region SRC_x");
-    ck.expect(after, id + "-AFTER: no blitter write lies outside the windows of the three blits, so no blitter access follows the end of a case");
-    if (!(fixture && dma && tmo && reads && after)) { not_graded(ck, id, "a precondition"); return; }
-    ck.expect(ok, "F8: with source x enabled the blitter loads BLTADAT, BLTBDAT or BLTCDAT from the source pointer's RAM words and computes D from them, and the destination words reach RAM as blitter writes: four writes at DST to DST+6 with data $8001, $4002, $2004, $1008 in that order and no other write, for each of A, B, C (AA p.13 'It is normally loaded by the Blitter DMA channel', 'The transfer is automatic during Blitter operation'; AA p.6 ER)");
+    if (!(fixture && dma && tmo)) { not_graded(ck, id, "a precondition"); return; }
+    ck.expect(ok && reads && after, "F8: with source x enabled the blitter reads the four words of the source x from RAM (exactly four blitter reads in SRC_x in the window of each of the three blits), loads BLTADAT, BLTBDAT or BLTCDAT from them and computes D from them, and the destination words reach RAM as blitter writes: four writes at DST to DST+6 with data $8001, $4002, $2004, $1008 in that order and no other write, for each of A, B, C, and no blitter write lies outside the windows of the three blits (AA p.13 'It is normally loaded by the Blitter DMA channel', 'The transfer is automatic during Blitter operation'; AA p.6 ER)");
 }
 
 } // namespace s7
