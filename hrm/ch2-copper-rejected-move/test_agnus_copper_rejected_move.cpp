@@ -1,17 +1,24 @@
-// Test purpose: Protect NanoMig's observed behaviour after the Copper
-//   rejects a MOVE to a forbidden register - it halts, never fetches the
-//   instruction's second word, and resumes only on a strobe or start of
-//   frame.
-// Test class: RTL_REGRESSION (R1 is a secondary HRM_CONFORMANCE check)
-// Primary oracle: NanoMig interface contract. The HRM (3rd edition, print
-//   pages 21 and 26) states only that the write does not occur; it does not
-//   define what the Copper does next. Frozen specification (docs/legacy-names.md).
+// Test purpose: Check what a Copper does around a MOVE to a forbidden
+//   register: the write never reaches the register bus (R1), and a
+//   jump-address strobe (R5) or the start of the next frame (R6) restarts
+//   the Copper from a location register. What the Copper does with the
+//   rejected MOVE's second word and afterwards (R2, R3, R4) is printed as
+//   MEASURED lines, not graded.
+// Test class: mixed. R1, R5 and R6 are HRM_CONFORMANCE (graded, each with
+//   its page claim id). R2, R3 and R4 are not graded: no page defines them
+//   (OUT OF ORACLE), so they print as MEASURED.
+// Primary oracle: Amiga Hardware Reference Manual, 3rd ed., print pages 21 and
+//   26 (R1: the Copper cannot write the register), 25 and 26 (R5: a strobe
+//   reloads the program counter from the location register; R6: at the
+//   start of each vertical blank COP1LC restarts the Copper whatever it is
+//   doing).
 // Requirement IDs: COP-03
 // Non-goals: The register-range boundaries themselves (red as
-//   NM-HRM-004). ECS and CDANG=1 rejection variants. Whether halting is
-//   correct for real Agnus silicon - this protects observed behaviour, it
-//   does not endorse it. Any claim that the single-word fetch violates the
-//   HRM.
+//   NM-HRM-004). ECS and CDANG=1 rejection variants. What the Copper does
+//   after it decodes a forbidden destination: whether it fetches the
+//   MOVE's second word, whether it halts, and whether the next MOVE runs.
+//   The pages say only that the write does not occur (pp.21, 26), and the
+//   MEASURED lines report what NanoMig does without endorsing it.
 // Claim ids: ids such as `COP2-control-register.c3` and
 //   `COP2-location-registers.c24` name one sentence of the manual in this
 //   chapter's reading. They carry no reader prefix, and they resolve in the
@@ -24,9 +31,9 @@
 //   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
-// inspected before this specification was written.
-// For a regression test that is the intended situation, and it is precisely why
-// this test must not be presented as HRM-derived.
+// inspected before this specification was written. The expected values of
+// R1, R5 and R6 come from the cited pages; the MEASURED lines describe the
+// RTL and are not HRM-derived.
 //
 // Source conflict recorded in the specification and NOT resolved here: print
 // page 21 and print page 26 give incompatible register ranges for the same
@@ -35,20 +42,15 @@
 //
 // MUTATION R1 stimulus red: rejecting_list()'s first MOVE retargeted from FORBIDDEN to COLOR00 (a legal
 //   register), and R1's checked register updated to match -> FAIL as expected (write now reaches the bus).
-// MUTATION R3 stimulus red: same retarget of rejecting_list()'s first MOVE to COLOR00 -> FAIL as expected
-//   (the now-legal first MOVE causes its second word, at LIST+1, to be fetched).
-// MUTATION R4 stimulus red: same retarget of rejecting_list()'s first MOVE to COLOR00 -> FAIL as expected
-//   (with no halt, the following COLOR00 MOVE also executes).
-// MUTATION R2 stimulus green (unexpected on the R1/R3/R4 retarget): the same retarget left R2 PASSING - the
-//   sentinel WAIT (TERMINAL_IR1/WAIT_ALL) that follows still makes the Copper idle within the run window, so a
-//   >2000-cycle gap appears whether or not a rejection ever happened. See the dedicated R2 mutation below.
-// MUTATION R2 stimulus red: replaced the poked list with 200 back-to-back legal MOVEs to COLOR00 (no rejection
-//   at all) -> FAIL as expected (sustained bus activity keeps the last-grant gap under 2000 cycles, proving R2
-//   does distinguish "halted" from "still busy").
 // MUTATION R5 stimulus red: LIST2's MOVE retargeted from COLOR01 to COLOR00 (R5's check left at COLOR01) ->
 //   FAIL as expected (the relocated list's actual destination no longer matches what R5 expects to see).
+//   Built as `make MUT=R5`, which defines MUT_R5=1.
+// MUTATION R5 stimulus red: the COPJMP1 strobe withheld (COP1LC still repointed at LIST2) -> FAIL as expected
+//   (nothing restarts the Copper from COP1LC, so LIST2's MOVE never runs). Built as `make MUT=R5_NOSTROBE`.
 // MUTATION R6 stimulus red: same LIST2 retarget (COLOR01 -> COLOR00) applied to R6's own block -> FAIL as
-//   expected.
+//   expected. Built as `make MUT=R6`.
+// MUTATION R6 stimulus red: the start-of-frame pulse withheld (COP1LC still repointed at LIST2) -> FAIL as
+//   expected. Built as `make MUT=R6_NOSOF`.
 
 #include <cstdint>
 #include <iostream>
@@ -58,6 +60,19 @@
 
 #include <verilated.h>
 #include "Vagnus_copper.h"
+
+#ifndef MUT_R5
+#define MUT_R5 0
+#endif
+#ifndef MUT_R5_NOSTROBE
+#define MUT_R5_NOSTROBE 0
+#endif
+#ifndef MUT_R6
+#define MUT_R6 0
+#endif
+#ifndef MUT_R6_NOSOF
+#define MUT_R6_NOSOF 0
+#endif
 
 namespace {
 
@@ -188,6 +203,7 @@ public:
         std::cout << (c ? "PASS: " : "FAIL: ") << l << "\n";
         c ? ++passed : ++failed;
     }
+    void note(const std::string& m) { std::cout << "MEASURED: " << m << "\n"; }
     int passed = 0, failed = 0;
 };
 
@@ -205,7 +221,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
 
-    // R1 (conformance) / R2 / R3 / R4 - one scenario, four observations.
+    // R1 (graded) / R2 / R3 / R4 (MEASURED) - one scenario, four observations.
     {
         CopperHarness h;
         h.seek_beam(0x20);
@@ -218,39 +234,52 @@ int main(int argc, char** argv) {
                       "R1 [conformance] the forbidden register is never presented on the register bus (p.21, p.26) "
                       "[claims: COP2-control-register.c3]");
 
-        // R3 - the second instruction word is never fetched.
-        checks.expect(h.any_grant_fetching(LIST) && !h.any_grant_fetching(LIST + 1),
-                      "R3 [regression] the rejected MOVE's second instruction word is never fetched");
+        // R3 - whether the second instruction word is fetched. No page says.
+        const bool first_word_fetched = h.any_grant_fetching(LIST);
+        const bool second_word_fetched = h.any_grant_fetching(LIST + 1);
+        checks.note("R3 the rejected MOVE's first word is fetched: " + std::string(first_word_fetched ? "yes" : "no") +
+                    "; its second word is fetched: " + std::string(second_word_fetched ? "yes" : "no") +
+                    " (no page defines the fetch after a forbidden destination)");
 
-        // R2 - the Copper stops requesting the bus altogether.
+        // R2 - whether the Copper keeps requesting the bus. No page says.
         const long last = h.last_grant_tick();
-        checks.expect(last >= 0 && h.now() - last > 2000,
-                      "R2 [regression] after the rejected MOVE the Copper stops requesting the bus");
+        checks.note("R2 ticks from the last Copper bus grant to the end of the run: " +
+                    std::to_string(last >= 0 ? h.now() - last : -1L) +
+                    " (no page defines whether the Copper halts after a forbidden MOVE)");
 
-        // R4 - the halt persists: the following legal MOVE never runs.
-        checks.expect(!h.any_grant_for_register(COLOR00),
-                      "R4 [regression] the halt persists - the legal MOVE after the rejected one never executes");
+        // R4 - whether the next legal MOVE runs. No page says.
+        checks.note("R4 the legal MOVE after the rejected one executes: " +
+                    std::string(h.any_grant_for_register(COLOR00) ? "yes" : "no") +
+                    " (no page defines the instruction that follows a forbidden destination)");
     }
 
-    // R5 - a COPJMP1 strobe releases the halt. COP1LC is repointed at a legal
-    // list first, so resumption is unambiguous rather than a repeat of the same
-    // rejection.
+    // R5 - a COPJMP1 strobe restarts the Copper from COP1LC (p.25, p.26). The
+    // Copper first runs a list that holds a forbidden MOVE, then COP1LC is
+    // repointed at a legal list, so the restart is unambiguous rather than a
+    // repeat of the same rejection.
     {
         CopperHarness h;
         h.seek_beam(0x20);
         h.poke(LIST, rejecting_list());
-        h.poke(LIST2, {move_ir1(COLOR01), 0x0DEF,
-                       TERMINAL_IR1,      WAIT_ALL});
+        uint16_t r5_reg = COLOR01;
+#if MUT_R5
+        r5_reg = COLOR00;  // MUTATION: LIST2's MOVE retargeted; the check below stays at COLOR01.
+#endif
+        h.poke(LIST2, {move_ir1(r5_reg), 0x0DEF,
+                       TERMINAL_IR1,     WAIT_ALL});
         h.start_at(LIST);
         h.run_cycles(2000);
-        const long halted_at = h.now();
+        const long before_strobe = h.now();
 
         h.point_at(LIST2);
-        h.strobe_copjmp1();
+#if !MUT_R5_NOSTROBE
+        h.strobe_copjmp1();  // MUTATION (MUT_R5_NOSTROBE): withheld.
+#endif
         h.run_cycles(2000);
 
-        checks.expect(h.grants_after(halted_at) > 0 && h.any_grant_for_register(COLOR01),
-                      "R5 [regression] a COPJMP1 strobe releases the halt and the Copper runs the relocated list");
+        checks.expect(h.grants_after(before_strobe) > 0 && h.any_grant_for_register(COLOR01),
+                      "R5 [conformance] a COPJMP1 strobe restarts the Copper from COP1LC: the relocated list's MOVE runs "
+                      "(p.25, p.26) [claims: COP2-jump-strobe-address.c6]");
     }
 
     // R6 - a start-of-frame pulse releases the halt the same way.
@@ -258,19 +287,25 @@ int main(int argc, char** argv) {
         CopperHarness h;
         h.seek_beam(0x20);
         h.poke(LIST, rejecting_list());
-        h.poke(LIST2, {move_ir1(COLOR01), 0x0FED,
-                       TERMINAL_IR1,      WAIT_ALL});
+        uint16_t r6_reg = COLOR01;
+#if MUT_R6
+        r6_reg = COLOR00;  // MUTATION: LIST2's MOVE retargeted; the check below stays at COLOR01.
+#endif
+        h.poke(LIST2, {move_ir1(r6_reg), 0x0FED,
+                       TERMINAL_IR1,     WAIT_ALL});
         h.start_at(LIST);
         h.run_cycles(2000);
-        const long halted_at = h.now();
+        const long before_sof = h.now();
 
         h.point_at(LIST2);
-        h.pulse_sof();
+#if !MUT_R6_NOSOF
+        h.pulse_sof();  // MUTATION (MUT_R6_NOSOF): withheld.
+#endif
         h.run_cycles(2000);
 
-        checks.expect(h.grants_after(halted_at) > 0 && h.any_grant_for_register(COLOR01),
-                      "R6 [regression] a start-of-frame pulse releases the halt in the same way "
-                      "[claims: COP2-location-registers.c24]");
+        checks.expect(h.grants_after(before_sof) > 0 && h.any_grant_for_register(COLOR01),
+                      "R6 [conformance] the start of a frame restarts the Copper from COP1LC whatever it was doing "
+                      "(p.25) [claims: COP2-location-registers.c24]");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";

@@ -8,6 +8,11 @@ OBJ_DIR = obj_dir
 TEST_BIN = $(OBJ_DIR)/V$(TOP)
 
 VERILATOR = verilator
+
+# MUT=<NAME> builds with MUT_<NAME>=1, replaying the stimulus change that the
+# matching "// MUTATION" line in the test source describes.
+MUT ?=
+MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 FLAGS = --no-timing --cc --exe --build -j 0 -Wall -Wno-fatal
 
 .PHONY: all test clean
@@ -19,7 +24,7 @@ test: $(TEST_BIN)
 
 $(TEST_BIN): $(TEST_SRC) $(RTL)
 	rm -rf $(OBJ_DIR)
-	$(VERILATOR) $(FLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(RTL) $(TEST_SRC)
+	$(VERILATOR) $(FLAGS) $(MUTFLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(RTL) $(TEST_SRC)
 
 clean:
 	rm -rf $(OBJ_DIR)
