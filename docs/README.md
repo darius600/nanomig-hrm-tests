@@ -21,7 +21,7 @@ three rows below answer that.
 
 ## The evidence behind the findings
 
-Eight documents of evidence, in [`evidence/`](evidence/). Every finding page
+Nine documents of evidence, in [`evidence/`](evidence/). Every finding page
 already states its conclusion and what the other implementations do; these hold
 the comparisons and reasoning those statements rest on. None is needed to read a
 finding.
@@ -36,6 +36,7 @@ finding.
 | [`upstream-minimig-aga.md`](evidence/upstream-minimig-aga.md) | What NanoMig inherited from Minimig-AGA, which decides whether a finding is NanoMig's own and where a fix should be reported. |
 | [`finding-analyses.md`](evidence/finding-analyses.md) | Work that produced or tested a group of findings and belongs to none of them alone. |
 | [`blitter-prior-art.md`](evidence/blitter-prior-art.md) | A record: the eight blitter tests that existed before chapter 6 went through the pipeline, and why the five that were deleted could be. Chapter 6's test sources cite it. |
+| [`practitioner-reports.md`](evidence/practitioner-reports.md) | What emulator authors and hardware tinkerers report in one long forum thread: the statements, which page each speaks to, and the ones no page or test covers. Witnesses like the emulators, never an oracle. |
 
 ## Everything else, by where it lives
 
