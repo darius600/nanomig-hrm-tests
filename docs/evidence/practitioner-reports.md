@@ -51,7 +51,7 @@ The hardware basis in an entry comes from the post alone; where the post names n
 | [NM-HRM-009](../findings/withdrawn/NM-HRM-009.md) (withdrawn) | SUPPORTS | [208517](https://eab.abime.net/showpost.php?p=208517) |
 | [NM-HRM-079](../findings/withdrawn/NM-HRM-079.md) (withdrawn) | SUPPORTS | [1468737](https://eab.abime.net/showpost.php?p=1468737) |
 
-Three entries are inferred in part, and say which step: NM-HRM-011 (the end of the blank at the next STRHOR), NM-HRM-089 and NM-HRM-073 (what the post's state machine implies for a case it does not mention). NM-HRM-091 is borderline and kept only as EXPLAINS: no post names BLTPRI.
+Four entries are inferred in part, and say which step: NM-HRM-011 (the end of the blank at the next STRHOR), NM-HRM-089 and NM-HRM-073 (what the post's state machine implies for a case it does not mention), and NM-HRM-091 (idle cycles reaching the 68000; no post names BLTPRI), which is borderline and kept only as EXPLAINS.
 
 ## Merged statement list
 

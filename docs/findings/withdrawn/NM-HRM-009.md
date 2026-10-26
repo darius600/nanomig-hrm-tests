@@ -70,7 +70,7 @@ gave bit 15 a value to read; p. 273 does not.
 
 Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../../evidence/practitioner-reports.md)).
 
-**SUPPORTS.** [EAB post 208517](https://eab.abime.net/showpost.php?p=208517), Toni Wilen, 2005-09-08. Chip set: not stated. Known from: found in emulation: a game breaks if the bit is not set (post: "Barney and Freddy Mouse").
+**SUPPORTS.** [EAB post 208517](https://eab.abime.net/showpost.php?p=208517), Toni Wilen, 2005-09-08. Chip set: not stated. Known from: not stated; the post adds that "Barney and Freddy Mouse" breaks if the bit is not set.
 
 > "CLXDAT bit 15 is always set."
 

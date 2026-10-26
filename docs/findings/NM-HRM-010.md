@@ -170,7 +170,7 @@ Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t
 
 > "NTSC has 227.5 CCK scan line length. To simplify logic, NTSC mode Agnus generates alternating 227 and 228 scan line lengths."
 
-A statement about the real chips that backs p. 23's alternation, which the page otherwise finds only in the four implementations.
+A statement about the real chips that backs p. 23's alternation, which the page otherwise finds only in Commodore's documents and the four implementations.
 
 **SUPPORTS.** [EAB post 601811](https://eab.abime.net/showpost.php?p=601811), yaqube, 2009-10-06. Chip set: not stated; NTSC mode. Known from: "I have made some tests in the NTSC mode"; the set-up is not stated.
 

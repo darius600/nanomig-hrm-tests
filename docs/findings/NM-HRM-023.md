@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites): `make -C hrm/ch4-attached-sprites test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 4 graded (3 passed, 1 failed): `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` — expected: SPR0CTL bit 7 set alone leaves the sprdata trace identical to the neither-bit-set baseline; observed: the trace differs. Green on the same fixture: `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT`, `FIXTURE-LIVE-DATA-PATH`, `CODE-0000-YIELDS-TRANSPARENT-PIXEL` |
 | **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states; outside the emulators, the 8373R4 dissection stores bit 7 for the odd sprites only — see *What other Commodore documents say*. Hardware: not measured |
-| **Effort** | S — `denise_sprites.v` line 474 only — drop the `(!aga && attach0)` term; a narrower condition in its place, if the specialist finds the term was written for the original Denise, is the same line |
+| **Effort** | S — `denise_sprites.v` lines 595, 604, 613 and 622 (the term for each sprite pair; `:299`, `:308`, `:317` and `:326` under `DENISE_EBR`) — drop the `(!aga && attach0)` term from each; a narrower condition in its place, if the specialist finds the term was written for the original Denise, is the same lines |
 
 ---
 
@@ -57,7 +57,7 @@ shows the sprite path delivers distinct known values in order before anything re
 - **The `!aga` gate looks deliberate.** Someone wrote a chipset condition around the
   even-sprite term, and it covers the original and the enhanced chip set alike: the
   module takes `aga` and no ECS strap
-  ([`denise_sprites.v#L39`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites.v#L39),
+  ([`denise_sprites.v#L353`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_sprites.v#L353),
   `input aga,`). The gate is MiSTer's and TC64's too, not something NanoMig added.
 - **The silicon answers half of it.** On the enhanced chip set the 8373R4 stores
   SPRxCTL bit 7 for the odd sprites only, so there the term encodes no behaviour. The
@@ -120,7 +120,7 @@ Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t
 > "ECS (probably OCS too, not tested yet): sprite is attached if odd \_or\_ even (or both) sprite SPRxCTL bit 7 is set."
 > "AGA: only odd sprite SPRxCTL bit 7 enables attachment."
 
-The source requirement and the 8373R4 reading above give the attach bit to the odd sprite only for the ECS Denise; this post has either sprite's bit attaching the pair on ECS and only the odd sprite's on AGA, which is the split of the even-sprite term in NanoMig's attach condition, and the thread holds no retraction. The same author changed WinUAE to the odd sprite only in 2009: the changelog of WinUAE 1.6.0 says under Beta 12 ["sprite attachment fixed. Surprisingly it works as documented :)"](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/winuaechangelog.txt#L13429).
+The source requirement and the 8373R4 reading above give the attach bit to the odd sprite only for the ECS Denise; this post has either sprite's bit attaching the pair on ECS and only the odd sprite's on AGA, which is the split of the even-sprite term in NanoMig's attach condition, and the thread holds no retraction. The same author changed WinUAE to the odd sprite only in 2009: the changelog of WinUAE 1.6.0 says under Beta 12 ["sprite attachment fixed. Surprisingly it works as documented :)"](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/winuaechangelog.txt#L13429). The code shows the change: WinUAE 1.6.0 Beta 11 has [`custom.c#L2138`](https://github.com/tonioni/WinUAE/blob/914d0e866429e2745c1f0ffb7943b1108d1f6861/custom.c#L2138), `(sprctl[num | 1] & 0x80) || (!(currprefs.chipset_mask & CSMASK_AGA) && (sprctl[num & ~1] & 0x80))`, and Beta 12 has [`custom.c#L2139`](https://github.com/tonioni/WinUAE/blob/90f5686feb07d61f8372f0e95ccf67abc9739e70/custom.c#L2139), `attachment = sprctl[num | 1] & 0x80;`. As a reading (the page's Decision asks where the even-sprite term comes from), the Beta 11 expression is the rule NanoMig's term encodes: the odd sprite's bit on every chip set and the even sprite's too when the chip set is not AGA. The 2005 post restates the rule WinUAE 1.1 Beta 6 introduced ([changelog, lines 17493-17495](https://github.com/tonioni/WinUAE/blob/a43ff3fb2e9fccd1a064485eaa0afdd4297d823f/od-win32/winuaechangelog.txt#L17493-L17495): "OCS/ECS: sprite is attached if odd or even sprite's SPRxCTL bit 7 is set. AGA: odd sprite SPRxCTL bit 7 only."), which 1.6.0 Beta 12 removed.
 
 ## Decision
 
