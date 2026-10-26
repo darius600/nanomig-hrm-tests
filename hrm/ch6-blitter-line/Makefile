@@ -14,6 +14,11 @@ TEST_BIN := $(OBJ_DIR)/V$(TOP)
 VERILATOR ?= verilator
 FLAGS := --no-timing --cc --exe --build -j 0 -Wall -Wno-fatal
 
+# MUT=<NAME> builds with MUT_<NAME>=1, replaying the stimulus change that the
+# matching "// MUTATION" line in the test source describes.
+MUT ?=
+MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
+
 .PHONY: all test build clean
 
 all: test
@@ -22,7 +27,7 @@ build: $(TEST_BIN)
 
 $(TEST_BIN): $(SRC) $(TEST_SRC) Makefile
 	rm -rf $(OBJ_DIR)
-	$(VERILATOR) $(FLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(SRC) $(TEST_SRC)
+	$(VERILATOR) $(FLAGS) $(MUTFLAGS) --Mdir $(OBJ_DIR) --top-module $(TOP) $(SRC) $(TEST_SRC)
 
 test: $(TEST_BIN)
 	./$(TEST_BIN)

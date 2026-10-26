@@ -235,20 +235,24 @@
 //   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): 6-appa-registers.c98,
 //     6-appa-registers.c99, ch6-appa-bltxmod.c10, ch6-appa-bltxmod.c11,
 //     ch6-appa-bltxpt.c10.
-//   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270 -- ch6-linesum.c9,
-//     "BLTBPT is unused", is corroborated by direct RTL citation here
-//     rather than simulated: no `case (blt_state)` branch in BLT_L1-L4 ever
-//     assigns ptrsel or chsel the value CHB, agnus_blitter.v:795-869, so
-//     BLTBPT genuinely cannot be read or written by line mode's own state
-//     machine; there is no register-readback path to confirm this by
-//     measurement the way the other claims here are measured):
+//   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270; both addresses are
+//     read at the D store ticks. Graded on the printed statements that each
+//     channel has its own address pointer and modulo (p.170, p.173, p.270,
+//     Appendix B p.289). OPEN QUESTION, not settled by the pages: the
+//     line-mode passages (pp.191, 192, 270) prescribe EQUAL values for the C
+//     and D pointers and modulos and p.189 says many blitter registers
+//     "serve other purposes in line-drawing mode", so a reading exists under
+//     which the pages do not say what unequal C and D values do in line
+//     mode. This line follows the explicit per-channel statements. The
+//     BLTBPT-unused claims 6-line-mode.c82 and ch6-linesum.c9 are not graded
+//     here; see the RECORDED lines at the end):
 //     6-line-mode.c57, 6-line-mode.c58, 6-line-mode.c59, 6-line-mode.c60,
 //     6-line-mode.c79, 6-line-mode.c80, 6-line-mode.c83, 6-line-mode.c84,
 //     ch6-line.c30, ch6-line.c31, 6-appa-registers.c100,
 //     6-appa-registers.c101, 6-appa-registers.c102, 6-appa-registers.c117,
 //     6-appa-registers.c118, 6-appa-registers.c119, 6-appa-registers.c120,
 //     ch6-appa-bltxmod.c12, ch6-appa-bltxpt.c11, ch6-linesum.c6,
-//     ch6-linesum.c7, ch6-linesum.c9, ch6-linesum.c10, ch6-linesum.c11 .
+//     ch6-linesum.c7, ch6-linesum.c10, ch6-linesum.c11 .
 //   OCTANT-CODE-EQUALS-BITS (p.189/190/268 -- arithmetic, not RTL):
 //     6-line-mode.c7, 6-line-mode.c8, 6-line-mode.c9, 6-line-mode.c10,
 //     6-line-mode.c11, 6-line-mode.c12, 6-line-mode.c13, 6-line-mode.c14,
@@ -343,12 +347,11 @@
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean, confirmed byte-identical to the baseline by
 // `git diff --stat` after every revert) and the FAIL/PASS lines quoted are
-// what the run printed, not predictions. All 19 mutations (17 assertions,
-// two of which -- LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE's compound claim --
-// were probed on both halves separately) FAILED ONLY the assertion named,
-// with every other assertion staying PASS on the same run: no mutation was
-// found vacuous, so there is no defect-2-shaped finding to report from this
-// campaign beyond the one it was built to fix.
+// what the run printed, not predictions. Every mutation moved ONLY the
+// assertion named, with every other assertion staying as in the baseline
+// on the same run. The exception is LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE,
+// which is red in the baseline (18 passed, 1 failed): its entries say
+// which line moves instead.
 //
 // Every mutation is a STIMULUS mutation to this test file's OWN inputs
 // (a register value, an octant's bit pattern, a probe, a table entry) --
@@ -393,11 +396,21 @@
 // MUTATION LINE-SIGN-SELECTS-MODULO-BANK stimulus red: the SIGNFLAG=0
 //   call's BLTAMOD changed from 0x0040 to 0x0080 (expected constant 32
 //   left untouched) -> FAIL; 15/16 others PASS.
-// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus red, part 1:
-//   h_identity's BLTDPTL changed from 0x0500 to 0x0600 (expected constant
-//   0x0280 left untouched) -> FAIL; 15/16 others PASS. Part 2, probed
-//   separately: h_mod's BLTDMOD changed from 0x0080 to 0x0100 (expected
-//   constant 64 left untouched) -> FAIL, same assertion, same isolation.
+// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus green: h_mod's BLTCMOD set
+//   equal to BLTDMOD (0x0080) with the expected constant 64 left untouched
+//   (`make MUT=CD_CMOD_EQ_DMOD`) -> PASS: the store-tick read and the comparator can
+//   pass, which a line that is red without this change needs shown. The
+//   line is red in the baseline because the address at the D store ticks
+//   of pixels 2 and 3 steps by BLTCMOD, not BLTDMOD (see the MEASURED line).
+// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus red: h_identity's BLTDPTL changed
+//   from 0x0500 to 0x0600 (`make MUT=CD_DPTL`), expected constant 0x0280 left
+//   untouched. The line is red in the baseline too, so the contrast is the
+//   MEASURED line LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED, whose address moves
+//   from 0x0280 to 0x0300 with BLTDPTL.
+// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus none: h_mod's BLTDMOD changed
+//   from 0x0080 to 0x0100 (`make MUT=CD_DMOD`) leaves the store-tick address
+//   delta at 32 (BLTCMOD's step), so it does not move the line; the former
+//   part-2 mutation is dropped because it only moved the tick before the store.
 // MUTATION OCTANT-CODE-EQUALS-BITS stimulus red: FIG68's octant-0 entry
 //   changed from code 6 to code 7 (OCTANTS[] itself, and every other
 //   assertion that reads it, left untouched) -> FAIL; 15/16 others PASS.
@@ -450,6 +463,18 @@
 
 #include <verilated.h>
 #include "Vagnus_blitter.h"
+
+// Stimulus-only mutation switches for LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE
+// (see the "// MUTATION" lines in the header). Built with `make MUT=<NAME>`.
+#ifndef MUT_CD_DPTL
+#define MUT_CD_DPTL 0
+#endif
+#ifndef MUT_CD_DMOD
+#define MUT_CD_DMOD 0
+#endif
+#ifndef MUT_CD_CMOD_EQ_DMOD
+#define MUT_CD_CMOD_EQ_DMOD 0
+#endif
 
 namespace {
 
@@ -663,6 +688,16 @@ private:
     }
 };
 
+std::string hex16(uint16_t v) {
+    static const char* digits = "0123456789ABCDEF";
+    std::string r(4, '0');
+    for (int i = 3; i >= 0; --i) {
+        r[static_cast<size_t>(i)] = digits[v & 0xF];
+        v = static_cast<uint16_t>(v >> 4);
+    }
+    return r;
+}
+
 class Checks {
 public:
     void expect(bool condition, const std::string& label) {
@@ -670,6 +705,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
+    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -1556,7 +1592,11 @@ int main(int argc, char** argv) {
         h_identity.write_reg(BLTAFWM, 0xFFFF);
         h_identity.write_reg(BLTALWM, 0xFFFF);
         h_identity.write_reg(BLTCPTL, 0x0300);  // deliberately different from D
-        h_identity.write_reg(BLTDPTL, 0x0500);
+        uint16_t identity_dptl = 0x0500;
+#if MUT_CD_DPTL
+        identity_dptl = 0x0600;  // MUTATION: BLTDPTL changed; the expected 0x0280 stays.
+#endif
+        h_identity.write_reg(BLTDPTL, identity_dptl);
         h_identity.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
         h_identity.write_reg(BLTCON1, LINE_BIT);  // octant 6
         h_identity.write_reg(BLTSIZE, bltsize_word(2, 1));
@@ -1564,31 +1604,54 @@ int main(int argc, char** argv) {
         const bool d_used_for_pixel1 =
             !h_identity.we_ticks.empty() &&
             h_identity.address_trace[h_identity.we_ticks[0]] == 0x0280;  // 0x0500 stored as data_in[15:1]
+        if (!h_identity.we_ticks.empty()) {
+            checks.note("LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED: with BLTCPTL=0x0300 and BLTDPTL=0x" +
+                        hex16(identity_dptl) + ", the address at pixel 1's D store tick is 0x" +
+                        hex16(static_cast<uint16_t>(h_identity.address_trace[h_identity.we_ticks[0]])) +
+                        " (word address)");
+        }
 
         // (b) BLTDPT's own step magnitude follows BLTDMOD specifically, not
         // BLTCMOD -- octant 6 (Y-major, unconditional ADD), ash=8 disables
         // the X component so only the modulo (Y) contribution is visible.
-        // Measured across PIXELS 2 AND 3, not pixel 1: BLT_L3 (where D's
-        // own step is applied, modsel=CHD) has enaptr gated by
-        // first_line_pixel and is only a reliable read point once
-        // first_line_pixel has cleared, i.e. from pixel 2 onward (same
-        // reliability rule as measure_pixel1_delta's own comment).
+        // Read at the D STORE ticks (`we`, where dma_req=1 and the address
+        // is the one the store uses) of pixels 2 and 3. Sampling the tick
+        // before the store reads BLT_L3, which requests no DMA; an address
+        // read there is not the address any store uses.
         Harness h_mod;
         h_mod.write_reg(BLTADAT, 0x0000);
         h_mod.write_reg(BLTAFWM, 0xFFFF);
         h_mod.write_reg(BLTALWM, 0xFFFF);
         h_mod.write_reg(BLTCPTL, 0x0400);
         h_mod.write_reg(BLTDPTL, 0x0400);
-        h_mod.write_reg(BLTCMOD, 0x0040);  // would give a delta of 32 if wrongly used for D
-        h_mod.write_reg(BLTDMOD, 0x0080);  // gives a delta of 64 when correctly used for D
+        uint16_t mod_cmod = 0x0040;  // would give a delta of 32 if wrongly used for D
+        uint16_t mod_dmod = 0x0080;  // gives a delta of 64 when correctly used for D
+#if MUT_CD_DMOD
+        mod_dmod = 0x0100;  // MUTATION: BLTDMOD changed; the expected 64 stays.
+#endif
+#if MUT_CD_CMOD_EQ_DMOD
+        mod_cmod = 0x0080;  // MUTATION: BLTCMOD set equal to BLTDMOD; the expected 64 stays.
+#endif
+        h_mod.write_reg(BLTCMOD, mod_cmod);
+        h_mod.write_reg(BLTDMOD, mod_dmod);
         h_mod.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
         h_mod.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | LINE_BIT));  // octant 6
         h_mod.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_mod.run_until_writes(3, 200);
-        const int32_t d_delta = (h_mod.we_ticks.size() >= 3 && h_mod.we_ticks[1] >= 1 && h_mod.we_ticks[2] >= 1)
-            ? static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[2] - 1]) -
-              static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[1] - 1])
+        const bool have_three_stores = h_mod.we_ticks.size() >= 3;
+        const int32_t d_delta = have_three_stores
+            ? static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[2]]) -
+              static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[1]])
             : INT32_MIN;
+        if (have_three_stores) {
+            checks.note("LINE-C-D-STORE-ADDRESSES-MEASURED: with BLTCPT=BLTDPT=0x0400, BLTCMOD=0x" +
+                        hex16(mod_cmod) + " and BLTDMOD=0x" + hex16(mod_dmod) +
+                        ", the address at the D store tick of pixels 1, 2, 3 is " +
+                        std::to_string(h_mod.address_trace[h_mod.we_ticks[0]]) + ", " +
+                        std::to_string(h_mod.address_trace[h_mod.we_ticks[1]]) + ", " +
+                        std::to_string(h_mod.address_trace[h_mod.we_ticks[2]]) +
+                        " (word addresses); delta pixel 2 to 3 = " + std::to_string(d_delta));
+        }
 
         checks.expect(d_used_for_pixel1 && d_delta == 64,
             "LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE: (1) preloading BLTCPTL=0x0300 and "
@@ -1621,12 +1684,7 @@ int main(int argc, char** argv) {
             "bitplane width in bytes'/'BLTDMOD to the bitplane width in bytes'/"
             "'BLTCMOD = width of the bitplane in bytes'/'BLTDMOD = width of the "
             "bitplane in bytes', 6-line-mode.c79/c80, ch6-linesum.c6/c7, p.192). "
-            "'BLTBPT is unused in line mode'/'BLTBPT is unused' (6-line-mode.c82/"
-            "ch6-linesum.c9, p.192) is corroborated by direct RTL citation rather "
-            "than simulated: no BLT_L1-L4 case branch ever assigns ptrsel or chsel "
-            "the value CHB (agnus_blitter.v:795-869), and there is no register "
-            "readback path on this design to confirm 'unused' by measurement the way "
-            "every other claim in this file is measured");
+            "Both addresses are read at the D store ticks (`we`).");
     }
 
     // ---------------- OCTANT-CODE-EQUALS-BITS (p.189, p.190, p.268) ----------------
@@ -1838,7 +1896,14 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- RECORDED ----------------
-    // These two claims are declined, not asserted -- their ids appear on
+    checks.record(
+        "6-line-mode.c82, ch6-linesum.c9 (p.192, 'BLTBPT = unused'; 'BLTBPT is "
+        "unused in line mode'): NOT ASSERTED here. No assertion in this file "
+        "reads BLTBPT. No BLT_L1-L4 case branch assigns ptrsel or chsel the "
+        "value CHB (agnus_blitter.v:795-869), which is a fact about the RTL, "
+        "and there is no register readback path on this design to show "
+        "'unused' by measurement.");
+    // The claims below are declined, not asserted -- their ids appear on
     // no expect() line above: a RECORDED line is not a measurement.
     checks.record(
         "ch6-line.c17 (p.191, \"these calculations normalize the line into "
