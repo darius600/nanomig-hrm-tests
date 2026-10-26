@@ -794,8 +794,6 @@ after S0. The first poll after each clear reads 0, so the clear took effect
 - AUDxLEN ← 7 with six words and a seventh that is 0: the blocks have seven words
   where the grader keeps six, and P8-PRE-BLOCKS goes red.
 - Replace word 6 by 0x9494: no run at L9 starts in the block, and P8-PRE-L9 goes red.
-- Five words, AUDxLEN ← 5: the word at BUFx+10 is never fetched, and P8-PRE-L9 goes red
-  with the blocks (of five words, as written) still passing P8-PRE-BLOCKS.
 
 **Contrasting cases.** The polled request is moved to a bit the channel's DMA never
 sets, and the CPU sets it by software at a time that the test takes from a play of
@@ -894,15 +892,16 @@ window, and PRE-PERIOD goes red.
 m's DMA off. There are no modulator fetches, and G-F goes red.
 
 **Contrasting cases.**
-- Leave out the ADKCON write in phase 2. The page predicts no modulation, so
-  channel n stays at L32 and the check goes red. Write L32 as 40 in the
-  calibration: two calibrated levels are equal and PRE-CAL goes red.
+- Write L32 as 40 in the calibration: two calibrated levels are equal and PRE-CAL
+  goes red.
 - Write `ADKCON ← 1 << m` in phase 2, which has SET/CLR = 0 ("Determines if
   bits written with a 1 get set or cleared", p.10). ADKCONR bit m reads 0,
   so the phase-2 readback check goes red, and so does the level check.
-- Store the modulator words in the reverse order, 0x0028, 0x0028, 0x0010,
-  0x0040 (the words past the set then repeat 0x0040). The page predicts the
-  reverse cycle, and the forward-cycle check goes red.
+- Reverse the live input, where the CPU writes the volumes 64, 16, 40 to the attached
+  channel in turn: the volumes are written 40, 16, 64. The page predicts the reverse
+  cycle, and the forward-cycle check goes red (P9-LIVEREV to P11-LIVEREV).
+- Leave the modulator channel's DMA off: there are no modulator fetches and G-F goes
+  red (P9-NOFETCH to P11-NOFETCH).
 
 **Left open.** The AA page does not say:
 - whether channel m still produces sound. (HRM p.149: "that channel ceases to
@@ -974,12 +973,12 @@ phase 1: all interior runs of channel n last exactly 400·c, so each sample is o
 P11, modulator DMA left off; and AUDnPER ← 800 in phase 1, where G-P goes red.
 
 **Contrasting cases.**
-- Leave out the ADKCON write. The page predicts unmodulated 400-colour-clock
-  runs, and the check goes red.
 - Write `ADKCON ← 1 << (4+m)` in phase 2 (SET/CLR = 0), as in P9 to P11.
   The readback check and the run check go red.
-- Store the modulator words in reverse order (0x015E, 0x015E, 0x0258, 0x00C8).
-  The page predicts the reverse cycle, and the check goes red.
+- Reverse the live input, where the CPU writes the periods 200, 600, 350 to the
+  attached channel in turn: the periods are written 350, 600, 200. The page predicts
+  the reverse cycle, and the check goes red (P12-LIVEREV to P14-LIVEREV).
+- Leave the modulator channel's DMA off: G-F goes red (P12-NOFETCH to P14-NOFETCH).
 
 **Left open.** As in P9 to P11: channel m's own output, when a new period
 takes effect, and how many samples each modulator word governs. The AA page
@@ -1075,8 +1074,10 @@ empty, so its frame follows the previous frame with no idle cell.
    middle of frame k−1, after it has begun (the buffer is empty) and before it ends
    (the word waits in the buffer while frame k−1 is sent). The read counts are tuned
    on this design (14 and 42), and the run prints where each write falls against the
-   start of the frame before it. Check (d) rests on this stimulus fact; the contrast
-   that writes a word late must reach check (d), so no precondition measures it.
+   start of the frame before it. Check (d) rests on the second half of this stimulus fact
+   (the word waits in the buffer); the contrast that writes a word late must reach check
+   (d), so no precondition measures that half. The first half (the buffer is empty at the
+   write, so that no waiting word is overwritten) is P16-PRE-EMPTY.
 4. Wait 30T and stop.
 
 The data bytes d1..d8 are 0x81, 0x3C, 0x5A, 0x00, 0xFF, 0x66, 0x18, 0xA5.
@@ -1098,14 +1099,18 @@ transmission, whenever it is empty." Over the whole interval:
   idle cell: the word waiting in the buffer moves as soon as the shift register is empty.
 - (e) After frame 8's stop cell, which ends 10T after its start, TxD stays idle until the end.
 
-**Preconditions.** G-S0, G-C, G-BRK, G-T.
+**Preconditions.** G-S0, G-C, G-BRK, G-T. Each of the words 2 to 8 is written after the
+frame of the word before it began (P16-PRE-EMPTY), so that the word before it has moved
+and the one-word buffer loses no waiting word. *Contrast:* shorten the wait before word 3
+to about 3 bit times: word 3 is written before frame 2 began, over the waiting word 2,
+and P16-PRE-EMPTY goes red.
 
 **Contrasting cases.**
 - Write word 5 only after 3 frame times of idle. The page predicts no move
   when frame 4 ends, because the buffer is empty, and the move at the
   delayed write instead. Check (d) for k = 5 goes red through its own
-  clause; no precondition refers to the time of the writes, so all of them
-  still hold.
+  clause; the late write still follows the start of the frame before it, so
+  P16-PRE-EMPTY and the other preconditions still hold.
 - Change d3 to 0x24. The decoded frame 3 differs, and check (b) goes red.
 
 ---
