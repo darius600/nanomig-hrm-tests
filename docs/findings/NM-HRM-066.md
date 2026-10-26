@@ -214,3 +214,5 @@ to come before its first use. That would make sprite 7's fate at $0030
 independent of the plane count, and move it away from Figure 6-9's by-plane
 counts with one to three lores planes or one hires plane, which is the other
 half of the decision.
+
+**NanoMig pull request.** [#181](https://github.com/MiSTle-Dev/NanoMig/pull/181), commit [`5e6d8de`](https://github.com/MiSTle-Dev/NanoMig/commit/5e6d8deef7b5299f9267d168ab6c9846da16d24b), blocks sprite DMA while the bitplane data fetch runs: the sprite request is dropped when `ddf` and the bitplane DMA enable are both set, with `ddf` taken from `ddfrun` on ECS and from `ddfena` on OCS, as in TC64's `fe2db71`. Merged on 2026-10-23 as [`113bcda`](https://github.com/MiSTle-Dev/NanoMig/commit/113bcda15e916739deebac429e075aea92d8c7ec). This suite pins NanoMig at `4315acb`, which is before the merge, so every NanoMig line this page cites is as it was before the change.

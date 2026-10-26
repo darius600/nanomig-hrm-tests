@@ -135,3 +135,5 @@ write instead of at the compositor, which may be the tidier place for it.
 
 Before removing the term, find out whether it was written for the original Denise
 (*Risks and unknowns*). It closes as stated in *What is asked of a reader*.
+
+**NanoMig pull request.** [#180](https://github.com/MiSTle-Dev/NanoMig/pull/180), commit [`11e5f9f`](https://github.com/MiSTle-Dev/NanoMig/commit/11e5f9f2702a3b7edc0740d38d4b1651d29c0725), removes the even-sprite term `(!aga && attach0)` from the attach condition of each sprite pair, in both module variants (default and `DENISE_EBR`); AGA is unchanged. Open.
