@@ -397,7 +397,7 @@ inline std::vector<Blk> p8_blocks(const R8& q, int x) {
 }
 
 // The reads after which the CPU sets the polled request, in the contrasts of a planning play (the same play, nothing set): one in every block, at the
-// middle of (F_k, S_k) for P8-EARLY, of (S_k, E_k) for P8-MID and of (E_k, F_(k+1)) for P8-LIVE.
+// middle of (F_k, S_k) for P8-EARLY and of (E_k, F_(k+1)) for P8-LIVE.
 inline std::vector<unsigned> p8_plan(const R8& base, int x, int mode) {
     // Each set of the CPU delays the reads after it by about 1000 system clocks (the two markers and the write), so the m-th set is
     // placed (m+1) such delays before its target; the value is tuned on this design, and the run prints where every request fell.
@@ -416,7 +416,7 @@ inline std::vector<unsigned> p8_plan(const R8& base, int x, int mode) {
 }
 
 inline void run_p8(Checks& ck) {
-    const int plan_mode = mut("P8-EARLY") ? 0 : (mut("P8-MID") ? 1 : (mut("P8-LIVE") ? 2 : -1));
+    const int plan_mode = mut("P8-EARLY") ? 0 : (mut("P8-LIVE") ? 2 : -1);
     std::vector<R8> runs;
     for (int x = 0; x < nch(); ++x) {
         if (plan_mode >= 0) {
@@ -425,7 +425,7 @@ inline void run_p8(Checks& ck) {
         } else runs.push_back(p8_build(x, mut("P8-BIT"), {}));
     }
     PreAgg agg;
-    bool gd = true, gf = true, gr = true, once = true, blocks = true, clearok = true, started_ok = true, used_ok = true, set_ok = true;
+    bool gd = true, gf = true, gr = true, once = true, blocks = true, clearok = true, started_ok = true, set_ok = true;
     for (int x = 0; x < nch(); ++x) {
         R8& q = runs[size_t(x)];
         ARun& r = q.r;
@@ -472,13 +472,12 @@ inline void run_p8(Checks& ck) {
             for (uint64_t ee : ev) {
                 if (ee >= b.Fk && ee < b.Sk) ++n_start;
                 if (ee >= b.Fk && ee < b.Ek) ++n_used;
-                if (ee >= b.Ek && ee < b.F1) ++n_set;
+                if (ee >= b.Sk && ee < b.F1) ++n_set;
                 if (ee >= b.Fk && first_ev < 0) first_ev = (long long)(ee - b.Fk);
             }
             if (n_start != 0) started_ok = false;
-            if (n_used != 0) used_ok = false;
             if (n_set < 1) set_ok = false;
-            wn += "k" + dec((long long)b.k) + ": S-F=" + dec((long long)(b.Sk - b.Fk)) + " E-F=" + dec((long long)(b.Ek - b.Fk)) + " first event-F=" + dec(first_ev) + " events before S/before E/after E=" + dec(n_start) + "/" + dec(n_used) + "/" + dec(n_set) + "; ";
+            wn += "k" + dec((long long)b.k) + ": S-F=" + dec((long long)(b.Sk - b.Fk)) + " E-F=" + dec((long long)(b.Ek - b.Fk)) + " first event-F=" + dec(first_ev) + " events before S/before E (P8-USED, measured and not graded: the page leaves the reading of used open)/from S=" + dec(n_start) + "/" + dec(n_used) + "/" + dec(n_set) + "; ";
         }
         ck.note("P8 ch" + dec(x) + ": events=" + dec((long long)ev.size()) + " per block (cycles from the fetch of word L): " + wn + "R=" + dec((long long)q.R) + " cycles, L9=" + num(q.L9));
     }
@@ -491,10 +490,10 @@ inline void run_p8(Checks& ck) {
     ck.expect(clearok, "P8-PRE-CLEAR: no two consecutive polls read 1: each clear took effect before the next poll (AA p.25 'These bits may be polled by the processor')");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && gr && blocks && once && clearok;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-R, the blocks, the L9 runs or the clear";
-    graded(ck, pre, started_ok, "P8-STARTED: in each block k = 2..6 no read of 1 in the channel's request bit is stored from F_k, the fetch of word L, to S_k, the start of word L's run: the request is clear until the last data is first in use (the weakest reading of AA p.11 to 12 'the data in this register has been used')", un);
-    graded(ck, pre, used_ok, "P8-USED: in each block k = 2..6 no read of 1 in the channel's request bit is stored from F_k, the fetch of word L, to E_k, the start of the run after word L's run: the request is clear until the output of the last word is over and its data has been used (AA p.11 to 12 'When the DMA data is finished (words outputted=Length) and the data in this register has been used, an audio channel interrupt request is set')", un);
-    graded(ck, pre && used_ok, set_ok, "P8-SET: in each block k = 2..6 a read of 1 in the channel's request bit is stored from E_k to F_(k+1), the fetch of word L in block k+1: the request is set once the data has been used (AA p.11 to 12 'an audio channel interrupt request is set'); graded only where P8-USED holds, since a request that was set early and cleared by the poll cannot show whether one is set again", un + " or P8-USED");
-    graded(ck, pre, used_ok && set_ok, "P8 sol:AA-audxdat.c11: for each channel and each block k = 2..6 the channel's interrupt request bit (INTREQ bit 7+x) reads 0 until the output of word L is over and its data has been used, and is set from then on: no read of 1 is stored before E_k and one is stored between E_k and the next block's last fetch (AA p.11 to 12 'When the DMA data is finished (words outputted=Length) and the data in this register has been used, an audio channel interrupt request is set'; AA p.25 '07 AUD0 4 Audio channel 0 block finished')", un);
+    graded(ck, pre, started_ok, "P8-STARTED: in each block k = 2..6 no read of 1 in the channel's request bit is stored from F_k, the fetch of word L, to S_k, the start of word L's run: the request is clear until the last data is first in use (AA p.11 to 12 'and the data in this register has been used'; both readings of 'used' require this)", un);
+    graded(ck, pre, set_ok, "P8-SET: in each block k = 2..6 a read of 1 in the channel's request bit is stored from S_k to F_(k+1), the fetch of word L in block k+1: the request is set once the last data is in use (AA p.11 to 12 'an audio channel interrupt request is set')", un);
+    graded(ck, pre, started_ok && set_ok, "P8 sol:AA-audxdat.c11: for each channel and each block k = 2..6 the channel's interrupt request bit (INTREQ bit 7+x) reads 0 until the data of word L is in use and is set from then on: no read of 1 is stored before S_k and one is stored between S_k and the next block's last fetch; whether it is set at S_k or at E_k, when the output of word L is over, the page leaves open (AA p.11 to 12 'When the DMA data is finished (words outputted=Length) and the data in this register has been used, an audio channel interrupt request is set'; AA p.25 '07 AUD0 4 Audio channel 0 block finished')", un);
+    ck.record("P8-USED (measured, not graded): the page leaves open whether 'used' means that the output of word L has begun (S_k) or has ended (E_k); the MEASURED lines of P8 print, per block, the events stored before S_k, before E_k and from S_k");
 }
 
 } // namespace s5

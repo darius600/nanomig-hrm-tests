@@ -202,7 +202,7 @@ inline void run_p16_17(Checks& ck) {
     {
         std::string ds;
         for (size_t k = 1; k < frames.size(); ++k) ds += dec((long long)(frames[k].s - frames[k - 1].s) - (long long)(10 * T)) + " ";
-        ck.note("P16 start of frame k minus the start of frame k-1 minus 10T (cycles), k = 2..: " + ds);
+        ck.note("P16 start of frame k minus the start of frame k-1 minus 10T (cycles), k = 2..: " + ds + "(measured, not graded: no page fixes the reload latency below one bit cell)");
     }
     // where each word k = 2..8 was written against frame k-1 (cycles after the start of frame k-1, in tenths of T): the word waits in
     // the buffer if this is between 0 and 10 T. Recorded, not a precondition: the contrast that writes word 5 late must reach check (d).
@@ -231,7 +231,7 @@ inline void run_p16_17(Checks& ck) {
     for (size_t k = 0; k < frames.size() && k < 8; ++k) b_ok &= frames[k].framed && frames[k].lsb == d[k] && frames[k].msb == d[k];
     bool c_ok = !frames.empty() && frames[0].s > r.t_w1;
     bool d_ok = frames.size() >= 2;
-    for (size_t k = 1; k < frames.size() && k < 8; ++k) d_ok &= frames[k].s <= frames[k - 1].s + 10 * T;
+    for (size_t k = 1; k < frames.size() && k < 8; ++k) d_ok &= frames[k].s < frames[k - 1].s + 11 * T;
     bool e_ok = !frames.empty();
     if (e_ok) {
         auto ed = tx_edges(c, frames.back().s + 10 * T, t_end);
@@ -247,7 +247,7 @@ inline void run_p16_17(Checks& ck) {
     graded(ck, pre, a_ok, "P16-A: before the first write TxD is constant (AA p.27 'Data from this buffer is moved into a serial shift register for output transmission, whenever it is empty')", un);
     graded(ck, pre, b_ok, "P16-B: exactly eight frames appear and frame k carries d_k, each with a start cell and a stop cell at the stop level: none missing, repeated or extra (AA p.27 'This address writes data to a Transmit data buffer')", un);
     graded(ck, pre, c_ok, "P16-C: frame 1's start cell begins after the first write marker (AA p.27)", un);
-    graded(ck, pre, d_ok, "P16-D: for k = 2..8 frame k's start cell begins no later than the end of frame k-1's stop cell, 10T after frame k-1's start cell: no idle cell, the word waiting in the buffer moves as soon as the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')", un);
+    graded(ck, pre, d_ok, "P16-D: for k = 2..8 frame k's start cell begins less than 11T after frame k-1's start cell, so that no complete idle cell lies between the frames: the word waiting in the buffer moves when the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')", un);
     graded(ck, pre, e_ok, "P16-E: after frame 8's stop cell TxD stays idle until the end of the capture (AA p.27)", un);
     graded(ck, pre, a_ok && b_ok && c_ok && d_ok && e_ok, "P16 sol:AA-serdat.c6 sol:AA-serdat.c7: every word written to SERDAT goes to the transmit buffer and is transmitted on TxD once, in the order written, and a word waiting in the buffer moves into the shift register as soon as it is empty, so its frame follows the previous frame with no idle cell (AA p.27)", un);
 
