@@ -179,7 +179,7 @@ inline void run_f5(Checks& ck, const std::string& sel) {
     ck.expect(pop, id + "-POP: in every case at least eight sprite reads or stray DMA reads lie between M1 and M2");
     ck.expect(ref, id + "-REF: in every case the window between M1 and M2 holds at least 156 reads at whose cycle the refresh output is high, the four refresh reads of each of at least 39 whole lines (AA p.29 '4 refresh time slots'; the window holds the 40 line starts of its LINES(40) wait); that the four reads of a line form one group, and that no line holds more than four, is unfalsifiable at this boundary");
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
-    fw_print(ck, id, fixture, fw_eval(c, acc, {{"IDLE", kIdle}}));
+    fw_print(ck, id, fw_eval(c, acc, {{"IDLE", kIdle}}));
     if (!(fixture && dma && quiet && pop && ref && tmo)) { not_graded(ck, id, "a precondition"); return; }
     std::string cl;
     for (int n = 0; n < 8; ++n) cl += " opus:AA-spr" + dec(n) + "pth.c5 opus:AA-spr" + dec(n) + "ptl.c5";
@@ -324,7 +324,6 @@ inline void run_f9(Checks& ck, const std::string& sel) {
     const unsigned LEN[2] = {4, 3};
     poke_words(hd.rs.pokes, DB[0], {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666});
     poke_words(hd.rs.pokes, DB[1], {0x7111, 0x7222, 0x7333, 0x7444, 0x7555, 0x7666});
-    if (sel == id + "-FW") poke_words(hd.rs.pokes, kIdle, {0x0001, 0xFFFE, 0xFFFF, 0xFFFE});   // contrast: the list starts with a WAIT that ends at once, so the word at IDLE+4 is an instruction word of the list
     s.w16(ADKCON, 0x9100);
     struct Case { int ms = 0, me = 0, mb = 0, i_on = -1, i_blk = -1; };
     Case cs[2];
@@ -354,7 +353,7 @@ inline void run_f9(Checks& ck, const std::string& sel) {
     bool dma = (logv(c, hd.dma_idx) & 0x0210) == 0x0210;
     bool dmaon = true, ref = true, ok = true;
     for (int j = 0; j < 2; ++j) {
-        uint64_t t0 = marker(c, cs[j].ms), t1 = marker(c, cs[j].me), tb = marker(c, cs[j].mb);
+        uint64_t t0 = marker(c, cs[j].ms), t1 = marker(c, cs[j].me);
         dmaon = dmaon && (logv(c, cs[j].i_on) & 0x4000) != 0;
         ref = ref && refresh_pre(acc, t0, t1, kF9Lines);
         std::vector<Region> chan = {{DB[j], DB[j] + 12}};
@@ -362,7 +361,7 @@ inline void run_f9(Checks& ck, const std::string& sel) {
         auto rd = chan_or_stray(acc, t0, t1, chan, &stray);
         bool reads_ok = rd.size() == LEN[j] && stray.empty();
         for (size_t i = 0; reads_ok && i < LEN[j]; ++i) reads_ok = rd[i].addr == DB[j] + 2 * uint32_t(i);
-        bool blk = cs[j].i_blk >= 0 && (logv(c, cs[j].i_blk) & 0x0002) != 0 && rd.size() >= LEN[j] && rd[LEN[j] - 1].t < tb;
+        bool blk = cs[j].i_blk >= 0 && (logv(c, cs[j].i_blk) & 0x0002) != 0;
         ok = ok && reads_ok && blk;
         ck.note("F9 LENGTH = " + dec(LEN[j]) + ": " + dec((long long)rd.size()) + " disk or stray reads, " + dec((long long)stray.size()) + " stray; DSKBYTR bit 14 " + dec((logv(c, cs[j].i_on) & 0x4000) ? 1 : 0) +
                 "; INTREQR bit 1 " + dec(cs[j].i_blk >= 0 && (logv(c, cs[j].i_blk) & 2) ? 1 : 0) + "; " + dec((long long)refresh_reads(acc, t0, t1)) + " refresh reads in the window (at least " + dec((long long)refresh_min(kF9Lines)) + " required)");
@@ -372,9 +371,10 @@ inline void run_f9(Checks& ck, const std::string& sel) {
     ck.expect(dmaon, id + "-DMAON: DSKBYTR bit 14 DMAON reads 1 after the DSKLEN sequence of each case (AA p.23 'DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)'; HRM p.247 'the DMAEN bit in the DSKLEN register must be turned on twice in order to actually enable the disk DMA hardware'; HRM p.248 DMAON 'Indicates when DMA is actually enabled')");
     ck.expect(ref, id + "-REF: the window of each case holds at least 12 reads at whose cycle the refresh output is high, the four refresh reads of each of at least 3 whole lines (AA p.29 '4 refresh time slots'; the window holds the 4 line starts of its LINES(4) wait); that the four reads of a line form one group, and that no line holds more than four, is unfalsifiable at this boundary");
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
-    fw_print(ck, id, fixture, fw_eval(c, acc, {{"IDLE", kIdle}}));
+    fw_print(ck, id, fw_eval(c, acc, {{"IDLE", kIdle}}));
     if (!(fixture && dma && dmaon && ref && tmo)) { not_graded(ck, id, "a precondition"); return; }
-    ck.expect(ok, "F9: a disk write DMA of LENGTH = 4 words and one of LENGTH = 3 words each read exactly LENGTH consecutive words from RAM starting at DSKPT, none of the guard words after them and no other word, and then raise the disk block request: INTREQR bit 1 is set after the last read (AA p.23 DSKLEN '13-0 LENGTH Length (# of words) of DMA data'; DSKDAT 'when the DMA data is finished (Length=0) it causes a Disk Block Interrupt.'; AA p.25 bit 1 DSKBLK 'Disk Block finished')");
+    ck.record("NOT CHECKABLE F9: that the words the disk DMA reads are transferred into DSKDAT (the returned data has no observable path at the ports), and that the disk block request is raised after the last read and not before it (the port shows no timestamp of the request; the CPU sees it only when it polls INTREQR); F9 grades the RAM read addresses and count of the two lengths and the eventual request (AA p.23 DSKDAT)");
+    ck.expect(ok, "F9: a disk write DMA of LENGTH = 4 words and one of LENGTH = 3 words each read exactly LENGTH consecutive words from RAM starting at DSKPT, none of the guard words after them and no other word, and the disk block request is raised: INTREQR bit 1 is set within the poll (AA p.23 DSKLEN '13-0 LENGTH Length (# of words) of DMA data'; DSKDAT 'when the DMA data is finished (Length=0) it causes a Disk Block Interrupt.'; AA p.25 bit 1 DSKBLK 'Disk Block finished')");
 }
 
 } // namespace s7

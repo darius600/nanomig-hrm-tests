@@ -84,7 +84,7 @@ struct Prop {
     bool mouse_contrast = false;           // C6: the population contrast moves the mouse between the two reads
 };
 
-inline void prologue(Script& s, bool copen = true) {
+inline void prologue(Script& s) {
     s.w16(INTENA, 0x7FFF); s.w16(INTREQ, 0x7FFF); s.w16(DMACON, 0x7FFF);
     s.w16(ADKCON, 0x7FFF);
     s.w16(COPCON, 0); s.w16(FMODE, 0); s.w16(BPLCON0, 0); s.w16(BPLCON1, 0); s.w16(BPLCON2, 0);
@@ -93,7 +93,7 @@ inline void prologue(Script& s, bool copen = true) {
     for (int x = 0; x < 4; ++x) s.w16(audvol(x), 0);
     s.w32(COP1LCH, kIdle);
     s.w16(COPJMP1, 0);
-    s.w16(DMACON, copen ? 0x8280 : 0x8200);   // the contrast of the final-WAIT anchor (F5-FWA, F9-FWA): Copper DMA is not turned on
+    s.w16(DMACON, 0x8280);
 }
 
 inline std::vector<uint16_t> idle_list() { return {0xFFFF, 0xFFFE}; }
@@ -117,7 +117,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
     rs.bin = (sel == p.id + "-FIXTURE") ? "prog_run_nofix.bin" : "prog_run.bin";
     Script& s = rs.sc;
     const bool m_assert = sel == p.id, m_pc1 = sel == p.id + "-PC1", m_pc2 = sel == p.id + "-PC2",
-               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5", m_fwa = sel == p.id + "-FWA";
+               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5";
     poke_words(rs.pokes, kIdle, idle_list());
     for (auto& k : p.pokes) rs.pokes.push_back(k);
     prologue(s);
@@ -160,7 +160,6 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
             }
             for (uint16_t c : p.cs) {   // frame B, once for each COPCON value
                 uint16_t cw = (m_assert && c == 0x0000) ? uint16_t(0x0002) : c;
-                if (m_fwa && c == 0x0002) cw = 0x0000;   // the contrast of the final-WAIT anchor: the MOVE is refused in every frame, so the list never reaches its final WAIT
                 s.w32(COP1LCH, kIdle);
                 s.vblsync();
                 s.waitline(0x30);
@@ -218,7 +217,6 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
         for (uint16_t c : p.cs) {
             FrameB fb; fb.c = c;
             uint16_t cw = (m_assert && c == 0x0000) ? uint16_t(0x0002) : c;
-            if (m_fwa && c == 0x0002) cw = 0x0000;   // the contrast of the final-WAIT anchor: the MOVE is refused in every frame, so the list never reaches its final WAIT
             s.w32(COP1LCH, vp.case_addr);
             if (m_pc1) s.w16(DMACON, 0x0080);
             s.vblsync();

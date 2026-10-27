@@ -100,7 +100,7 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     bool fixture = c.loaded && c.released && c.fixture_ok && c.done;
     bool pc1 = true, pc2 = true, pc3 = c.timeouts == 0, pc4 = true, pc5 = (logv(c, r.dma_idx) & 0x0240) == 0x0240, assert_ok = true;
     Ctx cx{&c, &r.acc};
-    // C12 runs its case lists with COPCON bit 1 clear only; no read of their final WAIT is observed, so only IDLE enters C12-FW.
+    // C12 runs its case lists with COPCON bit 1 clear only; no read of their final WAIT is observed, so only IDLE is measured.
     const Fw fw = fw_eval(c, r.acc, {{"IDLE", kIdle}});
     const std::vector<Region> px = {{kPx, kPx + 4}}, pxa = {{kPx, kPx + 2}};
     std::vector<Region> chan = {{kDst, kDst + 4}, {kDst3, kDst3 + 2}, {kPx, kPx + 4}};
@@ -150,7 +150,7 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     ck.expect(pc3, id + "-PC3: no wait of the program ended by its timeout");
     ck.expect(pc4, id + "-PC4: frame A: the DMA preload of V0 gives $3C3C twice and of V1 gives $5A5A twice in the observation blit; every preload blit reads [PX, PX+2) once and no other word of [PX, PX+4), every observation blit reads none of them");
     ck.expect(pc5, id + "-PC5: DMACONR reads DMAEN and BLTEN set, and no blitter access lies outside the windows of the blits, so every blit finished inside its window (AA p.22)");
-    fw_print(ck, id, fixture, fw);
+    fw_print(ck, id, fw);
     if (!(fixture && pc1 && pc2 && pc3 && pc4 && pc5)) { not_graded(ck, id, "a precondition"); return; }
     ck.expect(assert_ok, id + ": with COPCON bit 1 clear (COPCON $0000 and $FFFD) a Copper MOVE of the one value V1 = $5A5A (graded for this value against the preloaded V0 = $3C3C, not for every 16-bit value) to BLTADAT, BLTBDAT or BLTCDAT does not change the data the blitter uses from that source: the observation blit writes $3C3C twice (AA p.6 '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true.'; AA p.19 COPCON bit 01 CDANG; AA p.13 BLTxDAT) " + claims_note);
 }

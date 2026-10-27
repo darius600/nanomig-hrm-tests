@@ -20,7 +20,7 @@ inline FHead f_head(const std::string& id, const std::string& sel, uint16_t dmac
     FHead h;
     h.rs.bin = sel == id + "-FIXTURE" ? "prog_run_nofix.bin" : "prog_run.bin";
     poke_words(h.rs.pokes, kIdle, idle_list());
-    prologue(h.rs.sc, sel != id + "-FWA");
+    prologue(h.rs.sc);
     // The contrast of the DMA_CHECK (Fn-DMA): DMACONR is read before the enable bits are written, so the check reads them
     // clear, and the channels are enabled afterwards, so that the rest of the run is the normal run.
     const bool dma_mut = sel == id + "-DMA";

@@ -189,7 +189,7 @@ inline void print_c(Checks& ck, const Prop& p, const CEval& e, const std::string
     if (e.have_pc5) ck.expect(e.pc5, id + "-PC5: " + pc_extra);
     if (e.have_pc6) ck.expect(e.pc6, id + "-" + p.pcx + ": " + pc6_text);
     if (e.have_pcr) ck.expect(e.pcr, id + "-PCR: every window holds at least 28 reads at whose cycle the refresh output is high, the four refresh reads of each of at least 7 whole lines (AA p.29 '4 refresh time slots'; each window holds the 8 line starts of its LINES(8) wait); that the four reads of a line form one group, and that no line holds more than four, is unfalsifiable at this boundary");
-    fw_print(ck, id, e.fixture, e.fw);
+    fw_print(ck, id, e.fw);
     bool pre = e.fixture && e.pc1 && e.pc2 && e.pc3 && (e.pc4 || e.pc4_ng) && e.pc5 && e.pc6 && e.pcr;
     if (!pre) { not_graded(ck, id, "a precondition"); return; }
     ck.expect(e.assert_ok && e.runs, id + ": " + what + " " + claims_and_page);
