@@ -5,14 +5,14 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: should `paula_audio_mixer` give AUDxVOL = 64 a gain of its own on the multiply path (`ldata`/`rdata`), distinct from 63, as Table 5-9 prints 0.0 dB against -0.1 dB, where it now reads `ldatasum` 4032 for both? Closes when the change is made and the four reds under *Assertions* turn green, or when an Amiga specialist rejects it; if the rejection means Table 5-9 is wrong, this page is refiled against the printed page. |
+| **What is asked of a reader** | Question: should `paula_audio_mixer` give AUDxVOL = 64 a gain of its own on the multiply path (`ldata`/`rdata`), distinct from 63, as Table 5-9 prints 0.0 dB against -0.1 dB, where it now reads `ldatasum` 4032 for both? Closes when the change is made and the four reds of the two `hrm/` packages under *Assertions* and `P6-DISTINCT`, `P6-LIN` and `P6-LEVELS` of `integration/aa-integ-s5` on both cores turn green, or when an Amiga specialist rejects it; if the rejection means Table 5-9 is wrong, this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
-| **Scope** | chip revision unknown; the manual names none. Measured on the multiply path with channel 0 only, volume register values 63, 64, 65, 96 and 127 giving the same `ldatasum`; the PWM path is correct and reaches no output |
+| **Scope** | chip revision unknown; the manual names none. Measured on the multiply path: by the two `hrm/` packages with channel 0 only, volume register values 63, 64, 65, 96 and 127 giving the same `ldatasum`; by `integration/aa-integ-s5`, with the AA chip set selected, on each of the four channels at `nanomig.v`'s audio outputs, volumes 0 to 63 and $0040 with the words $7F7F and $8080, on fx68k and TG68K; the PWM path is correct and reaches no output |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (14)</summary> claim ids by assertion: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH`: `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`: `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`): `5-p163.c1`, `5-t59.v64`, `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS`: `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four assertions carry claim ids </details> |
+| **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY, PDF p. 11 (AUDxVOL); the document prints no page numbers · <details><summary>claim ids by assertion (15)</summary> claim ids by assertion: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH`: `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`: `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`): `5-p163.c1`, `5-t59.v64`, `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS`: `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four `hrm/` assertions carry claim ids. `P6-LEVELS` of `integration/aa-integ-s5`: `sol:AA-audxvol.c4` (AA p. 11); its `P6-DISTINCT` and `P6-LIN` carry no claim id </details> |
 | **Module** | `paula_audio_mixer.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33); inherited |
-| **Test** | [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map): `make -C hrm/ch5-audio-register-map test`; [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; an expected red exits nonzero |
-| **Assertions** | 4 red. `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map` (`8 passed, 1 failed`): expected `ldata` at AUDxVOL=64 to differ from AUDxVOL=63, observed 4032 for both. In `hrm/ch5-audio-volume-scale` (`69 passed, 5 failed`): `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, expected `ldatasum(vol0=63)` and `ldatasum(vol0=64)` to differ, observed identical; `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`), expected 0.0 dB within ±0.1, observed `ldatasum=4032`, -0.137 dB; `TABLE-5-9-HAS-65-VOLUME-LEVELS`, expected 65 distinct outputs over registers 0..64, observed 64. Its two other reds, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT`, are [NM-HRM-002](NM-HRM-002.md)'s |
+| **Test** | [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map): `make -C hrm/ch5-audio-register-map test`; [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`integration/aa-integ-s5`](../../integration/aa-integ-s5): `make -k -C integration/aa-integ-s5 test` (or `test-fx68k` and `test-tg68k`), the whole design at `nanomig.v`'s ports with the AA chip set selected, graded at `audio_left` and `audio_right`; an expected red exits nonzero |
+| **Assertions** | 4 red in the `hrm/` packages. `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map` (`8 passed, 1 failed`): expected `ldata` at AUDxVOL=64 to differ from AUDxVOL=63, observed 4032 for both. In `hrm/ch5-audio-volume-scale` (`69 passed, 5 failed`): `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, expected `ldatasum(vol0=63)` and `ldatasum(vol0=64)` to differ, observed identical; `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`), expected 0.0 dB within ±0.1, observed `ldatasum=4032`, -0.137 dB; `TABLE-5-9-HAS-65-VOLUME-LEVELS`, expected 65 distinct outputs over registers 0..64, observed 64. Its two other reds, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT`, are [NM-HRM-002](NM-HRM-002.md)'s. In `integration/aa-integ-s5`, 3 red of 19 on each core (195 passed, 19 failed on fx68k and on TG68K; the other sixteen are [NM-HRM-084](NM-HRM-084.md)'s four and [NM-HRM-028](NM-HRM-028.md)'s twelve): `P6-DISTINCT`, expected 65 pairwise different levels for v = 0 to 63 and $0040, observed the level of $0040 equal to that of 63 on every channel, 8001 with the word $7F7F and −8064 with $8080; `P6-LIN`, expected 64 · A(v) = v · A($0040) for v = 0 to 63, observed A(1) = 127 and −128 with the levels of 1 to 63 in proportion to v, so A($0040) = 63 · A(1) and every v from 1 to 63 fails; `P6-LEVELS`, their aggregate. Green on the same run: `P6-PROP`, the levels of 1 to 63 in proportion to v, `P6-ZERO`, `P6-ADDR` and `P7`, bit 6 giving the level of $0040 whatever bits 5 to 0 hold |
 | **Verdict of the four** | all four clamp at 64 and keep it distinct from 63. Hardware: not measured |
 | **Effort** | S — the `.volume` connection in `paula_audio_mixer.v` (four instances, `sv0` to `sv3`) and the width of `paula_audio_volume`'s `volume` port, as the suggested change states |
 
@@ -34,6 +34,22 @@ at the top are distinct:
 
 and describes bit 6 as forcing maximum output. So the manual asks for 65 distinct
 levels, and for 63 and 64 to differ.
+
+**The AA specification, PDF p. 11**, gives the AA chip set the same register, with
+64 as sixty-four ones and 63 as sixty-three:
+
+```
+AUDxVOL    0A8  W       P    Audio Channel x Volume
+                    This register contains the Volume setting for
+                    Audio Channel x. Bits 6,5,4,3,2,1,0 specify 65 linear volume
+                    levels as shown below.
+                    BITS    USE
+                    ----    ----------------------------
+                    15-07   Not used
+                    06      Forces volume to max (64 ones, no zeros)
+                    05-00   Sets one of 64 levels (000000=no output
+                            (111111=63 0nes, one zero)
+```
 
 ## RTL and measurement
 
@@ -67,12 +83,35 @@ is one of twelve); no file outside `src/minimig-aga/` other than `nanomig.v` nam
 Controls: `MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES` compares 62 against 63 on
 the same fixture and is green, and `VOLUME-65-LEVELS` is green on the PWM output.
 
+### Where else the suite meets it
+
+[`integration/aa-integ-s5`](../../integration/aa-integ-s5) measures the same collapse from the AA specification on all four channels, with the AA chip set selected, at `nanomig.v`'s `audio_left` and `audio_right` on fx68k and TG68K.
+Each channel alone plays one word, $7F7F in one run and $8080 in another, with AUDxLEN = 1 and AUDxPER = 200, while the program writes AUDxVOL = 0, 1, …, 63 and then $0040 (`s5_p58.h:159-193`).
+A level A(v) is the mean of the summed outputs over the third and fourth line after the write, less their level with every volume at 0 and no audio DMA running.
+`P6-DISTINCT`, `P6-LIN` and `P6-LEVELS` are graded at `s5_p58.h:283-285` and `P6-PROP` at `:287`.
+On fx68k, channel 0; the other three channels and TG68K print the same levels:
+
+```text
+MEASURED: P6 ch0 word 0x7F7F A(v)(period in cycles): 0:0(1) 1:127(1) 16:2032(1) 32:4064(1) 48:6096(1) 62:7874(1) 63:8001(1) 64:8001(1)  | 0x40|k: 0:8001 31:8001 63:8001
+MEASURED: P6 ch0 word 0x8080 A(v)(period in cycles): 0:0(1) 1:-128(1) 16:-2048(1) 32:-4096(1) 48:-6144(1) 62:-7936(1) 63:-8064(1) 64:-8064(1)  | 0x40|k: 0:-8064 31:-8064 63:-8064
+FAIL: P6-DISTINCT: the 65 levels written as v = 0..63 and as 0x0040 give 65 pairwise different levels for both data words and every channel (...)
+FAIL: P6-LIN: for both data words and every channel and every v in 0..63 the level over a whole number of repetitions is v/64 of the level of 0x0040 ...
+FAIL: P6-LEVELS sol:AA-audxvol.c4: AUDxVOL bits 6 to 0 specify 65 linear volume levels ...
+PASS: P6-PROP: among the volumes v = 1..63 the level over a whole number of repetitions is proportional to v ...
+```
+
+Every level is constant over its window, a period of one cycle, and is the sample times the volume: 127 · v and −128 · v up to 63, and 127 · 63 and −128 · 63 at $0040, because `sv0` to `sv3` each OR bit 6 into all six bits of the helper's input ([`paula_audio_mixer.v#L23-L70`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula_audio_mixer.v#L23-L70)). With the level of $0040 at 63 units no v from 1 to 63 is v/64 of it, so `P6-LIN` fails at each of them, and `P6-DISTINCT` at the pair 63 and $0040.
+
 ## Risks and unknowns
 
 - Chip revision and real hardware are not measured, and no affected software is
   on the result.
-- Both packages measure 63 against 64 on channel 0 only. `sv1` to `sv3` in
-  `paula_audio_mixer.v` carry the same construction but are not measured.
+- The two `hrm/` packages measure 63 against 64 on channel 0 only; `sv1` to
+  `sv3` are measured by `integration/aa-integ-s5` alone, through the whole design.
+- The AA line `Audio Channel x. Bits 6,5,4,3,2,1,0 specify 65 linear volume`, on
+  which `P6-DISTINCT` and `P6-LIN` rest, is `[1/3]` in the corpus; the rows for
+  bit 6 and bits 5 to 0 are `[3/3]`, their continuation `(111111=63 0nes, one
+  zero)` `[1/3]`. The AA document is marked PRELIMINARY.
 - The PWM path shows 65 levels from five sampled volumes only.
 - Measured against the multiply path's own maximum, the whole of Table 5-9 runs
   **+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
@@ -131,3 +170,7 @@ Leave `NANOMIG` off only to reproduce the before-state.
 So `ch5-audio-volume-scale` staying red is not a failed fix: its two remaining reds
 belong to [NM-HRM-002](NM-HRM-002.md), the stereo routing, which nothing suggested
 here touches. Read the assertion label before concluding anything.
+
+In `integration/aa-integ-s5` the same change would give $0040 the level 127 · 64
+and −128 · 64 and turn `P6-DISTINCT`, `P6-LIN` and `P6-LEVELS` green on both
+cores; that is a reading of the change, not run.
