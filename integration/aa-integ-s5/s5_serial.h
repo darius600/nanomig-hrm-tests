@@ -205,7 +205,7 @@ inline void run_p16_17(Checks& ck) {
         ck.note("P16 start of frame k minus the start of frame k-1 minus 10T (cycles), k = 2..: " + ds + "(measured, not graded: no page fixes the reload latency below one bit cell)");
     }
     // where each word k = 2..8 was written against frame k-1 (cycles after the start of frame k-1, in tenths of T): the word waits in
-    // the buffer if this is between 0 and 10 T. Recorded, not a precondition: the contrast that writes word 5 late must reach check (d).
+    // the buffer if this is between 0 and 10 T. P16-PRE-EMPTY and P16-PRE-WAITING grade that range.
     {
         std::string ws;
         std::vector<TxFrame> f17;
@@ -222,6 +222,14 @@ inline void run_p16_17(Checks& ck) {
         std::vector<TxFrame> f17;
         for (auto& f : frames) if (f.s > r.t_w1) f17.push_back(f);
         for (size_t k = 2; k <= 8; ++k) empty_ok &= k - 2 < r.m_w.size() && f17.size() >= k - 1 && marker(c, r.m_w[k - 2]) > f17[k - 2].s;
+    }
+    // every word k = 2..8 is written before the shift register becomes empty: the store of the marker that follows the write of word k comes
+    // earlier than 10T after the start of frame k-1 (its stop cell ends then), so that word k is waiting in the buffer when frame k-1 ends
+    bool waiting_ok = true;
+    {
+        std::vector<TxFrame> f17;
+        for (auto& f : frames) if (f.s > r.t_w1) f17.push_back(f);
+        for (size_t k = 2; k <= 8; ++k) waiting_ok &= k - 2 < r.m_w.size() && f17.size() >= k - 1 && marker(c, r.m_w[k - 2] + 1) < f17[k - 2].s + 10 * T;
     }
     // P16 expectations
     std::vector<uint8_t> d = r.d;   // the grader keeps d3 = 0x5A whatever the stimulus wrote
@@ -242,14 +250,17 @@ inline void run_p16_17(Checks& ck) {
     ck.expect(gt, "P16-G-T: every TxD edge lies on a grid of pitch T = (N+1) colour clocks from its frame's first edge, exactly, and the shortest edge interval is T (AA p.27 'If this number is N, then the Baud Rate is 1 bit every (N+1)*.2794 Microseconds')");
     ck.expect(idle_len >= 20 * T, "P16-PRE-IDLE: the wait from the SERPER write to the first write lasts at least 20T");
     ck.expect(empty_ok, "P16-PRE-EMPTY: each of the words 2 to 8 is written after the frame of the word before it began, so that the word before it has moved and the one-word buffer does not lose a waiting word");
+    ck.expect(waiting_ok, "P16-PRE-WAITING: each of the words 2 to 8 is written before the frame of the word before it ends, so that the word is waiting in the buffer when the shift register becomes empty (with P16-PRE-EMPTY: written after that frame began and before its shift register becomes empty; AA p.27 'whenever it is empty')");
     bool pre = agg.fixture && agg.s0 && agg.gc && gbrk && gt && idle_len >= 20 * T && empty_ok;
     const std::string un = "fixture, G-S0, G-C, G-BRK, G-T, the idle wait or the empty buffer at each write";
+    const bool pre_wait = pre && waiting_ok;
+    const std::string un_wait = un + " or the waiting word at each write";
     graded(ck, pre, a_ok, "P16-A: before the first write TxD is constant (AA p.27 'Data from this buffer is moved into a serial shift register for output transmission, whenever it is empty')", un);
     graded(ck, pre, b_ok, "P16-B: exactly eight frames appear and frame k carries d_k, each with a start cell and a stop cell at the stop level: none missing, repeated or extra (AA p.27 'This address writes data to a Transmit data buffer')", un);
     graded(ck, pre, c_ok, "P16-C: frame 1's start cell begins after the first write marker (AA p.27)", un);
-    graded(ck, pre, d_ok, "P16-D: for k = 2..8 frame k's start cell begins less than 11T after frame k-1's start cell, so that no complete idle cell lies between the frames: the word waiting in the buffer moves when the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')", un);
+    graded(ck, pre_wait, d_ok, "P16-D: for k = 2..8 frame k's start cell begins less than 11T after frame k-1's start cell, so that no complete idle cell lies between the frames: the word waiting in the buffer moves when the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')", un_wait);
     graded(ck, pre, e_ok, "P16-E: after frame 8's stop cell TxD stays idle until the end of the capture (AA p.27)", un);
-    graded(ck, pre, a_ok && b_ok && c_ok && d_ok && e_ok, "P16 sol:AA-serdat.c6 sol:AA-serdat.c7: every word written to SERDAT goes to the transmit buffer and is transmitted on TxD once, in the order written, and a word waiting in the buffer moves into the shift register as soon as it is empty, so its frame follows the previous frame with no idle cell (AA p.27)", un);
+    graded(ck, pre_wait, a_ok && b_ok && c_ok && d_ok && e_ok, "P16 sol:AA-serdat.c6 sol:AA-serdat.c7: every word written to SERDAT goes to the transmit buffer and is transmitted on TxD once, in the order written, and a word waiting in the buffer moves into the shift register as soon as it is empty, so its frame follows the previous frame with no idle cell (AA p.27)", un_wait);
 
     // ---- P17 ----
     std::vector<TxFrame> fr17;   // the frames of the eight words: those that start after the first write
@@ -571,13 +582,18 @@ inline void run_p20(Checks& ck) {
         int want = (i == 0 || i == 2) ? 1 : 0;
         a_pat &= ir == want && b0 == want && b2 == want;
     }
-    // run B: SERDATR bit 13 and INTREQR bit 0 (AA p.27 prints bit 13 as a mirror of the request)
-    const int wantb[6] = {1, 0, 1, 0, 1, 0};
-    bool b_mirror = okB, b_pat = okB;
+    // run B: SERDATR bit 13 is measured against the two conflicting readings (SPECIFICATION.md 5.2): AA p.27, a mirror of INTREQR bit 0
+    // (the value read between the two SERDATR reads), and HRM p.257, the state of the buffer (1 when it is empty, 0 when a word waits).
+    // Nothing about bit 13 is graded.
+    const int bufb[6] = {1, 0, 1, 1, 0, 0};   // the buffer is empty in the cases (a), (a), (c) and holds a word in (b), (d), (e)
+    const char* const casen[6] = {"a", "b", "a", "c", "d", "e"};
+    std::string tbe_line;
+    int n_mirror = 0, n_buffer = 0;
     for (int i = 0; i < 6 && okB; ++i) {
         int b0 = bitv(tb[size_t(i)][0], 13), ir = bitv(tb[size_t(i)][1], 0), b2 = bitv(tb[size_t(i)][2], 13);
-        b_mirror &= b0 == ir && b2 == ir;
-        b_pat &= ir == wantb[i] && b0 == wantb[i] && b2 == wantb[i];
+        bool m = b0 == ir && b2 == ir, h = b0 == bufb[i] && b2 == bufb[i];
+        n_mirror += m; n_buffer += h;
+        tbe_line += std::string("(") + casen[i] + ") bit13 " + dec(b0) + "," + dec(b2) + " INTREQR0 " + dec(ir) + " buffer " + dec(bufb[i]) + " mirror " + (m ? "yes" : "no") + " buffer-state " + (h ? "yes" : "no") + (i < 5 ? " | " : "");
     }
     // the cases (b) to (e) have to lie before the earliest instant at which the buffered word can move (the start of the stop cell of the
     // frame in the shift register), so that no move can change the request inside them
@@ -620,11 +636,12 @@ inline void run_p20(Checks& ck) {
     ck.expect(pre_a, "P20-PRE-TRIPLES: run A takes its four triples and INTREQR bit 11 takes both values across them (AA p.25 '11 RBF'; AA p.24 'Both a set and clear operation are required to load arbitary data into this register')");
     ck.expect(stable, "P20-PRE-STABLE: run B takes its six triples, and the triples of the cases (b), (c), (d) and (e) end before the start of the stop cell of the frame that is in the shift register, the earliest instant at which the buffered word can move (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')");
     bool preA = agg.fixture && agg.s0 && agg.gc && gbrk && gk && grxd && pre_a;
-    bool preB = agg.fixture && agg.s0 && agg.gc && gbrk && gk && grxd && pre_a && stable;
-    const std::string un = "fixture, G-S0, G-C, G-BRK, the colour-clock length, G-RXD, the triples or P20-PRE-STABLE";
+    const std::string un = "fixture, G-S0, G-C, G-BRK, the colour-clock length, G-RXD or the triples";
     graded(ck, preA, a_mirror && a_pat, "P20-RBF: in each of the four triples of run A (the frame received, cleared by software, set by software, cleared by software) SERDATR bit 14 equals INTREQR bit 11 at both reads, and the triples read (1, 1, 1), (0, 0, 0), (1, 1, 1) and (0, 0, 0) (AA p.27 '14 RBF Serial port Receive Buffer Full(mirror)')", un);
-    graded(ck, preB, b_mirror && b_pat, "P20-TBE: in each of the six triples of run B SERDATR bit 13 equals INTREQR bit 0 at both reads, and the triples read (1, 1, 1) after a move with the buffer empty, (0, 0, 0) with a word waiting and the request cleared, (1, 1, 1) after the next move, (0, 0, 0) after a software clear with the buffer empty, (1, 1, 1) after a software set with a word waiting and (0, 0, 0) after a software clear with a word waiting (AA p.27 '13 TBE Serial port Transmit Buffer Empty(mirror)')", un);
-    graded(ck, preB, a_mirror && a_pat && b_mirror && b_pat, "P20 sol:AA-serdatr.c8: SERDATR bit 14 reads the same as INTREQR bit 11 (RBF) and bit 13 the same as INTREQR bit 0 (TBE) in every stable case: after a frame is received, after a move with the buffer empty and with a word waiting, and after a software set and a software clear of the request with the buffer empty and with a word waiting (AA p.27 'Several interrupt request bits are also read at this address, along with the data')", un);
+    if (okB) ck.note("P20-TBE (not graded: AA p.27 reads bit 13 as a mirror of INTREQ bit 0, HRM p.257 as the state of the buffer; stable states " + std::string(stable ? "yes" : "no") + "), cases (a) (b) (a) (c) (d) (e) of run B: " + tbe_line +
+                     "; cases that follow the mirror reading " + dec(n_mirror) + "/6, the buffer-state reading " + dec(n_buffer) + "/6");
+    else ck.note("P20-TBE (not graded): the six triples of run B were not found");
+    ck.record("WITHDRAWN sol:AA-serdatr.c8: AA p.27 prints SERDATR bit 13 as '(mirror)' of INTREQ bit 0 and HRM p.257 as '(Not a mirror -- interrupt occurs when the buffer becomes empty.)'; the pages give opposite readings after a software clear with the buffer empty and after a software set with a word waiting, so the claim, which bundles the RBF and the TBE half, is withdrawn whole; P20-RBF grades the RBF half without the claim id and P20-TBE measures the TBE half");
 }
 
 } // namespace s5

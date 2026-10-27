@@ -1770,9 +1770,9 @@ for 9 system clocks per colour clock, and `P3-BYTE` writes the second byte of wo
 
 ### 7.5 RECORDED: the final run of each core
 
-Both builds print the same verdict on every line: tg68k: 194 passed, 21 failed; fx68k: 194 passed, 21 failed. The lines that print FAIL on both: P1-A, P1-B, P1-C, P1, P6-DISTINCT, P6-LIN, P6-LEVELS, P9-LEVELS, P9, P10-LEVELS, P10, P11-LEVELS, P11, P12-RUNS, P12, P13-RUNS, P13, P14-RUNS, P14, P20-TBE, P20.
+Both builds print the same verdict on every line: tg68k: 195 passed, 19 failed; fx68k: 195 passed, 19 failed. The lines that print FAIL on both: P1-A, P1-B, P1-C, P1, P6-DISTINCT, P6-LIN, P6-LEVELS, P9-LEVELS, P9, P10-LEVELS, P10, P11-LEVELS, P11, P12-RUNS, P12, P13-RUNS, P13, P14-RUNS, P14.
 
-Measurements, TG68K (an excerpt of the `MEASURED:` lines of the run: 42 of 133; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
+Measurements, TG68K (an excerpt of the `MEASURED:` lines of the run: 43 of 134; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
 
 ```text
 P1 ch0 L=1 wrote 1: fetches=8 returns=8 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 0 
@@ -1781,7 +1781,7 @@ P1 ch0 L=3 wrote 3: fetches=23 returns=7 distinct=5 outside=2 wrap_bad=1 step_ba
 P1 ch0 L=7 wrote 7: fetches=53 returns=8 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
 P1 ch0 L=16 wrote 16: fetches=121 returns=8 distinct=16 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
 P1 ch0 (all four) L=3 wrote 3: fetches=84 returns=28 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
-P2 ch0: pass-2 anchor fetch at cycle 2324401, 67 fetches from it, 75 runs in the interval, word-6 fetches before/after the write 3/5, write at cycle 2437389, L(A)=6048 L(D)=-6048
+P2 ch0: pass-2 anchor fetch at cycle 2324401, 67 fetches from it, 75 runs in the interval, word-6 fetches before/after the write 3/5, write at cycle 2437389, L(A)=6048 L(D)=-6048, run start minus the time of its fetch (cycles) min/max 2891/4699
 P3 pass 2 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
 P3 pass 3 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
 P3: pass-3 anchor run starts 43200 cycles after the pass-2 anchor run (nine words of 600 colour clocks: 43200)
@@ -1817,9 +1817,10 @@ P19: R=104 cycles (13.00 CCK); frames 1..8 (reads in the interval / reads that d
 P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 3B5A,0000,3B5A | 7B5A,0800,7B5A | 3B5A,0000,3B5A
 P20 run B triples (a, b, a, c, d, e): 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800 | 2800,0000,2800 | 0800,0001,0800 | 0800,0000,0800
 P20 run B: frames 3, last store of triples b, c, d, e against the start of the stop cell of the frame in the shift register (cycles, negative = before): -2526 -3146 -1922 -1090
+P20-TBE (not graded: AA p.27 reads bit 13 as a mirror of INTREQ bit 0, HRM p.257 as the state of the buffer; stable states yes), cases (a) (b) (a) (c) (d) (e) of run B: (a) bit13 1,1 INTREQR0 1 buffer 1 mirror yes buffer-state yes | (b) bit13 0,0 INTREQR0 0 buffer 0 mirror yes buffer-state yes | (a) bit13 1,1 INTREQR0 1 buffer 1 mirror yes buffer-state yes | (c) bit13 1,1 INTREQR0 0 buffer 1 mirror no buffer-state yes | (d) bit13 0,0 INTREQR0 1 buffer 0 mirror no buffer-state yes | (e) bit13 0,0 INTREQR0 0 buffer 0 mirror yes buffer-state yes; cases that follow the mirror reading 4/6, the buffer-state reading 6/6
 ```
 
-Measurements, fx68k (an excerpt of the `MEASURED:` lines of the run: 42 of 133; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
+Measurements, fx68k (an excerpt of the `MEASURED:` lines of the run: 43 of 134; the colour-clock notes of every run and the lines of channels 1 to 3 of P1, P2, P5, P6 and P8 are left out):
 
 ```text
 P1 ch0 L=1 wrote 1: fetches=7 returns=7 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 
@@ -1828,7 +1829,7 @@ P1 ch0 L=3 wrote 3: fetches=20 returns=6 distinct=5 outside=2 wrap_bad=1 step_ba
 P1 ch0 L=7 wrote 7: fetches=45 returns=7 distinct=7 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
 P1 ch0 L=16 wrote 16: fetches=102 returns=7 distinct=16 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
 P1 ch0 (all four) L=3 wrote 3: fetches=70 returns=23 distinct=5 outside=2 wrap_bad=1 step_bad=0 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
-P2 ch0: pass-2 anchor fetch at cycle 2322585, 55 fetches from it, 63 runs in the interval, word-6 fetches before/after the write 2/4, write at cycle 2413789, L(A)=6048 L(D)=-6048
+P2 ch0: pass-2 anchor fetch at cycle 2322585, 55 fetches from it, 63 runs in the interval, word-6 fetches before/after the write 2/4, write at cycle 2413789, L(A)=6048 L(D)=-6048, run start minus the time of its fetch (cycles) min/max 2891/4699
 P3 pass 2 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
 P3 pass 3 levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): 0/0 8001/8001 -8064/-8064 63/63 -63/-63 6048/6048 -6048/-6048 -2016/-2016 2016/2016 
 P3: pass-3 anchor run starts 43200 cycles after the pass-2 anchor run (nine words of 600 colour clocks: 43200)
@@ -1864,4 +1865,5 @@ P19: R=96 cycles (12.00 CCK); frames 1..8 (reads in the interval / reads that di
 P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 3B5A,0000,3B5A | 7B5A,0800,7B5A | 3B5A,0000,3B5A
 P20 run B triples (a, b, a, c, d, e): 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800 | 2800,0000,2800 | 0800,0001,0800 | 0800,0000,0800
 P20 run B: frames 3, last store of triples b, c, d, e against the start of the stop cell of the frame in the shift register (cycles, negative = before): -2318 -3122 -1778 -866
+P20-TBE (not graded: AA p.27 reads bit 13 as a mirror of INTREQ bit 0, HRM p.257 as the state of the buffer; stable states yes), cases (a) (b) (a) (c) (d) (e) of run B: (a) bit13 1,1 INTREQR0 1 buffer 1 mirror yes buffer-state yes | (b) bit13 0,0 INTREQR0 0 buffer 0 mirror yes buffer-state yes | (a) bit13 1,1 INTREQR0 1 buffer 1 mirror yes buffer-state yes | (c) bit13 1,1 INTREQR0 0 buffer 1 mirror no buffer-state yes | (d) bit13 0,0 INTREQR0 1 buffer 0 mirror no buffer-state yes | (e) bit13 0,0 INTREQR0 0 buffer 0 mirror yes buffer-state yes; cases that follow the mirror reading 4/6, the buffer-state reading 6/6
 ```

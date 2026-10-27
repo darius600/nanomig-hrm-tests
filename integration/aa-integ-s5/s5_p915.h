@@ -339,22 +339,11 @@ inline Bit3 bit3_run(int k, bool with_bit3, const std::string& variant) {
     poke_words(rs.pokes, kBuf[3], {0x0010, 0x0020});
     s.w32(audlc(k), kBuf[k]); s.w16(audlen(k), 1); s.w16(audper(k), (!with_bit3 && mut("P15-PERB")) ? 600 : 300); s.w16(audvol(k), 64);   // P15-PERB: run B plays at the period 600
     s.w32(audlc(3), kBuf[3]); s.w16(audlen(3), 2); s.w16(audper(3), 700); s.w16(audvol(3), 0);
-    uint16_t adk = 0x8008;
-    std::string var = variant;
-    // (no attach bit modulates channel 0: for k = 0 the page's contrast is the CPU volume write, selected by P15-VOL)
-    if (var == "ATT" && k == 0) var = "";
-    if (var == "ATT") {   // the page's contrast: the volume attach bit of the channel before k as well
-        int mm = k - 1;
-        if (mm >= 0) {
-            poke_words(rs.pokes, kBuf[mm], {0x0010, 0x0020});
-            s.w32(audlc(mm), kBuf[mm]); s.w16(audlen(mm), 2); s.w16(audper(mm), 700); s.w16(audvol(mm), 0);
-            adk = uint16_t(0x8008 | (1u << mm));
-        }
-    }
+    const uint16_t adk = 0x8008;
+    const std::string& var = variant;
     if (with_bit3 && !mut("P15-NOADK")) s.w16(ADKCON, adk);
     b.i_adk = r.pre.logn++; s.rd(ADKCONR);
-    unsigned mask = 0x8u | (1u << k);
-    if (var == "ATT" && k >= 1) mask |= 1u << (k - 1);
+    const unsigned mask = 0x8u | (1u << k);
     b.m_start = s.w16(DMACON, start_val(mask));
     b.i_dm = r.pre.logn++; s.rd(DMACONR);
     if (var == "VOL") { s.dly(wait_iters(20 * 227)); s.w16(audvol(k), 16); s.dly(wait_iters(40 * 227)); }
@@ -389,9 +378,9 @@ inline std::vector<LRun> bit3_core(const Bit3& q) {
 inline void run_p15(Checks& ck) {
     PreAgg agg;
     bool gd = true, gf = true, adk = true, gp = true, same_ok = true;
-    const bool volmut = mut("P15-VOL"), attm = mut("P15-ATT");
+    const bool volmut = mut("P15-VOL");
     for (int k = 0; k < 3; ++k) {
-        Bit3 a = bit3_run(k, true, volmut ? "VOL" : (attm ? "ATT" : ""));
+        Bit3 a = bit3_run(k, true, volmut ? "VOL" : "");
         Bit3 b = bit3_run(k, false, "");
         agg.add(a.r.st); agg.add(b.r.st);
         note_gc(ck, "P15 k=" + dec(k), a.r.st);

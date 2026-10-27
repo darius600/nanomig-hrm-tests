@@ -145,6 +145,7 @@ inline void run_p2(Checks& ck) {
             return pat[k];
         };
         double LA = 0, LD = 0; bool haveA = false, haveD = false;
+        long long lag_min = 0, lag_max = 0; bool lag_set = false;
         for (size_t j = 0; j < nw; ++j) {
             const LRun& u = r.runs[size_t(ps.r0) + j];
             double lv = double(u.v) - r.Z;
@@ -152,6 +153,10 @@ inline void run_p2(Checks& ck) {
             if (!haveA && f2[j].addr == kBuf[x]) { LA = lv; haveA = true; }
             if (!haveD && f2[j].addr == kBuf[x] + 14) { LD = lv; haveD = true; }
             b_ok &= u.t0 > f2[j].t;
+            long long lag = (long long)u.t0 - (long long)f2[j].t;
+            if (!lag_set || lag < lag_min) lag_min = lag;
+            if (!lag_set || lag > lag_max) lag_max = lag;
+            lag_set = true;
         }
         (void)flat;
         // (a): equal levels iff equal words; four distinct values give four distinct levels
@@ -177,7 +182,8 @@ inline void run_p2(Checks& ck) {
         wr_both &= tws != 0 && nbefore >= 1 && nafter >= 1;
         ck.note("P2 ch" + dec(x) + ": pass-2 anchor fetch at cycle " + dec((long long)ps.ta) + ", " + dec((long long)f2.size()) + " fetches from it, " + dec((long long)r.runs.size()) +
                 " runs in the interval, word-6 fetches before/after the write " + dec(nbefore) + "/" + dec(nafter) + ", write at cycle " + dec((long long)tws) +
-                ", L(A)=" + num(LA) + " L(D)=" + num(LD));
+                ", L(A)=" + num(LA) + " L(D)=" + num(LD) +
+                ", run start minus the time of its fetch (cycles) min/max " + dec(lag_min) + "/" + dec(lag_max));
     }
     print_std(ck, "P2", agg, runs.size());
     ck.expect(gd, "P2-G-D: after each start DMACONR bit 9 and the channel's bit read 1 on all four channels (AA p.22)");
