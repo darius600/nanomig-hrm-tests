@@ -28,6 +28,7 @@ needs a disk.
 | `sol:AA-audxdat.c8` | 11 | "With maximum volume, each byte can drive the audio outputs with 0.8 volts(peak to peak, typ)". This is an analog voltage. A test sees the audio output only as digital samples, never as volts. "typ" is a typical value, not a limit, and "can drive" states a capability. No expected value can be derived. |
 | `sol:AA-audxvol.c5` | 11 | "15-07 Not used". The page calls these bits unused, so it gives no expected value for them, and a test must not invent one. Every stimulus writes them as 0 (HRM p.264: "If a bit is described as unused in a write-only register, be sure to keep that bit clear when writing values to that register."). |
 | `sol:AA-serdat.c9` | 27 | "A stop bit must be provided as part of the data word." This is an obligation on the program, not a behaviour of the chip. The page states no outcome for a word that has no stop bit. Every stimulus meets the obligation, and P18 relies on it. The HRM states an outcome for an all-zero word (p.259: "If this register is written with all zeros, no data transmission is initiated"), but the oracle is the AA page, so that outcome is not tested. |
+| `sol:AA-serdatr.c8` | 27 | "13 TBE Serial port Transmit Buffer Empty(mirror)" (AA p.27) against "13 TBE TRANSMIT BUFFER EMPTY (Not a mirror -- interrupt occurs when the buffer becomes empty.)" (HRM p.257). The two pages give opposite readings of bit 13 after a software clear with the buffer empty and after a software set with a word waiting (section 5.2), so the claim, which bundles the RBF and the TBE half, is withdrawn whole. P20-RBF grades the RBF half, which is stated unambiguously ("14 RBF Serial port Receive Buffer Full(mirror)"), without a claim id; P20-TBE measures the TBE half. |
 | `sol:AA-audxdat.c5` | 11 | "This register is the Audio channel x (x=0,1,2,3) DMA data buffer." The ports show the reads of the Chip-memory port and the audio samples. AUDxDAT is write-only and no port shows what it holds, so a transfer of the fetched word into AUDxDAT and a path from the fetched word to the output that bypasses AUDxDAT give the same ports. No assertion tells the two apart, and the claim is withdrawn. P2 grades that the output follows the fetched words in fetch order and carries no claim id. |
 | `sol:AA-audxdat.c9` | 11 | "The audio DMA channel controller automatically transfers data to this register from RAM." Withdrawn for the reason given for `sol:AA-audxdat.c5`: the transfer into the register is not observable at a boundary that distinguishes it from a bypass. |
 | `sol:AA-audxlen.c2` | 11 | "AUDxLEN 0A4 W", which the claim reads as write-only access. The write half is exercised by P1 (a CPU write at 0A4 takes effect, graded under `sol:AA-audxlen.c1` and `sol:AA-audxlen.c4`). The read half has no expected value: the legend (p.6 and p.10) reads "W=Write, R=Read" and says nothing about what a read of a W address returns. A proposition grades a claim whole or not at all, so this claim is declined. |
@@ -1073,10 +1074,10 @@ empty, so its frame follows the previous frame with no idle cell.
    middle of frame k−1, after it has begun (the buffer is empty) and before it ends
    (the word waits in the buffer while frame k−1 is sent). The read counts are tuned
    on this design (14 and 42), and the run prints where each write falls against the
-   start of the frame before it. Check (d) rests on the second half of this stimulus fact
-   (the word waits in the buffer); the contrast that writes a word late must reach check
-   (d), so no precondition measures that half. The first half (the buffer is empty at the
-   write, so that no waiting word is overwritten) is P16-PRE-EMPTY.
+   start of the frame before it. Check (d) rests on both halves of this stimulus fact. The
+   first half (the buffer is empty at the write, so that no waiting word is overwritten)
+   is P16-PRE-EMPTY. The second half (the word waits in the buffer while frame k-1 is
+   sent) is P16-PRE-WAITING.
 4. Wait 30T and stop.
 
 The data bytes d1..d8 are 0x81, 0x3C, 0x5A, 0x00, 0xFF, 0x66, 0x18, 0xA5.
@@ -1105,14 +1106,26 @@ frame of the word before it began (P16-PRE-EMPTY), so that the word before it ha
 and the one-word buffer loses no waiting word. *Contrast:* shorten the wait before word 3
 to about 3 bit times: word 3 is written before frame 2 began, over the waiting word 2,
 and P16-PRE-EMPTY goes red.
+Each of the words 2 to 8 is written before the frame of the word before it ends, that is
+before its shift register becomes empty (P16-PRE-WAITING): the write log shows the store of
+the marker that follows the write of word k earlier than 10T after the start of frame k-1,
+so that word k is waiting in the buffer when the shift register becomes empty. Together with
+P16-PRE-EMPTY this proves that word k is written after frame k-1 starts and before its shift
+register becomes empty. P16-D and P16 are graded only when P16-PRE-WAITING holds.
+*Contrast:* write word 5 only after 3 frame times of idle: word 5 is written after frame 4
+has ended, and P16-PRE-WAITING goes red (this is a contrast of the condition, not of the
+clause under test).
 
 **Contrasting cases.**
-- Write word 5 only after 3 frame times of idle. The page predicts no move
-  when frame 4 ends, because the buffer is empty, and the move at the
-  delayed write instead. Check (d) for k = 5 goes red through its own
-  clause; the late write still follows the start of the frame before it, so
-  P16-PRE-EMPTY and the other preconditions still hold.
 - Change d3 to 0x24. The decoded frame 3 differs, and check (b) goes red.
+- Check (d) has no stimulus contrast. A contrast must keep the waiting word (P16-PRE-WAITING
+  and P16-PRE-EMPTY hold) and make a frame start 11T or more after the start of the frame
+  before it. With the word waiting, the only quantity that fixes this gap is the design's
+  reload latency, which no write of the program changes; the stimulus levers that change
+  the gap otherwise (a late write, a different SERPER value, a break) remove the waiting
+  word, move the bit-time grid, or force TxD low, and each is gated by a precondition
+  (P16-PRE-WAITING, P16-G-T, P16-G-BRK). The comparator is shown live by the
+  implementation records only.
 
 ---
 
@@ -1306,13 +1319,17 @@ no claim of this package states it.
 
 ### P20. SERDATR also reads the RBF and TBE request bits
 
-**Claim.** `sol:AA-serdatr.c8`, p.27.
+**Claim.** None. `sol:AA-serdatr.c8` (p.27) is withdrawn (section 1): the AA page
+and HRM p.257 conflict about bit 13 (section 5.2). The RBF half is graded as
+P20-RBF without a claim id; the TBE half is measured as P20-TBE.
 
-**Proposition.** SERDATR bit 14 reads the same as INTREQR bit 11 (RBF), and bit 13
-the same as INTREQR bit 0 (TBE), in every stable state: after a frame has been
-received, after a move of the transmit buffer with the buffer empty and with a word
-waiting, and after a software set and a software clear of the request with the
-buffer empty and with a word waiting.
+**Proposition.** SERDATR bit 14 reads the same as INTREQR bit 11 (RBF), in every
+stable state: after a frame has been received and after a software set and a
+software clear of the request. SERDATR bit 13 is measured against INTREQR bit 0
+(TBE) and against the state of the transmit buffer in the stable states of run B:
+after a move of the transmit buffer with the buffer empty and with a word waiting,
+and after a software set and a software clear of the request with the buffer empty
+and with a word waiting. Bit 13 is not graded.
 
 **Stimulus, run A (RBF).**
 1. The test drives one frame with data 0x5A on RxD. The program polls INTREQR
@@ -1348,24 +1365,22 @@ a buffered word can first move.
 
 **Expected.** p.27: "Several interrupt request bits are also read at this
 address, along with the data,as shown below." "14 RBF Serial port Receive
-Buffer Full(mirror)". "13 TBE Serial port Transmit Buffer Empty(mirror)". Each
-case above is a state that nothing changes while its triple is taken, so the
-INTREQR read between two SERDATR reads is bracketed by them. In every triple the
-two SERDATR reads and the INTREQR read agree in the one request, and no triple is
-skipped: a disagreement between the two SERDATR reads, or between them and INTREQR,
-is a failure of the mirror, not a case that is left out.
-- The two passages that bear on P20-TBE:
+Buffer Full(mirror)". Each case above is a state that nothing changes while its
+triple is taken, so the INTREQR read between two SERDATR reads is bracketed by
+them. No triple is skipped: a disagreement between the two SERDATR reads, or
+between them and INTREQR, is a failure of the mirror, not a case that is left out.
+- Run A (graded, P20-RBF): SERDATR bit 14 equals INTREQR bit 11 at both reads, and
+  the triples read (1, 1, 1), (0, 0, 0), (1, 1, 1) and (0, 0, 0).
+- Run B (measured, P20-TBE, not graded). The two pages conflict about bit 13:
   AA p.27: "13 TBE Serial port Transmit Buffer Empty(mirror)".
   HRM p.257: "13 TBE TRANSMIT BUFFER EMPTY (Not a mirror -- interrupt occurs when the
   buffer becomes empty.)" (section 5.2).
-- Run A: SERDATR bit 14 equals INTREQR bit 11 at both reads, and the triples read
-  (1, 1, 1), (0, 0, 0), (1, 1, 1) and (0, 0, 0).
-- Run B: SERDATR bit 13 equals INTREQR bit 0 at both reads, and the triples of the
-  cases (a), (b), (a), (c), (d), (e) read (1, 1, 1), (0, 0, 0), (1, 1, 1), (0, 0, 0),
-  (1, 1, 1) and (0, 0, 0). In the cases (c) and (d) the AA page prints bit 13 as a
-  mirror of the request, so bit 13 follows the software clear with the buffer empty
-  and the software set with a word waiting; HRM p.257 reads bit 13 as the state of the
-  buffer (section 5.2), and the oracle is the AA page.
+  The readings agree in the cases (a), (b), (a) and (e) of run B and differ in the
+  cases (c) and (d). The run prints, for each of the six triples, the three values
+  read, the value that the mirror reading predicts (INTREQR bit 0 as read between the
+  two SERDATR reads) and the value that the buffer-state reading predicts (1 when the
+  buffer is empty, 0 when a word waits), and whether bit 13 at both reads agrees with
+  each of them.
 
 **Preconditions.**
 - G-S0, G-BRK, G-RXD. G-RXD is read on run A's final poll, which starts before
@@ -1373,12 +1388,15 @@ is a failure of the mirror, not a case that is left out.
   reads inside it. INTENAR reads 0. The colour clock measured from the refresh
   pattern in run A is the 8 system clocks that the RxD schedule is built for
   (P20-PRE-K; *contrast:* build the schedule for 9, and the precondition goes red).
+  These gate P20-RBF.
 - In run A the four triples are taken and INTREQR bit 11 takes both values
   across them, which confirms that the set and clear took effect (P20-PRE-TRIPLES).
+  It gates P20-RBF.
 - In run B the six triples are taken, and the triples of the cases (b), (c), (d)
   and (e) end before the start of the stop cell of the frame that is in the shift
   register, the earliest instant at which the waiting word can move: no move can set
-  the request inside them (P20-PRE-STABLE).
+  the request inside them (P20-PRE-STABLE). It qualifies the measurement of P20-TBE as
+  a measurement of stable states and gates no graded line.
 
 *Contrast for P20-PRE-TRIPLES:* in run A, leave out the INTREQ writes of steps 3, 4
 and 5. INTREQR bit 11 then reads 1 in all four triples and never 0, and the
@@ -1390,10 +1408,14 @@ precondition goes red.
 **Contrasting cases.**
 - Leave out the software set in run A's step 4. The page predicts that bit 14
   reads 0 at triple 3, so the expectation (1, 1, 1) at triple 3 goes red.
-- In run B step 3, write `INTREQ ← 0x8001` in place of `0x0001`: the page predicts
-  the request set, (1, 1, 1), where the grader expects (0, 0, 0) for the case (b), and
-  P20-TBE goes red. In the same way, set in place of clear at step 5 (case (c)), clear in
-  place of set at step 6 (case (d)) and set in place of clear at step 7 (case (e)).
+- Run B has no contrast that a page decides. In each variant one software write of
+  run B is changed: step 3 writes `INTREQ ← 0x8001` (SETB, case (b)), the case (c) writes
+  `0x8001` (NOCLRC), the case (d) writes `0x0001` (NOSETD), the case (e) writes
+  `0x8001` (NOCLRE). In the normal run the two readings differ in the cases (c) and (d).
+  SETB and NOCLRE make the cases (b) and (e) a software set that meets a waiting word, where
+  they differ; NOCLRC and NOSETD make the cases (c) and (d) a software write that matches
+  the state of the buffer, where they agree. Each variant is a measurement of what the
+  design shows against the two conflicting readings, not a case that goes red through a clause.
 
 ---
 
@@ -1425,20 +1447,17 @@ mode.
 ### 5.2 SERDATR bit 13, TBE: mirror or not (P20)
 
 - AA p.27: "13 TBE Serial port Transmit Buffer Empty(mirror)". HRM Appendix A
-  p.283 says the same: "13 TBE Serial port transmit buffer empty (mirror)."
+  p.283: "13 TBE Serial port transmit buffer empty (mirror)."
 - HRM p.257: "13 TBE TRANSMIT BUFFER EMPTY (Not a mirror -- interrupt occurs
-  when the buffer becomes empty.) When bit 14 is a 1, the data in the output
-  data register ( SERDAT ) has been transferred to to accept another output
-  word. This is also true when the buffer is empty." The sentence is garbled
-  there, and "bit 14" presumably means bit 13.
+  when the buffer becomes empty.)"
 
 The readings agree in the cases (a) and (b) of P20: just after a move with the
 request not yet cleared (both 1), and with a word waiting and the request cleared
 (both 0). They differ where software sets or clears the request against the state
 of the buffer, the cases (c) (cleared, buffer empty: the AA page reads 0, HRM p.257
 reads 1) and (d) (set, word waiting: the AA page reads 1, HRM p.257 reads 0). The
-oracle of P20 is the AA page, which prints bit 13 as a mirror, and P20 grades all
-five cases of run B with the AA reading.
+pages conflict and neither is preferred: P20 measures the six triples of run B against
+both readings (P20-TBE) and grades nothing about bit 13.
 
 ### 5.3 SERDATR bit 8 (not graded)
 
@@ -1534,7 +1553,7 @@ ADKCON attach bits), p.266 (AUDxLEN and AUDxVOL, the latter printed as
 | `sol:AA-serdat.c9` | 27 | none (section 1; stimulus rule in P16 to P20) |
 | `sol:AA-serdatr.c6` | 27 | P19 |
 | `sol:AA-serdatr.c7` | 27 | P19 |
-| `sol:AA-serdatr.c8` | 27 | P20 |
+| `sol:AA-serdatr.c8` | 27 | none (section 1; P20-RBF grades the RBF half without a claim id, P20-TBE is measured) |
 | `sol:AA-audxdat.c8` | 11 | none (section 1) |
 | `sol:AA-audxvol.c5` | 11 | none (section 1) |
 | `sol:AA-audxlen.c2` | 11 | none (section 1) |
@@ -1678,7 +1697,9 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   stop, run by run.
 - **P16** and **P17** write the eight words at read counts that the program fixes
   (14 reads before word 2 and 42 before each later word, tuned on this design) and
-  prints where each write falls against the start of the frame before it. The
+  prints where each write falls against the start of the frame before it. The preconditions
+  `P16-PRE-EMPTY` (each write follows the start of the frame before it) and `P16-PRE-WAITING`
+  (each write precedes the end of that frame) bracket the writes from the write log. The
   precondition `P16-PRE-IDLE`: the wait from the SERPER write to the first write lasts at
   least 20T. That TxD is constant in the 20T before the first write is the check
   `P16-A`, not a precondition. **P17-ONE** grades that a read of 1 is stored no later
@@ -1719,17 +1740,29 @@ Live inputs through a comparator that is red without them: `P1-LIVE` (the length
 the modulator words hold) and `P8-LIVE` (the CPU sets the polled request after the
 data has been used). P4 needs none: its data set makes pass 2 gradable, and
 its lines print PASS. `P4-LEN-2` and `P4-LEN-3` have no stimulus mutation: one period
-governs both bytes of a word. `P15-ATT` is the page's contrast for k = 1 and 2 (AA p.11
-"00 USE0V1 Use audio channel 0 to modulate volume of channel 1"): the page
-predicts that channel k's level changes, so the comparator would print FAIL, and
-this design prints PASS under it because the attach bits reach nothing;
-`P15-VOL` shows P15's comparator live. The implementation records `P6-IMPL`,
-`P16-IMPL`, `P17-NONE` and `P20-IMPL` build the test against a private copy of the
+governs both bytes of a word. The attach-bit contrast of P15 for k = 1 and 2 (AA p.11
+"00 USE0V1 Use audio channel 0 to modulate volume of channel 1") is not run as a mutation:
+the volume-attach lines P9 to P11 print FAIL on this design, so a run in which the
+page predicts a changed level of channel k cannot show the comparator live. The
+page-opposite perturbation that does is `P15-VOL`: the CPU writes AUDkVOL = 16 into
+run A (AA p.11 AUDxVOL), which changes channel k's level from then on while every P15
+gate holds, so the run-by-run comparator prints FAIL on P15-RUNS and P15.
+`P2-B` has no stimulus mutation: a run starts after the fetch of its word whatever the
+program writes, and a program that moved a run start to or before its fetch would also
+move the run lengths that G-P grades or the pairing, so that P2-B would be NOT GRADED
+and not FAIL; as for `P2-G-W` the boundary cannot be placed by the stimulus. The implementation records `P6-IMPL`,
+`P16-IMPL` and `P17-NONE` build the test against a private copy of the
 design outside the repository (`make test-<core> NANOMIG=<copy>`, then
 `NMH_ONLY=<proposition> NMH_MUTATE=<selector>`; the selector changes no stimulus): in
 `P6-IMPL` the volume path gives bit 6 the level of 64; in `P16-IMPL` a word waiting in
 the buffer starts its frame at the end of the previous one; in `P17-NONE` the TBE
-request is set at the end of the frame; in `P20-IMPL` SERDATR bit 13 follows INTREQ bit 0.
+request is set at the end of the frame.
+`P16-DELAY` writes word 5 after 30 bit times of idle, so that word 5 is not waiting when
+frame 4 ends: it is the contrast of the condition P16-PRE-WAITING (that line prints FAIL and
+P16-D and P16 are NOT GRADED), not evidence for P16-D, which has no stimulus contrast
+(section 4, P16). The selectors `P20-SETB`, `P20-NOCLRC`, `P20-NOSETD` and `P20-NOCLRE`
+change one software write of run B and are measurement records of the two conflicting
+readings of SERDATR bit 13 (section 5.2); they are not mutations of a graded line.
 The selectors `P6-PAT`, `P9-PAT` to `P11-PAT` write a word of two different bytes
 so that the output has no short period, `P19-K` and `P20-K` build the RxD schedule
 for 9 system clocks per colour clock, and `P3-BYTE` writes the second byte of word
