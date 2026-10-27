@@ -235,17 +235,16 @@
 //   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): 6-appa-registers.c98,
 //     6-appa-registers.c99, ch6-appa-bltxmod.c10, ch6-appa-bltxmod.c11,
 //     ch6-appa-bltxpt.c10.
-//   LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191/192/270; both addresses are
-//     read at the D store ticks. Graded on the printed statements that each
-//     channel has its own address pointer and modulo (p.170, p.173, p.270,
-//     Appendix B p.289). OPEN QUESTION, not settled by the pages: the
-//     line-mode passages (pp.191, 192, 270) prescribe EQUAL values for the C
-//     and D pointers and modulos and p.189 says many blitter registers
-//     "serve other purposes in line-drawing mode", so a reading exists under
-//     which the pages do not say what unequal C and D values do in line
-//     mode. This line follows the explicit per-channel statements. The
+//   LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES (p.191/192/270; the documented
+//     setup, BLTCPT = BLTDPT and BLTCMOD = BLTDMOD, read at the D store
+//     ticks: pixel 1 stores at the start word and each further row moves the
+//     store by the modulo. The pages prescribe equal C and D values for line
+//     mode and say (p.189) that many blitter registers "serve other purposes
+//     in line-drawing mode", so they do not define which register supplies a
+//     later store address when the two differ; that case is printed as
+//     MEASURED lines and named in a RECORDED line, and is not graded. The
 //     BLTBPT-unused claims 6-line-mode.c82 and ch6-linesum.c9 are not graded
-//     here; see the RECORDED lines at the end):
+//     here either; see the RECORDED lines at the end):
 //     6-line-mode.c57, 6-line-mode.c58, 6-line-mode.c59, 6-line-mode.c60,
 //     6-line-mode.c79, 6-line-mode.c80, 6-line-mode.c83, 6-line-mode.c84,
 //     ch6-line.c30, ch6-line.c31, 6-appa-registers.c100,
@@ -349,9 +348,8 @@
 // `git diff --stat` after every revert) and the FAIL/PASS lines quoted are
 // what the run printed, not predictions. Every mutation moved ONLY the
 // assertion named, with every other assertion staying as in the baseline
-// on the same run. The exception is LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE,
-// which is red in the baseline (18 passed, 1 failed): its entries say
-// which line moves instead.
+// on the same run. The two PROBE entries for the unequal-setup MEASURED
+// lines move a printed number, not a graded line.
 //
 // Every mutation is a STIMULUS mutation to this test file's OWN inputs
 // (a register value, an octant's bit pattern, a probe, a table entry) --
@@ -396,21 +394,20 @@
 // MUTATION LINE-SIGN-SELECTS-MODULO-BANK stimulus red: the SIGNFLAG=0
 //   call's BLTAMOD changed from 0x0040 to 0x0080 (expected constant 32
 //   left untouched) -> FAIL; 15/16 others PASS.
-// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus green: h_mod's BLTCMOD set
-//   equal to BLTDMOD (0x0080) with the expected constant 64 left untouched
-//   (`make MUT=CD_CMOD_EQ_DMOD`) -> PASS: the store-tick read and the comparator can
-//   pass, which a line that is red without this change needs shown. The
-//   line is red in the baseline because the address at the D store ticks
-//   of pixels 2 and 3 steps by BLTCMOD, not BLTDMOD (see the MEASURED line).
-// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus red: h_identity's BLTDPTL changed
-//   from 0x0500 to 0x0600 (`make MUT=CD_DPTL`), expected constant 0x0280 left
-//   untouched. The line is red in the baseline too, so the contrast is the
-//   MEASURED line LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED, whose address moves
-//   from 0x0280 to 0x0300 with BLTDPTL.
-// MUTATION LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE stimulus none: h_mod's BLTDMOD changed
-//   from 0x0080 to 0x0100 (`make MUT=CD_DMOD`) leaves the store-tick address
-//   delta at 32 (BLTCMOD's step), so it does not move the line; the former
-//   part-2 mutation is dropped because it only moved the tick before the store.
+// MUTATION LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES stimulus red: BLTDPTL written one word
+//   off (0x0402 instead of 0x0400, `make MUT=CD_EQ_DPT_OFF`), expected start
+//   word left untouched -> FAIL, only this assertion; pixel 1's store
+//   address is one word-address unit off.
+// MUTATION LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES stimulus red: BLTCMOD and BLTDMOD both
+//   written one word off (0x0042 instead of 0x0040, `make MUT=CD_EQ_MOD_OFF`),
+//   expected step +32 left untouched -> FAIL, only this assertion.
+// PROBE LINE-C-D-STORE-ADDRESSES-MEASURED (a MEASURED line, not graded): BLTCMOD
+//   set equal to BLTDMOD (0x0080, `make MUT=CD_CMOD_EQ_DMOD`) moves the printed
+//   store addresses from 512, 544, 576 to 512, 576, 640, i.e. the later D
+//   stores step by BLTCMOD in this design when the two modulos differ.
+// PROBE LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED (a MEASURED line, not graded):
+//   BLTDPTL changed from 0x0500 to 0x0600 (`make MUT=CD_DPTL`) moves the
+//   printed pixel-1 store address from 0x0280 to 0x0300.
 // MUTATION OCTANT-CODE-EQUALS-BITS stimulus red: FIG68's octant-0 entry
 //   changed from code 6 to code 7 (OCTANTS[] itself, and every other
 //   assertion that reads it, left untouched) -> FAIL; 15/16 others PASS.
@@ -464,13 +461,18 @@
 #include <verilated.h>
 #include "Vagnus_blitter.h"
 
-// Stimulus-only mutation switches for LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE
-// (see the "// MUTATION" lines in the header). Built with `make MUT=<NAME>`.
+// Stimulus-only mutation switches for LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES
+// (CD_EQ_*) and probes of the two MEASURED unequal-setup lines (CD_DPTL,
+// CD_CMOD_EQ_DMOD); see the "// MUTATION" lines in the header. Built with
+// `make MUT=<NAME>`.
+#ifndef MUT_CD_EQ_DPT_OFF
+#define MUT_CD_EQ_DPT_OFF 0
+#endif
+#ifndef MUT_CD_EQ_MOD_OFF
+#define MUT_CD_EQ_MOD_OFF 0
+#endif
 #ifndef MUT_CD_DPTL
 #define MUT_CD_DPTL 0
-#endif
-#ifndef MUT_CD_DMOD
-#define MUT_CD_DMOD 0
 #endif
 #ifndef MUT_CD_CMOD_EQ_DMOD
 #define MUT_CD_CMOD_EQ_DMOD 0
@@ -484,8 +486,10 @@ constexpr uint16_t BLTCON0 = to_reg(0x040);
 constexpr uint16_t BLTCON1 = to_reg(0x042);
 constexpr uint16_t BLTAFWM = to_reg(0x044);
 constexpr uint16_t BLTALWM = to_reg(0x046);
+constexpr uint16_t BLTCPTH = to_reg(0x048);
 constexpr uint16_t BLTCPTL = to_reg(0x04A);
 constexpr uint16_t BLTAPTL = to_reg(0x052);
+constexpr uint16_t BLTDPTH = to_reg(0x054);
 constexpr uint16_t BLTDPTL = to_reg(0x056);
 constexpr uint16_t BLTSIZE = to_reg(0x058);
 constexpr uint16_t BLTCMOD = to_reg(0x060);
@@ -1577,60 +1581,121 @@ int main(int argc, char** argv) {
             "ch6-appa-bltxmod.c11 ch6-appa-bltxpt.c10, p.270)");
     }
 
-    // ---------------- LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE (p.191, p.192, p.270) ----------------
+    // ---------------- LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES (p.191, p.192, p.270) ----------------
+    // The pages prescribe ONE line-mode setup for the C and D channels: equal
+    // pointers (p.191 "The C and D pointer registers should be initialized
+    // to the word containing the first pixel of the line", p.270 "BLTCPT and
+    // BLTDPT (both H and L) must be preloaded with the starting address of
+    // the line") and equal modulos (p.191 "the C and D modulo registers
+    // should be set to the width of the bitplane in bytes", p.270 "BLTCMOD
+    // and BLTDMOD must both be preloaded with the width (in bytes)"). With
+    // that setup the address at each D store tick (`we`, where dma_req=1 and
+    // the grant is in) must start at the start word and move by the modulo
+    // for every further row (octant 6, ash=8: only the Y step is visible).
+    // The expected values below come from the documented setup constants
+    // (kStartBytes, kModBytes), not from the stimulus variables the mutation
+    // switches change.
     {
-        // (a) BLTCPT and BLTDPT are separately-addressed registers
-        // ($048/$04A vs $054/$056) and BLTDPT specifically -- not BLTCPT --
-        // governs the pointer pixel 1's own store reads. Pixel 1's own
-        // BLT_L4 has enaptr=1 UNCONDITIONALLY (agnus_blitter.v:854) and
-        // ptrsel=CHD (first_line_pixel is still 1 at that point,
-        // agnus_blitter.v:852) -- both guaranteed, so sampling address_out
-        // AT the `we` tick itself (not offset) reliably reads BLTDPT's own
-        // bank.
+        constexpr uint32_t kStartBytes = 0x00010400;      // BLTxPTH=1, BLTxPTL=0x0400
+        constexpr int32_t kStartWord = kStartBytes >> 1;  // address_out is a word address
+        constexpr uint16_t kModBytes = 0x0040;            // 64 bytes = 32 words per row
+        constexpr int32_t kModWords = kModBytes >> 1;
+
+        uint16_t cpt_l = static_cast<uint16_t>(kStartBytes & 0xFFFF);
+        uint16_t dpt_l = cpt_l;
+        uint16_t cmod = kModBytes;
+        uint16_t dmod = kModBytes;
+#if MUT_CD_EQ_DPT_OFF
+        dpt_l = static_cast<uint16_t>(cpt_l + 2);  // MUTATION: BLTDPTL one word off; expectation stays.
+#endif
+#if MUT_CD_EQ_MOD_OFF
+        cmod = static_cast<uint16_t>(kModBytes + 2);  // MUTATION: both modulos one word off;
+        dmod = cmod;                                  // expectation stays.
+#endif
+        Harness h_eq;
+        h_eq.write_reg(BLTADAT, 0x0000);
+        h_eq.write_reg(BLTAFWM, 0xFFFF);
+        h_eq.write_reg(BLTALWM, 0xFFFF);
+        h_eq.write_reg(BLTCPTH, static_cast<uint16_t>(kStartBytes >> 16));
+        h_eq.write_reg(BLTCPTL, cpt_l);
+        h_eq.write_reg(BLTDPTH, static_cast<uint16_t>(kStartBytes >> 16));
+        h_eq.write_reg(BLTDPTL, dpt_l);
+        h_eq.write_reg(BLTCMOD, cmod);
+        h_eq.write_reg(BLTDMOD, dmod);
+        h_eq.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+        h_eq.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | LINE_BIT));  // octant 6, SIGNFLAG=1
+        h_eq.write_reg(BLTSIZE, bltsize_word(2, 3));
+        h_eq.run_until_writes(3, 200);
+        const bool have_three = h_eq.we_ticks.size() >= 3;
+        int32_t s1 = 0, s2 = 0, s3 = 0;
+        if (have_three) {
+            s1 = static_cast<int32_t>(h_eq.address_trace[h_eq.we_ticks[0]]);
+            s2 = static_cast<int32_t>(h_eq.address_trace[h_eq.we_ticks[1]]);
+            s3 = static_cast<int32_t>(h_eq.address_trace[h_eq.we_ticks[2]]);
+        }
+        checks.expect(have_three && s1 == kStartWord && s2 - s1 == kModWords && s3 - s2 == kModWords,
+            "LINE-C-D-EQUAL-SETUP-STORE-ADDRESSES: with the documented line-mode setup, "
+            "BLTCPT = BLTDPT = the start address (H and L) and BLTCMOD = BLTDMOD = the "
+            "bitplane width in bytes (0x0040), the address at the D store tick (`we`) "
+            "of pixel 1 is the start word and each further row moves the store by "
+            "the modulo (+32 word units, i.e. 0x0040 bytes) ('The C and D pointer "
+            "registers should be initialized to the word containing the first pixel "
+            "of the line; the C and D modulo registers should be set to the width of "
+            "the bitplane in bytes', p.191, ch6-line.c30/c31, 6-line-mode.c57/c58/"
+            "c59/c60; register-summary echoes 'BLTCPT/BLTDPT = word containing the "
+            "first pixel of the line', 'BLTCMOD/BLTDMOD = width of the bitplane in "
+            "bytes', p.192, 6-line-mode.c79/c80/c83/c84, ch6-linesum.c6/c7/c10/c11; "
+            "'BLTCPT and BLTDPT (both H and L) must be preloaded with the starting "
+            "address of the line', 'BLTCMOD and BLTDMOD must both be preloaded with "
+            "the width (in bytes) of the image', p.270, ch6-appa-bltxpt.c11, "
+            "ch6-appa-bltxmod.c12, 6-appa-registers.c100/c101/c102/c117/c118/c119/"
+            "c120). Which of the two registers supplies a later store address when "
+            "the two differ is not prescribed; see the MEASURED lines and the "
+            "RECORDED line");
+    }
+
+    // ---------------- MEASURED: unequal C/D line-mode setups (the pages leave these open) ----------------
+    {
+        // (a) Unequal start pointers: BLTCPTL=0x0300, BLTDPTL=0x0500. Pixel 1's
+        // BLT_L4 has enaptr=1 and ptrsel=CHD (first_line_pixel still 1,
+        // agnus_blitter.v:852,854), so the address at the `we` tick is the
+        // BLTDPT bank's.
         Harness h_identity;
         h_identity.write_reg(BLTADAT, 0x0000);
         h_identity.write_reg(BLTAFWM, 0xFFFF);
         h_identity.write_reg(BLTALWM, 0xFFFF);
-        h_identity.write_reg(BLTCPTL, 0x0300);  // deliberately different from D
+        h_identity.write_reg(BLTCPTL, 0x0300);
         uint16_t identity_dptl = 0x0500;
 #if MUT_CD_DPTL
-        identity_dptl = 0x0600;  // MUTATION: BLTDPTL changed; the expected 0x0280 stays.
+        identity_dptl = 0x0600;
 #endif
         h_identity.write_reg(BLTDPTL, identity_dptl);
         h_identity.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
         h_identity.write_reg(BLTCON1, LINE_BIT);  // octant 6
         h_identity.write_reg(BLTSIZE, bltsize_word(2, 1));
         h_identity.run_until_writes(1, 60);
-        const bool d_used_for_pixel1 =
-            !h_identity.we_ticks.empty() &&
-            h_identity.address_trace[h_identity.we_ticks[0]] == 0x0280;  // 0x0500 stored as data_in[15:1]
         if (!h_identity.we_ticks.empty()) {
-            checks.note("LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED: with BLTCPTL=0x0300 and BLTDPTL=0x" +
-                        hex16(identity_dptl) + ", the address at pixel 1's D store tick is 0x" +
+            checks.note("LINE-C-D-PIXEL1-STORE-ADDRESS-MEASURED: with UNEQUAL pointers BLTCPTL=0x0300 and BLTDPTL=0x" +
+                        hex16(identity_dptl) + " (the pages prescribe equal pointers, so this setup is outside "
+                        "what they define), the address at pixel 1's D store tick is 0x" +
                         hex16(static_cast<uint16_t>(h_identity.address_trace[h_identity.we_ticks[0]])) +
                         " (word address)");
         }
 
-        // (b) BLTDPT's own step magnitude follows BLTDMOD specifically, not
-        // BLTCMOD -- octant 6 (Y-major, unconditional ADD), ash=8 disables
-        // the X component so only the modulo (Y) contribution is visible.
-        // Read at the D STORE ticks (`we`, where dma_req=1 and the address
-        // is the one the store uses) of pixels 2 and 3. Sampling the tick
-        // before the store reads BLT_L3, which requests no DMA; an address
-        // read there is not the address any store uses.
+        // (b) Unequal modulos: BLTCMOD=0x0040, BLTDMOD=0x0080, equal pointers.
         Harness h_mod;
         h_mod.write_reg(BLTADAT, 0x0000);
         h_mod.write_reg(BLTAFWM, 0xFFFF);
         h_mod.write_reg(BLTALWM, 0xFFFF);
         h_mod.write_reg(BLTCPTL, 0x0400);
         h_mod.write_reg(BLTDPTL, 0x0400);
-        uint16_t mod_cmod = 0x0040;  // would give a delta of 32 if wrongly used for D
-        uint16_t mod_dmod = 0x0080;  // gives a delta of 64 when correctly used for D
+        uint16_t mod_cmod = 0x0040;
+        uint16_t mod_dmod = 0x0080;
 #if MUT_CD_DMOD
-        mod_dmod = 0x0100;  // MUTATION: BLTDMOD changed; the expected 64 stays.
+        mod_dmod = 0x0100;
 #endif
 #if MUT_CD_CMOD_EQ_DMOD
-        mod_cmod = 0x0080;  // MUTATION: BLTCMOD set equal to BLTDMOD; the expected 64 stays.
+        mod_cmod = 0x0080;
 #endif
         h_mod.write_reg(BLTCMOD, mod_cmod);
         h_mod.write_reg(BLTDMOD, mod_dmod);
@@ -1638,53 +1703,18 @@ int main(int argc, char** argv) {
         h_mod.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | LINE_BIT));  // octant 6
         h_mod.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_mod.run_until_writes(3, 200);
-        const bool have_three_stores = h_mod.we_ticks.size() >= 3;
-        const int32_t d_delta = have_three_stores
-            ? static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[2]]) -
-              static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[1]])
-            : INT32_MIN;
-        if (have_three_stores) {
-            checks.note("LINE-C-D-STORE-ADDRESSES-MEASURED: with BLTCPT=BLTDPT=0x0400, BLTCMOD=0x" +
+        if (h_mod.we_ticks.size() >= 3) {
+            checks.note("LINE-C-D-STORE-ADDRESSES-MEASURED: with BLTCPT=BLTDPT=0x0400 but UNEQUAL modulos BLTCMOD=0x" +
                         hex16(mod_cmod) + " and BLTDMOD=0x" + hex16(mod_dmod) +
-                        ", the address at the D store tick of pixels 1, 2, 3 is " +
+                        " (the pages prescribe equal modulos, so this setup is outside what they define), "
+                        "the address at the D store tick of pixels 1, 2, 3 is " +
                         std::to_string(h_mod.address_trace[h_mod.we_ticks[0]]) + ", " +
                         std::to_string(h_mod.address_trace[h_mod.we_ticks[1]]) + ", " +
                         std::to_string(h_mod.address_trace[h_mod.we_ticks[2]]) +
-                        " (word addresses); delta pixel 2 to 3 = " + std::to_string(d_delta));
+                        " (word addresses); delta pixel 2 to 3 = " +
+                        std::to_string(static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[2]]) -
+                                       static_cast<int32_t>(h_mod.address_trace[h_mod.we_ticks[1]])));
         }
-
-        checks.expect(d_used_for_pixel1 && d_delta == 64,
-            "LINE-C-D-SEPARATE-REGISTERS-SAME-ROLE: (1) preloading BLTCPTL=0x0300 and "
-            "BLTDPTL=0x0500 to DIFFERENT values shows pixel 1's own store reads "
-            "BLTDPTL's value specifically, not BLTCPTL's -- BLTCPT and BLTDPT are "
-            "genuinely separate, independently-addressed registers ($048/$04A vs "
-            "$054/$056), each preloaded to the SAME word in real use ('the C and D "
-            "pointer registers are initialized to the word containing the first pixel "
-            "of the line', ch6-line.c30, p.191; 'BLTCPT is preloaded with the line's "
-            "starting address'/'BLTDPT is preloaded with the line's starting "
-            "address', 6-appa-registers.c119/c120, ch6-appa-bltxpt.c11, p.270; "
-            "'BLTCPT starts at the word containing the line's first pixel'/'BLTDPT "
-            "starts at...', 6-line-mode.c57/c58, p.191; 'the line-mode register "
-            "summary points BLTCPT/BLTDPT at the word containing the line's first "
-            "pixel', 6-line-mode.c83/c84, ch6-linesum.c10/c11, p.192; 'line mode uses "
-            "BLTCPT as a line pointer'/'uses both halves of BLTDPT as a line "
-            "pointer', 6-appa-registers.c117/c118, p.270); (2) with BLTCMOD=0x0040 "
-            "and BLTDMOD=0x0080 programmed to DIFFERENT values, D's own step follows "
-            "BLTDMOD (+64 word units) not BLTCMOD -- proving BLTCMOD and BLTDMOD are "
-            "each their OWN modulo register, exactly why the manual requires "
-            "programming BOTH to the SAME value or C and D drift apart mid-line "
-            "('BLTCMOD equals the bitplane width in bytes'/'BLTDMOD equals the "
-            "bitplane width in bytes', 6-line-mode.c59/c60, p.191; 'the C and D "
-            "modulo registers are set to the width of the bitplane in bytes', "
-            "ch6-line.c31, p.191; 'line mode loads the same width into BLTCMOD and "
-            "BLTDMOD'/'BLTCMOD uses image width in bytes'/'BLTDMOD uses image width "
-            "in bytes', 6-appa-registers.c100/c101/c102, p.270; 'BLTCMOD/BLTDMOD "
-            "must both be preloaded with the width, in bytes, of the image', "
-            "ch6-appa-bltxmod.c12, p.270; register-summary echoes, 'BLTCMOD to the "
-            "bitplane width in bytes'/'BLTDMOD to the bitplane width in bytes'/"
-            "'BLTCMOD = width of the bitplane in bytes'/'BLTDMOD = width of the "
-            "bitplane in bytes', 6-line-mode.c79/c80, ch6-linesum.c6/c7, p.192). "
-            "Both addresses are read at the D store ticks (`we`).");
     }
 
     // ---------------- OCTANT-CODE-EQUALS-BITS (p.189, p.190, p.268) ----------------
@@ -1903,6 +1933,21 @@ int main(int argc, char** argv) {
         "value CHB (agnus_blitter.v:795-869), which is a fact about the RTL, "
         "and there is no register readback path on this design to show "
         "'unused' by measurement.");
+    checks.record(
+        "Unequal C/D line-mode setups (BLTCPT != BLTDPT or BLTCMOD != BLTDMOD): "
+        "NOT ASSERTED. The pages prescribe equal values for line mode (p.191 "
+        "\"The C and D pointer registers should be initialized to the word "
+        "containing the first pixel of the line; the C and D modulo registers "
+        "should be set to the width of the bitplane in bytes\"; p.192 register "
+        "summary; p.270 \"BLTCMOD and BLTDMOD must both be preloaded with the "
+        "width (in bytes)\", \"BLTCPT and BLTDPT ... must be preloaded with the "
+        "starting address of the line\") and p.189 says \"Many of the blitter "
+        "registers serve other purposes in line-drawing mode\". No printed "
+        "sentence says which register supplies a later D-store address when "
+        "the two differ, so the MEASURED lines above report what this design "
+        "does and grade nothing. The general per-channel sentences (p.170, "
+        "p.173, p.270, Appendix B p.289) describe ordinary DMA channels, not "
+        "this mode substitution.");
     // The claims below are declined, not asserted -- their ids appear on
     // no expect() line above: a RECORDED line is not a measurement.
     checks.record(
