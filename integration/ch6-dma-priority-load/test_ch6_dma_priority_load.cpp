@@ -5,45 +5,56 @@
 // evaluates the group of that label with the unchanged comparators; the normal run never runs a mutant.
 // Both cores gave the same result for every record below (the numbers in a record are the same on both cores unless two are given).
 //
+// Kinds of record (SPECIFICATION.md 4.5): a PRIORITY CONTRAST is a stimulus a page predicts to reverse the order under test (none exists for P1-P6, each record
+// says why); a COMPARATOR CONTROL changes the subject of a comparison and shows that the comparator sees a displaced fetch; a POPULATION CONTROL removes or
+// moves a requester or channel and shows that a population gate can fail; a PAIR GATE applies C1 or C7 to the demand run of a pair of 1.8.
+//
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: prog_load_fixture_mut.s stores $DEAD instead of $BEEF; FIXTURE reads FAIL
 // MUTATION FIG69 stimulus red NMH_MUTATE=FIG69: NOFIX assembled with HTOTAL = $E4 and BEAMCON0 = $00A0 written at S1 (prog_load_htotal.s; p.304-305); FIG69 reads FAIL (line period 1832 clk_sys, not 1816; the program reaches DONE and field F is found); P1, C7 read NOT GRADED; every other line PASS
-// MUTATION C1 stimulus red NMH_MUTATE=C1: prog_load_nop.s has one NOP before S3 in the BLT run; C1 reads FAIL (first difference at a program fetch, before the named access); P1 not graded; C2, C3, C4, C6, C7 stay PASS
+// MUTATION C1 stimulus red NMH_MUTATE=C1: prog_load_nop.s has one NOP before S3 in the BLT run; C1 reads FAIL (first difference at a program fetch, before the named access); P1 not graded; C2, C3, C4, C6, C7 stay PASS. The same NOP applied to the demand run of each pair of 1.8 is recorded under P1-b, P2-b, P4-b, P6-c and P6-d (NMH_MUTATE=<label>-C1)
 // MUTATION C2 stimulus red NMH_MUTATE=C2: the BLT program writes DMACON $83FF while $87FF is declared; C2 reads FAIL; P1 not graded; C1, C3, C4, C6, C7 stay PASS
 // MUTATION C3 stimulus red NMH_MUTATE=C3: the BLT run with CPU = LOOP; C3 reads FAIL; P1 not graded; the other C lines stay PASS
 // MUTATION C4 stimulus red NMH_MUTATE=C4: the last stream MOVE of the BLT run replaced by the WAIT $F801,$FF00; C4 reads FAIL (C3 stays PASS); P1 not graded
-// MUTATION C5 stimulus red NMH_MUTATE=C5: the CPU run with DELAY = 11500 (the S4.13 count-down, p.25 restart at the vertical blank); the CPU variant word is read at cycle 2858805 (fx68k) or 2891709 (TG68K), after field F starts (cycle 2841873) and before its first bitplane fetch (cycle 2922217); C5 reads FAIL; P2-a stays PASS (the loop runs through the rest of field F); P2 not graded; C1, C2, C3, C4, C6, C7 stay PASS
+// MUTATION C5 stimulus red NMH_MUTATE=C5: the CPU run with DELAY = 11500 (the S4.13 count-down); the CPU variant word is read at cycle 2858805 (fx68k) or 2891709 (TG68K), after field F starts (cycle 2841873) and before its first bitplane fetch (cycle 2922217); C5 reads FAIL; P2-a stays PASS (the loop runs through the rest of field F); P2 not graded; C1, C2, C3, C4, C6, C7 stay PASS
 // MUTATION C6 stimulus red NMH_MUTATE=C6: the CPU run writes the handler address to $6E; C6 reads FAIL; C1 stays PASS (it ends at the read of the vector address); P2 not graded
-// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with HTOTAL = $E4 and BEAMCON0 = $00A0 written at S4.13 (variant words XREG1/XVAL1/XREG2/XVAL2; p.304-305, the line length changes from the write on, so the refresh accesses lie at other times than R); C7 reads FAIL; C1 stays PASS (the first difference by construction is the read of XREG1), as do C2, C3, C4, C6; P1 not graded. The NTSC run is not the C7 contrast: it measures 227 colour clocks on every line (NTSC-LINES), without the alternation p.23 prints
+// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with HTOTAL = $E4 and BEAMCON0 = $00A0 written at S4.13 (variant words XREG1/XVAL1/XREG2/XVAL2; p.304-305: the line length changes from the write on, so the refresh accesses lie at other times than R); C7 reads FAIL; C1 stays PASS (the first difference by construction is the read of XREG1), as do C2, C3, C4, C6; P1 not graded. The NTSC run is not the C7 contrast: it measures 227 colour clocks on every line (NTSC-LINES), without the alternation p.23 prints
 // MUTATION BASIS none impossible NMH_MUTATE=-: unfalsifiable at this boundary: no register, list or data the program can write makes two requesters share one memory cycle on the port; BASIS counts 0 memory cycles with two accesses in every use on both cores
-// MUTATION P1 stimulus red NMH_MUTATE=P1: BLT with item 5 = $5101,$FF00; P1 reads FAIL through the Copper's fetch times (first mismatch: element 0, cycle 2988969 against 2987153 on both cores; item 5's first word is exempt from the data comparison); P1-a, P1-b and every C line stay PASS
-// MUTATION P1-a stimulus red NMH_MUTATE=P1-a: BLT with item 4 data $0100 (4 rows); P1-a reads FAIL; P1 not graded
-// MUTATION P1-b stimulus red NMH_MUTATE=P1-b: BLT-NOCOP with BLIT = NO-OP (no blit in the unopposed run); P1-b reads FAIL; P1 not graded
-// MUTATION P2 stimulus red NMH_MUTATE=P2: CPU with item 5 = $5101,$FF00; P2 reads FAIL through the fetch times (first mismatch: element 54, cycle 2988969 against 2987153); P2-a, P2-b and every C line stay PASS
-// MUTATION P2-a stimulus red NMH_MUTATE=P2-a: CPU with CPU = STOP (REF itself); P2-a reads FAIL; P2 not graded
-// MUTATION P2-b stimulus red NMH_MUTATE=P2-b: CPU-NOCOP with CPU = STOP; P2-b reads FAIL; P2 not graded
-// MUTATION P3 stimulus red NMH_MUTATE=P3: REF with item 5 = $5101,$FF00 against NOFIX; P3 reads FAIL through the fetch times (first mismatch: element 54, cycle 2988969 against 2987153), and CJ-NO-COLLISION with it; P3r, P3-a, P3-b and every C line stay PASS
-// MUTATION P3-a stimulus red NMH_MUTATE=P3-a: REF with FIX = none; P3-a reads FAIL; P3 and CJ-NO-COLLISION not graded
-// MUTATION P3-b stimulus red NMH_MUTATE=P3-b: NOFIX with FIX = lowres; P3-b reads FAIL; P3 and CJ-NO-COLLISION not graded
-// MUTATION P3r none impossible NMH_MUTATE=-: unfalsifiable at this boundary: the Copper requests on a fixed cadence (four memory cycle times per instruction, p.20, p.275) and refresh is fixed per line (FIG69), and no register, list or data the program can write moves a Copper fetch onto a refresh cycle; measured on both cores in 10 runs: 0 of 5762 Copper fetches in field F lie in a refresh cycle, and the item-6 fetches of NOFIX lie 16 clk_sys apart (507 times) or 24 clk_sys apart (4 times)
-// MUTATION P4 stimulus red NMH_MUTATE=P4: BLT with AUD0PER = 200; P4 reads FAIL for audio channel 0 only (22 fetches against 34, first at cycle 2960001 against 2961817); this shows the comparator's sensitivity, no page predicts the delay; P4-a, P4-b and every C line stay PASS
-// MUTATION P4-a stimulus red NMH_MUTATE=P4-a: BLT and REF with DDFSTRT = $0030; P4-a reads FAIL; P4 not graded
-// MUTATION P4-b stimulus red NMH_MUTATE=P4-b: BLT-NOFIX with BLIT = NO-OP; P4-b reads FAIL; P4 not graded
-// MUTATION P5a stimulus red NMH_MUTATE=P5a: REF with AUD0PER = 200 against NOCOP; P5a reads FAIL for audio channel 0 only (3 fetches against 5); P5b reads FAIL as well since REF is also its reference; sensitivity only, no page predicts the delay
-// MUTATION P5b stimulus red NMH_MUTATE=P5b: CPU with AUD0PER = 200 against REF; P5b reads FAIL for audio channel 0 only (141 fetches against 227); sensitivity only, no page predicts the delay
-// MUTATION P5-a stimulus red NMH_MUTATE=P5-a: REF and CPU with DMACON $87FE (AUD0EN clear); P5-a reads FAIL (audio channel 0 has no fetches, in both runs); P2-a stays PASS; P5a and P5b not graded
-// MUTATION P6a stimulus red NMH_MUTATE=P6a: HIRES-LOAD with BPL1MOD = 2; P6a reads FAIL (first mismatch: element 2, address $4A668 against $4A640); P6-a, P6-b, P6-c, P6-d and every C line stay PASS
-// MUTATION P6b none impossible NMH_MUTATE=-: unfalsifiable at this boundary: P6b can fail only when a requester is pending across a gap and is kept out of the gap's free slots, which no page supports; the one stimulus that leaves a gap without an item-6 fetch or a blitter access has nothing pending there, fails P6-b first, and P6b then reads NOT GRADED (see NMH_MUTATE=P6-b)
-// MUTATION P6-a stimulus red NMH_MUTATE=P6-a: HIRES-REF with item 5 = $5001,$FF00 (the stream inside W_H); P6-a reads FAIL (512 item-6, BA or BD accesses in HIRES-REF); P6-c and P6-d stay PASS; P6a not graded
-// MUTATION P6-a stimulus red NMH_MUTATE=P6-a-planes: HIRES-REF with BPLCON0 = $8200 (no planes), the first clause of P6-a; P6-a reads FAIL, and P6-c and P6-d read FAIL as well (they count against HIRES-REF's bitplane fetches); P6a not graded
+// MUTATION P1 stimulus red NMH_MUTATE=P1: COMPARATOR CONTROL, not a priority contrast: BLT with item 5 = $5101,$FF00 (p.22: the Copper waits until line $51); P1 reads FAIL through the Copper's fetches (first mismatch: element 0, cycle 2988969 against 2987153 on both cores); P1-a, P1-b and every C line stay PASS. No priority contrast exists at this boundary: p.20 and p.275 put the Copper on the odd memory cycles and give it "priority over only the blitter and microprocessor", p.198 says the blitter would "steal every available Chip memory cycle", and no register, list word or data the program can write makes the blitter take a Copper slot; P1-b shows the demand, so a green P1 is not disjoint scheduling
+// MUTATION P1-a stimulus red NMH_MUTATE=P1-a: POPULATION CONTROL (a nonempty blit that ends before the stream): BLT with item 4 data $0100 (4 rows); P1-a reads FAIL; P1 not graded
+// MUTATION P1-b stimulus red NMH_MUTATE=P1-b: POPULATION CONTROL (removes the requester): BLT-NOCOP with BLIT = NO-OP (no blit in the unopposed run); P1-b reads FAIL; P1 not graded
+// MUTATION P1-b stimulus red NMH_MUTATE=P1-b-C1: PAIR GATE of P1-b: BLT-NOCOP with one NOP before S3 (prog_load_nop.s), so C1 fails for the pair BLT-NOCOP/REF; P1-b reads FAIL and C1 reads FAIL; P1 not graded; the other lines stay PASS
+// MUTATION P1-b stimulus red NMH_MUTATE=P1-b-C7: PAIR GATE of P1-b: BLT-NOCOP with the HTOTAL/BEAMCON0 writes of the C7 contrast at S4.13, so C7 fails for the pair BLT-NOCOP/REF; P1-b reads FAIL and C7 reads FAIL, C1 stays PASS; P1 not graded
+// MUTATION P2 stimulus red NMH_MUTATE=P2: COMPARATOR CONTROL, not a priority contrast: CPU with item 5 = $5101,$FF00 (p.22); P2 reads FAIL through the Copper's fetches (first mismatch: element 52, cycle 2958129 on both cores, item 5's first word $5101 against $5001); P2-a, P2-b and every C line stay PASS. No priority contrast exists at this boundary: p.20 and p.275 put the Copper on the odd memory cycles and give it "priority over only the blitter and microprocessor", p.196 puts the 68000 on the other parity, and no register, list word or data the program can write makes the 68000 take a Copper slot; P2-b shows the demand, so a green P2 is not disjoint scheduling
+// MUTATION P2-a stimulus red NMH_MUTATE=P2-a: POPULATION CONTROL (removes the requester): CPU with CPU = STOP (REF itself); P2-a reads FAIL; P2 not graded
+// MUTATION P2-b stimulus red NMH_MUTATE=P2-b: POPULATION CONTROL (removes the requester): CPU-NOCOP with CPU = STOP; P2-b reads FAIL; P2 not graded
+// MUTATION P2-b stimulus red NMH_MUTATE=P2-b-C1: PAIR GATE of P2-b: CPU-NOCOP with one NOP before S3, so C1 fails for the pair CPU-NOCOP/REF; P2-b reads FAIL and C1 reads FAIL; P2 not graded
+// MUTATION P2-b stimulus red NMH_MUTATE=P2-b-C7: PAIR GATE of P2-b: CPU-NOCOP with the writes of the C7 contrast at S4.13, so C7 fails for the pair CPU-NOCOP/REF; P2-b reads FAIL and C7 reads FAIL, C1 stays PASS; P2 not graded
+// MUTATION P3 stimulus red NMH_MUTATE=P3: COMPARATOR CONTROL, not a priority contrast: REF with item 5 = $5101,$FF00 against NOFIX (p.22); P3 reads FAIL through the Copper's fetches (first mismatch: element 52, cycle 2958129 on both cores, item 5's first word $5101 against $5001); P3r, P3-a, P3-b and every C line stay PASS. No priority contrast exists at this boundary: the pages place the Copper and these channels on disjoint slots (p.20 and p.275: the channels "use only the even-numbered memory cycles", the Copper only the odd ones), so no stimulus makes one take the other's slot
+// MUTATION P3-a stimulus red NMH_MUTATE=P3-a: POPULATION CONTROL (removes the channels): REF with FIX = none; P3-a reads FAIL; P3 not graded
+// MUTATION P3-b stimulus red NMH_MUTATE=P3-b: NOFIX with FIX = lowres (fixed fetches appear in the reference); P3-b reads FAIL; P3 not graded
+// MUTATION P3r none impossible NMH_MUTATE=-: unfalsifiable at this boundary: the Copper requests on a fixed cadence (four memory cycles per instruction, p.20, p.275) and refresh is fixed per line (FIG69), and no register, list or data the program can write moves a Copper fetch onto a refresh cycle; measured on both cores in 10 runs: 0 of 5762 Copper fetches in field F lie in a refresh cycle, and the item-6 fetches of NOFIX lie 16 clk_sys apart (507 times) or 24 clk_sys apart (4 times)
+// MUTATION P4 stimulus red NMH_MUTATE=P4: COMPARATOR CONTROL, not a priority contrast: BLT with AUD0PER = 200 (p.140: the period sets when the channel retrieves its next data); P4 reads FAIL for audio channel 0 only (22 fetches against 34, first at cycle 2960001 against 2961817); P4-a, P4-b and every C line stay PASS. No priority contrast exists at this boundary: p.198 says "Display, disk, and audio DMA take precedence over the blitter, so it cannot block them from bus access" and p.194 gives these channels "the highest priority level", and no register, list word or data the program can write makes the blitter take a slot of these channels (BLTPRI only decides whether the blitter releases the bus to the 68000); P4-b shows the demand, so a green P4 is not disjoint scheduling
+// MUTATION P4-a stimulus red NMH_MUTATE=P4-a: BLT and REF with DDFSTRT = $0030 (p.82: sprite 7 is disabled); P4-a reads FAIL; P4 not graded
+// MUTATION P4-b stimulus red NMH_MUTATE=P4-b: POPULATION CONTROL (removes the requester): BLT-NOFIX with BLIT = NO-OP; P4-b reads FAIL; P4 not graded
+// MUTATION P4-b stimulus red NMH_MUTATE=P4-b-C1: PAIR GATE of P4-b: BLT-NOFIX with one NOP before S3, so C1 fails for the pair BLT-NOFIX/REF; P4-b reads FAIL and C1 reads FAIL; P4 not graded
+// MUTATION P4-b stimulus red NMH_MUTATE=P4-b-C7: PAIR GATE of P4-b: BLT-NOFIX with the writes of the C7 contrast at S4.13, so C7 fails for the pair BLT-NOFIX/REF; P4-b reads FAIL and C7 reads FAIL, C1 stays PASS; P4 not graded
+// MUTATION P5a stimulus red NMH_MUTATE=P5a: COMPARATOR CONTROL, not a priority contrast: REF with AUD0PER = 200 against NOCOP; P5a reads FAIL for audio channel 0 only (3 fetches against 5); P5b reads FAIL as well since REF is also its reference (227 against 141). No priority contrast exists: the pages place the Copper and the fixed channels on disjoint slots (p.20, p.275), so no stimulus makes the Copper take a slot of these channels, and P5 has no demand precondition for that reason
+// MUTATION P5b stimulus red NMH_MUTATE=P5b: COMPARATOR CONTROL, not a priority contrast: CPU with AUD0PER = 200 against REF; P5b reads FAIL for audio channel 0 only (141 fetches against 227). No priority contrast exists: p.196 puts the 68000 on the other parity than the fixed channels, so no stimulus makes the 68000 take a slot of these channels
+// MUTATION P5b stimulus red NMH_MUTATE=P5b-planes: COMPARATOR CONTROL of the four bitplanes in the verdict: CPU with BPL1MOD = 2 against REF (p.60, p.291: the odd planes' pointers advance two bytes more per line); P5b reads FAIL through PL1 and PL3 only (4080 fetches against 4080 each, first mismatch for PL1 at element 20, cycle 2924081, address $4002A against $40028); P5a, P2-a and every C line stay PASS
+// MUTATION P5-a stimulus red NMH_MUTATE=P5-a: POPULATION CONTROL (removes a channel): REF and CPU with DMACON $87FE (AUD0EN clear); P5-a reads FAIL (audio channel 0 has no fetches, in both runs); P2-a stays PASS; P5a and P5b not graded
+// MUTATION P6a stimulus red NMH_MUTATE=P6a: COMPARATOR CONTROL, not a priority contrast: HIRES-LOAD with BPL1MOD = 2; P6a reads FAIL (first mismatch: element 2, address $4A668 against $4A640); P6-a, P6-b, P6-c, P6-d and every C line stay PASS. No priority contrast exists at this boundary: p.194 and p.198 put display DMA above the Copper and the blitter, p.197 says the four-plane high-resolution display "effectively locks out ... the blitter or Copper", and no register, list word or data the program can write makes either take a bitplane slot; P6-c and P6-d show the demand, so a green P6a is not disjoint scheduling
+// MUTATION P6b none impossible NMH_MUTATE=-: unfalsifiable at this boundary: P6b can fail only when a requester is pending across a gap and is kept out of the gap's free slots, which no page supports and no register, list word or data of the program causes; the one stimulus that leaves a gap without an item-6 fetch or a blitter access has nothing pending there, fails P6-b first, and P6b then reads NOT GRADED (see NMH_MUTATE=P6-b)
+// MUTATION P6-a stimulus red NMH_MUTATE=P6-a: HIRES-REF with item 5 = $5001,$FF00 (the stream inside W_H, second clause of P6-a); P6-a reads FAIL (512 item-6, BA or BD accesses in HIRES-REF); P6-c and P6-d stay PASS; P6a not graded
+// MUTATION P6-a stimulus red NMH_MUTATE=P6-a-planes: HIRES-REF with BPLCON0 = $B200 (three high-resolution planes, p.63), first clause of P6-a; plane 4 has no fetches and P6-a reads FAIL (display-line frame: line 0 has 120 of 160 words); the bitplane fetches that P6-c and P6-d count against remain, so P6-b, P6-c, P6-d and every C line stay PASS; P6a not graded
 // MUTATION P6-b stimulus red NMH_MUTATE=P6-b: HIRES-LOAD with item 4 data $0040 alone (one row); P6-b reads FAIL (the stream and the blit are never pending together); P6-a stays PASS; P6a and P6b not graded
-// MUTATION P6-c stimulus red NMH_MUTATE=P6-c: BLT-NOFIX with BLIT = NO-OP; P6-c reads FAIL; P6a not graded
-// MUTATION P6-d stimulus red NMH_MUTATE=P6-d: NOFIX with item 5 = $E001,$FF00; P6-d reads FAIL (0 of 0 item-6 fetches in W_stream(HIRES-LOAD)); P6a not graded
-// MUTATION CJ-HIGHEST stimulus red NMH_MUTATE=CJ-HIGHEST: CPU with AUD0PER = 200 (P5b's contrast), P4, P5a, P5b evaluated; P5b reads FAIL and CJ-HIGHEST with it; P4 and P5a stay PASS
-// MUTATION CJ-OVER-BLITTER stimulus red NMH_MUTATE=CJ-OVER-BLITTER: BLT with AUD0PER = 200 (P4's contrast), P4 and P6a evaluated; P4 reads FAIL and CJ-OVER-BLITTER with it; P6a stays PASS
-// MUTATION CJ-BELOW-FOUR stimulus red NMH_MUTATE=CJ-BELOW-FOUR: HIRES-LOAD with BPL1MOD = 2 (P6a's contrast), P5a, P5b and P6a evaluated; P6a reads FAIL and CJ-BELOW-FOUR with it; P5a stays PASS
-// MUTATION CJ-NEXT stimulus red NMH_MUTATE=CJ-NEXT: BLT with item 5 = $5101,$FF00 (P1's contrast), P1, P2, P5a, P6a evaluated; P1 reads FAIL and CJ-NEXT with it (CJ-STEALS as well); P2, P5a, P6a stay PASS
-// MUTATION CJ-STEALS stimulus red NMH_MUTATE=CJ-STEALS: CPU with item 5 = $5101,$FF00 (P2's contrast), P1 and P2 evaluated; P2 reads FAIL and CJ-STEALS with it; P1 stays PASS
-// MUTATION CJ-NO-COLLISION stimulus red NMH_MUTATE=CJ-NO-COLLISION: REF with item 5 = $5101,$FF00 (P3's contrast), P3 and P3r evaluated; P3 reads FAIL and CJ-NO-COLLISION with it; P3r stays PASS
+// MUTATION P6-c stimulus red NMH_MUTATE=P6-c: POPULATION CONTROL (removes the requester): BLT-NOFIX with BLIT = NO-OP; P6-c reads FAIL; P6a not graded
+// MUTATION P6-c stimulus red NMH_MUTATE=P6-c-C1: PAIR GATE of P6-c: BLT-NOFIX with one NOP before S3, so C1 fails for the pair BLT-NOFIX/HIRES-REF; P6-c reads FAIL and C1 reads FAIL; P6a not graded
+// MUTATION P6-c stimulus red NMH_MUTATE=P6-c-C7: PAIR GATE of P6-c: BLT-NOFIX with the writes of the C7 contrast at S4.13, so C7 fails for the pair BLT-NOFIX/HIRES-REF; P6-c reads FAIL and C7 reads FAIL, C1 stays PASS; P6a not graded
+// MUTATION P6-d stimulus red NMH_MUTATE=P6-d: POPULATION CONTROL (moves the requester out of the interval): NOFIX with item 5 = $E001,$FF00; P6-d reads FAIL (0 of 0 item-6 fetches in W_stream(HIRES-LOAD)); P6a not graded
+// MUTATION P6-d stimulus red NMH_MUTATE=P6-d-C1: PAIR GATE of P6-d: NOFIX with one NOP before S3, so C1 fails for the pair NOFIX/HIRES-REF; P6-d reads FAIL and C1 reads FAIL; P6a not graded
+// MUTATION P6-d stimulus red NMH_MUTATE=P6-d-C7: PAIR GATE of P6-d, not isolated: NOFIX is the run R is taken from, so its C7 holds by definition and the pair can fail C7 only through HIRES-REF; HIRES-REF with the writes of the C7 contrast at S4.13 fails C7 for the pairs of P6-d and of P6-c and for the pair HIRES-LOAD/HIRES-REF: P6-c, P6-d and C7 read FAIL; P6a and P6b not graded
+// MUTATION CJ-OVER-BLITTER stimulus red NMH_MUTATE=CJ-OVER-BLITTER: COMPARATOR CONTROL inherited from P4, not a priority contrast (the parts have none): BLT with AUD0PER = 200, P4 and P6a evaluated; P4 reads FAIL and CJ-OVER-BLITTER with it; P6a stays PASS
+// MUTATION CJ-STEALS stimulus red NMH_MUTATE=CJ-STEALS: COMPARATOR CONTROL inherited from P2, not a priority contrast (the parts have none): CPU with item 5 = $5101,$FF00, P1 and P2 evaluated; P2 reads FAIL and CJ-STEALS with it; P1 stays PASS
 
 #include <algorithm>
 #include <cstdint>
@@ -805,6 +816,26 @@ struct CAgg {
 };
 CAgg g_c;
 
+// C1 and C7 for the pair of a demand count (SPECIFICATION.md 1.8, interval borrowing): the unopposed run `d` and the run `r`
+// whose interval is applied to it as absolute times. Both are added to the aggregate lines C1 and C7.
+struct PairGate {
+    bool c1 = false, c7 = false;
+    std::string why;
+    // C7 uses R and reads NOT GRADED while FIG69 fails (1.8)
+    bool ok(bool fig) const { return c1 && (!fig || c7); }
+};
+PairGate pair_gate(const Run& d, const Run& r, const RSet& R, const std::string& tag) {
+    PairGate g;
+    g.c1 = c1_pair(d, r, g.why);
+    g.c7 = c7_run(d, R) && c7_run(r, R);
+    g_c.add(1, g.c1, tag + " pair " + g.why);
+    g_c.add(7, g.c7, tag + " pair");
+    return g;
+}
+std::string pair_text(const PairGate& g, bool fig) {
+    return std::string(" [pair C1 ") + (g.c1 ? "holds" : "FAILS") + ", C7 " + (!fig ? "not graded (FIG69)" : g.c7 ? "holds" : "FAILS") + "]";
+}
+
 // ids that only one line grades stay on that line; an id whose clause is graded by several lines is on a conjunction line
 const char* kClaimsP1 = "sol:COP2-copins-arbitration.c12,opus:ch2-appa-copins.c131,opus:ch2-about-the-copper.c28";
 const char* kClaimsP2 = "sol:COP2-copins-arbitration.c14,opus:ch2-appa-copins.c132,opus:ch2-about-the-copper.c27";
@@ -833,7 +864,8 @@ void gP1(Ctx& cx, Checks& chk) {
                                     ref, [](const Run& q, size_t i) { return is_item6(q.acc[i]); }, wr);
     Basis bs = wr.ok ? basis_of(nc, ref, wr) : Basis();
     g_c.add(8, bs.ok(), "P1-b");
-    bool p1b = wr.ok && bs.ok() && n_dem > 0;
+    PairGate pg = pair_gate(nc, ref, cx.R, "P1-b");
+    bool p1b = wr.ok && pg.ok(fig) && bs.ok() && n_dem > 0;
     std::string a_dem = num(n_dem) + basis_text(bs);
     std::string sa = num(wb.lo), sb = num(wb.hi), sc = num(ws.lo), sd = num(ws.hi);
     chk.expect(p1a,
@@ -842,16 +874,16 @@ void gP1(Ctx& cx, Checks& chk) {
         ") [not graded -- precondition, no claim uid]");
     chk.expect(p1b,
         "P1-b [p19,p198]: the blitter demanded the Copper's slots -- in BLT-NOCOP (the Copper waiting) " + a_dem +
-        " accesses to BA and BD lie at the times of REF's item-6 fetches [not graded -- precondition, no claim uid]");
+        " accesses to BA and BD lie at the times of REF's item-6 fetches" + pair_text(pg, fig) + " [not graded -- precondition, no claim uid]");
     bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p1a && p1b;
     auto ta = trace(blt, kMaskK, wb), tb = trace(ref, kMaskK, wb);
-    CmpRes r = cmp_traces(ta, tb, {kL1 + kItem4, kL1 + kItem5});
+    CmpRes r = cmp_traces(ta, tb, {kL1 + kItem4});
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
             std::string("P1 [p275,p20] ") + kClaimsP1 + ": while a blit with the blitter-nasty bit set runs, every one of the " + na +
-            " Copper fetches in the blit's span happens at the same time, from the same address, with the same data as in the run without the blit (" +
-            nb + " fetches there; the blitter half of CJ-STEALS, the \"above\" part of CJ-NEXT)");
+            " Copper fetches in the blit's span happens at the same time, from the same address, with the same data as in the run without the blit, except the data of item 4's first word, which differ by construction ($0058 against $01FE) (" +
+            nb + " fetches there; the blitter half of CJ-STEALS)");
         if (!r.eq) chk.note("P1 first mismatch: " + r.first);
     } else {
         not_graded(chk, "P1", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
@@ -887,24 +919,25 @@ void gP2(Ctx& cx, Checks& chk) {
                                     ref, [](const Run& q, size_t i) { return is_item6(q.acc[i]); }, wr);
     Basis bs = wr.ok ? basis_of(nc, ref, wr) : Basis();
     g_c.add(8, bs.ok(), "P2-b");
-    bool p2b = wr.ok && bs.ok() && n_dem > 0;
+    PairGate pg = pair_gate(nc, ref, cx.R, "P2-b");
+    bool p2b = wr.ok && pg.ok(fig) && bs.ok() && n_dem > 0;
     std::string a_dem = num(n_dem) + basis_text(bs);
     pre(chk, fig, "P2-a", p2a,
         "P2-a [p19,p20,p196]: the 68000 is busy -- loop accesses before the first bitplane fetch, in every display line outside the stream, in the lines just before and after it, and the loop-exit marker follows field F" +
         std::string(p2a ? "" : " (unmet: " + why2 + ")") + " [not graded -- precondition, no claim uid]");
     chk.expect(p2b,
         "P2-b [p19,p20]: the 68000 demanded the Copper's slots -- in CPU-NOCOP (the Copper waiting) " + a_dem +
-        " loop accesses lie at the times of REF's item-6 fetches [not graded -- precondition, no claim uid]");
+        " loop accesses lie at the times of REF's item-6 fetches" + pair_text(pg, fig) + " [not graded -- precondition, no claim uid]");
     bool gate = fig && c1 && c2 && c3 && c4 && c5 && c6 && c7 && p2a && p2b;
     Iv wf = field_span(cpu);
     auto ta = trace(cpu, kMaskK, wf), tb = trace(ref, kMaskK, wf);
-    CmpRes r = cmp_traces(ta, tb, {kL1 + kItem5});
+    CmpRes r = cmp_traces(ta, tb);
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
             std::string("P2 [p275,p20] ") + kClaimsP2 + ": while the 68000 runs a loop of Chip-memory accesses, every one of the " + na +
             " Copper fetches of field F happens at the same time, from the same address, with the same data as when the 68000 is stopped (" + nb +
-            " fetches there; the 680x0 half of CJ-STEALS, the \"above\" part of CJ-NEXT)");
+            " fetches there; the 680x0 half of CJ-STEALS)");
         if (!r.eq) chk.note("P2 first mismatch: " + r.first);
     } else {
         not_graded(chk, "P2", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
@@ -976,13 +1009,13 @@ void gP3(Ctx& cx, Checks& chk) {
     bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p3a && p3b;
     Iv wf = field_span(ref);
     auto ta = trace(ref, kMaskK, wf), tb = trace(nof, kMaskK, wf);
-    CmpRes r = cmp_traces(ta, tb, {kL1 + kItem5});
+    CmpRes r = cmp_traces(ta, tb);
     std::string na = num(r.na), nb = num(r.nb);
     if (gate) {
         chk.expect(r.eq,
             "P3 [p20,p275,p196]: disk, audio and sprite DMA and a four-plane low-resolution display never delay the Copper -- all " + na +
             " Copper fetches of field F happen at the same time, from the same address, with the same data as without them (" + nb +
-            " fetches there; the delay half of CJ-NO-COLLISION) [carries no claim uid]");
+            " fetches there; a scoped observation of one display mode and four DMA classes) [carries no claim uid]");
         if (!r.eq) chk.note("P3 first mismatch: " + r.first);
     } else {
         not_graded(chk, "P3", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
@@ -1037,7 +1070,8 @@ void gP4(Ctx& cx, Checks& chk) {
                                     ref, [](const Run& q, size_t i) { return (kMaskFixed & (1u << q.ch[i])) != 0; }, sp);
     Basis bs = sp.ok ? basis_of(nf, ref, sp) : Basis();
     g_c.add(8, bs.ok(), "P4-b");
-    bool p4b = sp.ok && bs.ok() && n_dem > 0;
+    PairGate pg = pair_gate(nf, ref, cx.R, "P4-b");
+    bool p4b = sp.ok && pg.ok(fig) && bs.ok() && n_dem > 0;
     std::string a_dem = num(n_dem) + basis_text(bs), li = num(uint64_t(lines_in));
     pre(chk, fig, "P4-a", p4a,
         "P4-a [p194,p198,p80,p82]: the channels ran during the blit -- in REF over the blit's span each of the 17 fixed channels has fetches at consecutive addresses and in each of the " + li +
@@ -1045,7 +1079,7 @@ void gP4(Ctx& cx, Checks& chk) {
         " [not graded -- precondition, no claim uid]");
     chk.expect(p4b,
         "P4-b [p198]: the blitter demanded their slots -- over lines $40 to $4F, in BLT-NOFIX " + a_dem +
-        " accesses to BA and BD lie at the times of REF's fixed-channel fetches [not graded -- precondition, no claim uid]");
+        " accesses to BA and BD lie at the times of REF's fixed-channel fetches" + pair_text(pg, fig) + " [not graded -- precondition, no claim uid]");
     bool gate = fig && c1 && c2 && c3 && c4 && c6 && c7 && p4a && p4b;
     bool all = true;
     std::string bad;
@@ -1060,7 +1094,7 @@ void gP4(Ctx& cx, Checks& chk) {
     if (gate) {
         chk.expect(all,
             std::string("P4 [p198,p194] ") + kClaimsP4 + ": while a blit with the blitter-nasty bit set runs, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tn +
-            " fetches of the 17 channels in the blit's span happen at the same time, from the same address, with the same data as without the blit (the blitter part of CJ-HIGHEST and of CJ-OVER-BLITTER)");
+            " fetches of the 17 channels in the blit's span happen at the same time, from the same address, with the same data as without the blit (the low-resolution part of CJ-OVER-BLITTER)");
         if (!all) chk.note("P4 mismatches: " + bad);
     } else {
         not_graded(chk, "P4", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
@@ -1111,22 +1145,20 @@ void gP5(Ctx& cx, Checks& chk) {
         tot_a += ra.na;
         if (!ra.eq) { all_a = false; bad_a += std::string(bad_a.empty() ? "" : "; ") + ch_name(c) + " (" + num(ra.na) + " against " + num(ra.nb) + "): " + ra.first; }
         CmpRes rb = cmp_traces(trace(cpu, 1u << c, wf), trace(ref, 1u << c, wf));
-        if (kMaskPlanes & (1u << c)) {
+        if (kMaskPlanes & (1u << c))
             planes_note += std::string(planes_note.empty() ? "" : ", ") + ch_name(c) + " " + num(rb.na) + " against " + num(rb.nb) + (rb.eq ? " equal" : " different");
-            continue;
-        }
         tot_b += rb.na;
         if (!rb.eq) { all_b = false; bad_b += std::string(bad_b.empty() ? "" : "; ") + ch_name(c) + " (" + num(rb.na) + " against " + num(rb.nb) + "): " + rb.first; }
     }
     std::string ta = num(tot_a), tb = num(tot_b);
-    chk.note("P5b bitplanes, measured and not graded: " + planes_note);
+    chk.note("P5b bitplanes, graded in the verdict below: " + planes_note);
     bool gate_a = fig && ac1 && ac2 && ac3 && ac4 && ac6 && ac7 && p5a_a;
     bool gate_b = fig && bc1 && bc2 && bc3 && bc5 && bc6 && bc7 && p2a && p5a_b;
     if (gate_a) {
         chk.expect(all_a,
             "P5a [p194]: while the Copper runs a stream of MOVEs, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + ta +
             " fetches of the 17 channels in the stream's interval happen at the same time, from the same address, with the same data as with the Copper waiting"
-            " (the Copper part of CJ-HIGHEST, a \"below\" part of CJ-BELOW-FOUR and of CJ-NEXT) [carries no claim uid]");
+            " (a scoped observation in separate runs: no demand precondition exists, so it does not establish priority, see P5-READING) [carries no claim uid]");
         if (!all_a) chk.note("P5a mismatches: " + bad_a);
     } else {
         not_graded(chk, "P5a", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (ac1 ? "1" : "0") + " C2=" + (ac2 ? "1" : "0") + " C3=" + (ac3 ? "1" : "0") + " C4=" + (ac4 ? "1" : "0") +
@@ -1136,9 +1168,9 @@ void gP5(Ctx& cx, Checks& chk) {
     verdict("P5a", gate_a, all_a);
     if (gate_b) {
         chk.expect(all_b,
-            "P5b [p194]: while the 68000 runs a loop of Chip-memory accesses, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tb +
-            " fetches of disk, audio and sprite DMA in field F happen at the same time, from the same address, with the same data as with the 68000 stopped"
-            " (the 68000 part of CJ-HIGHEST) [carries no claim uid]");
+            "P5b [p194,p196]: while the 68000 runs a loop of Chip-memory accesses, disk, audio, sprite and bitplane DMA keep every one of their slots -- all " + tb +
+            " fetches of the 17 channels (the four bitplanes among them) in field F happen at the same time, from the same address, with the same data as with the 68000 stopped"
+            " (a scoped observation in separate runs: no demand precondition exists, so it does not establish priority, see P5-READING) [carries no claim uid]");
         if (!all_b) chk.note("P5b mismatches: " + bad_b);
     } else {
         not_graded(chk, "P5b", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (bc1 ? "1" : "0") + " C2=" + (bc2 ? "1" : "0") + " C3=" + (bc3 ? "1" : "0") + " C5=" + (bc5 ? "1" : "0") +
@@ -1147,11 +1179,13 @@ void gP5(Ctx& cx, Checks& chk) {
     }
     verdict("P5b", gate_b, all_b);
     chk.record(
-        "P5-READING [p194,p20,p275,p196] sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5 (CJ-HIGHEST), "
-        "sol:6-system-dma.c11 (CJ-BELOW-FOUR), opus:ch6-sysdma.c9 (CJ-NEXT): the pages leave no slot contested between these channels and the Copper or the 68000 "
-        "(p.20 and p.275 put the Copper on the cycles disk, audio, refresh and sprite DMA do not use; p.196 and Figure 6-10 put the 68000 on cycles that leave them free). "
-        "The lines read \"highest priority level\", and \"the Copper has the next priority\" below it, as this: with a blitter-nasty blit, a Copper MOVE stream and a 68000 loop "
-        "all wanting every cycle, no other requester takes a slot of disk, audio, sprite or bitplane DMA. A green result shows that; it does not show that a contested slot was won");
+        "P5-READING [p194,p20,p275,p196] withdrawn -- sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5 (\"highest priority level\"), "
+        "sol:6-system-dma.c11,opus:ch6-sysdma.c9 (\"the Copper has the next priority\"): p.20 and p.275 give the Copper only the odd memory cycles (\"requests the bus only during odd-numbered memory cycles\", "
+        "four memory cycle times per instruction), which audio, disk, refresh, sprites and most low resolution display DMA do not use; p.196 gives the 68000 only the even-numbered cycles "
+        "(\"The 68000 uses only the even-numbered memory access cycles\") while Figure 6-10 labels the other parity \"odd cycle, assigned to other devices\". The pages disagree on which parity is odd or even, "
+        "and under either reading they place the Copper, the 68000 and the fixed channels on disjoint slots. P5a (Copper stream) and P5b (68000 loop) run in separate runs, and no run has the blitter, "
+        "the Copper stream and the 68000 loop active together; P5 has no demand precondition. An unchanged trace of the fixed channels therefore cannot tell priority from disjoint scheduling, "
+        "and the ids are not asserted. The blitter's part, where P4-b shows the demand, is graded by P4");
 }
 
 // ====================================================================================
@@ -1206,14 +1240,16 @@ void gP6(Ctx& cx, Checks& chk) {
                                     h0, [](const Run& q, size_t i) { return (kMaskPlanes & (1u << q.ch[i])) != 0; }, sp);
     Basis bs_c = sp.ok ? basis_of(nf, h0, sp) : Basis();
     g_c.add(8, bs_c.ok(), "P6-c");
-    bool p6c = sp.ok && bs_c.ok() && n_dem > 0;
+    PairGate pg_c = pair_gate(nf, h0, cx.R, "P6-c");
+    bool p6c = sp.ok && pg_c.ok(fig) && bs_c.ok() && n_dem > 0;
     // P6-d: the Copper wanted slots the display used -- measured in the unopposed run (NOFIX), over the stream's interval in HIRES-LOAD
     size_t n_d = 0;
     if (ss.ok) n_d = demand_count(unf, [](const Run& q, size_t i) { return is_item6(q.acc[i]); },
                                   h0, [](const Run& q, size_t i) { return (kMaskPlanes & (1u << q.ch[i])) != 0; }, ss);
     Basis bs_d = ss.ok ? basis_of(unf, h0, ss) : Basis();
     g_c.add(8, bs_d.ok(), "P6-d");
-    bool p6d = ss.ok && bs_d.ok() && n_d > 0;
+    PairGate pg_d = pair_gate(unf, h0, cx.R, "P6-d");
+    bool p6d = ss.ok && pg_d.ok(fig) && bs_d.ok() && n_d > 0;
     size_t n_item6 = 0;
     for (const auto& a : unf.acc) if (a.cycle >= ss.lo && a.cycle <= ss.hi && is_item6(a)) ++n_item6;
     std::string a_dem = num(n_dem) + basis_text(bs_c), li = num(uint64_t(lines_in));
@@ -1226,10 +1262,10 @@ void gP6(Ctx& cx, Checks& chk) {
         (p6b ? "" : " (unmet: " + why6b + ")") + " [not graded -- precondition, no claim uid]");
     chk.expect(p6c,
         "P6-c [p198]: the blitter demanded the display's slots -- over lines $40 to $4F, in BLT-NOFIX " + a_dem +
-        " accesses to BA and BD lie at the times of HIRES-REF's bitplane fetches [not graded -- precondition, no claim uid]");
+        " accesses to BA and BD lie at the times of HIRES-REF's bitplane fetches" + pair_text(pg_c, fig) + " [not graded -- precondition, no claim uid]");
     chk.expect(p6d,
         "P6-d [p19,p20,p197,p275]: the Copper wanted slots the display used -- in NOFIX (the Copper alone), over the stream's interval in HIRES-LOAD, " + num(n_d) +
-        " of the " + num(n_item6) + " item-6 fetches lie in the memory cycles of HIRES-REF's bitplane fetches" + basis_text(bs_d) + " [not graded -- precondition, no claim uid]");
+        " of the " + num(n_item6) + " item-6 fetches lie in the memory cycles of HIRES-REF's bitplane fetches" + basis_text(bs_d) + pair_text(pg_d, fig) + " [not graded -- precondition, no claim uid]");
     // (a)
     auto ta = trace(h1, kMaskPlanes, wh), tb = trace(h0, kMaskPlanes, wh);
     CmpRes ra = cmp_traces(ta, tb);
@@ -1239,7 +1275,7 @@ void gP6(Ctx& cx, Checks& chk) {
         chk.expect(ra.eq,
             "P6a [p194,p275,p198,p197,p186]: in a four-plane high-resolution display neither the Copper nor a blitter-nasty blit takes a slot from bitplane DMA -- all " + na +
             " bitplane fetches while the stream and the blit run happen at the same time, from the same address, with the same data as without them (" + nb +
-            " fetches there; a \"below\" part of CJ-BELOW-FOUR and of CJ-NEXT, the display part of CJ-OVER-BLITTER) [carries no claim uid]");
+            " fetches there; the display part of CJ-OVER-BLITTER) [carries no claim uid]");
         if (!ra.eq) chk.note("P6a first mismatch: " + ra.first);
     } else {
         not_graded(chk, "P6a", std::string("FIG69=") + (fig ? "1" : "0") + " C1=" + (c1 ? "1" : "0") + " C2=" + (c2 ? "1" : "0") + " C3=" + (c3 ? "1" : "0") + " C4=" + (c4 ? "1" : "0") +
@@ -1355,7 +1391,7 @@ void gP3r(Ctx& cx, Checks& chk) {
         chk.expect(th == 0,
             "P3r [p20,p275]: in every load run no Copper fetch lies in a refresh cycle -- over " + num(nruns) + " runs, " + num(th) + " of " + num(tf) +
             " Copper fetches of field F lie in a bus cycle in which that run's own `refresh` output is high (" + num(tr) +
-            " refresh cycles there; the refresh half of CJ-NO-COLLISION) [carries no claim uid]");
+            " refresh cycles there; a scoped observation) [carries no claim uid]");
     } else {
         not_graded(chk, "P3r", unmet);
     }
@@ -1400,6 +1436,9 @@ int real_main(int argc, char** argv) {
     cx.specs["HIRES-REF"] = mk(2, false, 0xE0, false);
     cx.specs["HIRES-LOAD"] = mk(2, true, 0x50, false);
 
+    // the contrast of C7 and of the C7 of a demand pair: S4.13 writes HTOTAL = $E4 and BEAMCON0 = $00A0 (p.304-305)
+    auto late_htotal = [](Spec& s) { s.xreg1 = 0xDFF1C0; s.xval1 = 0x00E4; s.xreg2 = 0xDFF1DC; s.xval2 = 0x00A0; };
+
     // the stimulus mutations: each replaces the named run by its contrasting case
     bool g1 = true, g2 = true, g3 = true, g4 = true, g5 = true, g6 = true, fixture = true;
     if (!mv.empty()) {
@@ -1409,7 +1448,7 @@ int real_main(int argc, char** argv) {
         if (mv == "FIXTURE") { fixture = true; REF.bin = "prog_load_fixture_mut.bin"; }
         else if (mv == "FIG69") { g1 = true; NOFIX.bin = "prog_load_htotal.bin"; }
         else if (mv == "C1") { g1 = true; BLT.bin = "prog_load_nop.bin"; }
-        else if (mv == "C7") { g1 = true; BLT.xreg1 = 0xDFF1C0; BLT.xval1 = 0x00E4; BLT.xreg2 = 0xDFF1DC; BLT.xval2 = 0x00A0; }
+        else if (mv == "C7") { g1 = true; late_htotal(BLT); }
         else if (mv == "C2") { g1 = true; BLT.dmacon = 0x83FF; BLT.dmacon_decl = 0x87FF; }
         else if (mv == "C3") { g1 = true; BLT.loop = true; }
         else if (mv == "C4") { g1 = true; BLT.last_wait = true; }
@@ -1429,20 +1468,28 @@ int real_main(int argc, char** argv) {
         else if (mv == "P4-b") { g4 = true; cx.specs["BLT-NOFIX"].blit = false; }
         else if (mv == "P5a") { g5 = true; REF.aud0per = 200; }
         else if (mv == "P5b") { g5 = true; CPU.aud0per = 200; }
+        else if (mv == "P5b-planes") { g5 = true; CPU.bpl1mod = 2; }
         else if (mv == "P5-a") { g5 = true; REF.dmacon = 0x87FE; CPU.dmacon = 0x87FE; }
         else if (mv == "P6a") { g6 = true; H1.bpl1mod = 2; }
         else if (mv == "P6-a") { g6 = true; H0.item5 = 0x5001; }
-        else if (mv == "P6-a-planes") { g6 = true; H0.bplcon0 = 0x8200; }
+        else if (mv == "P6-a-planes") { g6 = true; H0.bplcon0 = 0xB200; }
         else if (mv == "P6-b") { g6 = true; H1.blt_data = 0x0040; }
         else if (mv == "P6-c") { g6 = true; cx.specs["BLT-NOFIX"].blit = false; }
         else if (mv == "P6-d") { g6 = true; NOFIX.item5 = 0xE001; }
-        // conjunction lines: one part's contrast, with every part evaluated
-        else if (mv == "CJ-HIGHEST") { g4 = g5 = true; CPU.aud0per = 200; }
+        // the pair gates of the demand counts: the demand run with one NOP before S3 (C1), or with the writes of the C7 contrast (C7)
+        else if (mv == "P1-b-C1") { g1 = true; cx.specs["BLT-NOCOP"].bin = "prog_load_nop.bin"; }
+        else if (mv == "P1-b-C7") { g1 = true; late_htotal(cx.specs["BLT-NOCOP"]); }
+        else if (mv == "P2-b-C1") { g2 = true; cx.specs["CPU-NOCOP"].bin = "prog_load_nop.bin"; }
+        else if (mv == "P2-b-C7") { g2 = true; late_htotal(cx.specs["CPU-NOCOP"]); }
+        else if (mv == "P4-b-C1") { g4 = true; cx.specs["BLT-NOFIX"].bin = "prog_load_nop.bin"; }
+        else if (mv == "P4-b-C7") { g4 = true; late_htotal(cx.specs["BLT-NOFIX"]); }
+        else if (mv == "P6-c-C1") { g6 = true; cx.specs["BLT-NOFIX"].bin = "prog_load_nop.bin"; }
+        else if (mv == "P6-c-C7") { g6 = true; late_htotal(cx.specs["BLT-NOFIX"]); }
+        else if (mv == "P6-d-C1") { g6 = true; NOFIX.bin = "prog_load_nop.bin"; }
+        else if (mv == "P6-d-C7") { g6 = true; late_htotal(H0); }
+        // conjunction lines: the comparator control of one part, with every part evaluated
         else if (mv == "CJ-OVER-BLITTER") { g4 = g6 = true; BLT.aud0per = 200; }
-        else if (mv == "CJ-BELOW-FOUR") { g5 = g6 = true; H1.bpl1mod = 2; }
-        else if (mv == "CJ-NEXT") { g1 = g2 = g5 = g6 = true; BLT.item5 = 0x5101; }
         else if (mv == "CJ-STEALS") { g1 = g2 = true; CPU.item5 = 0x5101; }
-        else if (mv == "CJ-NO-COLLISION") { g3 = true; REF.item5 = 0x5101; }
         else { std::printf("unknown NMH_MUTATE %s\n", mv.c_str()); return 2; }
     }
 
@@ -1472,18 +1519,10 @@ int real_main(int argc, char** argv) {
     if (g3) gP3r(cx, checks);
 
     // ---- the conjunction lines
-    conj(checks, "CJ-HIGHEST", "p194,p198", "sol:6-system-dma.c5,sol:6-system-dma.c6,sol:6-system-dma.c8,opus:ch6-sysdma.c2,opus:ch6-sysdma.c3,opus:ch6-sysdma.c5",
-         "disk, audio and sprite DMA (and the display) have the highest priority level: neither the blitter, nor the Copper, nor the 68000 takes one of their slots", {"P4", "P5a", "P5b"});
     conj(checks, "CJ-OVER-BLITTER", "p198,p194", "opus:ch6-sysdma.c55",
          "display, disk and audio DMA take precedence over the blitter: the blitter takes none of their slots, with a low-resolution display and with a high-resolution one", {"P4", "P6a"});
-    conj(checks, "CJ-BELOW-FOUR", "p194,p275", "sol:6-system-dma.c11",
-         "the Copper's priority is below the four highest-priority DMA classes: it takes no slot of disk, audio, sprite or bitplane DMA, with a low-resolution and with a high-resolution display", {"P5a", "P6a"});
-    conj(checks, "CJ-NEXT", "p194,p275,p20", "opus:ch6-sysdma.c9",
-         "the Copper has the next priority after the four devices: below them (it takes no slot of theirs) and above the blitter and the 68000 (neither delays a Copper fetch)", {"P5a", "P6a", "P1", "P2"});
     conj(checks, "CJ-STEALS", "p19,p20,p275", "opus:ch2-about-the-copper.c17.s2",
          "when the WAIT condition is satisfied the Copper steals its memory cycles from either the blitter or the 680x0: neither delays a Copper fetch", {"P1", "P2"});
-    conj(checks, "CJ-NO-COLLISION", "p20,p275,p196", "opus:ch2-about-the-copper.c29,opus:ch2-appa-copins.c133",
-         "the Copper needs priority over nothing other than the 680x0 and the blitter: disk, audio, sprite and four-plane low-resolution display DMA do not delay it, and no Copper fetch lies in a refresh cycle", {"P3", "P3r"});
 
     // ---- the common preconditions, over the comparisons evaluated above
     if (!(mv == "FIXTURE")) {
@@ -1525,7 +1564,8 @@ int real_main(int argc, char** argv) {
         for (size_t i = 0; i < lr.acc.size(); ++i)
             if (lr.hasF && lr.ch[i] >= SP0 && lr.ch[i] <= SP7 && lr.acc[i].cycle >= lr.fs && lr.acc[i].cycle <= lr.fe) ++sprites;
         checks.note("SETUP-ORDER (NM-HRM-073), COP1LC = L1 written at S4.7, then COP2LC = L0 and COPJMP2, before Copper DMA is on (prog_load_literal.s): the first Copper fetch after the CPU's read of the DMACON value is at address $" + hx(kaddr) +
-                    " at cycle " + num(firstk) + " (" + num(firstk - dm) + " clk_sys after that read; L0 is $" + hx(kL1 - 0x100) + ", L1 is $" + hx(kL1) +
+                    " at cycle " + num(firstk) + " (" + num(firstk - dm) + " clk_sys after that read; p.26: \"COPJMP2/Restart Copper from address contained in COP2LC\", COP2LC is L0 = $" + hx(kL1 - 0x100) +
+                    ", so the first fetch is " + (kaddr == kL1 - 0x100 ? "at COP2LC" : "not at COP2LC") + "; L1 is $" + hx(kL1) +
                     "); field F starts at cycle " + num(lr.fs) + ", the CPU variant word is read at cycle " + num(firstv) + ", sprite DMA has " + num(sprites) +
                     " fetches in field F");
 
@@ -1547,6 +1587,11 @@ int real_main(int argc, char** argv) {
             "P6-LOCKOUT-WITHDRAWN [p197,p275] sol:6-system-dma.c73,opus:ch6-sysdma.c43: withdrawn -- the claims bundle the lock-out of the Copper and the blitter during the display, and the pages disagree on it "
             "(p.197 says the four-plane high-resolution display locks them out, p.275 says the display uses only the cycles the Copper does not request); the package grades only the ordering every page agrees on (P6a) and "
             "the slots between the lines' fetches (P6b), and prints the counts inside the fetches as measurements");
+        checks.record(
+            "NOTHING-OTHER-THAN-WITHDRAWN [p20,p275,p197] opus:ch2-about-the-copper.c29,opus:ch2-appa-copins.c133: withdrawn -- \"needs priority over only the 680x0 and the blitter\" is universal "
+            "(every DMA class, every display mode), and it covers the four-plane high-resolution display on which p.197 (\"effectively locks out the 68000 (as well as the blitter or Copper)\") and "
+            "p.275 (\"collisions with display, audio, disk, refresh, and sprites, all of which use only even cycles\") disagree (P6-LOCKOUT-WITHDRAWN); P3 observes one display mode and four DMA classes and "
+            "P3r the refresh cycles, as scoped observations without an id");
     }
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
