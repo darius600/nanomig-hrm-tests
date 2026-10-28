@@ -7,7 +7,6 @@
 ;   FIXTURE_MUTANT  the stored fixture constant is $DEAD instead of $BEEF
 ;   LITERAL        COP1LC = L1 is written at S4.7, before Copper DMA is on
 ;   C1NOP          one NOP before S3
-;   C5STOP         a STOP before S5's read of the CPU variant word, ended by field F's Copper interrupt
 ;   HTOT           HTOTAL = $E4 and BEAMCON0 = $00A0 written at S1
 
         include "nanomig.i"
@@ -50,6 +49,11 @@ VT_BPL2MOD      equ VT+12
 VT_AUD0PER      equ VT+14
 VT_VECADDR      equ VT+16       ; long: where the handler address is stored
 VT_BPLPT        equ VT+20       ; four longs
+VT_DELAY        equ VT+36       ; iterations of the S4.13 count-down loop
+VT_XVAL1        equ VT+38       ; S4.13: value written to the register whose address is at VT_XREG1
+VT_XREG1        equ VT+40       ; long
+VT_XVAL2        equ VT+44
+VT_XREG2        equ VT+46       ; long
 L0              equ $10000
 L1              equ $10100
 S_BASE          equ $60000
@@ -176,10 +180,14 @@ start:
                 ifnd    LITERAL
                 move.l  #L1,COP1LCH(a6)         ; the next vertical blank starts L1
                 endif
-                ifd     C5STOP
-                stop    #$2000                  ; field F's item 8 raises COPER
-                move.w  #$2700,sr
-                endif
+; ---- S4.13: two register writes and a delay whose operands are variant words; in every run
+;      but the contrasts of C5 and C7 they write 0 to the no-op register and count down from 0
+                movea.l VT_XREG1,a0
+                move.w  VT_XVAL1,(a0)
+                movea.l VT_XREG2,a0
+                move.w  VT_XVAL2,(a0)
+                move.w  VT_DELAY,d3
+.dly:           dbra    d3,.dly
 ; ---- S5
                 move.w  VT_CPU,d0
                 bne.s   .loop

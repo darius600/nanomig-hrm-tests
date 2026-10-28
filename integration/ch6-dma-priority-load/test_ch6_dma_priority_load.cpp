@@ -11,9 +11,9 @@
 // MUTATION C2 stimulus red NMH_MUTATE=C2: the BLT program writes DMACON $83FF while $87FF is declared; C2 reads FAIL; P1 not graded; C1, C3, C4, C6, C7 stay PASS
 // MUTATION C3 stimulus red NMH_MUTATE=C3: the BLT run with CPU = LOOP; C3 reads FAIL; P1 not graded; the other C lines stay PASS
 // MUTATION C4 stimulus red NMH_MUTATE=C4: the last stream MOVE of the BLT run replaced by the WAIT $F801,$FF00; C4 reads FAIL (C3 stays PASS); P1 not graded
-// MUTATION C5 stimulus red NMH_MUTATE=C5: prog_load_c5.s (a STOP before S5, ended by field F's Copper interrupt) for REF and CPU; C5 reads FAIL; P2-a reads FAIL as well (no loop access lies in field F when the CPU variant word is read after it); P2 not graded; C1, C2, C3, C4, C6, C7 stay PASS
+// MUTATION C5 stimulus red NMH_MUTATE=C5: the CPU run with DELAY = 11500 (the S4.13 count-down, p.25 restart at the vertical blank); the CPU variant word is read at cycle 2858805 (fx68k) or 2891709 (TG68K), after field F starts (cycle 2841873) and before its first bitplane fetch (cycle 2922217); C5 reads FAIL; P2-a stays PASS (the loop runs through the rest of field F); P2 not graded; C1, C2, C3, C4, C6, C7 stay PASS
 // MUTATION C6 stimulus red NMH_MUTATE=C6: the CPU run writes the handler address to $6E; C6 reads FAIL; C1 stays PASS (it ends at the read of the vector address); P2 not graded
-// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with NTSC selected; C7 reads FAIL (C1 reads FAIL as well: the refresh accesses and the end of the S3 poll move); C3 stays PASS; P1 not graded
+// MUTATION C7 stimulus red NMH_MUTATE=C7: the BLT run with HTOTAL = $E4 and BEAMCON0 = $00A0 written at S4.13 (variant words XREG1/XVAL1/XREG2/XVAL2; p.304-305, the line length changes from the write on, so the refresh accesses lie at other times than R); C7 reads FAIL; C1 stays PASS (the first difference by construction is the read of XREG1), as do C2, C3, C4, C6; P1 not graded. The NTSC run is not the C7 contrast: it measures 227 colour clocks on every line (NTSC-LINES), without the alternation p.23 prints
 // MUTATION BASIS none impossible NMH_MUTATE=-: unfalsifiable at this boundary: no register, list or data the program can write makes two requesters share one memory cycle on the port; BASIS counts 0 memory cycles with two accesses in every use on both cores
 // MUTATION P1 stimulus red NMH_MUTATE=P1: BLT with item 5 = $5101,$FF00; P1 reads FAIL through the Copper's fetch times (first mismatch: element 0, cycle 2988969 against 2987153 on both cores; item 5's first word is exempt from the data comparison); P1-a, P1-b and every C line stay PASS
 // MUTATION P1-a stimulus red NMH_MUTATE=P1-a: BLT with item 4 data $0100 (4 rows); P1-a reads FAIL; P1 not graded
@@ -131,6 +131,9 @@ struct Spec {
     bool ntsc = false;
     bool last_wait = false;      // last stream MOVE replaced by a WAIT
     bool vec_wrong = false;      // handler address written to $6E
+    uint16_t delay = 0;          // iterations of the S4.13 count-down loop (variant word)
+    uint16_t xval1 = 0, xval2 = 0;                       // S4.13 register writes: values ...
+    uint32_t xreg1 = 0xDFF1FE, xreg2 = 0xDFF1FE;         // ... and addresses (the no-op register by default)
     bool hires() const { return fix == 2; }
     uint16_t dmacon_v() const {
         if (dmacon) return dmacon;
@@ -221,6 +224,11 @@ void place_image(nmh::NanomigHarness& h, const Spec& s) {
     m.w(kVT + 14, s.aud0per);
     m.l(kVT + 16, s.vec_wrong ? 0x6E : 0x6C);
     for (int p = 0; p < 4; ++p) m.l(kVT + 20 + 4 * p, plane_base(s, p));
+    m.w(kVT + 36, s.delay);
+    m.w(kVT + 38, s.xval1);
+    m.l(kVT + 40, s.xreg1);
+    m.w(kVT + 44, s.xval2);
+    m.l(kVT + 46, s.xreg2);
 }
 
 // ---- a run --------------------------------------------------------------------
@@ -628,11 +636,15 @@ bool c4_run(const Run& r) {
     return next == 512;
 }
 // C5: the 68000 reads the CPU variant word before field F starts
+uint64_t c5_read_cycle(const Run& r) {
+    for (const auto& a : r.raw)
+        if (!a.is_write && a.word_addr * 2 == kVT) return a.cycle;
+    return 0;
+}
 bool c5_run(const Run& r) {
     if (!run_ok(r)) return false;
-    for (const auto& a : r.raw)
-        if (!a.is_write && a.word_addr * 2 == kVT) return a.cycle < r.fs;
-    return false;
+    uint64_t c = c5_read_cycle(r);
+    return c != 0 && c < r.fs;
 }
 // C6: the vector word read back
 bool c6_run(const Run& r) { return r.ok() && r.r_vec_hi == (kHandler >> 16) && r.r_vec_lo == (kHandler & 0xFFFF); }
@@ -655,6 +667,11 @@ std::vector<uint32_t> diff_reads(const Spec& a, const Spec& b) {
     if (a.bpl1mod != b.bpl1mod) v.push_back(kVT + 10);
     if (a.aud0per != b.aud0per) v.push_back(kVT + 14);
     if (a.vec_wrong != b.vec_wrong) v.push_back(kVT + 18);
+    if (a.delay != b.delay) v.push_back(kVT + 36);
+    if (a.xval1 != b.xval1) v.push_back(kVT + 38);
+    if (a.xreg1 != b.xreg1) v.push_back(kVT + 42);
+    if (a.xval2 != b.xval2) v.push_back(kVT + 44);
+    if (a.xreg2 != b.xreg2) v.push_back(kVT + 48);
     if (a.blit != b.blit) v.push_back(kL1 + kItem4);
     if (a.blt_data != b.blt_data) v.push_back(kL1 + kItem4 + 2);
     if (a.item5 != b.item5) v.push_back(kL1 + kItem5);
@@ -857,6 +874,8 @@ void gP2(Ctx& cx, Checks& chk) {
     bool c3 = c3_run(ref); g_c.add(3, c3, "P2");
     bool c4 = c4_run(cpu) && c4_run(ref); g_c.add(4, c4, "P2");
     bool c5 = c5_run(cpu); g_c.add(5, c5, "P2");
+    chk.note("C5 CPU run: the CPU variant word is read at cycle " + num(c5_read_cycle(cpu)) + ", field F starts at cycle " + num(cpu.fs) +
+             ", the first bitplane fetch of field F is at cycle " + num([&] { for (size_t i = 0; i < cpu.acc.size(); ++i) if (cpu.acc[i].cycle >= cpu.fs && (kMaskPlanes & (1u << cpu.ch[i]))) return cpu.acc[i].cycle; return uint64_t(0); }()));
     bool c6 = c6_run(ref) && c6_run(cpu); g_c.add(6, c6, "P2");
     bool c7 = c7_run(cpu, cx.R) && c7_run(ref, cx.R); g_c.add(7, c7, "P2");
     bool fig = cx.anchor.ok;
@@ -1390,11 +1409,11 @@ int real_main(int argc, char** argv) {
         if (mv == "FIXTURE") { fixture = true; REF.bin = "prog_load_fixture_mut.bin"; }
         else if (mv == "FIG69") { g1 = true; NOFIX.bin = "prog_load_htotal.bin"; }
         else if (mv == "C1") { g1 = true; BLT.bin = "prog_load_nop.bin"; }
-        else if (mv == "C7") { g1 = true; BLT.ntsc = true; }
+        else if (mv == "C7") { g1 = true; BLT.xreg1 = 0xDFF1C0; BLT.xval1 = 0x00E4; BLT.xreg2 = 0xDFF1DC; BLT.xval2 = 0x00A0; }
         else if (mv == "C2") { g1 = true; BLT.dmacon = 0x83FF; BLT.dmacon_decl = 0x87FF; }
         else if (mv == "C3") { g1 = true; BLT.loop = true; }
         else if (mv == "C4") { g1 = true; BLT.last_wait = true; }
-        else if (mv == "C5") { g2 = true; CPU.bin = "prog_load_c5.bin"; REF.bin = "prog_load_c5.bin"; }
+        else if (mv == "C5") { g2 = true; CPU.delay = 11500; }
         else if (mv == "C6") { g2 = true; CPU.vec_wrong = true; }
         else if (mv == "P1") { g1 = true; BLT.item5 = 0x5101; }
         else if (mv == "P1-a") { g1 = true; BLT.blt_data = 0x0100; }
