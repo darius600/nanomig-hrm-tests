@@ -34,11 +34,13 @@ PROGS    := p1 p1_move p1_move_mutc p1_muta p1_mutb p1_mutc \
             p1_mutc1 p1_mutc2 p1_mutc3 p1_mutc3f p1_mutc4 p1_mutc4b p1_mutc4e \
             p1_mutord p1_mutkind p1_mutnodone p1_mutpeek \
             p2 p2_low p2_muta p2_mutb p2_mutc \
-            p2_mutrd p2_mutvec p2_mutc1 p2_mutc2 p2_mutc3 p2_mutc4 p2_mutnodone p2_mutpeek \
+            p2_mutrd p2_mutvec p2_mutc1 p2_mutc2 p2_mutc3 p2_mutc4 p2_mutc4pop p2_mutnodone p2_mutpeek \
             p3 p3_muta p3_mutord p3_mutb p3_mutc p3_mutcpc p3_mutcreg p3_mutd \
-            p3_mutcidx p3_mutcop p3_mutcal p3_mutwin \
+            p3_mutcidx p3_mutcop p3_mutcunsup p3_mutcal p3_mutwin p3_mutc4pop \
             p3_mutc1 p3_mutc2 p3_mutc3 p3_mutc4 p3_mutnodone p3_mutpeek \
             $(P5_68K) $(P5_VBR) \
+            p7 p7_muta p7_mutb p7_mutc p7_mutctl p7_mutc1 p7_mutc2 p7_mutc3 p7_mutc4 p7_mutc4pop \
+            p7_mutnodone p7_mutpeek \
             p6 p6_muta p6_mutb p6_mutc p6_mutd p6_mute p6_mutalign \
             p6_mutc1 p6_mutc2 p6_mutc3 p6_mutc4 p6_mutnodone p6_mutpeek
 

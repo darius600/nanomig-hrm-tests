@@ -22,12 +22,15 @@
 ;   MUT_CREG a LEA W_3(PC),A1 and a TST.W (A1) (register-indirect data
 ;            read of the guard word) are inserted before block 3 (P3.c's
 ;            contrast)
-;   MUT_CIDX a LEA, a MOVEQ and a TST.W 0(A1,D1.W) are inserted before
-;            block 3: an indexed data read whose address the check cannot
-;            resolve (the read itself is harmless in this run: it reads a
-;            word far from every guard) (P3.c's fail-safe contrast)
-;   MUT_COP  an ADDQ.W #1,D2, which the check does not decode, is inserted
-;            before block 3 (P3.c's fail-safe contrast)
+;   MUT_CIDX a LEA W_3(PC),A1, a MOVEQ #0,D1 and a TST.W 0(A1,D1.W) are
+;            inserted before block 3: an indexed data read of the guard
+;            word (P3.c's indexed contrast)
+;   MUT_COP  an ADDQ.W #1,W_3 (absolute long) is inserted before block 3:
+;            a read-modify-write of the guard word (P3.c's contrast)
+;   MUT_CUNSUP a SWAP D2, which the check does not decode, is inserted
+;            before block 3 (P3.c's unsupported-analysis contrast)
+;   MUT_C4POP every S_P and S_L write is left out (C4's empty-population
+;            contrast)
 ;   MUT_D    block 1's stop instruction is assembled as BRA.W instead of
 ;            BRA.S (P3.d's contrast)
 ;   MUT_WIN  (with MUT_C4B) the four blocks run before S_START is written;
@@ -46,12 +49,16 @@
 ; the blocks and written after the last block instead (see the tail).
 PMARK   macro
         ifnd    MUT_WIN
+        ifnd    MUT_C4POP
         move.w  #\1,S_P
+        endc
         endc
         endm
 LMARK   macro
         ifnd    MUT_WIN
+        ifnd    MUT_C4POP
         move.w  #\1,S_L
+        endc
         endc
         endm
 
@@ -115,12 +122,15 @@ L2:     LMARK   2
         tst.w   (a1)                   ; P3.c contrast: register-indirect operand read of a guard word
         endc
         ifd     MUT_CIDX
-        lea     T_BASE,a1
+        lea     W3(pc),a1
         moveq   #0,d1
-        tst.w   0(a1,d1.w)             ; P3.c fail-safe contrast: an indexed access the check cannot resolve
+        tst.w   0(a1,d1.w)             ; P3.c contrast: indexed operand read of a guard word
         endc
         ifd     MUT_COP
-        addq.w  #1,d2                  ; P3.c fail-safe contrast: an instruction the check does not decode
+        addq.w  #1,(W3).l              ; P3.c contrast: read-modify-write of a guard word
+        endc
+        ifd     MUT_CUNSUP
+        swap    d2                     ; P3.c unsupported-analysis contrast: an instruction the check does not decode
         endc
         PMARK   3
         pea     L3(pc)

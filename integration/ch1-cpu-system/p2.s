@@ -18,6 +18,8 @@
 ;   MUT_VEC    a TST.W of vector word $0010 (not word 0) is made between
 ;              steps 6 and 7: a read inside the window in the vector area
 ;              (P2.c's vector-area contrast)
+;   MUT_C4POP  the S_A and S_B writes are left out (C4's empty-population
+;              contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
@@ -83,7 +85,9 @@ start:
         endc
 
 ; ---- step 4 -----------------------------------------------------------
+        ifnd    MUT_C4POP
         move.w  #$A200,S_A
+        endc
 
 ; ---- step 5: store each register --------------------------------------
         move.l  d0,M_BASE+0
@@ -123,7 +127,9 @@ start:
         move.l  a0,M_USP
 
 ; ---- step 8 --------------------------------------------------------------
+        ifnd    MUT_C4POP
         move.w  #$B200,S_B
+        endc
         ifd     MUT_A
         move.w  #$B200,S_B              ; P2.a contrast: a second window-close marker
         endc

@@ -22,8 +22,8 @@
 ; $000010 etc., 68000 instruction set).
 
 ; ---- common sentinels and results (2.2 table) ------------------------
-S_A             equ     $4000           ; window-open sentinel (P1, P2, P5)
-S_B             equ     $4002           ; window-close sentinel (P1, P2, P5)
+S_A             equ     $4000           ; window-open sentinel (P1, P2, P5, P7)
+S_B             equ     $4002           ; window-close sentinel (P1, P2, P5, P7)
 S_START         equ     $4004           ; run start (all)
 S_END           equ     $4006           ; run end (all)
 S_FAIL          equ     $4008           ; failure path (all)
@@ -54,6 +54,12 @@ M_USP           equ     $4540
 XTAB3           equ     $4550
 ; ---- P6: X_k table, 8 longs (block k's stop-instruction address) -----
 XTAB6           equ     $4570
+
+; ---- P7: MOVE SR destination, handler markers, X_w and X_m ----------
+DEST            equ     $4040           ; word: destination of MOVE SR (prefilled $5555)
+MRK_PRIV        equ     $4042           ; word: privilege-violation handler marker
+MRK_TRAP        equ     $4044           ; word: TRAP handler marker
+XTAB7           equ     $4590           ; two longs: X_w and X_m
 
 ; ---- stacks -----------------------------------------------------------
 SSP_INIT        equ     $3FF0           ; explicit supervisor stack (2.2 rule 1)
