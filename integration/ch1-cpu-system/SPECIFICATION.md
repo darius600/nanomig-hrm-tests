@@ -287,9 +287,12 @@ exists in P1 only).
   labelled 68010 or 68020 grades what the program does under that
   requested value.
   - Contrast (wrong mode): the run is driven with another `cpu_config` value
-    than the one it requests (00 for a 68010 or 68020 run, 11 for a 68000
-    run). The port shows the driven value, C5 goes red, and the relations
-    that depend on the run are not evaluated; the program finishes.
+    than the one it requests (00 for a 68010 or 68020 run; 11 for the
+    68000-mode run of P1 and P2, which have no other run). The port shows
+    the driven value, C5 goes red, and the relations that depend on the run
+    are not evaluated; the program finishes. P5's VBR image executes MOVEC,
+    which raises an exception in the 68000 mode, so P5.a, P5.b and P5.c are
+    red there as well.
 - **Fixture.** Every run's program is loaded, the CPU is released, and the
   program reaches DONE; S_START reads back $0001 through the memory
   inspection before any other inspected value is trusted.
@@ -1235,19 +1238,27 @@ anchors are P7.a and P7.b.
   holds. P1's relation (read then write) is graded through the same,
   unchanged comparator as the normal run, and goes red under this input on
   both cores, exactly as p.13 and p.263 predict for MOVE against CLR.
-- **Measured, P4 (section 6).** The run prints, for the second core under
-  cpu_config=11, the number of byte and word cases that showed one write, the
-  number of long cases that showed no read and both writes, the access log
-  of case 1, and the run's RAM-port log compared entry for entry (time,
-  address, data, direction) with the same program under cpu_config=00. The
-  first core has no 68020 mode and does not run it.
+- **Measured, P4 (section 6).** On the second core under cpu_config=11, 0 of
+  the 14 byte and word cases showed exactly one access at the operand, and 0
+  of the 7 long-word cases showed no read; case 1 (.B (An)) reads $A5A5 and
+  then writes $A500, the 68000 pattern of P1. The run's RAM-port log is
+  identical, entry for entry (time, address, data, direction), to P1's own run
+  of the same program under cpu_config=00 (748 entries). P4's two relation
+  lines are red against p.13 and p.263 on the TG68K build. The first core has
+  no 68020 mode and does not run it.
 - **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10).
-  The run prints D(68000 mode) on both cores and D(68020 mode) on the second
-  core, the same image, and the 68020-mode RAM-port log compared entry for
-  entry with the 68000-mode log of the same image.
-- **Measured, P7 (section 9).** The run prints, per mode, the CPU writes
-  inside W_m and the three result words, and each pair's first differing
-  entry.
+  D(68000 mode) is 1 on both cores and D(68020 mode) is 1 on the second core,
+  the same image; the 68020-mode RAM-port log is identical, entry for entry,
+  to the 68000-mode log of the same image (244 entries). P6's relation line
+  is red against p.13 on the TG68K build.
+- **Measured, P7 (section 9).** In the 68000 mode (both cores) MOVE SR stores
+  $0708 at DEST and the TRAP handler runs (MRK_TRAP $7002, MRK_PRIV $0000;
+  24 port accesses in the window). In the 68010 and the 68020 mode the
+  instruction raises the privilege-violation exception: DEST keeps $5555,
+  the privilege handler runs (MRK_PRIV $7001, MRK_TRAP $0000), and the
+  exception frame is four words (21 port accesses). The records first differ
+  at entry 3. The 68010 and 68020 records are equal to each other. Both
+  graded pairs hold, and the same-mode control holds.
 - **P5's and P6's own "contrasting case"** (first core vs. second core in
   68000 mode) spans both cores' separate executables; neither build can
   read the other's data, so each core prints its own RECORDED frame/depth
