@@ -94,11 +94,11 @@ struct Config {
     uint8_t memory_config  = 0x03; // [3:2] slow ram, [1:0] chip ram (11 = 2.0 MB, identity-mapped, see above)
     uint8_t fastram_config = 0x00; // 0 = no Zorro II fast RAM offered
     uint8_t cpu_config     = 0x00; // 00 = 68000 core behaviour (nanomig.v:198 comment)
-    // cpu_config's other values select the TG68K core's 68010/68020 behaviour: they
-    // change what the CPU executes (MOVEC, VBR, exception frame formats), not the bus.
-    // integration/ch1-cpu-system measured the RAM-port log identical under 00 and the
-    // 68020 setting, so nothing here claims a 68020 bus or prefetch. Nothing at the
-    // ports shows which setting a run used.
+    // cpu_config is forwarded to the TG68K core's CPU input (binary 00 = 68000, 01 = 68010,
+    // 11 = 68020); the fx68k build has no 68010/68020 mode. ports()->cpu_config shows the
+    // requested value, which proves the input and not the core's internal mode. The harness
+    // itself claims no 68020 bus or prefetch behaviour; integration/ch1-cpu-system grades
+    // the 68020 relations of p.13 (CLR access count, prefetch depth, MOVE SR) under 11.
     // ECS: bit 3 sets the ecs input of Agnus and Denise (minimig.v:483, |chipset_config[4:3]).
     // 2 MB of Chip memory is a machine the manual describes only with the ECS chips: a
     // blitter pointer keeps its high 5 bits under ECS and 3 under OCS (p.309), and an OCS
