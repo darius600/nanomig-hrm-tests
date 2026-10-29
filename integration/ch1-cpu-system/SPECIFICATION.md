@@ -258,12 +258,12 @@ exists in P1 only).
   evaluated only when the log holds at least one opener and one closer; with
   an empty opener or closer population it is **not evaluated**, never
   green. When it is evaluated, every opener and closer write in the log
-  carries a value of the program's own set, no value appears twice, and
-  S_START and S_END each appear once with their data. S_START comes before
-  every window (the first window-open sentinel write is later than the
-  S_START write), and S_END comes after them (the S_END write is later than
-  the last window-close sentinel write). A window that is missing from the
-  population is P1.a's, P2.a's, P3.a's, P5.a's and P7.a's business, not C4's.
+  carries a value of the program's own set, and S_START appears once with
+  its data (S_END's count is C3's). S_START comes before every window (the
+  first window-open sentinel write is later than the S_START write), and
+  S_END comes after them (the S_END write is later than the last
+  window-close sentinel write). Whether each window appears, and how often,
+  is P1.a's, P2.a's, P3.a's, P5.a's and P7.a's business, not C4's.
   - Contrast (empty population): leave out every S_A and S_B write of P2
     (and every S_P and S_L write of P3). The program finishes, C4 prints
     not evaluated, and P2.a (respectively P3.a) is red.
