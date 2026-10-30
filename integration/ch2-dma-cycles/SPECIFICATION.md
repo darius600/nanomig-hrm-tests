@@ -327,8 +327,9 @@ graded.
   proposition), all 16 sprite pixels are set. That line's run of non-background output pixels
   has length W. Then p = W/16. p.98 and p.101 fix the width: *"Sprites are 16 pixels wide"*.
   **Precondition Q2:** (i) the two data words the sprite channel fetched for that line, read at
-  the port in the Copper frame of the output frame (word offsets 2 and 3 of the reference
-  image's structure: S2 sprite block 2, structure R; S1 sprite block 0, structure Z), are `$FFFF`
+  the port in the Copper frame of the output frame (word offsets 2 and 3 from the first word
+  the channel fetched in the reference image's sprite block: S2 sprite block 2, structure R; S1
+  sprite block 0, structure Z), are `$FFFF`
   and `$0000`, so every pixel has value 01 (p.107: *"The bits in the high order color descriptor
   word contribute the leftmost digit of the binary color selector number for each pixel"*);
   (ii) W > 0 and W is divisible by 16; (iii) each of the 16 cells of that line, p = W/16 output
@@ -1082,7 +1083,8 @@ graded, the measurement that stands in its place and the reason are in one place
    (p.25). The list is read from the words the Copper fetched in the Copper frame, as Q4 reads
    them (IR1 at an even offset from the list start, IR2 after it; `$FFFF,$FFFE` is END, p.23),
    and VSTART and VSTOP of the uses from the control words of structure Z as the sprite channel
-   fetched them (word offsets 0, 1, 18 and 63 of sprite block 0). The video output is not used
+   fetched them (word offsets 0, 1, 18 and 63 from the first word the channel fetched in sprite
+   block 0, so a copy of Z elsewhere in the block is read as Z is). The video output is not used
    for this: it lags the beam by the scan doubler's line buffer, so a position in the output
    cannot be compared with a time at the port. The sentence is p.27's own
    exception: *"You can change sprite colors mid-screen with a Copper instruction list that
