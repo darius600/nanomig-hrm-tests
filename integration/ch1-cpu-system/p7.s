@@ -13,8 +13,8 @@
 ;   MUT_B    the instruction at X_m is MOVE.W SR,D2 (P7.b's contrast)
 ;   MUT_C    the witness instruction is TRAP #1 with HW also installed at
 ;            vector 33 (P7.c's contrast)
-;   MUT_CTL  the instruction at X_m is MOVE.W D1,DEST (the same-mode
-;            control's contrast)
+;   MUT_CTL  the TRAP handler writes $7003 in place of $7002 to MRK_TRAP
+;            (the same-mode control's contrast; every precondition holds)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;   MUT_C4POP  every S_A and S_B write is left out (C4's empty population)
 ;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
@@ -71,11 +71,7 @@ MPHASE: lea     HM(pc),a0
         ifd     MUT_B
 XM:     move.w  sr,d2
         else
-        ifd     MUT_CTL
-XM:     move.w  d1,(DEST).w
-        else
 XM:     move.w  sr,(DEST).w
-        endc
         endc
         trap    #0                      ; reached only if MOVE SR raised no exception
         bra.w   FAILRUN
@@ -85,7 +81,11 @@ HM:     move.w  #$7001,MRK_PRIV
         endc
         movea.l PRE_SP,a7
         bra.w   CEND
+        ifd     MUT_CTL
+HT:     move.w  #$7003,MRK_TRAP
+        else
 HT:     move.w  #$7002,MRK_TRAP
+        endc
         ifnd    MUT_C4POP
         move.w  #$F702,S_B
         endc
