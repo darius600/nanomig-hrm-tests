@@ -52,6 +52,14 @@ struct P1Case {
 
 struct P1Run { Cap cap; Prefix pre; std::vector<P1Case> cases; };
 
+// The capture window of a case of length L, in colour clocks, paced by the beam counter: a channel fetches one word per 400 colour
+// clocks (AUDxPER = 200 colour clocks per sample, two samples per word), so the window holds the first block, four more blocks and
+// the fetches before the first return to BUFx, with a margin of about a third.
+inline unsigned p1_window(unsigned L) { return mut("P1-SHORT") ? 1600 * L + 800 : 3000 * L + 1000; }   // P1-SHORT: about 4L+2 fetches, five blocks of fetches but fewer than 4L after the first return
+
+// A wait of a third more than c colour clocks, c being the length that a DBRA loop of c/4 + 1 iterations has on the slowest CPU of the three builds.
+inline unsigned wc(unsigned c) { return c + c / 3; }
+
 inline uint32_t wait_iters(unsigned ccks) { return std::min<uint32_t>(65000, ccks / 4 + 1); }   // a DBRA iteration takes at least four colour clocks
 
 inline void fill_buf(RunSpec& rs, int x) {
@@ -74,7 +82,7 @@ inline P1Run p1_single(int x, unsigned L) {
     s.w16(audper(x), 200);
     c.m_start = s.w16(DMACON, start_val(1u << x));
     c.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(2000 * L));
+    s.bwait(p1_window(L));
     c.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
     r.cases.push_back(c);
@@ -103,7 +111,7 @@ inline P1Run p1_all() {
     }
     int ms = s.w16(DMACON, start_val(0xF));
     int idx = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(2000 * 11));
+    s.bwait(p1_window(11));
     int me = s.w16(DMACON, 0x000F);
     s.dly(200);
     s.end();
@@ -139,7 +147,7 @@ inline void run_p1(Checks& ck) {
     runs.push_back(p1_all());
     PreAgg agg;
     bool anchor = true, gd = true, gf = true;
-    bool a_ok = true, b_ok = true, c_ok = true, addr_ok = true;
+    bool a_ok = true, b_ok = true, c_ok = true, addr_ok = true, sample_ok = true;
     size_t ncase = 0;
     for (auto& r : runs) {
         p1_eval(r);
@@ -156,12 +164,14 @@ inline void run_p1(Checks& ck) {
             a_ok &= c.b.distinct == c.L;
             b_ok &= c.b.wrap_bad == 0;
             c_ok &= c.b.outside == 0;
-            addr_ok &= c.ss.n >= 4 * size_t(c.L) && c.ss.distinct == c.L && c.ss.wrap_bad == 0 && c.ss.outside == 0 && c.ss.step_bad == 0;
+            sample_ok &= c.ss.n >= 4 * size_t(c.L);
+            addr_ok &= c.ss.distinct == c.L && c.ss.wrap_bad == 0 && c.ss.outside == 0 && c.ss.step_bad == 0;
             std::string addrs;
             for (size_t i = 0; i < c.f.size() && i < 24; ++i) addrs += dec((c.f[i].addr - kBuf[c.x]) / 2) + " ";
             ck.note("P1 ch" + dec(c.x) + (c.all4 ? " (all four)" : "") + " L=" + dec(c.L) + " wrote " + dec(c.wrote) + ": fetches=" + dec((long long)c.b.n) +
                     " returns=" + dec((long long)c.b.returns) + " distinct=" + dec((long long)c.b.distinct) + " outside=" + dec((long long)c.b.outside) +
                     " wrap_bad=" + dec((long long)c.b.wrap_bad) + " step_bad=" + dec((long long)c.b.step_bad) + " first_at_base=" + dec(c.b.first_at_base) +
+                    " fetches after the first return=" + dec((long long)c.ss.n) + " (need " + dec(4 * (long long)c.L) + ")" +
                     " DMACONR=" + hex4(logv(r.cap, c.i_dmaconr)) + " offsets: " + addrs);
         }
     }
@@ -169,12 +179,13 @@ inline void run_p1(Checks& ck) {
     ck.expect(gd, "P1-G-D: after each start DMACONR bit 9 (DMAEN) and the channel's bit read 1 in all " + dec((long long)ncase) + " cases (AA p.22 '09 DMAEN Enable all DMA below')");
     ck.expect(gf, "P1-G-F: each channel's fetches occur: at least five fetches at the location, so at least four complete blocks, in each of the " + dec((long long)ncase) + " cases (AA p.22 '00 AUD0EN Audio channel 0 DMA enable')");
     ck.expect(anchor, "P1-PRE-ANCHOR: the first fetch inside the channel's region after each start is at the location written to AUDxLCH/LCL (AA p.11 'the 20 bit starting address (location)')");
+    ck.expect(sample_ok, "P1-PRE-SAMPLE: after the channel's first return to BUFx at least four blocks of fetches (4L fetches) follow, in each of the " + dec((long long)ncase) + " cases, so that the address check sees at least four blocks");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && anchor;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F or the first-fetch anchor";
     graded(ck, pre, a_ok, "P1-A: in every case exactly L distinct addresses are fetched (AA p.11 AUDxLEN 'length (number of words)')", un);
     graded(ck, pre, b_ok, "P1-B: in every case a fetch at the last word of the block (location + 2(L-1)) is followed by a fetch at the location (AA p.6 'Used to automaticall[y] restart pointers ... the Audio sample counter (whenever the audio length count is finished)')", un);
     graded(ck, pre, c_ok, "P1-C: in every case no fetch lies outside [location, location + 2L) (AA p.11 AUDxLEN)", un);
-    graded(ck, pre, addr_ok, "P1-ADDR sol:AA-audxlen.c1: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the channel's length register: from the channel's first return to BUFx on, the fetches take exactly the L addresses BUFx, BUFx+2, .. BUFx+2(L-1) of the length L written there, in turn and over again, for every channel and every L (AA p.11 'AUDxLEN 0A4 W P Audio Channel x length')", un);
+    graded(ck, pre && sample_ok, addr_ok, "P1-ADDR sol:AA-audxlen.c1: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the channel's length register: from the channel's first return to BUFx on, the fetches take exactly the L addresses BUFx, BUFx+2, .. BUFx+2(L-1) of the length L written there, in turn and over again, for every channel and every L (AA p.11 'AUDxLEN 0A4 W P Audio Channel x length')", un + " or the sample after the first return");
     graded(ck, pre, a_ok && b_ok && c_ok,
            "P1 sol:AA-audxlen.c4: AUDxLEN contains the length, the number of words, of the channel's DMA data: for every channel and every L the fetches of every block, the first included, lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1) (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
 }

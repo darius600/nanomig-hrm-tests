@@ -122,34 +122,36 @@ inline TxRun tx_run(const std::string& variant) {
     if (variant == "D3") wd[2] = 0x24;
     r.m_ser = s.w16(SERPER, mut("GT") ? uint16_t(0x007F) : uint16_t(0x003F));
     r.T_expect = 64;
-    int n_wait = mut("P17-R") ? 40 : (mut("P16-IDLE") ? 30 : 130);
+    const bool lng = variant == "LONG";
+    const uint16_t stop = lng ? 0x300 : 0x100;                  // LONG: the stop bit at bit 9, so that bit 8 is a data bit and a frame has eleven cells (AA p.27)
+    const unsigned idle_lines = mut("P16-IDLE") ? 3 : 8;
+    const uint16_t slow = mut("P17-R") ? 9 : 0;                 // contrast: every pass of the poll loop is followed by a DBRA loop, so that R exceeds the bound
     r.i_poll0 = r.pre.logn;
+    // The writes are paced by the beam counter (prog_run.s op BTO): line starts counted from BZERO, whatever the speed of the CPU.
+    s.bzero();
     if (variant == "X") { s.w16(SERDAT, 0x0181); }   // at the start of the wait
-    if (variant == "X16") {                          // 10 poll reads in, so that the frame lies inside the 20T before the first write
-        s.poll(INTREQR, 59); s.w16(SERDAT, 0x0181); n_wait -= 60; r.pre.logn += 60;
-    }
-    if (mut("P17-R")) {   // contrast: the poll loop is slowed down so that R exceeds the bound
-        for (int i = 0; i < n_wait; ++i) { s.rd(INTREQR); s.dly(8); }
-    } else s.poll(INTREQR, unsigned(n_wait));
-    r.pre.logn += n_wait + (mut("P17-R") ? 0 : 1);
-    r.m_w1 = s.w16(SERDAT, uint16_t(0x100 | wd[0]));
+    if (variant == "X16") { s.bto(INTREQR, 4, slow); s.w16(SERDAT, 0x0181); }   // four lines in, so that the frame lies inside the 20T before the first write
+    s.bto(INTREQR, idle_lines, slow);
+    r.m_w1 = s.w16(SERDAT, uint16_t(stop | wd[0]));
     uint16_t cval = mut("P17-NOCLEAR") ? uint16_t(0) : uint16_t(1);
-    // Words 2..8 are written after fixed numbers of poll reads, whatever TBE reads: before each, INTREQ <- 1 clears the TBE request
-    // (a marker pair around each of the two writes logs when they happened). Word 2 follows word 1 by about 5 bit times and each later
-    // word follows by about 10, the length of a frame, so that word k is written in the middle of frame k-1: after it began (the
-    // buffer is empty) and before it ends (the word waits in the buffer). The read counts are tuned on this design and the
-    // position of every write in its frame is printed.
+    // Words 2..8 are written at fixed line starts after the first write, whatever TBE reads: before each, INTREQ <- 1 clears the TBE request
+    // (a marker pair around each of the two writes logs when they happened). A line lasts 227 or 228 colour clocks and a frame 10 bit
+    // times of 64 colour clocks (11 for LONG), so word 2 follows word 1 by one line (about 3.5 bit times) and word k follows word 1 by
+    // the line count that puts it in the middle of frame k-1: after it began (the buffer is empty) and before it ends (the word waits in
+    // the buffer). The position of every write in its frame is printed.
+    static const unsigned kN[7] = {1, 4, 7, 10, 13, 15, 18}, kNLong[7] = {1, 4, 7, 10, 14, 17, 20};
+    const unsigned* nk = lng ? kNLong : kN;
+    const unsigned late = variant == "DELAY" ? 9 : 0;   // DELAY: word 5 and the later words 30 bit times (9 lines) late: after frame 4 has ended
+    unsigned last = idle_lines;
     for (int k = 1; k < 8; ++k) {
-        const unsigned gap = k == 1 ? 14 : (variant == "EARLYW" && k == 2 ? 8 : 42);   // EARLYW: word 3 follows word 2 by about 3 bit times
-        if (variant == "DELAY" && k == 4) s.dly(wait_iters(30 * 64));   // contrast: word 5 only after 30 bit times of idle
-        if (mut("P17-R")) { for (unsigned i = 0; i < gap; ++i) { s.rd(INTREQR); s.dly(8); } }
-        else s.poll(INTREQR, gap);
-        r.pre.logn += gap + (mut("P17-R") ? 0 : 1);
+        unsigned n = nk[k - 1] - ((variant == "EARLYW" && k == 2) ? 2 : 0) + (k >= 4 ? late : 0);   // EARLYW: word 3 follows word 2 by one line (about 3.5 bit times)
+        last = idle_lines + n;
+        s.bto(INTREQR, last, slow);
         r.m_c.push_back(s.w16(INTREQ, cval));
-        r.m_w.push_back(s.w16(SERDAT, uint16_t(0x100 | wd[size_t(k)])));
+        r.m_w.push_back(s.w16(SERDAT, uint16_t(stop | wd[size_t(k)])));
     }
-    if (variant == "EXTRA") { s.dly(wait_iters(25 * 64)); s.w16(SERDAT, 0x01FF); }   // contrast: a ninth word after frame 8
-    s.poll(INTREQR, 150);
+    if (variant == "EXTRA") { last += 7; s.bto(INTREQR, last, slow); s.w16(SERDAT, 0x01FF); }   // contrast: a ninth word 25 bit times (7 lines) after word 8
+    s.bto(INTREQR, last + 12, slow);   // 12 lines (about 42 bit times), more than the two frames that follow the last write
     s.end();
     rs.cycles = 4'000'000 + 8ull * 30000;
     r.cap = run(rs);
@@ -162,7 +164,7 @@ inline TxRun tx_run(const std::string& variant) {
 }
 
 inline void run_p16_17(Checks& ck) {
-    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : (mut("P17-X") ? "X" : (mut("P16-X") ? "X16" : (mut("P16-EXTRA") ? "EXTRA" : (mut("P16-EARLYW") ? "EARLYW" : "")))));
+    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : (mut("P17-X") ? "X" : (mut("P16-X") ? "X16" : (mut("P16-EXTRA") ? "EXTRA" : (mut("P16-EARLYW") ? "EARLYW" : (mut("P16-LONG") ? "LONG" : ""))))));
     TxRun r = tx_run(var);
     Std st = std_pre(r.cap, r.pre, {});
     PreAgg agg; agg.add(st);
@@ -323,14 +325,14 @@ inline void run_p18(Checks& ck) {
     s.w16(SERPER, mut("GT") ? uint16_t(0x007F) : uint16_t(0x003F));
     std::vector<int> mk;
     for (int i = 0; i < 6; ++i) {
-        s.dly(wait_iters(mut("P18-IDLE") ? 13 * 64 : 24 * 64));
+        s.bwait(mut("P18-IDLE") ? 13 * 64 : 32 * 64);
         int p = ps[i];
         if (mut("P18") && i == 0) p = 9;       // contrast: p = 9 where the grader expects p = 8
         if (mut("P18-REP") && i == 4) p = 7;   // contrast: the second p = 8 is written as p = 7
         mk.push_back(s.w16(SERDAT, uint16_t(1u << p)));
-        if (mut("P18-EXTRA") && i == 2) { s.dly(wait_iters(11 * 64)); s.w16(SERDAT, 0x0100); }   // contrast: a word written 2T after the frame's stop cell
+        if (mut("P18-EXTRA") && i == 2) { s.bwait(11 * 64); s.w16(SERDAT, 0x0100); }   // contrast: a word written after the frame's stop cell
     }
-    s.dly(wait_iters(24 * 64));
+    s.bwait(32 * 64);
     s.end();
     rs.cycles = 4'000'000 + 8ull * 20000;
     Cap c = run(rs);
@@ -345,6 +347,7 @@ inline void run_p18(Checks& ck) {
     // the low interval of each write
     std::vector<uint64_t> w(6, 0), tw(6, 0);
     bool idle12 = true, back_idle = true, found = true;
+    uint64_t idle_min = ~0ull;   // the shortest stretch of constant TxD before a write
     for (int i = 0; i < 6; ++i) {
         tw[size_t(i)] = marker(c, mk[size_t(i)]);
         uint64_t e0 = 0, e1 = 0;
@@ -356,6 +359,11 @@ inline void run_p18(Checks& ck) {
         w[size_t(i)] = e1 - e0;
         // TxD constant for 12T before the write
         for (uint64_t u = tw[size_t(i)] - 12 * T; u < tw[size_t(i)]; ++u) if (tx_at(c, u) != idle) idle12 = false;
+        {
+            uint64_t u = tw[size_t(i)];
+            while (u > c.base + 1 && tx_at(c, u - 1) == idle) --u;
+            idle_min = std::min<uint64_t>(idle_min, tw[size_t(i)] - u);
+        }
         // and at the stop level until the next write
         uint64_t nxt = i + 1 < 6 ? marker(c, mk[size_t(i + 1)]) : t_end;
         for (uint64_t u = e1; u < nxt; ++u) if (tx_at(c, u) != idle) back_idle = false;
@@ -376,6 +384,7 @@ inline void run_p18(Checks& ck) {
     bool r9 = found && dif(5, 1) == 0;
     ck.note("P18: T=" + dec((long long)T) + " cycles; w(p) for p = 8 9 7 4 8 9: " + dec((long long)w[0]) + " " + dec((long long)w[1]) + " " + dec((long long)w[2]) + " " + dec((long long)w[3]) + " " + dec((long long)w[4]) + " " + dec((long long)w[5]) +
             " cycles = " + num2(double(w[0]) / double(T)) + " " + num2(double(w[1]) / double(T)) + " " + num2(double(w[2]) / double(T)) + " " + num2(double(w[3]) / double(T)) + " T (the HRM's single start bit gives (p+1)T, recorded, not graded)");
+    ck.note("P18: the shortest stretch of constant TxD before a write is " + dec((long long)idle_min) + " cycles (" + num2(double(idle_min) / double(T)) + " T; P18-PRE-IDLE needs 12T)");
     print_std(ck, "P18", agg, 1);
     ck.expect(gbrk, "P18-G-BRK: after S0 ADKCONR bit 11 (UARTBRK) reads 0 (AA p.10 '11 UARTBRK')");
     ck.expect(gt, "P18-G-T: every TxD edge lies on a grid of pitch T = (N+1) colour clocks from its frame's first edge, exactly (AA p.27 'If this number is N, then the Baud Rate is 1 bit every (N+1)*.2794 Microseconds')");
@@ -421,9 +430,9 @@ inline void run_p19(Checks& ck) {
     drv.sched.push_back({t_low, 0});
     drv.sched.push_back({t_low + 12 * T, 1});
     rs.drive = [&drv](nmh::NanomigHarness& h, uint64_t cy) { drv(h, cy); };
-    unsigned total = unsigned((t_low + 16 * T) / (11 * K0)) + 40;   // reads of about 11 colour clocks each
+    unsigned total = unsigned((t_low + 16 * T) / (4 * K0)) + 40;   // reads of at least 4 colour clocks each: the capture outlasts the schedule on a CPU more than twice as fast as the one that reads in 11
     int i_poll = pre0.logn;
-    if (mut("P19-R")) { for (unsigned i = 0; i < total / 8 + 20; ++i) { s.rd(SERDATR); s.dly(12); } }   // contrast: a poll loop with a delay, so that R exceeds the bound
+    if (mut("P19-R")) { s.bzero(); s.bto(SERDATR, unsigned((t_low + 16 * T) / K0 / 227) + 2, 12); }   // contrast: a poll loop with a delay, so that R exceeds the bound
     else s.poll(SERDATR, total);
     s.end();
     rs.cycles = 4'000'000 + t_low + 40 * T + 400000;
@@ -473,6 +482,12 @@ inline void run_p19(Checks& ck) {
         all_ok &= good;
         det += dec(k + 1) + ":" + dec((long long)n) + "/" + dec((long long)bad) + " ";
     }
+    {
+        // how far the poll outlasts the drive schedule: the last read against the end of the 12T low and the reads in the schedule (colour clocks per read)
+        uint64_t t_last = c.log.size() > ip0 ? c.log.back().first : 0, t_sched_end = tref + t_low + 12 * T;
+        ck.note("P19: the poll's last read is " + dec((long long)t_last - (long long)t_sched_end) + " cycles after the end of the schedule; " + dec((long long)(c.log.size() - ip0)) + " reads of the " + dec((long long)total) +
+                " scripted, " + num2(double(t_last - c.log[ip0].first) / double(c.log.size() - 1 - ip0) / double(K)) + " colour clocks per read");
+    }
     ck.note("P19: R=" + dec((long long)R) + " cycles (" + num2(double(R) / double(K)) + " CCK); frames 1..8 (reads in the interval / reads that differ) " + det);
     print_std(ck, "P19", agg, 1);
     ck.expect(gk, "P19-PRE-K: the bit time of the RxD schedule, " + dec((long long)T) + " system clocks, is 64 colour clocks of the colour clock measured from the refresh pattern (SPECIFICATION.md 2.2)");
@@ -497,8 +512,8 @@ inline void run_p20(Checks& ck) {
     rx_frame(drv.sched, 20 * T, 0x5A, T);
     ra.drive = [&drv, &drv2](nmh::NanomigHarness& h, uint64_t cy) { drv(h, cy); drv2(h, cy); };
     Script& s = ra.sc;
-    s.waitb(INTREQR, 0x0800, 400);
-    s.dly(wait_iters(5 * 64));
+    s.waitb(INTREQR, 0x0800, 6000);
+    s.bwait(5 * 64);
     const bool no_set = mut("P20-NOSET"), no_int = mut("P20-NOINT");
     s.rd3(SERDATR, INTREQR);                                                   // triple 1: the frame has been received
     int ma1 = s.w16(INTREQ, no_int ? uint16_t(0) : uint16_t(0x0800));
@@ -511,7 +526,7 @@ inline void run_p20(Checks& ck) {
     drv2.marker_idx = s.mark();
     drv2.sched.push_back({t_low, 0});
     drv2.sched.push_back({t_low + 12 * T, 1});
-    s.poll(SERDATR, 200);
+    s.poll(SERDATR, 400);
     s.end();
     ra.cycles = 4'000'000 + 8ull * 40000;
     Cap ca = run(ra);
@@ -520,16 +535,16 @@ inline void run_p20(Checks& ck) {
     Prefix pb = prefix(rb.sc, true, 119, brk_hook());
     Script& t = rb.sc;
     int mb_ser = t.w16(SERPER, 0x003F);
-    t.dly(wait_iters(14 * 64));
+    t.bwait(14 * 64);
     t.w16(INTREQ, 0x0001);
     t.w16(SERDAT, 0x0181);
-    t.waitb(INTREQR, 0x0001, 400);
+    t.waitb(INTREQR, 0x0001, 6000);
     t.rd3(SERDATR, INTREQR);                                                   // case (a): word 1 has moved, the buffer is empty
     int mb1 = t.w16(INTREQ, mut("P20-SETB") ? uint16_t(0x8001) : uint16_t(0x0001));   // P20-SETB: the request is set by software in place of cleared
     int mb2 = t.w16(SERDAT, 0x01FF);
-    if (mut("P20-LATE")) t.dly(wait_iters(14 * 64));                           // contrast: the triple after the second word has moved
+    if (mut("P20-LATE")) t.bwait(14 * 64);                           // contrast: the triple after the second word has moved
     t.rd3(SERDATR, INTREQR);                                                   // case (b): the second word waits in the buffer, the request is clear
-    t.waitb(INTREQR, 0x0001, 600);
+    t.waitb(INTREQR, 0x0001, 6000);
     t.rd3(SERDATR, INTREQR);                                                   // case (a) again: word 2 has moved, the buffer is empty
     int mb3 = t.w16(INTREQ, mut("P20-NOCLRC") ? uint16_t(0x8001) : uint16_t(0x0001));   // case (c): cleared by software with the buffer empty; P20-NOCLRC: set in place
     t.rd3(SERDATR, INTREQR);                                                   // case (c)
@@ -538,7 +553,7 @@ inline void run_p20(Checks& ck) {
     t.rd3(SERDATR, INTREQR);                                                   // case (d)
     int mb6 = t.w16(INTREQ, mut("P20-NOCLRE") ? uint16_t(0x8001) : uint16_t(0x0001));   // case (e): cleared by software with the buffer full; P20-NOCLRE: set in place
     t.rd3(SERDATR, INTREQR);                                                   // case (e)
-    t.dly(wait_iters(14 * 64));
+    t.bwait(14 * 64);
     t.end();
     rb.cycles = 4'000'000 + 8ull * 40000;
     Cap cb = run(rb);
@@ -617,7 +632,7 @@ inline void run_p20(Checks& ck) {
     bool grxd = true;
     {
         uint64_t tref = drv2.t_ref, R = 0;
-        size_t ip0 = endA >= 201 ? endA - 201 : 0;
+        size_t ip0 = endA >= 401 ? endA - 401 : 0;
         R = max_gap(ca, ip0, endA - 1);
         size_t n_hi = 0, n_lo = 0;
         for (size_t i = ip0; i < endA; ++i) {
@@ -626,6 +641,7 @@ inline void run_p20(Checks& ck) {
             if (ti < tref + t_low - 2 * R) { ++n_hi; if (b != 1) grxd = false; }
         }
         grxd &= n_lo > 10 && n_hi > 10;
+        ck.note("P20 run A: reads of the final poll that G-RXD uses, before the low / during the low (each must exceed 10): " + dec((long long)n_hi) + " / " + dec((long long)n_lo) + ", R=" + dec((long long)R) + " cycles");
     }
     bool gbrk = (logv(ca, pa.i_adkconr) & 0x0800) == 0 && (logv(cb, pb.i_adkconr) & 0x0800) == 0;
     bool gk = sa.frame.ok && 64 * sa.frame.K == T;   // the bit time that the RxD drive uses is 64 colour clocks of the measured machine

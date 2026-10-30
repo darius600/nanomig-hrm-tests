@@ -44,9 +44,9 @@ inline VolAtt vol_att(int m, int n, const std::string& pid) {
     // phase 1: channel n alone
     r.m_start = s.w16(DMACON, start_val(1u << n));
     v.i_dm_n = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(2 * 227));
+    s.bwait(wc(2 * 227));
     const uint16_t cv[4] = {64, 16, 40, mut((pid + "-CAL").c_str()) ? uint16_t(40) : uint16_t(32)};   // contrast: L32 written as 40
-    for (int i = 0; i < 4; ++i) { v.m_c[i] = s.w16(audvol(n), cv[i]); s.dly(wait_iters(3 * 227)); }
+    for (int i = 0; i < 4; ++i) { v.m_c[i] = s.w16(audvol(n), cv[i]); s.bwait(wc(3 * 227)); }
     // phase 2
     {
         uint16_t val = mut((pid + "-CLR").c_str()) ? uint16_t(1u << m) : uint16_t(0x8000 | (1u << m));
@@ -58,8 +58,8 @@ inline VolAtt vol_att(int m, int n, const std::string& pid) {
     v.i_dm_m = r.pre.logn++; s.rd(DMACONR);
     if (live) {
         for (int cyc = 0; cyc < 8; ++cyc)
-            for (int i = 0; i < 3; ++i) { s.w16(audvol(n), cv[liver ? (3 - i) % 3 : i]); s.dly(wait_iters(1500)); }
-    } else s.dly(wait_iters(36000));
+            for (int i = 0; i < 3; ++i) { s.w16(audvol(n), cv[liver ? (3 - i) % 3 : i]); s.bwait(wc(1500)); }
+    } else s.bwait(wc(36000));
     v.m_p2end = s.mark();
     v.m_adk3 = s.w16(ADKCON, uint16_t(1u << m));
     v.i_adk3 = r.pre.logn++; s.rd(ADKCONR);
@@ -201,7 +201,7 @@ inline PerAtt per_att(int m, int n, const std::string& pid) {
     s.w32(audlc(m), kBuf[m]); s.w16(audlen(m), 4); s.w16(audper(m), 3000); s.w16(audvol(m), 0);
     v.m_p1 = r.m_start = s.w16(DMACON, start_val(1u << n));
     v.i_dm_n = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(10 * 227));
+    s.bwait(wc(10 * 227));
     {
         uint16_t val = mut((pid + "-CLR").c_str()) ? uint16_t(1u << (4 + m)) : uint16_t(0x8000 | (1u << (4 + m)));
         v.m_adk2 = s.w16(ADKCON, val);
@@ -213,8 +213,8 @@ inline PerAtt per_att(int m, int n, const std::string& pid) {
     if (live) {
         const uint16_t pv[3] = {200, 600, 350};
         for (int cyc = 0; cyc < 8; ++cyc)
-            for (int i = 0; i < 3; ++i) { s.w16(audper(n), pv[liver ? (3 - i) % 3 : i]); s.dly(wait_iters(3000)); }
-    } else s.dly(wait_iters(72000));
+            for (int i = 0; i < 3; ++i) { s.w16(audper(n), pv[liver ? (3 - i) % 3 : i]); s.bwait(wc(3000)); }
+    } else s.bwait(wc(72000));
     v.m_p2end = s.mark();
     v.m_adk3 = s.w16(ADKCON, uint16_t(1u << (4 + m)));
     v.i_adk3 = r.pre.logn++; s.rd(ADKCONR);

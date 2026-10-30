@@ -166,20 +166,20 @@ inline VolSweep vol_sweep(int x, uint16_t word, bool p7) {
     s.w32(audlc(x), kBuf[x]); s.w16(audlen(x), 1); s.w16(audper(x), 200); s.w16(audvol(x), 0x0040);
     r.m_start = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(2 * 227 * 3));
+    s.bwait(wc(2 * 227 * 3));
     uint16_t vreg = mut("P6-ADDR") && x == 0 ? 0x0B8 : audvol(x);
     for (int val = 0; val <= 64; ++val) {
         uint16_t w = uint16_t(val == 64 ? 0x0040 : val);
         if (mut("P6") && val == 32) w = 16;
         if (mut("P6-ZERO") && val == 0) w = 1;                    // contrast: volume 1 where the grader expects 0
         v.m6.push_back(s.w16(vreg, w));
-        s.dly(mut("P6-SHORT") ? 60 : 230);
+        s.bwait(mut("P6-SHORT") ? 250 : 1200);
     }
     if (p7) {
         for (int k = 0; k < 64; ++k) {
             uint16_t w = mut("P7") ? uint16_t(k) : uint16_t(0x40 | k);
             v.m7.push_back(s.w16(audvol(x), w));
-            s.dly(230);
+            s.bwait(1200);
         }
     }
     v.m_end = s.mark();
@@ -316,7 +316,7 @@ inline R8 p8_build(int x, bool other_bit, const std::vector<unsigned>& ins) {
     s.w32(audlc(x), kBuf[x] + 0x100); s.w16(audlen(x), 1); s.w16(audper(x), 400); s.w16(audvol(x), 64);
     q.m_cal0 = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(8 * 227));
+    s.bwait(wc(8 * 227));
     q.m_cal1 = s.w16(DMACON, uint16_t(1u << x));
     s.dly(100);
     // the block run
@@ -330,7 +330,7 @@ inline R8 p8_build(int x, bool other_bit, const std::vector<unsigned>& ins) {
     if (mut("P8-R")) {   // contrast: a poll loop with a delay in it, so that R exceeds the bound
         for (int i = 0; i < 220; ++i) { s.rd(INTREQR); s.w16(INTREQ, pbit); s.dly(40); }
     } else if (ins.empty()) {
-        s.pact(INTREQR, pbit, 2600, INTREQ, cval);
+        s.pact(INTREQR, pbit, 5200, INTREQ, cval);
     } else {
         unsigned done = 0;
         for (unsigned j : ins) {
@@ -338,7 +338,7 @@ inline R8 p8_build(int x, bool other_bit, const std::vector<unsigned>& ins) {
             s.w16(INTREQ, uint16_t(0x8000 | pbit));          // the CPU sets the polled request
             done = j + 1;
         }
-        s.pact(INTREQR, pbit, uint16_t(2601 - done - 1), INTREQ, cval);
+        s.pact(INTREQR, pbit, uint16_t(5201 - done - 1), INTREQ, cval);
     }
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(100);

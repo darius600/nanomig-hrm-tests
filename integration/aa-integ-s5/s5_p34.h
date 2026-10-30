@@ -17,7 +17,7 @@ inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16
     r.m_start = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
     if (mid) mid(s);
-    s.dly(wait_iters(unsigned(2 * per) * unsigned(words.size()) * (blocks + 1)));
+    s.bwait(wc(unsigned(2 * per) * unsigned(words.size()) * (blocks + 1)));
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
     s.end();

@@ -110,6 +110,14 @@ struct Script {
         w.insert(w.end(), words.begin(), words.end());
     }
     void end() { w.push_back(0); }
+    // The beam counter paces the script (prog_run.s ops 13 and 14), whatever the speed of the CPU: a line number change of
+    // VHPOSR bits 15..8 is a line start, and a line lasts 227 or 228 colour clocks (SPECIFICATION.md 2.2).
+    void bzero() { w.push_back(13); }
+    // Until `lines` line starts have passed since the last bzero(); with reg != 0 the register is read and stored in the log on
+    // every pass, with dly != 0 every pass is followed by dly+1 iterations of a DBRA loop.
+    void bto(uint16_t reg, unsigned lines, uint16_t dly = 0) { w.insert(w.end(), {14, reg, dly, uint16_t(lines)}); }
+    // A wait of at least `ccks` colour clocks.
+    void bwait(unsigned ccks) { bzero(); bto(0, (ccks + 226) / 227); }
 };
 
 // ---- a run -------------------------------------------------------------------

@@ -90,9 +90,9 @@ inline ARun p2_run(int x, bool swap34, bool wrong_write, bool write_early) {
     if (write_early) s.wm(kBuf[x] + 10, kA);                  // contrast: RAM written before the DMA starts
     r.m_start = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    s.dly(wait_iters(12000));
+    s.bwait(wc(12000));
     if (!write_early) s.wm(kBuf[x] + 10, wrong_write ? kD : kA);
-    s.dly(wait_iters(17000));
+    s.bwait(wc(17000));
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
     s.end();

@@ -31,6 +31,15 @@
 ;                                  to SERDAT; a wait of tmo+1 reads without a
 ;                                  hit adds 1 to the word at RESULTS+2 and
 ;                                  ends the op; the script goes on at rhi:rlo
+;  13 BZERO                       wait for the next change of the line number
+;                                  (VHPOSR bits 15..8), then count the line
+;                                  number changes from that one on
+;  14 BTO  reg dly n              until n line number changes have been seen
+;                                  since the last BZERO (the count carries
+;                                  over from op to op); with reg != 0 each
+;                                  pass reads reg and stores the word in the
+;                                  log, and with dly != 0 each pass is
+;                                  followed by a DBRA loop of dly+1 iterations
 ; A marker is the running count 1, 2, 3, ... stored at MARKS + 2*(count-1).
 ; A wait that ends by its timeout adds 1 to the word at RESULTS+2.
 ; Symbol NOFIX leaves out the fixture store.
@@ -42,6 +51,9 @@ MARKS   equ     $0B8000
 LOG     equ     $100000
 INTREQ_ equ     $09C
 SERDAT_ equ     $030
+VHPOSR_ equ     $006
+BLAST   equ     $0B7FE0
+BLINES  equ     $0B7FE2
 
         org     PROGRAM_ORG
 
@@ -70,6 +82,8 @@ tbl:    bra.w   op_end
         bra.w   op_rd3
         bra.w   op_wm
         bra.w   op_feed
+        bra.w   op_bzero
+        bra.w   op_bto
 
 op_end:
         DONE
@@ -198,3 +212,56 @@ op_feed:
 .done:  move.l  SAVE,a1
         bra     next
 
+
+; The beam counter paces the script: a line number change is a line start, whatever the speed of the CPU.
+op_bzero:
+        lea     VHPOSR_(a0),a2
+        move.b  (a2),d4
+.w:     move.b  (a2),d0
+        cmp.b   d4,d0
+        beq.s   .w
+        move.b  d0,BLAST
+        move.w  #0,BLINES
+        bra     next
+
+op_bto: move.w  (a1)+,d1
+        move.w  (a1)+,d3
+        move.w  (a1)+,d7
+        lea     VHPOSR_(a0),a5
+        lea     0(a0,d1.w),a2
+        move.b  BLAST,d5
+        move.w  BLINES,d2
+        cmp.w   d7,d2
+        bhs.s   .out
+        tst.w   d1
+        beq.s   .nolog
+        tst.w   d3
+        bne.s   .logdly
+.l:     move.w  (a2),(a3)+
+        cmp.b   (a5),d5
+        beq.s   .l
+        move.b  (a5),d5
+        addq.w  #1,d2
+        cmp.w   d7,d2
+        blo.s   .l
+        bra.s   .out
+.logdly:
+        move.w  (a2),(a3)+
+        move.w  d3,d0
+.dd:    dbra    d0,.dd
+        cmp.b   (a5),d5
+        beq.s   .logdly
+        move.b  (a5),d5
+        addq.w  #1,d2
+        cmp.w   d7,d2
+        blo.s   .logdly
+        bra.s   .out
+.nolog: cmp.b   (a5),d5
+        beq.s   .nolog
+        move.b  (a5),d5
+        addq.w  #1,d2
+        cmp.w   d7,d2
+        blo.s   .nolog
+.out:   move.b  d5,BLAST
+        move.w  d2,BLINES
+        bra     next
