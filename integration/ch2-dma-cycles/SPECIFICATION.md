@@ -1074,11 +1074,17 @@ graded, the measurement that stands in its place and the reason are in one place
    page's own exception, a Copper write between two uses: Q6 gates the line on there being none,
    and P12-EXC grades the exception.
 5. **Preconditions.** C1, Q2, Q3, Q4, Q5, K9, the four images as in P9(a), and **Q6:** in the
-   Copper frame of each output frame used, no MOVE to COLOR17, COLOR18 or COLOR19 is fetched
-   from the Copper's list between the first sample of the first image's first output line and
-   the last sample of the fourth image's last output line (the video samples and the port log
-   share one time base, §4). The datum word of the MOVE is read from the list words fetched in
-   the Copper frame, as Q4 reads them, with the time of its fetch. The sentence is p.27's own
+   Copper frame of each output frame used, the list writes each of COLOR17, COLOR18 and COLOR19
+   and no MOVE to them takes effect from the first line of use 1 to the last line of use 4: no
+   WAIT fetched before such a MOVE names a line from VSTART of use 1 up to, not including,
+   VSTOP of use 4. A MOVE takes effect at the beam position of the last WAIT before it (p.22),
+   or in the vertical blanking interval in which the list starts when no WAIT precedes it
+   (p.25). The list is read from the words the Copper fetched in the Copper frame, as Q4 reads
+   them (IR1 at an even offset from the list start, IR2 after it; `$FFFF,$FFFE` is END, p.23),
+   and VSTART and VSTOP of the uses from the control words of structure Z as the sprite channel
+   fetched them (word offsets 0, 1, 18 and 63 of sprite block 0). The video output is not used
+   for this: it lags the beam by the scan doubler's line buffer, so a position in the output
+   cannot be compared with a time at the port. The sentence is p.27's own
    exception: *"You can change sprite colors mid-screen with a Copper instruction list that
    waits until the last line of the first use of the sprite processor and changes the colors
    before the first line of the next use of the same sprite processor"*; p.27 also says
@@ -1113,10 +1119,11 @@ graded, the measurement that stands in its place and the reason are in one place
    the four uses in every output frame used.
 5. **Preconditions.** For S1c: C1, FRAMES, Q2, Q3, Q4, Q5, K9, IMG4 (the same graded lines as
    for S1, which grade S1c as well), and **Q7:** in the Copper frame of each output frame used,
-   a MOVE to each of COLOR17, COLOR18 and COLOR19 is fetched after the last sample of the first
-   image's last output line and before the first sample of the second image's first output line,
-   and no other MOVE to these registers is fetched from the first image's first line to the
-   fourth image's last line. Q7 reads the writes and their times, not the values written.
+   a MOVE to each of COLOR17, COLOR18 and COLOR19 follows a WAIT for a line from VSTOP of use 1
+   (the line after its last line, p.107) up to, not including, VSTART of use 2 (its first line),
+   and no other MOVE to these registers takes effect from the first line of use 1 to the last
+   line of use 4. Q7 reads the list and the control words of Z as Q6 does (P12.5), and not the
+   values written.
 6. **Contrasting case.** **S1-cx:** list L_S1cx writes `$0FFF`, `$0F0F`, `$0FF0` after the
    WAIT instead. Q7 holds (the writes are in the same place), the pages predict U2–U4 in the
    written colours, and the line, whose expected values are those of L_S1c, goes red.
