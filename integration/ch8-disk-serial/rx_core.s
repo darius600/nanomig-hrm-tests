@@ -17,6 +17,7 @@ BND_VERTB       equ 500000
 ; cycle budget (see SPECIFICATION.md 4.1).
 BND_RBF         equ 1500
 DELAYCOUNT      equ 300
+BND_STALL       equ 300
 
         org     PROGRAM_ORG
 
@@ -231,9 +232,12 @@ start:
         endif
         move.w  #8,MARK
 
-        ifd MUT_FORCETO
-; ---- completion contrast: a poll that ended at its bound is declared ----
-        ori.w   #1,POLL_TIMEOUT
+        ifd MUT_STALL
+; ---- completion contrast: a poll for a ninth character the driver never
+; sends. RBF (INTREQR bit 11) was cleared after character 7 and stays 0, so
+; this bounded poll runs to its own bound and POLLBIT records that in
+; POLL_TIMEOUT; the program then falls through to MARK=DONE ----
+        POLLBIT INTREQR,11,BND_STALL
         endif
         move.w  #MARK_DONE,MARK
         DONE

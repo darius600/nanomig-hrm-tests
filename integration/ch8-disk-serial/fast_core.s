@@ -42,6 +42,11 @@ start:
         move.w  #DBUF_LEN-1,d1
 .fill:  move.w  #$AAAA,(a1)+
         dbra    d1,.fill
+        ifd MUT_BADFILL
+; ---- precondition 4f contrast: word 100 of the buffer is overwritten with
+; another value after the fill ----
+        move.w  #$5555,DBUF+200
+        endif
 
 ; ---- step 3: ADKCON <- $7F00 (clear bits 14-8); FAST=1 also sets bit 8;
 ; read ADKCONR and store it in RESULT ----
@@ -129,17 +134,19 @@ start:
         move.w  $000100,d5
         endif
         ifd MUT_ONCE
-; ---- precondition 4e contrast: the CPU reads word 10 of the buffer, which
-; the disk DMA fetched long before, so that word is read twice ----
-        move.w  DBUF+20,d5
+; ---- precondition 4e contrast: the transfer is run a second time over the
+; same buffer (pointer and length written again, p.246-247), so the disk DMA
+; fetches every word of the buffer twice ----
+        move.w  #$0002,INTREQ(a0)
+        move.l  #DBUF,DSKPTH(a0)
+        move.w  #$4000,DSKLEN(a0)
+        move.w  #$C100,DSKLEN(a0)
+        move.w  #$C100,DSKLEN(a0)
+        POLLBIT INTREQR,1,BND_POLL
         endif
 
 ; ---- step 8: DSKLEN <- $4000 (stop), MARK <- DONE ----
         move.w  #$4000,DSKLEN(a0)
-        ifd MUT_FORCETO
-; ---- completion contrast: a poll that ended at its bound is declared ----
-        ori.w   #1,POLL_TIMEOUT
-        endif
         move.w  #MARK_DONE,MARK
 
         DONE

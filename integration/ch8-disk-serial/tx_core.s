@@ -17,6 +17,7 @@
 
 BND_VERTB       equ 500000
 BND_TBE         equ 1000
+BND_STALL       equ 300
 
         org     PROGRAM_ORG
 
@@ -99,9 +100,12 @@ start:
 
 ; ---- step 6: poll SERDATR bit 12 (TSRE) until 1, then MARK <- DONE ----
         POLLBIT SERDATR,12,BND_TSRE
-        ifd MUT_FORCETO
-; ---- completion contrast: a poll that ended at its bound is declared ----
-        ori.w   #1,POLL_TIMEOUT
+        ifd MUT_STALL
+; ---- completion contrast: a poll for an event that does not occur. RBF
+; (INTREQR bit 11) is set only by a received character and RxD stays idle,
+; so this bounded poll runs to its own bound and POLLBIT records that in
+; POLL_TIMEOUT; the program then falls through to MARK=DONE ----
+        POLLBIT INTREQR,11,BND_STALL
         endif
         move.w  #MARK_DONE,MARK
 

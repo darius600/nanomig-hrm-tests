@@ -1,5 +1,6 @@
-; Precondition 4e contrast, FAST=0 run: after the transfer the CPU reads one buffer word
-; (word 10) that the disk DMA already fetched, so it is read twice.
+; Precondition 4e contrast, FAST=0 run: after the first transfer the pointer and
+; length are written again and the transfer is run a second time over the
+; same buffer, so the disk DMA fetches every word of it twice.
 MUT_ONCE        equ 1
 BND_POLL        equ 200000
         include "fast_core.s"

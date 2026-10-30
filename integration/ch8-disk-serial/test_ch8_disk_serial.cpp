@@ -2,7 +2,7 @@
 // every proposition, program, observed value and expected value.
 //
 // Test purpose: grade the serial transmitter's bit time (P1, P2, P3) and the nine-bit receive setting (P5) through the top-level ports, with the preconditions of the disk write DMA rate (P4), on fx68k and on TG68K.
-// Test class: HRM_CONFORMANCE for P1, P2, P3, (a), (b), (c) and their controls; INTEGRATION_SMOKE for the apparatus and precondition lines (FIXTURE, the R1 and R2 anchors, the G3/G4 completion lines, 4a-4e, 5a-5f).
+// Test class: HRM_CONFORMANCE for P1, P2, P3, (a), (b), (c) and their controls; INTEGRATION_SMOKE for the apparatus and precondition lines (FIXTURE, the R1 and R2 anchors, the G3/G4 completion lines, 4a-4f, 5a-5f).
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed pp. 255-259 and 283-284 (serial port), 194-195 and 23-24 (colour clock, fields), 246-250 and 265 (disk DMA), as read in SPECIFICATION.md.
 // Requirement IDs: none; the claims sol:8-serper.c8, sol:8-serper.c9, sol:8-serper.c10, opus:8-serial.c36 and sol:8-serial.c21 are withdrawn from the graded lines and the other 29 declined, every id printed on a RECORDED line.
 // Non-goals: every 15-bit divisor beyond N=0, 371 and 32396; the disk bit-cell time; RESULT bit 8 under a ninth bit of 0; an absolute duration; the long/short alternation of NTSC lines (measured, not graded; NM-HRM-010).
@@ -24,73 +24,77 @@
 // describe can make fail; it is not the same as a line the package chose not
 // to drive.
 //
-// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: the N=371 program (both standards) never writes the marker for k=3 (prog_tx_n371_nomark3.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: FIXTURE-PAL. Also NOT GRADED: 1c, 1e, 1d, P1, P1-CTRL-WITHIN, 2c, 2e, 2d, P2, P3.
-// MUTATION FIXTURE-PAL stimulus red NMH_MUTATE=FIXTURE: the N=371 program (both standards) never writes the marker for k=3 (prog_tx_n371_nomark3.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: FIXTURE. Also NOT GRADED: 1c, 1e, 1d, P1, P1-CTRL-WITHIN, 2c, 2e, 2d, P2, P3.
-// MUTATION 1a stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 1b stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 1c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK is forced low then high between the lead-in and MARK=0 (prog_tx_n371_1c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2c. Also NOT GRADED: P1, P1-CTRL-WITHIN, P2, P3.
-// MUTATION 1d stimulus red NMH_MUTATE=P1-1D: the next word is polled on TSRE instead of TBE before it is written (prog_tx_n371_1d.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2d. Also NOT GRADED: P1, P1-CTRL-WITHIN, P2, P3.
-// MUTATION 1e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write is left out while its transfer is still polled (prog_tx_n371_1e.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2e. Also NOT GRADED: 1d, P1, P1-CTRL-WITHIN, 2d, P2, P3.
-// MUTATION P1N0-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P1N0-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P1N0-DONE stimulus red NMH_MUTATE=P1-SINGLE-FORCETO: the N=0 and N=32396 programs declare a poll that ended at its own bound (POLL_TIMEOUT set) before MARK=DONE (prog_tx_n0_forceto.bin, prog_tx_n32396_forceto.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N32396-DONE, P2N0-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR, P2.
-// MUTATION P1N0-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N32396-IDLE, P2N0-IDLE, P2N32396-IDLE. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR, P2.
-// MUTATION P1N32396-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P1N32396-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P1N32396-DONE stimulus red NMH_MUTATE=P1-SINGLE-FORCETO: the N=0 and N=32396 programs declare a poll that ended at its own bound (POLL_TIMEOUT set) before MARK=DONE (prog_tx_n0_forceto.bin, prog_tx_n32396_forceto.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P2N0-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR, P2.
-// MUTATION P1N32396-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P2N0-IDLE, P2N32396-IDLE. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR, P2.
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: the N=371 program (both standards) never writes the marker for k=3 (prog_tx_n371_nomark3.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: FIXTURE-PAL. Also NOT GRADED: 1c, 1e, 1d, P1-CTRL-WITHIN, 2c, 2e, 2d.
+// MUTATION FIXTURE-PAL stimulus red NMH_MUTATE=FIXTURE: the N=371 program (both standards) never writes the marker for k=3 (prog_tx_n371_nomark3.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: FIXTURE. Also NOT GRADED: 1c, 1e, 1d, P1-CTRL-WITHIN, 2c, 2e, 2d.
+// MUTATION 1a stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 1b stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 1c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK is forced low then high between the lead-in and MARK=0 (prog_tx_n371_1c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2c. Also NOT GRADED: P1-CTRL-WITHIN.
+// MUTATION 1d stimulus red NMH_MUTATE=P1-1D: the next word is polled on TSRE instead of TBE before it is written (prog_tx_n371_1d.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2d. Also NOT GRADED: P1-CTRL-WITHIN.
+// MUTATION 1e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write is left out while its transfer is still polled (prog_tx_n371_1e.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 2e. Also NOT GRADED: 1d, P1-CTRL-WITHIN, 2d.
+// MUTATION P1N0-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P1N0-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P1N0-DONE stimulus red NMH_MUTATE=P1-SINGLE-STALL: the N=0 and N=32396 programs follow the transmission with a bounded poll for a received character that never comes, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_tx_n0_stall.bin, prog_tx_n32396_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N32396-DONE, P2N0-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR.
+// MUTATION P1N0-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N32396-IDLE, P2N0-IDLE, P2N32396-IDLE. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR.
+// MUTATION P1N32396-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P1N32396-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P1N32396-DONE stimulus red NMH_MUTATE=P1-SINGLE-STALL: the N=0 and N=32396 programs follow the transmission with a bounded poll for a received character that never comes, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_tx_n0_stall.bin, prog_tx_n32396_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P2N0-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR.
+// MUTATION P1N32396-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P2N0-IDLE, P2N32396-IDLE. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR.
 // MUTATION P1 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N. P1 is red at baseline on both cores and stays FAIL, so it cannot be turned red; its comparator (check_grid on the N=371 NTSC run) runs on live inputs in P1-CTRL-N0 and P1-CTRL-N32396 (check_grid) and P1-CTRL-WITHIN (check_within_word), which print PASS at baseline and FAIL under this selector; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-CTRL-N0 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR.
 // MUTATION P1-CTRL-N32396 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-CTRL-N0, P1-CTRL-WITHIN, P2-CTRL-PAIR.
 // MUTATION P1-CTRL-WITHIN stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR.
-// MUTATION 2a stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 2b stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK is forced low then high between the lead-in and MARK=0 (prog_tx_n371_1c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1c. Also NOT GRADED: P1, P1-CTRL-WITHIN, P2, P3.
-// MUTATION 2d stimulus red NMH_MUTATE=P1-1D: the next word is polled on TSRE instead of TBE before it is written (prog_tx_n371_1d.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1d. Also NOT GRADED: P1, P1-CTRL-WITHIN, P2, P3.
-// MUTATION 2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write is left out while its transfer is still polled (prog_tx_n371_1e.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1e. Also NOT GRADED: 1d, P1, P1-CTRL-WITHIN, 2d, P2, P3.
-// MUTATION P2N0-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P2N0-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P2N0-DONE stimulus red NMH_MUTATE=P1-SINGLE-FORCETO: the N=0 and N=32396 programs declare a poll that ended at its own bound (POLL_TIMEOUT set) before MARK=DONE (prog_tx_n0_forceto.bin, prog_tx_n32396_forceto.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P1N32396-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR, P2.
-// MUTATION P2N0-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P1N32396-IDLE, P2N32396-IDLE. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR, P2.
-// MUTATION P2N32396-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P2N32396-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION P2N32396-DONE stimulus red NMH_MUTATE=P1-SINGLE-FORCETO: the N=0 and N=32396 programs declare a poll that ended at its own bound (POLL_TIMEOUT set) before MARK=DONE (prog_tx_n0_forceto.bin, prog_tx_n32396_forceto.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P1N32396-DONE, P2N0-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR, P2.
-// MUTATION P2N32396-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P1N32396-IDLE, P2N0-IDLE. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR, P2.
+// MUTATION 2a stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 2b stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK is forced low then high between the lead-in and MARK=0 (prog_tx_n371_1c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1c. Also NOT GRADED: P1-CTRL-WITHIN.
+// MUTATION 2d stimulus red NMH_MUTATE=P1-1D: the next word is polled on TSRE instead of TBE before it is written (prog_tx_n371_1d.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1d. Also NOT GRADED: P1-CTRL-WITHIN.
+// MUTATION 2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write is left out while its transfer is still polled (prog_tx_n371_1e.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1e. Also NOT GRADED: 1d, P1-CTRL-WITHIN, 2d.
+// MUTATION P2N0-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P2N0-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P2N0-DONE stimulus red NMH_MUTATE=P1-SINGLE-STALL: the N=0 and N=32396 programs follow the transmission with a bounded poll for a received character that never comes, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_tx_n0_stall.bin, prog_tx_n32396_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P1N32396-DONE, P2N32396-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR.
+// MUTATION P2N0-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P1N32396-IDLE, P2N32396-IDLE. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR.
+// MUTATION P2N32396-R1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P2N32396-R2 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION P2N32396-DONE stimulus red NMH_MUTATE=P1-SINGLE-STALL: the N=0 and N=32396 programs follow the transmission with a bounded poll for a received character that never comes, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_tx_n0_stall.bin, prog_tx_n32396_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-DONE, P1N32396-DONE, P2N0-DONE. Also NOT GRADED: P1N0-IDLE, P1N32396-IDLE, P1-CTRL-N0, P1-CTRL-N32396, P2N0-IDLE, P2N32396-IDLE, P2-CTRL-PAIR.
+// MUTATION P2N32396-IDLE stimulus red NMH_MUTATE=P1-SINGLE-BRK: the N=0 and N=32396 programs force UARTBRK low then high between the lead-in and MARK=0 (prog_tx_n0_brk.bin, prog_tx_n32396_brk.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P1N0-IDLE, P1N32396-IDLE, P2N0-IDLE. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P2-CTRL-PAIR.
 // MUTATION P2-CTRL-PAIR stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN.
 // MUTATION P2 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N. P2 is red at baseline on both cores and stays FAIL, so it cannot be turned red; its comparator (check_uniform and the pairwise U comparison on the PAL runs) runs on live inputs in P2-CTRL-PAIR (the same pairwise U comparison on the N=0 and N=32396 pair), which print PASS at baseline and FAIL under this selector; TG68K FAIL, fx68k FAIL.
 // MUTATION P3 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER is written with N+1 (1, 372, 32397) by the three _plus1 programs, on both standards, and the runs are graded against N. P3 is red at baseline on both cores and stays FAIL, so it cannot be turned red; its comparator (check_grid on the N=371 NTSC run) runs on live inputs in P1-CTRL-N0 and P1-CTRL-N32396 (the same check_grid), which print PASS at baseline and FAIL under this selector; TG68K FAIL, fx68k FAIL.
-// MUTATION 4a-NTSC-FAST1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 4b-NTSC-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 4a-NTSC-FAST1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 4b-NTSC-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 4c-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST0, 4c-PAL-FAST1, 4c-PAL-FAST0.
-// MUTATION 4e-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST0, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
-// MUTATION 4d-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Not exercised: the DISKWRITE clause (the pause leaves DSKLEN unwritten, so DISKWRITE stays 1).
-// MUTATION P4-DONE-NTSC-FAST1 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
-// MUTATION 4a-NTSC-FAST0 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 4b-NTSC-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 4f-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4F: after the fill, word 100 of the buffer is overwritten with $5555 (prog_fast1_4f.bin, prog_fast0_4f.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4f-NTSC-FAST0, 4f-PAL-FAST1, 4f-PAL-FAST0. Also NOT GRADED: 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4e-PAL-FAST1, 4d-PAL-FAST1, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4e-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST0, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the program runs the transfer a second time over the same buffer, so every buffer word is fetched twice): 4e-NTSC-FAST1 FAIL through its exactly-once clause with every index seen and in rising order, 4d-NTSC-FAST1 PASS; TG68K FAIL, fx68k FAIL.
+// MUTATION 4d-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. The DISKWRITE clause is withdrawn (RECORDED) and has no contrast.
+// MUTATION P4-DONE-NTSC-FAST1 stimulus red NMH_MUTATE=P4-STALL: the P4 programs poll for DSKBLK with a bound of 50 iterations, far below the length of the transfer, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_fast1_stall.bin, prog_fast0_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4f-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4f-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4f-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4f-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4a-NTSC-FAST0 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 4b-NTSC-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 4c-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-PAL-FAST1, 4c-PAL-FAST0.
-// MUTATION 4e-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
-// MUTATION 4d-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-PAL-FAST1, 4d-PAL-FAST0. Not exercised: the DISKWRITE clause (the pause leaves DSKLEN unwritten, so DISKWRITE stays 1).
-// MUTATION P4-DONE-NTSC-FAST0 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
-// MUTATION 4a-PAL-FAST1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 4b-PAL-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 4f-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4F: after the fill, word 100 of the buffer is overwritten with $5555 (prog_fast1_4f.bin, prog_fast0_4f.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4f-NTSC-FAST1, 4f-PAL-FAST1, 4f-PAL-FAST0. Also NOT GRADED: 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4e-PAL-FAST1, 4d-PAL-FAST1, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4e-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the program runs the transfer a second time over the same buffer, so every buffer word is fetched twice): 4e-NTSC-FAST0 FAIL through its exactly-once clause with every index seen and in rising order, 4d-NTSC-FAST0 PASS; TG68K FAIL, fx68k FAIL.
+// MUTATION 4d-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-PAL-FAST1, 4d-PAL-FAST0. The DISKWRITE clause is withdrawn (RECORDED) and has no contrast.
+// MUTATION P4-DONE-NTSC-FAST0 stimulus red NMH_MUTATE=P4-STALL: the P4 programs poll for DSKBLK with a bound of 50 iterations, far below the length of the transfer, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_fast1_stall.bin, prog_fast0_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4f-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4f-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4f-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4f-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4a-PAL-FAST1 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST0, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 4b-PAL-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 4c-PAL-FAST1 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-NTSC-FAST0, 4c-PAL-FAST0.
-// MUTATION 4e-PAL-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
-// MUTATION 4d-PAL-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST0. Not exercised: the DISKWRITE clause (the pause leaves DSKLEN unwritten, so DISKWRITE stays 1).
-// MUTATION P4-DONE-PAL-FAST1 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
-// MUTATION 4a-PAL-FAST0 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 4b-PAL-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 4f-PAL-FAST1 stimulus red NMH_MUTATE=P4-4F: after the fill, word 100 of the buffer is overwritten with $5555 (prog_fast1_4f.bin, prog_fast0_4f.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4f-NTSC-FAST1, 4f-NTSC-FAST0, 4f-PAL-FAST0. Also NOT GRADED: 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4e-PAL-FAST1, 4d-PAL-FAST1, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4e-PAL-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the program runs the transfer a second time over the same buffer, so every buffer word is fetched twice): 4e-PAL-FAST1 FAIL through its exactly-once clause with every index seen and in rising order, 4d-PAL-FAST1 PASS; TG68K FAIL, fx68k FAIL.
+// MUTATION 4d-PAL-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST0. The DISKWRITE clause is withdrawn (RECORDED) and has no contrast.
+// MUTATION P4-DONE-PAL-FAST1 stimulus red NMH_MUTATE=P4-STALL: the P4 programs poll for DSKBLK with a bound of 50 iterations, far below the length of the transfer, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_fast1_stall.bin, prog_fast0_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST0. Also NOT GRADED: 4c-NTSC-FAST1, 4f-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4f-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4f-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4f-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4a-PAL-FAST0 stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 5a-R1-A, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 4b-PAL-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 4c-PAL-FAST0 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-NTSC-FAST0, 4c-PAL-FAST1.
-// MUTATION 4e-PAL-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST1. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
-// MUTATION 4d-PAL-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1. Not exercised: the DISKWRITE clause (the pause leaves DSKLEN unwritten, so DISKWRITE stays 1).
-// MUTATION P4-DONE-PAL-FAST0 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1. Also NOT GRADED: 4c-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
-// MUTATION 5a-R1-A stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-B. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 5a-R2-A stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 4f-PAL-FAST0 stimulus red NMH_MUTATE=P4-4F: after the fill, word 100 of the buffer is overwritten with $5555 (prog_fast1_4f.bin, prog_fast0_4f.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4f-NTSC-FAST1, 4f-NTSC-FAST0, 4f-PAL-FAST1. Also NOT GRADED: 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4e-PAL-FAST1, 4d-PAL-FAST1, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 4e-PAL-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST1. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the program runs the transfer a second time over the same buffer, so every buffer word is fetched twice): 4e-PAL-FAST0 FAIL through its exactly-once clause with every index seen and in rising order, 4d-PAL-FAST0 PASS; TG68K FAIL, fx68k FAIL.
+// MUTATION 4d-PAL-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1. The DISKWRITE clause is withdrawn (RECORDED) and has no contrast.
+// MUTATION P4-DONE-PAL-FAST0 stimulus red NMH_MUTATE=P4-STALL: the P4 programs poll for DSKBLK with a bound of 50 iterations, far below the length of the transfer, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_fast1_stall.bin, prog_fast0_stall.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1. Also NOT GRADED: 4c-NTSC-FAST1, 4f-NTSC-FAST1, 4e-NTSC-FAST1, 4d-NTSC-FAST1, 4c-NTSC-FAST0, 4f-NTSC-FAST0, 4e-NTSC-FAST0, 4d-NTSC-FAST0, 4c-PAL-FAST1, 4f-PAL-FAST1, 4e-PAL-FAST1, 4d-PAL-FAST1, 4c-PAL-FAST0, 4f-PAL-FAST0, 4e-PAL-FAST0, 4d-PAL-FAST0.
+// MUTATION 5a-R1-A stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-B. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 5a-R2-A stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-B. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 5a-C8-A none impossible: unfalsifiable at this boundary -- no stimulus the pages describe changes the number of cycles per colour clock, so the measured C cannot differ from the 8.0 the driver assumes
-// MUTATION 5a-DONE-A stimulus red NMH_MUTATE=P5-FORCETO-A: run A declares a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also NOT GRADED: 5b, (a), (b), (c).
-// MUTATION 5a-R1-B stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A. Also NOT GRADED: 1d, P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
-// MUTATION 5a-R2-B stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a), (b), (c).
+// MUTATION 5a-DONE-A stimulus red NMH_MUTATE=P5-STALL-A: run A follows the eighth character with a bounded poll for a ninth that is never sent, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_rx_a_stall.bin); TG68K FAIL, fx68k FAIL. Also NOT GRADED: 5b, (a), (b), (c).
+// MUTATION 5a-R1-B stimulus red NMH_MUTATE=R1-READ: one CPU read of Chip word $000100 (word address $80, below $1000) with the ROM overlay cleared is added to every program: after the lead-in in the TX and P5 programs, after the transfer in the P4 programs (prog_*_r1.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 1a, P1N0-R1, P1N32396-R1, 2a, P2N0-R1, P2N32396-R1, 4a-NTSC-FAST1, 4a-NTSC-FAST0, 4a-PAL-FAST1, 4a-PAL-FAST0, 5a-R1-A. Also NOT GRADED: 1d, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, 2d, P2-CTRL-PAIR, 5f, (a), (b), (c).
+// MUTATION 5a-R2-B stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A. Also NOT GRADED: P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, 5f, (a), (b), (c).
 // MUTATION 5a-C8-B none impossible: unfalsifiable at this boundary -- no stimulus the pages describe changes the number of cycles per colour clock, so the measured C cannot differ from the 8.0 the driver assumes
-// MUTATION 5a-DONE-B stimulus red NMH_MUTATE=P5-FORCETO-B: run B declares a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also NOT GRADED: 5f, (a), (b), (c).
+// MUTATION 5a-DONE-B stimulus red NMH_MUTATE=P5-STALL-B: run B follows the eighth character with a bounded poll for a ninth that is never sent, so the poll runs to its own bound (POLL_TIMEOUT is set by the poll itself) and the program still reaches DONE (prog_rx_b_stall.bin); TG68K FAIL, fx68k FAIL. Also NOT GRADED: 5f, (a), (b), (c).
 // MUTATION 5b stimulus red NMH_MUTATE=P5-5B: the ADKCON write that sets UARTBRK is left out; MARK=BRK is still written; TG68K FAIL, fx68k FAIL. Also NOT GRADED: (a), (b), (c).
 // MUTATION 5c-A stimulus red NMH_MUTATE=P5-5C: the driver sends a ninth character in run A and in run B, and the read of character 7 is delayed until after it (prog_rx_a_5c.bin, prog_rx_b_5c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 5c-B. Also NOT GRADED: 5f, (a), (b), (c).
 // MUTATION 5c-B stimulus red NMH_MUTATE=P5-5C: the driver sends a ninth character in run A and in run B, and the read of character 7 is delayed until after it (prog_rx_a_5c.bin, prog_rx_b_5c.bin); TG68K FAIL, fx68k FAIL. Also printing FAIL: 5c-A. Also NOT GRADED: 5f, (a), (b), (c).
@@ -99,9 +103,9 @@
 // MUTATION 5e-A stimulus red NMH_MUTATE=P5-5E: every poll iteration is padded by T/4 or more in run A and in run B; TG68K FAIL, fx68k FAIL. Also printing FAIL: 5e-B. Also NOT GRADED: (a), (b), (c).
 // MUTATION 5e-B stimulus red NMH_MUTATE=P5-5E: every poll iteration is padded by T/4 or more in run A and in run B; TG68K FAIL, fx68k FAIL. Also printing FAIL: 5e-A. Also NOT GRADED: (a), (b), (c).
 // MUTATION 5f stimulus red NMH_MUTATE=P5-5F: run B itself is driven at a bit time of 2T; TG68K FAIL, fx68k FAIL. Also NOT GRADED: (a), (b), (c).
-// MUTATION (a) stimulus red NMH_MUTATE=P5-A-DATA: run A is driven with every byte complemented, at the same timing; TG68K FAIL, fx68k FAIL. Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T) moves (a), (b) and (c).
-// MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A loads prog_rx_a_altper.bin (SERPER <- $80B9, N=185, driver unchanged); TG68K FAIL, fx68k FAIL. Also printing FAIL: (a), (c). Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (a), (b) and (c) FAIL, the 5a-5e lines of run A stay PASS; TG68K FAIL, fx68k FAIL. (b) is decided per character: of the 16 characters 16 reach their threshold at baseline, 8 stay below it under P5-B and 2 under P5-A, none straddles it, on both cores.
-// MUTATION (c) stimulus red NMH_MUTATE=P5-C: run B loads prog_rx_a.bin (SERPER <- $8173 in run B too); TG68K FAIL, fx68k FAIL. Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T) moves (a), (b) and (c).
+// MUTATION (a) stimulus red NMH_MUTATE=P5-A-DATA: run A is driven with every byte complemented, at the same timing; TG68K FAIL, fx68k FAIL. Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (a) FAIL, (b) FAIL, (c) FAIL.
+// MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A loads prog_rx_a_altper.bin (SERPER <- $80B9, N=185, driver unchanged); TG68K FAIL, fx68k FAIL. Also printing FAIL: (a), (c). Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (b) FAIL, the 5a-5e lines of run A stay PASS. (b) is decided per character and passes only when all 16 are decided and pass: of the 16 characters 16 reach their threshold at baseline, 8 stay below it under P5-B and 2 under P5-A; 0 straddle it at baseline, 0 under P5-B and 0 under P5-A.
+// MUTATION (c) stimulus red NMH_MUTATE=P5-C: run B loads prog_rx_a.bin (SERPER <- $8173 in run B too); TG68K FAIL, fx68k FAIL. Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (c) FAIL. (c) is decided per character and passes only when all 8 are decided and pass: of the 8 characters 8 lie inside the band at baseline; under P5-C 0 lie inside it, 8 outside and 0 straddle an edge; under P5-A 3 inside, 5 outside, 0 straddle; under P5-B 0 inside, 8 outside, 0 straddle.
 
 #include <algorithm>
 #include <cmath>
@@ -361,20 +365,27 @@ struct GridResult {
     uint64_t t0 = 0;
 };
 
+// The observation resolution. TxD is sampled once per clk_sys cycle, so the
+// time of a change is known to within one cycle, and the difference of two
+// change times (every comparison below is relative to the first change, which
+// removes the unknown phase) to within less than one cycle. This is the only
+// uncertainty any comparison of a change time with the page's N+1-colour-clock
+// spacing allows; no fraction of the colour clock enters.
+constexpr double kObsRes = 1.0;
+
 GridResult check_grid(const std::vector<uint64_t>& changes, double C, int N, int W) {
     GridResult g;
     g.total_expected = 10 * W;
     if (changes.empty() || C <= 0) return g;
     g.t0 = changes[0];
     double T = double(N + 1) * C;
-    double tol = C / 2.0;
     std::vector<bool> used(changes.size(), false);
     int matched = 0;
     for (int k = 0; k < 10 * W; ++k) {
         double target = double(g.t0) + double(k) * T;
         for (size_t i = 0; i < changes.size(); ++i) {
             if (used[i]) continue;
-            if (std::abs(double(changes[i]) - target) <= tol) { used[i] = true; ++matched; break; }
+            if (std::abs(double(changes[i]) - target) < kObsRes) { used[i] = true; ++matched; break; }
         }
     }
     g.matched = matched;
@@ -389,18 +400,35 @@ GridResult check_grid(const std::vector<uint64_t>& changes, double C, int N, int
 // graded in isolation from any inter-word drift.
 bool check_within_word(const std::vector<uint64_t>& changes, double C, int N, int W) {
     if ((int)changes.size() != 10 * W || C <= 0) return false;
-    double T = double(N + 1) * C, tol = C / 2.0;
+    double T = double(N + 1) * C;
     for (int w = 0; w < W; ++w)
         for (int i = 0; i < 9; ++i) {
             double gap = double(changes[w * 10 + i + 1]) - double(changes[w * 10 + i]);
-            if (std::abs(gap - T) > tol) return false;
+            if (!(std::abs(gap - T) < kObsRes)) return false;
         }
     return true;
 }
 
+// Measured, not graded: how far each change of a run lies from t0+k*(N+1)*C,
+// in cycles, when the run has exactly 10W changes (change k is then the one
+// the page puts at k). Returns "max |deviation| = D at k=K; first change of
+// each word: d0 d1 ..." or a note that the count differs.
+std::string grid_deviation_note(const std::vector<uint64_t>& changes, double C, int N, int W) {
+    if (C <= 0 || changes.size() != size_t(10 * W)) return "change count differs from 10W, no per-change deviation";
+    double T = double(N + 1) * C, worst = 0; int worst_k = 0;
+    std::string firsts;
+    for (int k = 0; k < 10 * W; ++k) {
+        double dev = double(changes[k]) - (double(changes[0]) + double(k) * T);
+        if (std::abs(dev) > std::abs(worst)) { worst = dev; worst_k = k; }
+        if (k % 10 == 0) firsts += " " + std::to_string(dev);
+    }
+    return "largest deviation " + std::to_string(worst) + " cycles at k=" + std::to_string(worst_k) +
+           "; first change of each word:" + firsts;
+}
+
 // ---- P2's own checks: uniform grid within a run, and cross-run period ----
 
-struct UniformResult { bool ok = false; double T_N = 0; size_t total_changes = 0; };
+struct UniformResult { bool ok = false; double T_N = 0; size_t total_changes = 0; int matched = 0; };
 
 UniformResult check_uniform(const std::vector<uint64_t>& changes, double C, int W) {
     UniformResult u;
@@ -408,17 +436,20 @@ UniformResult check_uniform(const std::vector<uint64_t>& changes, double C, int 
     if ((int)changes.size() < 2 || C <= 0) return u;
     u.total_changes = changes.size();
     u.T_N = double(changes.back() - changes.front()) / double(total - 1);
-    double tol = C / 2.0;
     uint64_t t0 = changes.front();
     std::vector<bool> used(changes.size(), false);
     int matched = 0;
+    // Change k lies on the straight line through the first and the last
+    // change; a change time is known to within kObsRes, so the line's own
+    // interior points are known to within the same kObsRes.
     for (int k = 0; k < total; ++k) {
         double target = double(t0) + double(k) * u.T_N;
         for (size_t i = 0; i < changes.size(); ++i) {
             if (used[i]) continue;
-            if (std::abs(double(changes[i]) - target) <= tol) { used[i] = true; ++matched; break; }
+            if (std::abs(double(changes[i]) - target) < kObsRes) { used[i] = true; ++matched; break; }
         }
     }
+    u.matched = matched;
     u.ok = (matched == total) && (changes.size() == size_t(total));
     return u;
 }
@@ -590,13 +621,13 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
                          mv == "P5-5D" ? "/prog_rx_a_5d.bin" :
                          mv == "P5-5E" ? "/prog_rx_a_5e.bin" :
                          mv == "P5-B"  ? "/prog_rx_a_altper.bin" :
-                         mv == "P5-FORCETO-A" ? "/prog_rx_a_forceto.bin" : "/prog_rx_a.bin");
+                         mv == "P5-STALL-A" ? "/prog_rx_a_stall.bin" : "/prog_rx_a.bin");
     auto bin_b = dir + (mv == "R1-READ" ? "/prog_rx_b_r1.bin" :
                          mv == "P5-C" ? "/prog_rx_a.bin" :
                          mv == "P5-5C" ? "/prog_rx_b_5c.bin" :
                          mv == "P5-5D" ? "/prog_rx_b_5d.bin" :
                          mv == "P5-5E" ? "/prog_rx_b_5e.bin" :
-                         mv == "P5-FORCETO-B" ? "/prog_rx_b_forceto.bin" : "/prog_rx_b.bin");
+                         mv == "P5-STALL-B" ? "/prog_rx_b_stall.bin" : "/prog_rx_b.bin");
     constexpr uint64_t kP5Budget = 25'000'000;
     const double T = 372.0 * 8.0; // N=371, C confirmed 8.0 by 5a below and every other proposition's own R1
     const double step = 16.125 * T;
@@ -790,9 +821,10 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
     // s_j+9T (run A) or s_j+8T (run B): the character PASSES when the
     // bracket's lower end t0-S reaches the threshold (the event lies after
     // it), FAILS when t1 stays below it (the event lies before it), and
-    // otherwise is NOT GRADED: the bracket straddles the threshold, so no
-    // sampling phase the pages allow is excluded. The line passes only if no
-    // character fails and at least one is graded.
+    // otherwise is undecided: the bracket straddles the threshold, so no
+    // sampling phase the pages allow is excluded. The line passes only when
+    // all 16 characters are decided and pass; it fails when any character
+    // fails; otherwise (no failure, some undecided) it is NOT GRADED.
     {
         int pass = 0, fail = 0, undecided = 0;
         auto grade_char = [&](const Bracket& br, double sj, double thr_bits) {
@@ -806,33 +838,60 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
         for (int j = 0; j < 8; ++j) grade_char(brackets_a[j], double(a.s0) + double(j) * step, 9.0);
         for (int j = 0; j < 8; ++j) grade_char(brackets_b[j], double(b.s0) + double(j) * step, 8.0);
         checks.note("(b) characters (of 16): reach the threshold=" + std::to_string(pass) +
-                    ", stay below it=" + std::to_string(fail) + ", straddle it (NOT GRADED)=" + std::to_string(undecided));
+                    ", stay below it=" + std::to_string(fail) + ", straddle it=" + std::to_string(undecided));
         const std::string text =
-            "[p256] no character's RBF event lies before s_j+9T (run A) or s_j+8T (run B): none "
-            "has its G5 bracket (t0-S, t1] wholly below that threshold, and at least one has its "
-            "lower end t0-S at or past it";
-        if (checks.unmet_of(p5_deps).empty() && fail == 0 && pass == 0) {
-            checks.record("NOT GRADED (b): no character's bracket decides the threshold (" +
-                          std::to_string(undecided) + " of 16 straddle it)");
+            "[p256] no character's RBF event lies before s_j+9T (run A) or s_j+8T (run B): all 16 "
+            "G5 brackets (t0-S, t1] decide the threshold, and each has its lower end t0-S at or past it";
+        if (checks.unmet_of(p5_deps).empty() && fail == 0 && undecided > 0) {
+            checks.record("NOT GRADED (b): " + std::to_string(undecided) +
+                          " of 16 characters' brackets straddle the threshold and none lies below it");
             checks.verdict["(b)"] = false;
         } else {
-            checks.line("(b)", p5_deps, fail == 0 && pass > 0, text);
+            checks.line("(b)", p5_deps, fail == 0 && undecided == 0 && pass == 16, text);
         }
     }
 
-    // ---- (c) One bit later: the RBF event of run A comes one bit time
-    // later than run B's own. ----
+    // ---- (c) One bit later: for every character j, the RBF event of run A
+    // comes one bit time later than run B's own. ----
+    // G5 places each event in (t0-S, t1], so D_j(A)-D_j(B), with D_j the
+    // event time minus s_j, lies in (loA-sA-hiB+sB, hiA-sA-loB+sB]. A
+    // character PASSES when that whole interval lies in [T/2,3T/2] (the
+    // half-bit grading of p.256's "proper number of bit times", because the
+    // page does not say where the receiver samples), FAILS when the interval
+    // lies wholly outside it, and otherwise is undecided. The line passes
+    // only when all 8 characters pass, fails when any fails, and is NOT
+    // GRADED otherwise.
     {
+        int pass = 0, fail = 0, undecided = 0;
+        std::string per;
         double sumA = 0, sumB = 0;
-        for (int j = 0; j < 8; ++j) sumA += bracket_midpoint(brackets_a[j]) - (double(a.s0) + j * step);
-        for (int j = 0; j < 8; ++j) sumB += bracket_midpoint(brackets_b[j]) - (double(b.s0) + j * step);
-        const double meanD_a = sumA / 8.0, meanD_b = sumB / 8.0, diffAB = meanD_a - meanD_b;
-        checks.note("(c): meanD_a=" + std::to_string(meanD_a) + " meanD_b=" + std::to_string(meanD_b) +
-                    " diff=" + std::to_string(diffAB) + " T=" + std::to_string(T));
-        bool timing_ok = diffAB >= T / 2.0 && diffAB <= 1.5 * T;
-        checks.line("(c)", p5_deps, timing_ok,
-            "[p255,p256] run A's RBF event comes one bit time later than run B's own "
-            "(mean_j D_j(A) - mean_j D_j(B) in [T/2,3T/2])");
+        for (int j = 0; j < 8; ++j) {
+            const double sA = double(a.s0) + j * step, sB = double(b.s0) + j * step;
+            sumA += bracket_midpoint(brackets_a[j]) - sA;
+            sumB += bracket_midpoint(brackets_b[j]) - sB;
+            if (!brackets_a[j].ok || !brackets_b[j].ok) { ++undecided; per += " j" + std::to_string(j) + "=no bracket"; continue; }
+            const double loA = double(brackets_a[j].t0) - double(brackets_a[j].S), hiA = double(brackets_a[j].t1);
+            const double loB = double(brackets_b[j].t0) - double(brackets_b[j].S), hiB = double(brackets_b[j].t1);
+            const double dlo = (loA - sA) - (hiB - sB), dhi = (hiA - sA) - (loB - sB);
+            per += " j" + std::to_string(j) + "=[" + std::to_string(dlo) + "," + std::to_string(dhi) + "]";
+            if (dlo >= T / 2.0 && dhi <= 1.5 * T) ++pass;
+            else if (dhi < T / 2.0 || dlo > 1.5 * T) ++fail;
+            else ++undecided;
+        }
+        checks.note("(c): D_j(A)-D_j(B) bracket per character:" + per + "; T=" + std::to_string(T) +
+                    "; mean_j D_j(A) - mean_j D_j(B) = " + std::to_string((sumA - sumB) / 8.0));
+        checks.note("(c) characters (of 8): inside [T/2,3T/2]=" + std::to_string(pass) +
+                    ", outside it=" + std::to_string(fail) + ", straddle it=" + std::to_string(undecided));
+        const std::string text =
+            "[p255,p256] for every character j, run A's RBF event comes one bit time later than "
+            "run B's own: the G5 interval of D_j(A)-D_j(B) lies in [T/2,3T/2] for all 8 characters";
+        if (checks.unmet_of(p5_deps).empty() && fail == 0 && undecided > 0) {
+            checks.record("NOT GRADED (c): " + std::to_string(undecided) +
+                          " of 8 characters' intervals straddle the band edge and none lies outside it");
+            checks.verdict["(c)"] = false;
+        } else {
+            checks.line("(c)", p5_deps, fail == 0 && undecided == 0 && pass == 8, text);
+        }
     }
 
     // ---- P5 run-A ninth-bit-zero variant: recorded, not graded (p.257
@@ -931,19 +990,44 @@ bool result_fast_bit_matches(const FastRun& r, bool expect_fast1) {
     return ((*r.result & 0x0100) != 0) == expect_fast1;
 }
 
-// 4d: every PROBE_D value stored strictly inside [lo,hi] has DMAON (bit14)
-// and DISKWRITE (bit13) set.
-bool check_4d(const FastRun& r, uint64_t lo, uint64_t hi, int* n_checked) {
-    int n = 0; bool ok = true;
+// 4d: every PROBE_D value the CPU stored inside [lo,hi] has DMAON (bit14)
+// set. DISKWRITE (bit13) is counted, not graded (see 4d below).
+bool check_4d(const FastRun& r, uint64_t lo, uint64_t hi, int* n_checked, int* n_diskwrite = nullptr) {
+    int n = 0, nw = 0; bool ok = true;
     uint32_t pd = word_addr(kProbeDAddr);
     for (const auto& a : r.log) {
         if (a.is_write && a.word_addr == pd && a.cycle >= lo && a.cycle <= hi) {
             ++n;
-            if ((a.data & 0x4000) == 0 || (a.data & 0x2000) == 0) ok = false;
+            if ((a.data & 0x4000) == 0) ok = false;
+            if (a.data & 0x2000) ++nw;
         }
     }
     if (n_checked) *n_checked = n;
+    if (n_diskwrite) *n_diskwrite = nw;
     return ok && n > 0;
+}
+
+// 4f: the buffer holds the known value. Returns (a) the number of words
+// B+2i, i=0..255, whose last Chip-port write before MARK=START is $AAAA, and
+// (b) the number of Chip-port reads of buffer words and how many of them
+// delivered $AAAA.
+struct FillScan { int fill_words = 0; int reads = 0, reads_aaaa = 0; bool have_start = false; };
+FillScan scan_fill(const FastRun& r) {
+    FillScan f;
+    const uint32_t base = word_addr(kDbufAddr), mk = word_addr(kMarkAddr);
+    uint64_t start = 0;
+    for (const auto& a : r.log)
+        if (a.is_write && a.word_addr == mk && a.data == 0x00F4) { start = a.cycle; f.have_start = true; break; }
+    if (!f.have_start) return f;
+    std::vector<int> last(kDbufLen, -1);
+    for (const auto& a : r.log) {
+        if (a.word_addr < base || a.word_addr >= base + uint32_t(kDbufLen)) continue;
+        const int i = int(a.word_addr - base);
+        if (a.is_write) { if (a.cycle < start) last[i] = a.data; }
+        else { ++f.reads; if (a.data == 0xAAAA) ++f.reads_aaaa; }
+    }
+    for (int i = 0; i < kDbufLen; ++i) if (last[i] == 0xAAAA) ++f.fill_words;
+    return f;
 }
 
 double T_cell_us(uint64_t t_lo, uint64_t t_hi, double C, bool ntsc) {
@@ -959,14 +1043,16 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
                              mv == "P4-4C" ? "/prog_fast1_4c.bin" :
                              mv == "P4-4D" ? "/prog_fast1_4d.bin" :
                              mv == "P4-4E" ? "/prog_fast1_4e.bin" :
+                             mv == "P4-4F" ? "/prog_fast1_4f.bin" :
                              mv == "P4-4E-ONCE" ? "/prog_fast1_once.bin" :
-                             mv == "P4-FORCETO" ? "/prog_fast1_forceto.bin" : "/prog_fast1.bin");
+                             mv == "P4-STALL" ? "/prog_fast1_stall.bin" : "/prog_fast1.bin");
     auto bin_fast0 = dir + (mv == "R1-READ" ? "/prog_fast0_r1.bin" :
                              mv == "P4-4C" ? "/prog_fast0_4c.bin" :
                              mv == "P4-4D" ? "/prog_fast0_4d.bin" :
                              mv == "P4-4E" ? "/prog_fast0_4e.bin" :
+                             mv == "P4-4F" ? "/prog_fast0_4f.bin" :
                              mv == "P4-4E-ONCE" ? "/prog_fast0_once.bin" :
-                             mv == "P4-FORCETO" ? "/prog_fast0_forceto.bin" : "/prog_fast0.bin");
+                             mv == "P4-STALL" ? "/prog_fast0_stall.bin" : "/prog_fast0.bin");
     constexpr uint64_t kP4Budget = 21'000'000;
 
     FastRun ntsc_f1 = run_fast(bin_fast1, true, kP4Budget);
@@ -1028,6 +1114,20 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
             "[p249] ADKCONR bit 8 read back as " + std::string(fast1 ? "1" : "0") +
             " (RESULT=" + std::to_string(r.result.value_or(0xFFFF)) + ")");
 
+        // 4f: the buffer holds the known valid raw-MFM value ($AAAA) when the
+        // disk DMA reads it: every word B+2i, i=0..255, was last written
+        // with $AAAA before MARK=START, and every Chip-port read of a buffer
+        // word (at least one) delivered $AAAA.
+        FillScan fs = scan_fill(r);
+        checks.note(pt + " 4f: words whose last write before MARK=START is $AAAA=" + std::to_string(fs.fill_words) +
+                    " of " + std::to_string(kDbufLen) + ", buffer reads seen=" + std::to_string(fs.reads) +
+                    ", delivering $AAAA=" + std::to_string(fs.reads_aaaa));
+        checks.line("4f-" + tag, {"P4-DONE-" + tag},
+            fs.have_start && fs.fill_words == kDbufLen && fs.reads > 0 && fs.reads_aaaa == fs.reads,
+            "[p250,p249,p247] the buffer holds the known valid raw-MFM value: the last write to each of "
+            "B+2i, i=0..255, before MARK=START is $AAAA, and every Chip-port read of a buffer word "
+            "(" + std::to_string(fs.reads) + " seen) delivers $AAAA");
+
         // 4e: fetches cover the window (i=0..192 seen, each exactly once, rising order).
         // Its coverage clause is also the precondition of 4d (the window t_64..t_192
         // exists), so it is printed first.
@@ -1045,18 +1145,23 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
         checks.note(pt + " 4e: of the 193 indices i=0..192, never read=" + std::to_string(unseen) +
                     ", not read exactly once=" + std::to_string(not_once) + ", out of rising order=" +
                     std::to_string(order_bad) + "; reads counted after coalescing held bus cycles");
-        checks.line("4e-" + tag, {"P4-DONE-" + tag}, e_ok,
+        checks.line("4e-" + tag, {"P4-DONE-" + tag, "4f-" + tag}, e_ok,
             "[p247] reads of B+2i are seen for i=0..192, each exactly "
             "once (by full read count, not just first-seen), in rising order");
         checks.verdict["4e-window-" + tag] = cov_ok && has_window;
 
-        // 4d: DMA runs throughout the window; the window must exist.
-        int n4d = 0;
-        bool d_ok = has_window && check_4d(r, *t[64], *t[192], &n4d);
-        checks.note(pt + " 4d: " + std::to_string(n4d) + " PROBE_D samples in window");
-        checks.line("4d-" + tag, {"4e-window-" + tag, "P4-DONE-" + tag}, d_ok,
-            "[p248] every PROBE_D value between t_64 and t_192 has DMAON "
-            "and DISKWRITE set (" + std::to_string(n4d) + " samples)");
+        // 4d: DMAON is set at every instant the CPU sampled DSKBYTR inside the
+        // window; the window must exist. The samples are the CPU's own, one
+        // per poll iteration: the line says nothing about the instants
+        // between them.
+        int n4d = 0, n4d_write = 0;
+        bool d_ok = has_window && check_4d(r, *t[64], *t[192], &n4d, &n4d_write);
+        checks.note(pt + " 4d: " + std::to_string(n4d) + " PROBE_D samples in window, DMAON set in " +
+                    (d_ok ? std::to_string(n4d) : std::string("not all")) + " of them; DISKWRITE (bit 13) set in " +
+                    std::to_string(n4d_write) + " (measured, not graded)");
+        checks.line("4d-" + tag, {"4e-window-" + tag, "4f-" + tag, "P4-DONE-" + tag}, d_ok,
+            "[p248] DMAON is set in every PROBE_D value the CPU sampled between t_64 and t_192 (" +
+            std::to_string(n4d) + " sampled instants)");
 
         // Also measured, not graded: no page sentence bounds the fetch cadence.
         std::string span = has_window ?
@@ -1085,17 +1190,26 @@ void record_declined(Checks& checks) {
           "opus:8-dsk.c15", "opus:8-dsk.c16", "sol:8-dsk.c10", "sol:8-dsk.c11", "sol:8-dsk.c12",
           "sol:8-dsk.c13", "sol:8-dsk.c14", "sol:8-dsk.c15", "sol:8-dsk.c16", "sol:8-dsk.c17",
           "sol:8-dsk.c18"}, "p241",
-         "needs data read from or written to a disk surface; the harness serves no disk and the disk "
-         "write data is not among the outputs a test sees (SPECIFICATION.md 1.1)"},
+         "needs data read from or written to a disk surface; the harness's fixture mounts no image "
+         "(sdc_img_mounted and sdc_img_size stay 0) and answers no sector request, although nanomig.v "
+         "exposes those ports and the sector and byte ports; once an image is served each named format "
+         "can be checked one at a time, while \"virtually any\" and \"most\" stay declined because "
+         "no sample of formats establishes a quantifier (SPECIFICATION.md 1.1)"},
         {{"opus:8-mfm.c7", "sol:8-gcr.c2"}, "p250",
-         "MSBSYNC acts on disk read and needs bytes read from a disk surface; no page says what the "
-         "controller receives when no disk is served (SPECIFICATION.md 1.1)"},
+         "MSBSYNC acts on disk read and needs bytes whose most significant bit is set, read from a disk "
+         "surface; the harness's fixture mounts no image and answers no sector request, so the controller "
+         "is given no disk bytes, although nanomig.v exposes the ports that would carry them "
+         "(SPECIFICATION.md 1.1)"},
         {{"opus:8-adkcon.c31", "sol:8-appa-adkbit.c13", "opus:8-appA-adkcon.c22"}, "p265",
-         "ADKCON bit 9 (MSBSYNC) acts on disk read, so the reason of the claims on p250 applies, and its "
-         "name cannot be observed (SPECIFICATION.md 1.1)"},
+         "ADKCON bit 9 (MSBSYNC) acts on disk read, so the reason of the claims on p250 applies: the "
+         "harness's fixture mounts no image and answers no sector request, although nanomig.v exposes "
+         "the ports (SPECIFICATION.md 1.1)"},
         {{"opus:8-cia.c9", "sol:8-cia.c7", "opus:8-cia.c10", "sol:8-cia.c8"}, "p244",
-         "DSKRDY* is driven by the drive, which the harness does not serve; the claims give no expected "
-         "value without one (SPECIFICATION.md 1.2)"},
+         "the page gives DSKRDY* a meaning only while the motor is on (\"only valid when the motor is "
+         "ON\") and says that at other times \"configuration information may obscure the meaning of this "
+         "input\": both clauses say when the input may be trusted and neither prints a value, so the "
+         "motor-off case has no falsifiable expected value; DF0 is configured (floppy_config=0), only "
+         "the image interface is idle (SPECIFICATION.md 1.2)"},
         {{"sol:8-serper.c4", "sol:8-serper.c5"}, "p255",
          "an absolute duration (279.36 ns NTSC, 281.94 ns PAL); a test measures cycles and no page ties "
          "the clock to nanoseconds, so it is used only to convert (SPECIFICATION.md 1.3)"},
@@ -1131,7 +1245,7 @@ int main(int argc, char** argv) {
     auto bin_n0        = dir + (mv == "R1-READ" ? "/prog_tx_n0_r1.bin" :
                                   mv == "P1-NPLUS1" ? "/prog_tx_n0_plus1.bin" :
                                   mv == "P1-SINGLE-BRK" ? "/prog_tx_n0_brk.bin" :
-                                  mv == "P1-SINGLE-FORCETO" ? "/prog_tx_n0_forceto.bin" : "/prog_tx_n0.bin");
+                                  mv == "P1-SINGLE-STALL" ? "/prog_tx_n0_stall.bin" : "/prog_tx_n0.bin");
     auto bin_n371       = dir + (mv == "R1-READ" ? "/prog_tx_n371_r1.bin" :
                                   mv == "P1-1C" ? "/prog_tx_n371_1c.bin" :
                                   mv == "P1-1D" ? "/prog_tx_n371_1d.bin" :
@@ -1141,7 +1255,7 @@ int main(int argc, char** argv) {
     auto bin_n32396     = dir + (mv == "R1-READ" ? "/prog_tx_n32396_r1.bin" :
                                   mv == "P1-NPLUS1" ? "/prog_tx_n32396_plus1.bin" :
                                   mv == "P1-SINGLE-BRK" ? "/prog_tx_n32396_brk.bin" :
-                                  mv == "P1-SINGLE-FORCETO" ? "/prog_tx_n32396_forceto.bin" : "/prog_tx_n32396.bin");
+                                  mv == "P1-SINGLE-STALL" ? "/prog_tx_n32396_stall.bin" : "/prog_tx_n32396.bin");
 
     TxRun ntsc_n0    = run_tx(bin_n0, true, budget_for(0, 1));
     TxRun ntsc_n371  = run_tx(bin_n371, true, budget_for(371, 4));
@@ -1313,16 +1427,20 @@ int main(int argc, char** argv) {
                     " of " + std::to_string(g371.total_changes) + " changes, C=" + std::to_string(ntsc_n371.C));
         checks.note("P1 grid: N=32396 matched " + std::to_string(g32396.matched) + "/" + std::to_string(g32396.total_expected) +
                     " of " + std::to_string(g32396.total_changes) + " changes, C=" + std::to_string(ntsc_n32396.C));
+        checks.note("P1 deviation of each change from t0+k*(N+1)*C: N=0: " + grid_deviation_note(ntsc_n0.tx_changes, ntsc_n0.C, 0, 1) +
+                    "; N=371: " + grid_deviation_note(ntsc_n371.tx_changes, ntsc_n371.C, 371, 4) +
+                    "; N=32396: " + grid_deviation_note(ntsc_n32396.tx_changes, ntsc_n32396.C, 32396, 1) +
+                    "; the observation resolution is " + std::to_string(kObsRes) + " cycle");
         const std::vector<std::string> p371 = {"1a", "1b", "1c", "1d", "1e"};
         checks.line("P1", cat(cat(p371, run_pre_ids("P1N0")), run_pre_ids("P1N32396")),
             g0.ok && g371.ok && g32396.ok,
             "[p255] \"N+1 color clocks occur ... between transmissions of output bits\": on "
-            "NTSC, with SERPER=N, every TxD change lands within +/-C/2 of t0+k*(N+1)*C for "
+            "NTSC, with SERPER=N, every TxD change lands within one cycle of t0+k*(N+1)*C for "
             "k=0..10W-1, and there is no other change, for N=0 (W=1), N=371 (W=4) and N=32396 (W=1)");
         checks.record(
             "sol:8-serper.c8 [p255]: withdrawn from the graded line above -- \"the number N\" "
             "covers every 15-bit divisor, and N=0, 371 and 32396 sample three of them, not the "
-            "whole domain; the N=371 grid above is red (words 3-4 miss +/-C/2 of t0+k*372*C), "
+            "whole domain; the N=371 grid above is red (words 2-4 do not land within one cycle of t0+k*372*C), "
             "which stands as the counterexample the claim's every-N reading would have to survive");
 
         // Controls, graded on the same comparator: P1's own N=371 run is
@@ -1336,7 +1454,7 @@ int main(int argc, char** argv) {
         checks.line("P1-CTRL-WITHIN", p371, within_word_ok,
             "[p255] control: the within-word intervals of the N=371 NTSC run (the "
             "9 bit-to-bit gaps inside each word, excluding the stop-to-next-start boundary) all "
-            "land within +/-C/2 of T=(N+1)*C");
+            "differ from T=(N+1)*C by less than one cycle");
     }
 
     // ---- P2 preconditions 2a-2e: 1a-1e restated on the PAL run, and the
@@ -1386,7 +1504,10 @@ int main(int argc, char** argv) {
         UniformResult u32396 = check_uniform(pal_n32396.tx_changes, pal_n32396.C, 1);
         checks.note("P2 uniform grid: N=0 T_N=" + std::to_string(u0.T_N) + " ok=" + std::to_string(u0.ok) +
                     "; N=371 T_N=" + std::to_string(u371.T_N) + " ok=" + std::to_string(u371.ok) +
-                    "; N=32396 T_N=" + std::to_string(u32396.T_N) + " ok=" + std::to_string(u32396.ok));
+                    "; N=32396 T_N=" + std::to_string(u32396.T_N) + " ok=" + std::to_string(u32396.ok) +
+                    "; changes on the line through the first and last change within the observation resolution: " +
+                    std::to_string(u0.matched) + "/10, " + std::to_string(u371.matched) + "/40, " +
+                    std::to_string(u32396.matched) + "/10");
 
         // (ii) the same period in every run: U_N = T_N/(N+1), pairwise tolerance.
         struct RunU { double U; int W; int N; };
@@ -1397,10 +1518,10 @@ int main(int argc, char** argv) {
         std::string detail;
         for (size_t i = 0; i < us.size(); ++i)
             for (size_t j = i + 1; j < us.size(); ++j) {
-                double tol = pal_n371.C * (1.0 / (double(10 * us[i].W - 1) * double(us[i].N + 1)) +
+                double tol = kObsRes * (1.0 / (double(10 * us[i].W - 1) * double(us[i].N + 1)) +
                                             1.0 / (double(10 * us[j].W - 1) * double(us[j].N + 1)));
                 double diff = std::abs(us[i].U - us[j].U);
-                bool ok = diff <= tol;
+                bool ok = diff < tol;
                 if (!ok) pair_ok = false;
                 detail += " |U" + std::to_string(us[i].N) + "-U" + std::to_string(us[j].N) + "|=" +
                           std::to_string(diff) + "(tol " + std::to_string(tol) + ")";
@@ -1414,10 +1535,10 @@ int main(int argc, char** argv) {
         // is red only through pairs that include N=371; this isolates the
         // pair that does not.
         {
-            double tol_pair = pal_n371.C * (1.0 / (double(10 * us[0].W - 1) * double(us[0].N + 1)) +
+            double tol_pair = kObsRes * (1.0 / (double(10 * us[0].W - 1) * double(us[0].N + 1)) +
                                              1.0 / (double(10 * us[2].W - 1) * double(us[2].N + 1)));
             double diff_pair = std::abs(us[0].U - us[2].U);
-            checks.line("P2-CTRL-PAIR", cat({"2a"}, p2single), diff_pair <= tol_pair,
+            checks.line("P2-CTRL-PAIR", cat({"2a"}, p2single), diff_pair < tol_pair,
                 "[p255] control: the (N=0, N=32396) pair alone agrees within "
                 "the stated tolerance (diff=" + std::to_string(diff_pair) + ", tol=" +
                 std::to_string(tol_pair) + ")");
@@ -1456,13 +1577,13 @@ int main(int argc, char** argv) {
                     std::to_string(g.total_expected));
         checks.line("P3", {"1a", "1b", "1c", "1d", "1e"}, g.ok,
             "[p255] \"N+1 color clocks occur ... between transmissions of output bits\": "
-            "every change of the N=371 NTSC run lies within +/-C/2 of t0+k*372*C for k=0..39");
+            "every change of the N=371 NTSC run differs from t0+k*372*C by less than one cycle for k=0..39");
         checks.record(
             "sol:8-serper.c10 [p255]: withdrawn from the graded line above -- the claim reads 371 "
             "as the proper NTSC setting for 9600 baud, but the rate = 3,579,545/372 = 9622.4 "
             "bit/s; the page's own arithmetic (3,579,545/9600-1=371.87, printed 371) makes its "
             "\"9600 baud\" actually 9622 bit/s, so 9600 itself is not graded (only the p.255 "
-            "N+1 grid above is), and that grid is red at N=371 (words 3-4 miss +/-C/2 of "
+            "N+1 grid above is), and that grid is red at N=371 (words 2-4 do not land within one cycle of "
             "t0+k*372*C)");
 
         checks.record("3a-3e [p194-p257]: preconditions 1a-1e, already graded above on this same "
@@ -1471,6 +1592,12 @@ int main(int argc, char** argv) {
 
     // ==== P4: ADKCON FAST sets the disk bit cell to 2us or 4us ============
     run_p4(dir, mv, checks);
+    checks.record(
+        "4d DISKWRITE clause [p248]: withdrawn from the graded lines 4d-*, which grade DMAON only -- "
+        "\"DISKWRITE The disk write bit (in DSKLEN) is enabled\" has no contrast here: a stimulus that "
+        "makes it false is a disk-read transfer, whose fetch window exists only when a disk image is "
+        "served, and the harness's fixture mounts no image and answers no sector request (nanomig.v "
+        "exposes the ports). The value is printed on each 4d MEASURED line.");
 
     // ==== P5: the nine-bit receive setting takes eight data bits plus a
     // parity bit ============================================================
