@@ -17,19 +17,19 @@ the 34 ids on a RECORDED line with its reason.
 
 ## 1. Claims not turned into a proposition
 
-### 1.1 Claims that need data read from or written to a disk surface: cannot be checked yet
+### 1.1 Claims that need data read from or written to a disk surface: they wait for a served disk image
 
 | Claims | Page | Reason |
 |---|---|---|
-| `opus:8-dsk.c10`, `opus:8-dsk.c11`, `opus:8-dsk.c12`, `opus:8-dsk.c13`, `opus:8-dsk.c14`, `opus:8-dsk.c15`, `opus:8-dsk.c16`, `sol:8-dsk.c10`, `sol:8-dsk.c11`, `sol:8-dsk.c12`, `sol:8-dsk.c13`, `sol:8-dsk.c14`, `sol:8-dsk.c15`, `sol:8-dsk.c16`, `sol:8-dsk.c17`, `sol:8-dsk.c18` | 241 | Each says the controller can read and/or write a kind of disk (double-density MFM, Amiga V1.0, MS-DOS 5.25" and 3.5", CP/M, GCR, Apple II). Reading needs a disk input stream, and a write is judged by what reaches the disk surface. The harness serves no disk, and the disk write data is not among the outputs a test sees. Once a disk can be served, each named format becomes checkable one format at a time. Even then, "virtually any" and "most" are hedges that no sample of formats can establish. p.241 ties no format to any register setting. |
-| `opus:8-mfm.c7`, `sol:8-gcr.c2` | 250 | MSBSYNC acts on disk read: "MSBSYNC, when a 1, tells the disk controller to look for this sync bit on every disk byte." To check it, the input must carry bytes whose most significant bit is set, which means data read from a disk surface. No page says what the controller receives when no disk is served, so a read without a disk gives no expected value. |
+| `opus:8-dsk.c10`, `opus:8-dsk.c11`, `opus:8-dsk.c12`, `opus:8-dsk.c13`, `opus:8-dsk.c14`, `opus:8-dsk.c15`, `opus:8-dsk.c16`, `sol:8-dsk.c10`, `sol:8-dsk.c11`, `sol:8-dsk.c12`, `sol:8-dsk.c13`, `sol:8-dsk.c14`, `sol:8-dsk.c15`, `sol:8-dsk.c16`, `sol:8-dsk.c17`, `sol:8-dsk.c18` | 241 | Each says the controller can read and/or write a kind of disk (double-density MFM, Amiga V1.0, MS-DOS 5.25" and 3.5", CP/M, GCR, Apple II). Reading needs a disk input stream, and a write is judged by what reaches the disk surface. The harness's fixture mounts no image (`sdc_img_mounted` and `sdc_img_size` stay 0) and answers no sector request; `nanomig.v` exposes those ports, the sector request and the byte ports, so this is a choice of the fixture and not a limit of the design. Once an image is served, each named format becomes checkable one format at a time. Even then, "virtually any" and "most" are hedges that no sample of formats can establish. p.241 ties no format to any register setting. |
+| `opus:8-mfm.c7`, `sol:8-gcr.c2` | 250 | MSBSYNC acts on disk read: "MSBSYNC, when a 1, tells the disk controller to look for this sync bit on every disk byte." To check it, the input must carry bytes whose most significant bit is set, which means data read from a disk surface. The harness's fixture mounts no image and answers no sector request, so the controller is given no disk bytes; `nanomig.v` exposes the ports that would carry them. With an image of known sector contents, runs with MSBSYNC set and clear (pp.249-250) would make the DMA words and the DSKSYNC state observable. |
 | `opus:8-adkcon.c31`, `sol:8-appa-adkbit.c13`, `opus:8-appA-adkcon.c22` | 265 | These say the same of ADKCON bit 9 ("Enables disk read synchronizing on the MSB"), so the reason in the row above applies. The name "MSBSYNC" cannot be observed. The one thing about bit 9 a test could see without a disk is that ADKCONR returns it, and none of these claims says that. |
 
-### 1.2 A claim that needs a disk drive
+### 1.2 Claims about the DSKRDY* input
 
 | Claims | Page | Reason |
 |---|---|---|
-| `opus:8-cia.c9`, `sol:8-cia.c7`, `opus:8-cia.c10`, `sol:8-cia.c8` | 244 | DSKRDY* is driven by the drive: "The drive will pull this line low when the motor is known to be rotating at full speed." The harness serves no drive. The claims say when the input may be trusted, not what value it has. With the motor on, the value depends on the drive. With the motor off, the page says only that "configuration information may obscure the meaning of this input". That describes a possibility and gives no expected value. |
+| `opus:8-cia.c9`, `sol:8-cia.c7`, `opus:8-cia.c10`, `sol:8-cia.c8` | 244 | DSKRDY* is driven by the drive: "The drive will pull this line low when the motor is known to be rotating at full speed. This signal is only valid when the motor is ON, at other times configuration information may obscure the meaning of this input." The harness configures one drive (`floppy_config=0`, DF0); only its image interface is idle. The claims say when the input may be trusted, not what value it has. With the motor on, the value depends on the drive. With the motor off, the page says only that "configuration information may obscure the meaning of this input". That describes a possibility and prints no value, so the "valid only" and "may obscure" clauses have no falsifiable expected value. |
 
 ### 1.3 Absolute durations
 
@@ -183,7 +183,7 @@ The run proceeds as follows:
 
 **Expected.** Let t0 be the first TxD change in the window, and let T = (N+1)·C.
 
-- For every k from 0 to 10W−1, there is exactly one TxD change within ±C/2 of t0 + k·T.
+- For every k from 0 to 10W−1, there is exactly one TxD change whose time differs from t0 + k·T by less than one cycle.
 - There is no other TxD change in the window.
 
 Where this comes from:
@@ -195,7 +195,7 @@ Where this comes from:
 - So with data $55, the line changes at every bit boundary: start bit, then 1, 0, 1, 0, 1, 0, 1, 0, then the stop bit.
 - Once the next word is waiting, the boundary from one stop bit to the next start bit also carries a change. That boundary is also a boundary "between transmissions of output bits".
 
-The tolerance ±C/2 grades at the unit the page counts in, whole color clocks. Each change is graded against t0, not against the change before it, so any drift is caught.
+**The tolerance is the observation resolution.** TxD is sampled once per cycle, so the time of a change is known to within one cycle, and the difference of two change times to less than one cycle. Every comparison is made relative to t0, which removes the unknown phase of the bit clock. The page prints no band around the N+1 spacing, and no fraction of C enters. C itself carries no uncertainty: the anchor (a) requires every gap of every refresh group to be 2C, and those gaps are whole numbers of cycles. Each change is graded against t0, not against the change before it, so any drift is caught.
 
 **Quantifiers.**
 
@@ -223,7 +223,7 @@ The tolerance ±C/2 grades at the unit the page counts in, whole color clocks. E
 - **1e. The run completed.** MARK=DONE is present and no poll ended at its bound.
   - Contrast: the program leaves out the SERDAT write for word 2 but still polls for its transfer. The TBE request is set only when data moves into the shift register (p.283), so the poll ends at its bound and 1e fails. DONE is still written.
 
-**Contrasting case.** Write SERPER with N+1 (1, 372, 32397) and grade against N. The change expected at k = 1 then arrives one color clock late, which is more than C/2, so the check fails. Nothing else changes.
+**Contrasting case.** Write SERPER with N+1 (1, 372, 32397) and grade against N. The change expected at k = 1 then arrives one color clock (C cycles) late, which is more than one cycle, so the check fails. Nothing else changes.
 
 **Reference frames.**
 
@@ -253,10 +253,12 @@ Both pages agree that one bit lasts N+1 times one fixed period. Only that is gra
 
 **Expected.**
 
-- **(i) A uniform grid in each run.** Let T_N = (t_last − t0) / (10W−1). For every k from 0 to 10W−1, there is exactly one change within ±C/2 of t0 + k·T_N, and no other change in the window.
+- **(i) A uniform grid in each run.** Let T_N = (t_last − t0) / (10W−1). For every k from 0 to 10W−1, there is exactly one change whose time differs from t0 + k·T_N by less than one cycle, and no other change in the window. The straight line through the first and the last change is known to within the observation resolution of P1 at every interior point, so one cycle is the tolerance here too.
 - **(ii) The same period in every run.** Let U_N = T_N / (N+1). For every pair of runs:
 
-  |U_N − U_M| ≤ C / ((10W_N − 1)(N+1)) + C / ((10W_M − 1)(M+1)).
+  |U_N − U_M| < 1 / ((10W_N − 1)(N+1)) + 1 / ((10W_M − 1)(M+1)) cycles.
+
+  The two terms are the uncertainty of T_N and T_M: t_last − t0 is known to less than one cycle (the observation resolution of P1), so T_N is known to less than 1/(10W−1) and U_N to less than 1/((10W−1)(N+1)). No page prints a tolerance, and no fraction of C enters.
 
 - **Diagnostic, not graded.** Report U/C. p.255 predicts 1 and p.284 predicts 0.991.
 
@@ -264,7 +266,7 @@ Both pages agree that one bit lasts N+1 times one fixed period. Only that is gra
 
 **Preconditions.** 1a, 1b (showing PAL), 1c, 1d and 1e, with the same contrasts as in P1.
 
-**Contrasting case.** In the N = 371 run, write SERPER ← 372 and grade the run as N = 371. U_371 is then off by a factor 373/372. That is about C/372, far beyond the tolerance in (ii) of about C/(39·372), so (ii) fails.
+**Contrasting case.** In the N = 371 run, write SERPER ← 372 and grade the run as N = 371. U_371 is then off by a factor 373/372. That is about C/372 = 0.0215 cycles, far beyond the tolerance in (ii) of about 1/(39·372) = 0.00007 cycles, so (ii) fails.
 
 **Reference frames.** R1, and t0 as in P1.
 
@@ -278,7 +280,7 @@ Both pages agree that one bit lasts N+1 times one fixed period. Only that is gra
 
 **Stimulus and observation.** The N = 371 run of P1.
 
-**Expected.** Every change of the run lies within ±C/2 of t0 + k·372·C, for k = 0 to 39.
+**Expected.** Every change of the run differs from t0 + k·372·C by less than one cycle (the resolution of P1), for k = 0 to 39.
 
 The rate is reported, not graded:
 
@@ -367,17 +369,23 @@ For orientation, not graded: 32 µs per word is 114.5 color clocks on NTSC and 1
   - Contrast: select the other standard, and 4b fails.
 - **4c. The FAST bit took effect.** The ADKCONR value stored in step 3 has bit 8 = 1 in the FAST = 1 run, and bit 8 = 0 in the FAST = 0 run. p.249: ADKCONR "is the read-only address for this register".
   - Contrast: in the FAST = 1 run, write ADKCON ← $0100 instead of $8100. With bit 15 = 0 this clears the bit, it reads 0, and 4c fails.
-- **4d. The disk write DMA runs throughout the window.** Every PROBE_D value stored between t_64 and t_192 has bit 14 (DMAON) = 1 and bit 13 (DISKWRITE) = 1.
-  - p.248: "DMAON Indicates when DMA is actually enabled" and "DISKWRITE The disk write bit (in DSKLEN) is enabled."
+- **4d. DMAON is set at every instant the CPU sampled inside the window.** Every PROBE_D value stored between t_64 and t_192 has bit 14 (DMAON) = 1. The samples are the CPU's own, one per poll iteration, so the line says nothing about the instants between them; it does not establish that the DMA runs throughout the window.
+  - p.248: "DMAON Indicates when DMA is actually enabled".
   - Contrast: partway through the transfer, clear DMACON's DSKEN bit for a while and then set DMAEN and DSKEN again. Some PROBE_D values stored during the pause then have DMAON = 0, and 4d fails, while the same transfer resumes and the window still fills.
-  - DISKWRITE stays 1 through the pause: it is the write bit of DSKLEN (p.248: "The disk write bit (in DSKLEN) is enabled"), and a DMACON write leaves DSKLEN alone. The contrast moves the DMAON clause only. The DISKWRITE clause has no contrast: a write to DSKLEN that clears it ends or changes the transfer the window needs.
-- **P4-DONE. The run completed.** MARK=DONE is present and no poll ended at its bound (G3, G4). 4c, 4d and 4e are graded only when it holds.
-  - Contrast: the program declares a poll that ended at its own bound before MARK=DONE. P4-DONE fails, and 4c, 4d and 4e are not graded.
+  - The DISKWRITE clause is withdrawn. p.248: "DISKWRITE The disk write bit (in DSKLEN) is enabled." The contrast above leaves DSKLEN alone, so DISKWRITE stays 1 through the pause and the contrast does not move that clause. A stimulus that makes the clause false needs a disk-read transfer (DSKLEN WRITE = 0), whose fetch window exists only when a disk image is served; the harness's fixture mounts no image and answers no sector request, and `nanomig.v` exposes the ports. The number of sampled values with DISKWRITE set is printed as MEASURED, and a RECORDED line states the withdrawal.
+- **P4-DONE. The run completed.** MARK=DONE is present and no poll ended at its bound (G3, G4). 4c, 4d, 4e and 4f are graded only when it holds.
+  - Contrast: the bound of the DSKBLK poll in step 7 is 50 iterations, far below the length of the transfer. The poll runs to its own bound (the poll itself sets the flag G4 reads), the program leaves it and still writes MARK=DONE. P4-DONE fails, and 4c, 4d, 4e and 4f are not graded.
+- **4f. The buffer holds the known value.** For every i from 0 to 255 the last write to B + 2i before MARK=START is $AAAA, and every Chip-port read of a buffer word delivers $AAAA; at least one such read occurs.
+  - p.250: by the table, a data 0 that follows a 0 is written as 10, so $AAAA is valid raw MFM; p.249 requires valid raw MFM for FAST = 1.
+  - The observation is the Chip-port log: a write entry carries the data written and a read entry the data served. The fill of step 2 is the only writer of the buffer.
+  - Which indices are read is 4e's business; 4f grades the value of every read that occurs.
+  - Contrast: after the fill, the program overwrites word 100 with $5555. The last write to that word is then not $AAAA and the read of it delivers $5555, so 4f fails. Nothing else changes.
+  - 4e and 4d are graded only when 4f holds.
 - **4e. The fetches cover the window.** Reads of B + 2i are seen for at least i = 0 to 192, each exactly once, and in rising order of i. Reads are counted as accesses, after the held continuations of a stretched bus cycle are removed.
   - p.247: "After each transfer occurs, the value of the pointer is incremented."
   - The program makes no access to the buffer after step 2.
   - Contrast: use LENGTH = 128 ($C080, written twice). The fetches then end at i = 127, and 4e fails through its coverage clause.
-  - Contrast for the exactly-once clause: after the transfer the program reads one buffer word (word 10) with the CPU. That word is then read twice, and 4e fails with every index seen and in order.
+  - Contrast for the exactly-once clause: when the transfer is done, the program writes DSKPTH ← B again and runs the DSKLEN sequence of step 6 a second time with the same length. The disk DMA then fetches every buffer word twice (p.247: each transfer reads from the pointer, which "is incremented" after each transfer, until the length "counts down to 0"), and 4e fails with every index seen and in order.
 
 **Also measured, not graded.** |(t_128 − t_64) − (t_192 − t_128)|, across the window. Neither p.194
 nor p.23 bounds this quantity or says that an active disk device must request a Chip-memory slot at
@@ -386,7 +394,7 @@ request one of its allocated time slots, the slot is open for other uses"). So t
 proposition; it is recorded as a measurement (MEASURED), with no mutation of its own.
 
 **Contrasting case.** None for P4-MAIN: it is a RECORDED decline, not a graded comparison, so no
-stimulus can turn it red or green (1.4). Preconditions 4a-4e keep their own contrasts, below.
+stimulus can turn it red or green (1.4). Preconditions 4a-4f keep their own contrasts, below.
 
 **Reference frames.**
 
@@ -480,18 +488,18 @@ The RxD driver behaves the same in both runs:
   Bits 10-15 are not graded here; OVRUN is precondition 5c.
 - **(b) No early signal.** In run A, the RBF event for every j comes no earlier than s_j + 9T. In run B, it comes no earlier than s_j + 8T.
   - The start bit is followed by the data bits, so the ninth data bit begins at 9T. Nine data bits cannot have been received before the ninth begins, and eight not before the eighth.
-  - G5's own interval places the event in (t0 − S, t1]. The pages do not say where the receiver places its samples, so a character is decided only where the bracket decides it. A character passes when t0 − S is at least its threshold (s_j + 9T in run A, s_j + 8T in run B): the event lies after the threshold. It fails when t1 stays below the threshold: the event lies before it. Otherwise the bracket straddles the threshold and that character is not graded; the count of each kind is printed. The line passes only if no character fails and at least one passes; if no character is decided it is NOT GRADED. That reading needs the bracket's width to be small (precondition 5e, on both runs) and run B driven at the bit time T (precondition 5f).
-- **(c) One bit later.** Let D_j be the bracket midpoint minus s_j. Then
+  - G5's own interval places the event in (t0 − S, t1]. The pages do not say where the receiver places its samples, so a character is decided only where the bracket decides it. A character passes when t0 − S is at least its threshold (s_j + 9T in run A, s_j + 8T in run B): the event lies after the threshold. It fails when t1 stays below the threshold: the event lies before it. Otherwise the bracket straddles the threshold and that character is undecided; the count of each kind is printed. The line passes only when all 16 characters (8 per run) are decided and pass. It fails when any character fails. When no character fails and some are undecided it is NOT GRADED. That reading needs the bracket's width to be small (precondition 5e, on both runs) and run B driven at the bit time T (precondition 5f).
+- **(c) One bit later, for every character.** Let D_j be the event time minus s_j, in each run. G5 puts each event in (t0 − S, t1], so for character j the difference D_j(run A) − D_j(run B) lies in an interval whose ends are the lower end of run A's bracket minus the upper end of run B's, and the reverse, each less its own s_j. The character passes when that whole interval lies in [T/2, 3T/2]. It fails when the interval lies wholly outside it. Otherwise it is undecided.
 
-  mean_j D_j(run A) − mean_j D_j(run B) must lie in [T/2, 3T/2].
+  The line passes only when all 8 characters pass. It fails when any character fails. When no character fails and some are undecided it is NOT GRADED.
 
-  That is "one bit time later", graded to half a bit, because the page does not state where the receiver samples.
+  That is p.256's "proper number of bit times" for each received character: "one bit time later", graded to half a bit, because the page does not state where the receiver samples. The mean over the characters is printed as MEASURED and is not graded.
 
 **Quantifiers.**
 
 - "Eight or nine": both settings are run.
 - "In either case ... one start bit, eight or nine data bits, and at least one stop bit": each character carries a ninth 1 and a stop 1, which is a valid frame under both settings.
-- (a) and (b) are graded on all eight characters.
+- (a), (b) and (c) are graded on all eight characters of each run.
 
 **Preconditions.**
 
@@ -513,7 +521,7 @@ The RxD driver behaves the same in both runs:
 
 **Contrasting cases.**
 
-- For (c): write SERPER ← $8173 in run B as well. The page then predicts no difference between the runs, so the difference is near 0 and (c) fails.
+- For (c): write SERPER ← $8173 in run B as well. The page then predicts no difference between the runs, so each character's interval lies near 0, below T/2, and (c) fails.
 - For (a): drive run A with different data bytes (each byte_j complemented) at the same timing. RESULT bits 7-0 then differ from byte_j and (a) fails, while (b), (c) and every precondition keep their verdicts.
 - For (a), (b) and (c) together: drive run A at a bit time of 2T.
 - For (b): a stimulus contrast through (b)'s own clause, run A with SERPER ← $80B9 (N=185), the driver unchanged. p.255's own N+1 rule then has the receiver sample about every 186 colour clocks, near half the driver's own bit time, so it reaches nine samples well before the driver's own ninth bit begins, and (b) fails.
@@ -544,15 +552,17 @@ wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`, their
 three `_plus1` contrast variants, `prog_tx_n371_1c/1d/1e.s` (precondition
 contrasts), `prog_tx_n371_nomark3.s` (FIXTURE's contrast), and for the two
 single-word runs `prog_tx_n0_brk.s`, `prog_tx_n32396_brk.s` (1c's contrast)
-and `prog_tx_n0_forceto.s`, `prog_tx_n32396_forceto.s` (completion
+and `prog_tx_n0_stall.s`, `prog_tx_n32396_stall.s` (completion
 contrast); `fast_core.s` (P4's shared engine) and its wrappers
-`prog_fast0.s`, `prog_fast1.s`, the contrasts `prog_fast1_4c/4d/4e.s` and
-`prog_fast0_4c/4d/4e.s`, and `prog_fast1_forceto.s`, `prog_fast0_forceto.s`;
+`prog_fast0.s`, `prog_fast1.s`, the contrasts `prog_fast1_4c/4d/4e/4f.s` and
+`prog_fast0_4c/4d/4e/4f.s`, the exactly-once contrasts `prog_fast1_once.s` and
+`prog_fast0_once.s`, and `prog_fast1_stall.s`, `prog_fast0_stall.s` (completion
+contrast);
 `rx_core.s` (P5's shared engine, driven from the C++ test's own RxD
 schedule) and its wrappers `prog_rx_a.s`, `prog_rx_b.s`,
 `prog_rx_a_5b/5c/5d/5e.s` and `prog_rx_b_5c/5d/5e.s` (precondition
 contrasts), `prog_rx_a_altper.s` ((b)'s own contrast), and
-`prog_rx_a_forceto.s`, `prog_rx_b_forceto.s` (completion contrast). The
+`prog_rx_a_stall.s`, `prog_rx_b_stall.s` (completion contrast). The
 R1 contrast (`NMH_MUTATE=R1-READ`) has one wrapper per program family:
 `prog_tx_n0_r1.s`, `prog_tx_n371_r1.s`, `prog_tx_n32396_r1.s`,
 `prog_fast1_r1.s`, `prog_fast0_r1.s`, `prog_rx_a_r1.s` and `prog_rx_b_r1.s`.
@@ -562,8 +572,13 @@ adds a ninth driven character to `prog_rx_a_5c.s` and `prog_rx_b_5c.s`; the
 run-A ninth-bit-zero variant is likewise driver-level, reusing
 `prog_rx_a.bin`.
 
-The completion contrasts (`forceto`) write a 1 into `POLL_TIMEOUT` before
-MARK=DONE, which is the state a poll that ended at its bound leaves. The
+The completion contrasts (`stall`) make a bounded poll run to its own bound, and
+the program still reaches MARK=DONE. In the TX and P5 programs the poll waits
+for a received character (RBF, INTREQR bit 11) that never comes, because RxD
+stays idle, with a bound of `BND_STALL` = 300 iterations; in the P4 programs the
+bound of the DSKBLK poll is 50 iterations, far below the length of the
+transfer. In each case `POLLBIT` or the poll itself sets `POLL_TIMEOUT`.
+The
 standard contrast (`NMH_MUTATE=STD-SWAP`) is not a program: every capture of
 the package is made with the other video standard selected than the one its
 checks expect.
@@ -597,8 +612,10 @@ completes the whole transfer in only a few hundred iterations of its own
 `BND_POLL` = 200000, so `MIDSTOP4D_DELAY` sits close to `BND_POLL`'s own
 top, not its middle -- to land the DSKEN pause inside the t_64..t_192
 window and resume well within the run's own cycle budget). None of these
-bounds is reached in an unmutated run; 1e's and 2e's own contrasts are the
-cases built to reach one.
+bounds is reached in an unmutated run; the completion contrasts, 1e's and 2e's
+own contrasts are the cases built to reach one. The completion contrasts use
+`BND_STALL` = 300 for a poll whose event never comes (TX and P5) and a
+`BND_POLL` of 50, far below the length of the transfer (P4).
 
 ### 4.2 Measured values
 
@@ -626,29 +643,36 @@ cases built to reach one.
 ### 4.3 Results
 
 **P1, P2 and P3 are red on both cores, on the same run.** Measured on the
-N=371, W=4 NTSC run (both standards, both cores): the main grid check
-matches 20 of 40 changes (words 1-2 land inside the +/-C/2 tolerance,
-words 3-4 do not); the single-word runs (N=0, N=32396) match 10 of 10, and
-the within-word intervals of the N=371 run are all exact -- both are
-graded as their own controls, and both pass. P2's own uniform-grid check
-(i) passes on every run; the pairwise U comparison (ii) is red through the
-pairs that include N=371: |U371-U32396| = 0.000827 against a tolerance of
-0.000579. The pairs that exclude N=371 pass on their own tolerance:
-|U0-U371| = 0.000827 against 0.889440, and |U0-U32396| = 0.000000 against
-0.888916 (graded on its own as a control). The red is not exercised by
-N=0 or N=32396 alone, only by back-to-back transmission (W>1): the R1
-anchor, R2 standard, idle-window and completion preconditions on the N=0
-and N=32396 runs all pass, on both standards and both cores.
+N=371, W=4 run (NTSC for P1 and P3, PAL for P2; both cores): the main grid
+check matches 10 of 40 changes within one cycle of t0 + k*372*C. The first
+change of words 2, 3 and 4 lies 4, 8 and 12 cycles after the page's spacing,
+and the 9 gaps inside each word are all exact. The single-word runs (N=0,
+N=32396) match 10 of 10, and the within-word intervals of the N=371 run are
+all exact -- both are graded as their own controls, and both pass. P2's own
+uniform-grid check (i) passes on the N=0 and N=32396 runs and fails on the
+N=371 run (22 of 40 changes lie on the line through its first and last
+change within one cycle). P2's pairwise U comparison (ii) is red through one
+pair only, U371/U32396: |U371-U32396| = 0.000827 against a tolerance of
+0.000072. The two other pairs pass: |U0-U371| = 0.000827 against 0.111180,
+and |U0-U32396| = 0.000000 against 0.111115 (graded on its own as the control
+P2-CTRL-PAIR). The red is not exercised by N=0 or N=32396 alone, only by
+back-to-back transmission (W>1): the R1 anchor, R2 standard, idle-window and
+completion preconditions on the N=0 and N=32396 runs all pass, on both
+standards and both cores.
 
-**P4-MAIN is declined; preconditions 4a-4e are graded and pass on every
+**P4-MAIN is declined; preconditions 4a-4f are graded and pass on every
 capture, both cores.** With the buffer address set below the identity-mapped
 Chip RAM and the overlay cleared before the fill, the DMA fetch of B+2i
-(DBUF=$020000) is observed on every capture: 4a, 4b, 4c, 4d and 4e all pass.
-T_cell measured 1.331189 us (NTSC) and 1.343483 us (PAL), identical for
-FAST=1 and FAST=0 and identical on both cores. p.265/p.249's bands (1.5-2.5
-us and 3.5-4.5 us) time the disk data clock, a different quantity from
-T_cell (1.4); P4-MAIN declines the comparison for that reason rather than
-grading T_cell against either band. |(t128-t64)-(t192-t128)| is also
+(DBUF=$020000) is observed on every capture: 4a, 4b, 4c, 4d, 4e and 4f all
+pass. 4f finds all 256 buffer words last written with $AAAA before
+MARK=START and every one of the buffer reads delivering $AAAA. 4d grades
+DMAON at the instants the CPU sampled DSKBYTR, and its MEASURED line counts
+the sampled values with DISKWRITE set. T_cell measured 1.331189 us (NTSC) and
+1.343483 us (PAL), identical for FAST=1 and FAST=0 and identical on both
+cores. p.265 and p.249 print 2 us and 4 us as the bit-cell time of the disk
+data clock, a different quantity from T_cell (1.4), and print no band around
+either value; P4-MAIN declines the comparison for that reason rather than
+grading T_cell against 2 us or 4 us. |(t128-t64)-(t192-t128)| is also
 measured, not graded (no page sentence bounds it): 1768 cycles on every
 capture, on both cores.
 
@@ -703,8 +727,9 @@ FAIL.
 | `2d` | FIXTURE-PAL, 2a, 2e |
 | `P2` | 2a-2e, P2N0-*, P2N32396-* |
 | `P2-CTRL-PAIR` | 2a, P2N0-*, P2N32396-* |
-| `4c-<tag>`, `4e-<tag>` | `P4-DONE-<tag>` |
-| `4d-<tag>` | the fetches at i = 64, 128 and 192 were observed (the coverage clause of 4e), `P4-DONE-<tag>` |
+| `4c-<tag>`, `4f-<tag>` | `P4-DONE-<tag>` |
+| `4e-<tag>` | `P4-DONE-<tag>`, `4f-<tag>` |
+| `4d-<tag>` | the fetches at i = 64, 128 and 192 were observed (the coverage clause of 4e), `P4-DONE-<tag>`, `4f-<tag>` |
 | `5b` | 5a-DONE-A |
 | `5e-A`, `5e-B` | 5d-A, 5d-B respectively |
 | `5f` | 5a-R1-B, 5a-R2-B, 5a-C8-B, 5a-DONE-B, 5c-B, 5d-B |
@@ -716,5 +741,5 @@ The ids of the N=0 and N=32396 runs are `P1N0-`, `P1N32396-` (NTSC) and
 `DONE` (MARK=0 and MARK=DONE present in order, no poll ended at its bound)
 and `IDLE` (TxD idle before MARK=0). The P4 ids end in the capture tag
 `NTSC-FAST1`, `NTSC-FAST0`, `PAL-FAST1` or `PAL-FAST0`: `4a-`, `4b-`, `4c-`,
-`4d-`, `4e-` and `P4-DONE-`. The P5 ids `5a-R1`, `5a-R2`, `5a-C8`, `5a-DONE`,
+`4d-`, `4e-`, `4f-` and `P4-DONE-`. The P5 ids `5a-R1`, `5a-R2`, `5a-C8`, `5a-DONE`,
 `5c`, `5d` and `5e` end in `-A` or `-B` for the run.
