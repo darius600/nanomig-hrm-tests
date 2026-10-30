@@ -60,14 +60,23 @@ with it a package may report `BUILD`, and rerunning that package alone with
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
 with 2.0f; `make CPU=m68k SYNTAX=mot` in the unpacked archive builds it) on the
-PATH. If *every* package reports a build error, the
+PATH. The TG68K builds also need GHDL (last verified with **6.0.0**; the mcode
+build from the release tarball at https://github.com/ghdl/ghdl/releases needs no
+root: unpack it and put its `bin/` on the PATH, or name the binary with
+`GHDL=/path/to/ghdl`). If *every* package reports a build error, the
 toolchain is missing rather than the tree broken; on Windows these usually
 live only inside WSL. In `integration/` a build error prints as
 `FAIL ... no summary: build error`. A single package that reports a build error is rerun alone
 with `make -B -C hrm/<package> test`.
 
 NanoMig comes in as a submodule, pinned to the commit the tests were verified
-against; nothing under `nanomig/` is modified. Cloned without `--recursive`?
+against; nothing under `nanomig/` is modified. The TG68K build compiles a GHDL
+translation of the board's VHDL (`nanomig/src/tg68k/`) and a copy of
+`cpu_wrapper.v` with the board's `skipFetch` connection
+(`nanomig/src/minimig-aga/cpu_wrapper.v:464`, which the Verilator instance at
+`:420-441` leaves out), both generated at build time into `build/tg68k/`;
+`TG68K_KERNEL=shipped` compiles the submodule's own TG68K files instead.
+Cloned without `--recursive`?
 `git submodule update --init`. NanoMig checked out elsewhere?
 `make -B -C hrm/<package> NANOMIG=/path/to/NanoMig` (`-B` here and below because otherwise a
 package whose build is up to date runs the old build, not one from that tree).

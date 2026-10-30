@@ -38,11 +38,18 @@ and their own comments), not copied from `classify.evidence`'s prose.
 ## Core
 
 This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
-the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
-`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
-`skipFetch` output unconnected, which the synthesis instance connects
-(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
-cycles the synthesized TG68K skips. `hrm/appK-autoconfig-register-map-fx68k`
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`). By
+default the build compiles the kernel the boards synthesize, translated
+from `nanomig/src/tg68k/*.vhd` by GHDL with the generics of the board
+instance (`:405-417`), and a copy of `cpu_wrapper.v` that connects the
+kernel's `skipFetch` output in that instance as the board instance does
+(`:464`), so `cpu_req` (`:101`) drops the bus request on a skipped fetch,
+as on the board. `TG68K_KERNEL=shipped` compiles
+`nanomig/sim/TG68KdotC_Kernel.v` instead, a netlist of an older kernel
+revision, with the unmodified `cpu_wrapper.v`, whose Verilator instance
+leaves `skipFetch` unconnected: `skip_fetch` is then 0 and `cpu_req`
+requests bus cycles the synthesized TG68K skips.
+`hrm/appK-autoconfig-register-map-fx68k`
 builds the same test source with fx68k, which has one instance for
 simulation and synthesis alike.
 
@@ -67,9 +74,10 @@ simulation and synthesis alike.
 2. **`TG68KdotC_Kernel` (the other core `cpu_wrapper.v:38-42`/`:403-470` can
    select, via `` `define ENABLE_TG68K``) does elaborate, and is the one this
    package uses.** `cpu_wrapper.v`'s own `` `ifdef VERILATOR `` branch
-   (`:420-440`) binds an all-lowercase port list matching exactly
-   `nanomig/sim/TG68KdotC_Kernel.v` (not the parametrized synthesis source at
-   `nanomig/src/tg68k/verilog/TG68KdotC_Kernel.v`) — i.e. the pinned RTL
+   (`:420-440`) binds an all-lowercase port list, the one of the Verilog
+   translation of the kernel (the shipped `nanomig/sim/TG68KdotC_Kernel.v`; the
+   build generates the same ports from the synthesis source at
+   `nanomig/src/tg68k/TG68KdotC_Kernel.vhd`) — i.e. the pinned RTL
    itself already anticipates and names a Verilator-compatible build of this
    core; this package does not substitute a materially different
    implementation the way a hand-adapted fork would. `verilator --lint-only

@@ -49,11 +49,18 @@ taken on faith from those documents (documents drift; the RTL does not):
 ## Core
 
 This package builds `cpu_wrapper` with TG68K (`-DENABLE_TG68K=1`), through
-the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`,
-`nanomig/sim/TG68KdotC_Kernel.v`). That instance leaves the core's
-`skipFetch` output unconnected, which the synthesis instance connects
-(`:464`), so `skip_fetch` is 0 here and `cpu_req` (`:101`) requests bus
-cycles the synthesized TG68K skips. `hrm/appK-autoconfig-space-decode-fx68k`
+the instance `cpu_wrapper.v` compiles under Verilator (`:420-441`). By
+default the build compiles the kernel the boards synthesize, translated
+from `nanomig/src/tg68k/*.vhd` by GHDL with the generics of the board
+instance (`:405-417`), and a copy of `cpu_wrapper.v` that connects the
+kernel's `skipFetch` output in that instance as the board instance does
+(`:464`), so `cpu_req` (`:101`) drops the bus request on a skipped fetch,
+as on the board. `TG68K_KERNEL=shipped` compiles
+`nanomig/sim/TG68KdotC_Kernel.v` instead, a netlist of an older kernel
+revision, with the unmodified `cpu_wrapper.v`, whose Verilator instance
+leaves `skipFetch` unconnected: `skip_fetch` is then 0 and `cpu_req`
+requests bus cycles the synthesized TG68K skips.
+`hrm/appK-autoconfig-space-decode-fx68k`
 builds the same test source with fx68k, which has one instance for
 simulation and synthesis alike.
 
@@ -62,7 +69,7 @@ simulation and synthesis alike.
 `cpu_wrapper`'s bus ports are outputs driven by whichever CPU core it
 instantiates; the sibling package's boundary investigation (re-read in full
 before this file was written) builds `TG68KdotC_Kernel` from
-`nanomig/sim/TG68KdotC_Kernel.v` via `-DENABLE_TG68K=1`. The default core,
+the TG68K kernel of its Core section via `-DENABLE_TG68K=1`. The default core,
 `fx68k`, fails this project's pinned Verilator under its default checks
 (`%Error-BLKANDNBLK` at `fx68k.sv:293`); it builds with `-Wno-BLKANDNBLK`, as
 NanoMig's own `sim/Makefile` does, and runs with `--no-assert`, and so built
@@ -205,7 +212,7 @@ Sum = 1+2+2+1+3+2+1+3+4+2+2 = **23**. 16 graded, 7 declined.
   `` `ifdef ENABLE_FX68K`` block (`:493-495`) and read only inside the same
   block (`:299`, `:497`). This package builds `TG68KdotC_Kernel`; with
   `ENABLE_FX68K` undefined, `fc_o` is a fully undriven, unread wire in the
-  compiled design. `nanomig/sim/TG68KdotC_Kernel.v` (35,330 lines) does
+  compiled design. The shipped `nanomig/sim/TG68KdotC_Kernel.v` (35,330 lines) does
   declare its own function-code port — `output [2:0] fc,` (line 7453),
   driven by `assign fc = n9523_o;` (line 13746) — but cpu_wrapper.v never
   connects it: the `` `ifdef VERILATOR`` TG68K instantiation (`:420-441`)

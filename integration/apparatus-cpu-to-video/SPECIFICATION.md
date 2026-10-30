@@ -36,9 +36,18 @@ the `src/misc` sd card/sdram models -- this harness drives `sdc_*` and
   there.
 - **tg68k** -- the configuration `nanomig/src/tang/nano20k/top_020.sv`
   gives the design: `ENABLE_TG68K ENABLE_AGA CPU_SLOW14 ENABLE_CACHE
-  CHIPRAM_CACHE NO_WS2812 DENISE_EBR`. The TG68K core itself comes from
-  `nanomig/sim/TG68KdotC_Kernel.v`, the Verilator-simulatable translation
-  that `cpu_wrapper.v:420-441` instantiates under `ENABLE_TG68K`.
+  CHIPRAM_CACHE NO_WS2812 DENISE_EBR`. The TG68K core itself is the kernel
+  the boards synthesize, `nanomig/src/tg68k/*.vhd`, translated by GHDL with
+  the generics of the board instance (`cpu_wrapper.v:405-417`); the
+  Verilator instance (`cpu_wrapper.v:420-441`) names that translation. The
+  build compiles a copy of `cpu_wrapper.v` that also connects the kernel's
+  skipFetch output (`.skipFetch(skip_fetch_i)`, as the board instance does
+  at `:464`), so that `cpu_req` (`:101`) drops the bus request on a skipped
+  fetch. Both files are generated at build time
+  (`integration/harness/tg68k.mk`). `TG68K_KERNEL=shipped` compiles instead
+  `nanomig/sim/TG68KdotC_Kernel.v`, a Verilog netlist of an older kernel
+  revision, with the unmodified `cpu_wrapper.v`, whose Verilator instance
+  leaves skipFetch unconnected.
 
 Both builds also pass `-DINFER_DPRAM`. It is a **simulation-only**
 option: only `minimig-aga/ide.v` reads it, to replace an FPGA-specific RAM
