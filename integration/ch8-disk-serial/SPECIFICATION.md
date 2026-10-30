@@ -42,7 +42,7 @@ the 34 ids on a RECORDED line with its reason.
 
 | Claims | Page | Reason |
 |---|---|---|
-| `opus:8-adkcon.c33` | 265 | "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)" times the disk data clock on Paula's write-data pin (p.380: `38 DKWD* Disk write data O`). No such pin is among the top-level observable ports; the disk side offered there is an SD-card sector interface. P4 below times the rate at which disk write DMA reads words at the Chip-memory port instead. No page ties that rate to the bit-cell time -- it would need an unprinted premise (that DSKDAT is the whole of the storage between memory and the pin, or that Paula requests a word only when the previous one has been sent; p.194 lets a device leave a slot unused, "If a device does not request one of its allocated time slots, the slot is open for other uses", and pp.380-381 name only Paula's `DMAL`, "DMA request line"). P4's own rate comparison (P4-MAIN, the four `P4-*-FAST*` lines) is declined for this reason; preconditions 4a-4e, which each grade a different page sentence on their own, stay graded (see P4 below). |
+| `opus:8-adkcon.c33` | 265 | "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)" times the disk data clock on Paula's write-data pin (p.380: `38 DKWD* Disk write data O`). No such pin is among the top-level observable ports; the disk side offered there is an SD-card sector interface. P4 below times the rate at which disk write DMA reads words at the Chip-memory port instead. No page ties that rate to the bit-cell time -- it would need an unprinted premise (that DSKDAT is the whole of the storage between memory and the pin, or that Paula requests a word only when the previous one has been sent; p.194 lets a device leave a slot unused, "If a device does not request one of its allocated time slots, the slot is open for other uses", and pp.380-381 name only Paula's `DMAL`, "DMA request line"). P4's own rate comparison (P4-MAIN, the four `P4-*-FAST*` lines) is declined for this reason; preconditions 4a-4f, which each grade a different page sentence on their own, stay graded (see P4 below). |
 
 ---
 
@@ -628,9 +628,22 @@ own contrasts are the cases built to reach one. The completion contrasts use
   for FAST=1 and FAST=0, on both cores.
 - P2's own PAL colour-clock ratios: U_N/C measured 1.000000 (N=0), 1.000103
   (N=371) and 1.000000 (N=32396), on both cores.
-- P5's (c): mean_j D_j(run A) - mean_j D_j(run B) measured 2944.5 cycles on
-  fx68k and 2978.0 cycles on TG68K, against T=2976.0 (0.9896T and 1.0007T),
-  both inside [T/2,3T/2].
+- P5's (c): the G5 interval of D_j(run A) - D_j(run B) lies between 2312 and
+  3640 cycles on fx68k and between 2496 and 3560 cycles on TG68K, for every
+  one of the 8 characters, inside [T/2,3T/2] = [1488,4464]. The mean
+  difference measured 2944.5 cycles on fx68k and 2978.0 cycles on TG68K,
+  against T=2976.0 (0.9896T and 1.0007T).
+- P1's deviation of each change from t0 + k*(N+1)*C: 0 cycles for every
+  change of the N=0 and N=32396 runs. On the N=371 run the first change of
+  words 1 to 4 lies 0, 4, 8 and 12 cycles from the page's spacing, and the
+  largest deviation is 12 cycles at k=30, on both cores.
+- P2's line fit: 10 of 10, 22 of 40 and 10 of 10 changes (N=0, 371, 32396)
+  lie within one cycle of the line through the first and the last change, on
+  both cores.
+- P4's 4f: all 256 buffer words are last written with $AAAA before
+  MARK=START, and all 256 buffer reads deliver $AAAA, on every capture and
+  both cores. 4d: 211 PROBE_D values sampled in the window on fx68k and 243
+  on TG68K, DMAON set in all of them and DISKWRITE set in all of them.
 - The R1 population (refresh_population) found zero malformed groups on
   every capture this package builds, both cores: every candidate low-
   address read group is the full four-read, 2C-apart shape.
@@ -679,7 +692,9 @@ capture, on both cores.
 **P5: every character (0-7) reads back correctly on both runs, both
 cores.** RESULT bits 7-0, bit 9 and bit 8 match (a)'s own expected values
 on run A, run B's own bits 7-0 match byte_j, and the G5 brackets,
-RBF-observed and no-early-signal checks all hold, on both runs. The
+RBF-observed checks hold on both runs. (b) decides all 16 characters
+and all 16 reach their threshold; (c) decides all 8 characters and the
+G5 interval of D_j(A) - D_j(B) lies inside [T/2,3T/2] for all 8. The
 run-A ninth-bit-zero variant is recorded, not graded (p.257 and p.283
 disagree on what it should read); its own RESULT bit 8, per core, is
 under "measured values" below.
@@ -706,6 +721,13 @@ line is named in the record of the line the selector is aimed at.
   exists and the package does not drive it).
 - Every R2 line fails under `STD-SWAP` (every capture made on the other
   standard), the contrast R2 names.
+- Each completion line (`P1N0-DONE`, `P1N32396-DONE`, `P2N0-DONE`,
+  `P2N32396-DONE`, `P4-DONE-*`, `5a-DONE-A`, `5a-DONE-B`) fails under a
+  stimulus in which a bounded poll runs to its own bound while the program
+  still reaches MARK=DONE (`stall` programs, 4.1).
+- (b) and (c) are decided per character: their records give how many
+  characters pass, fail or straddle under each selector. A line is NOT
+  GRADED when no character fails and some straddle.
 
 ### 4.5 Line ids and preconditions
 
