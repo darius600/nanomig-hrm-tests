@@ -5,23 +5,30 @@ the pages of the *Amiga Hardware Reference Manual*, 3rd edition. Its author neve
 implementation under test or any existing test. Every expected value below is taken from a
 printed page and quoted. Where the pages leave a value open or disagree with each other, the
 specification says so and grades only what all of them agree on. It specifies twelve
-propositions; P6 is withdrawn. Eighteen of the package's 22 claims support them; four could not be used.
+propositions; P6 is withdrawn. Of the package's 22 claim ids, fourteen stand on graded lines and eight are
+recorded without a grade, each with its reason (§0).
 
 Page numbers are printed page numbers. "Fig." means a figure of the manual. "p.X" without a
 chapter means the page in the manual.
 
 ---
 
-## 0. Claims not turned into a proposition
+## 0. Claim ids with no graded line
+
+Eight of the 22 claim ids stand on no graded line. Each is printed as a RECORDED line of the
+run with its reason; none is cited on a PASS or FAIL line.
 
 | claim | page | says | reason |
 |---|---|---|---|
-| `COP2-about-the-copper.c34` | 20 | The blitter DMA channel handles animation. | The parenthesis *"(the DMA channel that handles animation, line drawing, and polygon filling)"* says which channel the sentence means. It describes no behaviour. "Animation" is a use, not a machine function: no register setting, output or value on p.20 or on any other page defines what "handling animation" produces. There is nothing to observe and no expected value. |
-| `COP2-about-the-copper.c35` | 20 | The blitter DMA channel handles line drawing. | The same parenthesis. The claim states a purpose and gives no observable and no expected value. What a line-mode blit writes is specified only on pp.189–192, and no sentence there is a claim of this package. A check built from those pages would test behaviour this package holds no claim for, with expected values taken entirely from pages outside it. |
-| `COP2-about-the-copper.c36` | 20 | The blitter DMA channel handles polygon filling. | As for c35. Area fill is specified on pp.184–186, which are outside this package's claims. |
+| `COP2-about-the-copper.c34` | 20 | The blitter DMA channel handles animation. | The parenthesis *"(the DMA channel that handles animation, line drawing, and polygon filling)"* says which channel the sentence means. Pages elsewhere give observables for what that channel does: p.97, *"You can create more complex animation effects by using the blitter, which is described in the chapter called "Blitter Hardware.""*, points to the blitter chapter, and a copy blit's destination words are observable. This package is about the cycles of the Copper and the DMA channels and does not repeat blitter tests. **Scope decision:** copy blits (pp.169–183) are graded by `integration/ch6-blitter-geometry`. This id is not that package's claim and is not attached there. |
+| `COP2-about-the-copper.c35` | 20 | The blitter DMA channel handles line drawing. | The same parenthesis. p.189, *"In addition to all of the functions described above, the blitter can draw patterned lines. The line draw mode is selected by setting bit 0 (LINEMODE) of BLTCON1"*, and pp.191–192 (the data function and the register setup) give the observable: the bits a line-mode blit writes. **Scope decision:** line mode (pp.189–192) is graded by `integration/ch6-blitter-line-fill`. This id is not that package's claim and is not attached there. |
+| `COP2-about-the-copper.c36` | 20 | The blitter DMA channel handles polygon filling. | The same parenthesis. p.184, *"In addition to copying data, the blitter can simultaneously perform a fill operation during the copy."*, with the worked inclusive and exclusive fill, gives the observable: the filled destination words. **Scope decision:** area fill (pp.182, 184, 200) is graded by `integration/ch6-blitter-line-fill`. This id is not that package's claim and is not attached there. |
+| `COP2-putting-together-a-copper-instruction-list.c1` | 27 | The sprite DMA channels that create movable objects can be reused multiple times during the same display field. | The sentence speaks of the sprite DMA channels in the plural, the class of eight channels. P8 and P9 grade one member of it, sprite DMA channel 0 (§2.5). One member does not establish the plural claim, and no run drives a structure through channels 1–7. The id is recorded, not graded; P8 stays a graded line without it. |
+| `ch2-putting-together-a-copper-instruction-list.c5` | 27 | The sprite DMA channels can be reused multiple times during the same display field. | The claim is plural, and p.116, *"Each of the eight sprite DMA channels can produce more than one independently controllable image"*, which supports it, is a statement about every channel. P9 grades channel 0 only (§2.5). The id is recorded, not graded; P9 stays a graded line without it and keeps `COP2-putting-together-a-copper-instruction-list.c2`. |
+| `ch2-about-the-copper.c23`, `COP2-about-the-copper.c28` | 20 | The disk uses only the even-numbered memory cycles. | The two ids say "only" over the disk channel in both directions. P2 grades the write direction (C2a, C6). The read direction needs data on the disk input; the harness's fixture serves no disk image (D9). The id pair is recorded, not graded. |
 | `ch2-about-the-copper.c21` | 20 | The Copper requests the bus only during odd-numbered memory cycles, which prevents collision with audio, disk, refresh, sprites and most low-resolution display DMA. | One sentence bundles three things: the requests, the collisions, and five DMA channels. The Chip-memory port shows the accesses that happen, not the requests made or the collisions avoided. P6, the parity of the accesses in the Copper block, is withdrawn (P6 below): the port shows accesses, not requests. P7 grades that the Copper's cycles do not move when the even-cycle channels run; it observes neither a request nor a collision, and leaves the disk-to-memory direction undone (D9). The id is therefore not cited on any graded line. |
 
-The sentence those three claims come from also says something testable: *"The Copper,
+The sentence the blitter claims (c34–c36) and c21 come from also says something testable: *"The Copper,
 therefore, needs priority over only the 680x0 and the blitter"*. No claim of this package
 states it, so it is not specified here.
 
@@ -120,12 +127,20 @@ memory holds only Copper lists and padding. Every access into it counts as a Cop
 in the attribution table (§2.2); the check that would grade them, P6, is withdrawn. No check
 counts WAIT cycles.
 
-**D9. Disk read DMA without a drive.** p.250: *"If the WORDSYNC bit is enabled in ADKCON, no
+**D9. Disk read DMA with no image served.** p.250: *"If the WORDSYNC bit is enabled in ADKCON, no
 data is transferred until a word is found in the input stream that matches the word in the
-DSKSYNC register."* The system under test has no drive. No page says whether read DMA
-transfers words when there is no input stream. **Handling:** read-direction disk DMA is run
-with WORDSYNC clear, under a precondition that disk accesses actually occur. If none occur,
-the read direction is reported as not exercised, not as passing.
+DSKSYNC register."* The harness's fixture serves no disk image: it mounts none and never
+answers a sector request (`sdc_img_mounted`, `sdc_img_size`, `sdc_busy`, `sdc_done` and the byte
+strobe stay idle). The system's ports for serving one exist (`sdc_img_mounted`, `sdc_img_size`,
+`sdc_rd`, `sdc_sector`, `sdc_busy`, `sdc_done` and the byte-strobe and data ports). No page says
+whether read DMA transfers words when there is no input stream. **Handling:** read-direction
+disk DMA is run with WORDSYNC clear in the fixture as it is, under a precondition that disk
+accesses actually occur. If none occur, the read direction is reported as not exercised, not as
+passing. **Scope decision:** a run that mounts an image through those ports, answers the sector
+handshake, keeps C2b and K2b live and asserts that every write into the disk block lies on an
+even in-line cycle (p.20, quoted in D1) is possible; it needs an image server the harness does
+not have, and extending the harness is the owner's decision. It is not built here, and the two
+ids that say "only" over both directions stay recorded (§0).
 
 **D10. Registers the Copper may write.** p.21 says any register at `$20` or above. p.26 says
 *"The registers that the Copper can always affect are numbered $80 through $FF inclusive"*.
@@ -311,9 +326,20 @@ graded.
 - **Sprite pixel width p.** On the first line of the reference image (named in each
   proposition), all 16 sprite pixels are set. That line's run of non-background output pixels
   has length W. Then p = W/16. p.98 and p.101 fix the width: *"Sprites are 16 pixels wide"*.
-  **Precondition Q2:** W > 0 and W is divisible by 16. **Contrast:** make the low data word of
-  that line `$7FFF`. Its leftmost pixel then becomes transparent (p.108: *"binary 00 always
-  means transparent"*), W becomes 15·p, and Q2 fails.
+  **Precondition Q2:** (i) the two data words the sprite channel fetched for that line, read at
+  the port in the Copper frame of the output frame (word offsets 2 and 3 of the reference
+  image's structure: S2 sprite block 2, structure R; S1 sprite block 0, structure Z), are `$FFFF`
+  and `$0000`, so every pixel has value 01 (p.107: *"The bits in the high order color descriptor
+  word contribute the leftmost digit of the binary color selector number for each pixel"*);
+  (ii) W > 0 and W is divisible by 16; (iii) each of the 16 cells of that line, p = W/16 output
+  pixels wide, shows the same colour and that colour is not the background. (i) is what makes p
+  the true width of one sprite pixel: the width of the set run alone cannot say how many of the
+  16 pixels are set. **Contrasts:** (a) **S1-q2**: make the low data word of that line `$7FFF`.
+  Its leftmost pixel then becomes transparent (p.108: *"binary 00 always means transparent"*),
+  W becomes 15·p, and Q2 fails. (b) **S1-q2p**: make the low data word of that line `$FF00`. Its
+  right-hand eight pixels become transparent (the same sentence), the set run is 8·p wide, which
+  is divisible by 16 for the p of this fixture (p = 2, measured), so the width test alone
+  passes and reads p as 1; the fetched words are `$FF00,$0000`, and Q2 fails.
 - **Beam lines.** Output lines map to beam lines through the harness's line doubler, which
   produces k_v output lines per beam line (a fixed harness property). Vertical distances are
   measured in output lines and divided by k_v. **Precondition Q3:** every image height in
@@ -335,7 +361,10 @@ graded.
 - **Channel scope.** Every line of P8–P12 is graded over sprite DMA channel 0 (in S2, channel
   2 serves only as the fixed reference). p.116 speaks of each of the eight channels and
   Table 4-3 (p.115) gives each sprite pair its own colour registers; channels 1–7 are not
-  graded, and a RECORDED line says so.
+  graded, and a RECORDED line says so. The two ids whose sentences speak of the plural class,
+  `COP2-putting-together-a-copper-instruction-list.c1` (p.27) and
+  `ch2-putting-together-a-copper-instruction-list.c5` (p.27, p.116), are cited on no graded line;
+  the RECORDED line names channel 0 as the graded member (§0).
 - **Modes.** Every line of P8–P12 and its preconditions is graded in PAL/ECS and again, with
   its own preconditions, in NTSC/ECS, PAL/OCS and NTSC/OCS (§2.10).
 
@@ -383,8 +412,18 @@ separately. Register addresses are those of Appendix B.
   INTENA ← `$7FFF`, then store a completion word.
 
 **Precondition C1 (program finished).** The completion word is present. This holds for
-every run. Its contrast is any run with the STOP loop's exit condition removed: the
-completion word is then missing.
+every run; it is graded as the FIXTURE line, which also requires that the run's program loaded
+and that the CPU was released from reset. **Contrast for C1: none, impossible as a program
+stimulus.** A program stimulus that keeps the completion word present cannot make the other
+two clauses false (whether the program file loaded, and when the CPU leaves reset, are
+properties of the harness and of its reset sequence, which no program influences), and a
+stimulus that removes the completion word, such as the STOP loop
+without its exit condition, makes the program hang instead of reaching DONE, which a mutation
+may not do. The comparator is shown by **SELFTEST-FIXTURE**: the record of a real run that
+reached DONE, passed through the FIXTURE comparator unchanged, and the same record with each
+clause in turn made false (not loaded, CPU not released, completion word absent), which the
+comparator must reject. A run without the exit condition (C6-nofinish) is a gating observation
+for the lines of §2.11, not a mutation of C1.
 
 ### 2.7 Memory layout rules
 
@@ -439,8 +478,11 @@ for bitplane pointers.
 | **L5** | V_all; MOVE COP2LCH (`$084`) ← hi(L5b); MOVE COP2LCL (`$086`) ← lo(L5b); then for i = 0..112: WAIT (VP = `$40`+i, HP = 2i), i.e. `DC.W ((($40+i)<<8)|(2i)|1),$FFFE`, followed by three × `DC.W $0180,$0000` (MOVE COLOR00 ← `$000`); then `DC.W $B401,$FFFE` (WAIT VP=`$B4`, HP=0); `DC.W $B441,$FFFF` (SKIP, VP=`$B4`, HP=`$40`); `DC.W $0180,$0000`; `DC.W $008A,$0000` (write the strobe COPJMP2, p.26: *"any MOVE instruction that addresses COPJMP2 strobes this indirect address into the program counter"*). |
 | **L5b** | `DC.W $B821,$FFFE` (WAIT VP=`$B8`, HP=`$20`); four × `DC.W $0180,$0000`; END |
 | **L5'** | L5 with the WAIT for i = 32 changed from `DC.W $6041,$FFFE` (HP=`$40`) to `DC.W $6043,$FFFE` (HP=`$42`) |
+| **L5s** | L5 with every WAIT of the loop one line lower: WAIT i at VP = `$41`+i, i.e. `DC.W ((($41+i)<<8)|(2i)|1),$FFFE`, for i = 0..112. The V_all part before the loop, the three MOVEs after each WAIT and the trailer are L5's |
 | **L_S1** | V_spr (sprite 0 → structure Z, sprites 1–7 → null block); V_bpl(1) (→ zero plane); `DC.W $01A2,$0F00`; `DC.W $01A4,$00F0`; `DC.W $01A6,$000F` (COLOR17–19 ← red, green, blue); END |
 | **L_S1c** | as L_S1, but before END insert `DC.W $4801,$FFFE` (WAIT VP=`$48`, the line after the last line of use 1), `DC.W $01A2,$0FF0`, `DC.W $01A4,$00FF`, `DC.W $01A6,$0F0F` |
+| **L_S1v** | as L_S1 with the three colour MOVEs of the vertical-blanking part writing `$0FF0`, `$00FF`, `$0F0F` (COLOR17–19) in place of `$0F00`, `$00F0`, `$000F`; nothing is written between the uses |
+| **L_S1cx** | as L_S1c with the three MOVEs after the WAIT writing `$0FFF`, `$0F0F`, `$0FF0` in place of `$0FF0`, `$00FF`, `$0F0F` |
 | **L_A** | V_spr (sprite 0 → A, sprite 2 → R, others → null); V_bpl(1); COLOR17–19 as in L_S1; `DC.W $01AA,$0FF0`; `DC.W $01AC,$00FF`; `DC.W $01AE,$0F0F` (COLOR21–23); MOVE COP1LCH (`$080`) ← hi(L_B); MOVE COP1LCL (`$082`) ← lo(L_B); END |
 | **L_B** | as L_A with sprite 0 → B and COP1LC ← L_A |
 
@@ -468,6 +510,7 @@ DMAEN | COPEN. BLTEN is never set.
 | **C7a** | BPLEN | L5 | the registers of C4-6 |
 | **C7b** | BPLEN | L5 | BPLCON0 ← `$C200` (HIRES, 4 planes, p.63); DDFSTRT ← `$003C`; DDFSTOP ← `$00D4` (p.60, "normal high resolution"); modulos 0; plane blocks of 80 bytes × 256 lines |
 | **S1** | SPREN \| BPLEN | L_S1 | BPLCON0 ← `$1200`; BPL1MOD ← 0; DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP as C4-1; plane 1 all zeros; COLOR00 ← `$000`; structure Z (below) in sprite block 0; null block for sprites 1–7 |
+| **S1c** | SPREN \| BPLEN | L_S1c | as S1: the exception control of P12 (P12-EXC) |
 | **S2** | SPREN \| BPLEN | L_A (S3 installs L_A) | as S1; structures A and B in sprite block 0; R in sprite block 2 (below) |
 
 **Structure Z (S1, sprite 0, four uses).** Each data line is written low word first, then
@@ -502,7 +545,7 @@ the usage of a sprite"*).
 
 The default mode is PAL with the Enhanced Chip Set. C0, C6 and S1 also run with NTSC/ECS,
 PAL/OCS and NTSC/OCS. The NTSC runs of C0 and C6 exercise the alternating 228/227-cycle lines
-of p.23. S1 and S2 are run once more in each of the four modes for the video lines of
+of p.23. S1, S1c and S2 are run once more in each of the four modes for the video lines of
 P8–P12 (§2.5). Every run is made on both CPU cores and graded per core.
 
 ### 2.11 Preconditions gate their lines
@@ -519,8 +562,12 @@ precondition is part of a graded expression.
   neither F2 nor F2-COUNT, which grade the very accesses P1 grades (P1.4). K2a reads a
   stored value and observes no run. A run that has not finished, or has no observed frames,
   leaves its own F1, F2, F2-COUNT and F3 lines NOT GRADED.
-- **Contrasts for the observation preconditions** (the lines K2b, K3, K4, K5, K6, T1, T2 and
-  T3, which all grade C6, each with C6 replaced in turn by one of three runs):
+- **Gating observations for the observation preconditions** (the lines K2b, K3, K4, K5, K6,
+  T1, T2 and T3, which all grade C6, each with C6 replaced in turn by one of three runs). A run
+  that empties a population or breaks an anchor is a gating observation, not a mutation of the
+  proposition: it shows that the line is NOT GRADED when its gate fails, and no line turns red
+  through it. Each of these lines has its own stimulus mutation, which reaches DONE with every
+  gate live (see the records of K2b, K3, K4, K5, K6, T1, T2 and T3).
   C6-nofinish, C6 with the wait loop's exit condition removed (C1 fails); C6-htotal, C6 with
   HTOTAL = `$E0` and BEAMCON0 = `$00A0`, as in §2.3's contrast for F3 (every line is 225
   memory cycles and F3 fails); and C6-norestart, C6 with COP1LC pointing at L5b, so that the
@@ -537,7 +584,7 @@ precondition is part of a graded expression.
   the Copper's lists (L5, L5b): the Copper reads them whether or not the channel runs, so
   they cannot show the channel active.
 - **Populations.** "Every" needs a non-empty population: an empty one fails its line. T1
-  therefore requires every segment of C5 to hold at least one Copper access in every
+  therefore requires every part of C5 (P7.3) to hold at least one Copper access in every
   observed frame, and T2 requires at least one line spanned by a segment.
 
 ---
@@ -596,8 +643,9 @@ precondition is part of a graded expression.
    line. Claims `ch2-about-the-copper.c23` and `COP2-about-the-copper.c28`, p.20. Both claims
    say "only", over the disk channel in both directions. P2's graded line covers the write
    direction (C2a, C6) and cites neither id: the read direction (C2b) shows no disk-block
-   access in the observed frames, so it is declined (D9), and the two ids are printed as
-   RECORDED lines saying so, not as graded ones.
+   access in the observed frames, since the fixture serves no image, so it is declined and
+   named as a scope decision (D9), and the two ids are printed as a RECORDED line saying so,
+   not as a graded one.
 2. **Stimulus.** C2a (write direction: the channel reads memory), C2b (read direction: the
    channel writes memory), and C6. The disk start follows p.247: *"1. Enable disk DMA in the
    DMACON register … 2. Set DSKLEN to $4000 … 3. Put the value you want into the DSKLEN
@@ -787,22 +835,34 @@ graded, the measurement that stands in its place and the reason are in one place
    collisions are observable at this port.
 2. **Stimulus.** C5 (Copper alone) and C6 (the same list L5, with audio, disk, eight sprites
    and four low-resolution planes running). The CPU is in STOP (S6). The blitter is off.
-3. **Observation.** For i = 0..112, the **segment i** of the list is the Copper-block
+3. **Observation.** The compared population is every Copper-block read of each observed
+   frame, in time order, in **parts**: for i = 0..112, the **segment i** of the list is the
    accesses after the two words of WAIT i, up to and including the two words of WAIT i+1 (for
-   i = 112, of the WAIT at `$B4`). Each access in a segment is recorded as (line offset from
-   the line of the segment's first access, s). This is done for each observed frame of both
-   runs.
-4. **Expected value.** For every i and every observed frame, the list of (line offset, s)
-   pairs of segment i is identical in C5 and C6. p.20: *"This prevents collision with audio,
+   i = 112, of the WAIT at `$B4`); the **head** is the accesses from the frame's restart fetch
+   through the two words of WAIT 0; the **tail** is the accesses of L5 after the two words of
+   the WAIT at `$B4`; and the **second list** is the accesses in L5b. That is 116 parts per
+   frame. Each access is recorded as (line offset from the line of the frame's restart fetch,
+   s): the restart fetch of that frame is the Copper's read of the first word of L5 (§2.4), and
+   the line offset counts lines of the run's own frame F (§2.3) from the line that holds it. The
+   anchor is the same in both runs: the restart fetch of the same observed frame. This is done
+   for each observed frame of both runs.
+4. **Expected value.** For every part and every observed frame, the list of (line offset, s)
+   pairs is identical in C5 and C6: every Copper access lies on the same line, counted from the
+   frame's restart line, and on the same in-line cycle in both runs, WAIT 0 and the head
+   included. p.20: *"This prevents collision with audio,
    disk, refresh, sprites, and most low resolution display DMA access"*. Appendix A p.275:
    *"It therefore needs (and has) priority over only the blitter and microprocessor."* No
    collision means the Copper never waits for these channels, so its cycles cannot move. All
-   113 segments are graded, in every observed frame, in PAL/ECS: C5 has no run in the other
-   modes of §2.10.
+   116 parts are graded, in every observed frame, in PAL/ECS: C5 has no run in the other
+   modes of §2.10. What the anchor cannot show: the restart fetch is the line from which the
+   frame is counted (§2.4), so its own position in the line grid is compared by its in-line
+   cycle s only; p.25 ties the restart to the start of vertical blanking and not to the other
+   channels, and the comparison of every later access against it is what P7 grades.
 5. **Preconditions.**
    - F1–F3, F2-COUNT, C1, K6 (both runs).
-   - **T1:** every segment has the same number of Copper accesses in both runs, and every
-     segment of C5 has at least one in every observed frame.
+   - **T1:** every part (113 segments, the head, the tail and the second list) has the same
+     number of Copper accesses in both runs, and every part of C5 has at least one in every
+     observed frame.
    - **T2:** no CPU-block access lies in any line spanned by a segment, in either run, and at
      least one line is spanned by a segment.
    - **T3:** in the lines of the segments in C6, bitplane fetches occur in every line; sprite
@@ -821,6 +881,16 @@ graded, the measurement that stands in its place and the reason are in one place
    the instruction"*. Segment 32 starts later and its s-values differ, so the comparator finds
    mismatches; the cause is the Copper's own list, which p.22 predicts, and not an even-cycle
    channel, so the run is not a mutation of P7. T1–T3 still hold.
+   - **SELFTEST-P7-SHIFT** (the uniform one-line shift): C6 with list L5s (every WAIT of the
+     loop one line lower, WAIT i at VP `$41`+i) compared with C5 on L5, by the same comparator.
+     p.22 (quoted above): the Copper waits until the beam counters reach the coordinates in
+     the instruction, so every Copper access from WAIT 0 on lies one line lower than in C5 at
+     the same in-line cycle. A comparator that subtracted each segment's own first-access line
+     would find no difference there, while the comparator of P7, which counts lines from the
+     frame's restart line, finds the 113 segments of each frame different. The cause is the
+     Copper's own list, not an even-cycle channel, so the run is not a mutation of P7. T1–T3
+     still hold. The run also prints, as MEASURED, the mismatches the segment-relative
+     comparison would have found.
    - **Contrast for T2:** C6 with `STOP #$2000` replaced by a loop that branches to itself.
      The CPU then fetches in every line, and T2 fails.
    - **Contrast for T3:** C6 without SPREN. Sprite fetches are then absent, and T3 fails.
@@ -844,8 +914,9 @@ graded, the measurement that stands in its place and the reason are in one place
 
 1. **Proposition.** The object a sprite DMA channel displays is placed by the position in its
    data structure, and moves by exactly the change in that position from one field to the
-   next. Claim `COP2-putting-together-a-copper-instruction-list.c1`, p.27; the position rule
-   is from pp.106–107, 113 and 128.
+   next. Graded over sprite DMA channel 0 and cited under no claim id: the sentence of
+   `COP2-putting-together-a-copper-instruction-list.c1` (p.27) speaks of the sprite DMA channels
+   in the plural and is recorded (§0). The position rule is from pp.106–107, 113 and 128.
 2. **Stimulus.** S2. L_A and L_B alternate by frame. Sprite 0 reads structure A in L_A
    frames and structure B in L_B frames; the two differ only in position (ΔHSTART = +24,
    ΔVSTART = +10). Sprite 2 shows the fixed reference R. p.113: *"A sprite generated in
@@ -896,8 +967,10 @@ graded, the measurement that stands in its place and the reason are in one place
 
 1. **Proposition.** One sprite DMA channel, following one chained data structure, displays
    four separate images in the same field and reads the words of all four uses in address
-   order within that field. Claims `COP2-putting-together-a-copper-instruction-list.c2` and
-   `ch2-putting-together-a-copper-instruction-list.c5`, p.27; pp.97, 116–117 and 126–127.
+   order within that field. Graded over sprite DMA channel 0. Claim
+   `COP2-putting-together-a-copper-instruction-list.c2`, p.27; pp.97, 116–117 and 126–127.
+   `ch2-putting-together-a-copper-instruction-list.c5` (p.27, p.116), which says the sprite DMA
+   channels can be reused and is plural, is recorded (§0), not cited here.
 2. **Stimulus.** S1: structure Z (four uses) for sprite 0 alone, and SPR0PT is the only
    pointer that addresses it. The chaining follows p.116: *"To reuse a DMA channel, you replace
    this pair of zero words with another complete sprite data structure, which describes the
@@ -982,10 +1055,11 @@ graded, the measurement that stands in its place and the reason are in one place
 
 ### P12 — All reuses of a sprite normally use the same colours during a frame
 
-1. **Proposition.** When nothing rewrites COLOR17–19 during a frame, every use of sprite 0
-   shows each pixel value in the same colour, the one held by the register that value selects.
-   A Copper write between two uses changes the colours of the later uses, as the next sentence
-   of the page says. Claims `ch2-putting-together-a-copper-instruction-list.c7` and
+1. **Proposition.** When no Copper write to COLOR17–19 lies between the uses (Q6), every use of
+   sprite 0 shows each pixel value in the same colour, the one held by the register that value
+   selects. A Copper write between two uses changes the colours of the later uses, as the next
+   sentence of the page says; P12-EXC below grades that exception as a positive control. Claims
+   `ch2-putting-together-a-copper-instruction-list.c7` and
    `COP2-putting-together-a-copper-instruction-list.c5`, p.27; the register assignment is from
    pp.102–103 and 108.
 2. **Stimulus.** S1 with list L_S1. COLOR17–19 are written by the Copper only in the list's
@@ -996,17 +1070,59 @@ graded, the measurement that stands in its place and the reason are in one place
    `$00F`, in all four uses. p.27: *"every multiple reuse normally uses the same set of colors
    during a full display frame"*. p.108: *"Sprite channel 0, for example, takes its colors from
    registers 17 - 19"*, with Table 4-2 giving 01 → 17, 10 → 18, 11 → 19. "Every" is graded over
-   all four uses and all three values in every output frame used. "Normally" is graded through
-   the contrast.
-5. **Preconditions.** C1, Q2, Q3, Q4, Q5, K9, and the four images as in P9(a).
-6. **Contrasting case.** **S1-c:** list L_S1c, the page's own recipe from p.27: *"You can
-   change sprite colors mid-screen with a Copper instruction list that waits until the last
-   line of the first use of the sprite processor and changes the colors before the first line
-   of the next use of the same sprite processor"*. The pages predict U1 in `$F00`/`$0F0`/`$00F`
-   and U2–U4 in `$FF0`/`$0FF`/`$F0F`. The same-colours check goes red. Q5 holds for L_S1c, and
-   the images and program are unaffected.
+   all four uses and all three values in every output frame used. "Normally" is read as the
+   page's own exception, a Copper write between two uses: Q6 gates the line on there being none,
+   and P12-EXC grades the exception.
+5. **Preconditions.** C1, Q2, Q3, Q4, Q5, K9, the four images as in P9(a), and **Q6:** in the
+   Copper frame of each output frame used, no MOVE to COLOR17, COLOR18 or COLOR19 is fetched
+   from the Copper's list between the first sample of the first image's first output line and
+   the last sample of the fourth image's last output line (the video samples and the port log
+   share one time base, §4). The datum word of the MOVE is read from the list words fetched in
+   the Copper frame, as Q4 reads them, with the time of its fetch. The sentence is p.27's own
+   exception: *"You can change sprite colors mid-screen with a Copper instruction list that
+   waits until the last line of the first use of the sprite processor and changes the colors
+   before the first line of the next use of the same sprite processor"*; p.27 also says
+   *"If you do want to change the color registers, the Copper can do this for you."*
+6. **Contrasting case.** **S1-colv:** list L_S1v, which writes COLOR17–19 as `$0FF0`, `$00FF`
+   and `$0F0F` in the vertical-blanking part, in the same place as L_S1: nothing is written
+   between the uses, so Q6 holds, and the pages predict (p.108, Table 4-2) every use in
+   `$FF0`/`$0FF`/`$F0F`. The line's expected values are those of the specification's L_S1
+   (`$F00`/`$0F0`/`$00F`), unchanged, so P12 goes red: it grades the colour each register
+   holds against what the list wrote, not only that the uses agree with each other (P11
+   grades that). Q4, Q5, K9 and IMG4 hold.
+   - **Contrast for Q6 (S1-c):** list L_S1c, the page's recipe above: WAIT VP=`$48` (the line
+     after the last line of use 1) and COLOR17–19 ← `$0FF0`, `$00FF`, `$0F0F` between use 1
+     and use 2. Q6 fails, P12 is NOT GRADED, and Q5 holds for L_S1c.
 7. **Reference frame.** The colour nibbles of Table 3-3 (p.46), compared with the output's
    4-bit red, green and blue.
+
+### P12-EXC — A Copper write between two uses changes the colours of the later uses
+
+1. **Proposition.** When the Copper writes COLOR17–19 between the last line of one use and
+   the first line of the next, the uses before the write keep the colours of the registers
+   and the later uses show the new values, each pixel value in the colour held by the register
+   it selects. p.27, the sentence quoted in P12.5. Graded over sprite DMA channel 0. It is
+   the positive control of P12's "normally": it cites no claim id.
+2. **Stimulus.** S1c: L_S1c (§2.8), the page's recipe: WAIT VP=`$48`, then COLOR17–19 ←
+   `$0FF0`, `$00FF`, `$0F0F`, after the vertical-blanking write of `$0F00`, `$00F0`, `$000F`.
+3. **Observation.** The colour of every non-transparent sprite pixel of U1–U4, in every output
+   frame used.
+4. **Expected value.** U1: value 1 shows `$F00`, value 2 `$0F0`, value 3 `$00F`. U2, U3 and U4:
+   value 1 shows `$FF0`, value 2 `$0FF`, value 3 `$F0F` (the values the list writes, through
+   p.108 Table 4-2). Graded for every non-transparent pixel of
+   the four uses in every output frame used.
+5. **Preconditions.** For S1c: C1, FRAMES, Q2, Q3, Q4, Q5, K9, IMG4 (the same graded lines as
+   for S1, which grade S1c as well), and **Q7:** in the Copper frame of each output frame used,
+   a MOVE to each of COLOR17, COLOR18 and COLOR19 is fetched after the last sample of the first
+   image's last output line and before the first sample of the second image's first output line,
+   and no other MOVE to these registers is fetched from the first image's first line to the
+   fourth image's last line. Q7 reads the writes and their times, not the values written.
+6. **Contrasting case.** **S1-cx:** list L_S1cx writes `$0FFF`, `$0F0F`, `$0FF0` after the
+   WAIT instead. Q7 holds (the writes are in the same place), the pages predict U2–U4 in the
+   written colours, and the line, whose expected values are those of L_S1c, goes red.
+   - **Contrast for Q7:** S1 (list L_S1, no write between the uses) in place of S1c. Q7 fails
+     and P12-EXC is NOT GRADED.
+7. **Reference frame.** As P12.
 
 ---
 
@@ -1190,7 +1306,16 @@ SELFTEST-VIDEO and SELFTEST-Q3 have no module stimulus; their perturbations are 
 - **P8–P12 over sprite DMA channels 1–7** (§2.5): not graded. S1 and S2 drive channel 0 (and channel
   2 as the reference in S2); channels 1, 3, 4, 5, 6 and 7 point at the null block. p.116 says each of
   the eight channels can be reused and p.115 gives each sprite pair its own colour registers; no
-  run measures that for channels 1–7, and a RECORDED line says so.
-- **The blitter DMA channel** (`COP2-about-the-copper.c34`–`c36`): not built. §0 already
-  withdraws these three ids: their own sentence names a use (animation, line drawing, polygon
-  filling), not a machine function this package's claims give an observable for.
+  run measures that for channels 1–7, and a RECORDED line says so. `COP2-putting-together-a-copper-instruction-list.c1`
+  and `ch2-putting-together-a-copper-instruction-list.c5`, whose sentences speak of the class of
+  channels, are recorded, not graded (§0).
+- **The blitter DMA channel** (`COP2-about-the-copper.c34`–`c36`): not built here, by a scope
+  decision. The pages give observables (p.97 on animation by blitter copies, pp.189–192 on line
+  mode, p.184 on area fill); copy blits are graded by `integration/ch6-blitter-geometry`, and line
+  mode and area fill by `integration/ch6-blitter-line-fill`. This package does not repeat them, and
+  the three ids are not attached to those packages (§0).
+- **A served-image read run of the disk channel** (`ch2-about-the-copper.c23`,
+  `COP2-about-the-copper.c28`): not built here, by a scope decision. The harness's fixture
+  serves no disk image, although the ports for serving one exist (D9); the run would mount an
+  image, answer the sector handshake, keep C2b and K2b live and assert every write into the
+  disk block on an even in-line cycle. Extending the harness is the owner's decision.
