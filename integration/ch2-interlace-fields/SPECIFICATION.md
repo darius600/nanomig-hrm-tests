@@ -1019,16 +1019,27 @@ PI-1 (section 3.6) and print NOT GRADED, and PI-8 holds.
   313, 312, 313, 312, 313, 312, 313, 312.
 - Program T's Delta (section 2.7, both cores): 1288 clk_sys cycles
   (161 colour clocks).
-- P3's last-line length x_k (section 2.7, both cores): 227 on every one
-  of the 12 graded fields, never 228; P3 measures red on both cores. PT-5
-  (every measured length is 227 or 228) is unaffected and stays green,
-  since 227 is one of the two page values.
+- P3's lengths (section 2.7, both cores): of the 3,302 line lengths measured
+  between the Copper marks (lines 0 to 253 of the 13 recorded fields), all
+  3,302 are 227 colour clocks and none is 228, so P3 measures red on both
+  cores. Of the 3,400 directly observed lengths (lines 0 to N_k - 2), all
+  3,400 are 227, and PT-5 (every length is 227 or 228) stays green, since 227
+  is one of the two page values.
+- The derived last-line length x_k (section 2.7, both cores; Δ carried from
+  lines 44 to 254): 227 on every one of the fields 0 to 11, never 228; the
+  four-field pattern of p24 fits it at no phase. Derived values are recorded,
+  never graded.
 - T-a (LACE clear, both cores): all 13 recorded NTSC fields measure 263 lines
-  (the PT-6 gate line of the PT-6 run).
-- The normal run prints Delta, the type f_k and the length x_k of each of
-  the 12 graded fields, and the number of measured line lengths that are 227
-  colour clocks, 228 colour clocks and neither, as MEASURED lines before the
-  P3 line.
+  (the PT-6 gate line of the PT-6 run; PT-8 red in its own run, P2 NOT
+  GRADED).
+- PI-5's contrasts (both cores): under I-w the first twelve writes to HCNT
+  carry 0, 2, 4, ... 22; under I-g the run holds the one write of the program
+  and none by a handler; under I-x the first write carries 7.
+- The normal run prints, as MEASURED lines before the P3 line, the number of
+  directly observed line lengths that are 227 colour clocks, 228 colour clocks
+  and neither (over lines 0 to N_k - 2 and over the Copper-mark lines), Δ, and
+  the derived type f_k and last-line length x_k of fields 0 to 11 with the fit
+  of the four-field pattern.
 
 **PI-7(bpl)'s own contrast (I-l).** Measured on both cores: with the
 BPL1PT MOVEs read at their real list offset (after the SPR0-7PT MOVEs and
@@ -1076,12 +1087,13 @@ p25 ("Instruction fetch continues sequentially until the Copper is interrupted
 by another jump address strobe") and p30 ("No stop instruction is provided for
 the Copper") would let it go on to the terminal wait and leave PI-2 and PT-7
 green. I-s and T-j are therefore not page-predicted contrasts and not
-mutations of PI-2 and PT-7: they are self-tests of the anchor's third clause
-(`SELFTEST-PI-2-ANCHOR`, `SELFTEST-PT-7-ANCHOR`). Measured on both cores, the
-Copper fetches the MOVE's first word, fetches nothing more of the list, and
-reads the MOVE's second word 2 colour clocks before the restart; on this
-design the comparator therefore goes red through the third clause alone, with
-everything else holding. PI-2 and PT-7 keep their page-based contrasts, I-f
+mutations of PI-2 and PT-7: they are diagnostics of the anchor's third clause
+(`SELFTEST-PI-2-ANCHOR`, `SELFTEST-PT-7-ANCHOR`), printed as MEASURED lines
+that state whether the comparator holds; they are not assertions. Measured on
+both cores, the Copper fetches the MOVE's first word, fetches nothing more of
+the list, and reads the MOVE's second word 2 colour clocks before the restart;
+on this design the comparator therefore does not hold, through the third
+clause alone, with everything else holding. PI-2 and PT-7 keep their page-based contrasts, I-f
 and T-h, and the third clause has its own, page-predicted contrast, I-v and
 T-k (section 2.6). Measured on both cores, under I-v 8 of 8 and under T-k 13
 of 13 M1 fields hold exactly one restart, the matched restarts are
@@ -1103,6 +1115,9 @@ after the restart (line 25, colour clock 19 at 227 colour clocks per line) and
 the first bitplane fetch 10,049 (line 44), the same on both cores.
 
 **T-g.** Line 10's WAIT uses `(10, $40)`. Measured on both cores, field 0's
-line 9 then measures 536 clk_sys (67 colour clocks); 24 of the 3150 line
-lengths measured over the 12 fields fall outside 227 and 228 colour clocks;
-PT-1, PT-3 and every Copper mark the line lengths need stay live.
+line 9 then measures 536 clk_sys (67 colour clocks); 26 of the 3,400 directly
+observed line lengths of the 13 fields fall outside 227 and 228 colour clocks;
+PT-1, PT-3 and every Copper mark the line lengths need stay live, P2 is
+graded and P3 is not graded. The run prints PT-5's comparator as a gating
+observation (`PT-5(mark)`), not as an assertion: it moves a measuring mark and
+no physical line.
