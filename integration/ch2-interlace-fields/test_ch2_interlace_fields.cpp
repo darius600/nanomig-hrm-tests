@@ -21,12 +21,12 @@
 // calls for, run the label's own assertion function -- the same function,
 // with the same label text and the same comparator the normal run uses -- and
 // print its line, which must be FAIL. The other preconditions of the run print
-// before or after it as "<label>/<id>: ..." lines: PASS where they hold, FAIL
-// where they do not, and RECORDED "NOT GRADED" where the run lacks what they
-// read or they do not apply. The lines downstream of the preconditions (P1,
-// P1-NOLACE, P4a to P4e, P5, P6, P5-NOREWRITE, P6-NOREWRITE, P2, P3) print
-// through their normal gates, so a mutation that closes a gate shows the line
-// NOT GRADED. The "<label>/..." lines are not assertions of the package. A
+// before or after it as "<label>/<id>: ..." MEASURED lines ("holds" or "DOES NOT
+// HOLD"), and as RECORDED "NOT GRADED" where the run lacks what they read or
+// they do not apply. The lines downstream of the preconditions (P1, P1-NOLACE,
+// P4a to P4e, P5, P6, P5-NOREWRITE, P6-NOREWRITE, P2, P3) print through their
+// normal gates, so a mutation that closes a gate shows the line NOT GRADED. The
+// "<label>/..." lines are not assertions of the package and are not counted. A
 // precondition that fails in a mutation run turns the labelled line into NOT
 // GRADED, never PASS or FAIL.
 //
@@ -37,7 +37,7 @@
 // MUTATION FIX-I stimulus red: NMH_MUTATE=FIX-I runs prog_i_n (FIXMARK stores $DEAD, not $BEEF, I-n); the known-value comparator prints FAIL
 // MUTATION PI-1 stimulus red: NMH_MUTATE=PI-1 runs prog_i_j (M1 waits between samples, I-j); PI-1's comparator prints FAIL
 // MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(long) runs prog_i_v (both lists, relocated, wait for line 255 and then hold 5,200 MOVEs in front of the terminal wait, I-v: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PI-2's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
-// MUTATION SELFTEST-PI-2-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PI-2-ANCHOR runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s); a self-test of the third clause of PI-2's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PI-2's comparator prints FAIL under the label SELFTEST-PI-2-ANCHOR; controls: one restart per M1 field, consecutive matched restarts
+// DIAGNOSTIC SELFTEST-PI-2-ANCHOR (printed as a MEASURED line, not graded; not a mutation of PI-2, no page predicts it): NMH_MUTATE=SELFTEST-PI-2-ANCHOR runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s); on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; the line prints that PI-2's comparator does not hold; controls: one restart per M1 field, consecutive matched restarts
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k); PI-6's comparator prints FAIL through the tags
@@ -67,7 +67,7 @@
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL
 // MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present
 // MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(long) runs prog_t_k (LISTT waits for line 255 after its last mark and then holds 1,800 MOVEs in front of the terminal wait, T-k: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PT-7's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
-// MUTATION SELFTEST-PT-7-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); a self-test of the third clause of PT-7's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PT-7's comparator prints FAIL under the label SELFTEST-PT-7-ANCHOR; controls: one restart per M1 field, consecutive matched restarts
+// DIAGNOSTIC SELFTEST-PT-7-ANCHOR (printed as a MEASURED line, not graded; not a mutation of PT-7, no page predicts it): NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; the line prints that PT-7's comparator does not hold; controls: one restart per M1 field, consecutive matched restarts
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-3, PT-5, PT-7
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-2, PT-3, PT-7
 // GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed and P3 prints "not graded, gate closed"; controls PT-1, PT-2, PT-3, PT-7; P2 is not printed, a non-interlaced display is not the display it grades
@@ -145,22 +145,18 @@ public:
     }
     void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
-    // A live control of a mutation run: printed like a graded line, but it is
-    // not an assertion of the package -- it only shows that the mutation
-    // changed the one thing it was meant to change.
-    void control(bool condition, const std::string& label) {
-        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
-        condition ? ++passed : ++failed;
-    }
     int passed = 0, failed = 0;
 };
 Checks checks;
 
 const char* g_mutate = std::getenv("NMH_MUTATE");
 
-// A control line of mutation run <label>: "<label>/<what>: live control".
+// A control line of mutation run <label>: "<label>/<what>: ...". It shows that
+// the mutation changed the one thing it was meant to change; it is not an
+// assertion of the package, so it prints as a MEASURED line.
 void ctl(const std::string& label, const std::string& what, bool c) {
-    checks.control(c, label + "/" + what + ": live control, expected to hold in this run");
+    checks.note(label + "/" + what + ": live control, expected to hold in this run: " +
+                (c ? "holds" : "DOES NOT HOLD"));
 }
 
 // ---- one harness run ---------------------------------------------------
@@ -871,15 +867,15 @@ bool p6(const IAnalysis& a) {
     return true;
 }
 
-// The "not rewritten" half of ch2-putting-together-a-copper-instruction-list.c3
-// on the run whose lists omit the BPL1PT MOVEs: in no later field (index 1
-// upward; the first recorded field may be the first field after DMA-on, which
-// starts at the pointer the CPU wrote) does the first 20-word fetch start at
-// the address the rewrite would have given. An unpopulated search is false.
+// The "not rewritten" half of p27's "must be rewritten" on the run whose lists
+// omit the BPL1PT MOVEs: in no recorded field (0 upward; M1 opens the capture
+// at the second wrap after DMA was switched on, so field 0 already follows
+// others) does the first 20-word fetch start at the address the rewrite would
+// have given. An unpopulated search is false.
 bool p5_norewrite(const IAnalysis& c) {
     std::vector<BplGroup> firsts;
     if (!p5_first_groups(c, firsts) || firsts.size() != (size_t)kI_K) return false;
-    for (size_t k = 1; k < firsts.size(); ++k) {
+    for (size_t k = 0; k < firsts.size(); ++k) {
         uint32_t rewritten = (c.fields[k].list == 'A') ? kI_PIC : kI_PIC + 40;
         if (firsts[k].addr * 2 == rewritten) return false;
     }
@@ -897,12 +893,12 @@ int sprite_words_fetched_in(const IAnalysis& a, const IField& f) {
     return n;
 }
 
-// The "not rewritten" half of ch2-putting-together-a-copper-instruction-list.c4
-// on the run whose lists omit the SPR0PT MOVEs: none of the four data words is
-// fetched in any later field (index 1 upward, as for p5_norewrite).
+// The "not rewritten" half of p27's "must be rewritten" on the run whose lists
+// omit the SPR0PT MOVEs: none of the four data words is fetched in any
+// recorded field (0 upward, as for p5_norewrite).
 bool p6_norewrite(const IAnalysis& c) {
     if (!c.matched) return false;
-    for (size_t k = 1; k < c.fields.size(); ++k)
+    for (size_t k = 0; k < c.fields.size(); ++k)
         if (sprite_words_fetched_in(c, c.fields[k]) != 0) return false;
     return true;
 }
@@ -1053,8 +1049,7 @@ void g_PI3(const Pv& v) {
 void g_P1(const IAnalysis& a, bool pre) {
     if (!pre) { checks.record("P1: NOT GRADED, a precondition (PI-1, PI-2 or PI-4) did not hold on this run"); return; }
     checks.expect(p1_alternation(a),
-        "P1 p24,p34 COP2-vertical-beam-position.c12 COP2-vertical-beam-position.c15 "
-        "COP2-vertical-beam-position.c16 COP2-using-the-copper-in-interlaced-mode.c5 "
+        "P1 p24,p34 COP2-vertical-beam-position.c12 COP2-using-the-copper-in-interlaced-mode.c5 "
         "COP2-using-the-copper-in-interlaced-mode.c6 COP2-using-the-copper-in-interlaced-mode.c11 "
         "ch2-using-the-copper-in-interlaced-mode.c6: with LACE set, all 8 recorded PAL fields have "
         "312 or 313 lines, and every consecutive pair sums to 625 (alternates)");
@@ -1086,16 +1081,14 @@ void g_P4b(const IAnalysis& a, bool pre) {
 void g_P4c(const IAnalysis& a, bool pre) {
     if (!pre) { checks.record("P4c: NOT GRADED, a precondition (PI-1 to PI-6, PI-7(bpl) or PI-12(bpl)) or the gate P4e did not hold on this run"); return; }
     checks.expect(p4c(a),
-        "P4c p34 ch2-using-the-copper-in-interlaced-mode.c10 ch2-using-the-copper-in-interlaced-mode.c13 "
-        "ch2-using-the-copper-in-interlaced-mode.c14 COP2-using-the-copper-in-interlaced-mode.c12 "
-        "COP2-using-the-copper-in-interlaced-mode.c13: the recorded fields alternate between the A-list and "
+        "P4c p34: the recorded fields alternate between the A-list and "
         "the B-list (the gate P4e), in every A-field fetch group i reads memory line 2i, and in every B-field "
-        "group i reads 2i+1");
+        "group i reads 2i+1 (fetch addresses only)");
 }
 void g_P4d(const IAnalysis& a, bool pre) {
     if (!pre) { checks.record("P4d: NOT GRADED, a precondition (PI-1 to PI-6, PI-7(bpl) or PI-12(bpl)) or the gate P4e did not hold on this run"); return; }
     checks.expect(p4d(a),
-        "P4d p34 ch2-using-the-copper-in-interlaced-mode.c15 COP2-using-the-copper-in-interlaced-mode.c19: every "
+        "P4d p34: every "
         "two consecutive recorded fields (an A-field and a B-field, in either order) together fetch memory "
         "lines 0..511 each exactly once, and in the order A-group 0, B-group 0, A-group 1, ... the "
         "group addresses rise by 40 bytes at every step (memory addresses only)");
@@ -1136,18 +1129,18 @@ void g_PI11(const IAnalysis& c) {
 void g_P5_NOREWRITE(const IAnalysis& a, const IAnalysis* c, bool pre) {
     if (!pre || !c) { checks.record("P5-NOREWRITE: NOT GRADED, a precondition (PI-1, PI-2, the populated 20-word search, or PI-7(bpl) and PI-12(bpl) where the lists hold the BPL1PT MOVEs, on the rewrite run, or PI-10 on the no-rewrite run) did not hold"); return; }
     checks.expect(p5(a) && p5_norewrite(*c),
-        "P5-NOREWRITE p27 ch2-putting-together-a-copper-instruction-list.c3: the bitplane pointers must be "
+        "P5-NOREWRITE p27: the bitplane pointers must be "
         "rewritten during vertical blanking so the data is properly retrieved -- with the rewrite every "
-        "recorded field starts at the rewritten address, and without it (I-c) no later recorded field "
-        "starts there");
+        "recorded field starts at the rewritten address, and without it (I-c) no recorded field "
+        "starts there (bitplane pointer 1, first 20-word fetch group)");
 }
 void g_P6_NOREWRITE(const IAnalysis& a, const IAnalysis* c, bool pre) {
     if (!pre || !c) { checks.record("P6-NOREWRITE: NOT GRADED, a precondition (PI-1, PI-2, PI-8, or PI-7(spr) and PI-12(spr) where the lists hold the SPR0PT MOVEs, on the rewrite run, or PI-11 on the no-rewrite run) did not hold"); return; }
     checks.expect(p6(a) && p6_norewrite(*c),
-        "P6-NOREWRITE p27 ch2-putting-together-a-copper-instruction-list.c4: the sprite pointers must be "
+        "P6-NOREWRITE p27: the sprite pointers must be "
         "rewritten during vertical blanking so the data is properly retrieved -- with the rewrite the "
-        "sprite's data is fetched in every recorded field, and without it (I-e) no later recorded field "
-        "fetches it");
+        "sprite's data is fetched in every recorded field, and without it (I-e) no recorded field "
+        "fetches it (sprite pointer 0, four data words)");
 }
 
 void run_program_i_assertions(const std::string& dir) {
@@ -1169,6 +1162,11 @@ void run_program_i_assertions(const std::string& dir) {
     note_pi12("PI-12(spr)", a, kSPR0PTH, kSPR0PTL);
     g_PI3(p.pi3);
     g_P1(a, p1_gate(p));
+    checks.record("P1: COP2-vertical-beam-position.c15 (the first field length in the PAL alternation is 312 lines) and "
+        "COP2-vertical-beam-position.c16 (the next field length is 313 lines) are not graded -- P1 accepts either "
+        "phase: p24 says \"312, then 313 lines\" and no page ties a recorded field to the first of the alternation "
+        "(the capture opens at a wrap that no page ties to a field type, SPECIFICATION.md section 6 item 8), so P1 "
+        "establishes that every length is 312 or 313 and that consecutive lengths differ, not which comes first");
     checks.record("P1: ch2-using-the-copper-in-interlaced-mode.c1 and COP2-using-the-copper-in-interlaced-mode.c1 "
         "(twice the normal number of vertical lines) are not graded -- for scan lines \"twice\" is not exact on the "
         "page itself (p34 gives PAL as 312 lines normally and 625 in interlaced mode, and 625 is not 2 x 312), and "
@@ -1201,14 +1199,28 @@ void run_program_i_assertions(const std::string& dir) {
     checks.record("P4c: COP2-using-the-copper-in-interlaced-mode.c10 (the even-numbered lines from the second scan "
         "are interlaced with the odd-numbered lines) is not graded -- whether the lines sit between each other on "
         "the screen depends on the vertical half-line offset of alternate fields (p49), and no page says what an "
-        "interlaced field looks like at the test's video output; only the retrieval part of the claim is used, in P4");
+        "interlaced field looks like at the test's video output; the memory lines the fields fetch are graded in P4c");
+    checks.record("P4c: ch2-using-the-copper-in-interlaced-mode.c10 (the scanning circuitry treats an interlaced display "
+        "as two display fields, one holding the even-numbered lines and one the odd-numbered lines), "
+        "ch2-using-the-copper-in-interlaced-mode.c13 (the odd field holds display lines 1, 3 and 5), "
+        "ch2-using-the-copper-in-interlaced-mode.c14 (the even field holds display lines 2, 4 and 6), "
+        "COP2-using-the-copper-in-interlaced-mode.c12 (one interlaced display field contains the even-numbered lines) and "
+        "COP2-using-the-copper-in-interlaced-mode.c13 (one contains the odd-numbered lines) are not graded -- P4c observes "
+        "only the addresses the bitplane DMA fetches in each field, so a design that fetched the same addresses but sent "
+        "the lines to the wrong field or the wrong place on the screen would pass; the graded member P4c stays graded as "
+        "the order in which the memory lines are retrieved and carries none of these ids");
     g_P4d(a, p4_gate(p));
     checks.record("P4d: ch2-using-the-copper-in-interlaced-mode.c19 and COP2-using-the-copper-in-interlaced-mode.c18 "
         "(the organization of the data in memory matches the apparent organization on the screen) are not graded "
         "-- P4d observes only the memory addresses the bitplane DMA fetches, where the lines land on the screen is "
         "not graded (SPECIFICATION.md section 1), so a design that fetched these addresses but displayed the lines "
-        "in a different screen order would pass; the memory-only claim of the same sentence (odd and even "
-        "lines interlaced together in memory) stays graded in P4d");
+        "in a different screen order would pass");
+    checks.record("P4d: ch2-using-the-copper-in-interlaced-mode.c15 (the data in memory holds lines 1 through 6 "
+        "consecutively in ascending order) and COP2-using-the-copper-in-interlaced-mode.c19 (odd and even bitplane lines "
+        "are interlaced together in memory) are not graded -- both state how the data is laid out in memory, a layout "
+        "the program builds and both contrasts of P4d (I-b, I-p) leave unchanged; P4d grades the order in which the "
+        "bitplane DMA retrieves the lines of that memory over two consecutive fields, which neither id says, and carries "
+        "neither");
     checks.record("P4d: implied by P4c, no separate contrast is possible -- where P4c holds (every A-field group i "
         "reads memory line 2i, every B-field group i reads 2i+1, the fields alternating) two consecutive fields fetch "
         "lines 0..511 each exactly once and the group addresses rise by 40 bytes at every step, so no run turns P4d "
@@ -1241,6 +1253,13 @@ void run_program_i_assertions(const std::string& dir) {
             checks.note("P5-NOREWRITE: first 20-word fetch address of fields 0.." + std::to_string(kI_K - 1) +
                         " of the no-rewrite run = " + m + " (PIC = " + std::to_string(kI_PIC) + ")");
         }
+        checks.record("P5-NOREWRITE: ch2-putting-together-a-copper-instruction-list.c3 (the bitplane pointers used in "
+            "playfield displays must be rewritten during the vertical blanking interval so the data is properly "
+            "retrieved) is not graded -- the claim speaks of the bitplane pointers in the plural and of properly "
+            "retrieved data, and P5-NOREWRITE observes bitplane pointer 1 and the address of its first 20-word fetch "
+            "group in each field: no other active bitplane pointer is exercised and neither the remaining groups of a "
+            "field nor the data they return is compared; the graded member P5-NOREWRITE stays graded for BPL1PT and "
+            "carries no id");
     }
     {
         IAnalysis c6 = analyze_i(dir, "prog_i_e");
@@ -1253,6 +1272,12 @@ void run_program_i_assertions(const std::string& dir) {
             checks.note("P6-NOREWRITE: sprite data words (of 4) fetched in fields 0.." + std::to_string(kI_K - 1) +
                         " of the no-rewrite run = " + m);
         }
+        checks.record("P6-NOREWRITE: ch2-putting-together-a-copper-instruction-list.c4 (the sprite pointers must be "
+            "rewritten during the vertical blanking interval so the data is properly retrieved) is not graded -- the "
+            "claim speaks of the sprite pointers in the plural and of properly retrieved data, and P6-NOREWRITE "
+            "observes sprite pointer 0 and whether reads occur at four data addresses of its structure in each field: "
+            "no other sprite channel is exercised and neither the control and end words nor the values returned are "
+            "compared; the graded member P6-NOREWRITE stays graded for SPR0PT and carries no id");
     }
 }
 
@@ -1460,18 +1485,19 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         i_dump(label, p, {"PI-2"});
         i_downstream(cs, a, p, {});
     } else if (label == "SELFTEST-PI-2-ANCHOR") {
-        // I-s: a self-test of the third clause of pi2_anchor, not a page-predicted
-        // contrast. Both lists end in a MOVE the Copper cannot execute in front
-        // of the terminal wait; on this design the Copper does not go on to the
+        // I-s: a diagnostic of the third clause of pi2_anchor. No page predicts
+        // the outcome, so the result is a MEASURED line and not an assertion.
+        // Both lists end in a MOVE the Copper cannot execute in front of the
+        // terminal wait; on this design the Copper does not go on to the
         // terminal wait. Every M1 field still holds exactly one restart and the
         // matched restarts still follow each other.
         ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
         ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
         i_dump(label, p, {"PI-2"});
-        checks.expect(p.pi2.holds(),
-            "SELFTEST-PI-2-ANCHOR: PI-2's comparator on I-s -- not page-predicted: on this design the Copper "
-            "fetches the first word of the MOVE it cannot write and nothing more of the list, so each field "
-            "holds one restart and none is preceded by a read of a terminal wait; a self-test of the third clause");
+        checks.note("SELFTEST-PI-2-ANCHOR diagnostic (no page predicts it, not an assertion): PI-2's comparator on I-s " +
+                    std::string(p.pi2.holds() ? "holds" : "does not hold") +
+                    "; on this design the Copper fetches the first word of the MOVE it cannot write and nothing more "
+                    "of the list, so each field holds one restart and none is preceded by a read of a terminal wait");
         checks.note("SELFTEST-PI-2-ANCHOR measured: " + anchor_text(a.anchor));
         i_downstream(cs, a, p, {});
     } else if (label == "PI-4") {
@@ -2047,16 +2073,16 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         t_dump(label, a, t, {"PT-7"});
         t_downstream(a, t, {});
     } else if (label == "SELFTEST-PT-7-ANCHOR") {
-        // T-j: a self-test of the third clause of pt7_anchor, not a page-predicted
-        // contrast (as I-s): LISTT ends in a MOVE the Copper cannot execute in
-        // front of the terminal wait.
+        // T-j: a diagnostic of the third clause of pt7_anchor, a MEASURED line
+        // and not an assertion (as I-s): LISTT ends in a MOVE the Copper cannot
+        // execute in front of the terminal wait.
         ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
         ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
         t_dump(label, a, t, {"PT-7"});
-        checks.expect(t.pt7.holds(),
-            "SELFTEST-PT-7-ANCHOR: PT-7's comparator on T-j -- not page-predicted: on this design the Copper "
-            "fetches the first word of the MOVE it cannot write and nothing more of the list, so each field "
-            "holds one restart and none is preceded by a read of a terminal wait; a self-test of the third clause");
+        checks.note("SELFTEST-PT-7-ANCHOR diagnostic (no page predicts it, not an assertion): PT-7's comparator on T-j " +
+                    std::string(t.pt7.holds() ? "holds" : "does not hold") +
+                    "; on this design the Copper fetches the first word of the MOVE it cannot write and nothing more "
+                    "of the list, so each field holds one restart and none is preceded by a read of a terminal wait");
         checks.note("SELFTEST-PT-7-ANCHOR measured: " + anchor_text(a.anchor));
         t_downstream(a, t, {});
     } else if (label == "FIX-T") {
