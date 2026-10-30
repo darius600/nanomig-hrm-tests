@@ -61,6 +61,9 @@ build_L5_waitloop:
                 move.w  d0,d2
                 lsl.w   #8,d2
                 add.w   #$4000,d2               ; d2 = ($40+i)<<8
+                ifd     L5_VPSHIFT
+                add.w   #$0100,d2               ; L5s: d2 = ($41+i)<<8
+                endc
                 move.w  d0,d1
                 add.w   d1,d1                    ; d1 = 2*i
                 cmp.w   d5,d0

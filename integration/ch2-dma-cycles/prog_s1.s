@@ -21,22 +21,39 @@ start:
         moveq   #1,d4
         bsr     build_Vbpln
         move.w  #COLOR17,(a1)+
-        move.w  #$0F00,(a1)+
-        move.w  #COLOR18,(a1)+
-        move.w  #$00F0,(a1)+
-        move.w  #COLOR19,(a1)+
-        move.w  #$000F,(a1)+
-        ifd     S1_C
-        ; L_S1c (2.8): WAIT VP=$48 (the line after the last line of use 1),
-        ; then COLOR17-19 <- $0FF0,$00FF,$0F0F.
-        move.w  #$4801,(a1)+
-        move.w  #$FFFE,(a1)+
-        move.w  #COLOR17,(a1)+
+        ifd     S1_COLV
+        ; L_S1v (2.8): the vertical-blanking colours are $0FF0,$00FF,$0F0F.
         move.w  #$0FF0,(a1)+
         move.w  #COLOR18,(a1)+
         move.w  #$00FF,(a1)+
         move.w  #COLOR19,(a1)+
         move.w  #$0F0F,(a1)+
+        else
+        move.w  #$0F00,(a1)+
+        move.w  #COLOR18,(a1)+
+        move.w  #$00F0,(a1)+
+        move.w  #COLOR19,(a1)+
+        move.w  #$000F,(a1)+
+        endc
+        ifd     S1_C
+        ; L_S1c (2.8): WAIT VP=$48 (the line after the last line of use 1),
+        ; then COLOR17-19 <- $0FF0,$00FF,$0F0F; L_S1cx writes $0FFF,$0F0F,$0FF0.
+        move.w  #$4801,(a1)+
+        move.w  #$FFFE,(a1)+
+        move.w  #COLOR17,(a1)+
+        ifd     S1_CX
+        move.w  #$0FFF,(a1)+
+        move.w  #COLOR18,(a1)+
+        move.w  #$0F0F,(a1)+
+        move.w  #COLOR19,(a1)+
+        move.w  #$0FF0,(a1)+
+        else
+        move.w  #$0FF0,(a1)+
+        move.w  #COLOR18,(a1)+
+        move.w  #$00FF,(a1)+
+        move.w  #COLOR19,(a1)+
+        move.w  #$0F0F,(a1)+
+        endc
         endc
         move.w  #$FFFF,(a1)+
         move.w  #$FFFE,(a1)+
@@ -101,7 +118,11 @@ structz_tbl:    dc.w    $4050,$4800
                 ifd     S1_Q2
                 dc.w    $7FFF,$0000
                 else
+                ifd     S1_Q2P
+                dc.w    $FF00,$0000
+                else
                 dc.w    $FFFF,$0000
+                endc
                 endc
                 rept    7
                 dc.w    $F0F0,$FF00
