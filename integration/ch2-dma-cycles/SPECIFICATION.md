@@ -585,8 +585,9 @@ precondition is part of a graded expression.
   the Copper's lists (L5, L5b): the Copper reads them whether or not the channel runs, so
   they cannot show the channel active.
 - **Populations.** "Every" needs a non-empty population: an empty one fails its line. T1
-  therefore requires every part of C5 (P7.3) to hold at least one Copper access in every
-  observed frame, and T2 requires at least one line spanned by a segment.
+  therefore requires every part of L5 in C5 (P7.3: the segments, the head and the tail) to hold
+  at least one Copper access in every observed frame, and T2 requires at least one line spanned
+  by a segment.
 
 ---
 
@@ -861,9 +862,10 @@ graded, the measurement that stands in its place and the reason are in one place
    channels, and the comparison of every later access against it is what P7 grades.
 5. **Preconditions.**
    - F1–F3, F2-COUNT, C1, K6 (both runs).
-   - **T1:** every part (113 segments, the head, the tail and the second list) has the same
-     number of Copper accesses in both runs, and every part of C5 has at least one in every
-     observed frame.
+   - **T1:** every part of L5 (the 113 segments, the head and the tail) has the same number of
+     Copper accesses in both runs, and every such part of C5 has at least one in every observed
+     frame. The second list (L5b) is not in T1: K6 requires its 12 words to be read, and P7
+     compares its accesses.
    - **T2:** no CPU-block access lies in any line spanned by a segment, in either run, and at
      least one line is spanned by a segment.
    - **T3:** in the lines of the segments in C6, bitplane fetches occur in every line; sprite
