@@ -26,6 +26,8 @@
 ;   I_MIDPTR     I-t   the BPL1PT MOVEs placed after WAIT $2001,$FF00 (line 32)
 ;   I_MIDSPR     I-u   the SPR0PT MOVEs placed after WAIT $1901,$FF00 (line 25)
 ;   I_LONGLIST   I-v   both lists, relocated, wait for line 255 and then hold 5,200 MOVEs before the terminal wait
+;   I_HCNTSTEP2  I-w   the handler adds 2 to HCNT, not 1
+;   I_HCNTSEED   I-x   the program writes $0007 to HCNT, not 0
 
         include "nanomig.i"
         include "ch2.i"
@@ -58,7 +60,13 @@ start:
         move.b  #$03,CIAADDRA.l
         move.b  #0,CIAAPRA.l
 
+        ; HCNT starts from a known value, written by the CPU in front of
+        ; every write of the handler (PI-13; I-x writes $0007).
+        ifd     I_HCNTSEED
+        move.w  #$0007,HCNT.l
+        else
         clr.w   HCNT.l
+        endif
 
         ; The fixture proves it can deliver a known value before anything
         ; else reads one.
@@ -185,7 +193,11 @@ i_handler:
         move.l  a1,COP1LCH(a6)          ; step 1: COP1LC, one long word
         exg     a0,a1                   ; step 2: the other list is next
         endif
+        ifd     I_HCNTSTEP2
+        addq.w  #2,HCNT.l               ; step 3 (I-w: 2, not 1)
+        else
         addq.w  #1,HCNT.l               ; step 3
+        endif
         move.w  #$0010,INTREQ(a6)       ; step 4: clears COPER
         rte
 

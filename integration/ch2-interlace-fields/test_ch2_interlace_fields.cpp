@@ -39,7 +39,8 @@
 // MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(long) runs prog_i_v (both lists, relocated, wait for line 255 and then hold 5,200 MOVEs in front of the terminal wait, I-v: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PI-2's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact
 // DIAGNOSTIC SELFTEST-PI-2-ANCHOR (printed as a MEASURED line, not graded; not a mutation of PI-2, no page predicts it): NMH_MUTATE=SELFTEST-PI-2-ANCHOR runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s); on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; the line prints that PI-2's comparator does not hold; controls: one restart per M1 field, consecutive matched restarts
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
-// MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
+// MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_w (the handler adds 2 to HCNT, I-w; interrupts, the completion word and one HCNT write per field stay live, PI-13 holds) and NMH_MUTATE=PI-5(count) runs prog_i_g (INTENA leaves COPER clear, I-g; no handler runs, no field holds an HCNT write); PI-5's comparator prints FAIL, in the first run through its value clause alone, in the second through its count clause
+// MUTATION PI-13 stimulus red: NMH_MUTATE=PI-13 runs prog_i_x (the program writes $0007 to HCNT, I-x); PI-13's comparator prints FAIL and PI-5 prints NOT GRADED
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k); PI-6's comparator prints FAIL through the tags
 // MUTATION PI-7(bpl) stimulus red: NMH_MUTATE=PI-7(bpl) runs prog_i_l (the BPL1PT MOVEs sit after the WAIT, I-l); the comparator locates the MOVEs in the assembled list and prints FAIL; the gates of P4 and P5 close, so P4a to P4e and P5 print NOT GRADED, as does the gate note of PI-12(bpl) ("not measured")
 // MUTATION PI-7(spr) stimulus red: NMH_MUTATE=PI-7(spr) runs prog_i_m (the SPR0PT MOVEs sit after the WAIT, I-m); the comparator locates the MOVEs in the assembled list and prints FAIL; the gate of P6 closes
@@ -615,12 +616,33 @@ bool all_lengths_equal(const IAnalysis& a, std::vector<int>* Ns = nullptr) {
 // The LACE-clear control run is a valid fixture: PI-1 and PI-2 on that run.
 bool pi9_control_valid(const IAnalysis& c) { return pi1_valid(c) && pi2_anchor(c); }
 
+// Every CPU write to HCNT in port order: the cycle and the data it carries.
+std::vector<std::pair<uint64_t, uint16_t>> hcnt_writes(const Run& r) {
+    std::vector<std::pair<uint64_t, uint16_t>> out;
+    for (const auto& a : r.log)
+        if (a.is_write && a.word_addr == kI_HCNT / 2) out.push_back({a.cycle, a.data});
+    return out;
+}
+
+// PI-13: HCNT starts from a known value -- the first write to HCNT in the run is
+// the program's write of 0, in front of every write by the handler.
+bool pi13_seed(const IAnalysis& a) {
+    auto w = hcnt_writes(a.r);
+    return !w.empty() && w.front().second == 0;
+}
+
+// PI-5: HCNT is written exactly once in every recorded field, and every write
+// from the first handler write on carries the previous written value plus 1.
 bool pi5_hcnt(const IAnalysis& a) {
     if (!a.matched) return false;
+    auto w = hcnt_writes(a.r);
+    if (w.size() < 2) return false;
+    for (size_t i = 1; i < w.size(); ++i)
+        if (w[i].second != (uint16_t)(w[i - 1].second + 1)) return false;
     for (const auto& f : a.fields) {
         int n = 0;
-        for (const auto& e : write_cycles(a.r, kI_HCNT))
-            if (e >= f.begin && e < f.end) ++n;
+        for (const auto& e : w)
+            if (e.first >= f.begin && e.first < f.end) ++n;
         if (n != 1) return false;
     }
     return true;
@@ -922,7 +944,7 @@ bool pi11_ctrl_valid(const IAnalysis& c) {
 // PI-6 and PI-7(bpl) only where the lists rewrite BPL1PT and PI-7(spr) only
 // where they rewrite SPR0PT (the MOVE is read from the assembled list).
 struct IPre {
-    Pv pi1, pi2, pi3, pi4, pi5, pi6, pi7b, pi7s, pi8, pi12b, pi12s;
+    Pv pi1, pi2, pi3, pi4, pi5, pi13, pi6, pi7b, pi7s, pi8, pi12b, pi12s;
     bool hasBpl = false, hasSpr = false, searchOk = false, p4eOk = false;
 };
 IPre i_pre(const IAnalysis& a) {
@@ -938,7 +960,10 @@ IPre i_pre(const IAnalysis& a) {
     p.pi4 = !frame ? not_graded(noFrame)
           : !a.hasBpl ? not_graded("the lists hold no BPL1PT MOVEs, so the fetches lie outside PIC's window")
           : graded(pi4_groups(a));
-    p.pi5 = frame ? graded(pi5_hcnt(a)) : not_graded(noFrame);
+    p.pi13 = graded(pi13_seed(a));
+    p.pi5 = !frame ? not_graded(noFrame)
+          : !p.pi13.holds() ? not_graded("PI-13 did not hold: HCNT does not start from the known value the writes are counted from")
+          : graded(pi5_hcnt(a));
     p.pi6 = !p.pi4.holds() ? not_graded("PI-4 did not hold or was not graded in this run, so it is not shown that every field has fetches inside PIC")
           : graded(pi6_tags(a));
     p.pi7b = !frame ? not_graded(noFrame)
@@ -995,9 +1020,15 @@ void g_PI4(const Pv& v) {
     pre_line(v,
         "PI-4: every recorded field contains exactly 256 groups of 20 consecutive ascending bitplane fetches");
 }
+void g_PI13(const Pv& v) {
+    pre_line(v,
+        "PI-13: HCNT starts from a known value -- the first write to HCNT in the run is the program's write of 0, "
+        "in front of every write by the handler");
+}
 void g_PI5(const Pv& v) {
     pre_line(v,
-        "PI-5: HCNT rises by exactly 1 in every recorded field");
+        "PI-5: HCNT is written exactly once in every recorded field, and every write in the run from the first "
+        "handler write on carries the previous written value plus 1");
 }
 void g_PI6(const Pv& v) {
     pre_line(v,
@@ -1151,6 +1182,7 @@ void run_program_i_assertions(const std::string& dir) {
     g_PI1(p.pi1);
     g_PI2(a, p.pi2);
     g_PI4(p.pi4);
+    g_PI13(p.pi13);
     g_PI5(p.pi5);
     g_PI6(p.pi6);
     g_PI7bpl(p.pi7b);
@@ -1295,7 +1327,7 @@ void pre_ctl(const std::string& label, const std::string& id, const Pv& v) {
 // the mutation targets prints through its own assertion).
 void i_dump(const std::string& label, const IPre& p, const std::set<std::string>& skip) {
     struct E { const char* id; const Pv* v; };
-    const E es[] = {{"PI-1", &p.pi1}, {"PI-2", &p.pi2}, {"PI-3", &p.pi3}, {"PI-4", &p.pi4}, {"PI-5", &p.pi5},
+    const E es[] = {{"PI-1", &p.pi1}, {"PI-2", &p.pi2}, {"PI-3", &p.pi3}, {"PI-4", &p.pi4}, {"PI-13", &p.pi13}, {"PI-5", &p.pi5},
                     {"PI-6", &p.pi6}, {"PI-7(bpl)", &p.pi7b}, {"PI-7(spr)", &p.pi7s}, {"PI-8", &p.pi8}};
     for (const auto& e : es) if (!skip.count(e.id)) pre_ctl(label, e.id, *e.v);
     if (!skip.count("PI-12(bpl)")) g_PI12bpl(p.pi12b);
@@ -1359,7 +1391,8 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         {"P6", "prog_i_e"},
         {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-2(long)", "prog_i_v"}, {"SELFTEST-PI-2-ANCHOR", "prog_i_s"},
         {"PI-4", "prog_i_h"},
-        {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-8", "prog_i_i"},
+        {"PI-5", "prog_i_w"}, {"PI-5(count)", "prog_i_g"}, {"PI-13", "prog_i_x"},
+        {"PI-6", "prog_i_k"}, {"PI-8", "prog_i_i"},
         {"FIX-I", "prog_i_n"},
     };
     auto it = kProg.find(label);
@@ -1504,10 +1537,20 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         g_PI4(p.pi4);
         i_dump(label, p, {"PI-4"});
         i_downstream(cs, a, p, {});
-    } else if (label == "PI-5") {
+    } else if (label == "PI-5" || label == "PI-5(count)") {
         g_PI5(p.pi5);
         i_dump(label, p, {"PI-5"});
         i_downstream(cs, a, p, {});
+        auto w = hcnt_writes(a.r);
+        std::string vals;
+        for (size_t i = 0; i < w.size() && i < 12; ++i) vals += (i ? "," : "") + std::to_string(w[i].second);
+        checks.note(label + " mutation measured: " + std::to_string(w.size()) + " writes to HCNT, the first values " + vals);
+    } else if (label == "PI-13") {
+        g_PI13(p.pi13);
+        i_dump(label, p, {"PI-13"});
+        i_downstream(cs, a, p, {});
+        auto w = hcnt_writes(a.r);
+        if (!w.empty()) checks.note(label + " mutation measured: the first write to HCNT carries " + std::to_string(w.front().second));
     } else if (label == "PI-6") {
         g_PI6(p.pi6);
         i_dump(label, p, {"PI-6"});
