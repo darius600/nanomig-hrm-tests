@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**62 findings ask for a review, in 30 modules.** They are listed by the
+**63 findings ask for a review, in 31 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -24,6 +24,12 @@ others ask for no RTL review:
 | 2 | filed against the RTL, but seen in the RTL source and not red at any pin: no test yet, or measured only inside the module |
 
 Module links point at the NanoMig revision the pages cite, `4315acb`.
+
+## [`src/tg68k/TG68KdotC_Kernel.vhd`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/tg68k/TG68KdotC_Kernel.vhd) — 1
+
+| finding | subject | evidence |
+|---|---|---|
+| [NM-HRM-094](findings/NM-HRM-094.md) | in 68020 mode NanoMig's TG68K reads no more instruction words ahead than in 68000 mode, where p. 13 says the more advanced processors prefetch more words | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/agnus.v`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v) — 5
 

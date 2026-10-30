@@ -91,8 +91,8 @@ commit.
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **35**, each run on both CPU cores: 11 green, 24 carrying a red; 27 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **6530** on fx68k — 6156 pass, **374 fail**; **6594** on TG68K — 6220 pass, **374 fail** |
-| registered findings | **88**, all open — 75 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA) |
-| what the registered findings rest on | 79 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
+| registered findings | **89**, all open — 76 against the Hardware Reference Manual and 13 against the AA specification. **63 ask you to decide whether the RTL should change** (53 HRM, 10 AA) |
+| what the registered findings rest on | 80 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **13** — ten are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |

@@ -2,7 +2,7 @@
 
 A reference for developers, not a narrative.
 
-**Seventy-five of these pages are filed against the Hardware Reference
+**Seventy-six of these pages are filed against the Hardware Reference
 Manual, 3rd edition (1991), and thirteen against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-013) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The fourteen
