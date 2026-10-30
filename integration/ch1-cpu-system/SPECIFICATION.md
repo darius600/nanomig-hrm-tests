@@ -79,8 +79,8 @@ The package has seven propositions:
   line without ids: the claim covers every other member, and the 68030 and
   68040 are not available. The ids stand on a RECORDED line with that reason
   (section 9). The page names no observable in which the difference shows;
-  P7 therefore compares everything the program makes the CPU write (section
-  9).
+  P7 therefore compares what the program can see of the instruction: the
+  destination word and the two handler markers (section 9).
 
 ---
 
@@ -265,8 +265,11 @@ exists in P1 only).
   window-close sentinel write). Whether each window appears, and how often,
   is P1.a's, P2.a's, P3.a's, P5.a's and P7.a's business, not C4's.
   - Contrast (empty population): leave out every S_A and S_B write of P2
-    (and every S_P and S_L write of P3). The program finishes, C4 prints
-    not evaluated, and P2.a (respectively P3.a) is red.
+    (and every S_P and S_L write of P3, and every S_A and S_B write of P7).
+    The program finishes, C4 prints not evaluated, and P2.a (respectively
+    P3.a, P7.a) is red. This calibrates the not-evaluated rule; it is not a
+    stimulus-red record of C4, which stays with the ordinary C4 contrasts
+    below.
   - Contrast: write S_START twice. It is no longer written exactly once, C4
     goes red, and S_START still reads back $0001.
   - Contrast (ordering, S_START): write S_START after the first window has
@@ -290,9 +293,12 @@ exists in P1 only).
     than the one it requests (00 for a 68010 or 68020 run; 11 for the
     68000-mode run of P1 and P2, which have no other run). The port shows
     the driven value, C5 goes red, and the relations that depend on the run
-    are not evaluated; the program finishes. P5's VBR image executes MOVEC,
-    which raises an exception in the 68000 mode, so P5.a, P5.b and P5.c are
-    red there as well.
+    are not evaluated; the program finishes. For P5 each advanced request is
+    driven with the other advanced value (01 with 11, 11 with 01): P5's VBR
+    image executes MOVEC, which raises an exception in the 68000 mode, so
+    driving 00 would break P5.a, P5.b and P5.c as well; with the other
+    advanced value MOVEC and every P5 precondition stay live and only C5 and
+    the lines gated on it change.
 - **Fixture.** Every run's program is loaded, the CPU is released, and the
   program reaches DONE; S_START reads back $0001 through the memory
   inspection before any other inspected value is trusted.
@@ -1083,7 +1089,8 @@ counted as in P3, as a calibration.
 **Proposition.** The same program, started from the same state and executing
 MOVE SR,\<dest\> in user mode, makes the system behave differently under the
 68010 and the 68020 than under the 68000: for each of the pairs (68000,
-68010) and (68000, 68020), the port's record of the window differs. Claims:
+68010) and (68000, 68020), the program-visible outcome of the instruction
+differs. Claims:
 `opus:1-guidelines.c56`, `sol:1-guidelines.c56`, p.13, which stand on a
 RECORDED line (section 1), not on a graded one. Graded on the second core in
 its three modes. The first core serves only to record the 68000 side.
@@ -1094,10 +1101,15 @@ its three modes. The first core serves only to record the 68000 side.
 **Reading.** The sentence compares the 68000's instruction with the other
 members' and says that the instruction "acts differently". It names no
 observable in which the difference shows and no direction. The page therefore
-supplies the inequality and nothing else. P7 grades that inequality on
-everything the port shows, so that a difference in the stored value, in an
-exception, in the bus accesses or in their timing all count, and no
-implementation-derived direction enters.
+supplies the inequality and nothing else. The same page says separately that
+the exception stack frames differ between the family members, and the port's
+record of the window contains those frame writes: the record can differ for
+that independent reason even if MOVE SR itself took the same path. The
+record is therefore not a proof that the instruction acts differently. P7
+grades the instruction's own program-visible outcome: the word it leaves at
+the destination and which handler the program reaches, the privilege-violation
+handler or the TRAP that follows the instruction. No direction enters; only
+that the outcome of the 68000 differs from the outcome of the other member.
 
 **Stimulus.** Program P7, one image for every mode.
 
@@ -1125,19 +1137,25 @@ The instructions exist on every member the system can run (`MOVE.W SR,<ea>` is
 a 68000 instruction; the page's subject), so the same image runs in every
 mode.
 
-**Observation.** The Chip-memory port. W_m is the open interval between the
-CPU write of $E702 to S_A and the CPU write of $F702 to S_B. For each run,
-the sequence Q of the port's accesses inside W_m, each as (time since the
-write of $E702 to S_A, word address, data, read or write), in time order.
-The test also records, for each run, the CPU writes inside W_m (the word at
-DEST, the markers and the frame words) and the three result words after the
-run, as RECORDED lines. They are not graded.
+**Observation.** For each run, the outcome triple O = (DEST, MRK_PRIV,
+MRK_TRAP), the three result words read through the memory inspection after
+the run (DEST is prefilled $5555, the markers start at zero). Which handler
+ran is the program's own record of the path the instruction took: MRK_PRIV
+is written only by the privilege-violation handler HM, MRK_TRAP only by the
+TRAP handler HT that follows the instruction. The Chip-memory port is the
+frame of reference for the window: W_m is the open interval between the CPU
+write of $E702 to S_A and the CPU write of $F702 to S_B. For each run the
+test also records the sequence Q of the port's accesses inside W_m, each as
+(time since the write of $E702 to S_A, word address, data, read or write),
+in time order, and the CPU writes inside W_m, as RECORDED lines. Q and the
+writes are not graded.
 
 **Expected relation.** For each of the pairs (68000, 68010) and (68000,
-68020), Q differs between the two runs: the sequences differ in length or in
-at least one entry. Both pairs must hold. p.13 states the difference for "other
+68020), O differs between the two runs: at least one of the three words
+differs. Both pairs must hold. p.13 states the difference for "other
 members" than the 68000 and nothing about 68010 against 68020, which is
-reported and not graded.
+reported and not graded. Whether Q differs is reported with each pair and is
+not part of the relation.
 
 **Preconditions**
 
@@ -1159,30 +1177,39 @@ reported and not graded.
     taken and the window closes, but no read at the privilege vector lies
     inside W_w and no port read of X_w carries $46FC, so P7.c goes red and
     the program finishes.
-- **P7 control, the sequence is a property of the mode.** A second run of
-  the 68000 mode produces the same Q as the first.
-  - Contrast: the second 68000-mode run loads a variant whose W_m executes
-    `MOVE.W D1,DEST` in place of `MOVE.W SR,DEST` (the exception route is
-    still not taken, the stores differ), so Q differs and the control goes
-    red; the pair lines do not depend on that run.
-- C1 to C5 and the fixture, in every run.
+- **P7 control, the outcome is a property of the mode.** A second run of
+  the 68000 mode produces the same O as the first. The control run is a run
+  like the three primary runs: it passes through the same fixture, C1 to C5,
+  P7.a, P7.b and P7.c lines, and the control is graded only when the first
+  68000-mode run and the control run pass all of them. Its Q is compared
+  with the first run's and reported.
+  - Contrast: the second 68000-mode run loads a variant whose TRAP handler
+    writes $7003 in place of $7002 to MRK_TRAP (the instruction at X_m is
+    unchanged, so P7.a, P7.b and P7.c still hold), so O differs and the
+    control goes red. The pair comparisons do not use the control run's
+    data, but they are gated by the passing control, so both are not
+    evaluated in that case.
+- C1 to C5 and the fixture, in every run, the control run included.
 
 **Contrasting case.** A pair of runs under the same mode. p.13 states a
 difference between members, so two runs of one member are predicted to give
-the same Q, and the relation evaluated on them goes red.
+the same O, and the relation evaluated on them goes red.
 - Contrast (pair 68000, 68010): the 68010 run requests and is driven with
-  00. C5 holds, the two Q are equal, and that pair's relation goes red alone;
+  00. C5 holds, the two O are equal, and that pair's relation goes red alone;
   the other pair holds.
 - Contrast (pair 68000, 68020): the 68020 run requests and is driven with
-  00. The pair (68000, 68020) goes red alone.
+  00. C5 holds, the two O are equal, and the pair (68000, 68020) goes red
+  alone.
 
 **Reference frame.** W_m, bounded by the program's own sentinel writes; the
 anchors are P7.a and P7.b.
 
 **Not graded**
 
-- Which of the observables differs, and how. The page says only "acts
-  differently".
+- How the outcome differs. The page says only "acts differently"; the
+  direction, the stored value and the exception path are measured, not
+  graded.
+- The port's record Q of W_m, and the exception frame words it contains.
 - 68010 against 68020, and the 68030 and 68040 (not available).
 - The stored status register value at DEST.
 
@@ -1215,9 +1242,11 @@ anchors are P7.a and P7.b.
 - **Byte order of a long store** is not on these pages. P2 grades the halves
   as an unordered pair.
 - **How MOVE SR "acts differently"** (p.13) is not stated: not the stored
-  value, not the exception, not the timing. P7 grades only that the port's
-  record of the window differs between the 68000 and each of the other two
-  available members.
+  value, not the exception, not the timing. P7 grades only that the
+  program-visible outcome (DEST, MRK_PRIV, MRK_TRAP) differs between the
+  68000 and each of the other two available members; the port's record of
+  the window also contains the exception frames, which p.13 names as a
+  separate difference, and is reported only.
 
 ---
 
@@ -1257,8 +1286,9 @@ anchors are P7.a and P7.b.
   instruction raises the privilege-violation exception: DEST keeps $5555,
   the privilege handler runs (MRK_PRIV $7001, MRK_TRAP $0000), and the
   exception frame is four words (21 port accesses). The records first differ
-  at entry 3. The 68010 and 68020 records are equal to each other. Both
-  graded pairs hold, and the same-mode control holds.
+  at entry 3. The 68010 and 68020 records are equal to each other. The
+  outcome triple differs in both graded pairs, and the same-mode control
+  holds.
 - **P5's and P6's own "contrasting case"** (first core vs. second core in
   68000 mode) spans both cores' separate executables; neither build can
   read the other's data, so each core prints its own RECORDED frame/depth
