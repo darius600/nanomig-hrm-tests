@@ -36,7 +36,7 @@ sm-test-fx68k: sm-rtl $(BINS)
 
 sm-test-tg68k: sm-rtl $(BINS)
 	rm -rf obj_dir_sm_tg68k out_sm_tg68k.txt
-	verilator $(COMMON_VFLAGS) 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR 		-I$(NANOMIG)/sim 		--Mdir obj_dir_sm_tg68k -cc --exe --build -j 0 		$(SM_FILES) $(TG68K_FILE) $(TEST_CPP) 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
+	verilator $(COMMON_VFLAGS) 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR 		-I$(NANOMIG)/sim 		--Mdir obj_dir_sm_tg68k -cc --exe --build -j 0 		$(call tg68k_files,$(SM_FILES)) $(TG68K_FILE) $(TEST_CPP) 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 	( cd obj_dir_sm_tg68k && ./Vnanomig $(PKG_DIR) ) > out_sm_tg68k.txt; rc=$$?; cat out_sm_tg68k.txt; exit $$rc
 
 sm-test: sm-test-fx68k sm-test-tg68k

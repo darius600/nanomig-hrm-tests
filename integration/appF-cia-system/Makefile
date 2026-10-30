@@ -96,7 +96,7 @@ conf-test-tg68k: conf-rtl-tg68k $(BINS)
 	verilator $(COMMON_VFLAGS) \
 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR -I$(NANOMIG)/sim \
 		--Mdir obj_dir_conf_tg68k -cc --exe --build -j 0 \
-		$(CONF_TG68K_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		$(call tg68k_files,$(CONF_TG68K_FILES)) $(TG68K_FILE) $(TEST_CPP) \
 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 	( cd obj_dir_conf_tg68k && ./Vnanomig $(PKG_DIR) ) > out_conf_tg68k.txt; rc=$$?; cat out_conf_tg68k.txt; exit $$rc
 
@@ -126,7 +126,7 @@ sp-test-tg68k: sp-rtl-tg68k $(BINS)
 	verilator $(COMMON_VFLAGS) \
 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR -I$(NANOMIG)/sim \
 		--Mdir obj_dir_sp_tg68k -cc --exe --build -j 0 \
-		$(SP_TG68K_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		$(call tg68k_files,$(SP_TG68K_FILES)) $(TG68K_FILE) $(TEST_CPP) \
 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 	( cd obj_dir_sp_tg68k && ./Vnanomig $(PKG_DIR) ) > out_sp_tg68k.txt; rc=$$?; cat out_sp_tg68k.txt; exit $$rc
 

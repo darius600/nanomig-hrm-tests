@@ -4,7 +4,12 @@ NANOMIG ?= ../../nanomig
 TOP_MODULE = cpu_wrapper
 # Fixture, harness and program-building approach reused from
 # hrm/appK-autoconfig-space -- see SPECIFICATION.md.
-SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
+# The TG68K the boards synthesize, translated by GHDL, and cpu_wrapper.v with
+# the board's skipFetch connection, both generated at build time: see
+# ../../integration/harness/tg68k.mk (TG68K_KERNEL=shipped compiles the
+# submodule's sim/TG68KdotC_Kernel.v and unmodified cpu_wrapper.v instead).
+include ../../integration/harness/tg68k.mk
+SRC = $(call tg68k_files,$(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v) $(TG68K_FILE)
 
 # This package deliberately does NOT define ENABLE_RAM32. That macro selects
 # the configuration of NanoMig's 32 MiB boards (src/lattice/icepi-zero,

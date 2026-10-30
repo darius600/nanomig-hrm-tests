@@ -22,14 +22,27 @@
 #   uart_rx/uart_tx pins, which is where the manual describes the serial port;
 #   the boards' serial behaviour at the modem interface is not tested here.
 #
+# What the TG68K build compiles in place of the submodule's TG68K files:
+#   the kernel the boards synthesize, translated from src/tg68k/*.vhd by GHDL
+#   with the generics of the board instance (cpu_wrapper.v:405-417), and a
+#   copy of cpu_wrapper.v that connects the kernel's skipFetch output in the
+#   Verilator instance as the board instance does (.skipFetch(skip_fetch_i),
+#   :464), so cpu_req (:101) drops the bus request on a skipped fetch. The
+#   submodule's own sim/TG68KdotC_Kernel.v is a netlist of an older kernel
+#   revision, and the Verilator instance (:420-441) leaves skipFetch
+#   unconnected. Both files are generated at build time, nothing under
+#   nanomig/ is modified, and the fx68k build is unaffected.
+#   TG68K_KERNEL=shipped compiles the submodule's two files instead. See
+#   tg68k.mk. Needs GHDL on PATH (or GHDL=<path>).
+#
 # Each run starts from its object
 # directory: fx68k reads its microcode from the working directory, and a
 # binary started anywhere else runs without it. The test gets the directory
 # holding the .bin files as its first argument, and writes out_<core>.txt.
 # `make test` fails if either run fails.
 #
-# Requires Verilator and vasm (vasmm68k_mot, http://sun.hasenbraten.de/vasm/),
-# both on PATH.
+# Requires Verilator, vasm (vasmm68k_mot, http://sun.hasenbraten.de/vasm/) and
+# GHDL (for the TG68K build), all on PATH.
 
 NANOMIG      ?= $(abspath ../../nanomig)
 MINIMIG_DIR  := $(NANOMIG)/src/minimig-aga
@@ -63,7 +76,7 @@ MINIMIG_FILES := \
 
 FX68K_DIR   := $(NANOMIG)/src/fx68k
 FX68K_FILES := $(FX68K_DIR)/fx68k.sv $(FX68K_DIR)/fx68kAlu.sv $(FX68K_DIR)/uaddrPla.sv
-TG68K_FILE  := $(NANOMIG)/sim/TG68KdotC_Kernel.v
+include $(HARNESS_DIR)/tg68k.mk
 
 COMMON_VFLAGS := -O3 -DINFER_DPRAM --no-timing -Wno-fatal --threads 1 --top-module nanomig
 COMMON_CFLAGS := -std=c++17 -I$(HARNESS_DIR)
@@ -95,7 +108,7 @@ test-tg68k: $(BINS)
 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR \
 		-I$(NANOMIG)/sim \
 		--Mdir obj_dir_tg68k -cc --exe --build -j 0 \
-		$(MINIMIG_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		$(call tg68k_files,$(MINIMIG_FILES)) $(TG68K_FILE) $(TEST_CPP) \
 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 	( cd obj_dir_tg68k && ./Vnanomig $(PKG_DIR) ) > out_tg68k.txt; rc=$$?; cat out_tg68k.txt; exit $$rc
 

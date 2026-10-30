@@ -18,3 +18,7 @@ integration/**/*.bin
 
 __pycache__/
 *.pyc
+
+# The TG68K the TG68K builds compile, generated from nanomig/src/tg68k by
+# integration/harness/tg68k-board.sh (one directory per set of inputs).
+/build/

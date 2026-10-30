@@ -10,7 +10,12 @@ TOP_MODULE = cpu_wrapper
 # (:577) and the default is "0.5MB" (:580), so size code 000 (8MB) is never
 # emitted in Zorro II mode and K-0796/K-0772's reachable half could not be
 # graded. No file under nanomig/ is modified.
-SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
+# The TG68K the boards synthesize, translated by GHDL, and cpu_wrapper.v with
+# the board's skipFetch connection, both generated at build time: see
+# ../../integration/harness/tg68k.mk (TG68K_KERNEL=shipped compiles the
+# submodule's sim/TG68KdotC_Kernel.v and unmodified cpu_wrapper.v instead).
+include ../../integration/harness/tg68k.mk
+SRC = $(call tg68k_files,$(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v) $(TG68K_FILE)
 
 MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
 

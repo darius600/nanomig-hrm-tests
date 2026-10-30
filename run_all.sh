@@ -21,6 +21,15 @@ if [ ! -e nanomig/src/minimig-aga/agnus_copper.v ]; then
     exit 2
 fi
 
+# The TG68K builds compile a GHDL translation of the board's VHDL and a copy of
+# cpu_wrapper.v with the board's skipFetch connection (integration/harness/
+# tg68k.mk). Make them once here, before any package starts: a missing GHDL
+# stops the run with one message instead of failing every TG68K build.
+# TG68K_KERNEL=shipped builds with the submodule's own files and needs no GHDL.
+if [ "${TG68K_KERNEL:-board}" = board ]; then
+    sh integration/harness/tg68k-board.sh generate "${NANOMIG:-}" > /dev/null || exit 2
+fi
+
 rc=0
 
 echo "===== HRM suite ====="

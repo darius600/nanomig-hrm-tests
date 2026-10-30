@@ -75,6 +75,6 @@ pm-run-tg68k: $(BINS)
 		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR \
 		-I$(NANOMIG)/sim \
 		--Mdir obj_dir_$(PM_NAME)_tg68k -cc --exe --build -j 0 \
-		$(MINIMIG_FILES) $(TG68K_FILE) $(TEST_CPP) \
+		$(call tg68k_files,$(MINIMIG_FILES)) $(TG68K_FILE) $(TEST_CPP) \
 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 	( cd obj_dir_$(PM_NAME)_tg68k && ./Vnanomig $(PKG_DIR) ) > out_$(PM_NAME)_tg68k.txt; rc=$$?; cat out_$(PM_NAME)_tg68k.txt; exit $$rc

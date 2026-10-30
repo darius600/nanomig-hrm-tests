@@ -12,12 +12,16 @@ TOP_MODULE = cpu_wrapper
 # -Wno-BLKANDNBLK, as NanoMig's own sim/Makefile does, and runs with
 # --no-assert, and so built it gives this package's every result line as
 # TG68K does. The other core cpu_wrapper.v can
-# select, TG68KdotC_Kernel, elaborates when built from the sim/ tree
-# cpu_wrapper.v's own `ifdef VERILATOR branch already names (all-lowercase
-# ports matching nanomig/sim/TG68KdotC_Kernel.v, not the parametrized
-# synthesis source under src/tg68k/). This build selects it with
+# select, TG68KdotC_Kernel, elaborates from the Verilog translation of the
+# board's VHDL (all-lowercase ports, the `ifdef VERILATOR branch of
+# cpu_wrapper.v). This build selects it with
 # -DENABLE_TG68K=1; no file under nanomig/ is modified.
-SRC = $(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v $(NANOMIG)/sim/TG68KdotC_Kernel.v
+# The TG68K the boards synthesize, translated by GHDL, and cpu_wrapper.v with
+# the board's skipFetch connection, both generated at build time: see
+# ../../integration/harness/tg68k.mk (TG68K_KERNEL=shipped compiles the
+# submodule's sim/TG68KdotC_Kernel.v and unmodified cpu_wrapper.v instead).
+include ../../integration/harness/tg68k.mk
+SRC = $(call tg68k_files,$(NANOMIG)/src/minimig-aga/$(TOP_MODULE).v) $(TG68K_FILE)
 
 # MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."
 # lines in test_cpu_wrapper.cpp) by defining MUT_<NAME>=1 for the build, so
