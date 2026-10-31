@@ -965,7 +965,10 @@ otherwise.
   reason: neither the program's own code nor its result block is read by a
   pointer-width-limited DMA channel, only the CPU itself.
 - **Mutation scope.** Every mutation is replayed on both cores in every
-  configuration its own assertion or precondition is graded in (2.1); the
+  configuration its own assertion or precondition is graded in (2.1), and
+  the records of the audio, T2S and disk selectors print the counts they
+  state on fx68k, on the board's TG68K kernel and on the shipped TG68K
+  netlist alike (`TG68K_KERNEL=shipped`); the
   F1/B4 contrasting case is ECS only, per 2.4. The normal run never runs a
   mutant.
 - **Fixture lines (2.3).** Four kinds of line carry no claim: FIXTURE (the program
