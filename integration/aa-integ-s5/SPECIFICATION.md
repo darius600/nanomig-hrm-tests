@@ -1735,8 +1735,11 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
 - **P19** and **P20** compare the colour clock measured from refresh with the 8
   system clocks their RxD schedule is built for (P19-PRE-K, P20-PRE-K). P19, frame 8:
   the interval is from the end of its stop cell plus T plus R to the start of the 12T
-  low. P20 drives its 12T low from a marker that follows triple 4 and polls 201 reads;
-  its triples are located by the markers of the INTREQ writes (run A) and of the
+  low. P20 drives its 12T low from a marker that follows triple 4 and polls 401 reads;
+  the reads before and during the low that P20-G-RXD counts are 29 and 67 on fx68k, 33 and 75 on
+  the TG68K board kernel and 27 and 62 on the shipped kernel, and the verdict holds with a poll of
+  an eighth of the reads on all three builds (50 reads: 28 and 18, 32 and 14, 26 and 20).
+  Its triples are located by the markers of the INTREQ writes (run A) and of the
   INTREQ and SERDAT writes (run B).
 
 ### 7.4 Mutations
@@ -1777,7 +1780,7 @@ and not FAIL; as for `P2-G-W` the boundary cannot be placed by the stimulus. The
 `P16-IMPL` and `P17-NONE` build the test against a private copy of the
 design outside the repository (`make test-<core> NANOMIG=<copy>`, then
 `NMH_ONLY=<proposition> NMH_MUTATE=<selector>`; the selector changes no stimulus): in
-`P6-IMPL` the volume path gives bit 6 the level of 64; in `P16-IMPL` a word waiting in
+`P6-IMPL` the volume path gives bit 6 the level of 64 (`paula_audio_mixer.v` passes 64 for a set bit 6, `paula_audio_volume.v` takes a 7-bit volume); in `P16-IMPL` a word waiting in
 the buffer starts its frame at the end of the previous one; in `P17-NONE` the TBE
 request is set at the end of the frame.
 `P16-DELAY` writes word 5 and the later words 9 line starts (about 30 bit times) later, so that word 5 is not waiting when
