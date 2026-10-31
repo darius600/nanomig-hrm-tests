@@ -228,10 +228,10 @@ again after a one-shot has ended, and the comparators find it.
 with PBON (CR = $07) over a latch of 60, with DDRB bit n = 1 and the data bit
 0, and reads PRB and ICR 600 times each; p. 342 has the line change level at
 every underflow and at no other time, and be high before the first. On CIA-B's
-two instances ICR flags 88 underflows and PRB shows no transition in the 600
-samples (the package prints `T=0 Q=88` for each instance): bit n never
-changes, and the line is red: 88 underflow flags against no transition at all
-is the clause "on every timer underflow, the output can either toggle", which
+two instances ICR flags 88 underflows on fx68k and 79 on TG68K, and PRB shows
+no transition in the 600 samples (the package prints `T=0 Q=88` for each
+instance on fx68k, `T=0 Q=79` on TG68K): bit n never changes, and the line is
+red: 88 and 79 underflow flags against no transition at all is the clause "on every timer underflow, the output can either toggle", which
 `P3` carries. `P3` also requires the level before the first flag to be high.
 `P3-PRE`, the underflows at least three samples apart and at least 16 of them,
 is green. `P9-LEGF-TRANSITIONS`
@@ -283,8 +283,8 @@ three latches of each are usable. `P9-LEGF-TRANSITIONS-GREENCTL` runs the
 period measurement and the transition-spacing comparator on a toggle the CPU
 makes after every flagged ICR read: 173 PRB transitions in the 600 samples on
 fx68k and 157 on TG68K, with P(40) = 41. `P9-LEGW-GREENCTL` runs the width
-comparator on a width the CPU makes, W(40) = 53 and W(100) = 114 on fx68k (113
-on TG68K), inside 60 ± s with s = 10.02 E, after its own
+comparator on a width the CPU makes, W(40) = 53 and W(100) = 114 on fx68k (50
+and 113 on TG68K), inside 60 ± s with s = 10.02 E (9.03 E on TG68K), after its own
 `P9-LEGW-GREENCTL-PRE2.2` and `-PRE2.3`. All are green on both cores: the samplers and
 the comparators see a level that moves at each underflow. `P1-PRE1.1` and `P9-LEGF-PRE` are green as well; `P2-PRE2.1` is recorded rather than graded.
 
