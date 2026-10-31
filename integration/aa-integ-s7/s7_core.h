@@ -136,8 +136,6 @@ struct Cap {
     uint64_t done_cycle = 0;
     uint64_t end_cycle = 0;
     uint64_t period = 0;                        // clk_sys cycles per bus period: the smallest spacing of two log entries
-    std::vector<uint64_t> strobe_t;             // cycles of the CPU's read of the last operand word of each script op that writes COPJMP1 or COPJMP2
-    std::vector<uint64_t> vbl_seen;             // cycles of the CPU's read of the script word after each VBLSYNC op: the CPU has seen INTREQR bit 5 (the vertical blank) set
     uint32_t prog_end = 0, script_end = 0;      // the CPU spans of this run: image end + 16, script end + 16
 };
 
@@ -201,21 +199,6 @@ inline Cap run(const RunSpec& s) {
         if (d > 0 && (c.period == 0 || d < c.period)) c.period = d;
     }
     for (int i = 0; i < s.sc.logn; ++i) c.log.push_back(h.peek_logical(kLogBase + 2 * uint32_t(i)).value_or(0xDEAD));
-    {   // the strobe writes: the script ops that write COPJMP1 (0x088) or COPJMP2 (0x08A), found in the script the run was given
-        static const int len[14] = {1, 3, 4, 2, 2, 2, 2, 2, 2, 1, 4, 4, 5, 4};
-        const auto& w = s.sc.w;
-        std::set<uint32_t> lasts, vnext;
-        for (size_t i = 0; i < w.size() && w[i] < 14; i += len[w[i]]) {
-            if (w[i] == 6) vnext.insert(kScript + 2 * uint32_t(i + 2));
-            bool st = (w[i] == 1 && (w[i + 1] == 0x088 || w[i + 1] == 0x08A)) ||
-                      (w[i] == 12 && (w[i + 1] == 0x088 || w[i + 1] == 0x08A || w[i + 3] == 0x088 || w[i + 3] == 0x08A));
-            if (!st) continue;
-            lasts.insert(kScript + 2 * uint32_t(i + len[w[i]] - 1));   // the op's last operand word
-        }
-        for (const auto& a : c.ram) if (!a.is_write && lasts.count(a.word_addr * 2)) c.strobe_t.push_back(a.cycle);
-        std::sort(c.strobe_t.begin(), c.strobe_t.end());
-        for (const auto& a : c.ram) if (!a.is_write && vnext.count(a.word_addr * 2)) c.vbl_seen.push_back(a.cycle);
-    }
     if (s.want_audio) c.audio.assign(h.audio().begin() + vbase, h.audio().end());
     if (s.want_video) c.video.assign(h.video().begin() + vbase, h.video().end());
     scan_marks(c, 0, c.ram.size());
@@ -309,63 +292,82 @@ inline size_t refresh_reads(const std::vector<Acc>& acc, uint64_t t0, uint64_t t
 inline size_t refresh_min(unsigned lines) { return lines >= 1 ? kRefSlots * (lines - 1) : 0; }
 
 // The final WAIT of a list ($FFFF, $FFFE) and the word after it (SPECIFICATION.md 1.10). AA p.20, WAIT: 'Wait until beam counter
-// is equal to, or greater than. (keeps Coprocessor off of bus until beam position has been reached)'. The package measures the
-// Copper's reads of the word after a list's final WAIT and attributes each to an event the run observes; it grades nothing about
-// them: no page-founded restart boundary is observable at the RAM port (SPECIFICATION.md 1.10).
+// is equal to, or greater than. (keeps Coprocessor off of bus until beam position has been reached)'. AA p.21: COP1LC and COP2LC are
+// transferred to the program counter on a strobe, and COP1LC at the beginning of each vertical blank; HRM p.25: the next instruction is
+// fetched from the new location. The first-word fetch of the restarted list is therefore an anchor the RAM port shows. The package
+// measures, per list, the Copper's reads of the word after the final WAIT between the read of the WAIT's second word and that fetch,
+// with their distance to it; it grades nothing about them, because the pages do not fix the restart's first bus cycle.
 struct FwList { std::string name; uint32_t wait_at; };   // byte address of the first word of the list's final WAIT
 struct Fw { std::string text; };
 
-// The events a read of the word after a final WAIT is attributed to, as cycles observed without the Copper's help:
-// - the Copper's own last read of the final WAIT's second word before the read;
-// - the CPU's read of the last operand word of a script op that writes COPJMP1 or COPJMP2 (the write follows that read);
-// - the CPU's sight of the vertical blank (its read of the script word after a VBLSYNC op: the program has seen INTREQR bit 5 set).
-// A read is attributed to the latest of these that lies before it; the vertical blank itself starts earlier than the CPU's sight of it, and
-// no output shows the strobe write or the start of the vertical blank, so a read attributed to the second word's read may lie in a restart.
-inline Fw fw_eval(const Cap& c, const std::vector<Acc>& acc, const std::vector<FwList>& lists) {
+// `starts` holds the byte address of the first word of every list the run can restart (IDLE and the case lists); a read of one of them,
+// after a read of the WAIT's second word, is the fetch that ends the interval.
+inline Fw fw_eval(const Cap& c, const std::vector<Acc>& acc, const std::vector<FwList>& lists, const std::vector<uint32_t>& starts) {
     Fw f;
     std::map<uint32_t, std::vector<uint64_t>> reads;   // address -> cycles of its reads by anything but a write or a refresh cycle, from the release of the CPU on
-    for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr >= 0x090000 && a.addr < 0x090600) reads[a.addr].push_back(a.t);
+    std::vector<std::pair<uint64_t, uint32_t>> fetch;  // (cycle, address) of every read of the first word of a list
+    for (auto& a : acc) {
+        if (a.write || a.refresh || a.t < c.base || a.addr < 0x090000 || a.addr >= 0x090600) continue;
+        reads[a.addr].push_back(a.t);
+        if (std::find(starts.begin(), starts.end(), a.addr) != starts.end()) fetch.push_back({a.t, a.addr});
+    }
     const std::vector<uint64_t> none;
     auto rd = [&](uint32_t a) -> const std::vector<uint64_t>& { auto it = reads.find(a); return it == reads.end() ? none : it->second; };
     auto last_before = [](const std::vector<uint64_t>& v, uint64_t p) -> uint64_t {   // the latest cycle of the sorted v that lies before p, or 0
         auto it = std::lower_bound(v.begin(), v.end(), p);
         return it == v.begin() ? 0 : *(it - 1);
     };
-    f.text = "Copper reads of the two words of a list's final WAIT, and of the word after it, each of the latter attributed to the latest of three events before it (the Copper's read of the WAIT's second word, the CPU's read of the last operand word of a COPJMP1 or COPJMP2 script op, the CPU's sight of the vertical blank); not graded, since no page-founded restart boundary is observable at the RAM port:";
+    auto first_fetch_after = [&](uint64_t t) -> size_t {   // the index of the first fetch later than t, or fetch.size()
+        size_t i = 0;
+        while (i < fetch.size() && fetch[i].first <= t) ++i;
+        return i;
+    };
+    auto dists = [](const std::map<uint64_t, size_t>& d) {   // 'distance x count', ascending
+        std::string s;
+        for (auto& kv : d) s += (s.empty() ? "" : ", ") + dec((long long)kv.first) + " x " + dec((long long)kv.second);
+        return s.empty() ? std::string("none") : s;
+    };
+    f.text = "Copper reads of the word after a list's final WAIT, each placed between the Copper's read of the WAIT's second word and the next read of the first word of a restarted list (the fetch from the new location), with its distance to that fetch in cycles; not graded, since the pages do not fix the restart's first bus cycle:";
     std::vector<std::string> names;
     for (auto& l : lists) if (std::find(names.begin(), names.end(), l.name) == names.end()) names.push_back(l.name);
     for (auto& nm : names) {
-        size_t n = 0, reached = 0, total = 0, with_reads = 0, by_w = 0, by_strobe = 0, by_vbl = 0, by_none = 0;
+        size_t n = 0, reached = 0, total = 0, with_reads = 0, before = 0, after = 0, no_w2 = 0, no_fetch = 0;
         uint32_t first = 0;
-        std::string many;
+        std::map<uint64_t, size_t> d_before, d_after;
+        std::string example, many;
         for (auto& l : lists) {
             if (l.name != nm) continue;
             if (!n++) first = l.wait_at;
             const auto& r0 = rd(l.wait_at); const auto& r1 = rd(l.wait_at + 2); const auto& rp = rd(l.wait_at + 4);
             if (!r0.empty() && !r1.empty()) ++reached;
             if (!rp.empty()) ++with_reads;
-            std::map<std::pair<int, uint64_t>, std::vector<uint64_t>> per_event;   // (kind, cycle of the event) -> reads attributed to it
-            for (uint64_t p : rp) {
-                const uint64_t tw = last_before(r1, p), ts = last_before(c.strobe_t, p), tv = last_before(c.vbl_seen, p);
-                int kind; uint64_t te;
-                if (!tw && !ts && !tv) { kind = 3; te = 0; ++by_none; }
-                else if (tw >= ts && tw >= tv) { kind = 0; te = tw; ++by_w; }
-                else if (ts >= tv) { kind = 1; te = ts; ++by_strobe; }
-                else { kind = 2; te = tv; ++by_vbl; }
-                per_event[{kind, te}].push_back(p);
-            }
             total += rp.size();
-            for (auto& kv : per_event)
+            std::map<uint64_t, std::vector<uint64_t>> per_interval;   // cycle of the fetch -> the reads placed before it
+            for (uint64_t t : rp) {
+                const uint64_t p = last_before(r1, t);
+                const size_t qi = first_fetch_after(t);
+                const uint64_t lf = qi ? fetch[qi - 1].first : 0;   // the latest fetch before t, or 0
+                if (!p) { ++no_w2; continue; }
+                if (lf > p) { ++after; ++d_after[t - lf]; continue; }
+                if (qi == fetch.size()) { ++no_fetch; continue; }
+                ++before; ++d_before[fetch[qi].first - t];
+                per_interval[fetch[qi].first].push_back(t);
+                if (example.empty())
+                    example = " e.g. the WAIT's second word read at cycle " + dec((long long)p) + ", the word after it at cycle " + dec((long long)t) +
+                              ", the first word at $" + hex6(fetch[qi].second) + " at cycle " + dec((long long)fetch[qi].first) + " (distance " + dec((long long)(fetch[qi].first - t)) + ");";
+            }
+            for (auto& kv : per_interval)
                 if (kv.second.size() > 1) {
-                    many += " $" + hex6(l.wait_at + 4) + " read " + dec((long long)kv.second.size()) + " times after the event at cycle " + dec((long long)kv.first.second) + " (cycles";
+                    many += " $" + hex6(l.wait_at + 4) + " read " + dec((long long)kv.second.size()) + " times before the fetch at cycle " + dec((long long)kv.first) + " (cycles";
                     for (uint64_t p : kv.second) many += " " + dec((long long)p);
                     many += ");";
                 }
         }
-        f.text += " " + nm + " (" + dec((long long)n) + (n == 1 ? " list" : " lists") + ", the first final WAIT at $" + hex6(first) + "): final WAIT read in " + dec((long long)reached) + ", word after it read " +
-                  dec((long long)total) + " times in " + dec((long long)with_reads) + ": " + dec((long long)by_w) + " after the read of the WAIT's second word, " + dec((long long)by_strobe) + " after a COPJMP script op, " +
-                  dec((long long)by_vbl) + " after the CPU's sight of the vertical blank, " + dec((long long)by_none) + " before every event" +
-                  (many.empty() ? "" : "; more than one in one event:" + many) + ";";
+        f.text += " " + nm + " (" + dec((long long)n) + (n == 1 ? " list" : " lists") + ", the first final WAIT at $" + hex6(first) + "): second word of the final WAIT read in " + dec((long long)reached) +
+                  ", word after it read " + dec((long long)total) + " times in " + dec((long long)with_reads) + ": " + dec((long long)before) + " between the read of the WAIT's second word and the next fetch (distance to the fetch: " + dists(d_before) + "), " +
+                  dec((long long)after) + " after a fetch and before the next read of the WAIT's second word (distance from the fetch: " + dists(d_after) + "), " +
+                  dec((long long)no_w2) + " before every read of the WAIT's second word, " + dec((long long)no_fetch) + " with no fetch after them;" + example +
+                  (many.empty() ? "" : " more than one in one interval:" + many);
     }
     return f;
 }
@@ -373,7 +375,7 @@ inline Fw fw_eval(const Cap& c, const std::vector<Acc>& acc, const std::vector<F
 // The final-WAIT lines of a proposition `id`: the measurement, and the assertion it does not carry.
 inline void fw_print(Checks& ck, const std::string& id, const Fw& f) {
     ck.note(id + " " + f.text);
-    ck.record("NOT CHECKABLE " + id + "-FW: that the Copper reads no word after a final WAIT ($FFFF, $FFFE) while it waits (AA p.20 WAIT 'keeps Coprocessor off of bus until beam position has been reached') needs the restart that ends the waiting, and no page-founded restart boundary can be observed at the RAM port: the write of the strobe is not visible, the start of the vertical blank is not exposed, and a final WAIT that is never released cannot be made to read its successor while it waits, so no stimulus contrast exists");
+    ck.record("OPEN " + id + "-FW: whether the Copper reads no word after a final WAIT ($FFFF, $FFFE) before the first fetch from the restarted list (AA p.20 WAIT 'keeps Coprocessor off of bus until beam position has been reached'; AA p.21 the location register is transferred to the program counter on a strobe or at the beginning of each vertical blank; HRM p.25 the next instruction is fetched from the new location) is not graded: the pages do not fix the restart's first bus cycle, since no page says that the Copper's first bus cycle after the strobe or the start of the vertical blank is that fetch, so a read of the word after the WAIT between the WAIT's second word and the fetch is measured and printed above, not judged");
 }
 
 } // namespace s7

@@ -101,7 +101,7 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     bool pc1 = true, pc2 = true, pc3 = c.timeouts == 0, pc4 = true, pc5 = (logv(c, r.dma_idx) & 0x0240) == 0x0240, assert_ok = true;
     Ctx cx{&c, &r.acc};
     // C12 runs its case lists with COPCON bit 1 clear only; no read of their final WAIT is observed, so only IDLE is measured.
-    const Fw fw = fw_eval(c, r.acc, {{"IDLE", kIdle}});
+    const Fw fw = fw_eval(c, r.acc, {{"IDLE", kIdle}}, {kIdle, kCase + 0x40, kCase + 0x80, kCase + 0xC0});
     const std::vector<Region> px = {{kPx, kPx + 4}}, pxa = {{kPx, kPx + 2}};
     std::vector<Region> chan = {{kDst, kDst + 4}, {kDst3, kDst3 + 2}, {kPx, kPx + 4}};
     std::vector<std::pair<uint64_t, uint64_t>> wins;

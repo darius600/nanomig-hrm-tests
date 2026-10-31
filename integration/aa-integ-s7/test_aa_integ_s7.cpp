@@ -16,9 +16,11 @@
 // inside the window. That the four reads of a line form one group, and that no line holds more than four, is unfalsifiable at this
 // boundary, because no stimulus changes how many refresh reads a line holds. The records of the precondition shorten the window.
 //
-// The final-WAIT lines (C1-FW ... C12-FW, F5-FW, F9-FW): SPECIFICATION.md 1.10. Each is a RECORDED NOT CHECKABLE line, because no
-// page-founded restart boundary of the Copper is observable at the RAM port and no stimulus contrast exists. The per-list read
-// counts of the word after a final WAIT are MEASURED lines, attributed by the event they follow.
+// The final-WAIT lines (C1-FW ... C12-FW, F5-FW, F9-FW): SPECIFICATION.md 1.10. Each prints a MEASURED line per list name: the
+// Copper's reads of the word after the final WAIT between the read of the WAIT's second word and the next read of the first word of
+// a restarted list, with their distance to that fetch. The RECORDED line of each names the open point: the pages do not fix the
+// restart's first bus cycle, so nothing about those reads is graded. NMH_MUTATE=F9-FW is the demonstration that the measurement
+// sees a successor read: IDLE is {$0001, $FFFE, $FFFF, $FFFE}, the first WAIT ends at once and the word at IDLE + 4 is read.
 //
 // MUTATION records of the form 'MUTATION <label> stimulus red': the second token is the label of the line the contrast moves.
 //
@@ -44,7 +46,7 @@
 // MUTATION C4 stimulus red NMH_MUTATE=C4: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; fx68k and TG68K: FAIL C4.
 // MUTATION C4-FIXTURE stimulus red NMH_MUTATE=C4-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; fx68k and TG68K: FAIL C4-FIXTURE; NOT GRADED: C4.
 // MUTATION C4-PC1 stimulus red NMH_MUTATE=C4-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; fx68k and TG68K: FAIL C4-PC1; NOT GRADED: C4.
-// MUTATION C4-PC2 stimulus red NMH_MUTATE=C4-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; fx68k and TG68K: FAIL C4-PC2; NOT GRADED: C4. The C4 MEASURED line of this run prints one read of the word after the final WAIT of the VHPOSW list (1 after the read of the WAIT's second word, on both cores): the Copper MOVE to VHPOSW advances the beam counter and the added poll waits across the vertical blank that follows, at whose restart (AA p.21 'COP1LC is automatically used at the beginning of each vertical blank time') the Copper makes that read. It is a restart-cycle read, a MEASURED line, and no line is red for it.
+// MUTATION C4-PC2 stimulus red NMH_MUTATE=C4-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; fx68k and TG68K: FAIL C4-PC2; NOT GRADED: C4. The C4 MEASURED line of this run prints one read of the word after the final WAIT of the VHPOSW list, 217936 cycles after the read of the WAIT's second word and 16 cycles before the next read of the first word of the restarted list, at $090100 (fx68k: WAIT second word at cycle 5466345, the read at 5684281, the fetch at 5684297; TG68K: 5465889, 5683825, 5683841). It is a MEASURED line and no line is red for it.
 // MUTATION C4-PC3 stimulus red NMH_MUTATE=C4-PC3: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first frame A; fx68k and TG68K: FAIL C4-PC3; NOT GRADED: C4.
 // MUTATION C4-PC4 stimulus red NMH_MUTATE=C4-PC4: the calibration does not write VHPOSW; fx68k and TG68K: FAIL C4-PC4; NOT GRADED: C4.
 // MUTATION C2 stimulus red NMH_MUTATE=C2: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; fx68k and TG68K: FAIL C2.

@@ -72,8 +72,10 @@ inline CEval eval_c(Checks& ck, const Prop& p, const CRun& r) {
         ck.note(p.id + " run: " + dec((long long)c.base) + " clk_sys cycles to the release of the CPU, " + dec((long long)(c.end_cycle - c.base)) +
                 " cycles run after it, bus period " + dec((long long)c.period) + " clk_sys cycles");
         std::vector<FwList> fl = {{"IDLE", kIdle}};
+        std::vector<uint32_t> fs = {kIdle};
+        for (const auto& vp : r.plan) fs.push_back(vp.case_addr);
         for (const auto& vp : r.plan) fl.push_back({vp.v.name + (p.batch ? " lists" : " list"), vp.case_addr + 8});
-        e.fw = fw_eval(c, r.acc, fl);
+        e.fw = fw_eval(c, r.acc, fl, fs);
     }
     std::map<std::string, Agg> agg;
     std::vector<std::string> agg_order;
