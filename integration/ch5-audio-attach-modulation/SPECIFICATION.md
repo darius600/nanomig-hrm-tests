@@ -476,9 +476,18 @@ window must hold at least 18 runs, which is one full cycle of M_P plus one; the
   words, each containing period information"; Table 5-4, column "Modulating
   Period Only", which lists Words 1-4 as "|period|".
 - (b) (P2-B) The window holds applied-period runs, and the mean complete-sample
-  duration of each run equals D_1(P) of the word the data set holds at that position
-  (the first run is aligned to its own word, the data set is cyclic), within the
-  apparatus resolution. p.149's format: "15 - 0 Period information,
+  duration of each run equals D_1(P) of the word the data set holds at that position,
+  within the apparatus resolution. The position of a run is read from channel 0's
+  own record and the page's time-out grid, not from channel 1's output (p.149: the word
+  is written "each time the period register of the modulator channel times out"; the
+  time-outs lie at t010 + m·D_mod, as in P5, with D_mod = 35,000 ticks here): the word a
+  run carries is the one held at the latest time-out of the grid that precedes the
+  run's first complete sample, which is the data-set word of the latest fetch before
+  that time-out (the next fetch is requested at that time-out and arrives later). The
+  expected duration is D_1(M_P[offset]) and no rotation of the data set is chosen from
+  the periods observed. The line prints a MEASURED line with the number of applied runs,
+  the number anchored to a fetch and the number whose duration matches, and names the
+  clause that is not met (population, anchor or duration). p.149's format: "15 - 0 Period information,
   P15 - P0". M_P toggles each of the sixteen bits once against 400, so
   dropping any bit turns one run into a different value. A difference of
   one tick (bit 0) is resolved over at least 150 samples.
@@ -498,7 +507,10 @@ window must hold at least 18 runs, which is one full cycle of M_P plus one; the
 
 **5. Preconditions.** PC1 ($10), PC2, PC3 (channel 0 at least one complete
 cycle in the window), PC4-DUR (the R-RAMP durations are distinct and rise with
-the value, and the sixteen levels are distinct), PC5. (b) needs applied-period
+the value, and the sixteen levels are distinct), PC5. (b) also needs PC7-CAL and the
+start-up frame of S-P2 (at least three fetches follow the calibrated entry r), which place
+the time-out grid that gives each run its data-set position; without them it prints NOT
+GRADED. (b) needs applied-period
 runs in the window: with none, no word has reached the period, and (b) fails (an
 applied-event population, per *Measurements*). (c)'s population is the window's
 complete runs, which exist whatever channel 1 receives; (c) grades the waveform on
@@ -716,9 +728,11 @@ the counter's own grid, which a line-quantised request does not move.
   instant of the session's own F_2 (record entry r) shifted by the offset between F_2
   and the instant 010 was entered that PC7-CAL measures in R-MOD, so it is the
   calibrated state 010, not a value of this package's choosing. A change lies on the
-  grid within the apparatus resolution when it is a volume change, whose instant is
-  known to the resolution, and within ε when it is a period change, whose instant is
-  known to the length of one sample.
+  grid within ε when it is a period change, whose instant is known to the length of
+  one sample. A volume change is not graded against the grid: the target volume latch
+  is not observable at nanomig.v, and no cited page fixes the latency from the target
+  volume write to the external output, so the distance of a volume change from the grid
+  is a MEASURED line (P5-AV, P5-BOTH).
 - Single attach bit (S-AV, S-AP): consecutive changes are D_mod·2 apart: to the
   apparatus resolution for volume changes (S-AV), to ε for period changes (S-AP),
   whose instant is known to the length of one sample. p.164: "In attach volume,
@@ -727,17 +741,20 @@ the counter's own grid, which a line-quantised request does not move.
   requests occurs on the 010->011 transition". Each is one request per
   010->011->010 loop. p.165: "pbufld2 Like pbufld1, but only during
   010->011 with attach period" -- graded on S-AP, the one session where
-  that transition alone carries the request. In S-AV every volume change lies on
-  the grid of the even time-outs (the 011->010 transitions), to the apparatus
-  resolution. In S-AP every period change lies within ε of the grid of the odd
+  that transition alone carries the request. In S-AV the distance of every volume
+  change from the grid of the even time-outs (the 011->010 transitions) is measured and
+  not graded (above). In S-AP every period change lies within ε of the grid of the odd
   time-outs (the 010->011 transitions). The two grids are 2·D_mod apart and
   ε < D_mod/2, so the two are told apart; a word carried on the other transition
   would land on the other grid.
 - Both bits (S-BOTH): consecutive changes are D_mod apart, to ε (a period change is
-  in every pair), alternating volume and period. p.164: "When both attach period and
-  attach volume are high, requests occur on both transitions". Every volume change
-  lies on the grid of the time-outs (every m ≥ 1), to the apparatus resolution, and
-  every period change within ε of it.
+  in every pair). p.150: with both bits the words alternate volume and period; the
+  window must hold at least four changes of each kind (M_VP holds four volume and four
+  period words), and the changes, in time, alternate strictly volume, period, volume,
+  period, each one D_mod after the one before. p.164: "When both attach period and
+  attach volume are high, requests occur on both transitions". Every period change
+  lies within ε of the grid of the time-outs (every m ≥ 1); the distance of every
+  volume change from that grid is measured and not graded (above).
 - Each line needs at least 2L = 8 changes of channel 1 in the window (L = 4, channel 1's
   own length): fewer is a window in which the words did not take effect.
 
@@ -766,14 +783,18 @@ PC1, PC2 and PC3 of the session stay green.
   completes two cycles of its data set after its first restart). The page then
   predicts changes 12,000 (6000 for both bits) ticks apart, and the spacing clause
   fails (the changes then lie off the grid of R-MOD as well).
-- Grid: AUD0PER = 5000 at the start and rewritten to 4000 about 1000 ticks after M_on,
-  after state 010 was entered and before its first time-out (prog_s_av_shift,
-  selector P5-AV-GRID; prog_s_ap_shift, P5-AP-GRID; prog_s_both_shift, P5-BOTH-GRID).
+- Grid (period changes): AUD0PER = 5000 at the start and rewritten to 4000 about 1000
+  ticks after M_on, after state 010 was entered and before its first time-out
+  (prog_s_ap_shift, selector P5-AP-GRID; prog_s_both_shift, P5-BOTH-GRID).
   p.164, "The period counter is reloaded at these transitions": the first time-out
   comes 5000 ticks after 010 was entered and every later one 4000 ticks after the one
   before, so every time-out, and every change that lands at one, lies 1000 ticks
   (8000 clk, more than ε = 900 ticks) after the grid of R-MOD, while consecutive
   changes stay 2·D_mod (D_mod for both bits) apart: only the grid clause fails.
+- Population and alternation (P5-BOTH): every period-position word of M_VP is 200, the
+  period channel 1 already holds (prog_s_both_volwords, selector P5-BOTH-ALT): only the
+  volume words change anything, so the window holds no period change, and the population
+  and alternation clause fails; PC1, PC2 and PC3 of the session stay green.
 
 **7. Reference frame.** The time-out grid is anchored on channel 0's
 fetches (p.164 transfer timing). D_mod comes from R-MOD (PC6).
@@ -1361,6 +1382,8 @@ P7-JOINT-P, P9-C for S-LEN-A and S-LEN-B, P10-AP and P10-BOTH.
 | P5: applied changes in S-AV / S-AP / S-BOTH | 0 / 0 / 0 | 0 / 0 / 0 | 43 / 22 / 47 | 43 / 22 / 47 |
 | P5: largest deviation of a gap from 2·D_mod (S-AV, volume) / S-AP / from D_mod (S-BOTH), clk | - | - | 0 / 4000 / 4816 | 0 / 4000 / 4816 |
 | P5: largest distance of a change from the time-out grid: S-AV volume (even) / S-AP period (odd) / S-BOTH volume, period, clk | - | - | 0 / 4816 / 0, 4816 | 0 / 4816 / 0, 4816 |
+| P2-B: applied-period runs / anchored to a fetch / duration equal to DR[M_P[offset]] | 0 / 0 / 0 | 0 / 0 / 0 | 51 / 51 / 51 | 51 / 51 / 51 |
+| P5-BOTH: volume changes / period changes / places where two consecutive changes are of one kind | 0 / 0 / 0 | 0 / 0 / 0 | 24 / 23 / 0 | 24 / 23 / 0 |
 | P5: C − F_k over the three sessions, clk (measured, not graded) | - | - | 30107 .. 68523 | 30107 .. 68523 |
 | P10: largest circular distance of a fetch from its phase grid: S-AV / S-AP / S-BOTH, clk | 888 / 31992 / 888 | 888 / 31992 / 888 | 888 / 904 / 904 | 888 / 904 / 904 |
 
@@ -1408,6 +1431,7 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P2-JOINT | P2-C | the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-JOINT | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P2-B | P2-B | channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P2-B | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P3-PRE | P3-PRE | R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-SILENT | P3-SILENT | every modulator word is 0 (prog_s_av_zero) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P3-WHOLE | P3-WHOLE | channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
@@ -1423,13 +1447,13 @@ A verdict that stays FAIL on the RTL is a line that is red with and without the 
 | P4-C | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P4-A | P4-C | every period word is 300 (prog_s_both_perconst) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-AV | P5-AV | AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
-| P5-AV | P5-AV-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_av_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-AV | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P5-AP | P5-AP | AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-AP | P5-AP-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_ap_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-AP | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P5-BOTH | P5-BOTH | AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-BOTH | P5-BOTH-GRID | AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_both_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
+| P5-BOTH | P5-BOTH-ALT | every period-position word of M_VP is 200, the period channel 1 already holds (prog_s_both_volwords): only the volume words change anything, the window holds no period change | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL | PASS -> FAIL |
 | P5-BOTH | PC7-CAL | R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL | FAIL -> NOT GRADED | FAIL -> NOT GRADED | PASS -> NOT GRADED | PASS -> NOT GRADED |
 | P6-A | P6-0 | bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #1 | PASS -> FAIL #1 |
 | P6-A | P6-1 | bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap) | FAIL -> FAIL | FAIL -> FAIL | PASS -> FAIL #2 | PASS -> FAIL #2 |

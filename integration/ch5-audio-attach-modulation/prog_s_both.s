@@ -22,6 +22,9 @@
 ;   still a word of M_VP, the order is not).
 ; V32: the last volume word is 32 instead of 40, a volume outside the four of M_VP
 ;   (P4-B's contrast).
+; VOLWORDS (prog_s_both_volwords.s): every period-position word is 200, the period channel 1
+;   already holds (the contrast of the population and alternation clauses of P5-BOTH: only the
+;   volume words change anything).
 ; PERCONST: every period word is 300 (P4-C's contrast: the period changes once).
 
         include "nanomig.i"
@@ -38,7 +41,11 @@ mvp_data:
         ifd     PERCONST
         dc.w    $0018,$012C,$0038,$012C,$0008,$012C,$0028,$012C
         else
+        ifd     VOLWORDS
+        dc.w    $0018,$00C8,$0038,$00C8,$0008,$00C8,$0028,$00C8
+        else
         dc.w    $0018,$012C,$0038,$02BC,$0008,$01F4,$0028,$0384
+        endif
         endif
         endif
         endif

@@ -59,6 +59,7 @@
 // MUTATION P2-JOINT stimulus red NMH_MUTATE=P2-C: the second and third words of channel 1's own data (RAMP) are exchanged (prog_s_p2_ramp); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P2-JOINT stimulus red NMH_MUTATE=P2-B: channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P2-B stimulus red NMH_MUTATE=P2-B: channel 1's own AUD1PER is rewritten to 700 halfway through (prog_s_p2_per1write): 700 is R-RAMP's settle period and is no word of M_P; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P2-B stimulus red NMH_MUTATE=PC7-CAL: R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
 // MUTATION P3-PRE stimulus red NMH_MUTATE=P3-PRE: R-MOD with AUD0VOL = 0 (prog_rmod_vol0) plays no byte; RTL/fx68k PASS -> FAIL; RTL/TG68K PASS -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P3-SILENT stimulus red NMH_MUTATE=P3-SILENT: every modulator word is 0 (prog_s_av_zero); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P3-WHOLE stimulus red NMH_MUTATE=P3-WHOLE: channel 1 plays the first four words of M_V as its own data (prog_s_av_ch1bytes); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
@@ -74,13 +75,13 @@
 // MUTATION P4-C stimulus red NMH_MUTATE=P4-C: every period word is 300 (prog_s_both_perconst); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P4-A stimulus red NMH_MUTATE=P4-C: every period word is 300 (prog_s_both_perconst); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AV stimulus red NMH_MUTATE=P5-AV: AUD0PER = 6000 (prog_s_av_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
-// MUTATION P5-AV stimulus red NMH_MUTATE=P5-AV-GRID: AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_av_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AV stimulus red NMH_MUTATE=PC7-CAL: R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
 // MUTATION P5-AP stimulus red NMH_MUTATE=P5-AP: AUD0PER = 6000 (prog_s_ap_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AP stimulus red NMH_MUTATE=P5-AP-GRID: AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_ap_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-AP stimulus red NMH_MUTATE=PC7-CAL: R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
 // MUTATION P5-BOTH stimulus red NMH_MUTATE=P5-BOTH: AUD0PER = 6000 (prog_s_both_per6000), graded with R-MOD's D_mod; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-BOTH stimulus red NMH_MUTATE=P5-BOTH-GRID: AUD0PER = 5000 at the start, rewritten to 4000 about 1000 ticks after M_on (prog_s_both_shift): every time-out lies 1000 ticks off the grid of R-MOD, the spacing is unchanged; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
+// MUTATION P5-BOTH stimulus red NMH_MUTATE=P5-BOTH-ALT: every period-position word of M_VP is 200, the period channel 1 already holds (prog_s_both_volwords): only the volume words change anything, the window holds no period change; RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL; PM/TG68K PASS -> FAIL
 // MUTATION P5-BOTH stimulus red NMH_MUTATE=PC7-CAL: R-MOD with AUD0PER = 6000 from the start (prog_rmod_per6000), graded with R-MOD's D_mod of 4000 ticks: the lines gated on PC7-CAL; RTL/fx68k FAIL -> NOT GRADED; RTL/TG68K FAIL -> NOT GRADED; PM/fx68k PASS -> NOT GRADED; PM/TG68K PASS -> NOT GRADED
 // MUTATION P6-A stimulus red NMH_MUTATE=P6-0: bit 0, the second and third modulator words are exchanged (prog_s_pair0_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #1; PM/TG68K PASS -> FAIL #1
 // MUTATION P6-A stimulus red NMH_MUTATE=P6-1: bit 1, the second and third modulator words are exchanged (prog_s_pair1_swap); RTL/fx68k FAIL -> FAIL; RTL/TG68K FAIL -> FAIL; PM/fx68k PASS -> FAIL #2; PM/TG68K PASS -> FAIL #2
@@ -1226,9 +1227,10 @@ int main(int argc, char** argv) {
     // force at the window's edge, applied before the window opened; the changes are the runs after it. A window
     // without one has an empty population of applied changes: P2-B and P3-SP2 print FAIL for it (an applied-event
     // population), and P2-C grades the waveform on the window's complete runs, which exist whatever channel 1 receives.
-    struct P2Runs { P2Win w; std::vector<int> periods; std::vector<double> means; size_t changes() const { return periods.size() > 1 ? periods.size() - 1 : 0; }
+    struct P2Runs { P2Win w; std::vector<int> periods; std::vector<double> means; std::vector<uint64_t> starts; size_t changes() const { return periods.size() > 1 ? periods.size() - 1 : 0; }
         std::vector<int> applied() const { return periods.size() > 1 ? std::vector<int>(periods.begin() + 1, periods.end()) : std::vector<int>{}; }
-        std::vector<double> applied_means() const { return means.size() > 1 ? std::vector<double>(means.begin() + 1, means.end()) : std::vector<double>{}; } };
+        std::vector<double> applied_means() const { return means.size() > 1 ? std::vector<double>(means.begin() + 1, means.end()) : std::vector<double>{}; }
+        std::vector<uint64_t> applied_starts() const { return starts.size() > 1 ? std::vector<uint64_t>(starts.begin() + 1, starts.end()) : std::vector<uint64_t>{}; } };
     auto p2_runs = [&](const Capture& c) -> P2Runs {
         P2Runs r;
         r.w = p2_window(c);
@@ -1248,6 +1250,7 @@ int main(int argc, char** argv) {
             for (auto& kv : DR) if (std::fabs(kv.second - mean) <= kClkRes) { found = kv.first; break; }
             r.periods.push_back(found);
             r.means.push_back(mean);
+            r.starts.push_back(comp[i].start);
             i = j;
         }
         return r;
@@ -1433,21 +1436,50 @@ int main(int argc, char** argv) {
         bool cyclic_ok = win_ok && applied_periods.size() >= 18 &&
             std::find(applied_periods.begin(), applied_periods.end(), -1) == applied_periods.end() &&
             cyclic_consecutive(applied_periods, m_p_order);
-        // (b) is its own assertion: the mean complete-sample duration of every run equals R-RAMP's
-        // reference duration of the word the data set holds at that position (the first run is aligned to
-        // its own word, the data set is cyclic), within the apparatus resolution.
-        bool dur_ok = win_ok && !applied_periods.empty() && applied_periods.size() == run_means.size();
-        if (dur_ok) {
-            int r0 = -1;
-            for (size_t i = 0; i < m_p_order.size(); ++i) if (m_p_order[i] == applied_periods[0]) r0 = (int)i;
-            if (r0 < 0) dur_ok = false;
-            for (size_t i = 0; dur_ok && i < applied_periods.size(); ++i) {
-                const int word = m_p_order[(r0 + i) % m_p_order.size()];
-                if (!DR.count(word) || std::fabs(run_means[i] - DR[word]) > kClkRes) dur_ok = false;
+        // (b) is its own assertion: the mean complete-sample duration of every applied run equals R-RAMP's
+        // reference duration of the word the data set holds at that position. The position of a run is
+        // channel 0's own record and the page's time-out grid, not channel 1's output (p.149: the word is
+        // written "each time the period register of the modulator channel times out"; p.164: the time-outs
+        // lie at t010 + m*D_mod, t010 being the session's own F_2 shifted by the offset PC7-CAL measured):
+        // the word a run carries is the one the data register holds at the time-out that precedes the run's
+        // first complete sample, i.e. the data-set word of the latest fetch before that time-out (the next
+        // fetch is requested at that time-out and arrives later). The expected duration is DR[M_P[offset]]
+        // and no expected rotation is derived from the periods observed.
+        const std::vector<uint64_t> run_starts = pr.applied_starts();
+        std::vector<FetchRec> fr_p2;
+        {
+            auto mk_p2 = markers(c);
+            auto on_p2 = m_on(mk_p2), off_p2 = m_off(mk_p2);
+            if (win_ok && on_p2 && off_p2) fr_p2 = fetch_records(c.log, ch_base(0), kChannelRegionWords, *on_p2, *off_p2);
+        }
+        const auto cal_rec_p2 = rec_of(cal_cap);
+        const bool p2_frame = cal_ok && d_mod > 0 && cal_rec_p2.size() > cal.r && fr_p2.size() > cal.r + 3;
+        const double p2_t010 = p2_frame ? (double)fr_p2[cal.r].cycle + (cal.t010 - (double)cal_rec_p2[cal.r].cycle) : 0.0;
+        const double p2_dmod = ticks(35000);   // S-P2's modulator period, AUD0PER = 35000 ticks
+        size_t b_anchored = 0, b_matched = 0;
+        const bool b_pop = win_ok && !applied_periods.empty() && applied_periods.size() == run_means.size() &&
+                           run_starts.size() == run_means.size();
+        if (b_pop && p2_frame) {
+            for (size_t i = 0; i < run_means.size(); ++i) {
+                const double tout = p2_t010 + std::floor(((double)run_starts[i] - p2_t010) / p2_dmod) * p2_dmod;
+                const FetchRec* fk = nullptr;
+                for (auto& f : fr_p2) if ((double)f.cycle < tout && (!fk || f.cycle > fk->cycle)) fk = &f;
+                if (!fk || fk->offset >= m_p_order.size()) continue;
+                ++b_anchored;
+                const int word = m_p_order[fk->offset];
+                if (DR.count(word) && std::fabs(run_means[i] - DR[word]) <= kClkRes) ++b_matched;
             }
         }
+        const bool dur_ok = b_pop && p2_frame && b_anchored == run_means.size() && b_matched == b_anchored;
         checks.note("P2: window has " + std::to_string(applied_periods.size()) + " applied-period "
             "runs (need >=18); cyclic-consecutive-in-M_P (via DR)=" + std::string(cyclic_ok ? "yes" : "no"));
+        checks.note("P2-B: applied-period runs " + std::to_string(applied_periods.size()) + ", anchored to a "
+            "channel-0 fetch of the data set " + std::to_string(b_anchored) + ", duration equal to DR[M_P[offset of "
+            "the latest fetch before the run's time-out]] " + std::to_string(b_matched) + "; clause not met: " +
+            std::string(!b_pop ? "population (no applied-period run in the window)"
+                        : !p2_frame ? "frame (PC7-CAL or a start-up frame in S-P2)"
+                        : b_anchored != run_means.size() ? "anchor (a run without a fetch before its time-out)"
+                        : b_matched != b_anchored ? "duration (a run differs from DR[M_P[offset]])" : "none"));
 
         const std::string unmet = pre.unmet("S-P2");
         p2a_ok = pre.ok() && c.loaded && c.done.has_value() && cyclic_ok;
@@ -1461,8 +1493,9 @@ int main(int argc, char** argv) {
             "from at least 18 runs", unmet);
         // The window exists whatever channel 1 receives; with no applied-period run in it no word has reached
         // the period, and (b) fails.
-        if (!pre.ok()) {
-            not_graded(checks, "P2-B", unmet);
+        if (!pre.ok() || !p2_frame) {
+            not_graded(checks, "P2-B", std::string(pre.ok() ? "" : unmet) + ((!pre.ok() && !p2_frame) ? " and " : "") +
+                (p2_frame ? "" : "PC7-CAL and a start-up frame in S-P2"));
         } else {
             checks.expect(c.loaded && win_ok && dur_ok,
                 "P2-B [p.149]: the window holds applied-period runs and the mean complete-sample "
@@ -1797,19 +1830,19 @@ int main(int argc, char** argv) {
         // S-AP is graded by P5, P8 and P10; its PC lines are printed here, once.
         sess_pre(&checks, kSAP, sap_cap);
 
-        Capture av = run_capture(dir + (mutating("P5-AV") ? "/prog_s_av_per6000.bin"
-                                        : mutating("P5-AV-GRID") ? "/prog_s_av_shift.bin" : "/prog_s_av.bin"), budget_for(200000));
+        Capture av = run_capture(dir + (mutating("P5-AV") ? "/prog_s_av_per6000.bin" : "/prog_s_av.bin"), budget_for(200000));
         Capture ap = mutating("P5-AP") ? run_capture(dir + "/prog_s_ap_per6000.bin", budget_for(110000))
                    : mutating("P5-AP-GRID") ? run_capture(dir + "/prog_s_ap_shift.bin", budget_for(110000)) : sap_cap;
         Capture both = mutating("P5-BOTH") ? run_capture(dir + "/prog_s_both_per6000.bin", budget_for(250000))
                      : mutating("P5-BOTH-GRID") ? run_capture(dir + "/prog_s_both_shift.bin", budget_for(110000))
+                     : mutating("P5-BOTH-ALT") ? run_capture(dir + "/prog_s_both_volwords.bin", budget_for(110000))
                      : run_capture(dir + "/prog_s_both.bin", budget_for(110000));
         mut_note("P5-AV", "prog_s_av_per6000.bin", av);
-        mut_note("P5-AV-GRID", "prog_s_av_shift.bin", av);
         mut_note("P5-AP", "prog_s_ap_per6000.bin", ap);
         mut_note("P5-AP-GRID", "prog_s_ap_shift.bin", ap);
         mut_note("P5-BOTH", "prog_s_both_per6000.bin", both);
         mut_note("P5-BOTH-GRID", "prog_s_both_shift.bin", both);
+        mut_note("P5-BOTH-ALT", "prog_s_both_volwords.bin", both);
         const Pre pre_av = sess_pre(nullptr, kSAV, av), pre_ap = sess_pre(nullptr, kSAP, ap),
                   pre_both = sess_pre(nullptr, kSBOTH, both);
         int side = side_of[1];
@@ -1980,10 +2013,11 @@ int main(int argc, char** argv) {
         const bool both_frame = cal_ok && d_mod > 0 && rec_both.size() > cal.r + 3;
         max_gap_dev = 0;
         grid_max = 0;
+        // The volume-output grid is measured, not graded: the target volume latch is not observable at nanomig.v,
+        // and no cited page fixes the latency from the target volume write to the external output.
         const bool av_grid = av_frame && grid_ok(av_changes, rec_av, 0, kClkRes);
         const double av_grid_max = grid_max;
-        const bool av_ok = av_changes.size() >= 8 && ordered_ok(av_changes, fr_av) && consec_ok(av_changes, 2.0 * d_mod, kClkRes) &&
-                           av_grid;
+        const bool av_ok = av_changes.size() >= 8 && ordered_ok(av_changes, fr_av) && consec_ok(av_changes, 2.0 * d_mod, kClkRes);
         const double av_dev = max_gap_dev;
         max_gap_dev = 0;
         grid_max = 0;
@@ -1996,11 +2030,24 @@ int main(int argc, char** argv) {
         grid_max = 0;
         const bool both_vol_grid = both_frame && (both_vol_changes.empty() || grid_ok(both_vol_changes, rec_both, -1, kClkRes));
         const double both_vol_max = grid_max;
+        (void)both_vol_grid;
         grid_max = 0;
         const bool both_per_grid = both_frame && (both_per_changes.empty() || grid_ok(both_per_changes, rec_both, -1, eps5));
         const double both_per_max = grid_max;
+        // p.150: with both attach bits the words alternate volume and period. The population of each kind is
+        // required (the data set holds four volume and four period words: one full cycle of each), and the
+        // kinds of the changes, in time, alternate strictly, each change one D_mod after the one before.
+        std::vector<std::pair<uint64_t, int>> both_kinds;   // (time, 0 volume / 1 period)
+        for (auto& ch : both_vol_changes) both_kinds.push_back({std::get<0>(ch), 0});
+        for (auto& ch : both_per_changes) both_kinds.push_back({std::get<0>(ch), 1});
+        std::sort(both_kinds.begin(), both_kinds.end());
+        size_t both_alt_breaks = 0;
+        for (size_t i = 1; i < both_kinds.size(); ++i)
+            if (both_kinds[i].second == both_kinds[i - 1].second) ++both_alt_breaks;
+        const bool both_pop = both_vol_changes.size() >= 4 && both_per_changes.size() >= 4;
+        const bool both_alt = both_pop && both_kinds.size() >= 8 && both_alt_breaks == 0;
         const bool both_ok = both_changes.size() >= 8 && ordered_ok(both_changes, fr_both) && consec_ok(both_changes, d_mod, eps5) &&
-                             both_vol_grid && both_per_grid;
+                             both_per_grid && both_alt;
         const double both_dev = max_gap_dev;
         checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes (largest deviation of a gap from 2*D_mod: " +
             std::to_string(av_dev) + " clk; largest distance of a change from the even time-out grid: " +
@@ -2010,6 +2057,9 @@ int main(int argc, char** argv) {
             std::to_string(both_dev) + " clk; largest distance from the time-out grid, volume changes " +
             std::to_string(both_vol_max) + " clk, period changes " + std::to_string(both_per_max) +
             " clk); eps = " + std::to_string(eps5) + " clk");
+        checks.note("P5-BOTH: " + std::to_string(both_vol_changes.size()) + " volume changes and " +
+            std::to_string(both_per_changes.size()) + " period changes (need >=4 of each), " +
+            std::to_string(both_alt_breaks) + " places where two consecutive changes are of one kind (need 0)");
         // The delay between a request and its fetch is given by the page as one line plus about 14 clock
         // cycles (p.164) and not as a bound, so the offset of a change from the fetch of its word is
         // measured, not graded.
@@ -2036,9 +2086,12 @@ int main(int argc, char** argv) {
         } else {
             checks.expect(av_ok,
                 "P5-AV [p.149,p.164]: S-AV -- the window holds at least 2L=8 applied changes of channel 1, "
-                "each after the fetch of its word, consecutive changes are 2*D_mod apart, and every change lies "
-                "on the 011->010 time-out grid of the calibrated state 010 (even time-outs), to the apparatus "
-                "resolution");
+                "each after the fetch of its word, and consecutive changes are 2*D_mod apart");
+            checks.note("P5-AV volume-output grid, not graded: the largest distance of a volume change on the "
+                "output from the 011->010 time-out grid of the calibrated state 010 (even time-outs) is " +
+                std::to_string(av_grid_max) + " clk over " + std::to_string(av_changes.size()) + " changes; the target "
+                "volume latch is not observable at nanomig.v and no cited page fixes the latency from the "
+                "target volume write to the external output");
         }
         if (!pre_ap.ok() || !ap_frame) {
             not_graded(checks, "P5-AP", std::string(pre_ap.ok() ? "" : pre_ap.unmet("S-AP")) + ((!pre_ap.ok() && !ap_frame) ? " and " : "") +
@@ -2055,11 +2108,16 @@ int main(int argc, char** argv) {
                 (both_frame ? "" : "PC7-CAL and a start-up frame in S-BOTH"));
         } else {
             checks.expect(both_ok,
-                "P5-BOTH [p.149,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- the window holds at least 2L=8 applied "
-                "changes of channel 1, each after the fetch of its word, consecutive changes are D_mod apart, "
-                "alternating volume and period, and every volume change (to the apparatus resolution) and "
-                "every period change (to eps) lies on the time-out grid of the calibrated state 010: a word lands "
-                "at the time-outs of the modulator's period (both transitions)");
+                "P5-BOTH [p.149,p.150,p.164] 5-mod.c10,5-p149.c16: S-BOTH -- the window holds at least 2L=8 applied "
+                "changes of channel 1, at least four of volume and four of period, each after the fetch of its "
+                "word, consecutive changes are D_mod apart and strictly alternate volume, period, volume, "
+                "period, and every period change (to eps) lies on the time-out grid of the calibrated state 010 "
+                "(both transitions)");
+            checks.note("P5-BOTH volume-output grid, not graded: the largest distance of a volume change on the "
+                "output from the time-out grid of the calibrated state 010 is " + std::to_string(both_vol_max) +
+                " clk over " + std::to_string(both_vol_changes.size()) + " changes; the target volume latch is not "
+                "observable at nanomig.v and no cited page fixes the latency from the target volume write to the "
+                "external output");
         }
     }
 
