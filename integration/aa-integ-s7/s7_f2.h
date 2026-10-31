@@ -351,7 +351,7 @@ inline void run_f9(Checks& ck, const std::string& sel) {
     hd.rs.cycles = 40'000'000;
     Cap c = run(hd.rs);
     std::vector<Acc> acc = accesses(c);
-bool fixture = f_fixture(c), tmo = c.timeouts == 0;
+    bool fixture = f_fixture(c), tmo = c.timeouts == 0;
     bool dma = (logv(c, hd.dma_idx) & 0x0210) == 0x0210;
     bool dmaon = true, ref = true, ok = true;
     for (int j = 0; j < 2; ++j) {
