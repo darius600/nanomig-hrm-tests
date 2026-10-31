@@ -152,12 +152,12 @@ MEASURED: A4: blit DMA run 2274353..2282489 (first source read to last destinati
 FAIL: A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter write) from the blit's first source read to its last destination write (2 accesses, 0 of them counter writes)
 ```
 
-TG68K prints the run `2274313..2282449` and the same two fetches at +12 and +8132.
+TG68K prints the run `2274297..2282433` and the same two fetches at +12 and +8132.
 
 `A4-CTRL` runs `A4`'s comparator over the 768 fetch windows of a
 four-high-resolution-plane display (`test_blitter_cpu_sharing.cpp:1035-1077`),
 each holding 160 bitplane fetches and no free slot, with the CPU making Chip-memory
-accesses outside them (41771 on fx68k, 45984 on TG68K; `A4-CTRL-PRE`, green).
+accesses outside them (41771 on fx68k, 45985 on TG68K; `A4-CTRL-PRE`, green).
 It counts 0 CPU accesses in them on both cores (`A4-CTRL`, green).
 
 ## Risks and unknowns
