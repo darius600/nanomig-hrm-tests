@@ -51,18 +51,20 @@ KFIX            equ     RESULTS+12      ; FIXTURE: a program-stored known value,
                                          ; anything else this program stores
                                          ; (BRIEF.md)
 
-; Poll DSKBLK (INTREQR bit 1), bounded by up to 8 VERTB pulses (2.3, P6
-; step 8). Leaves D4 = 1 if seen, 0 otherwise; not graded (2.9). Each
-; VERTB wait itself has its own bounded fallback loop counter, so the
-; whole thing can never hang. Clobbers d4, d5, d7.
+; Poll DSKBLK (bit 1 of INTREQR, the low byte at INTREQR+1), bounded by up
+; to 8 VERTB pulses (bit 5, 2.3, P6 step 8). Leaves D4 = 1 if seen, 0
+; otherwise; not graded (2.9). Each VERTB wait itself has its own bounded
+; fallback loop counter, so the whole thing can never hang. Clobbers
+; d4, d5, d7.
 POLL_DSKBLK     macro
                 moveq   #8-1,d5
-.pdbloop\@      btst    #1,INTREQR(a0)
+.pdbloop\@      btst    #1,INTREQR+1(a0)
                 bne.s   .pdbseen\@
                 move.l  #200000,d7
-.pdbvbl\@       btst    #5,INTREQR(a0)
+.pdbvbl\@       btst    #5,INTREQR+1(a0)
                 bne.s   .pdbvbld\@
-                dbra    d7,.pdbvbl\@
+                subq.l  #1,d7
+                bne.s   .pdbvbl\@
 .pdbvbld\@      move.w  #$0020,INTREQ(a0)
                 dbra    d5,.pdbloop\@
                 moveq   #0,d4

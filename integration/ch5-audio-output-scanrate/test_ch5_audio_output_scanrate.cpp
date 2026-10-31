@@ -78,7 +78,7 @@
 //   unchanged
 //   fx68k 38 passed, 2 failed; TG68K 38 passed, 2 failed
 // MUTATION A4 stimulus red NMH_MUTATE=A4: T1's AUD0VOL set to 0 seven lines after its DMA starts, inside the window
-//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 5 entries on fx68k and 4 on TG68K, the output
+//   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 4 entries on both cores, the output
 //   flat from there on); A3 for T1 green (median run 1024); T1's P1 and P2 not graded (RECORDED, "precondition A4
 //   failed"); A1 for T1, T2 and T3 unchanged
 //   fx68k 40 passed, 2 failed; TG68K 40 passed, 2 failed

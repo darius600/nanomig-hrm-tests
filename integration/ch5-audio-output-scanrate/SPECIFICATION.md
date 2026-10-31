@@ -207,9 +207,18 @@ B (pp. 289-293) and Appendix A:
   address, one word per slot. The test sees each store as a CPU write at the
   Chip-memory port.
 - **Bounded waits.** Every wait is bounded, so that every variant finishes.
-  The program counts vertical-blank requests (poll INTREQR bit 5, clear it
-  with INTREQ = $0020). A CPU loop counter serves as a fallback bound, so the
+  The program counts vertical-blank requests (poll bit 5 of INTREQR, which is
+  bit 5 of the word's low byte, address INTREQR + 1; clear it with
+  INTREQ = $0020). A CPU loop counter serves as a fallback bound, so the
   wait ends even if no request comes. How the program waits is not graded.
+- **Durations are frames.** No wait of the audio and disk programs is sized
+  by a count of CPU instructions. An audio table's DMA is started right after
+  a wait for a vertical-blank request has returned and stopped after the
+  number of requests the table needs, so it runs a whole number of frames
+  counted from a frame edge; a disk run waits for DSKBLK, bounded by 8
+  requests. The speed of the CPU enters only through the microseconds between
+  a request and the instruction after it. The fallback bound is reached on
+  none of the three CPU builds (section 5).
 - **Done marker.** The program's last action writes a done marker to a fixed
   Chip address. Every run, including every contrasting case, must show that
   write. Otherwise the run is broken, not graded.
@@ -404,7 +413,10 @@ fixes the list's period at exactly K.
    5. DMACON = $8201 (SET, DMAEN, AUD0EN; p. 144: "When both DMAEN and AUDxEN
       are set, the DMA will start for channel x").
    6. Wait at least N_T + 3 passes. One pass lasts 2 x (words in T) x P color
-      clocks.
+      clocks. The wait is a number of vertical-blank requests (2.3): one for
+      T1 and T2, five for T3. T1 is set up after a wait for a request, T2 after
+      T1's and T3 after T2's, so each wait starts at a frame edge. The reads of
+      each table's first word that the run shows are in section 5.
    7. DMACON = $0001, which clears AUD0EN (p. 144: "Once started, the DMA
       continues until you specifically stop it").
 5. Done marker.
@@ -865,8 +877,22 @@ otherwise.
   taken from the design, since `nanomig_harness.h` declares no such ratio;
   B4, measured in that same interval, guards it. In the audio runs A6 does
   the same over the interval of each program's own audio reads, averaging
-  every group of it: 227.00 color clocks, ECS/PAL and OCS/PAL, on both cores
-  (prog_audio: 1786 groups on fx68k, 1681 on TG68K; prog_t2s: 254 and 237).
+  every group of it: 227.00 color clocks, ECS/PAL and OCS/PAL, on fx68k and
+  on both TG68K kernels (prog_audio: 2188 groups; prog_t2s: 311).
+- **Durations in frames (2.3, 2.6).** Every audio table's DMA runs a whole
+  number of frames from a frame edge, so the number of reads of the table's
+  first word does not depend on the CPU. Measured, ECS/PAL and OCS/PAL
+  alike, identical on fx68k, the board's TG68K kernel and the shipped TG68K
+  netlist (reads of the first word in all, against the N + 3 the table
+  needs): T1 70 (11), T2 70 (11), T3 6 (5: its five frames hold 5.4 passes),
+  T2S 139 (11). The fallback bound of 200000 loop passes per wait was
+  scaled down in a copy outside the repository (never committed) and the
+  audio and disk programs run again, every verdict identical: down to 4000
+  passes on fx68k, down to 8000 on both TG68K kernels, and at 2000 on fx68k
+  and at 4000 on both TG68K kernels A1 goes red for at least one table,
+  because the bound ends a wait before the frame does. One frame therefore takes between 2000 and
+  4000 passes of the loop on fx68k and between 4000 and 8000 on the TG68K
+  kernels: the bound is at least 25 times a frame on every build.
 - **Audio port scale.** `nanomig_harness.h` documents only the width of
   `audio_left`/`audio_right` ("15 bits significant"), not their sign or
   scale. LEVELS(W) (2.5) reads the raw magnitude and recovers a continuous
@@ -888,11 +914,11 @@ otherwise.
   line that names NM-HRM-084. It is not graded and not counted in
   passed or failed, so P1-P4, P3B and A1, A3-A5 do not depend on it.
   Measured, ECS/PAL and OCS/PAL alike: reads of the table's words before
-  t_2, against the table's length. T1: 3 of 4 on both cores. T2: 4 of 4 on
-  both. T3: 255 of 256 on fx68k, 256 of 256 on TG68K. T2S (its own program,
-  `prog_t2s.s`, run from a clean boot independent of T1/T2/T3): 2 of 2 on
-  both. With the anchor taken from t_2, A1 holds for every table on both
-  cores, and P1-P4 and P3B are graded on every run.
+  t_2, against the table's length. T1: 3 of 4 on all three builds. T2: 4 of
+  4. T3: 256 of 256. T2S (its own program, `prog_t2s.s`, run from a clean
+  boot independent of T1/T2/T3): 2 of 2. With the anchor taken from t_2, A1
+  holds for every table on all three builds, and P1-P4 and P3B are graded on
+  every run.
 - **The window and A5's population (2.5, 2.7), measured per table.** The
   window starts on the first output transition after t_2 and ends in the
   middle of level number N x K. On both cores, ECS/PAL and OCS/PAL alike:
@@ -914,18 +940,19 @@ otherwise.
 - **P1's last-level contrast (3, P1).** The first run of prog_audio under
   that selector writes the byte's own value; from it the test takes the
   window's last level (code 7 of C_up, the lower byte of T1's word 3), the
-  DMA's last two reads of that word (cycles 2337113 and 2346193 on both cores
-  and both configurations) and the line count to wait (37). The CPU write of
-  the second run comes at cycle 2341125 on fx68k and 2340965 on TG68K, between
-  the two reads. P1 goes red and exactly one entry of L, the last, differs
-  from the level one pass earlier.
+  DMA's last two reads of that word (cycles 2905521 and 2914601 on all three
+  builds and both configurations) and the line count to wait (38). The CPU
+  write of the second run comes at cycle 2911405 on fx68k and 2911205 on the
+  TG68K kernels, between the two reads, 3196 and 3396 cycles before the
+  later one. P1 goes red and exactly one entry of L, the last, differs from
+  the level one pass earlier.
 - **A3's contrasting cases.** With AUD0PER = 129 for T1 only, T1's median run
   is 1032 samples against the programmed 1024 and A3 goes red for T1, on both
   cores in ECS/PAL and OCS/PAL; A4, A5, P1 and P2 of T1 are not graded, and T2
   and T3 are unchanged. The systematic merge (T1 with every pair of adjacent
   codes equal) gives a median run of 2048 and also fails A3.
 - **A4's contrasting case.** With T1's AUD0VOL set to 0 seven lines after its
-  DMA starts, the window holds 5 runs on fx68k and 4 on TG68K in both
+  DMA starts, the window holds 4 runs on all three builds in both
   configurations, the median run is still 1024 (A3 holds) and A4 goes red for
   T1.
 - **A6's contrasting case.** With VTOTAL, HTOTAL and BEAMCON0 rewritten before

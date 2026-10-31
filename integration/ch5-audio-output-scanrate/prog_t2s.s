@@ -27,14 +27,21 @@ KFIX    equ     RESULTS+$20     ; FIXTURE: a program-stored known value, checked
                                  ; before DONE, so it cannot perturb T2S's own DMA-
                                  ; restart timing (SPECIFICATION.md section 5).
 
-; Waits for one VERTB pulse (INTREQR bit 5), clearing it afterwards, with
-; a bounded fallback loop counter so the wait can never hang (2.3
-; "Bounded waits"; how this program waits is not graded).
+; Waits for one VERTB pulse (bit 5 of INTREQR, the low byte at INTREQR+1),
+; clearing it afterwards, with a bounded fallback loop counter so the wait
+; can never hang (2.3 "Bounded waits"; how this program waits is not
+; graded). The table's DMA starts right after a WAITVBL has returned and
+; stops one WAITVBL later, so it runs one frame, less the few microseconds
+; the CPU needs between the pulse and the DMACON write. The table needs
+; N + 3 = 11 passes of 2 x 2 words x 128 = 512 colour clocks; the run reads
+; the first word 139 times (SPECIFICATION.md section 5), on every CPU build.
+; Clobbers d7.
 WAITVBL macro
                 move.l  #200000,d7
-.wv\@           btst    #5,INTREQR(a0)
+.wv\@           btst    #5,INTREQR+1(a0)
                 bne.s   .wvd\@
-                dbra    d7,.wv\@
+                subq.l  #1,d7
+                bne.s   .wv\@
 .wvd\@          move.w  #$0020,INTREQ(a0)
                 endm
 
@@ -68,6 +75,7 @@ start:
         move.w  #0,AUD3VOL(a0)
 
         ; ---- table T2S (P3B) ----
+        WAITVBL                        ; align: the DMA starts right after a frame edge
         move.l  #T2S_ADDR,AUD0LCH(a0)  ; one 32-bit write sets both halves (p.139)
         move.w  #2,AUD0LEN(a0)
         move.w  #64,AUD0VOL(a0)        ; p.140: 64 = maximum volume

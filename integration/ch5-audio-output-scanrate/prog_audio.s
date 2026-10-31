@@ -63,17 +63,28 @@ KFIX    equ     RESULTS+$20     ; FIXTURE: a program-stored known value, checked
                                  ; timing (T1's A1 included, measured per-core,
                                  ; SPECIFICATION.md section 5) exactly as measured.
 
-; Waits for one VERTB pulse (INTREQR bit 5), clearing it afterwards, with
-; a bounded fallback loop counter so the wait can never hang (2.3
-; "Bounded waits"; how this program waits is not graded). One VERTB
-; pulse (about 71000 color clocks) is well above every table's own
-; "N_T + 3 passes" minimum (2.6): T1/T2 need about 11000, T3 about
-; 330000 across the five calls used for it below. Clobbers d6, d7.
+; Waits for one VERTB pulse (bit 5 of INTREQR, the low byte at INTREQR+1),
+; clearing it afterwards, with a bounded fallback loop counter so the wait
+; can never hang (2.3 "Bounded waits"; how this program waits is not
+; graded). The duration of every table's DMA is a whole number of frames
+; counted from a frame edge: each table is set up and started right after
+; a WAITVBL has returned (T1 after the one before its set-up, T2 after T1's,
+; T3 after T2's), so its first WAITVBL ends one frame after the start and
+; the n-th ends n frames after it, plus the few microseconds the CPU needs
+; between the pulse and the DMACON write that stops the DMA. What a table
+; needs is "N_T + 3 passes" (2.6), one pass being 2 x words x period colour
+; clocks: T1 and T2 11 passes of 1024 colour clocks, T3 5 reads of its first
+; word, the fifth 4 passes of 65536 after the first. The run reads the first
+; word 70 times in T1's frame, 70 in T2's and 6 in T3's five (SPECIFICATION.md
+; section 5), on every CPU build. How fast the CPU runs enters only through
+; the few microseconds between a pulse and the instruction that follows it.
+; Clobbers d7.
 WAITVBL macro
                 move.l  #200000,d7
-.wv\@           btst    #5,INTREQR(a0)
+.wv\@           btst    #5,INTREQR+1(a0)
                 bne.s   .wvd\@
-                dbra    d7,.wv\@
+                subq.l  #1,d7
+                bne.s   .wv\@
 .wvd\@          move.w  #$0020,INTREQ(a0)
                 endm
 
@@ -108,6 +119,7 @@ start:
         move.w  #0,AUD3VOL(a0)
 
         ; ---- table T1 (P1, P2; A1/A2/A4 demonstrated on this table) ----
+        WAITVBL                         ; align: T1's DMA starts right after a frame edge
         move.l  #T1_ADDR,AUD0LCH(a0)   ; one 32-bit write sets both halves (p.139)
         move.w  #4,AUD0LEN(a0)
         move.w  #64,AUD0VOL(a0)        ; p.140: 64 = maximum volume
