@@ -230,7 +230,7 @@ measured current (no pen capture, no end-of-field latch)"* — and the RTL above
 reads the counter the same way in both chipsets. No choice of port, pin,
 polarity or pulse width reaches a counter that has no latch in front of it.
 The page-model control replaces 38279 and 31600 of the 90000 phase-B samples
-on fx68k and 41427 and 34083 on TG68K (PAL and NTSC) with the values p. 238
+on fx68k and 41428 and 34084 on TG68K (PAL and NTSC) with the values p. 238
 and p. 239 predict, and the same `P1` to `P13` code grades those green.
 
 ### Where else the suite meets it
@@ -245,13 +245,13 @@ of one connector low for 4 colour clocks at scheduled positions in F2 to F7 and 
 schedule on the left connector (J12) and on the right (J11). In ECS the program first writes BEAMCON0 with bit 13 clear
 (`LP-C6-LPENDIS-CLEAR`). Thirteen lines are red in each of OCS/PAL, OCS/NTSC, ECS/PAL and ECS/NTSC, 52 in a run of `230 passed, 56 failed`. In ECS/PAL on J11 the first read
 after each pulse of F2 to F7 is on the pulse's line, V = 100, 100, 100, 101, 258 and 60, but at H = 82, 88, 94, 82, 82 and 73 on fx68k
-(86, 88, 90, 86, 86 and 76 on TG68K) where the targets are 64, 65, 72, 64, 64 and 64:
+(88, 72, 92, 84, 82 and 84 on TG68K) where the targets are 64, 65, 72, 64, 64 and 64:
 
 ```text
 MEASURED: ECS/PAL J11 P1-P4 measured: P1=does not hold, P2(a)=holds, P2(c)=does not hold, P3(a)=does not hold, P3(b)=does not hold, P3(c)=holds, P3(d)=does not hold, P4=does not hold
 ```
 
-Over the eight runs of each core the first read after a pulse lies 7 to 24 colour clocks past the pulse's position on fx68k and 8 to 26 on TG68K.
+Over the eight runs of each core the first read after a pulse lies 7 to 24 colour clocks past the pulse's position, on fx68k and on TG68K.
 `P2(a)`, the line alone, holds and `P2(c)`, the horizontal offsets following the pulses, does not
 (`test_appDE_ports_disk.cpp:1224-1225`; `LP-P2-LATCH-AT-PULSE`, `:1273-1274`). The reds that follow grade what p. 239 says a latch does:
 `LP-P1A-LATCH-HOLDS`, that a pulse freezes the reads and so does the end of a field without one (`test_appDE_ports_disk.cpp:1283`);
@@ -281,8 +281,8 @@ FAIL: P3-PEN-POSITION OCS-PAL [p.238,p.239]: the latched value is the light-pen 
 
 The reads after the pulses return their own lines, 110 and 190, not the pulses' 100 and 180 (`P3-PEN-POSITION`,
 `test_ch7_system_control.cpp:1591-1593`), and the reads that follow change (`P3-HELD`, `test_ch7_system_control.cpp:1575-1581`;
-`P3-LATCHED-PEN-POSITION`, `:1595-1598`). On TG68K L1, L3 and L5 read the same lines, and H(L3) - H(L1) is -4 in PAL, and 2 (OCS) and
--20 (ECS) in NTSC, where fx68k reads 6 and 16; the page's 40 is in none. After a field with no pulse V1 and V2 read lines 2 and 11
+`P3-LATCHED-PEN-POSITION`, `:1595-1598`). On TG68K L1, L3 and L5 read the same lines, and H(L3) - H(L1) is 8 in PAL and
+-8 in NTSC, where fx68k reads 6 and 16; the page's 40 is in none. After a field with no pulse V1 and V2 read lines 2 and 11
 on fx68k (2 and 10 on TG68K), two different values below $10500, `$0029B` and `$00B1F` in F1 on fx68k, where `P3-FIELD-END-LATCH` expects
 them to agree, at an M greater than $10500 in PAL and not less than it in NTSC (`P3-FIELD-END-LATCH`, `test_ch7_system_control.cpp:1614-1617`). In ECS-PAL `P4` sets LPENDIS, reads X near line 270 of F1 after a pulse
 on line 100, clears LPENDIS and reads Y; in F3 it reads X' and Y' with LPENDIS clear throughout. Its two preconditions that need a
@@ -293,7 +293,7 @@ FAIL: P4-PRE-LATCHF1 ECS-PAL [p.239]: the latch is present in F1 -- V(Y)=100 and
 FAIL: P4-PRE-CONTROL ECS-PAL [p.239]: F3 (LPENDIS clear throughout) shows X'=Y', V(X')=100
 ```
 
-They measure V(Y) = 270 with H(Y) = 141 and H(Y') = 145 on fx68k (124 and 128 on TG68K), and V(X') = V(Y') = 270 with X' different from Y' (`P4-PRE-LATCHF1`,
+They measure V(Y) = 270 with H(Y) = 141 and H(Y') = 145 on fx68k (136 and 134 on TG68K), and V(X') = V(Y') = 270 with X' different from Y' (`P4-PRE-LATCHF1`,
 `test_ch7_system_control.cpp:1836-1838`; `P4-PRE-CONTROL`, `:1846-1848`). With nothing latched there is nothing for LPENDIS to hide, so
 `P4-LPENDIS-READ`, p. 305's bit, is recorded not graded (`P4-LPENDIS-READ`, `test_ch7_system_control.cpp:1859`).
 
@@ -315,19 +315,19 @@ here and an LPEN of 1 would look like 0` in all four; the `P4 aggregate` is reco
 
 **`integration/aa-integ-s1`, the AA chip set.** [`integration/aa-integ-s1`](../../integration/aa-integ-s1) selects the AA chip set and writes BEAMCON0 = `$0020`
 (PAL, LPENDIS low). An LPEN run writes BPLCON0 = `$0008`; three times it waits for VERTB, stores a marker, reads VPOSR:VHPOSR as a long
-word (w0), waits at least 40 colour clocks and reads again (w1). Pin 6 of both ports stays at its open-switch level (`P10-FIRE`, green), so no trigger
+word (w0), waits 32 DBRA iterations and reads again (w1); in the main run, which writes no BPLCON0, the counter moves 172 colour clocks between the two reads on fx68k and 138 on TG68K. Pin 6 of both ports stays at its open-switch level (`P10-FIRE`, green), so no trigger
 occurs, and p. 239's field-end latch, with AA p. 12's LPENDIS low, predicts w1 = w0 in every pair. `P10-LATCH` is red on both cores
 (`P10-LATCH`, `test_aa_integ_s1.cpp:1696`), 1 red in a run of `156 passed, 10 failed, 11 NOT GRADED`, the other nine grading BPLCON1's reset value, BYPASS and the DUAL counter; in pair 0 of the LPEN run:
 
 ```text
-MEASURED: P10 main pair 0: w0=$A3000021 (V=0) w1=$A300006E; LPEN run: w0=$A3000029 w1=$A3000076
+MEASURED: P10 main pair 0: w0=$A3000021 (V=0) w1=$A30000CD (w1 - w0 = 172 CCK of the counter); LPEN run: w0=$A3000029 w1=$A30000D5
 ```
 
-(fx68k; on TG68K the LPEN run reads w0 = `$A3000022` and w1 = `$A3000078` in every pair.) `P10-WIN`, which requires fewer than 19 line boundaries between the marker and the store of w1, is
+(fx68k; on TG68K pair 0 of the LPEN run reads w0 = `$A3000022` and w1 = `$A30000AC`.) `P10-WIN`, which requires fewer than 19 line boundaries between the marker and the store of w1, is
 green. The check that LPEN is off after power-up, which needs a latch to be told from a counter that latches nothing, prints `RECORDED: NOT GRADED P10 main check`.
 
 **`integration/aa-integ-s2`, the AA chip set, a pulse on both ports.** [`integration/aa-integ-s2`](../../integration/aa-integ-s2) selects the AA chip set, waits for line 254, writes BPLCON0 = `$0008`
-and then reads, once every 45 colour clocks, CIA-A's port A, VPOSR:VHPOSR as a long word and HHPOSR (`prog_lpen.s`). The harness pulls pin 6 of both ports low
+and then reads, once every 45 colour clocks on fx68k and every 40 on TG68K, CIA-A's port A, VPOSR:VHPOSR as a long word and HHPOSR (`prog_lpen.s`). The harness pulls pin 6 of both ports low
 on line 255 for one sample interval and two colour clocks. The program's own reads of PRA bits 7 and 6 are low during the pulse and high before and after it (`P8-TRIGGER`, green), and up to the pulse
 the samples match those of a run with no pulse (`P8-ALIGN`, green). With BEAMCON0 = `$0020`, LPENDIS low, AA p. 12 and p. 239 predict one held position on line 255 in every sample after the pulse.
 `P8-0-VH` is red on both cores (`P8-0-VH`, `test_aa_integ_s2.cpp:2702`), and so is `P8`, which joins it to the LPENDIS-high run (`P8`, `test_aa_integ_s2.cpp:2736-2738`):
@@ -337,7 +337,7 @@ the samples match those of a run with no pulse (`P8-ALIGN`, green). With BEAMCON
 MEASURED: P8 measured: P8-0 first sample after the pulse: V=255 H=195 HHPOSR=0; last: V=258 H=99 HHPOSR=0
 ```
 
-(on TG68K the first sample after the pulse is V=255, H=215 and the last V=258, H=119.) With BEAMCON0 = `$2020`, LPENDIS high, the counters are to run, and `P8-1-VH` is green; so is `P8-LPE`,
+(on TG68K the first sample after the pulse is V=255, H=190 and the last V=258, H=44.) With BEAMCON0 = `$2020`, LPENDIS high, the counters are to run, and `P8-1-VH` is green; so is `P8-LPE`,
 the same pulse with bit 3 clear. HHPOSR does not run in the run with no pulse (`P8-HHRUN` prints NOT CHECKABLE), so `P8-0-HH` and `P8-1-HH` print NOT GRADED, and `P8-VBREL`, the release at the end of vertical blanking, is not graded because nothing froze.
 
 ## Risks and unknowns
