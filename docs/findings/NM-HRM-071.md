@@ -157,7 +157,7 @@ the sample either side of each run of 32, 240 more, which must be dark.
 | run | BPLCON0 | chip set | `PC2w`: of 3840 samples | `a1 − a0` | fx68k | TG68K |
 |---|---|---|---|---:|---|---|
 | graded run | $1040, SuperHires | ECS | **1920 lit, 1920 dark** | 50 | **red** | **red** |
-| contrast `CR4` | $9000, Hires | ECS | 3840 lit | 50 | green | green |
+| contrast `CR4`, a mutation build, not run by `make test` | $9000, Hires | ECS | 3840 lit | 50 | green | green |
 
 Each sprite is lit over exactly 16 samples of every uniform line, and `PC2(e)`,
 green, finds the same set of lit offsets on all 120 uniform sprite lines. So a
@@ -165,9 +165,9 @@ green, finds the same set of lit offsets on all 120 uniform sprite lines. So a
 samples, 140 ns a pixel, in Hires, where the same comparator is green. The
 position does not change with the width: `a1 − a0` is 50 in both runs. In each
 run the two cores print identical lines but for the cycle at which the
-program's end marker arrives; in the graded run TG68K's graded frame and its
-Copper pass are also the frame before fx68k's (`samples [6830808,7399216)`
-against `[7399216,7967624)`).
+program's end marker arrives, the graded frame and the Copper pass: TG68K's
+graded frame and its Copper pass are the frame before fx68k's
+(`samples [6830808,7399216)` against `[7399216,7967624)` in both runs).
 
 In the graded run `PC1` is green, 6138 transitions of the $CCCC pattern in runs
 of exactly one sample, so SuperHires is in effect around the sprites; `CR4`
