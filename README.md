@@ -47,7 +47,7 @@ cd nanomig-hrm-tests
 ```
 
 `./run_all.sh --jobs 8` runs up to eight packages of each tree at a time and
-prints the same lines in the same order. A full run that way took 6990 s (about two hours) on
+prints the same lines in the same order. A full run that way took 6551 s (about two hours) on
 a 16-thread machine, most of it the integration packages. One `hrm/` package runs in
 seconds: `make -C hrm/<package> test` (each finding page's Test row gives its
 command); one `integration/` package can take a quarter of an hour or more
