@@ -66,7 +66,7 @@ CIA-A's four-bit counter of timer A's underflows, which ends a run at the sixtee
 | CIA-B, `p76_ciab.s`: samples showing SP | **0 of 300** | **0 of 300** | `P7.6-CIAB`, **red** |
 | CIA-A, `p76_ciaa.s`, the same program: a sample showing SP | yes | yes | `P7.6-CIAB-GREENCTL`, green |
 
-**Where SP appears.** Read with the package's own two programs and harness in a run whose sample indices `make test` does not print — a reading for this page, not a graded assertion — on both cores alike: on CIA-A the SP bit shows first in sample 34, the sample that shows timer A's sixteenth underflow, which is p. 345's eight bits at "1/2 the underflow rate of Timer A". On CIA-B the underflows go on through all 300 samples and SP never shows. The samples are 192 to 208 clk_sys apart and no two neighbours both show TA, so each flagged sample is one underflow.
+**Where SP appears.** Read with the package's own two programs and harness in a run whose sample indices `make test` does not print — a reading for this page, not a graded assertion — on fx68k: on CIA-A the SP bit shows first in sample 34, the sample that shows timer A's sixteenth underflow, which is p. 345's eight bits at "1/2 the underflow rate of Timer A". On CIA-B the underflows go on through all 300 samples and SP never shows. The samples are 192 to 208 clk_sys apart and no two neighbours both show TA, so each flagged sample is one underflow. On TG68K, 111 of CIA-B's 300 samples show TA, against 136 on fx68k (`P7.6-CIAB TA samples`); its sample indices were not read.
 
 ## Risks and unknowns
 
