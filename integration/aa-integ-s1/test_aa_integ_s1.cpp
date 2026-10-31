@@ -1792,7 +1792,7 @@ void prop_p11(Checks& checks, Grader& g) {
     }
     checks.note("P11 joystick run: " + dec((long long)ja.rd.t.size()) + " reads of both registers stored, " + dec((long long)ja.change.size()) + " input changes, run " + std::string(ja.cap.done ? "reached" : "did not reach") + " DONE; first store " + dec(ja.rd.t.empty() ? 0 : (long long)((ja.rd.t.front() - ja.cap.base) / g_K)) + " CCK, last store " + dec(ja.rd.t.empty() ? 0 : (long long)((ja.rd.t.back() - ja.cap.base) / g_K)) + " CCK after the start of the capture");
     bool fixture = ja.cap.loaded && ja.cap.released && ja.cap.fixture_ok && ja.cap.done && ja.rd.t.size() > 0 && ja.change.size() == 18;
-    g.expect(fixture, "P11-FIXTURE: the joystick run loaded, booted, stored the $BEEF fixture, stored reads of both registers until the program's fourth VERTB and reached DONE");
+    g.expect(fixture, "P11-FIXTURE: the joystick run loaded, booted, stored the $BEEF fixture, stored reads of both registers and reached DONE (the program ends after its fourth VERTB or when a buffer of 16384 words is full; the MEASURED P11 joystick run line gives the number of reads)");
     bool still = fixture;
     bool pop = fixture;
     std::vector<std::pair<size_t, size_t>> win(18);   // read index range of each graded window
