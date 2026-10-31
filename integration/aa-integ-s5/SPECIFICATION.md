@@ -1705,8 +1705,13 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   specified. On both builds the first fetch of the block play is at
   `BUFx+0x100`, the location of the calibration play, and not at `BUFx`; the
   windows from block 2 on do not use it. The poll that follows the start of the
-  block play is 5200 reads long, about twenty-four blocks on the slowest build and twelve on a CPU twice as fast as the fastest, in place of the seven that
+  block play is 5200 reads long, longer than the seven blocks that
   the stimulus names: blocks 2 to 6 are graded and what happens after block 7 is not.
+  The poll is a count of reads, so its length follows the speed of the CPU. With every
+  DBRA and poll count halved, standing for a CPU twice as fast, P8's twelve lines pass
+  on all three builds, as at the full count; with every count quartered the block play ends before
+  block 7, and P8-G-F and P8-PRE-L9 fail on all three (a hook that scales the counts,
+  in a copy outside the repository).
   The contrasts that set the request by software take the instants from a play of
   the same stimulus; the delay that each set adds to the reads after it is about
   1000 system clocks, tuned on this design, and the run prints the position of every
