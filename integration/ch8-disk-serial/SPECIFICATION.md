@@ -29,7 +29,7 @@ the 34 ids on a RECORDED line with its reason.
 
 | Claims | Page | Reason |
 |---|---|---|
-| `opus:8-cia.c9`, `sol:8-cia.c7`, `opus:8-cia.c10`, `sol:8-cia.c8` | 244 | DSKRDY* is driven by the drive: "The drive will pull this line low when the motor is known to be rotating at full speed. This signal is only valid when the motor is ON, at other times configuration information may obscure the meaning of this input." The harness configures one drive (`floppy_config=0`, DF0); only its image interface is idle. The claims say when the input may be trusted, not what value it has. With the motor on, the value depends on the drive. With the motor off, the page says only that "configuration information may obscure the meaning of this input". That describes a possibility and prints no value, so the "valid only" and "may obscure" clauses have no falsifiable expected value. |
+| `opus:8-cia.c9`, `sol:8-cia.c7`, `opus:8-cia.c10`, `sol:8-cia.c8` | 244 | DSKRDY* is driven by the drive: "The drive will pull this line low when the motor is known to be rotating at full speed. This signal is only valid when the motor is ON, at other times configuration information may obscure the meaning of this input." The harness configures one drive (`floppy_config=0`, DF0); only its image interface is idle. The claims say when the input may be trusted, not what value it has. With the motor on, the value depends on the drive. With the motor off, the page says only that "configuration information may obscure the meaning of this input". That describes a possibility and prints no value, so the "only valid" and "may obscure" clauses have no falsifiable expected value. |
 
 ### 1.3 Absolute durations
 
@@ -493,7 +493,7 @@ The RxD driver behaves the same in both runs:
 
   The line passes only when all 8 characters pass. It fails when any character fails. When no character fails and some are undecided it is NOT GRADED.
 
-  That is p.256's "proper number of bit times" for each received character: "one bit time later", graded to half a bit, because the page does not state where the receiver samples. The mean over the characters is printed as MEASURED and is not graded.
+  That is p.256's "proper number of bit times" for each received character. The nine-bit setting adds one data bit to the eight-bit character (p.255: "eight or nine data bits"), so the signal is expected one bit time later; this is graded to half a bit, because the page does not state where the receiver samples. The mean over the characters is printed as MEASURED and is not graded.
 
 **Quantifiers.**
 
@@ -707,9 +707,14 @@ value it uses and what that value moved on each core. Several lines share a
 binary or a capture, so one selector can move more than one line; each moved
 line is named in the record of the line the selector is aimed at.
 
-- The three red lines P1, P2 and P3 are red at baseline and stay red under
-  every selector. Their records name the substitution through live inputs of
-  the same comparator: the controls P1-CTRL-N0, P1-CTRL-N32396,
+- The three red lines P1, P2 and P3 print FAIL at baseline. Under the
+  selectors that move a precondition they print NOT GRADED, not FAIL, and
+  every record of such a selector names them. On both cores, `R1-READ`,
+  `STD-SWAP`, `FIXTURE`, `P1-1C`, `P1-1D` and `P1-1E` turn all three into
+  NOT GRADED; `P1-SINGLE-STALL` and `P1-SINGLE-BRK` turn P1 and P2 into NOT
+  GRADED while P3 keeps printing FAIL; under every other selector all three
+  keep printing FAIL. Their own records name the substitution through live
+  inputs of the same comparator: the controls P1-CTRL-N0, P1-CTRL-N32396,
   P1-CTRL-WITHIN and P2-CTRL-PAIR print PASS at baseline and FAIL under
   `P1-NPLUS1`.
 - Each R1 anchor line has a stimulus contrast through its population and
