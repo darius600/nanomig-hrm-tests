@@ -13,6 +13,7 @@
 ;   M1_DELAY       T-f  M1 waits between samples (see m1.i)
 ;   T_LINE10_40    T-g  the WAIT of line 10 uses H=$40, not $E0
 ;   T_HTOTAL       T-l  BEAMCON0 = $0080, HTOTAL = $E2; the Copper writes HTOTAL = $E8 at line 100, $E2 at line 101 (line 101 measures 256 colour clocks)
+;   T_HTALT        T-m  as T-l (T_HTOTAL set too), but the Copper writes HTOTAL = $E3 in even lines and $E2 in odd lines, at (v,$40) of each line (listt_alt_body.i)
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 ;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
@@ -103,7 +104,11 @@ start:
 
 ; ---- Copper list LISTT (section 4.2) ----
         org     LISTT
+        ifd     T_HTALT
+        include "listt_alt_body.i"
+        else
         include "listt_body.i"
+        endif
         ifd     T_BADMOVE
         dc.w    $0000,$0000
         endif

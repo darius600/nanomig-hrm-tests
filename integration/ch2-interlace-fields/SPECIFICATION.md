@@ -492,6 +492,7 @@ comparison works on the least significant bits of the vertical count").
 | T-i | FIXMARK stores `$DEAD`, not `$BEEF` |
 | T-j | LISTT ends in `$0000,$0000` (as in I-s) in front of the `$FFFF,$FFFE` that stays in the list |
 | T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 1,800 `MOVE COLOR00, bg` (four memory cycle times each, p20: 7,200 colour clocks, more than the 30 lines (at most 6,840 colour clocks) from line 255 of a 263-line field through line 21 of the next; LISTT is relocated to `$0A0000`, clear of PLANE, with the code of M1 behind it) |
+| T-m | As T-l (`BEAMCON0 = $0080`, `HTOTAL = $E2` from the CPU), but `listt_alt_body.i` replaces the list: every line v holds `WAIT (v,$40)`, `MOVE HTOTAL` (`$E3` for even v, `$E2` for odd v), then `WAIT (v,$E0)` and `MOVE COLOR00, bg` (the mark), so every write is early in its line and every mark is live. Contrast of P3's comparator (section 4.6): the measured lengths alternate 228 and 227 colour clocks |
 | T-l | The CPU writes `BEAMCON0 = $0080` (VARBEAMEN; bit 5 clear, as in NTSC) and `HTOTAL = $E2` (the count the default line has) before the Copper starts; the `MOVE COLOR00, bg` of line 100 is `MOVE HTOTAL, $E8` and that of line 101 is `MOVE HTOTAL, $E2`, at the same list addresses, so every WAIT stays at `(v, $E0)` and every mark is still read. It changes an actual line length (a contrast of PT-5, section 4.5) |
 
 ### 4.5 Preconditions of Program T
@@ -669,9 +670,14 @@ there); PT-5 needs PT-3 and the gate PT-4.
 5. **Preconditions.** PT-1 to PT-5 and PT-7. PT-6 and PT-4 are gates: when
    either is closed, P3 is reported as not graded.
 6. **Contrasting case.** None for P3's own comparator that this package has
-   built: no input of this package makes it green (T-l changes one line of
-   every field, and the lengths it produces are neither 227 nor 228, so P3
-   is not graded there; PT-5, section 4.5). T-b (PAL) runs the same comparator on the standard for which p23
+   built: T-m (selector `P3(alternating)`) makes it green. The CPU writes
+   `BEAMCON0 = $0080` and `HTOTAL = $E2`, and the Copper list writes, in every
+   line v, `WAIT (v,$40)` and `MOVE HTOTAL` with `$E3` for even v and `$E2`
+   for odd v, then keeps `WAIT (v,$E0)` and its mark; the count `$E3` is the
+   228 colour clocks (0-$E3) of p23 and `$E2` the 227. The comparator and its
+   expected value are those of the normal run (T-l, whose single write lands
+   after the count has passed `$E2`, changes one line per field to a length
+   that is neither 227 nor 228; PT-5, section 4.5). T-b (PAL) runs the same comparator on the standard for which p23
    says "In PAL, they are all 227 long": every L_k(v) is 227 and the check
    goes red, as it does on the NTSC run. PT-1 to PT-7 still hold on it,
    because PAL fields alternate between 312 and 313 (P1) and 227 is a valid
@@ -990,13 +996,13 @@ there); PT-5 needs PT-3 and the gate PT-4.
 
 Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_x.s`
 (I-a to I-x, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
-`prog_t_c.s` to `prog_t_l.s` (T-a, T-c to T-l, section 4.4; T-b is the same
+`prog_t_c.s` to `prog_t_m.s` (T-a, T-c to T-m, section 4.4; T-b is the same
 binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
 that `nanomig.i` does not, and the CIA-A address used only to release the
 reset-time overlay so Program I can install its own interrupt vector at
 $6C, independently of Appendix B); `listt_body.i` (LISTT's 255 WAIT/MOVE
-pairs, generated once, not by hand); `test_ch2_interlace_fields.cpp`.
+pairs, generated once, not by hand); `listt_alt_body.i` (T-m's list, generated); `test_ch2_interlace_fields.cpp`.
 
 **Clock ratio.** Every check that compares a cycle count against colour
 clocks (p194, section 2.3) converts by a fixed 8 clk_sys cycles per colour
@@ -1132,3 +1138,14 @@ and all 13 are line 101 (the E8 write comes after line 100's count $E2 has passe
 end at $E8, and the $E2 write in line 101 again comes after $E2 has passed, so the count runs on to
 256). PT-1, PT-2, PT-3, PT-7 and PT-8 hold, the gate PT-4 is open (line 0 to 1 is 1,816 clk_sys),
 the gate PT-6 is open, P2 is graded and passes, PT-5's comparator prints FAIL and P3 is not graded.
+
+**T-m.** `BEAMCON0 = $0080`, `HTOTAL = $E2`, then in every line v the Copper's
+`WAIT (v,$40)` and `MOVE HTOTAL` (`$E3` for even v, `$E2` for odd v) in front of
+the mark. Measured on the fx68k build, the default TG68K build and the
+`TG68K_KERNEL=shipped` build: of the 3,302 Copper-mark line lengths of the 13
+fields 1,651 are 228 colour clocks and 1,651 are 227, none is neither and none
+equals the line before (lines 0 to 5 of field 0: 1,824 1,816 1,824 1,816 1,824
+1,816 clk_sys); PT-1, PT-2, PT-3, PT-5, PT-7 and PT-8 hold, the gates PT-4 and
+PT-6 are open (N_0..N_12 = 263, 262, ...), P2 is graded and passes and P3's
+comparator prints PASS. The selector `P3(alternating)` runs it; the normal run
+does not.
