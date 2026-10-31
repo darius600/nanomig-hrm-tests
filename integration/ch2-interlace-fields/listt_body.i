@@ -2,6 +2,8 @@
 ; T_WAIT0_ZERO (T-c): the v=0 WAIT uses H=$00 instead of $E0.
 ; T_LINE100_C0 (T-d): the v=100 WAIT uses H=$C0 instead of $E0.
 ; T_LINE10_40 (T-g): the v=10 WAIT uses H=$40 instead of $E0.
+; T_HTOTAL (T-l): the MOVE of v=100 writes HTOTAL = $E8 and the MOVE of v=101
+; writes HTOTAL = $E2, in place of the two COLOR00 MOVEs (same addresses).
         ifd     T_WAIT0_ZERO
         dc.w    $0001,$FFFE
         else
@@ -217,9 +219,17 @@
         else
         dc.w    $64E1,$FFFE
         endif
+        ifd     T_HTOTAL
+        dc.w    $01C0,$00E8                    ; T-l: the count E8 is written after line 100 has passed E2
+        else
         dc.w    COLOR00,$0000
+        endif
         dc.w    $65E1,$FFFE
+        ifd     T_HTOTAL
+        dc.w    $01C0,$00E2                    ; T-l: written after the count E2 has passed, so line 101 runs to 256
+        else
         dc.w    COLOR00,$0000
+        endif
         dc.w    $66E1,$FFFE
         dc.w    COLOR00,$0000
         dc.w    $67E1,$FFFE

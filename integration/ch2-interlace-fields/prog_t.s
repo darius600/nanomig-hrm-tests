@@ -12,6 +12,7 @@
 ;   T_DIWSTOP_NORM T-e  DIWSTOP = $F4C1 (the normal NTSC value, p59)
 ;   M1_DELAY       T-f  M1 waits between samples (see m1.i)
 ;   T_LINE10_40    T-g  the WAIT of line 10 uses H=$40, not $E0
+;   T_HTOTAL       T-l  BEAMCON0 = $0080, HTOTAL = $E2; the Copper writes HTOTAL = $E8 at line 100, $E2 at line 101 (line 101 measures 256 colour clocks)
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 ;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
@@ -74,6 +75,13 @@ start:
         move.w  #$F4C1,DIWSTOP(a0)
         else
         move.w  #$39C1,DIWSTOP(a0)
+        endif
+
+        ; T-l: the programmable beam counters on (VARBEAMEN, BEAMCON0 bit 7;
+        ; bit 5 stays 0, NTSC) with HTOTAL = $E2, the count the default line has.
+        ifd     T_HTOTAL
+        move.w  #$0080,$1DC(a0)         ; BEAMCON0
+        move.w  #$00E2,$1C0(a0)         ; HTOTAL
         endif
 
         ; step 4.

@@ -492,6 +492,7 @@ comparison works on the least significant bits of the vertical count").
 | T-i | FIXMARK stores `$DEAD`, not `$BEEF` |
 | T-j | LISTT ends in `$0000,$0000` (as in I-s) in front of the `$FFFF,$FFFE` that stays in the list |
 | T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 1,800 `MOVE COLOR00, bg` (four memory cycle times each, p20: 7,200 colour clocks, more than the 30 lines (at most 6,840 colour clocks) from line 255 of a 263-line field through line 21 of the next; LISTT is relocated to `$0A0000`, clear of PLANE, with the code of M1 behind it) |
+| T-l | The CPU writes `BEAMCON0 = $0080` (VARBEAMEN; bit 5 clear, as in NTSC) and `HTOTAL = $E2` (the count the default line has) before the Copper starts; the `MOVE COLOR00, bg` of line 100 is `MOVE HTOTAL, $E8` and that of line 101 is `MOVE HTOTAL, $E2`, at the same list addresses, so every WAIT stays at `(v, $E0)` and every mark is still read. It changes an actual line length (a contrast of PT-5, section 4.5) |
 
 ### 4.5 Preconditions of Program T
 
@@ -508,7 +509,7 @@ there); PT-5 needs PT-3 and the gate PT-4.
 | PT-2 | In every field, the bitplane fetches are exactly N_k - 44 groups, each of 20 consecutive ascending word addresses, with no fetch left over (the number of fetches is 20 x (N_k - 44)). This shows that the bitplane marks run from line 44 to the last line, and it confirms N_k independently of the CPU. | T-e |
 | PT-3 | Δ has one single value on every line 44 ... 254 of every field. | T-d |
 | PT-4 (gate of PT-5 and P3) | In every field, m_c(k, 1) - m_c(k, 0) is 227 or 228 colour clocks: the marks of line 0 and line 1 lie on consecutive lines, so the Copper mark of line 0 is anchored on line 0. p25 leaves open whether the restart lies at the start or at the end of vertical blanking, and a restart at the end of blanking satisfies the WAIT (0, $E0) at once, so PT-4 is printed as a gate state and is not graded. When it is closed, PT-5 and P3 are not graded. | T-c |
-| PT-5 | Every directly observed line length of section 2.7 (lines 0 ... N_k - 2 of every field) is 227 or 228 colour clocks, the two values p23 gives. Graded only when PT-3 and PT-4 hold: PT-3 shows that the Copper marks lie at one fixed horizontal offset from the bitplane marks on lines 44 ... 254, so that the differences of the two kinds of mark are lengths of the same lines, and PT-4 anchors the Copper mark of line 0. No program-only input changes a physical line length (the horizontal count is the chip set's: p24 "One horizontal count takes one cycle of the system clock"; BEAMCON0, the register of the programmable beam counters, is never written: p305 "Do not write to this register"), so PT-5 has no stimulus contrast; T-g, which moves a measuring mark, is a gating observation of the marks, not a contrast of PT-5. | none (T-g, gating observation) |
+| PT-5 | Every directly observed line length of section 2.7 (lines 0 ... N_k - 2 of every field) is 227 or 228 colour clocks, the two values p23 gives. Graded only when PT-3 and PT-4 hold: PT-3 shows that the Copper marks lie at one fixed horizontal offset from the bitplane marks on lines 44 ... 254, so that the differences of the two kinds of mark are lengths of the same lines, and PT-4 anchors the Copper mark of line 0. A program can change a physical line length: p305 lists BEAMCON0 bit 7 as "VARBEAMEN Variable beam counter comparator enable", and p298 lists HTOTAL as "Highest number count, horiz line (VARBEAMEN=1)" (p304: "The value in this register represents the number of 280ns increments on the horizontal line."). The warning on p305 "Other modes, such as VGA (31 KHz programmable mode) disable the hard stops on display sync and blank. Do not write to this register." is addressed to programs that change the scan rate of a monitor; the register is in the table and its write changes the count. T-l writes VARBEAMEN and HTOTAL and changes the length of a line with every mark live. T-g, which moves a measuring mark, is a gating observation of the marks, not a contrast of PT-5. | T-l |
 | PT-6 (gate of P3) | The selected standard is NTSC or PAL as the harness was configured, and consecutive field lengths alternate between the two values p24 gives for that standard: 262 and 263 in NTSC, 312 and 313 in PAL (every N_k is one of the two, and no two consecutive N_k are equal). p34 reads the NTSC fields as all 262 lines, so an implementation that follows p34 closes the gate; PT-6 is printed as a gate state with the standard it checked and is not graded, and P3 is reported as not graded, gate closed. | T-a |
 | PT-8 (for P2) | Interlace is active: no two consecutive recorded field lengths are equal. p24: "there are also long and short fields (interlace only)"; with interlace off there are no long and short fields, so consecutive fields have one length. Graded; where it fails, P2 is not graded. | T-a (LACE clear: all 13 fields have one length) |
 | PT-7 | Anchor check of section 2.6, with LISTT: one restart per M1 field, in order, each the first-word fetch of LISTT, preceded, among the list's words up to the terminal wait, by the fetch of the terminal `$FFFF,$FFFE` wait. | T-h (no restart); T-k (the third clause, page-predicted: the Copper is restarted in the middle of the list); T-j is a self-test of the third clause on this design only, not page-predicted (section 7) |
@@ -667,17 +668,18 @@ there); PT-5 needs PT-3 and the gate PT-4.
    so either phase is accepted.
 5. **Preconditions.** PT-1 to PT-5 and PT-7. PT-6 and PT-4 are gates: when
    either is closed, P3 is reported as not graded.
-6. **Contrasting case.** None that a program can set up: the length of a line
-   is the chip set's, and no stimulus of this package changes it (PT-5, section
-   4.5). T-b (PAL) runs the same comparator on the standard for which p23
+6. **Contrasting case.** None for P3's own comparator that this package has
+   built: no input of this package makes it green (T-l changes one line of
+   every field, and the lengths it produces are neither 227 nor 228, so P3
+   is not graded there; PT-5, section 4.5). T-b (PAL) runs the same comparator on the standard for which p23
    says "In PAL, they are all 227 long": every L_k(v) is 227 and the check
    goes red, as it does on the NTSC run. PT-1 to PT-7 still hold on it,
    because PAL fields alternate between 312 and 313 (P1) and 227 is a valid
    length; that is a live control of the preconditions while the comparator is
    red, not a demonstration that it can pass. The contrasts for the
    preconditions are T-f (PT-1), T-e (PT-2), T-d (PT-3), T-c (PT-4), T-a
-   (PT-6; p24: long and short fields occur "interlace only") and T-h (PT-7);
-   PT-5 has none (section 4.5).
+   (PT-6; p24: long and short fields occur "interlace only"), T-h (PT-7) and
+   T-l (PT-5).
 7. **Reference frame.**
    - Line marks at fixed horizontal positions (section 2.7).
    - The WAIT position anchors the Copper marks (p22) and DDFSTRT anchors the
@@ -988,7 +990,7 @@ there); PT-5 needs PT-3 and the gate PT-4.
 
 Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_x.s`
 (I-a to I-x, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
-`prog_t_c.s` to `prog_t_k.s` (T-a, T-c to T-k, section 4.4; T-b is the same
+`prog_t_c.s` to `prog_t_l.s` (T-a, T-c to T-l, section 4.4; T-b is the same
 binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
 that `nanomig.i` does not, and the CIA-A address used only to release the
@@ -1121,3 +1123,12 @@ PT-1, PT-3 and every Copper mark the line lengths need stay live, P2 is
 graded and P3 is not graded. The run prints PT-5's comparator as a gating
 observation (`PT-5(mark)`), not as an assertion: it moves a measuring mark and
 no physical line.
+
+**T-l.** `BEAMCON0 = $0080`, `HTOTAL = $E2`, then the Copper's `HTOTAL = $E8` in line 100's
+MOVE slot and `HTOTAL = $E2` in line 101's. Measured on both cores (the fx68k build and the default
+TG68K build, the board's kernel): in every one of the 13 fields line 101 measures 2,048 clk_sys (256
+colour clocks); 13 of the 3,400 directly observed line lengths fall outside 227 and 228 colour clocks
+and all 13 are line 101 (the E8 write comes after line 100's count $E2 has passed, so line 101 would
+end at $E8, and the $E2 write in line 101 again comes after $E2 has passed, so the count runs on to
+256). PT-1, PT-2, PT-3, PT-7 and PT-8 hold, the gate PT-4 is open (line 0 to 1 is 1,816 clk_sys),
+the gate PT-6 is open, P2 is graded and passes, PT-5's comparator prints FAIL and P3 is not graded.

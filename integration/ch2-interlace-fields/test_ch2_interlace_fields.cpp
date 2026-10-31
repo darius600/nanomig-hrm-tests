@@ -67,7 +67,7 @@
 // MUTATION PT-1 stimulus red: NMH_MUTATE=PT-1 runs prog_t_f (M1 waits between samples, T-f); PT-1's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL (M1 record 0's first V is 122); TG68K: FAIL (first V is 3)
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
-// MUTATION PT-5 none impossible: PT-5 states what the chip set's beam does, and no program-only input changes the length of a physical line (one horizontal count is one system clock, p24; BEAMCON0, the register of the programmable beam counters, is never written, p305 "Do not write to this register"); no run of this package turns PT-5's comparator red through a real line, so none is shown ; outcome per core, replayed: no run exists, so there is no outcome on either core
+// MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_l (T-l: the CPU writes BEAMCON0 = $0080, VARBEAMEN, bit 5 clear as in NTSC, and HTOTAL = $E2, the count the default line has; the Copper list writes HTOTAL = $E8 in the MOVE slot of line 100 and HTOTAL = $E2 in the MOVE slot of line 101; every WAIT stays at (v,$E0) and every mark is read, p305 "VARBEAMEN Variable beam counter comparator enable", p298 "Highest number count, horiz line (VARBEAMEN=1)", p304 "The value in this register represents the number of 280ns increments on the horizontal line."; the oracle for the comparator stays p23 "Every other line is a long line (228 color clocks, 0-$E3), with the others being 227 color clocks long."); PT-5's comparator prints FAIL through line 101 of every recorded field, which measures 2,048 clk_sys (256 colour clocks) and not 227 or 228 (the E8 write comes after line 100's count E2 has passed, so line 101 would end at E8, and the E2 write in line 101 again comes after E2 has passed, so the count runs on to 256); controls PT-1, PT-2, PT-3, PT-7 and PT-8 hold, the gates PT-4 and PT-6 print open (line 0-to-1 is 1,816 clk_sys, N_0..N_12 = 263,262,...), P2 is graded and prints PASS, P3 prints NOT GRADED ; outcome per core, replayed: fx68k: FAIL (13 of 3,400 directly observed lengths outside 227 and 228 colour clocks, all of them line 101, 2,048 clk_sys); TG68K (default board kernel): FAIL (the same 13 of 3,400, 2,048 clk_sys); the line lengths other than line 101 are 227 or 228 colour clocks on both
 // GATE PT-5(mark) (a gating observation of PT-5's marks, printed as a MEASURED line, not graded; not a mutation of PT-5, no physical line changes): NMH_MUTATE=PT-5(mark) runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g), which moves a measuring mark; PT-5's comparator does not hold, through measured lengths of lines 9 and 10 outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present; P2 is graded and P3 prints NOT GRADED ; outcome per core, replayed: fx68k: PT-5's comparator does not hold (26 of 3,400 directly observed lengths outside {227,228}, the first field 0 line 9 = 536 clk_sys); TG68K: the same (26 of 3,400, 536 clk_sys); P2 PASS and P3 NOT GRADED on both
 // MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(long) runs prog_t_k (LISTT waits for line 255 after its last mark and then holds 1,800 MOVEs in front of the terminal wait, T-k: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PT-7's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact ; outcome per core, replayed: fx68k: FAIL on T-h and FAIL on T-k; TG68K: FAIL on T-h and FAIL on T-k
 // DIAGNOSTIC SELFTEST-PT-7-ANCHOR (printed as a MEASURED line, not graded; not a mutation of PT-7, no page predicts it): NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; the line prints that PT-7's comparator does not hold; controls: one restart per M1 field, consecutive matched restarts ; outcome per core, replayed: fx68k: PT-7's comparator does not hold (13 of 13 fields hold one restart, 0 of 13 preceded by a terminal wait); TG68K: the same (13 of 13, 0 of 13)
@@ -75,7 +75,7 @@
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-3, PT-5, PT-7, PT-8 ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-2, PT-3, PT-7 ; outcome per core, replayed: fx68k: closed (the line 0-to-1 distance is 3,528 clk_sys in all 13 fields), PT-5 and P3 NOT GRADED; TG68K: closed (3,528 clk_sys), PT-5 and P3 NOT GRADED
 // GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed (the fields have one length, not the two of the NTSC standard) and P3 prints "not graded, gate closed"; PT-8 fails on the same stimulus and is graded in its own run, here it is recorded and P2 prints NOT GRADED; controls PT-1, PT-2, PT-3, PT-7 ; outcome per core, replayed: fx68k: closed (N_0..N_12 are all 263), P3 not graded, P2 NOT GRADED; TG68K: closed (all 263), P3 not graded, P2 NOT GRADED
-// MUTATION P3 none impossible: already red in the normal run and not exercised further: NMH_MUTATE=P3 runs prog_t with PAL selected (T-b, the gate PT-6 checks 312 and 313) and P3's comparator prints FAIL again, every line measuring 227 colour clocks as p23 says for PAL; no stimulus of this package makes P3's comparator green, because the length of a line is the chip set's, so what is shown is that the controls PT-1..PT-8 hold while it is red, not that the comparator can pass ; outcome per core, replayed: fx68k: FAIL (3,302 of 3,302 Copper-mark line lengths are 227 colour clocks, none 228); TG68K: FAIL (3,302 of 3,302 are 227)
+// MUTATION P3 none impossible: already red in the normal run and not exercised further: NMH_MUTATE=P3 runs prog_t with PAL selected (T-b, the gate PT-6 checks 312 and 313) and P3's comparator prints FAIL again, every line measuring 227 colour clocks as p23 says for PAL; no input built in this package makes P3's comparator green (T-l, which changes the length of one line per field through BEAMCON0 and HTOTAL, produces a length that is neither 227 nor 228, and no list here alternates the count line by line), so what is shown is that the controls PT-1..PT-8 hold while it is red, not that the comparator can pass ; outcome per core, replayed: fx68k: FAIL (3,302 of 3,302 Copper-mark line lengths are 227 colour clocks, none 228); TG68K: FAIL (3,302 of 3,302 are 227)
 
 #include <cstdio>
 #include <cstdint>
@@ -2126,6 +2126,7 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         {"PT-2", {"prog_t_e", true}},
         {"PT-3", {"prog_t_d", true}},
         {"PT-4", {"prog_t_c", true}},
+        {"PT-5", {"prog_t_l", true}},
         {"PT-5(mark)", {"prog_t_g", true}},
         {"PT-6", {"prog_t_a", true}},
         {"PT-8", {"prog_t_a", true}},
@@ -2152,7 +2153,7 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         for (const auto& f : a.fields) if (f.N == 263) anyLongField = true;
         checks.note(label + " mutation measured: any field with N=263? " + (anyLongField ? "yes" : "no"));
         checks.record(label + " mutation: no input built in this package turns P3's own comparator green "
-            "-- the length of a line is the chip set's and no stimulus of this package changes it; NTSC runs "
+            "-- the one input that changes a line length here (T-l, PT-5) produces a length that is neither 227 nor 228, and none alternates the count line by line; NTSC runs "
             "show only 227-colour-clock lines and PAL, for which p23 says \"they are all 227 long\", the same");
     } else if (label == "PT-8") {
         // T-a: LACE clear. Every recorded field has one length, so PT-8 is red
@@ -2181,6 +2182,33 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         t_dump(label, a, t, {"PT-4"});
         g_PT4(a);
         ctl(label, "the gate PT-4 is closed", !t.pt4);
+        t_downstream(a, t, {});
+    } else if (label == "PT-5") {
+        // T-l: the program turns the programmable beam counters on and writes HTOTAL
+        // = $E8 at line 100 and $E2 at line 101: line 100 is 233 colour clocks long.
+        // Every mark stays live, so PT-3 and the gate PT-4 hold and PT-5's own
+        // comparator is graded and prints FAIL.
+        size_t outside = 0, measured = 0;
+        std::string first, odd;
+        for (int k = 0; k < kT_K && t.pt3.holds(); ++k) {
+            std::vector<int64_t> lens;
+            if (!observed_lengths(a, k, lens)) continue;
+            for (size_t v = 0; v < lens.size(); ++v) {
+                ++measured;
+                if (!length_in_range(lens[v])) {
+                    ++outside;
+                    if (first.empty())
+                        first = "field " + std::to_string(k) + " line " + std::to_string(v) + " = " +
+                                std::to_string(lens[v]) + " clk_sys (" + cc_text(lens[v]) + " colour clocks)";
+                    if (v != 100) odd += " " + std::to_string(k) + "/" + std::to_string(v);
+                }
+            }
+        }
+        t_dump(label, a, t, {"PT-5"});
+        g_PT5(t);
+        checks.note(label + " mutation measured: " + std::to_string(outside) + " of " + std::to_string(measured) +
+                    " directly observed line lengths lie outside 227 and 228 colour clocks; first: " +
+                    (first.empty() ? "none" : first) + "; outside lines other than line 100:" + (odd.empty() ? " none" : odd));
         t_downstream(a, t, {});
     } else if (label == "PT-5(mark)") {
         // T-g: a gating observation of PT-5's marks, not a mutation of PT-5. Line
