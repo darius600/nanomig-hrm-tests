@@ -220,7 +220,7 @@ on the whole of `nanomig.v`, with the same lines on both cores:
   (`P7.5-CIAB-GREENCTL-PRE` and `P8.65-MODE01-CIAB-GREENCTL-PRE`, green). One key
   code, eight KCLK pulses, is sent in the second. On the repository's RTL, so
   selected, both controls print FAIL, reading v1 = $0DFE, i1 = $00, i2 = $08 and
-  v2 = $0544 on fx68k and v1 = $0D9D, i1 = $00, i2 = $08 and v2 = $0335 on TG68K:
+  v2 = $0544 on fx68k and v1 = $0E66, i1 = $00, i2 = $08 and v2 = $0772 on TG68K:
   the timer counts φ2 in both intervals. The package's `conf-test-fx68k` and
   `conf-test-tg68k` run the same selectors, with `P5-CONTRAST`, against a private
   copy of the chip set made with `conf.patch`, which gives both CIAs a CNT input
