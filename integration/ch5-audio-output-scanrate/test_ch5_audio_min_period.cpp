@@ -84,9 +84,10 @@
 // MUTATION MC5 stimulus red NMH_MUTATE=MC5MARK: PAL P = 124 without the done-marker store
 //   measured: fx68k and TG68K: MC5 red (marker absent); MC1, MC2, MC4, MC6 green; 14 passed, 1 failed
 // MUTATION MC5 stimulus red NMH_MUTATE=MC5STOP: PAL P = 64 with DMACON <- $0001 after 200 lines of the wait and a delay of 30 loop passes
-//   measured: fx68k and TG68K: MC5 red through both of its clauses (no read at the channel offset in the first and last tenth of the port window,
-//   the last such read before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of order), MC6 green
-//   (largest distance from the grid 0.0000 ticks); 14 passed, 1 failed
+//   measured: fx68k, TG68K and TG68K shipped kernel: MC5 red through both of its clauses (no read at the channel offset in the first and last
+//   tenth of the port window, the last such read before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of
+//   order). MC6 green on fx68k and TG68K shipped kernel (largest distance from the grid 0.0000 ticks; 14 passed, 1 failed), red on TG68K
+//   (largest distance from the grid 1.0000 ticks; 13 passed, 2 failed): SPECIFICATION-min-period.md 6.1
 // MUTATION MC6 stimulus red NMH_MUTATE=MC6PER: PAL with AUD0PER 129 written while 128 is declared
 //   measured: fx68k and TG68K: MC6 red (largest distance from the 128-tick grid 64 ticks); MC1, MC2, MC4, MC5 green; 14 passed, 1 failed
 // MUTATION MC6 stimulus red NMH_MUTATE=MC6BELOW: PAL with AUD0PER 101 written while 100 is declared, below the minimum
