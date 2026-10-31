@@ -14,7 +14,7 @@
 | **Test** | [`integration/aa-integ-s1`](../../integration/aa-integ-s1): `make -k -C integration/aa-integ-s1 test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. The AA chip set, graded on both CPU cores |
 | **Assertions** | 3 red on fx68k and 3 on TG68K, in a package run of 156 passed, 10 failed, 11 NOT GRADED on each core: `P4b-C1` expects PF1H0 (BPLCON1 bit 8) to read 0 after reset, the plane-1 stripe colour being the same in F3 (reset state) and F5 (BPLCON1 = $0000), and observes colour 0 in F3 and 1 in F5; `P4b-C2` the same for PF2H0 (bit 12) and plane 2; `P5` expects bit 12 and bit 8 to be PF2H0 and PF1H0 and 0 after reset, and observes the stripe colours unequal. `P4a-D1`, `P4a-D2` and the six `P5-PF*` lines, which grade the other six marked bits through the delay, print NOT GRADED because each rests on `P4b-C1` or `P4b-C2` showing PFnH0 = 0. The run's seven other reds are not this finding's: `P6-II` and `P6-AGG` grade BPLCON0's BYPASS bit ([NM-AA-007](NM-AA-007.md)), `P10-LATCH` the light-pen latch ([NM-HRM-087](NM-HRM-087.md)), and `P14-U1`, `P14-U2`, `P14-REL` and `P14-AGG` HHPOSR with DUAL set ([NM-AA-008](NM-AA-008.md)) |
 | **Verdict of the four** | **three of three with the page, and none with NanoMig.** WinUAE, vAmiga and Copperline all start an AA machine with BPLCON1 = $0000: vAmiga and Copperline clear it on every reset, WinUAE never resets it and starts from zero. Denise models no AA machine and casts no vote. MiSTer and TC64, descendants, reset it to $3300 as NanoMig does. Hardware: not measured |
-| **Effort** | S — `denise_bitplanes.v:172`, the reset value of `bplcon1`, which becomes $0000 when `aga` is set |
+| **Effort** | S — `denise_bitplanes.v:172` and its copy at `:458`, the reset value of `bplcon1`, which becomes $0000 when `aga` is set |
 
 ---
 
@@ -94,23 +94,23 @@ p. 4:
       bplcon1 <= #1 aga ? data_in[15:0] : {2'b00,2'b11,2'b00,2'b11,data_in[7:0]};
 ```
 
-$3300 sets bits 13, 12, 9 and 8: PF2H1, PF2H0, PF1H1 and PF1H0, four of the eight bits p. 16 marks `=0`. Each delay takes them as its two lowest bits ([`#L148`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_bitplanes.v#L148), [`#L160`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_bitplanes.v#L160)), so after reset both delays are 3 SHRES pixels (105 ns), where the table gives 0. $3300 is the pattern an ECS-mode write forces into the same bits (`aga` low); with `aga` high a write stores all sixteen bits, so an AA machine keeps the 3-pixel delay until software first writes BPLCON1. Lines 228-235 lie outside both branches of `ifdef DENISE_EBR`, so the TG68K build, which defines it, and the fx68k build have the same block.
+$3300 sets bits 13, 12, 9 and 8: PF2H1, PF2H0, PF1H1 and PF1H0, four of the eight bits p. 16 marks `=0`. Each delay takes them as its two lowest bits ([`#L148`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_bitplanes.v#L148), [`#L160`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_bitplanes.v#L160)), so after reset both delays are 3 SHRES pixels (105 ns), where the table gives 0. $3300 is the pattern an ECS-mode write forces into the same bits (`aga` low); with `aga` high a write stores all sixteen bits, so an AA machine keeps the 3-pixel delay until software first writes BPLCON1. The block lies in the `ifdef DENISE_EBR` branch, which the TG68K build defines; the fx68k build compiles the other branch, whose block at [`#L454-L461`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_bitplanes.v#L454-L461) is the same, `bplcon1 <= #1 16'h3300;` on reset.
 
 [`integration/aa-integ-s1`](../../integration/aa-integ-s1) reads the reset state off the screen, because p. 16 lists BPLCON1 as written (`W`) and gives no value for a read. Each run comes out of the harness's power-on reset, writes everything its display needs except BPLCON1 (`prog_bars_midrun.s` writes none before F3 and reads no custom register but INTREQR), shows a frame, F3, with BPLCON1 as reset left it, then writes $0000 at the VERTB that starts F5 and shows F5 as the reference.
 
 - **Run (b)**, SuperHires with 64-bit fetch, shows a band of alternating SHRES pixels in each playfield. The video output keeps one sample per 70 ns, so the band shows one of its two colours and a delay of one SHRES pixel shows the other. Read at every op from 12 to 68 past each frame's own solid edge, the band shows its playfield's colour in F5 (`1`) and does not in F3 (`0`), in both playfields: each playfield sits an odd number of SHRES pixels from where $0000 puts it, so PF1H0 and PF2H0 are not 0. `P4b-C1` and `P4b-C2` are red on both cores, and `P5` with them.
-- **Run (a)**, low resolution with 64-bit fetch, measures the delay: F3 lies 1 op right of F5 on fx68k and 2 op on TG68K, for both playfields. 3 SHRES pixels is 1.5 op, between two samples, and the two cores round it to different whole op. `P4a-D1` and `P4a-D2` accept only even whole-op delays from 0 to 30 and are graded only where run (b) shows PFnH0 = 0, so both print NOT GRADED, as do the six `P5-PF*` lines that rest on them.
+- **Run (a)**, low resolution with 64-bit fetch, measures the delay: F3 lies 2 op right of F5 on both cores, for both playfields. 3 SHRES pixels is 1.5 op, between two samples. `P4a-D1` and `P4a-D2` accept only even whole-op delays from 0 to 30 and are graded only where run (b) shows PFnH0 = 0, so both print NOT GRADED, as do the six `P5-PF*` lines that rest on them.
 - **The bits themselves work.** `P2` writes each of bits 15-8 alone and its rows are green on both cores: PF1H0 alone ($0100) and PF2H0 alone ($1000) turn their own playfield's band from colour 1 to 0 and leave the other's.
 
 ```
 MEASURED: P4 run(b) measured: plane-1 stripe colour F3 0 F5 1, plane-2 stripe colour F3 0 F5 1
-MEASURED: P4 run(a) measured: F3-vs-F5 Delta1=1 op, Delta2=1 op
+MEASURED: P4 run(a) measured: F3-vs-F5 Delta1=2 op, Delta2=2 op
 MEASURED: P5 conjuncts: P2 rows 8-15 all-ok=1; P4 run(b) stripe colours equal=0; P4 run(a) graded=0
 ```
 
-(fx68k; TG68K prints `Delta1=2 op, Delta2=2 op` and the same elsewhere.) `P4-FIXTURE`, `P4-F1`, `P4-R1`, `P4-S3A`, `P4-S3B-A`, `P4-S3B-B` and `P4-SIG`, on which the reds rest, are green on both cores.
+(The same on fx68k and TG68K.) `P4-FIXTURE`, `P4-F1`, `P4-R1`, `P4-S3A`, `P4-S3B-A`, `P4-S3B-B` and `P4-SIG`, on which the reds rest, are green on both cores.
 
-`P4b-C1` is graded at `test_aa_integ_s1.cpp:2893-2895`, `P4b-C2` at `:2896-2898` and `P5` at `:2935-2937`; `P4a-D1` and `P4a-D2` are recorded at `:2917-2922`.
+`P4b-C1` is graded at `test_aa_integ_s1.cpp:2927-2929`, `P4b-C2` at `:2930-2932` and `P5` at `:2969-2971`; `P4a-D1` and `P4a-D2` are recorded at `:2951-2956`.
 
 ## Risks and unknowns
 
@@ -143,4 +143,4 @@ The question put to each: on an AA machine, what does BPLCON1 hold after reset?
 +      bplcon1 <= #1 aga ? 16'h0000 : 16'h3300;
 ```
 
-With `aga` low it keeps today's reset, which equals what every ECS-mode write forces into the same bits, so the ECS display does not move. With `aga` high, which is every run of the package, a build against a private copy whose BPLCON1 resets to `16'h0000` (`NMH_MUTATE=P5-NONE`; mutation build, not run by `make test`) prints PASS for `P4b-C1`, `P4b-C2`, `P4a-D1`, `P4a-D2`, `P5` and the six `P5-PF*` lines on both cores, `42 passed, 0 failed` on each, with the run (a) delay at 0 op. On an AA machine both playfields would then start 3 SHRES pixels (105 ns) further left than today, until software first writes BPLCON1; a display that writes BPLCON1 before it is shown sees no difference.
+With `aga` low it keeps today's reset, which equals what every ECS-mode write forces into the same bits, so the ECS display does not move. With `aga` high, which is every run of the package, a build against a private copy whose BPLCON1 resets to `16'h0000` (`NMH_MUTATE=P5-NONE`; mutation build, not run by `make test`) prints PASS for `P4b-C1`, `P4b-C2`, `P4a-D1`, `P4a-D2`, `P5` and the six `P5-PF*` lines on both cores, by the package's own record. On an AA machine both playfields would then start 3 SHRES pixels (105 ns) further left than today, until software first writes BPLCON1; a display that writes BPLCON1 before it is shown sees no difference.
