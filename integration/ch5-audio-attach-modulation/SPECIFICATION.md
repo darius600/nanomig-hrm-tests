@@ -794,7 +794,11 @@ PC1, PC2 and PC3 of the session stay green.
 - Population and alternation (P5-BOTH): every period-position word of M_VP is 200, the
   period channel 1 already holds (prog_s_both_volwords, selector P5-BOTH-ALT): only the
   volume words change anything, so the window holds no period change, and the population
-  and alternation clause fails; PC1, PC2 and PC3 of the session stay green.
+  and alternation clause fails; PC1, PC2 and PC3 of the session stay green. The D_mod
+  spacing clause fails with it, because the volume changes lie 2·D_mod apart. With both bits
+  set the words take turns by position, so at the port a missing change of one kind always
+  leaves a 2·D_mod gap; this contrast does not isolate the alternation clause from the
+  spacing clause.
 
 **7. Reference frame.** The time-out grid is anchored on channel 0's
 fetches (p.164 transfer timing). D_mod comes from R-MOD (PC6).
