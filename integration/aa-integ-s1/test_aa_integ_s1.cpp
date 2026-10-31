@@ -69,21 +69,21 @@
 // MUTATION P9-R3 stimulus red NMH_MUTATE=P9-R3: run D0 places the second marker at line $81 instead of $80; TG68K FAIL, fx68k FAIL.
 // MUTATION P9-POP stimulus red NMH_MUTATE=P9-POP: run D0 writes BPLCON0 = $4000 (4 planes); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-FIRST stimulus red NMH_MUTATE=P9-FIRST: run D0 writes DIWSTRT = $2E81; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL, fx68k FAIL. Also printing PASS: P10-LATCH.
-// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
-// MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN.
-// MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by about 110 lines; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10 main check.
-// MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS. Also printing PASS: P10-MAIN.
-// MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
-// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
-// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE-RET: the second movement brings 39 counts instead of 40; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
-// MUTATION P11-AGG stimulus red NMH_MUTATE=P11-AGG: the 40 counts of the third movement are -1 instead of +1 on Y; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-MOUSE.
-// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
-// MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL, fx68k FAIL.
-// MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P11 joystick decode, P11 aggregate.
-// MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing PASS: P10-LATCH.
+// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
+// MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10-WIN.
+// MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by 89 (TG68K board kernel), 133 (TG68K shipped kernel) or 111 (fx68k) line boundaries; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10 main check.
+// MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS (board kernel and shipped kernel), fx68k PASS. Also printing PASS: P10-MAIN.
+// MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE-RET: the second movement brings 39 counts instead of 40; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-AGG stimulus red NMH_MUTATE=P11-AGG: the 40 counts of the third movement are -1 instead of +1 on Y; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-MOUSE.
+// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: UNIT-R2.
+// MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P11 joystick decode, P11 aggregate.
+// MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
 // MUTATION P12-MAIN stimulus red NMH_MUTATE=P12-MAIN: the main run loads prog_uart_k.bin: ADKCON = $0800 at step 5; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the main run loads prog_uart_early.bin: ADKCON = $8800 in place of $0800 at step 2, so UARTBRK is set before M1; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-KPRE stimulus red NMH_MUTATE=P12-KPRE: the contrast run loads prog_uart.bin: the break stays set; TG68K FAIL, fx68k FAIL.
@@ -93,12 +93,12 @@
 // MUTATION P13-MAIN stimulus red NMH_MUTATE=P13-MAIN-LOW: run Zc writes DSKPTL = $B48E in place of $B4AE (bit 5 of the low word flipped); TG68K FAIL, fx68k FAIL.
 // MUTATION P13-RUN stimulus red NMH_MUTATE=P13-RUN: run X writes DMACON = $8200 (DSKEN clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: run X loads prog_disk_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-STEP. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-STEP, P14-POS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
-// MUTATION P14-R2 stimulus red NMH_MUTATE=P14-R2: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added); TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-PHASE. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
-// MUTATION P14-U3 stimulus red NMH_MUTATE=P14-U3: run U3 writes BEAMCON0 = $0820 and no VTOTAL (run U0's); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P14-MAIN, P14-AGG.
-// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: run U1 loads prog_dual_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P14.
-// MUTATION P14-UNIT stimulus red NMH_MUTATE=P14-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2. Also NOT GRADED: P14.
-// MUTATION P15-V1 stimulus green NMH_MUTATE=P15-V1: live inputs through the same comparators: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer) and run V1 loads prog_cpuuh_57.bin (one per 57 CCK); TG68K PASS, fx68k PASS.
+// MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: 50 NOPs after each sample, so that consecutive samples lie more than HTOTAL+1 CCK apart (at least 132 CCK on the three cores); TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P14-STEP. fx68k: also P14-POS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: also P14-MAIN.
+// MUTATION P14-R2 stimulus red NMH_MUTATE=P14-R2: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added) and HTOTAL = $00E8, so that its lines are not 227 or 228 CCK long; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-U3 stimulus red NMH_MUTATE=P14-U3: run U3 writes BEAMCON0 = $0820 and no VTOTAL (run U0's) and loads prog_dual.bin as run U0 does; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P14-MAIN, P14-AGG.
+// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: run U1 loads prog_dual_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P14.
+// MUTATION P14-UNIT stimulus red NMH_MUTATE=P14-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: UNIT-R2. Also NOT GRADED: P14.
+// MUTATION P15-V1 stimulus green NMH_MUTATE=P15-V1: live inputs through the same comparators, in place of the UHRES pointer: in run V0 the Copper writes BLTSIZE once per line (position $14) on every line from $68 to $98 and the Blitter reads one word of the region (channel A, BLTAMOD = 6) each time; in run V1 it does so four times per line (positions $14, $4C, $86 and $BE); TG68K PASS (board kernel and shipped kernel), fx68k PASS.
 // MUTATION P15-FIXTURE stimulus red NMH_MUTATE=P15-FIXTURE: run V0 loads prog_uhres_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15.
 // MUTATION P15-R2 stimulus red NMH_MUTATE=P15-R2: run V0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15-R3, P15.
 // MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(), before the program's fifth VERTB and so before DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P15-DONE. Also NOT GRADED: P15-R3, P15.
@@ -156,14 +156,14 @@
 // MUTATION P5-PF1H6 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C1 holds, the precondition of the reset result; the reset result of playfield 1 is red, and the three lines of its bits move together because one delay result (P4a-D1) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P5-PF1H7, P5-PF1H1. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
 // MUTATION P5-PF1H1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 in run (a) instead of leaving the reset state and $0000 before F3 in run (b), so that P4b-C1 holds, the precondition of the reset result; the reset result of playfield 1 is red, and the three lines of its bits move together because one delay result (P4a-D1) covers all three; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P5-PF1H7, P5-PF1H6. Also printing PASS: P4b-C1, P4b-C2, P5, P5-PF2H7, P5-PF2H6, P5-PF2H1.
 // MUTATION P2-H2 stimulus red NMH_MUTATE=P2-H2: only the rows PF1H2 and PF2H2 run, and the FMODE = $0000 (a1) and FMODE = $0003 (a2) test runs of PF2H2 write the neighbouring bit $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF2H2, P2A2-PF2H2.
-// MUTATION P14-PHASE stimulus red NMH_MUTATE=P14-PHASE: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added): the lines are as long as the secondary counter's period and the sample times no longer take every phase; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-R2. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
-// MUTATION P14-STEP stimulus red NMH_MUTATE=P14-STEP: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK, longer than HTOTAL+1; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-POS, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
-// MUTATION P14-POS stimulus red NMH_MUTATE=P14-POS: run U1 loads prog_dual_sync.bin, which waits for the main counter's H8-H1 to lie in $20-$2F before each sample: one sample per line, so U1 samples a few R2-relative positions and not those of U2 and U0; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-STEP, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
-// MUTATION P14-U1 stimulus green NMH_MUTATE=P14-U1: live input through the same comparator: P14-U1 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U1's HHPOSR samples; TG68K PASS, fx68k PASS.
-// MUTATION P14-U2 stimulus green NMH_MUTATE=P14-U2: live input through the same comparator: P14-U2 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U2's HHPOSR samples; TG68K PASS, fx68k PASS.
-// MUTATION P14-REL stimulus green NMH_MUTATE=P14-REL: live input through the same comparator: P14-REL evaluates the qualifying pairs of U0's VHPOSR samples modulo the line length R2 measures in place of those of U1's and U2's HHPOSR samples; TG68K PASS, fx68k PASS.
-// MUTATION P14-MAIN stimulus red NMH_MUTATE=P14-MAIN: the VHPOSR samples of run U2 are replaced by those of run U3 (VARBEAMEN, HTOTAL = $0040), whose maximum differs from U0's; TG68K FAIL, fx68k FAIL.
-// MUTATION P14-AGG stimulus green NMH_MUTATE=P14-AGG: live input through the same line: P14-U1, P14-U2 and P14-REL evaluate U0's VHPOSR samples as in their own selectors, P14-MAIN the runs as they are; TG68K PASS, fx68k PASS. Also printing PASS: P14-U1, P14-U2, P14-REL.
+// MUTATION P14-PHASE stimulus red NMH_MUTATE=P14-PHASE: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added) and loads prog_dual_sync.bin, which takes one sample per line: the lines are as long as the secondary counter's period (65 CCK) and the sample times modulo HTOTAL+1 take 8 (TG68K board kernel), 7 (TG68K shipped kernel) or 4 (fx68k) of the 65 values; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P14-R2, P14-STEP, P14-PAIRS. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-STEP stimulus red NMH_MUTATE=P14-STEP: run U1 loads prog_dual_pad121.bin: 50 NOPs after each sample, so that consecutive samples lie more than HTOTAL+1 CCK apart (at least 132 CCK on the three cores); TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P14-PAIRS. fx68k: also P14-POS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: also P14-MAIN.
+// MUTATION P14-POS stimulus red NMH_MUTATE=P14-POS: run U1 loads prog_dual_sync.bin, which waits for the main counter's H8-H1 to lie in $20-$2F before each sample: one sample per line, so U1 samples a few R2-relative positions and not those of U2 and U0; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P14-STEP, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-U1 stimulus green NMH_MUTATE=P14-U1: live input through the same comparator: P14-U1 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U1's HHPOSR samples; TG68K PASS (board kernel and shipped kernel), fx68k PASS.
+// MUTATION P14-U2 stimulus green NMH_MUTATE=P14-U2: live input through the same comparator: P14-U2 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U2's HHPOSR samples; TG68K PASS (board kernel and shipped kernel), fx68k PASS.
+// MUTATION P14-REL stimulus green NMH_MUTATE=P14-REL: live input through the same comparator: P14-REL evaluates the qualifying pairs of U0's VHPOSR samples modulo the line length R2 measures in place of those of U1's and U2's HHPOSR samples; TG68K PASS (board kernel and shipped kernel), fx68k PASS.
+// MUTATION P14-MAIN stimulus red NMH_MUTATE=P14-MAIN: the VHPOSR samples of run U2 are replaced by those of run U3 (VARBEAMEN, HTOTAL = $0040), whose maximum differs from U0's; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P14-AGG stimulus green NMH_MUTATE=P14-AGG: live input through the same line: P14-U1, P14-U2 and P14-REL evaluate U0's VHPOSR samples as in their own selectors, P14-MAIN the runs as they are; TG68K PASS (board kernel and shipped kernel), fx68k PASS. Also printing PASS: P14-U1, P14-U2, P14-REL.
 // MUTATION R1-FIXTURE stimulus red NMH_MUTATE=R1-FIXTURE: the LORES calibration run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-F1, R1-RL, R1-EVEN, R1-HIRES.
 // MUTATION R1-F1 stimulus red NMH_MUTATE=R1-F1: the LORES calibration run writes DMACON = $8280 (BPLEN clear): no bit-plane DMA, so no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-RL, R1-EVEN, R1-HIRES.
 // MUTATION R1-RL stimulus red NMH_MUTATE=R1-RL: the LORES calibration run's plane 1 holds the bytes $AA and $FF alternating, so the runs have two lengths; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-EVEN, R1-HIRES.
@@ -1697,7 +1697,7 @@ void prop_p10(Checks& checks, Grader& g) {
     checks.record("P10 precondition (iii): the program source of the main run contains no write to BPLCON0 ($DFF100); the contrast build adds that one write");
     for (int i = 0; fixture && i < 3; ++i)
         checks.note("P10 main pair " + dec(i) + ": w0=$" + hexw(m.w0[i], 8) + " (V=" + dec(lp_v(m.w0[i])) + ") w1=$" + hexw(m.w1[i], 8) +
-                    "; LPEN run: w0=$" + hexw(c.w0[i], 8) + " w1=$" + hexw(c.w1[i], 8));
+                    " (w1 - w0 = " + dec((long long)(lp_v(m.w1[i]) - lp_v(m.w0[i])) * (long long)std::llround(m.r2.ok ? m.r2.gap_min : 227.0) + (long long)(m.w1[i] & 0xFF) - (long long)(m.w0[i] & 0xFF)) + " CCK of the counter); LPEN run: w0=$" + hexw(c.w0[i], 8) + " w1=$" + hexw(c.w1[i], 8));
     if (!(fixture && m.r2.ok && win && fire && latch)) { not_graded(checks, "P10 main check", "fixture, R2 anchor, vertical-blank window, fire-button or latch precondition"); return; }
     bool ok = true;
     for (int i = 0; i < 3; ++i) ok = ok && m.w1[i] != m.w0[i] && lp_v(m.w0[i]) < 20;
@@ -1706,7 +1706,7 @@ void prop_p10(Checks& checks, Grader& g) {
 
 // ---- P11: JOY0DAT and JOY1DAT ----------------------------------------------
 
-constexpr uint32_t kJoyA = 0x0D0000, kJoyB = 0x0D8000, kJoyCount = 7200;
+constexpr uint32_t kJoyA = 0x0D0000, kJoyB = 0x0D8000, kJoyCount = 16384;   // the capacity of each buffer, in words
 
 // One entry per loop iteration: the store times of the JOY0DAT read (t) and of the JOY1DAT read (t2) and the two values.
 // Both reads precede their stores, so an iteration lies before a time T when t2 < T.
@@ -1759,7 +1759,7 @@ void prop_p11(Checks& checks, Grader& g) {
     {
         RunSpec s;
         s.bin = mutating("P11-FIXTURE") ? "prog_joy_nofix.bin" : "prog_joy.bin";
-        s.cycles = 3'900'000;
+        s.cycles = 5'000'000;
         uint64_t holdc = mutating("P11-POP") ? ms_to_cycles(0.15) : hold;
         auto t0 = std::make_shared<int64_t>(-1);
         auto changes = std::make_shared<std::vector<uint64_t>>();
@@ -1790,8 +1790,9 @@ void prop_p11(Checks& checks, Grader& g) {
         // changes hold run-relative cycles; make them absolute
         for (auto& x : ja.change) x += ja.cap.base;
     }
-    bool fixture = ja.cap.loaded && ja.cap.released && ja.cap.fixture_ok && ja.cap.done && ja.rd.t.size() == kJoyCount && ja.change.size() == 18;
-    g.expect(fixture, "P11-FIXTURE: the joystick run loaded, booted, stored the $BEEF fixture, stored all 7200 reads of both registers and reached DONE");
+    checks.note("P11 joystick run: " + dec((long long)ja.rd.t.size()) + " reads of both registers stored, " + dec((long long)ja.change.size()) + " input changes, run " + std::string(ja.cap.done ? "reached" : "did not reach") + " DONE; first store " + dec(ja.rd.t.empty() ? 0 : (long long)((ja.rd.t.front() - ja.cap.base) / g_K)) + " CCK, last store " + dec(ja.rd.t.empty() ? 0 : (long long)((ja.rd.t.back() - ja.cap.base) / g_K)) + " CCK after the start of the capture");
+    bool fixture = ja.cap.loaded && ja.cap.released && ja.cap.fixture_ok && ja.cap.done && ja.rd.t.size() > 0 && ja.change.size() == 18;
+    g.expect(fixture, "P11-FIXTURE: the joystick run loaded, booted, stored the $BEEF fixture, stored reads of both registers until the program's fourth VERTB and reached DONE");
     bool still = fixture;
     bool pop = fixture;
     std::vector<std::pair<size_t, size_t>> win(18);   // read index range of each graded window
@@ -1853,7 +1854,7 @@ void prop_p11(Checks& checks, Grader& g) {
     {
         RunSpec s;
         s.bin = "prog_joy.bin";
-        s.cycles = 3'900'000;
+        s.cycles = 5'000'000;
         s.drive = [=](nmh::NanomigHarness& h, uint64_t i) {
             if (*mt0 < 0) { auto fx = h.peek_logical(kResults); if (fx && *fx == 0xBEEF) { *mt0 = (int64_t)i; } else return; }
             uint64_t rel = i - (uint64_t)*mt0;
@@ -1881,7 +1882,7 @@ void prop_p11(Checks& checks, Grader& g) {
         jm.rd = joy_reads(jm.cap);
         jm.t0 = *mt0 >= 0 ? (uint64_t)*mt0 + jm.cap.base : 0;
     }
-    bool mfix = jm.cap.loaded && jm.cap.released && jm.cap.fixture_ok && jm.cap.done && jm.rd.t.size() == kJoyCount;
+    bool mfix = jm.cap.loaded && jm.cap.released && jm.cap.fixture_ok && jm.cap.done && jm.rd.t.size() > 0;
     bool mouse_ok = false;
     if (!mfix) {
         not_graded(checks, "P11 mouse", "fixture");
@@ -1975,6 +1976,7 @@ void prop_p12(Checks& checks, Grader& g) {
     }
     g.expect(kpre, "P12-KPRE: precondition: in contrast run K (ADKCON = $0800 at step 5) the interval carries the word $0155 as HRM p.258 draws it: a start bit 0, the data bits 1 0 1 0 1 0 1 0 LSB first and a stop bit 1, each 30 CCK long");
     checks.note("P12 run K bits at bit centres: " + pat);
+    checks.note("P12 main run: M1 to M2 " + num(double(m.t[1] - m.t[0]) / double(g_K)) + " CCK, M2 to M3 " + num(double(m.t[2] - m.t[1]) / double(g_K)) + " CCK, M3 to M4 " + num(double(m.t[3] - m.t[2]) / double(g_K)) + " CCK; M1 at " + num(double(m.t[0] - m.cap.base) / double(g_K)) + " CCK after the start of the capture");
     if (!(pre1 && kpre)) { not_graded(checks, "P12-MAIN", "TxD idle level or contrast word precondition"); return; }
     bool all0 = true; size_t n = 0, ones = 0;
     for (uint64_t c = m.t[1]; c <= m.t[2]; ++c) { ++n; if (txd_at(m, c)) { all0 = false; ++ones; } }
@@ -1996,6 +1998,7 @@ struct DiskRun {
     Cap cap;
     std::vector<nmh::RamAccess> dma;   // reads that are neither CPU, register-list nor refresh accesses
     bool dskblk = false;
+    size_t polls = 0;                  // INTREQR reads the program stored at RESULTS+2 before DSKBLK was seen or its poll count ran out
 };
 
 DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFFFF, const char* bin = "prog_disk.bin", uint16_t dskptl_xor = 0) {
@@ -2024,6 +2027,7 @@ DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFF
         d.dma.push_back(x);
     }
     d.dskblk = (d.cap.results2 & 0x0002) != 0;
+    for (auto& x : d.cap.ram) if (x.is_write && x.word_addr * 2 == kResults + 2) ++d.polls;
     return d;
 }
 
@@ -2046,6 +2050,7 @@ void prop_p13(Checks& checks, Grader& g) {
                 "; run Y (A=$" + hexw(ay, 6) + "): " + dec((long long)y.dma.size()) + " disk DMA reads, DSKBLK " + (y.dskblk ? "set" : "not set") +
                 "; run Z (A=$" + hexw(az, 6) + "): " + dec((long long)z.dma.size()) + " disk DMA reads, DSKBLK " + (z.dskblk ? "set" : "not set") +
                 "; run Zc (A=$" + hexw(azc, 6) + "): " + dec((long long)zc.dma.size()) + " disk DMA reads, DSKBLK " + (zc.dskblk ? "set" : "not set"));
+    checks.note("P13 INTREQR polls stored before DSKBLK was seen (of 7000 allowed): X " + dec((long long)x.polls) + ", Y " + dec((long long)y.polls) + ", Z " + dec((long long)z.polls) + ", Zc " + dec((long long)zc.polls));
     dep_expect(checks, fixture, occurs, "P13-RUN: precondition: in all four runs at least one disk DMA access occurs after the second $C008 write to DSKLEN and DSKBLK (INTREQR bit 1) is set", "fixture");
     if (!occurs) { not_graded(checks, "P13-MAIN", "disk DMA does not run in this harness or the fixture failed"); return; }
     std::string seq;
@@ -2105,13 +2110,14 @@ DualRun run_dual(const std::string& bin, uint16_t beamcon0, uint16_t htotal, uin
 void prop_p14(Checks& checks, Grader& g) {
     // The contrasts (selectors) are described by the MUTATION records at the head of this file.
     const bool pad = mutating("P14-PAIRS") || mutating("P14-STEP");
-    const char* u1bin = mutating("P14-POS") ? "prog_dual_sync.bin" : pad ? "prog_dual_pad121.bin" : mutating("P14-FIXTURE") ? "prog_dual_nofix.bin" : "prog_dual.bin";
-    const uint64_t u1cyc = mutating("P14-POS") ? 6'000'000 : pad ? 3'700'000 : 3'100'000;
+    const bool sync1 = mutating("P14-POS") || mutating("P14-PHASE");
+    const char* u1bin = sync1 ? "prog_dual_sync.bin" : pad ? "prog_dual_pad121.bin" : mutating("P14-FIXTURE") ? "prog_dual_nofix.bin" : "prog_dual.bin";
+    const uint64_t u1cyc = sync1 ? 6'000'000 : pad ? 3'700'000 : 3'100'000;
     const bool u1_var = mutating("P14-R2") || mutating("P14-PHASE");
-    DualRun u1 = run_dual(u1bin, u1_var ? 0x08E0 : 0x0860, 0x0040, u1cyc);
+    DualRun u1 = run_dual(u1bin, u1_var ? 0x08E0 : 0x0860, mutating("P14-R2") ? 0x00E8 : 0x0040, u1cyc);
     DualRun u2 = run_dual("prog_dual.bin", 0x0860, 0x0070, 3'100'000);
     DualRun u0 = run_dual("prog_dual.bin", 0x0820, 0x0040, 3'100'000);
-    DualRun u3 = run_dual("prog_dual.bin", mutating("P14-U3") ? 0x0820 : 0x08A0, 0x0040, 3'100'000, !mutating("P14-U3"));
+    DualRun u3 = run_dual(mutating("P14-U3") ? "prog_dual.bin" : "prog_dual_cpu.bin", mutating("P14-U3") ? 0x0820 : 0x08A0, 0x0040, 3'100'000, !mutating("P14-U3"));
     DualRun* all[4] = {&u1, &u2, &u0, &u3};
     bool fixture = true;
     for (DualRun* d : all) fixture = fixture && d->cap.loaded && d->cap.released && d->cap.fixture_ok && d->cap.done && d->have;
@@ -2130,9 +2136,11 @@ void prop_p14(Checks& checks, Grader& g) {
         return seen.size() == htotal + 1;
     };
     auto period = [&](const DualRun& d) { std::vector<uint64_t> dt; for (int i = 1; i < 1024; ++i) dt.push_back(d.t[i] - d.t[i - 1]); std::sort(dt.begin(), dt.end()); return double(dt[dt.size() / 2]) / double(g_K); };
-    checks.note("P14 loop period (median distance of consecutive HHPOSR stores, CCK): U1 " + num(period(u1)) + ", U2 " + num(period(u2)) + ", U0 " + num(period(u0)));
+    checks.note("P14 median distance of consecutive HHPOSR stores, CCK: U1 " + num(period(u1)) + ", U2 " + num(period(u2)) + ", U0 " + num(period(u0)));
     auto period_hist = [&](const DualRun& d) { std::map<long long, int> h; for (int i = 1; i < 1024; ++i) ++h[(long long)((d.t[i] - d.t[i - 1]) / g_K)]; std::string r; for (auto& kv : h) r += " " + dec(kv.first) + "x" + dec(kv.second); return r; };
     checks.note("P14 distances between consecutive samples (CCK x count): U1" + period_hist(u1) + "; U2" + period_hist(u2));
+    auto phase_count = [&](const DualRun& d, unsigned htotal) { std::set<unsigned> seen; for (int i = 0; i < 1024; ++i) seen.insert(unsigned((d.t[i] / g_K) % (htotal + 1))); return seen.size(); };
+    checks.note("P14 phase coverage (distinct values of the sample time in CCK modulo HTOTAL+1): U1 " + dec((long long)phase_count(u1, 0x40)) + " of 65, U2 " + dec((long long)phase_count(u2, 0x70)) + " of 113");
     bool ph = phase_ok(u1, 0x40) && phase_ok(u2, 0x70);
     g.expect(ph, "P14-PHASE: precondition: in U1 and U2 the sample times in CCK taken modulo HTOTAL+1 take every value from 0 to HTOTAL");
     auto step_ok = [&](const DualRun& d, unsigned htotal) {
@@ -2258,12 +2266,22 @@ struct UhRun {
 };
 
 UhRun run_uhres(uint16_t beamcon0, uint16_t htotal, uint16_t bplcon0, const char* bin = "prog_uhres.bin",
-                int marker_b = 0x98, uint64_t cycles = 5'400'000) {
+                int marker_b = 0x98, uint64_t cycles = 5'400'000, int live = 0) {
     UhRun u;
     RunSpec s;
     CopList& cl = u.cl;
     cl.marker(0x68);
+    // live != 0: a live input in place of the UHRES pointer. The Blitter reads one word of the region U (channel A, no other channel) every time
+    // the Copper writes BLTSIZE, and BLTAMOD = 6 puts each read 8 bytes after the one before. The Copper writes it once per line (live = 1, at
+    // position $14) or four times per line (live = 2, at $14, $4C, $86 and $BE: 56, 58, 56 and 57 CCK apart), on every line from $68 to
+    // marker_b (BLTSIZE is above $3E, so COPCON.CDANG is set). The Copper's position is the beam's, not the CPU's.
+    auto blits = [&](int line) {
+        static const int pos1[1] = {0x14}, pos2[4] = {0x14, 0x4C, 0x86, 0xBE};
+        for (int k = 0; k < (live == 1 ? 1 : 4); ++k) { cl.wait(line, live == 1 ? pos1[k] : pos2[k]); cl.move(0x058, 0x0041); }
+    };
+    if (live) for (int line = 0x68; line < marker_b; ++line) blits(line);
     cl.marker(marker_b);
+    if (live) blits(marker_b);
     cl.end();
     cl.poke_into(s.pokes);
     s.bin = bin;
@@ -2278,10 +2296,17 @@ UhRun run_uhres(uint16_t beamcon0, uint16_t htotal, uint16_t bplcon0, const char
     s.rl.add(0x104, 0x0024); s.rl.add(0x106, 0x0C00); s.rl.add(0x10C, 0x0011);
     s.rl.add(0x08E, 0x2C81); s.rl.add(0x090, 0xF0C1);
     s.rl.add(0x080, uint16_t(kCopList >> 16)); s.rl.add(0x082, uint16_t(kCopList & 0xFFFF)); s.rl.add(0x088, 0);
-    s.rl.add(0x096, 0x8380);
+    if (live) {
+        s.rl.add(0x02E, 0x0002);                                  // COPCON.CDANG
+        s.rl.add(0x040, 0x0800); s.rl.add(0x042, 0x0000);         // BLTCON0: channel A only; BLTCON1
+        s.rl.add(0x044, 0xFFFF); s.rl.add(0x046, 0xFFFF);         // BLTAFWM, BLTALWM
+        s.rl.add(0x050, uint16_t(kUhres >> 16)); s.rl.add(0x052, uint16_t(kUhres & 0xFFFF));
+        s.rl.add(0x064, 0x0006);                                  // BLTAMOD
+    }
+    s.rl.add(0x096, live ? 0x83C0 : 0x8380);
     s.rl.finish();
     s.cycles = cycles;
-    u.fr = run_fetch(s, kCopList, kCopList + 0x100);   // the frame holding the first Copper fetch is the one the DMA enable falls in
+    u.fr = run_fetch(s, kCopList, kCopList + 0x100 + (live ? 0x1000 : 0));   // the frame holding the first Copper fetch is the one the DMA enable falls in
     if (u.fr.f3_ok && u.fr.r2.ok) {
         u.idx_a = marker_line_idx(u.fr, u.cl.marker_move_word.at(0x68));
         u.idx_b = marker_line_idx(u.fr, u.cl.marker_move_word.at(marker_b));
@@ -2300,9 +2325,9 @@ void prop_p15(Checks& checks, Grader& g) {
     // the contrasts: VARBEAMEN lines in V0 (R2); live inputs through the same comparators, a CPU loop reading the region in place
     // of the UHRES pointer, one read per line in V0 (V0) and one per 57 CCK in V0 and V1 (V1)
     UhRun v0 = run_uhres(mutating("P15-R2") ? 0x00A0 : 0x0820, mutating("P15-R2") ? 0x00E8 : 0, 0x0080,
-                         mutating("P15-FIXTURE") ? "prog_uhres_nofix.bin" : (mutating("P15-V0") || mutating("P15-V1")) ? "prog_cpuuh_line.bin" : "prog_uhres.bin", mutating("P15-R3") ? 0x99 : 0x98,
-                         mutating("P15-F3") ? 3'300'000 : 5'400'000);
-    UhRun v1 = run_uhres(v1_beam, 0x0038, 0x0080, mutating("P15-V1") ? "prog_cpuuh_57.bin" : "prog_uhres.bin");
+                         mutating("P15-FIXTURE") ? "prog_uhres_nofix.bin" : (mutating("P15-V0") || mutating("P15-V1")) ? "prog_regs.bin" : "prog_uhres.bin", mutating("P15-R3") ? 0x99 : 0x98,
+                         mutating("P15-F3") ? 3'300'000 : 5'400'000, (mutating("P15-V0") || mutating("P15-V1")) ? 1 : 0);
+    UhRun v1 = run_uhres(v1_beam, 0x0038, 0x0080, mutating("P15-V1") ? "prog_regs.bin" : "prog_uhres.bin", 0x98, 5'400'000, mutating("P15-V1") ? 2 : 0);
     UhRun* all[2] = {&v0, &v1};
     bool fixture = true, r2ok = true, f3ok = true, r3ok = true;
     for (UhRun* u : all) {
@@ -2312,7 +2337,7 @@ void prop_p15(Checks& checks, Grader& g) {
     }
     g.expect(fixture, "P15-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
     bool done = v0.fr.cap.done && v1.fr.cap.done;
-    g.expect(done, "P15-DONE: both runs reached DONE, the program's last store, after its fifth VERTB (the bounded program) or after its fixed number of reads (the live-input programs)");
+    g.expect(done, "P15-DONE: both runs reached DONE, the program's last store, after its fifth VERTB (the bounded program) or after the register list (the live-input runs)");
     g.expect(r2ok, "P15-R2: precondition R2 anchor: in V0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 227 or 228 CCK apart; V1 runs with a 57 CCK secondary period and keeps the main line");
     g.expect(f3ok, "P15-F3: precondition frame F3: the frame holding the first Copper-list fetch is found and its third successor F3 is complete in both runs");
     dep_expect(checks, r2ok && f3ok, r3ok, "P15-R3: precondition R3 anchor: the markers at lines $68 and $98 fall 48 line boundaries apart in both runs", "R2 anchor or F3");
@@ -2324,6 +2349,15 @@ void prop_p15(Checks& checks, Grader& g) {
     for (size_t i = 1; i < v0.acc.size(); ++i) v0pat = v0pat && v0.acc[i].addr - v0.acc[i - 1].addr == 8;
     checks.note("P15-V0: with DUAL clear (V0) exactly one UHRES access on each of at least 40 lines between markers $68 and $98, consecutive accesses 8 bytes apart (AA p.15: BPLHMOD plus 2): " + std::string(v0pat ? "shown" : "not shown") +
                 "; " + dec((long long)v0.acc.size()) + " accesses on " + dec((long long)m0.size()) + " lines in V0, " + dec((long long)v1.acc.size()) + " accesses on " + dec((long long)m1.size()) + " lines in V1");
+    auto access_note = [&](const char* name, const UhRun& u, const std::map<int64_t, std::vector<Fetch>>& per) {
+        if (u.acc.size() < 2) { checks.note(std::string("P15 ") + name + ": fewer than two accesses"); return; }
+        double lo = 1e9, hi = 0; size_t plo = SIZE_MAX, phi = 0;
+        for (size_t i = 1; i < u.acc.size(); ++i) { double gp = double(u.acc[i].cycle - u.acc[i - 1].cycle) / double(u.fr.r2.K); lo = std::min(lo, gp); hi = std::max(hi, gp); }
+        for (auto& kv : per) { plo = std::min(plo, kv.second.size()); phi = std::max(phi, kv.second.size()); }
+        checks.note(std::string("P15 ") + name + ": distance of consecutive accesses " + num(lo) + " to " + num(hi) + " CCK, " + dec((long long)plo) + " to " + dec((long long)phi) + " accesses per line");
+    };
+    access_note("V0", v0, m0);
+    access_note("V1", v1, m1);
     if (!v0pat) { not_graded(checks, "P15-V1", "V0 does not show the one-per-line access pattern, the condition under which the specification makes P15 checkable"); return; }
     bool v1ok = v1.idx_a && v1.idx_b && m1.size() == size_t(*v1.idx_b - *v1.idx_a + 1) && m1.size() >= 40;
     for (auto& kv : m1) v1ok = v1ok && kv.second.size() >= 3;

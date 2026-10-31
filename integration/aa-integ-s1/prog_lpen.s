@@ -8,6 +8,7 @@
 ;   VAR    VARBEAMEN with HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK
 ;   SAME   w1 is a copy of w0 (one read of VPOSR): a live input for the comparators
 ;   NOFIX  no fixture store
+; The wait between the two reads is 32 dbra iterations.
 ; Before the S1 writes the program stores CIAA PRA bits 7-6 at RESULTS+6.
         include "nanomig.i"
 
@@ -53,7 +54,7 @@ start:
 .late:  dbra    d2,.late
         endc
         move.l  VPOSR(a0),d1            ; w0
-        moveq   #12,d2
+        moveq   #31,d2
 .wait:  dbra    d2,.wait
         ifd     SAME
         move.l  d1,d4                   ; w1 = w0
