@@ -60,7 +60,7 @@
 // MUTATION P3-PEN-POSITION implementation green the private copy described at P3-HELD: V(L1)=100, V(L3)=100, V(L5)=180 and H(L3)-H(L1)=40 in all four cases on both cores, where the repository's RTL reads V=110, 110, 190
 // MUTATION P3-PRE-PULSE stimulus red the F1 trigger at t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET (measured: the drive log differs from the nominal schedule plan_triggers(dry.log,16), P3-PRE-PULSE FAIL, the four P3 lines NOT GRADED, both cores and both RTLs)
 // MUTATION P3-LATCHED-PEN-POSITION implementation green the private copy described at P3-HELD: PASS in all four cases on both cores, where the repository's RTL is red
-// MUTATION P3-FIELD-END-LATCH implementation green the private copy described at P3-HELD: V1 and V2 of F1, F3, F5 and F7 are $13801 in PAL and $10601 in NTSC, PASS in all four cases on both cores, where the repository's RTL reads the live beam (V1 at line 2, V2 at line 11)
+// MUTATION P3-FIELD-END-LATCH implementation green the private copy described at P3-HELD: V1 and V2 of F1, F3, F5 and F7 are $13801 in PAL and $10601 in NTSC, PASS in all four cases on both cores, where the repository's RTL reads the live beam (V1 at line 2 on both cores; V2 at line 11 on fx68k and line 10 on TG68K)
 //
 // MUTATION P4-FIXTURE-LOADED stimulus red the program file does not exist, via NMH_MUTATE=P4-NOBIN (measured: P4-FIXTURE-LOADED FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
 // MUTATION P4-FIXTURE-A1 stimulus red DMACON written without COPEN so the Copper never fetches, via NMH_MUTATE=P4-NOCOPEN (measured: P4-FIXTURE-A1 FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
