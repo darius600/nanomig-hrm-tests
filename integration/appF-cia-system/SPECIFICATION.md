@@ -845,59 +845,59 @@ both: EP1 dedicated run: CIAA CRA=$00 CRB=$00; CIAB CRA=$00 CRB=$00
 both: EP2 dedicated run: reads below $1000 outside a refresh group=0, other accesses outside the CPU ranges=0, F1 anchor holds=yes
 both: EP3 dedicated run: final marker written, completion word=$600D
 both: F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1256 line marks, spacing 454.00..454.00 T_CPU
-both: P3 CIAA/TA T=0 Q=88; CIAA/TB T=0 Q=88; CIAB/TA T=0 Q=88; CIAB/TB T=0 Q=88
+fx68k: P3 CIAA/TA T=0 Q=88; CIAA/TB T=0 Q=88; CIAB/TA T=0 Q=88; CIAB/TB T=0 Q=88
 fx68k: P3-GREENCTL CIAB/TB: T=113 Q=113 pairing holds, level before the first flag is 1
-both: P4 ciaa_ta L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciaa_ta L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_ta L=21: measured P(L)=22 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_ta L=22: measured P(L)=23 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciaa_ta L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciaa_ta L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_ta L=24: measured P(L)=25 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_ta L=25: measured P(L)=26 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciaa_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciaa_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_tb L=21: measured P(L)=22 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_tb L=22: measured P(L)=23 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciaa_tb L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciaa_tb L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_tb L=24: measured P(L)=25 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciaa_tb L=25: measured P(L)=26 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciab_ta L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciab_ta L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_ta L=21: measured P(L)=22 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_ta L=22: measured P(L)=23 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciab_ta L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciab_ta L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_ta L=24: measured P(L)=25 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_ta L=25: measured P(L)=26 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_tb L=21: measured P(L)=22 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_tb L=22: measured P(L)=23 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
-both: P4 ciab_tb L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
+fx68k: P4 ciab_tb L=23: measured P(L)=24 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_tb L=24: measured P(L)=25 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 ciab_tb L=25: measured P(L)=26 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
 both: P4 [p341,p342], graded instances: measured over the six latch runs of CIAB/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAB/TB: PRB $FF, bit n set in 2400 of 2400 samples
-both: P4 usable latches: CIAA/TA=4 CIAA/TB=4 CIAB/TA=4 CIAB/TB=4
-both: P4-GREENCTL ciab_ta L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_ta L=41: measured P(L)=42 (uniquely determined), coverage not met, bit n set in 19 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_ta L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_ta L=43: measured P(L)=44 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
-both: P4-GREENCTL ciab_ta L=44: measured P(L)=45 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_ta L=45: measured P(L)=46 (uniquely determined), coverage not met, bit n set in 17 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_tb L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_tb L=41: measured P(L)=42 (uniquely determined), coverage not met, bit n set in 19 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_tb L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_tb L=43: measured P(L)=44 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
-both: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
-both: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage not met, bit n set in 17 of 400 samples, one high residue holds
-both: P4-GREENCTL usable latches: CIAB/TA=3 CIAB/TB=3
+fx68k: P4 usable latches: CIAA/TA=4 CIAA/TB=4 CIAB/TA=4 CIAB/TB=4
+fx68k: P4-GREENCTL ciab_ta L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_ta L=41: measured P(L)=42 (uniquely determined), coverage not met, bit n set in 19 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_ta L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_ta L=43: measured P(L)=44 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
+fx68k: P4-GREENCTL ciab_ta L=44: measured P(L)=45 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_ta L=45: measured P(L)=46 (uniquely determined), coverage not met, bit n set in 17 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_tb L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_tb L=41: measured P(L)=42 (uniquely determined), coverage not met, bit n set in 19 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_tb L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_tb L=43: measured P(L)=44 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
+fx68k: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage not met, bit n set in 17 of 400 samples, one high residue holds
+fx68k: P4-GREENCTL usable latches: CIAB/TA=3 CIAB/TB=3
 both: P9-LEGF P(40)=41 P(41)=42 P(64)=65 P(100)=101
-both: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E
+fx68k: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E
 fx68k: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 173 PRB transitions in the 600 samples, P(40)=41, s=11.87E
 both: P9-LEGW polls=1/1 icr=$02/$02 s0=$7F/$7F (L=40 / L=100)
-both: P9-LEGW W(40)=? W(100)=? s=5.000000E
+fx68k: P9-LEGW W(40)=? W(100)=? s=5.000000E
 fx68k: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=114.000000 s=10.020101E
 fx68k: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$7424
 fx68k: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$7424
 fx68k: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$7424
 fx68k: P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$7424
-both: P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
-both: P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
+fx68k: P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
+fx68k: P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
 fx68k: P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02
@@ -909,13 +909,13 @@ fx68k: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INM
 fx68k: P8.65-MODE01 CIAB v=$0744 W=2236.000000E
 fx68k: P8.65-MODE01-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 2236 in [2229.60, 2242.00]
 both: P7.6-CIAA-CONTRAST i=$00 (key not sent)
-both: P7.6-CIAB TA samples=136 SP seen=no
+fx68k: P7.6-CIAB TA samples=136 SP seen=no
 both: P7.6-CIAB-CONTRAST SP seen=no
 both: P7.6-CIAB-GREENCTL SP seen=yes
 both: P8.65-M10 CIAA: measured P(30)=31 (uniquely determined)
-both: P8.65-M10 CIAA: nA=48 v=$FFCF flagged=48
+fx68k: P8.65-M10 CIAA: nA=48 v=$FFCF flagged=48
 both: P8.65-M10 CIAB: measured P(30)=31 (uniquely determined)
-both: P8.65-M10 CIAB: nA=48 v=$FFCF flagged=48
+fx68k: P8.65-M10 CIAB: nA=48 v=$FFCF flagged=48
 both: P8.65-M10 contrast CIAB: measured P(30)=31 (uniquely determined)
 fx68k: P8.65-M10 contrast CIAB: nA=48 v=$FA0F flagged=48
 fx68k: P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=559, D_Y(N)=559 (equal), windows hold
@@ -952,37 +952,67 @@ both: P10-opus:F-crb.c13 members: P8.0-STOP PASS; P1-CONTROL(CIAA/TB) NOT GRADED
 both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.7-RUNX PASS
 both: P10-opus:F-timers.c6 members: P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL; P9-LEGF PASS; P9-LEGF-TRANSITIONS FAIL; P9-LEGW FAIL; P8.65-10 PASS
 both: per-run population: 133 captures of 118 programs, 133 loaded
-TG68K: P3-GREENCTL CIAB/TB: T=104 Q=104 pairing holds, level before the first flag is 1
-TG68K: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.81E
-TG68K: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=113.000000 s=10.020101E
-TG68K: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$71D8
-TG68K: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$71D8
-TG68K: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$71D8
-TG68K: P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$71D8
-TG68K: P7.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80); CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80)
-TG68K: P8.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80); CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80)
-TG68K: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E; CIAB c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E
-TG68K: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
-TG68K: P7.5 CIAB v=$0596 W=2666.000000E
-TG68K: P7.5-CONTRAST counted E cycles: CIAA 2666 in [2660.60, 2672.00]; CIAB 2666 in [2660.60, 2672.00]
-TG68K: P7.5-CIAA-INMODE CIAA v1=$0D9D i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0335 (the page's count is 8)
-TG68K: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
-TG68K: P8.65-MODE01 CIAB v=$0596 W=2666.000000E
-TG68K: P8.65-MODE01-CONTRAST counted E cycles: CIAA 2666 in [2660.60, 2672.00]; CIAB 2666 in [2660.60, 2672.00]
-TG68K: P8.65-M10 contrast CIAB: nA=48 v=$FA11 flagged=48
-TG68K: P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=666, D_Y(N)=666 (equal), windows hold
-TG68K: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=666 >= D_X(K)=666; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
-TG68K: P8.65-MODE11 D_X(N)=666 D_Y(N)=666 D_X(K)=666 D_Y(K)=666 window(N)=106680/106680 window(K)=106680/106680
-TG68K: P8.7-PRE CIAB run X: T0=133 lines-measured=132
-TG68K: P8.7-PRE CIAB run Y: T0=133 lines-measured=132
-TG68K: P8.7-RUNX CIAB: firstMatch=51 firstALRM=50
-TG68K: P8.7 CIAB T0(X)=133 T1X=134 T0(Y)=133 T1Y=4096 linesX=1 linesY=0
-TG68K: P5-LEGA CIAA/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
-TG68K: P5-LEGA CIAA/TB tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
-TG68K: P5-LEGA CIAB/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
-TG68K: P5-LEGA CIAB/TB tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
-TG68K: P6-PRE63 K1 twin I=192 clk_sys, I mod T_E=32; P5(b) twin I=192 clk_sys, I mod T_E=32; P9(W) twin I=192 clk_sys, I mod T_E=32, T_E=40
-TG68K: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=192 clk_sys, T_E=40
+TG68K: P3 CIAA/TA T=0 Q=79; CIAA/TB T=0 Q=79; CIAB/TA T=0 Q=79; CIAB/TB T=0 Q=79
+TG68K: P3-GREENCTL CIAB/TB: T=103 Q=103 pairing holds, level before the first flag is 1
+TG68K: P4 ciaa_ta L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciaa_ta L=23: measured P(L)=24 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciaa_tb L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciaa_tb L=23: measured P(L)=24 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciab_ta L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciab_ta L=23: measured P(L)=24 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 ciab_tb L=23: measured P(L)=24 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
+TG68K: P4 usable latches: CIAA/TA=6 CIAA/TB=6 CIAB/TA=6 CIAB/TB=6
+TG68K: P4-GREENCTL ciab_ta L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_ta L=41: measured P(L)=42 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_ta L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_ta L=43: measured P(L)=44 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_ta L=44: measured P(L)=45 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
+TG68K: P4-GREENCTL ciab_ta L=45: measured P(L)=46 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_tb L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_tb L=41: measured P(L)=42 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_tb L=42: measured P(L)=43 (uniquely determined), coverage met, bit n set in 10 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_tb L=43: measured P(L)=44 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverage not met, bit n set in 0 of 400 samples, one high residue does not hold
+TG68K: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
+TG68K: P4-GREENCTL usable latches: CIAB/TA=5 CIAB/TB=5
+TG68K: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=8.05E
+TG68K: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.79E
+TG68K: P9-LEGW W(40)=? W(100)=? s=4.086957E
+TG68K: P9-LEGW-GREENCTL W(40)=50.000000 W(100)=113.000000 s=9.025126E
+TG68K: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$768D
+TG68K: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$768D
+TG68K: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$768D
+TG68K: P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$768D
+TG68K: P7.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400
+TG68K: P8.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400
+TG68K: P7.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)
+TG68K: P8.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)
+TG68K: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0; CIAB c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0
+TG68K: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
+TG68K: P7.5 CIAB v=$090A W=1782.000000E
+TG68K: P7.5-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 1782 in [1776.60, 1788.00]
+TG68K: P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0772 (the page's count is 8)
+TG68K: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
+TG68K: P8.65-MODE01 CIAB v=$090A W=1782.000000E
+TG68K: P8.65-MODE01-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 1782 in [1776.60, 1788.00]
+TG68K: P7.6-CIAB TA samples=111 SP seen=no
+TG68K: P8.65-M10 CIAA: nA=39 v=$FFD8 flagged=39
+TG68K: P8.65-M10 CIAB: nA=39 v=$FFD8 flagged=39
+TG68K: P8.65-M10 contrast CIAB: nA=39 v=$FB21 flagged=39
+TG68K: P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=445, D_Y(N)=445 (equal), windows hold
+TG68K: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=445 >= D_X(K)=445; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
+TG68K: P8.65-MODE11 D_X(N)=445 D_Y(N)=445 D_X(K)=445 D_Y(K)=445 window(N)=71280/71280 window(K)=71280/71280
+TG68K: P8.7-PRE CIAB run X: T0=89 lines-measured=88
+TG68K: P8.7-PRE CIAB run Y: T0=89 lines-measured=88
+TG68K: P8.7-RUNX CIAB: firstMatch=58 firstALRM=58
+TG68K: P8.7 CIAB T0(X)=89 T1X=90 T0(Y)=89 T1Y=4096 linesX=1 linesY=0
+TG68K: P5-LEGA CIAA/TA tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=38578.000000
+TG68K: P5-LEGA CIAA/TB tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=38578.000000
+TG68K: P5-LEGA CIAB/TA tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=38578.000000
+TG68K: P5-LEGA CIAB/TB tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=38578.000000
+TG68K: P6-PRE63 K1 twin I=176 clk_sys, I mod T_E=16; P5(b) twin I=176 clk_sys, I mod T_E=16; P9(W) twin I=176 clk_sys, I mod T_E=16, T_E=40
+TG68K: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=176 clk_sys, T_E=40
 ```
 
 ### 5.3 Recorded lines (not graded)
@@ -991,7 +1021,7 @@ TG68K: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2
 both: P1-PRE1.4/O1 [p341], CIA-A: not graded as a live read-back -- measured $FF (d1) and $FF (O1 contrast) on CIAA/timer A, $FF and $FF on CIAA/timer B; CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause
 both: P1-LP/P1-O2 [p244]: not graded -- measured: LED when the CPU leaves reset=off, after R-SELECT with MTR*=0 (on leg)=off, after R-SELECT with MTR*=1 (off leg)=off -- the same level at all three points, so no input of this package is shown to move the light at this port; O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded
 both: LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2
-both: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=88; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=88
+fx68k: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=88; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=88
 both: P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured over the six latch runs of CIAA/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAA/TB: PRB $FF, bit n set in 2400 of 2400 samples
 both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL); both are selected through NMH_MUTATE
 both: P7.5-COUNTING [p348,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of INMODE=CNT are FAIL or not graded, never PASS
@@ -1005,6 +1035,7 @@ both: sol:F-signals.c70 declined: the claim says that phi2 is connected to the 6
 both: opus:F-portsig.c47 declined: "PC...not used" (CIAB): no output this package sees shows a PC pin on either CIA, and "not used" describes no behaviour
 both: opus:F-signals.c1 declined: the claim says phi2 is a "TTL compatible input", an electrical property of an input pin that nothing a test sees depends on
 both: sol:F-signals.c69 declined: the claim says phi2 is a "TTL compatible input", an electrical property of an input pin that nothing a test sees depends on
-TG68K: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0599, with-key v=$0599 -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
-TG68K: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$0599, with-key v=$0599 -- P8.65 mode 01's own CIAB leg carries the red without it
+TG68K: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=79; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=79
+TG68K: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$090D, with-key v=$090D -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
+TG68K: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$090D, with-key v=$090D -- P8.65 mode 01's own CIAB leg carries the red without it
 ```
