@@ -1015,7 +1015,7 @@ page value; it is guarded by the very check it is meant to break (PI-1,
 PT-1), and by design several times longer than one line, so the contrast
 does not depend on its exact size. Measured, per core: the first M1
 record's own first V (which the page ties only to a wrap, section 2.4)
-is 12 (fx68k) and 35 (tg68k) under I-j, and 122 (fx68k) and 3 (tg68k)
+is 12 (fx68k) and 29 (tg68k) under I-j, and 122 (fx68k) and 51 (tg68k)
 under T-f -- several lines' worth either way, on both cores. After the completion word
 the run goes on until the next fetch of the first word of a list (section
 2.5), so that the last recorded field is not cut off. Measured on both cores,
@@ -1112,12 +1112,12 @@ clause goes red; every other precondition holds.
 **PI-12 (I-t, I-u).** Measured on both cores: the Copper fetches the two BPL1PT
 MOVEs 0 and 4 and the two SPR0PT MOVEs 8 and 12 colour clocks after the
 restart, and the write that opens the M1 field follows the restart by 165 to
-259 (fx68k) and 99 to 185 (TG68K) colour clocks. The later MOVE fetch therefore
+259 (fx68k) and 81 to 185 (TG68K) colour clocks. The later MOVE fetch therefore
 lies 161 to 255 (BPL1PT) and 153 to 247 (SPR0PT) colour clocks before that write
-on fx68k, and 95 to 181 and 87 to 173 on TG68K, against the limit of 5,221
+on fx68k, and 77 to 181 and 69 to 173 on TG68K, against the limit of 5,221
 colour clocks (23 lines). Under I-t the later BPL1PT fetch lies 7,053 to 7,083
-(fx68k) and 7,064 to 7,164 (TG68K) colour clocks after the write, under I-u the
-later SPR0PT fetch 5,464 to 5,494 (fx68k) and 5,475 to 5,573 (TG68K); PI-7(bpl)
+(fx68k) and 7,064 to 7,158 (TG68K) colour clocks after the write, under I-u the
+later SPR0PT fetch 5,464 to 5,494 (fx68k) and 5,475 to 5,591 (TG68K); PI-7(bpl)
 and PI-7(spr) hold there, the gate PI-12 prints closed, and P4, P5 (I-t) or P6 (I-u) and their NOREWRITE lines print NOT GRADED. The sprite's first fetch comes 5,694 colour clocks
 after the restart (line 25, colour clock 19 at 227 colour clocks per line) and
 the first bitplane fetch 10,049 (line 44), the same on both cores.
