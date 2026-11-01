@@ -1578,7 +1578,7 @@ frame wrap stored after t(MC). The wrap boundary measures a record on line
 record before the wrap and 1 in a record at V <= 1 from the wrap on, which
 is the boundary the assertion requires. The poll records stored after t(MC)
 and before the event (the `P8d` lines) number, on fx68k and TG68K: COP 388
-and 400, VB 443 and 456, BLIT 108 and 113. INTENAR bits 14-0 read 0 in all three
+and 423, VB 443 and 481, BLIT 108 and 120. INTENAR bits 14-0 read 0 in all three
 cases. The VB device contrast (`P8-VB-DEV`) stores 562 and 710 poll records
 after t(MC), the first at line $40.
 
