@@ -631,8 +631,8 @@ own contrasts are the cases built to reach one. The completion contrasts use
 - P5's (c): the G5 interval of D_j(run A) - D_j(run B) lies between 2312 and
   3640 cycles on fx68k and between 2496 and 3560 cycles on TG68K, for every
   one of the 8 characters, inside [T/2,3T/2] = [1488,4464]. The mean
-  difference measured 2944.5 cycles on fx68k and 2978.0 cycles on TG68K,
-  against T=2976.0 (0.9896T and 1.0007T).
+  difference measured 2944.5 cycles on fx68k and 2975.5 cycles on TG68K,
+  against T=2976.0 (0.9894T and 0.9998T).
 - P1's deviation of each change from t0 + k*(N+1)*C: 0 cycles for every
   change of the N=0 and N=32396 runs. On the N=371 run the first change of
   words 1 to 4 lies 0, 4, 8 and 12 cycles from the page's spacing, and the
