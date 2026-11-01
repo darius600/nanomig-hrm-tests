@@ -1536,20 +1536,20 @@ P18 measured (BLT_S reads / BLT_D writes): BLTEN set 251 / 252, BLTEN clear 0 / 
 P19 measured (reads per field and sprite, SPREN set / clear): 20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0
 P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
 RF-F measured: spacings of the first 3 stores to MARK (system clock cycles) / longest pass Q of the polling loop (system clock cycles), run by run (set run, clear run) in the order P16, P17, P19
-    TG68K: P16 568376, 568424 / 600 and 568376, 568424 / 600; P17 568424, 568424 / 280 and 568376, 568424 / 280; P19 568424, 568376 / 600 and 568424, 568376 / 600
+    TG68K: P16 568392, 568392 / 592 and 568392, 568392 / 592; P17 568392, 568392 / 288 and 568392, 568472 / 280; P19 568368, 568464 / 592 and 568368, 568464 / 592
     fx68k: P16 568456, 568344 / 768 and 568392, 568408 / 768; P17 568320, 568496 / 400 and 568288, 568408 / 400; P19 568408, 568408 / 760 and 568408, 568408 / 752
     The polling loop is at 0x080472; the passes counted per run are between 3507 and 4698.
 P20 measured (system clock cycles from the blitter's first and last access): marker 0x5A01 and marker 0x5A02
-    TG68K: BLTPRI set -76 / +1928508, BLTPRI clear -76 / +1895212
+    TG68K: BLTPRI set -76 / +1607108, BLTPRI clear -76 / +1573844
     fx68k: BLTPRI set -76 / +1771740, BLTPRI clear -76 / +1736628
 P20 measured (CPU accesses between the blitter's second and second-to-last access, BLTPRI set / clear)
     TG68K: 0 / 2071     fx68k: 0 / 1982
-P20 measured (CPU accesses between the blitter's first and second access, BLTPRI set / clear): 1 / 1; between its second-to-last and last access: 1 / 1
-    (both builds)
+P20 measured (CPU accesses between the blitter's first and second access, BLTPRI set / clear; between its second-to-last and last access, BLTPRI set / clear)
+    TG68K: 1 / 1; 1 / 0     fx68k: 1 / 1; 1 / 1
 P22-ii (samples of B1 or B2 inside the blit)
-    TG68K: 507          fx68k: 509
+    TG68K: 579          fx68k: 509
 P21 (phase-B samples inside the blit, base run / long phase A)
-    TG68K: 511 / 511    fx68k: 515 / 514
+    TG68K: 584 / 584    fx68k: 515 / 514
 ```
 
 Graded counts: both builds print 149 passed, 0 failed.
@@ -1558,7 +1558,7 @@ RF-F. The stores to MARK that bound a field are made by a polled wait. The
 measured spacings of consecutive stores differ by up to 176 system clock
 cycles (568288 to 568496); Q, the longest pass of the polling loop, is 280 to
 768 system clock cycles, shorter than a line (1816). Every RF-F line prints
-PASS on both builds. With LACE = 1 the two spacings are 566576 to 566696 and
+PASS on both builds. With LACE = 1 the two spacings are 566592 to 566696 and
 568304 to 568456, a difference of 1608 to 1824 system clock cycles, and the RF-F
 lines print FAIL (mutations P16-i-lace, P17-i-lace, P19-i-lace).
 
@@ -1571,8 +1571,10 @@ registers in hires, prints PASS.
 
 P20. With BLTPRI set no CPU access falls between the blitter's second access and
 its second-to-last; with BLTPRI clear 2071 (TG68K) and 1982 (fx68k) fall there.
-In each edge interval one CPU access falls with BLTPRI set and one with it clear,
-on both builds (printed as MEASURED lines, not graded).
+In the first edge interval one CPU access falls with BLTPRI set and one with it
+clear, on both builds. In the last edge interval one falls with BLTPRI set on both
+builds, and with BLTPRI clear one on fx68k and none on TG68K (printed as MEASURED
+lines, not graded).
 
 ### 5.5 Measurements outside the graded run
 

@@ -131,14 +131,14 @@
 // MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; TG68K FAIL, fx68k FAIL.
 // MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P16-i stimulus red NMH_MUTATE=P16-i-lace: BPLCON0 is 0x4004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566696 and 568304 (fx68k), 566576 and 568376 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 600 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P16-i), fx68k FAIL (P16-i).
+// MUTATION P16-i stimulus red NMH_MUTATE=P16-i-lace: BPLCON0 is 0x4004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566696 and 568304 (fx68k), 566592 and 568392 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 592 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P16-i), fx68k FAIL (P16-i).
 // MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); TG68K FAIL, fx68k FAIL.
 // MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); TG68K FAIL, fx68k FAIL.
 // MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; TG68K FAIL, fx68k FAIL.
 // MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; TG68K FAIL, fx68k FAIL.
 // MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P17-i stimulus red NMH_MUTATE=P17-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566680 and 568320 (fx68k), 566624 and 568424 (TG68K), against a longest polling-loop pass of 400 (fx68k) and 280 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P17-i), fx68k FAIL (P17-i).
+// MUTATION P17-i stimulus red NMH_MUTATE=P17-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566680 and 568320 (fx68k), 566592 and 568392 (TG68K), against a longest polling-loop pass of 400 (fx68k) and 288 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P17-i), fx68k FAIL (P17-i).
 // MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); TG68K FAIL, fx68k FAIL.
 // MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P18 stimulus red NMH_MUTATE=P18: the BLTEN-clear run writes DMACON 0x8240 in place of 0x8200; TG68K FAIL, fx68k FAIL.
@@ -148,7 +148,7 @@
 // MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; TG68K FAIL, fx68k FAIL.
 // MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
-// MUTATION P19-i stimulus red NMH_MUTATE=P19-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566632 and 568456 (fx68k), 566576 and 568376 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 600 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P19-i), fx68k FAIL (P19-i).
+// MUTATION P19-i stimulus red NMH_MUTATE=P19-i-lace: BPLCON0 is written 0x0004 (LACE = 1) in both runs, so alternate fields differ by one line; the first two MARK spacings are 566632 and 568456 (fx68k), 566656 and 568320 (TG68K), against a longest polling-loop pass of 760 (fx68k) and 592 (TG68K) system clock cycles; the other preconditions of the proposition stay green and the proposition is NOT GRADED; TG68K FAIL (P19-i), fx68k FAIL (P19-i).
 // MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); TG68K FAIL, fx68k FAIL.
 // MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; TG68K FAIL, fx68k FAIL.
 // MUTATION P20-fix stimulus red NMH_MUTATE=P20-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
