@@ -1278,7 +1278,7 @@ anchors are P7.a and P7.b.
 - **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10).
   D(68000 mode) is 1 on both cores and D(68020 mode) is 1 on the second core,
   the same image; the 68020-mode RAM-port log is identical, entry for entry,
-  to the 68000-mode log of the same image (244 entries). P6's relation line
+  to the 68000-mode log of the same image (239 entries). P6's relation line
   is red against p.13 on the TG68K build.
 - **Measured, P7 (section 9).** In the 68000 mode (both cores) MOVE SR stores
   $0708 at DEST and the TRAP handler runs (MRK_TRAP $7002, MRK_PRIV $0000;
