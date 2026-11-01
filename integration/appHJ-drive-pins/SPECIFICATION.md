@@ -883,7 +883,7 @@ PJ2 prints the store-time gap between consecutive samples:
     MEASURED: PJ2 store-time gap between consecutive samples, in clock
     cycles: median 1768, maximum 1864 (fx68k)
     MEASURED: PJ2 store-time gap between consecutive samples, in clock
-    cycles: median 1848, maximum 1848 (TG68K)
+    cycles: median 1832, maximum 1832 (TG68K)
 
 The maximum is within 1.5 times the median on both cores; under PJ2-FRAME and
 PJ2-FRAMEEND it is about twice the median (two lines).
