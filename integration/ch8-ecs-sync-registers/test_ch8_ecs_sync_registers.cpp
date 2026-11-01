@@ -73,73 +73,73 @@
 //   shortened to 1024 samples (prog_h_h1_short.bin, SHORT_LOOP), followed by a delay loop that
 //   keeps the MARK1..MARK2 window as long as the normal run's. Red on fx68k and tg68k (80
 //   passed, 1 failed): P1-LINES [H1]. Not graded: P1 [H1]. Measured: P1-LINES [H1]: 34 graded
-//   wraps, 1024 samples (fx68k), 35 graded wraps, 1024 samples (tg68k); P2-LINES [H1]: 719
-//   graded periods (fx68k), 852 graded periods (tg68k).
+//   wraps, 1024 samples (fx68k), 34 graded wraps, 1024 samples (tg68k); P2-LINES [H1]: 719
+//   graded periods (fx68k), 579 graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2: P1-LINES [H2]: as X-SHORT, for H2
 //   (prog_h_h2_short.bin). Red on fx68k and tg68k (80 passed, 1 failed): P1-LINES [H2]. Not
-//   graded: P1 [H2]. Measured: P1-LINES [H2]: 31 graded wraps, 1024 samples (fx68k), 32 graded
-//   wraps, 1024 samples (tg68k); P2-LINES [H2]: 657 graded periods (fx68k), 781 graded periods
+//   graded: P1 [H2]. Measured: P1-LINES [H2]: 31 graded wraps, 1024 samples (fx68k), 31 graded
+//   wraps, 1024 samples (tg68k); P2-LINES [H2]: 657 graded periods (fx68k), 531 graded periods
 //   (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H1C: P1-LINES [H1c]: as X-SHORT, for H1c
 //   (prog_h_h1c_short.bin). Red on fx68k and tg68k (79 passed, 1 failed): P1-LINES [H1c]. Not
 //   graded: A1 [H1c], P1-CONTRAST [H1c]. Measured: P1-LINES [H1c]: 26 graded wraps, 1024
-//   samples (fx68k), 27 graded wraps, 1024 samples (tg68k); P2-LINES [H1c]: 559 graded periods
-//   (fx68k), 663 graded periods (tg68k).
+//   samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H1c]: 559 graded periods
+//   (fx68k), 450 graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2C: P1-LINES [H2c]: as X-SHORT, for H2c
 //   (prog_h_h2c_short.bin). Red on fx68k and tg68k (79 passed, 1 failed): P1-LINES [H2c]. Not
 //   graded: A1 [H2c], P1-CONTRAST [H2c]. Measured: P1-LINES [H2c]: 26 graded wraps, 1024
-//   samples (fx68k), 27 graded wraps, 1024 samples (tg68k); P2-LINES [H2c]: 559 graded periods
-//   (fx68k), 663 graded periods (tg68k).
+//   samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H2c]: 559 graded periods
+//   (fx68k), 450 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE: P2-LINES [H1]: H1 with all 16384 samples
 //   but MARK1 written only after the last of them, followed by a short delay loop
 //   (prog_h_h1_late.bin, LATE_MARK): the MARK1..MARK2 window holds far fewer than 320 line
 //   periods while the sampled population is the normal run's. Red on fx68k and tg68k (76
 //   passed, 1 failed): P2-LINES [H1]. Not graded: A2 [H1], P2(a) [H1], P2(b), P2(c), P2.
-//   Measured: P1-LINES [H1]: 564 graded wraps, 16384 samples (fx68k), 566 graded wraps, 16384
-//   samples (tg68k); P2-LINES [H1]: 83 graded periods (fx68k), 101 graded periods (tg68k).
+//   Measured: P1-LINES [H1]: 564 graded wraps, 16384 samples (fx68k), 563 graded wraps, 16384
+//   samples (tg68k); P2-LINES [H1]: 83 graded periods (fx68k), 67 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H2: P2-LINES [H2]: as X-LATE, for H2
 //   (prog_h_h2_late.bin). Red on fx68k and tg68k (76 passed, 1 failed): P2-LINES [H2]. Not
 //   graded: A2 [H2], P2(a) [H2], P2(b), P2(c), P2. Measured: P1-LINES [H2]: 516 graded wraps,
-//   16384 samples (fx68k), 519 graded wraps, 16384 samples (tg68k); P2-LINES [H2]: 77 graded
-//   periods (fx68k), 92 graded periods (tg68k).
+//   16384 samples (fx68k), 516 graded wraps, 16384 samples (tg68k); P2-LINES [H2]: 77 graded
+//   periods (fx68k), 61 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H1C: P2-LINES [H1c]: as X-LATE, for H1c
 //   (prog_h_h1c_late.bin). Red on fx68k and tg68k (79 passed, 1 failed): P2-LINES [H1c]. Not
 //   graded: A2 [H1c], P2-CONTRAST. Measured: P1-LINES [H1c]: 439 graded wraps, 16384 samples
-//   (fx68k), 441 graded wraps, 16384 samples (tg68k); P2-LINES [H1c]: 64 graded periods
-//   (fx68k), 77 graded periods (tg68k).
+//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H1c]: 64 graded periods
+//   (fx68k), 52 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H2C: P2-LINES [H2c]: as X-LATE, for H2c
 //   (prog_h_h2c_late.bin). Red on fx68k and tg68k (79 passed, 1 failed): P2-LINES [H2c]. Not
 //   graded: A2 [H2c], P2-CONTRAST. Measured: P1-LINES [H2c]: 439 graded wraps, 16384 samples
-//   (fx68k), 441 graded wraps, 16384 samples (tg68k); P2-LINES [H2c]: 64 graded periods
-//   (fx68k), 77 graded periods (tg68k).
+//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H2c]: 64 graded periods
+//   (fx68k), 52 graded periods (tg68k).
 // MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST: P1-COVER [H1]: H1's sampling loop replaced
 //   with a read-until-wrap-then-store-4 burst (prog_h_h1_burst.bin, BURST_MODE): consecutive
 //   graded sample stores are a whole line apart between bursts. Red on fx68k and tg68k (80
 //   passed, 1 failed): P1-COVER [H1]. Not graded: P1 [H1]. Measured: P1-COVER [H1]: largest
 //   consecutive-sample gap in the graded range = 148 CCK (fx68k), largest consecutive-sample
-//   gap in the graded range = 153 CCK (tg68k); P1-LINES [H1]: 398 graded wraps, 1600 samples.
+//   gap in the graded range = 151 CCK (tg68k); P1-LINES [H1]: 398 graded wraps, 1600 samples.
 // MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST-H2: P1-COVER [H2]: as X-BURST, for H2
 //   (prog_h_h2_burst.bin). Red on fx68k and tg68k (80 passed, 1 failed): P1-COVER [H2]. Not
 //   graded: P1 [H2]. Measured: P1-COVER [H2]: largest consecutive-sample gap in the graded
-//   range = 164 CCK (fx68k), largest consecutive-sample gap in the graded range = 169 CCK
+//   range = 164 CCK (fx68k), largest consecutive-sample gap in the graded range = 167 CCK
 //   (tg68k); P1-LINES [H2]: 398 graded wraps, 1600 samples.
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: A2 [H1]: H1 with audio channel 0 DMA started
 //   (prog_h_h1_aud0.bin, AUD0_ON: location, length 8 words, volume 64, period 124, enable;
 //   p.145, p.140, p.266): a non-refresh DMA access appears at the port, so a graded period's
 //   group no longer has exactly 4 members. Red on fx68k and tg68k (77 passed, 1 failed): A2
 //   [H1]. Not graded: P2(a) [H1], P2(b), P2(c), P2. Measured: P2-LINES [H1]: 563 graded periods
-//   (fx68k), 566 graded periods (tg68k).
+//   (fx68k), 563 graded periods (tg68k).
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H2: A2 [H2]: as X-AUD0, for H2
 //   (prog_h_h2_aud0.bin). Red on fx68k and tg68k (77 passed, 1 failed): A2 [H2]. Not graded:
-//   P2(a) [H2], P2(b), P2(c), P2. Measured: P2-LINES [H2]: 516 graded periods (fx68k), 518
+//   P2(a) [H2], P2(b), P2(c), P2. Measured: P2-LINES [H2]: 516 graded periods (fx68k), 516
 //   graded periods (tg68k).
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H1C: A2 [H1c]: as X-AUD0, for H1c
 //   (prog_h_h1c_aud0.bin). Red on fx68k and tg68k (80 passed, 1 failed): A2 [H1c]. Not graded:
-//   P2-CONTRAST. Measured: P2-LINES [H1c]: 438 graded periods (fx68k), 440 graded periods
+//   P2-CONTRAST. Measured: P2-LINES [H1c]: 438 graded periods (fx68k), 438 graded periods
 //   (tg68k).
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H2C: A2 [H2c]: as X-AUD0, for H2c
 //   (prog_h_h2c_aud0.bin). Red on fx68k and tg68k (80 passed, 1 failed): A2 [H2c]. Not graded:
-//   P2-CONTRAST. Measured: P2-LINES [H2c]: 438 graded periods (fx68k), 440 graded periods
+//   P2-CONTRAST. Measured: P2-LINES [H2c]: 438 graded periods (fx68k), 438 graded periods
 //   (tg68k).
 // MUTATION A1 stimulus red NMH_MUTATE=A1: A1 [H1c]: H1's graded samples (VARBEAMEN=1, bounded
 //   by N) in A1 [H1c]'s unchanged comparator, which expects the free-running range only
@@ -147,7 +147,7 @@
 //   none. Measured: A1 [H1c]: max graded H=$00B0.
 // MUTATION A1 stimulus red NMH_MUTATE=A1-H2: A1 [H2c]: as A1, H2's graded samples in A1 [H2c].
 //   Red on fx68k and tg68k (81 passed, 1 failed): A1 [H2c]. Not graded: none. Measured: A1
-//   [H2c]: max graded H=$00C0 (fx68k), max graded H=$00BE (tg68k).
+//   [H2c]: max graded H=$00C0 (fx68k), max graded H=$00C0 (tg68k).
 // MUTATION A3 stimulus red NMH_MUTATE=A3: A3 [H1c]: H1's graded periods (VARBEAMEN=1, 177 CCK)
 //   in A3 [H1c]'s unchanged 227/228-CCK comparator. Red on fx68k and tg68k (61 passed, 1
 //   failed): A3 [H1c]. Not graded: P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2],
@@ -172,20 +172,20 @@
 // MUTATION P1-CONTRAST stimulus red NMH_MUTATE=P1C-H2: P1-CONTRAST [H2c]: as P1C, H2's graded
 //   samples in P1-CONTRAST [H2c]. Red on fx68k and tg68k (81 passed, 1 failed): P1-CONTRAST
 //   [H2c]. Not graded: none. Measured: P1-CONTRAST [H2c]: max graded H=$00C0, N=$00C0 (fx68k),
-//   max graded H=$00BE, N=$00C0 (tg68k).
+//   max graded H=$00C0, N=$00C0 (tg68k).
 // MUTATION P2(a) stimulus red NMH_MUTATE=P2A: P2(a) [H1]: H1 with HTOTAL written again
 //   mid-loop, to $00C0 in place of $00B0 (prog_h_h1_retotal.bin, RETOTAL_MID), in P2(a) [H1]
 //   only; p.280 states no exception for a second write, so the graded periods after that point
 //   are page-predicted to differ from those before it. The conjunction P2 requires P2(a) [H1]
 //   and goes red with it. The capture prints its own PC-ID, PC-MARK, DONE and P2-LINES under
 //   the tag [H1,P2A]. Red on fx68k and tg68k (84 passed, 2 failed): P2(a) [H1], P2. Not graded:
-//   none. Measured: P2-LINES [H1,P2A]: 553 graded periods.
+//   none. Measured: P2-LINES [H1,P2A]: 553 graded periods (fx68k), 550 graded periods (tg68k).
 // MUTATION P2 stimulus red NMH_MUTATE=P2A: the line requires P2(a) [H1] and goes red with it
 //   (above).
 // MUTATION P2(a) stimulus red NMH_MUTATE=P2A-H2: P2(a) [H2]: as P2A for H2: HTOTAL written
 //   again to $00D0 in place of $00C0 (prog_h_h2_retotal.bin), in P2(a) [H2] only; tag
 //   [H2,P2A-H2]. Red on fx68k and tg68k (84 passed, 2 failed): P2(a) [H2], P2. Not graded:
-//   none. Measured: P2-LINES [H2,P2A-H2]: 509 graded periods.
+//   none. Measured: P2-LINES [H2,P2A-H2]: 509 graded periods (fx68k), 506 graded periods (tg68k).
 // MUTATION P2 stimulus red NMH_MUTATE=P2A-H2: the line requires P2(a) [H2] and goes red with it
 //   (above).
 // MUTATION P2(b) stimulus red NMH_MUTATE=P2B: P2(b): H1c's and H2c's first periods

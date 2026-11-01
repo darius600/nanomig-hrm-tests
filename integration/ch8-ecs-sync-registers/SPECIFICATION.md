@@ -758,14 +758,14 @@ comparator and changes nothing else; section 7 lists the line each turns red.
 Values below are what the build produced; both cores agree except where
 marked.
 
-**P1.** Graded max H: H1 = $B0 (= N), H2 = $C0 (= N) on fx68k and $BE on
-TG68K, H1c = $E2, H2c = $E2. Anchor A1's bound ($E2−16 to $E3) holds in both
-contrast runs. P1-LINES, graded wraps (fx68k / TG68K): H1 564 / 566, H2 516 /
-519, H1c 439 / 441, H2c 439 / 441, each from 16384 samples.
+**P1.** Graded max H: H1 = $B0 (= N), H2 = $C0 (= N), H1c = $E2, H2c = $E2,
+on both cores. Anchor A1's bound ($E2−16 to $E3) holds in both contrast runs.
+P1-LINES, graded wraps (fx68k / TG68K): H1 564 / 563, H2 516 / 516, H1c
+439 / 438, H2c 439 / 438, each from 16384 samples.
 
-**P2.** Graded periods: H1 563 (fx68k) / 565 (TG68K), first = 1416
-`clk_sys` cycles on both; H2 516 (fx68k) / 518 (TG68K), first = 1544 on
-both; H1c 438 (fx68k) / 440 (TG68K), first = 1816 on both; H2c matches
+**P2.** Graded periods: H1 563 (fx68k) / 563 (TG68K), first = 1416
+`clk_sys` cycles on both; H2 516 (fx68k) / 515 (TG68K), first = 1544 on
+both; H1c 438 (fx68k) / 438 (TG68K), first = 1816 on both; H2c matches
 H1c's count and period exactly on both cores. Converted at 8 `clk_sys`
 cycles per colour clock -- measured, not taken from the page; every graded
 period in H1c and H2c is exactly divisible by 8 and converts to 227 CCK
@@ -776,7 +776,8 @@ graded period within a run is identical (P2(a)). The conjunction (P2) is
 PASS on both cores.
 
 **P1-COVER.** Largest consecutive-sample gap in the graded range: H1 13
-CCK, H2 13 CCK, on both cores (bound: 16).
+CCK (fx68k) / 11 CCK (TG68K), H2 13 CCK (fx68k) / 11 CCK (TG68K) (bound:
+16).
 
 **A2.** Every graded period in H1, H2, H1c and H2c contains exactly 4
 refresh accesses, on both cores.
