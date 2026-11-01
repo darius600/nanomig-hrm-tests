@@ -2052,17 +2052,17 @@ P14 measured, PAL clear: port line lengths in colour clocks 227,227,227,227..., 
 **TG68K only:**
 
 ```text
-P8 measured: colour clock T_C = 8 system clocks, sample interval = 360 system clocks, 120 dry-run samples, last line-255 sample index 8, pulse delay D = 2218, pulse length = 376, samples N = 22
-P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:82:0000@320 254:127:0000@680 254:172:0000@1040 254:217:0000@1400 255:35:0000@1760 255:80:0000@2120 255:125:0000@2480 255:170:0000@2840 255:215:0000@3200 256:33:0000@3560 256:78:0000@3920 256:123:0000@4280 256:168:0000@4640 256:213:0000@5000 257:31:0000@5360 257:76:0000@5720 257:121:0000@6080 257:166:0000@6440 257:211:0000@6800 258:29:0000@7160 258:74:0000@7520 258:119:0000@7880 258:164:0000@8240 258:209:0000@8600
-P8 measured: dry run over all 120 samples: F4 violations = 0, line wraps with V not yet stepped = 1, crosses 255 to 256 = 1, last sample V:H = 277:216
+P8 measured: colour clock T_C = 8 system clocks, sample interval = 320 system clocks, 120 dry-run samples, last line-255 sample index 8, pulse delay D = 2010, pulse length = 336, samples N = 22
+P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO: 254:97:0000@312 254:137:0000@632 254:177:0000@952 254:217:0000@1272 255:30:0000@1592 255:70:0000@1912 255:110:0000@2232 255:150:0000@2552 255:190:0000@2872 256:3:0000@3200 256:48:0000@3552 256:88:0000@3872 256:128:0000@4192 256:168:0000@4512 256:208:0000@4832 257:26:0000@5192 257:66:0000@5512 257:106:0000@5832 257:146:0000@6152 257:186:0000@6472 257:226:0000@6792 258:44:0000@7152 258:84:0000@7472 258:124:0000@7792
+P8 measured: dry run over all 120 samples: F4 violations = 0, line wraps with V not yet stepped = 1, crosses 255 to 256 = 1, last sample V:H = 275:190
 P8 measured: P8-0 run: 6 samples before the pulse, 14 after; P8-1 run: 6 before, 14 after
-P8 measured: P8-0 first sample after the pulse: V=255 H=215 HHPOSR=0; last: V=258 H=119 HHPOSR=0
-P8 measured: P8-1 first sample after the pulse: V=255 H=215 HHPOSR=0; last: V=258 H=119 HHPOSR=0
-P8 measured: 534 samples into the next frame, 288 after the trigger before the wrap, first sample after the wrap on line 0, 112 of them in lines 25-60 after the wrap
+P8 measured: P8-0 first sample after the pulse: V=255 H=190 HHPOSR=0; last: V=258 H=44 HHPOSR=0
+P8 measured: P8-1 first sample after the pulse: V=255 H=190 HHPOSR=0; last: V=258 H=44 HHPOSR=0
+P8 measured: 600 samples into the next frame, 318 after the trigger before the wrap, first sample after the wrap on line 0, 135 of them in lines 25-60 after the wrap
 P11 measured: 2078 samples in the frame, F4 order violations = 0
 P13 measured: colour clock T_C = 8 system clocks, frame A samples = 2726, F4 violations = 0, line wraps with V not yet stepped = 24, port lines in frame B = 313
 P14 measured, PAL set: frame lines 313 and 313, frame periods 568408 and 568408 system clocks; PAL clear: frame lines 263 and 263, frame periods 477608 and 477608
-samples taken across the step from line 255 to line 256 and completed with the V8 they lacked: 1
+samples taken across the step from line 255 to line 256 and completed with the V8 they lacked: 6
 ```
 
 **fx68k only:**
