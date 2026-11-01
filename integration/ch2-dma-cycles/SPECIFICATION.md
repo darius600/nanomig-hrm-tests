@@ -1170,14 +1170,14 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | P1 | PASS (gate: C1, restarts, F1, F3 of every run, A1) | PASS |
 | K2a, K2b | PASS; K2b: disk-block accesses per observed frame 936/939/939 in C2a and in C6 (K2b/D9 declines C2b: 0/0/0) | same counts |
 | P2 | PASS | PASS |
-| P3, K3 | PASS; K3: every channel has accesses in every observed frame (C1a 286/287/286, C1b 80/79/80, C6 286/287/286) | PASS (C6 287/286/287) |
+| P3, K3 | PASS; K3: every channel has accesses in every observed frame (C1a 286/287/286, C1b 80/79/80, C6 286/287/286) | PASS (C6 286/287/286) |
 | P4, K4 | PASS | PASS |
 | P6 (withdrawn, MEASURED, not graded) | the Copper-block reads on an even in-line cycle are held continuations, all at s = 226 (the cycle before the next line's first refresh), each the sample of the same word, direction, data and byte enables one memory cycle (S) after the s = 225 sample: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b), and 24 in each of C6 NTSC/ECS, C6 PAL/OCS and C6 NTSC/OCS; none remains on an even cycle once they are set aside; no sample repeats the one before it at S/2 | identical counts |
 | A1 | PASS (0 violations) | PASS |
 | P5, K5 | PASS; K5: 256 lines with fetches for every enabled plane in every observed frame | PASS |
-| K6, T1, T2, T3 | PASS (K6 gated by the observation preconditions of C5, C6, C7a and C7b, T1 and T2 by those of C5 and C6, T3 by those of C6); T1: 0 parts differ, 0 parts empty in C5 (the 115 parts of L5); T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |
+| K6, T1, T2, T3 | PASS (K6 gated by the observation preconditions of C5, C6, C7a and C7b, T1 and T2 by those of C5 and C6, T3 by those of C6); T1: 0 parts differ, 0 parts empty in C5 (the 115 parts of L5); T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 107/105/107) |
 | P7 | PASS (0 of 348 part/frame pairs mismatch: 116 parts x 3 frames, every access placed by its line counted from the frame's restart line and its in-line cycle; the comparison with lines counted from each part's own first access finds 0 as well) | PASS (0 mismatches, same) |
-| Copper first fetch after S4 (MEASURED, not graded) | in a regular line of 227 memory cycles, at s = 165 (C0), 135 (C7a), 111 (S2) and 189 (C2a): odd in all four | s = 155 (C0), 125 (S2) and 179 (C2a), odd in all three; C7a dropped (the regular lines around the fetch are 454 memory cycles apart) |
+| Copper first fetch after S4 (MEASURED, not graded) | in a regular line of 227 memory cycles, at s = 165 (C0), 135 (C7a), 111 (S2) and 189 (C2a): odd in all four | s = 155 (C0), 211 (S2) and 179 (C2a), odd in all three; C7a dropped (the regular lines around the fetch are 454 memory cycles apart) |
 | SELFTEST-VIDEO, SELFTEST-Q3 | PASS | PASS |
 | FRAMES, Q2, Q3, Q4, Q5, Q6, Q7, Q-REF, K9, IMG4 | PASS; 3 output frames used in S2, S1 and S1c; W = 32 sample periods on the first line of the reference image (p = 2), whose fetched data words are `$FFFF` and `$0000` in every frame; Q6: 3 MOVEs to COLOR17-19 in S1, none after a WAIT for a line of the uses; Q7: 3 of the 6 MOVEs of S1c after the WAIT for VP `$48`-`$4F`, 3 in all within the uses; k_v = 2; Q3: the first image's top is 118 output lines, 0 modulo k_v, in every frame (not graded); Q4: 6 colour writes per frame in S2, 3 in S1, 6 in S1c; Q5: 54 of 54 words (S2, L_B and L_A alternating) and 44 of 44 (S1), 52 of 52 (S1c); K9: 90 reads per frame; IMG4: 4 images per frame; every image of every frame lies inside its Copper frame (2 of 2 in S2, 4 of 4 in S1; measured, not graded) | PASS, same values |
 | P8 | PASS; in the 3 frames used (B from L_B, A from L_A, B from L_B): (40 sprite pixels, 42 beam lines), (16, 32), (40, 42) | PASS, same |
@@ -1228,7 +1228,7 @@ at an `hs` edge. The output frames used (§2.5) are the complete output frames t
 after S4 and end by S7, from the third to the last. S4 is the Copper's first fetch from the Copper
 block (the DMACON write itself is a custom-register write and does not reach the Chip-memory log)
 and S7 the write of the completion word. Measured, both cores: 3 output frames are used in S2 and in S1 (fx68k: S4 at system-clock
-cycle 2294305 in S2 and 2289657 in S1, S7 at 6253085; tg68k: S4 at 2294417 and 2290129, S7 at
+cycle 2294305 in S2 and 2289657 in S1, S7 at 6253085; tg68k: S4 at 2293289 and 2288649, S7 at
 6253021). "(at least 3)" in P8.4 is read as at least three output frames (two consecutive pairs).
 The graded line FRAMES requires that count in both runs; its contrast S2-exit6 (the wait loop
 exits at FRAME_CTR 6) leaves 2 frames in S2.
