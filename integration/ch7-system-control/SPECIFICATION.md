@@ -660,11 +660,11 @@ Measured values (not graded):
 
 - P1, every case and both cores: k = 2 output samples per lores pixel, s0 = 141 samples from the row's first sample, 512 rows per field in PAL and 400 in NTSC, 5155840 samples compared in PAL and 4026880 in NTSC (P1 PAL: 688128 in A1 and A2, 2747392 in B1-B8, 1720320 in E0-E4); P2: 344072 samples (PAL), 268808 (NTSC).
 - B8, the three-way overlap the pages leave open: 5120 samples per case are not graded; the colour seen there is `$0F0` (PF2C).
-- P3 delay calibration, polls of INTREQR over the 20 lines E110..E130 (the Copper fetches them 36320 cycles apart): 164 (PAL) and 163 (NTSC) on fx68k, 221 on TG68K.
-- P3 item 2: V(L1) = 110, V(L3) = 110 and V(L5) = 190 in every case on both cores (the live beam at E110 and E190); H(L3) - H(L1) is 6, 6, 16, 16 on fx68k and -4, -4, 2, -20 on TG68K in OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC.
-- P3 item 5: V1 and V2 of F1, F3, F5 and F7 read the live beam on this RTL: V1 at line 2 (`$0029B` and `$0028A` on fx68k, `$00262` to `$00254` on TG68K) and V2 at line 11 or 10 (`$00B1F` to `$00A7E`), unequal, below `$10500`, in every case.
-- P3 period of the field before and after the BEAMCON0 write: 568408 and 568360 (fx68k) and 568376 and 568568 (TG68K) cycles in ECS-PAL, 477640 and 477704 (fx68k) and 477592 and 477528 (TG68K) in ECS-NTSC; the bound is one line, 1824 cycles.
-- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130, the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 36932 cycles, 308836 cycles. Y is stored 440 (fx68k) and 432 (TG68K) cycles after X. X reads V = 270 on both cores; Y reads V = 270, with H = 141 and H(Y') = 145 on fx68k and H = 124 and H(Y') = 128 on TG68K.
+- P3 delay calibration, polls of INTREQR over the 20 lines E110..E130 (the Copper fetches them 36320 cycles apart): 164 (PAL) and 163 (NTSC) on fx68k, 222 (OCS-PAL) and 221 (ECS-PAL, OCS-NTSC, ECS-NTSC) on TG68K.
+- P3 item 2: V(L1) = 110, V(L3) = 110 and V(L5) = 190 in every case on both cores (the live beam at E110 and E190); H(L3) - H(L1) is 6, 6, 16, 16 on fx68k and 8, 8, -8, -8 on TG68K in OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC.
+- P3 item 5: V1 and V2 of F1, F3, F5 and F7 read the live beam on this RTL: V1 at line 2 (`$0029B` to `$0028A` on fx68k, `$0025E` to `$0024E` on TG68K) and V2 at line 11 on fx68k and line 10 on TG68K (`$00B1F` to `$00B0E` on fx68k, `$00A8C` to `$00A7C` on TG68K), unequal, below `$10500`, in every case.
+- P3 period of the field before and after the BEAMCON0 write: 568408 and 568360 (fx68k) and 568472 and 568440 (TG68K) cycles in ECS-PAL, 477640 and 477704 (fx68k) and 477576 and 477576 (TG68K) in ECS-NTSC; the bound is one line, 1824 cycles.
+- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130, the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 37028 cycles, 308932 cycles. Y is stored 440 (fx68k) and 432 (TG68K) cycles after X. X reads V = 270 on both cores; Y reads V = 270, with H = 141 and H(Y') = 145 on fx68k and H = 136 and H(Y') = 134 on TG68K.
 
 ### Mutations replayed
 
