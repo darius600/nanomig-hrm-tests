@@ -428,7 +428,7 @@ Expected value: the count is exactly zero, with at least one window. If the
 precondition fails the line prints `NOT GRADED`.
 
 Measured: green on both cores, 768 fetch windows and 0 accesses in them
-(41771 CPU accesses outside them on fx68k, 45984 on TG68K).
+(41771 CPU accesses outside them on fx68k, 45985 on TG68K).
 
 Mutation (`NMH_MUTATE=A4-CTRL`): the fetch windows of the four-low-resolution-
 bitplane capture (`prog_bitplane.s`) stand in for the high-resolution ones, in
@@ -491,8 +491,8 @@ and its reads counted 45204 in 726528, so the share window's rate (254 in
 10200) stayed below it and the comparator stayed green. A4-SHARE-PRE stays true
 (the window is nonempty and the reference holds accesses: the counter writes).
 Measured: the reference holds 1120 accesses in 726048 `clk_sys` (fx68k) and
-8278 in 726528 (TG68K), against 243 in 10112 and 254 in 10200 in the share
-window.
+8274 in 726544 (TG68K), against 243 in 10112 (fx68k) and 253 in 10192 (TG68K) in the
+share window.
 
 Precondition mutation (`prog_sharing_tiny.s`, `NMH_MUTATE=A4-SHARE-PRE`): the
 share-mode blit shrinks to a near-instant one-word transfer, so its active
@@ -534,7 +534,7 @@ one colour clock (one slot). The page leaves three things open:
 - which cycle is the released one.
 
 Measured on the share-mode run (printed as an `A5` measurement): of the
-missed even cycles, 121 of 124 on fx68k and 120 of 125 on TG68K are granted
+missed even cycles, 121 of 124 on fx68k and 120 of 127 on TG68K are granted
 on the third slot after the slot the 68000 was ready for (the fourth counting
 that slot), that slot and the two after it taken by DMA. That pattern fits the first reading of each pair
 above; the page does not say that reading is the one meant, so grading it
@@ -974,7 +974,7 @@ Expected value: every CPU access, in both windows, falls on an
 even-numbered slot; the odd phase is never used.
 
 Measured: fx68k -- 20006 of 41007 no-DMA accesses on odd slots; 125 of
-243 in the share-mode window. TG68K -- 0 of 45209 no-DMA; 124 of 254 in
+243 in the share-mode window. TG68K -- 0 of 45210 no-DMA; 122 of 253 in
 the share-mode window.
 
 **fx68k: red (both windows). TG68K: red (share-mode window only; clean
@@ -1014,7 +1014,7 @@ Expected value: all 500 CPU destination writes are seen, and the blit's span
 is shorter.
 
 Measured: blit -- 8112 `clk_sys` (both cores, identical). CPU copy loop --
-44200 `clk_sys` (fx68k), 48112 `clk_sys` (TG68K).
+44200 `clk_sys` (fx68k), 40096 `clk_sys` (TG68K).
 
 Mutation of ORDER itself (`prog_copyloop_short.s`, `SHORT` set,
 `NMH_MUTATE=ORDER`): the CPU copy loop copies 100 words instead of 500. The
@@ -1205,9 +1205,9 @@ Measured: on fx68k, the blit's own active window spans 2276281..2284425
 49 of 50 (50-iteration build) and 75 (of 2000, 2000-iteration build -- the
 loop outlasts the window, as designed); all 74 in-window gaps equal 108
 `clk_sys`, the same period measured after the window (1923 gaps). On
-TG68K: window 2276057..2284169 (8112 `clk_sys`); 48 of 50 and 127 of 2000
-strictly inside; all 126 in-window gaps equal 64 `clk_sys`, the same
-period measured after the window (1870 gaps). Both builds reach `DONE`
+TG68K: window 2275929..2284041 (8112 `clk_sys`); 48 of 50 and 156 of 2000
+strictly inside; all 155 in-window gaps equal 52 `clk_sys`, the same
+period measured after the window (1841 gaps). Both builds reach `DONE`
 with `RESULTS` equal to their own iteration count (50 and 2000) on both
 cores.
 
@@ -1222,11 +1222,10 @@ instruction while the window holds. Measured: on fx68k, both builds, 0
 counter writes strictly inside the window (window 2276217..2284329), so
 there are no in-window gaps to compare, against an after-window period of
 104 `clk_sys` (1998 gaps) -- red through both the existence and the
-every-gap clause. On TG68K, both builds, 1 counter write strictly inside
-the window (window 2276185..2284297): the existence clause alone stays
-green, but one write forms no in-window gap either, against an
-after-window period of 80 `clk_sys` (1997 gaps) -- there the every-gap
-clause alone is what goes red.
+every-gap clause. On TG68K, both builds, 0 counter writes strictly inside
+the window (window 2276057..2284169), so there are no in-window gaps to
+compare, against an after-window period of 64 `clk_sys` (1997 gaps) -- red
+through both the existence and the every-gap clause.
 
 ### FASTRUN-LOCKOUT [p186,p197] The blitter locked out of Chip memory by display fetches
 
@@ -1312,7 +1311,7 @@ cycle 2401033; the display's own fetch window 2401049..2402321 (1272
 `clk_sys`, fully inside the Copper-to-blitter interval); the blitter's own
 first DMA access at cycle 2402361 (40 `clk_sys` after the window's own end
 -- its first attempt was denied throughout the window). Fast-RAM counter
-writes strictly inside the fetch window: 12 on fx68k, 20 on TG68K (both
+writes strictly inside the fetch window: 12 on fx68k, 24 on TG68K (both
 cores' own loop periods differ, as elsewhere in this package). Both cores
 reach `DONE` with `RESULTS`=8000.
 
@@ -1525,32 +1524,32 @@ Measurements printed by the run (tg68k):
 
 ```text
 DESC-OFFBY1: A (pointer at last word) writes first=yes extra=no; B (pointer one word past the last) writes $0C2100=no $0C2102=yes $0C2104=yes $0C2106=yes $0C2108=yes $0C210A=no
-BBUSY-PREDICTS: 200-word build -- last D-write at cycle 2274833, RESULTS store at cycle 2274645, 26 D-writes total
-capture health: base.log.size=51822 share.log.size=52429 nasty.log.size=52305 tiny.log.size=51811 base_aligned.log.size=51822
+BBUSY-PREDICTS: 200-word build -- last D-write at cycle 2274817, RESULTS store at cycle 2274629, 26 D-writes total
+capture health: base.log.size=51822 share.log.size=52428 nasty.log.size=52305 tiny.log.size=51811 base_aligned.log.size=51822
 capture health: lores4.log.size=177677 hires4.log.size=177677 lores6.log.size=177677 lores4_aligned.log.size=177677 lores6_aligned.log.size=177677
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
-A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
-A4: blit DMA run 2274313..2282449 (first source read to last destination write; first destination write at +24), 2 CPU Chip-memory access(es) inside it, 1 of them before the first destination write: fetch $8044A at +12 clk_sys, fetch $8044C at +8132 clk_sys (offsets from the run's first source read)
+A2: active window 2274321..2284513, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
+A4: blit DMA run 2274297..2282433 (first source read to last destination write; first destination write at +24), 2 CPU Chip-memory access(es) inside it, 1 of them before the first destination write: fetch $8044A at +12 clk_sys, fetch $8044C at +8132 clk_sys (offsets from the run's first source read)
 A4-CTRL: 768 fetch window(s), 0 CPU Chip-memory access(es) inside them (0 counter writes)
-A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
-A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
-A5: of 125 missed even cycles in the share-mode run, 120 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
-A8: 44815 access pairs, 125 missed even cycle(s), 116 missed odd cycle(s), 0 with an even free slot left unused (120 granted before the first free even slot, 5 exactly on it), 0 delayed with a free ready slot, 399 spanning a line start, 7 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
-SYSDMA-C29: four lores planes, BRA.S loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
-SYSDMA-C29: four lores planes, aligned loop: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
+A4-SHARE: CPU accesses 253 in a share-mode window of 10192 clk_sys; reference 45210 in 726544 clk_sys (no-DMA run)
+A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (240 of 252 intervals)
+A5: of 127 missed even cycles in the share-mode run, 120 were granted on the third slot after the slot the 68000 was ready for (the fourth counting that slot), that slot and the two after it taken by DMA
+A8: 44815 access pairs, 127 missed even cycle(s), 115 missed odd cycle(s), 0 with an even free slot left unused (120 granted before the first free even slot, 7 exactly on it), 0 delayed with a free ready slot, 400 spanning a line start, 6 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
+SYSDMA-C29: four lores planes, BRA.S loop: 107424 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
+SYSDMA-C29: four lores planes, aligned loop: 107424 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused (0 granted before the first free even slot, 0 exactly on it), 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
 A10: 768 fetch window(s); maximum CPU accesses in any one window = 0
-A11: 768 four-plane window(s), 768 found at the same cycle with five and six planes; CPU accesses outside the windows: 45984 / 45984 / 45984
-A6: no-DMA period of the aligned loop = 80 clk_sys (8399 unimpeded intervals); 11520 scratch-write interval(s) inside the display windows, 0 not equal to it
-SLOTSPAN: modal interval between consecutive CPU bus accesses of the BASELINE loop = 16 clk_sys (2 slot(s)), 45208 intervals
+A11: 768 four-plane window(s), 768 found at the same cycle with five and six planes; CPU accesses outside the windows: 45985 / 45985 / 45985
+A6: no-DMA period of the aligned loop = 64 clk_sys (10599 unimpeded intervals); 14592 scratch-write interval(s) inside the display windows, 0 not equal to it
+SLOTSPAN: modal interval between consecutive CPU bus accesses of the BASELINE loop = 16 clk_sys (2 slot(s)), 45209 intervals
 OPEN50: open slots per 160-slot window -- four planes 80..80, six planes 40..40
 PARITY-REF: 15360 of 15360 BPL1 reads classify odd by the per-line reference (four-lores-plane build)
-PARITY: no-DMA (baseline) odd-slot accesses 0 of 45209; share-mode window (blit's own active window) odd-slot accesses 124 of 254
-ORDER: CPU copy loop of 500 word(s) spans 48112 clk_sys (500 writes seen); the nasty-mode blit's own 500-word copy spans 8112 clk_sys, same yardstick (first to last destination write)
+PARITY: no-DMA (baseline) odd-slot accesses 0 of 45210; share-mode window (blit's own active window) odd-slot accesses 122 of 253
+ORDER: CPU copy loop of 500 word(s) spans 40096 clk_sys (500 writes seen); the nasty-mode blit's own 500-word copy spans 8112 clk_sys, same yardstick (first to last destination write)
 TAS: read-to-write gap = 40 clk_sys, 4 other RAM-port access(es) between them (TAS.B, share-mode blit concurrent)
 TAS-SPAN: slot unit 8 clk_sys; the three ordinary cycles span at most 0 clk_sys; the TAS read spans 0 clk_sys and its write follows the read's first sample after 16 clk_sys
 ch6-multi.c4 [p187]: loop iterations over 3000000 cycles, no DMA -- cpu_config=3 (68020): 9040, cpu_config=0 (68000): 9040 -- contradicts nothing on the page (no DMA is competing for the bus here)
-FASTRUN: 50-iteration -- done=y RESULTS=50 blit window=2276057..2284169 FR_CNT fast-RAM writes strictly inside=48; 2000-iteration -- done=y RESULTS=2000 blit window=2276057..2284169 FR_CNT fast-RAM writes strictly inside=127; in-window period(mode)=64 clk_sys (126 gaps), after-window period=64 clk_sys (1870 gaps), every in-window gap equals after-window period=y
-FASTRUN-LOCKOUT: done=y RESULTS=8000; Copper's own MOVE-data-word fetch at cycle=2401033; fetch window=2401049..2402321; blitter's own first DMA access at cycle=2402361; FR_CNT fast-RAM writes strictly inside the fetch window=20
-BBUSY-LOCKOUT: Copper data-word fetch at cycle 2401033; fetch window 2401049..2402321; blitter's first access at 2402369, last at 2433545; pair pending across the window: iteration 69, first store at cycle 2402408
+FASTRUN: 50-iteration -- done=y RESULTS=50 blit window=2275929..2284041 FR_CNT fast-RAM writes strictly inside=48; 2000-iteration -- done=y RESULTS=2000 blit window=2275929..2284041 FR_CNT fast-RAM writes strictly inside=156; in-window period(mode)=52 clk_sys (155 gaps), after-window period=52 clk_sys (1841 gaps), every in-window gap equals after-window period=y
+FASTRUN-LOCKOUT: done=y RESULTS=8000; Copper's own MOVE-data-word fetch at cycle=2401033; fetch window=2401049..2402321; blitter's own first DMA access at cycle=2402361; FR_CNT fast-RAM writes strictly inside the fetch window=24
+BBUSY-LOCKOUT: Copper data-word fetch at cycle 2401033; fetch window 2401049..2402321; blitter's first access at 2402369, last at 2433697; pair pending across the window: iteration 70, first store at cycle 2402408
 BBUSY-LOCKOUT: first test read 43C0 (BBUSY set), second test read 63C0 (BBUSY set)
 ```
