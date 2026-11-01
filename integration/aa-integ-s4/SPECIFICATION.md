@@ -1538,7 +1538,7 @@ P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
 RF-F measured: spacings of the first 3 stores to MARK (system clock cycles) / longest pass Q of the polling loop (system clock cycles), run by run (set run, clear run) in the order P16, P17, P19
     TG68K: P16 568392, 568392 / 592 and 568392, 568392 / 592; P17 568392, 568392 / 288 and 568392, 568472 / 280; P19 568368, 568464 / 592 and 568368, 568464 / 592
     fx68k: P16 568456, 568344 / 768 and 568392, 568408 / 768; P17 568320, 568496 / 400 and 568288, 568408 / 400; P19 568408, 568408 / 760 and 568408, 568408 / 752
-    The polling loop is at 0x080472; the passes counted per run are between 3507 and 4698.
+    The polling loop is at 0x080472; the passes counted per run are between 3521 and 3604 on fx68k and between 4666 and 4698 on TG68K.
 P20 measured (system clock cycles from the blitter's first and last access): marker 0x5A01 and marker 0x5A02
     TG68K: BLTPRI set -76 / +1607108, BLTPRI clear -76 / +1573844
     fx68k: BLTPRI set -76 / +1771740, BLTPRI clear -76 / +1736628
