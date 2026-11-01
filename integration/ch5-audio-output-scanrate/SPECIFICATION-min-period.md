@@ -999,8 +999,8 @@ both cores printed the same.
 Reference run `P_ref = 447`, NTSC and PAL, fx68k and TG68K:
 
 - The channel-0 output is `audio_left`; `audio_right` does not change after
-  the first fetch (0 changes). `audio_left` changes 591 times on fx68k and
-  592 times on TG68K in that span. Not graded.
+  the first fetch (0 changes). `audio_left` changes 591 times on both
+  cores in that span. Not graded.
 - `D_ref` = 3576 cycles in both standards on both cores, the largest
   deviation of a level run from it 0, so one tick = 8.0000 cycles and `s` =
   0.125 tick. The 256 level runs show 128 distinct levels.
@@ -1015,12 +1015,12 @@ Reference run `P_ref = 447`, NTSC and PAL, fx68k and TG68K:
   ticks and none differs from its predecessor: the NTSC alternation of p.23
   and the 227.5-clock mean of p.194 are not present at the port; they are
   printed and not graded (`NM-HRM-010`).
-- The F4 anchor is asserted in each reference run before F1 (c): fx68k
-  checked 1160 refresh clusters in each reference run and TG68K 1161; every
+- The F4 anchor is asserted in each reference run before F1 (c): both
+  cores checked 1160 refresh clusters in each reference run; every
   one holds four edges of `refresh` two slots apart, and the 227 table
   fetches of the port window lie at one offset from the line start. The
-  cross-check "reads below word $1000" counts 4644 on fx68k (4 * 1160 =
-  4640) and 4648 on TG68K (4 * 1161 = 4644).
+  cross-check "reads below word $1000" counts 4644 on both cores (4 * 1160 =
+  4640).
 - Channel 0's fetch lies 114 cycles (14.25 ticks) after the first refresh
   edge of a line, in every run, with the channel on its own.
 - Line phases of the window's words (measured by a separate driver over the
@@ -1101,7 +1101,7 @@ are identical on both.
 | `MC2DMA`, `MC2ADK` | MC2 | channel 3 enabled, USE3PN set | red, other preconditions green |
 | `MC3LEN` | MC3 item 2 | `AUD0LEN` <- 32 | red (64 distinct levels, the output live), item 1 green |
 | `MC3OTH` | MC3 item 1 | channel 1 plays a copy of the table, volume 64 | red, item 2 and all anchors green |
-| `MC3A` | MC3 anchor F1 (a) | `AUD0PER` <- 448 after 753 lines | red (deviation 7.938 cycles fx68k, 7.969 TG68K), the other lines green |
+| `MC3A` | MC3 anchor F1 (a) | `AUD0PER` <- 448 after 753 lines | red (deviation 7.938 cycles on both cores), the other lines green |
 | `MC3B` | MC3 anchor F1 (b) | `AUD0PER` <- 224 after 800 lines | red (5012.917 against 7152.000 cycles), the other lines green |
 | `MC3F4` | MC3 anchor F4 | CPU read of `T+64` after 1140 lines | red (2 offsets), the other lines green |
 | `MC3TIME` | MC3 anchor F1 (c) | `AUD0PER` 448 declared 447 | red, F4 and the other anchors green |
@@ -1133,8 +1133,7 @@ are identical on both.
   port window holds 895 complete lines of mean length 226.493 ticks, all
   outside 226.875 ... 228.125 ticks (NTSC) and 226.875 ... 227.625 ticks
   (PAL), in both standards on both cores, so F1 (c) is red through its own
-  clause. The F4 anchor is green (0 of 1162 clusters on fx68k, 0 of 1163 on
-  TG68K fail the shape check), and items 1 and 2 and anchors (a) and (b) are
+  clause. The F4 anchor is green (0 of 1162 clusters fail the shape check), and items 1 and 2 and anchors (a) and (b) are
   green.
 - `MC4LEN` and `MC4CPU` print no proposition line: MP3 is not graded behind
   a failing MC4 clause that section 3.7 does not release (MC4LEN: no wrap in
