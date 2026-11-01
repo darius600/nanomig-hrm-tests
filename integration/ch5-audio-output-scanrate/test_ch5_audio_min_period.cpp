@@ -65,17 +65,17 @@
 //   green; 14 passed, 2 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3A: both reference runs with AUD0PER <- 448 written after 753 lines of the wait
 //   measured: fx68k and TG68K: MC3 anchor F1 (a) red in PAL and NTSC (largest deviation of a level run from D_ref 7.938 cycles on fx68k,
-//   7.969 cycles on TG68K); items 1 and 2 and anchors F1 (b), F1 (c) and F4 green; 14 passed, 2 failed
+//   7.938 cycles on TG68K); items 1 and 2 and anchors F1 (b), F1 (c) and F4 green; 14 passed, 2 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3B: both reference runs with AUD0PER <- 224 written after 800 lines of the wait
 //   measured: fx68k and TG68K: MC3 anchor F1 (b) red in PAL and NTSC (mean spacing of table fetches over 192 fetches 5012.917 cycles against
 //   2 * D_ref = 7152.000, tolerance 9.466 cycles); items 1 and 2 and anchors F1 (a), F1 (c) and F4 green; 14 passed, 2 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3F4: both reference runs with one CPU read of the word at T+64 after 1140 lines of the wait
 //   measured: fx68k and TG68K: MC3 anchor F4 red in PAL and NTSC (228 table accesses in the port window at 2 different offsets from the line
-//   start; 0 refresh clusters of 1160 on fx68k and of 1161 on TG68K fail the shape check); items 1 and 2 and anchors F1 (a), (b) and (c) green;
+//   start; 0 refresh clusters of 1160 on fx68k and of 1160 on TG68K fail the shape check); items 1 and 2 and anchors F1 (a), (b) and (c) green;
 //   14 passed, 2 failed
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3TIME: both reference runs with AUD0PER 448 and the declaration left at 447
 //   measured: fx68k and TG68K: MC3 anchor F1 (c) red in PAL and NTSC (tick 8.0179 cycles, 895 complete lines of length 226.493 ticks, all outside
-//   226.875 ...); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1163 on TG68K, not four accesses two slots apart); items 1, 2 and anchors
+//   226.875 ...); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1162 on TG68K, not four accesses two slots apart); items 1, 2 and anchors
 //   (a), (b) green; 14 passed, 2 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4LEN: PAL P = 124 with AUD0LEN 65 and the bytes 0 and 2 at T+128
 //   measured: fx68k and TG68K: MC4 red (fetches off the table); MC1, MC2, MC5, MC6 green; 14 passed, 1 failed
