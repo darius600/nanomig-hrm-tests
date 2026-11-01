@@ -530,8 +530,8 @@ The lines that print MEASURED (final run), shipped design then page-built copy:
 shipped design, TG68K:
 
 ```text
-MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.001 memory cycles; conversion 7.990 clk_sys cycles per memory cycle (tg68k)
-MEASURED: UR: 66497 accesses, markers 226 of 226 (tg68k)
+MEASURED: HV: 60 pairs in 4 segments (S_HV), 0 same-V pair(s) with a decreasing H field left out, at most 0 for one V value; J_HV 1.000 memory cycles; conversion 8.000 clk_sys cycles per memory cycle (tg68k)
+MEASURED: UR: 66496 accesses, markers 226 of 226 (tg68k)
 MEASURED: PR-1c: complete lines of UR between the fetch of L+6 and the end marker: RA 31 lines with 4 to 4 refresh accesses per line, RB 31 lines with 4 to 4 (tg68k)
 MEASURED: P1: refresh accesses between the fetch of L+6 and the end marker: RA 129, RB 129; first RA address $000000 RB $000000 (tg68k)
 MEASURED: PR-U5 population: 0 UHRES accesses in U1, U2, U3, U4 and UW (tg68k)
@@ -544,17 +544,17 @@ MEASURED: U0d: BPLH 0 SPRH 0 stray 0; lines with one BPLH access 0 of 31, with t
 MEASURED: E3.6 (BPLH walking cases in UW): line $051: expected $000002, seen none; line $052: expected $000004, seen none; line $053: expected $000008, seen none; cases without their address: 40 of 40 (tg68k)
 MEASURED: E6.6 (SPRH walking cases in UW): line $051: expected $1FFFFC, seen none; line $052: expected $1FFFFA, seen none; line $053: expected $1FFFF6, seen none; cases without their address: 40 of 40 (tg68k)
 MEASURED: P4: U1 and U2 do not have exactly one BPLH access on every line $51..$6F; BPLH accesses U1 0, U2 0 (tg68k)
-MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 15.018 memory cycles (tg68k)
-MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.280, D0 227.280, U1 227.280; rounded to whole steps D1 227, D0 227 (tg68k)
+MEASURED: PR-9c: DH has 64 sample stores, largest sample interval 13.000 memory cycles (tg68k)
+MEASURED: PR-9a: main-counter line length in memory cycles, from the H fields of markers $40 and $80 over 64 lines: D1 227.000, D0 227.000, U1 227.000; rounded to whole steps D1 227, D0 227 (tg68k)
 MEASURED: P9: D1 has 0 BPLH accesses between t($51) and t($6F); D0 has 0 (tg68k)
 MEASURED: P9-E1a (not graded): D1 lines of $52..$6F with two or more BPLH accesses: 0 of 30, most on one line 0 (tg68k)
 MEASURED: P9-E1b (not graded): DH has 0 BPLH accesses between its first and last sample; alternate-counter resets between consecutive accesses: none (tg68k)
-MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.025 HB 20.025 HC 20.025 HW 20.025 (tg68k)
-MEASURED: P8: largest sample interval in memory cycles HA 15.018 HB 15.018 HC 15.018 HW 15.018, smallest HA 14.017 (tg68k)
+MEASURED: P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA 20.000 HB 20.000 HC 20.000 HW 20.000 (tg68k)
+MEASURED: P8: largest sample interval in memory cycles HA 13.000 HB 13.000 HC 13.000 HW 13.000, smallest HA 12.000 (tg68k)
 MEASURED: P8: first samples (bits 7-0) HA: 00 00 00 00 00 00 HB: 00 00 00 00 00 00 HC: 00 00 00 00 00 00 HD: 00 00 00 00 00 00 HW: 00 00 00 00 00 00
 MEASURED: P8: bits 15-8 of the samples (not graded): HA 00 00 00 00 00 00
 MEASURED: P8-E2: HW writes HTOTAL = $0A and X = $05: its 64 samples show 1 distinct values; the line has N+1 = 11 counts, the highest sample is $00, N is sampled 0 times (tg68k)
-MEASURED: P8-E4 rate (not graded): HA: sum d 0 counts, elapsed 887.091 memory cycles HB: sum d 0 counts, elapsed 887.091 memory cycles HC: sum d 0 counts, elapsed 887.091 memory cycles (tg68k)
+MEASURED: P8-E4 rate (not graded): HA: sum d 0 counts, elapsed 759.000 memory cycles HB: sum d 0 counts, elapsed 759.000 memory cycles HC: sum d 0 counts, elapsed 759.000 memory cycles (tg68k)
 ```
 
 shipped design, fx68k:
