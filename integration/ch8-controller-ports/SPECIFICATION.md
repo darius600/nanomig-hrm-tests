@@ -932,7 +932,7 @@ contract defines no clock) that PC1 grades. `READV` (`ch8_regs.i`) reads
 V7-V0/V8 with `SWAP` and word shifts. PC1 is the precondition that checks
 this margin at every run; a run where it fails is "not established", not
 "pass". Measured: fx68k yields 20 of a possible 72 records (4 per R step x
-18 R steps) with Vr0=Vr1=10; TG68K yields 42.
+18 R steps) with Vr0=Vr1=10; TG68K yields 45.
 
 ### Measured: P1's main claim on this build
 
