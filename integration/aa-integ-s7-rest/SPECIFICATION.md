@@ -450,9 +450,9 @@ Run to wrapper: HV `prog_hv`; HA, HB, HC, HW `prog_ha`, `prog_hb`, `prog_hc`, `p
 
 ### 7.4 Measured (the final run of every core)
 
-Shipped design (`make -k -B test`): TG68K 36 passed, 21 failed, fx68k 36 passed, 21 failed, with 11 NOT GRADED lines on each core. Page-built copy (7.5): TG68K 68 passed, 0 failed, fx68k 68 passed, 0 failed. A precondition that fails is counted as a failed line; a graded line whose preconditions fail prints `NOT GRADED`.
+Repository design (`make -k -B test`): TG68K 36 passed, 21 failed, fx68k 36 passed, 21 failed, with 11 NOT GRADED lines on each core. Page-built copy (7.5): TG68K 68 passed, 0 failed, fx68k 68 passed, 0 failed. A precondition that fails is counted as a failed line; a graded line whose preconditions fail prints `NOT GRADED`.
 
-| line | shipped TG68K | shipped fx68k | copy TG68K | copy fx68k |
+| line | repository TG68K | repository fx68k | copy TG68K | copy fx68k |
 |---|---|---|---|---|
 | FIXTURE-HV | PASS | PASS | PASS | PASS |
 | HV-ANCHOR | PASS | PASS | PASS | PASS |
@@ -525,9 +525,9 @@ Shipped design (`make -k -B test`): TG68K 36 passed, 21 failed, fx68k 36 passed,
 | P8-HD | PASS | PASS | PASS | PASS |
 | P8-AGG | FAIL | FAIL | PASS | PASS |
 
-The lines that print MEASURED (final run), shipped design then page-built copy:
+The lines that print MEASURED (final run), repository design then page-built copy:
 
-shipped design, TG68K:
+repository design, TG68K:
 
 ```text
 MEASURED: HV: 60 pairs in 4 segments (S_HV), 0 same-V pair(s) with a decreasing H field left out, at most 0 for one V value; J_HV 1.000 memory cycles; conversion 8.000 clk_sys cycles per memory cycle (tg68k)
@@ -557,7 +557,7 @@ MEASURED: P8-E2: HW writes HTOTAL = $0A and X = $05: its 64 samples show 1 disti
 MEASURED: P8-E4 rate (not graded): HA: sum d 0 counts, elapsed 759.000 memory cycles HB: sum d 0 counts, elapsed 759.000 memory cycles HC: sum d 0 counts, elapsed 759.000 memory cycles (tg68k)
 ```
 
-shipped design, fx68k:
+repository design, fx68k:
 
 ```text
 MEASURED: HV: 58 pairs in 5 segments (S_HV), 1 same-V pair(s) with a decreasing H field left out, at most 1 for one V value; J_HV 1.000 memory cycles; conversion 8.000 clk_sys cycles per memory cycle (fx68k)
@@ -649,13 +649,13 @@ MEASURED: P8-E4 rate (not graded): HA: sum d 820 counts, elapsed 820.000 memory 
 
 ### 7.5 Implementation record
 
-On the shipped design the refresh addresses are the same whatever the Copper writes to 028, no run has an access of the UHRES kind, and every HHPOSR sample reads 0 (7.4), so the lines that need these registers print FAIL, or NOT GRADED where a precondition needs them. So that every red line has a green control through the same comparator, the test was built against private copies of the design, outside the repository (`make test-<core> NANOMIG=<copy>`), written from the sentences of the pages named in each line and not from any run of this package:
+On the repository design the refresh addresses are the same whatever the Copper writes to 028, no run has an access of the UHRES kind, and every HHPOSR sample reads 0 (7.4), so the lines that need these registers print FAIL, or NOT GRADED where a precondition needs them. So that every red line has a green control through the same comparator, the test was built against private copies of the design, outside the repository (`make test-<core> NANOMIG=<copy>`), written from the sentences of the pages named in each line and not from any run of this package:
 
 - **REFPTR** (p.27, "used as a Dynamic RAM refresh address generator"; p.6 `~`): a register of word addresses that a Copper MOVE with COPCON bit 1 set writes; the refresh accesses take their address from it and it advances by one word after each refresh access.
 - **UHRES pointers** (p.16, p.22, p.15, p.27, p.28, p.12): BPLCON0 bit 7 together with DMACON bit 9 enables the chain. The chain starts at the reset of the beam counter in use (the normal one; with BEAMCON0 DUAL the alternate one: "starts the UHRES pointer chain with the reset of this counter", p.12): it is armed in the tick in which that counter's count falls back, and a write of HHPOSW does not arm it. It then takes the next three "free" memory cycles, those that no refresh, disk, audio, bit-plane or sprite channel uses: the first for the sprite pointer, the second for the bit-plane pointer, the third for the sprite pointer again. The vertical comparisons (BPLHSTRT <= V < BPLHSTOP, SPRHSTRT <= V < SPRHSTOP) are made when the chain is armed, with the vertical counter as it stands there, so the first access of a run lies on line start+1 in the numbering of R1 (the page's line start is open, R1). Each pointer is a pair of 5 and 15 bits (p.6 `+`). The bit-plane pointer advances after each access by 2 plus the sign-extended BPLHMOD, the sprite pointer by 2.
 - **HHPOSW and HHPOSR** (p.24): a counter of memory cycles that HHPOSW sets, that counts up to HTOTAL and then starts again, and that HHPOSR returns in bits 7-0.
 
-Against this copy `make test` prints, for every line of the table in 7.4, the verdict of the "copy" columns: every graded line prints PASS, 68 passed and 0 failed on TG68K and on fx68k (P9-E1a and P9-E1b print RECORDED lines), including the lines that are FAIL or NOT GRADED on the shipped design (P1, PR-2a, P2, P1P2-JOINT, PR-U5, PR-U6, PR-U7, P3-E1, P3-E2, P3-E4, P3-E5, P3-E6, P3-AGG, P4, P5, P6-E1, P6-E2, P6-E3, P6-E4, P6-E5, P6-E6, P6-CTRL, P6-AGG, P7, PR-9-U5, P9-E2, P9-D0, P8-E1, P8-E2, P8-E3, P8-E4, P8-AGG).
+Against this copy `make test` prints, for every line of the table in 7.4, the verdict of the "copy" columns: every graded line prints PASS, 68 passed and 0 failed on TG68K and on fx68k (P9-E1a and P9-E1b print RECORDED lines), including the lines that are FAIL or NOT GRADED on the repository design (P1, PR-2a, P2, P1P2-JOINT, PR-U5, PR-U6, PR-U7, P3-E1, P3-E2, P3-E4, P3-E5, P3-E6, P3-AGG, P4, P5, P6-E1, P6-E2, P6-E3, P6-E4, P6-E5, P6-E6, P6-CTRL, P6-AGG, P7, PR-9-U5, P9-E2, P9-D0, P8-E1, P8-E2, P8-E3, P8-E4, P8-AGG).
 
 Further copies change one sentence each:
 
@@ -667,9 +667,9 @@ Further copies change one sentence each:
 
 ### 7.6 Mutations
 
-Each mutant changes the stimulus (a program, or which program a run uses) and leaves the comparator and the expected values alone; no mutant changes a gate, an expected value or a comparator. Every mutant program reaches its end marker, except those whose point is a missing end marker (PR-U1, PR-8c, PR-9-U1). `NMH_MUTATE=<selector>` with `NMH_ONLY` of the line's family runs a mutant. The columns give the verdict of the labelled line in the mutant run on the shipped design and on the page-built copy of 7.5, whose unchanged run prints PASS on every line (7.4). A mutant that needs a REFPTR, UHRES or HHPOSR effect cannot change a verdict on the shipped design, which shows none of them; there the column repeats the unchanged verdict. PR-1c and P6-E4 have no stimulus mutant (the pages give no stimulus that removes refresh or reorders the free cycles); their mutants are the private copies of 7.5, `IMPL-NOREF` and `IMPL-E4` below, and the clause of HV-ANCHOR on decreasing pairs, which no stimulus produces, has `IMPL-HBACK`. The contrast of P1+P2 with COPCON = $0000 for RA and RB (`P1P2-JOINT-A`) prints NOT GRADED (7.2 item 12). Several mutants turn other lines red or NOT GRADED as well, because the runs they change (U1, UR, UW, D1, DH, HB, RB) are shared by several lines; the `// MUTATION` records in the test header list, per selector, every other line that moves on the page-built copy, and for the three private copies of 7.5 every line that moves on the copy.
+Each mutant changes the stimulus (a program, or which program a run uses) and leaves the comparator and the expected values alone; no mutant changes a gate, an expected value or a comparator. Every mutant program reaches its end marker, except those whose point is a missing end marker (PR-U1, PR-8c, PR-9-U1). `NMH_MUTATE=<selector>` with `NMH_ONLY` of the line's family runs a mutant. The columns give the verdict of the labelled line in the mutant run on the repository design and on the page-built copy of 7.5, whose unchanged run prints PASS on every line (7.4). A mutant that needs a REFPTR, UHRES or HHPOSR effect cannot change a verdict on the repository design, which shows none of them; there the column repeats the unchanged verdict. PR-1c and P6-E4 have no stimulus mutant (the pages give no stimulus that removes refresh or reorders the free cycles); their mutants are the private copies of 7.5, `IMPL-NOREF` and `IMPL-E4` below, and the clause of HV-ANCHOR on decreasing pairs, which no stimulus produces, has `IMPL-HBACK`. The contrast of P1+P2 with COPCON = $0000 for RA and RB (`P1P2-JOINT-A`) prints NOT GRADED (7.2 item 12). Several mutants turn other lines red or NOT GRADED as well, because the runs they change (U1, UR, UW, D1, DH, HB, RB) are shared by several lines; the `// MUTATION` records in the test header list, per selector, every other line that moves on the page-built copy, and for the three private copies of 7.5 every line that moves on the copy.
 
-| line | selector | what changes | shipped TG68K | shipped fx68k | copy TG68K | copy fx68k |
+| line | selector | what changes | repository TG68K | repository fx68k | copy TG68K | copy fx68k |
 |---|---|---|---|---|---|---|
 | FIXTURE-HV | `FIXTURE-HV` | run HV is run as prog_hv_nofix, which leaves out the store of the constant $BEEF | FAIL | FAIL | FAIL | FAIL |
 | HV-ANCHOR | `HV-ANCHOR` | run HV samples VPOSR instead of VHPOSR (prog_hv_c); bits 7-0 of VPOSR do not count | FAIL | FAIL | FAIL | FAIL |
