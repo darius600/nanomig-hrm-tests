@@ -898,7 +898,7 @@ Both cores, every light-pen run (the two connectors agree):
 | lag of the vertical count behind the horizontal wrap | 1 colour clock | 2 colour clocks |
 | anchor uncertainty u | 7 colour clocks | 7 colour clocks |
 | largest H read | 225 | 226 |
-| largest gap between consecutive reads | 20 colour clocks (PAL, NTSC) | 21 colour clocks (PAL, NTSC) |
+| largest gap between consecutive reads | 20 colour clocks (PAL, NTSC) | 19 colour clocks (PAL, NTSC) |
 
 Outcome of the normal run on the repository's chipset. fx68k and TG68K print
 the same verdict lines: 230 passed, 56 failed on each.
