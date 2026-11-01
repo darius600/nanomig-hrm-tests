@@ -1045,7 +1045,7 @@ beside the verdict.
 Measured on the repository's chipset, in every window of every system configuration: no
 equal pair, no V step other than 0 or 1, at most one H decrease per V value. The pairs
 with V unchanged and H lower are all H 210 -> 0 on fx68k (the read at H = 0 still shows the
-previous line's V) and all H 210 -> 1 on TG68K (the read at H = 1 still shows it). V8..V0 and
+previous line's V) and all H 212 -> 1 on TG68K (the read at H = 1 still shows it). V8..V0 and
 H8..H1 are the two bytes of one 16-bit register (VHPOSR, p.238), so these pairs are not a
 long-word read torn between two bus cycles. A private chipset whose vertical position
 counts at the clock edge at which the horizontal position wraps shows no such pair and
