@@ -1379,10 +1379,10 @@ P7-JOINT-P, P9-C for S-LEN-A and S-LEN-B, P10-AP and P10-BOTH.
 | one line (F_3 − F_2 of R-MOD), clk_sys cycles | 1816 | 1816 | 1816 | 1816 |
 | PC5 measured sides (0=left, 1=right) | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 | ch0=0 ch1=1 ch2=1 ch3=0 |
 | L_a (R-VOL-1, channel 1), clk_sys cycles | -77 | -77 | -77 | -77 |
-| PC7-CAL: state 010 entered at M_on+, clk | 2647 | 2271 | 2647 | 2271 |
+| PC7-CAL: state 010 entered at M_on+, clk | 2647 | 2319 | 2647 | 2319 |
 | PC7-CAL: nearest record entry / entries, offset, distance | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk | 0 of 46, offset 0, 11 clk |
 | ε = D_1(900), clk_sys cycles | 7200 | 7200 | 7200 | 7200 |
-| S-AV: the window of channel 1 ends before M_off by, clk | 80 | 1528 | 80 | 1528 |
+| S-AV: the window of channel 1 ends before M_off by, clk | 80 | 1464 | 80 | 1464 |
 | P5: applied changes in S-AV / S-AP / S-BOTH | 0 / 0 / 0 | 0 / 0 / 0 | 43 / 22 / 47 | 43 / 22 / 47 |
 | P5: largest deviation of a gap from 2·D_mod (S-AV, volume) / S-AP / from D_mod (S-BOTH), clk | - | - | 0 / 4000 / 4816 | 0 / 4000 / 4816 |
 | P5: largest distance of a change from the time-out grid: S-AV volume (even) / S-AP period (odd) / S-BOTH volume, period, clk | - | - | 0 / 4816 / 0, 4816 | 0 / 4816 / 0, 4816 |
