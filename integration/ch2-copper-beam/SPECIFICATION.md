@@ -1696,41 +1696,41 @@ MEASURED: P9 NTSC E: 1600 window lines, COLOR01 run lengths {640}, P_lo=2
 
 ```text
 CORE TG68K
-MEASURED: PRE-T1 PAL run A: 16 of 49999 consecutive-sample gaps exceed 16 slots, 11 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 PAL run A: 0 of 46531 trusted-sample transitions violate T2
+MEASURED: PRE-T1 PAL run A: 16 of 49999 consecutive-sample gaps exceed 16 slots, 6 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 PAL run A: 0 of 46534 trusted-sample transitions violate T2
 MEASURED: R1 PAL run A: 0 of 7 inter-boundary spans have restart count != 1
 MEASURED: P1-COUNT PAL run A: distinct V values per complete field {313} over 7 complete fields
 MEASURED: P1-ORIGIN PAL run A: parity coverage yes (even seen, odd seen)
-MEASURED: P3 PAL run A: H values observed 00..E2, 208 distinct; even values not observed (0): none; odd values up to $E1 not observed (19): 05 07 09 0B 0D 11 15 19 1D 21 25 29 2D 31 35 39 3D 41 45; lines with H>=$E0 and L=228: 0, with L=227: 304
+MEASURED: P3 PAL run A: H values observed 00..E2, 209 distinct; even values not observed (0): none; odd values up to $E1 not observed (18): 05 07 09 0B 0F 13 17 1B 1F 23 27 2B 2F 33 37 3B 3F 43; lines with H>=$E0 and L=228: 0, with L=227: 307
 MEASURED: OCS-CHECK PAL run A: ECS field-length set {313} vs OCS {313}; line-length L(v) set {227} over 1834 pairs vs OCS {227} over 1834 pairs -- match, assumption checked
-MEASURED: PRE-T1 NTSC run A: 20 of 49999 consecutive-sample gaps exceed 16 slots, 20 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 NTSC run A: 0 of 46544 trusted-sample transitions violate T2
+MEASURED: PRE-T1 NTSC run A: 20 of 49999 consecutive-sample gaps exceed 16 slots, 10 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 NTSC run A: 0 of 46557 trusted-sample transitions violate T2
 MEASURED: R1 NTSC run A: 0 of 9 inter-boundary spans have restart count != 1
 MEASURED: P1-COUNT NTSC run A: distinct V values per complete field {263} over 9 complete fields
 MEASURED: P1-ORIGIN NTSC run A: parity coverage yes (even seen, odd seen)
-MEASURED: P3 NTSC run A: H values observed 00..E2, 203 distinct; even values not observed (0): none; odd values up to $E1 not observed (24): 05 07 09 0B 0D 0F 11 15 19 1B 1D 21 25 27 29 2D 31 33 35 39 3D 3F 41 45; lines with H>=$E0 and L=228: 0, with L=227: 315
+MEASURED: P3 NTSC run A: H values observed 00..E2, 203 distinct; even values not observed (0): none; odd values up to $E1 not observed (24): 05 07 09 0B 0D 0F 13 15 17 1B 1F 21 23 27 2B 2D 2F 33 37 39 3B 3F 43 45; lines with H>=$E0 and L=228: 0, with L=227: 315
 MEASURED: P8 NTSC run A: the trusted sample after the last sample of line 261 has V (count): 262x9 over 9 field boundaries
 MEASURED: P8 NTSC run A: after m_261: 9 of 9 fields: m_262 fetched 117 slots before the earliest start of line 0;
 MEASURED: OCS-CHECK NTSC run A: ECS field-length set {263} vs OCS {263}; line-length L(v) set {227} over 1908 pairs vs OCS {227} over 1908 pairs -- match, assumption checked
-MEASURED: PRE-T1 PAL run C: 96 of 29999 consecutive-sample gaps exceed 16 slots, 4 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 PAL run C: 0 of 28052 trusted-sample transitions violate T2
+MEASURED: PRE-T1 PAL run C: 95 of 29999 consecutive-sample gaps exceed 16 slots, 4 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 PAL run C: 0 of 28053 trusted-sample transitions violate T2
 MEASURED: R1 PAL run C: 0 of 4 inter-boundary spans have restart count != 1
 MEASURED: P4 PAL run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
 MEASURED: P4-C PAL run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
 MEASURED: OCS-CHECK PAL run C: ECS field-length set {313} vs OCS {313} -- match, assumption checked
-MEASURED: PRE-T1 NTSC run C: 115 of 29999 consecutive-sample gaps exceed 16 slots, 6 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 NTSC run C: 0 of 28040 trusted-sample transitions violate T2
+MEASURED: PRE-T1 NTSC run C: 114 of 29999 consecutive-sample gaps exceed 16 slots, 3 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 NTSC run C: 0 of 28042 trusted-sample transitions violate T2
 MEASURED: R1 NTSC run C: 0 of 5 inter-boundary spans have restart count != 1
 MEASURED: P4 NTSC run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
 MEASURED: P4-C NTSC run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
 MEASURED: OCS-CHECK NTSC run C: ECS field-length set {263} vs OCS {263} -- match, assumption checked
-MEASURED: PRE-T1 PAL run B: 152 of 129999 consecutive-sample gaps exceed 16 slots, 19 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 PAL run B: 0 of 121948 trusted-sample transitions violate T2
+MEASURED: PRE-T1 PAL run B: 34 of 129999 consecutive-sample gaps exceed 16 slots, 22 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 PAL run B: 0 of 121953 trusted-sample transitions violate T2
 MEASURED: R1 PAL run B: 0 of 21 inter-boundary spans have restart count != 1
 MEASURED: P6 PAL run B: j=0: x_0 not fetched before line 0 of the next field, time(x_0)-time(a_0) = 13102 slots, on a line the trace does not identify; line 0 of the next field starts 13088 (earliest) to 13100 (latest) slots after a_0 (reading A predicts time(x_0)-time(a_0) = $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 19 of 19 fields: x_j fetched 2 slots after the latest start of line 0, 2 slots before the next restart, 0 Copper fetches between the second word of the WAIT and the earliest start of line 0;
 MEASURED: OCS-CHECK PAL run B: ECS field-length set {313} vs OCS {313} -- match, assumption checked
-MEASURED: PRE-T1 NTSC run B: 156 of 129999 consecutive-sample gaps exceed 16 slots, 21 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
-MEASURED: T2 NTSC run B: 0 of 121949 trusted-sample transitions violate T2
+MEASURED: PRE-T1 NTSC run B: 35 of 129999 consecutive-sample gaps exceed 16 slots, 26 of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)
+MEASURED: T2 NTSC run B: 0 of 121934 trusted-sample transitions violate T2
 MEASURED: R1 NTSC run B: 0 of 25 inter-boundary spans have restart count != 1
 MEASURED: P6 NTSC run B: j=0: x_0 not fetched before line 0 of the next field, time(x_0)-time(a_0) = 1752 slots, on a line the trace does not identify; line 0 of the next field starts 1738 (earliest) to 1751 (latest) slots after a_0 (reading A predicts time(x_0)-time(a_0) = $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 23 of 23 fields: x_j fetched 1 slot after the latest start of line 0, 2 slots before the next restart, 0 Copper fetches between the second word of the WAIT and the earliest start of line 0;
 MEASURED: OCS-CHECK NTSC run B: ECS field-length set {263} vs OCS {263} -- match, assumption checked
