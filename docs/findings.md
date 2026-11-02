@@ -47,8 +47,10 @@ A2000 and B2000 schematics all side with p. 326 against p. 137.
 > This file stays as the **register**.
 
 > **Deciding what to do about these:** start at [`rtl-review.md`](rtl-review.md),
-> the findings that ask for an RTL review by module. For six of them, chapter 2's
-> Copper and chapter 6's blitter findings, [`evidence/rtl-decisions.md`](evidence/rtl-decisions.md)
+> the findings that ask for an RTL review by module. For five of them, chapter 2's
+> Copper and chapter 6's blitter findings (NM-HRM-003, 005, 020, 021 and 022), and
+> for NM-HRM-004, which is filed against the printed page,
+> [`evidence/rtl-decisions.md`](evidence/rtl-decisions.md)
 > sets the question beside WinUAE's and vAmiga's implementation, with line
 > citations verified against the commits `evidence/third-witness.md` records.
 
