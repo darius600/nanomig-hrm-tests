@@ -108,13 +108,13 @@ The restarts equal $20004 as graded; the red is the first fetch, the case of lin
 
 **Where the start address comes from.** The same three programs, each with one change before MS (COP1LC pointed at a fourth list D, $001600, a WAIT that never ends; COPJMP1; Copper DMA on for three beam records and off again, DMACON = $0080), a measurement that `make test` does not print and no assertion grades:
 
-| scratch variant | first fetch after DMA-on, fx68k and TG68K | the pages |
+| scratch variant | first fetch after DMA-on, fx68k and the default TG68K build (the same on both) | the pages |
 |---|---|---|
 | Run 2, the Copper given DMA once earlier in the frame | **B** | B |
 | Run 3, the same | **C** | B |
 | Run 3-reorder, the same | **C** | C |
 
-Before MS the Copper reads D's two words at $001600 and $001602 and stops. After DMA-on its first read is at $001604, the word after D's WAIT, where its pointer stood (the reload cycle of lines 196–199), and the next is B's (Run 2) or C's (Run 3) first word. Once a DMA cycle has cleared `strobe1` in this frame, a COPJMP2 written with Copper DMA off starts the Copper at COP2LC; the standing `strobe1` is what starts Runs 2, 3 and 3-reorder at A.
+On both cores, before MS the Copper reads D's two words at $001600 and $001602 and stops. After DMA-on its first read is at $001604, the word after D's WAIT, where its pointer stood (the reload cycle of lines 196–199), and the next is B's (Run 2) or C's (Run 3) first word. Once a DMA cycle has cleared `strobe1` in this frame, a COPJMP2 written with Copper DMA off starts the Copper at COP2LC; the standing `strobe1` is what starts Runs 2, 3 and 3-reorder at A.
 
 ### Where else the suite meets it
 
