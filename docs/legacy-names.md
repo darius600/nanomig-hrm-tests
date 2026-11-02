@@ -45,11 +45,11 @@ sources are in the history.
 | `agnus_audiodma` | `ch5-audio-location-pointer` |
 | `agnus_beamcounter` | `ch3-field-geometry`, `ch3-beam-counters-and-blanking`, `ch3-register-map-agnus-beamcounter` |
 | `agnus_bitplanedma` | `ch3-ddf-fetch-window` |
-| `agnus_copper_move` | `agnus_copper_move_range`, `agnus_copper_move_src`, `agnus_copper_move_sweep` |
+| `agnus_copper_move` | `ch2-copper-move-range`, `ch2-copper-move-src`, `ch2-copper-move-sweep` |
 | `agnus_diskdma` | `ch8-disk-dma-data-channel`, `ch8-disk-dma-pointer` |
-| `agnus_refresh` | `agnus_slots` (`REFRESH-FOUR-CYCLES-PER-LINE`, printed p.194) |
+| `agnus_refresh` | `ch6-refresh-dma-slots` (`REFRESH-FOUR-CYCLES-PER-LINE`, printed p.194) |
 | `agnus_spritedma` | `ch4-sprite-dma-sequence`, `ch4-sprite-pointer-registers`, `ch4-sprite-vertical-position` |
-| `agnus_top_register_bus` | `agnus_top_dmacon` |
+| `agnus_top_register_bus` | `ch7-dmacon-register-bits` |
 | `denise` | `ch3-horizontal-display-window`, `ch3-register-map-denise`, `ch4-sprite-display-window` |
 | `denise_bitplane_shifter` | `ch3-bplcon1-scroll-delay` |
 | `denise_collision` | `ch3-collision-registers`, `ch4-sprite-collision`, `ch7-collision-model`, `ch7-collision-playfield-mode` |
@@ -119,7 +119,7 @@ the third to be one, and these twenty-six were the last that were not.
 moved. Only the `hrm/<name>` path form was rewritten, so a comment naming
 a *module* is not a stale package reference.
 
-**Four names in this family resolve to nothing at all**, because the
+**Five names in this family resolve to nothing at all**, because the
 packages were deleted before this rename: `agnus_blitter_modulo`,
 `agnus_blitter_ptr`, `agnus_blitter_mask`, `agnus_blitter_zero` and
 `agnus_blitter_line_octant`. They were the pre-chapter-6 blitter tests,
@@ -132,7 +132,7 @@ and the rest are unchanged, and a `//` comment naming a *module* is not a stale
 package reference.
 
 Records in `hrm-testpipeline/work/` cite these old directory names as
-`hrm/<name>` **859 times**, and the twenty-six below a further **4812**. Those
+`hrm/<name>` **859 times**, and the twenty-six above a further **4812**. Those
 are records and are not edited; these tables resolve them. An earlier revision
 of this sentence said 89, a figure measured for a different pattern and never
 re-measured when the twenty-six were renamed.
@@ -157,10 +157,10 @@ All of them are here.
 | `sol:7-int.c56`, `opus:8-appB.c31` | a **claim id**. The prefix names which of two models read the printed page: the pipeline has every chapter read twice, independently, before either reading is merged. The rest is that reader's own numbering — chapter or appendix, section, claim. An id names one reader's reading of one printed sentence, so the same sentence usually has two ids. |
 | `FPGA-nnn` | a task number in the private lab that plans this work. It is **not** a finding key and resolves to nothing public. Findings are `NM-HRM-nnn`; the mapping is in the table above. |
 | `work/ch8-s2-build/<package>.jsonl` | the package's claim file, in the sibling repository: [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work) (not public yet). Every id a package cites is a row there. |
-| a `work/…` path marked *private lab workspace* | a planning document that is not published. Five such citations exist, all in chapter-2 packages; the claim ids beside them are the public record of the same work. |
+| a `work/…` path marked *private lab workspace* | a planning document that is not published. Four such citations exist, in `ch2-copper-locreg-width`, `ch2-copper-move-src`, `ch2-copper-move-sweep` and `ch2-copper-selfmod`; the claim ids beside them are the public record of the same work. Two more chapter-2 citations of such documents carry no mark: `ch2-copper-move-sweep` (`work/2026-08-29_fpga-074_klassifikation.md`) and `ch2-copper-cycle-times` (`work/2026-09-06_fpga-084_appendix-cycle-conversion_testspecification.md`). |
 | `BOUNDARIES.md`, `CANDIDATES.md` | working files of a single build, in that build's directory under `work/`. |
 | "the builder", "the lead", "the validator" | roles in the pipeline, not people: the model that wrote a package, the model that assigned the work, and the independent model that checked it. `hrm-testpipeline/docs/model-collaboration-guide.md` defines them. |
 
-**Every package says in its own header which claim ids it grades**, in a
+**A package says in its own header which claim ids it grades**, in a
 `Claim ids:` field beside `Test purpose`, `Test class`, `Primary oracle` and
-`Non-goals` — all 216.
+`Non-goals`: 216 of the 217 packages in `hrm/`. `hrm/ch3-shres-sprite-colour-encoding` has no `Claim ids:` field; its header carries a `CLAIM COVERAGE` section instead.
