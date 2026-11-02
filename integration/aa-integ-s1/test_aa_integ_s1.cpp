@@ -70,7 +70,7 @@
 // MUTATION P9-POP stimulus red NMH_MUTATE=P9-POP: run D0 writes BPLCON0 = $4000 (4 planes); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-FIRST stimulus red NMH_MUTATE=P9-FIRST: run D0 writes DIWSTRT = $2E81; TG68K FAIL, fx68k FAIL.
 // MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing PASS: P10-LATCH.
-// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
+// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10-WIN, P10-FIRE, P10-LATCH.
 // MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10-WIN.
 // MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by 89 (TG68K board kernel), 133 (TG68K shipped kernel) or 111 (fx68k) line boundaries; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
 // MUTATION P10-FIRE stimulus red NMH_MUTATE=P10-FIRE: the main run drives both fire inputs (bit 4 of `joystick0` and `joystick1`) to 1 from the start; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P10 main check.
@@ -79,11 +79,11 @@
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE-RET: the second movement brings 39 counts instead of 40; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-AGG stimulus red NMH_MUTATE=P11-AGG: the 40 counts of the third movement are -1 instead of +1 on Y; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: P11-MOUSE.
-// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
-// MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: UNIT-R2.
-// MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P11-POP, P11-STILL, P11-POL, P11 joystick decode, P11 aggregate.
+// MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also printing FAIL: UNIT-R2. Also NOT GRADED: P11 checks.
+// MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P11-POL, P11 joystick decode, P11 aggregate.
 // MUTATION P11-POL stimulus red NMH_MUTATE=P11-POL: the first hold of each connector (state "none") drives the up switch (bit 3) in place of no switch; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P11 joystick decode, P11 aggregate.
-// MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL.
+// MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL (board kernel and shipped kernel), fx68k FAIL. Also NOT GRADED: P11-POL, P11 joystick decode, P11 aggregate.
 // MUTATION P12-MAIN stimulus red NMH_MUTATE=P12-MAIN: the main run loads prog_uart_k.bin: ADKCON = $0800 at step 5; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the main run loads prog_uart_early.bin: ADKCON = $8800 in place of $0800 at step 2, so UARTBRK is set before M1; TG68K FAIL, fx68k FAIL.
 // MUTATION P12-KPRE stimulus red NMH_MUTATE=P12-KPRE: the contrast run loads prog_uart.bin: the break stays set; TG68K FAIL, fx68k FAIL.
