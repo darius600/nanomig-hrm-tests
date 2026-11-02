@@ -28,9 +28,9 @@ confirmed it — and adjusting it to pass would delete the finding.
 with a 68000 program assembled by vasm, on both CPU cores NanoMig offers
 (fx68k and TG68K). Twenty-seven packages there are graded against the manual and
 eight against the AA specification, for claims that only show across module
-boundaries. A red in them becomes a finding only once a
-validation has confirmed it against the page, and
-[`docs/findings.md`](docs/findings.md) names the lines that did.
+boundaries. A red in them is a finding when a finding page names it;
+[`docs/findings.md`](docs/findings.md) lists those pages, which name the reds
+line by line.
 [`integration/README.md`](integration/README.md) lists the packages, what each
 grades, and the harness checks and smoke test beside them, which are graded
 against no page.

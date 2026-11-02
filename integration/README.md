@@ -90,18 +90,15 @@ Several packages are built in part. Their `SPECIFICATION.md` names what is
 not built, by a scope decision, and what building it would take; `run_all.sh`
 grades only what is built.
 
-Each package's `SPECIFICATION.md` was written from the manual's claims alone,
-by an author who never saw the RTL or a test, and was committed before any
-test code. Every expected value comes from a printed page, and a package's
+Every expected value in a package comes from a printed page, and a package's
 labels or its specification name that page.
 
-**A red here is a finding only once a validation has confirmed it.** An
-independent validator checks every expected value against the page; the reds
-it confirms as the RTL disagreeing with the page are named, line by line, on a
-finding page and in [`docs/findings.md`](../docs/findings.md). A red that no
-finding names is a test still under validation or repair, and says only that
-the test and the RTL disagree. The three chapter-6 packages were checked until
-nothing was left.
+**A red here is a finding once a finding page names it.** The reds are named
+line by line on the finding pages that [`docs/findings.md`](../docs/findings.md)
+lists, and some of them only there: the 11 `P10-*` reds of `appF-cia-system` are
+named on [NM-HRM-074](../docs/findings/NM-HRM-074.md) and
+[NM-HRM-078](../docs/findings/NM-HRM-078.md), not in the register's table. A red that no finding page
+names says only that the test and the RTL disagree.
 
 ## Not graded against a page
 
