@@ -247,8 +247,7 @@ That shape appeared three times in one day: **a green report from something
 that was not measuring.** The other two were the mutation gate reading one
 assertion of nineteen, and six control assertions never mutated because a
 `[control] ` prefix hid them. It appeared a fourth time on 19.09.2026, in nine
-packages that printed their counts in a wording no tool read — see the suite's
-own README on why every package now prints the same summary line.
+packages that printed their counts in a wording no tool read.
 
 *For the specialists:* `denise.v:181` gives the bit its AGA meaning,
 `bplcon0[4] & aga`, and no ECS meaning. The manual prints no ECS behaviour to
