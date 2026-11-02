@@ -16,25 +16,21 @@ test**, and no expectation in the suite comes from an emulator.
 
 ## Why this exists
 
-`tools/list_reds.py` counts 67 failing assertions in 32 families.
-**That figure is stale and is left as written.** It predates the runner
-defect described in the README, where 59 packages wrote their summary to
-`out.txt` and printed it on the next `make` line — so a package that failed
-stopped before the print and vanished from the count exactly when it went
-red. The suite-wide figure since that fix is **187 failing assertions**.
-The count for these two chapters was never recomputed; take the numbers
-below as the shape of the problem, not as its size, and read the current
-count from the register table in [`findings.md`](../findings.md). Chapters 2 and
+The unit suites together fail 198 assertions in `hrm/` and 5 in `aa/`. The
+numbers below for these two chapters show the shape of the problem, not its
+size; read the current count from the register table in
+[`findings.md`](../findings.md). Chapters 2 and
 5 have every family registered in [`findings.md`](../findings.md) — NM-HRM-003,
 NM-HRM-004, NM-HRM-005, NM-HRM-002 — and three of those already carry an emulator
 comparison in [`third-witness.md`](third-witness.md).
 
-The register in [`findings.md`](../findings.md) now holds **nineteen rows whose
+The register in [`findings.md`](../findings.md) holds **fourteen open rows whose
 package is a chapter-3 or chapter-6 unit package** (`hrm/ch3-*`, `hrm/ch6-*`):
-thirteen open — NM-HRM-006, 007, 008, 010, 011, 014, 016, 017, 019 and 068 from
-chapter 3's packages, NM-HRM-020, 021 and 022 from `hrm/ch6-blitter-ecs` — and
-six withdrawn, NM-HRM-001, 009, 012, 013, 015 and 018. Every section below is
-one of them. Two findings whose pages name chapter 3 or 6 are measured outside
+NM-HRM-006, 007, 008, 010, 011, 014, 016, 017, 019, 068 and 088 from
+chapter 3's packages and NM-HRM-020, 021 and 022 from `hrm/ch6-blitter-ecs`.
+The withdrawn findings NM-HRM-001, 009, 012, 013, 015 and 018 are kept apart in
+[`findings/withdrawn/`](../findings/withdrawn/). NM-HRM-088 is not
+discussed below. Two findings whose pages name chapter 3 or 6 are measured outside
 those packages and not counted here: NM-HRM-066 in
 `hrm/ch7-dmacon-register-bits` and NM-HRM-069 in the integration package
 `integration/ch6-blitter-cpu-sharing`.
