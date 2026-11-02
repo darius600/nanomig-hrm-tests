@@ -10,7 +10,7 @@ three rows below answer that.
 | | |
 |---|---|
 | [`findings.md`](findings.md) | **The register.** The register tables of all **89** open findings — key, subject, status, package, verdict of the four. 76 are against the Hardware Reference Manual; the 13 against the AA specification sit in a section of their own, so neither count has to be read twice. |
-| [`findings/`](findings/) | One page per finding, readable without anything outside this repository: what the printed page says, what NanoMig does and how it was measured, what the other implementations do, and what is asked of you. [`findings/README.md`](findings/README.md) says how a page is built and why NanoMig's two Minimig ancestors are listed but not counted as witnesses. Withdrawn findings are kept apart, with their own list, in [`findings/withdrawn/`](findings/withdrawn/). |
+| [`findings/`](findings/) | One page per finding, readable without anything outside this repository except two: [`NM-AA-002`](findings/NM-AA-002.md) rests on a tool of the private `hrm-testpipeline` repository, and [`NM-HRM-061`](findings/NM-HRM-061.md) addresses that repository's claim classification. Each states what the printed page says, what NanoMig does and how it was measured, what the other implementations do, and what is asked of you. [`findings/README.md`](findings/README.md) says how a page is built and why NanoMig's two Minimig ancestors are listed but not counted as witnesses. Withdrawn findings are kept apart, with their own list, in [`findings/withdrawn/`](findings/withdrawn/). |
 | [`rtl-review.md`](rtl-review.md) | Every finding that asks an Amiga specialist to review the RTL, grouped by the module it is about, so a reader who knows one part of the chip set can start with their own. |
 
 ## Look things up
@@ -47,7 +47,7 @@ None of them is needed before reading a finding or running the suite.
 |---|---|
 | `docs/findings/NM-*.md` | One page per finding. The register lists them; read the one you are working on. |
 | `docs/findings/withdrawn/` | Withdrawn findings and their own list. Nothing in it asks for action. |
-| `hrm/<package>/`, `aa/<package>/`, `integration/<package>/` | A package's own `SPECIFICATION.md` or `README.md`: read it for that package only. |
+| `hrm/<package>/`, `aa/<package>/`, `integration/<package>/` | A package's own Markdown files, where it has them: `SPECIFICATION.md` or `README.md`, and in two packages other names (`SPEC.md` and `MUTATIONS.md` in `hrm/ch3-bplcon0-display-modes`, `SPECIFICATION-min-period.md` in `integration/ch5-audio-output-scanrate`). Read them for that package only. |
 | [`aa/README.md`](../aa/README.md), [`integration/README.md`](../integration/README.md) | What those two trees hold and how to run one of their packages. |
 | [`example-package/`](example-package/) | The smallest real package: the shape of one in about a hundred lines. |
 
