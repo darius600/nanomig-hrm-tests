@@ -212,11 +212,11 @@ board, writes a distinct word at nine addresses and reads each back, logging
 | $800000, $9FFFFE | yes | $200000, $3FFFFE | each its own word | no |
 | $A00000 | no | — | $0000 | no |
 
-Both cores and both bases give the same table; the two bases give identical
-logs. The *address at the port* is the write's: the TG68K build reads through
+Both cores (fx68k and the default TG68K build) and both bases give the same table;
+the two bases give identical logs on each core. The *address at the port* is the write's: the TG68K build reads through
 its cache, so its reads reach the port as line fills at the eight-byte-aligned
-address, $3FFFF8 for $3FFFFE. Without the write to 48 no access reaches the
-port, and the reads return $FFFF at $200000 and $3FFFFE and $0000 at the other
+address, $3FFFF8 for $3FFFFE (and $5FFFF8 and $7FFFF8 for $5FFFFE and $7FFFFE, $3FFFF8 again for $9FFFFE). Without the write to 48 (4A written as in the other runs) no access reaches the
+port on either core, and the reads return $FFFF at $200000 and $3FFFFE and $0000 at the other
 seven. So the base written is not used (told $400000, the board answers at
 $200000 exactly as when told $200000), the size declared is not used (a 2 MB
 board answers for 8 MB), and the answer stops at $A00000, Zorro II I/O space in
