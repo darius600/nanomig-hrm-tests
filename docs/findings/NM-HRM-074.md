@@ -247,8 +247,8 @@ the timer runs at the rate its latch sets, and only its output is missing.
 with PBON (CR = $03) and DDRB = $00, once for each latch from 20 to 25, and
 reads PRB and ICR 400 times each; p. 342 has the line low except for one φ2
 cycle at every underflow. `P4-PRE` is green: in every run the underflow period
-is unique and equal to L + 1, and in four of the six runs of each instance the
-samples cover every residue of it. On CIA-B PRB reads $FF with bit n set in all
+is unique and equal to L + 1, and the samples cover every residue of it in four
+of the six runs of each instance on fx68k and in all six on TG68K. On CIA-B PRB reads $FF with bit n set in all
 2400 of the 2400 samples of the six runs of each instance, the pull-up of a
 line DDRB leaves an input, so every residue reads high and not a single one,
 and the line is red.
@@ -279,14 +279,14 @@ after every ICR read that shows the TB flag. `P4-GREENCTL` runs the unchanged
 `P4` comparator on a pulse the CPU makes at one fixed phase of the timer's own
 period: each iteration reads the timer's low byte and writes PRB bit n high
 only when it equals one value, for latches 40 to 45, on CIA-B's two timers;
-three latches of each are usable. `P9-LEGF-TRANSITIONS-GREENCTL` runs the
+three latches of each are usable on fx68k and five on TG68K. `P9-LEGF-TRANSITIONS-GREENCTL` runs the
 period measurement and the transition-spacing comparator on a toggle the CPU
 makes after every flagged ICR read: 173 PRB transitions in the 600 samples on
 fx68k and 157 on TG68K, with P(40) = 41. `P9-LEGW-GREENCTL` runs the width
 comparator on a width the CPU makes, W(40) = 53 and W(100) = 114 on fx68k (50
 and 113 on TG68K), inside 60 ± s with s = 10.02 E (9.03 E on TG68K), after its own
 `P9-LEGW-GREENCTL-PRE2.2` and `-PRE2.3`. All are green on both cores: the samplers and
-the comparators see a level that moves at each underflow. `P1-PRE1.1` and `P9-LEGF-PRE` are green as well; `P2-PRE2.1` is recorded rather than graded.
+the comparators see a level that moves at each underflow. `P1-PRE1.1`, `P2-PRE2.1` and `P9-LEGF-PRE` are green as well.
 
 ---
 
