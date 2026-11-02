@@ -98,7 +98,7 @@ so two `clk7_en` edges are one colour clock and a bit lasts N+1 colour clocks, a
 
 On PAL the N=371 run spans 39 intervals in 116076 cycles, 12 more than 39 × 2976. On `P1`'s grid the first changes of words 2, 3 and 4 lie 4, 8 and 12 cycles late, +C/2, +C and +3C/2, so only word 1's ten changes are on it.
 
-**Where the 12 cycles are**, every interval between two changes of TxD, on both cores, with the package's capture loop and programs of the same bytes as `prog_tx_n0.bin`, `prog_tx_n371.bin` and `prog_tx_n32396.bin`; not a graded assertion:
+**Where the 12 cycles are**, every interval between two changes of TxD, on fx68k and on the default TG68K build (the board's kernel), with the package's capture loop and programs of the same bytes as `prog_tx_n0.bin`, `prog_tx_n371.bin` and `prog_tx_n32396.bin`; not a graded assertion:
 
 | run | intervals of N+1 colour clocks | stop bits with a word waiting behind them |
 |---|---|---|
@@ -107,7 +107,7 @@ On PAL the N=371 run spans 39 intervals in 116076 cycles, 12 more than 39 × 297
 | N=32396, 2 words, NTSC | 18 of 19, 259176 cycles = 32397·C | **1 of 19, 259180 cycles = 32397½·C** |
 | N=0 and N=32396, 1 word, NTSC | 9 of 9 | none |
 
-The extra 4 cycles are one `clk7_en` period, C/2, at every N sampled. Every change of TxD lies at the same offset from the first start bit on fx68k and on TG68K, although the two cores write the words at different times, so the extra time is Paula's, not the CPU's.
+The extra 4 cycles are one `clk7_en` period, C/2, at every N sampled. Every change of TxD lies at the same offset from the first start bit on fx68k and on TG68K, although the two cores write the words at different times (at N=371, the program's marker after the write of word 2 is stored 378 cycles after the first start edge on fx68k and 362 on TG68K, the marker after word 3 30090 and 30154), so the extra time is Paula's, not the CPU's.
 
 **Half a colour clock per word boundary, whatever N is**: 139.7 ns on NTSC and 141.0 ns on PAL, by p. 255's colour-clock lengths; 1/(2(N+1)) of one bit, 0.13 % at N=371 and 1.6 % at N=31. **It does not accumulate within a word and does accumulate across words.** Each word's bits lie on N+1-colour-clock steps from that word's own start bit, and each waiting word's start bit comes half a colour clock after the step p. 255 gives it, so word k of a back-to-back run starts (k−1)/2 colour clocks after its place on the grid counted from word 1's start bit: +½, +1 and +1½ colour clocks for words 2, 3 and 4 above. A continuous run sends one word every 10(N+1)+½ colour clocks instead of 10(N+1).
 
