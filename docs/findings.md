@@ -300,7 +300,7 @@ decides about the RTL, never a second oracle.
 answering 4 keys** -- three counts that are easy to collapse into one and are
 not the same number. `aa-disk-status-bits` goes red on two of its own
 assertions, which is why the assertion count is one above the package count.
-Sixteen packages cover the RTL modules that decode an address the AA register
+Seventeen packages cover the RTL modules that decode an address the AA register
 list prints; four are from slice 2, five from slice 4, one from slice 3,
 one from slice 5, five from slice 1 and one, the scroll range, from slice 6.
 All seven slices are classified to their last record.
