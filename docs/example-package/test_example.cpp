@@ -11,11 +11,11 @@
 //   the real CIAA packages are hrm/appDE-fire-buttons-ciaa and
 //   hrm/ch8-ciaa-port-direction, and the fixture here is theirs.
 //
-// WHY THIS FILE EXISTS. docs/adding-a-test.md names
-// hrm/ch3-beam-counters-and-blanking/test_agnus_beamcounter.cpp as the worked
-// example to copy from. It is 1,749 lines, and a persona review pointed out
-// that "a package to copy from" ought not to mean searching a file that long
-// for the thirty lines that matter. That file stays the worked example --
+// WHY THIS FILE EXISTS. The worked example to copy from is
+// hrm/ch3-beam-counters-and-blanking/test_agnus_beamcounter.cpp. It is
+// 1,968 lines, and "a package to copy from" ought not to mean searching a
+// file that long for the thirty lines that matter. That file stays the
+// worked example --
 // it shows what a full package looks like. This one shows what the minimum
 // looks like, and the two are meant to be read in that order.
 //
