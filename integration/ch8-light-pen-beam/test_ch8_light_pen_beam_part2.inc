@@ -1695,8 +1695,8 @@ void schedD_PIN9CTRL(const BeamModel& m, int64_t M3, std::vector<Event>& ev, Por
 
 // K13 (SPECIFICATION.md section 8): the phase-B buffer is shortened so
 // phase B ends within field B19. The sample rate differs by core at the
-// same 60000-sample buffer size (measured: fx68k ends in B19, TG68K in
-// B17), so the buffer's own fixed size decides where the CPU actually
+// same 60000-sample buffer size (measured: fx68k ends in B19, TG68K,
+// the default build, in B17), so the buffer's own fixed size decides where the CPU actually
 // stops, while the driver's phase-B event schedule spans further than
 // that (out past B19, toward the un-shortened main schedule's B21). This
 // runner therefore stops injecting once M2 actually appears, rather than
