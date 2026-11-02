@@ -256,7 +256,7 @@ again, which is how it got there.
 
 ## Deletion — performed 10.09.2026, four of five
 
-All sixteen chapter-6 packages are built and validated, which is the condition
+All fifteen chapter-6 packages are built and validated, which is the condition
 the readiness check above held the deletion on. Four of the five superseded tests
 are deleted in this commit:
 
