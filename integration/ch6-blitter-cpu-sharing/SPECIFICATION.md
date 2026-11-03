@@ -483,12 +483,12 @@ instruction fetches are not Chip-memory accesses at all. The classifier of the
 word) is the one every other run uses and the population it counts is complete:
 the loop's only Chip-memory accesses are its counter writes. They come far
 less often than in the share window, and the unchanged comparator reads red.
-The copy runs from fast RAM and not from Chip memory because a slowed loop that
-stays on the Chip bus keeps the TG68K core's access count: with the two `MULU.W`
-in the loop in place the TG68K reference measured 45209 accesses in 726528
-`clk_sys`, exactly the `BASELINE` run's count, and with the copy in Chip memory
-and its reads counted 45204 in 726528, so the share window's rate (254 in
-10200) stayed below it and the comparator stayed green. A4-SHARE-PRE stays true
+The unmutated `BASELINE` run counts 45210 accesses in 726544 `clk_sys` (TG68K)
+and 41007 in 726488 (fx68k), against 253 in 10192 (TG68K) and 243 in 10112
+(fx68k) in the share window. The package builds no variant of the slowed loop
+that stays on the Chip bus (the two `MULU.W` in the loop in Chip memory, with
+and without its reads counted), so it does not show that such a loop would not
+read red. A4-SHARE-PRE stays true
 (the window is nonempty and the reference holds accesses: the counter writes).
 Measured: the reference holds 1120 accesses in 726048 `clk_sys` (fx68k) and
 8274 in 726544 (TG68K), against 243 in 10112 (fx68k) and 253 in 10192 (TG68K) in the
