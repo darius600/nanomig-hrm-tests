@@ -978,15 +978,11 @@ both cores printed the same.
   and F4 stay green on both cores (section 6.4). The line number 800 falls
   after those 256 runs and inside the port window. The line number 1140 falls
   after the last wrap of the port window: F4 goes red and F1 (b) stays green.
-  The delay of 30 loop passes leaves MC6 green on fx68k and with
-  `TG68K_KERNEL=shipped`, and red on the default TG68K build: where the stop
+  The delay of 30 loop passes leaves MC6 green on fx68k and red on the
+  default TG68K build: where the stop
   falls in a sample period follows the speed of the CPU, and an output change
   caused by the stop can lie off the grid (1.0000 ticks on the default TG68K
-  build at 30). Measured with delays of 8, 15, 24 to 34, 36, 60 and 120 loop
-  passes, MC5 is red at every delay and MC6 is green on all three builds at
-  none; a stop polled from the beam counter in line 200, at horizontal
-  positions 8 to 192, leaves MC6 red with `TG68K_KERNEL=shipped` at every
-  position. The delay stays at 30, and the MC5STOP record states MC6 per build.
+  build at 30). The delay stays at 30, and the MC5STOP record states MC6 per build.
 - One test binary runs `SPECIFICATION.md`'s test, then NTSC and PAL of this
   addendum at the same time in two processes, and prints one summary line.
 - The standard is selected by the harness's `chipset_config` (ECS, bit 1
@@ -1085,10 +1081,11 @@ played again, and is green there.
 ### 6.4 Mutations
 
 Each selector runs only the periods its contrast needs and runs the package's
-own comparator. Every selector was run on both cores; the PASS and FAIL lines
-are identical on both.
+own comparator. Every selector was run on both cores (fx68k and the default
+TG68K build); the PASS and FAIL lines are identical on both, except those of MC6
+under `MC5STOP` (see its row).
 
-| `NMH_MUTATE` | Assertion or precondition | Stimulus | Result on both cores |
+| `NMH_MUTATE` | Assertion or precondition | Stimulus | Result (both cores unless stated) |
 |---|---|---|---|
 | `MP1` | MP1 | `P` = 119, `P` = 64 | both red (next 499 of 503; next 732 of 936) |
 | `MP2` | MP2 | `P` = 124, `P` = 64 | 124 red in (a), (b) and (a) and (b); 64 green in all three |
@@ -1106,7 +1103,7 @@ are identical on both.
 | `MC3F4` | MC3 anchor F4 | CPU read of `T+64` after 1140 lines | red (2 offsets), the other lines green |
 | `MC3TIME` | MC3 anchor F1 (c) | `AUD0PER` 448 declared 447 | red, F4 and the other anchors green |
 | `MC4LEN`, `MC4CPU` | MC4 | length 65, CPU read at `T+64` | red, other preconditions green |
-| `MC5MARK`, `MC5STOP` | MC5 | marker left out, stop after 200 lines and 30 loop passes at `P` = 64 | red; MC5STOP: both clauses red, MC1, MC2, MC4 green, MC6 green on fx68k and TG68K shipped kernel, red on TG68K |
+| `MC5MARK`, `MC5STOP` | MC5 | marker left out, stop after 200 lines and 30 loop passes at `P` = 64 | red; MC5STOP: both clauses red, MC1, MC2, MC4 green, MC6 green on fx68k and red on the default TG68K build |
 | `MC6PER`, `MC6BELOW` | MC6 | `AUD0PER` 129 declared 128, 101 declared 100 | red, 64 and 50 ticks from the grid |
 | `FIXMP`, `FIXDONE` | FIXTURE-CONST, FIXTURE | constant $DEAD, `prog_nodone` | red |
 
@@ -1125,10 +1122,10 @@ are identical on both.
 - `MC5STOP`: at `P` = 64 the port window holds 2 wraps and no read out of
   order up to the stop, so MC4 is green; MC5 is red through both clauses (no
   read at the channel offset in the first and last tenth of the window, the
-  last such read before the output window ends), on all three builds; MC6 is
-  green on fx68k and with `TG68K_KERNEL=shipped` (largest distance from the
-  grid 0.0000 ticks) and red on the default TG68K build (1.0000 ticks, at a
-  level change 50.6 ticks before the last channel fetch); 6.1 says why.
+  last such read before the output window ends), on both cores; MC6 is
+  green on fx68k (largest distance from the grid 0.0000 ticks) and red on the
+  default TG68K build (1.0000 ticks, at a level change 50.6 ticks before the
+  last channel fetch); 6.1 says why.
 - `MC3TIME`: with `AUD0PER` 448 the tick is measured as 8.0179 cycles. The
   port window holds 895 complete lines of mean length 226.493 ticks, all
   outside 226.875 ... 228.125 ticks (NTSC) and 226.875 ... 227.625 ticks
