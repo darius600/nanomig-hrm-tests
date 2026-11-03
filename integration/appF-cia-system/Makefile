@@ -31,7 +31,7 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb p1_ciab_tb_pre11 p1_ciab
             p1_ciaa_ta_ep3 p1_ciaa_ta_f1 p1_ciaa_tb_ep1 p1_ciaa_tb_ep2 p1_ciaa_tb_ep3 p1_ciaa_tb_f1 \
             ep2_contrast_low p1_ciab_tb_pbon0_b0 p2c_ciab_ta p2c_ciab_tb p2c_ciab_tb_legr p2c_ciab_tb_k4 \
             p2c_ciab_tb_h1 p2c_ciab_tb_pre22 p2c_ciab_tb_pre23 p2c_ciab_tb_pre24 p4_ciab_tb_l21_nostart \
-            p4_ciab_tb_l22_nostart p4_ciab_tb_l24_nostart p9_legf_ciab_tb_l41_m \
+            p4_ciab_tb_l22_nostart p4_ciab_tb_l23_nostart p4_ciab_tb_l24_nostart p4_ciab_tb_l25_nostart p9_legf_ciab_tb_l41_m \
             p5a_ciab_tb_d2_nostart p5b_ciab_tb_nostart p5b_ciab_tb_chip p5b_ciab_tb_short p6_k123_short \
             p6_k123_k1chip p6_k123_k3mix p6_k123_n3 p6_k123_n5 p4_ciab_tb_l20_yspread p4_ciab_tb_l20_xspread \
             p9_legw_l40_chip p7_ciaa_inmode_ctl p76_ciaa_in p7_ciab_load_nostart p7_ciab_run_short \
