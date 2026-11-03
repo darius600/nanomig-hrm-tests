@@ -18,8 +18,7 @@
 // Kinds: stimulus changes what a program or a register list writes, or the Config object every run is built from (CONFIG);
 // the private build of SPECIFICATION.md 6.6 (a copy of the chip set made by private/*.patch, make private-uhres) is named where a
 // record gives its result beside the repository build's. implementation green and implementation red run that copy, none
-// impossible says why no stimulus can falsify the line at this boundary. The TG68K results of the private builds in these
-// records are those of the default TG68K build (TG68K_KERNEL=board, the kernel the boards synthesize).
+// impossible says why no stimulus can falsify the line at this boundary. The TG68K results of the private builds in these records are those of the default TG68K build (TG68K_KERNEL=board, the kernel the boards synthesize).
 // MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the Config object every run is built from is set to chipset_config 0x08 in place of 0x10 (P1 is the proposition that runs, built from that object); TG68K: FAIL CONFIG; NOT GRADED 5; fx68k: FAIL CONFIG; NOT GRADED 5; with NMH_ONLY=P8, P11, P12, P13 or P14 in place of P1: FAIL CONFIG; NOT GRADED 1 on each core; with NMH_ONLY=P9, P10 or F5: FAIL CONFIG; NOT GRADED 1 (one line for F5, P9 and P10) on each core
 // MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
 // MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
