@@ -1781,8 +1781,8 @@ writes only the PAL bit on ECS.
   "625 after" check goes red.
 - Proposition (OCS, outputs unchanged): the page-opposite is an OCS chip set on
   which BEAMCON0 acts. No program makes the harness's OCS chip set obey BEAMCON0,
-  so the contrast is a private copy of the chip set, outside the repository, built
-  from a patch file of the package, in which a write to BEAMCON0 takes effect on the
+  so the contrast is a private copy of the chip set, made in the package directory
+  from a tracked patch file of the package, in which a write to BEAMCON0 takes effect on the
   OCS chip set as on ECS. The OCS run of the normal program then writes the PAL bit
   and the other bits to a chip set on which they act, the frame line count and
   the fields after M1 differ from those before, and the "after = before" check goes
