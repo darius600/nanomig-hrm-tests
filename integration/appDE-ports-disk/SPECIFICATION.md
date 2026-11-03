@@ -836,12 +836,12 @@ clear.
   (the read counts are unchanged), `prog_lpen_v8.s` sets V8 of the vertical
   counter (VPOSW) after 3000 reads of S5 for 100 reads and clears it again,
   `prog_lpen_m8_fx.s` and `prog_lpen_m8_tg.s` set V8 for 100 reads of S7,
-  after 4800 (fx68k) or 7800 (TG68K) of them, which lie in F2 before its pulse
-  on that core, `prog_lpen_m4_fx.s` and `prog_lpen_m4_tg.s` set V8 and V9
-  (VPOSW word $8003, the M_ON define) for 950 (fx68k) or 900 (TG68K) reads of
-  S7 after 11650 or 14350 of them, which run from line 22 to line 101 of F4,
+  after 4800 (fx68k) or 6900 (TG68K) of them, which lie in F2 before its pulse
+  on that core (the reads of F2 before its pulse are the 4282nd to the 5129th of the loop on fx68k and the 6462nd to the 7356th on TG68K), `prog_lpen_m4_fx.s` and `prog_lpen_m4_tg.s` set V8 and V9
+  (VPOSW word $8003, the M_ON define) for 950 (fx68k) or 1000 (TG68K) reads of
+  S7 after 11650 or 14235 of them, which run from line 22 to line 101 of F4 (the reads before the F4 pulse are the 11649th to the 12579th of the loop on fx68k and the 14234th to the 15216th on TG68K),
   `prog_lpen_m10_fx.s` and `prog_lpen_m10_tg.s` set them for 100 reads after
-  34500 or 35700, which lie in F10 before line 100, and `prog_lpen_vb.s` writes HTOTAL = $E3 and then BEAMCON0 =
+  34500 or 38300, which lie in F10 before line 100 (the reads of F10 before line 100 are the 34080th to the 34924th of the loop on fx68k and the 37901st to the 38792nd on TG68K), and `prog_lpen_vb.s` writes HTOTAL = $E3 and then BEAMCON0 =
   $00A0 (VARBEAMEN, PAL) after S3, so that the lines have 228 colour clocks.
 - The harness waits for the first fixture store (the first write to the
   marker word, whatever it stores; the fixture line grades the value), drives
@@ -925,8 +925,10 @@ the same verdict lines: 230 passed, 56 failed on each.
 
 Contrasting runs, `NMH_MUTATE` selects the change. The P5 and fixture rows run
 in ECS, PAL; the light-pen rows run in ECS, PAL on `joystick1`, beside the run
-with bit 3 clear. Every run below printed FAIL on the named line on fx68k and on
-TG68K; the repository rows are on the repository's chipset.
+with bit 3 clear. Every repository row below printed FAIL on the named line on
+fx68k and on TG68K (the default board kernel); the private-chipset rows are runs
+of the private copies of 4.6, and the LP-A4F4 and LP-A4F10 rows on a private copy
+were not run with prog_lpen_m4_tg and prog_lpen_m10_tg.
 
 | line | `NMH_MUTATE` | chipset | change | result (both cores) |
 |---|---|---|---|---|
@@ -1021,8 +1023,9 @@ taken from the page, each guarded by a precondition the run checks:
   window that misses the crossing.
 - The position of the V8 contrast in S7 (`prog_lpen_m8_fx.s`,
   `prog_lpen_m8_tg.s`) differs between the cores because the field phase at
-  S6 differs: the beam is at the end of a field on fx68k and at its start on
-  TG68K. The 100 reads must lie in F2 before its pulse, between lines 57 and
+  S6 and the number of reads per field differ: line 0 of F1 is at the 213th
+  read of S7 on fx68k and at the 2168th on TG68K, and consecutive fields start
+  3724 (fx68k) or 3930 (TG68K) reads apart. The 100 reads must lie in F2 before its pulse, between lines 57 and
   255 of that field; the run's own A4 line shows whether they do. The F4 and
   F10 contrasts (`prog_lpen_m4_*.s`, `prog_lpen_m10_*.s`) are placed per core
   for the same reason: the F4 reads must cover every read of F4 before its
