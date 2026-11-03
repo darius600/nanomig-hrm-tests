@@ -110,9 +110,11 @@ DMA but memory refresh (`prog_sharing.s`) and once beside a share-mode A-to-D bl
 chip RAM port. It numbers the slots of each line from that line's own refresh
 group, its last refresh read being Figure 6-9's $05, and checks the numbering
 against the figure: in a four-plane lores build every one of the 15360 plane-1
-fetches lands on an odd slot (`PARITY-REF`, green on both cores), and the first
-of each line's fetches is at $3F in all 768 lines, where Figure 6-9 draws
-plane 1.
+fetches lands on an odd slot (`PARITY-REF`, green on both cores). Read from the
+same capture with the same numbering in a run whose per-line slots `make test`
+does not print, a reading for this page and not a graded assertion, the first of
+each line's fetches is at $3F in all 768 lines, with 20 fetches in each line, on
+fx68k and on the default TG68K build alike, where Figure 6-9 draws plane 1.
 
 | run | what is counted | fx68k | TG68K | graded by |
 |---|---|---:|---:|---|
