@@ -1267,13 +1267,14 @@ anchors are P7.a and P7.b.
   holds. P1's relation (read then write) is graded through the same,
   unchanged comparator as the normal run, and goes red under this input on
   both cores, exactly as p.13 and p.263 predict for MOVE against CLR.
-- **Measured, P4 (section 6).** On the second core under cpu_config=11, 0 of
-  the 14 byte and word cases showed exactly one access at the operand, and 0
-  of the 7 long-word cases showed no read; case 1 (.B (An)) reads $A5A5 and
-  then writes $A500, the 68000 pattern of P1. The run's RAM-port log is
-  identical, entry for entry (time, address, data, direction), to P1's own run
-  of the same program under cpu_config=00 (748 entries). P4's two relation
-  lines are red against p.13 and p.263 on the TG68K build. The first core has
+- **Measured, P4 (section 6).** On the second core under cpu_config=11 (the
+  default TG68K build), 14 of the 14 byte and word cases showed exactly one
+  access at the operand, a write, and 7 of the 7 long-word cases showed no
+  read and a write to both words; case 1 (.B (An)) shows a write of $A500
+  and no read. The run's RAM-port log differs from P1's own run of the same
+  program under cpu_config=00: the first entry that differs is entry 54 (of
+  746 entries in this run and 718 in P1's run). P4's two relation lines are
+  green against p.13 and p.263 on the default TG68K build. The first core has
   no 68020 mode and does not run it.
 - **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10).
   D(68000 mode) is 1 on both cores and D(68020 mode) is 1 on the second core,
