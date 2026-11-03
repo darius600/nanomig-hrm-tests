@@ -982,7 +982,15 @@ both cores printed the same.
   default TG68K build: where the stop
   falls in a sample period follows the speed of the CPU, and an output change
   caused by the stop can lie off the grid (1.0000 ticks on the default TG68K
-  build at 30). The delay stays at 30, and the MC5STOP record states MC6 per build.
+  build at 30). Measured with delays of 8, 15, 24 to 34, 36, 60 and 120 loop
+  passes, MC5 is red at every delay on both cores and no delay leaves MC6
+  green on both: on fx68k MC6 is green at 30, 31, 32 and 120 and red at the
+  others; on the default TG68K build it is green at 8 and red at the others.
+  A stop polled from the beam counter in line 200 (VHPOSR read until its
+  horizontal field reaches H, then DMACON written) leaves MC6 green on both
+  cores at H = 8, 24, 40, 56, 72 and 88 and red on both at H = 104, 120, 136,
+  152, 168, 184 and 192. The delay stays at 30, and the MC5STOP record states
+  MC6 per build.
 - One test binary runs `SPECIFICATION.md`'s test, then NTSC and PAL of this
   addendum at the same time in two processes, and prints one summary line.
 - The standard is selected by the harness's `chipset_config` (ECS, bit 1
