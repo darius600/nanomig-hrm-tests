@@ -79,8 +79,11 @@
 //   fx68k 38 passed, 2 failed; TG68K 38 passed, 2 failed
 // MUTATION A4 stimulus red NMH_MUTATE=A4: T1's AUD0VOL set to 0 seven lines after its DMA starts, inside the window
 //   measured: fx68k and TG68K: A4 for T1 red (ECS/PAL, OCS/PAL; L has 4 entries on both cores, the output
-//   flat from there on); A3 for T1 green (median run 1024); T1's P1 and P2 not graded (RECORDED, "precondition A4
-//   failed"); A1 for T1, T2 and T3 unchanged
+//   flat from there on); A3 for T1 green (median run 1024); T1's A5, P1 and P2 print no line (A5 PASS, P1 PASS and
+//   P2 PASS in the normal run; one RECORDED line "P1/P2 ...: not graded, precondition A4 failed" in their place);
+//   T1's MEASURED lines move (window W_T1: 4 runs found, shortest 1012 and longest 61964 on fx68k, shortest 1020
+//   and longest 61956 on TG68K, against 64 runs of 512 to 1024 in the normal run; fitted slope |b| = 19.500
+//   against 63.000); A1 for T1, T2 and T3 and every other line the selector's run prints unchanged
 //   fx68k 40 passed, 2 failed; TG68K 40 passed, 2 failed
 // MUTATION A5 stimulus red NMH_MUTATE=A5: T2's word 2 changed from $0101 to $0000 (repeats word 1's code, adjacent
 //   within a pass)
