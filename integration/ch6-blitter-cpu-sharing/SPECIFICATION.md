@@ -827,7 +827,7 @@ p.197 explicitly excludes from the lockout).
 
 Mutation (`NMH_MUTATE=A10`): the capture is `prog_bitplane.bin` (A9's own
 low-resolution build) instead; the unchanged "maximum == 0" check must go
-red (66-80 per window, per A9).
+red (measured: at most 66 CPU accesses in a window on fx68k, 80 on TG68K).
 
 Precondition mutation (`NMH_MUTATE=A10PRE`): the capture is
 `prog_sharing.bin` (no bitplane DMA at all); the unchanged "every window
