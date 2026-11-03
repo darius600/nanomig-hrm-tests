@@ -109,6 +109,10 @@ MARKLOOP        macro
 .pad\@          dbra    d7,.pad\@
                 endc
                 move.w  (a3),d2
+                ifd     U_PADS
+                moveq   #U_PADS,d7
+.pads\@         dbra    d7,.pads\@
+                endc
                 move.w  d2,d4
                 and.w   #7,d4
                 lsl.w   #8,d4

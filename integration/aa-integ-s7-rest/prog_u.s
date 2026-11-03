@@ -7,7 +7,8 @@
 ; Optional: U_HTOT, U_BEAM (P9: HTOTAL and BEAMCON0 written between setup steps 3 and 4),
 ; U_VTOT (VTOTAL written before BEAMCON0), U_LATE (wait for line $60 before the setup),
 ; U_STEP (marker line step, default 1), U_GLO and U_GW (marker gate, default $60 and $30),
-; NOEND, NOFIX, U_NOHEAD (a NOP after the marker loop's first instruction).
+; NOEND, NOFIX, U_NOHEAD (a NOP after the marker loop's first instruction), U_PAD (a delay loop of that many passes before the V read),
+; U_PADS (a delay loop of that many passes between the V read and the marker stores).
 ; U_WALK (run UW): with U_WLO and U_WHI, the marker loop writes the pointer words of walk.i.
 ; U_HSAMP (run DH): instead of the marker loop, wait for line U_HLINE and read HHPOSR 64 times,
 ; storing each word to BUF + 2i; U_HDELAY adds a delay loop of that many passes to each read.
