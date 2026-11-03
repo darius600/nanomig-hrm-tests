@@ -42,6 +42,8 @@ package and core.
 
 A package whose test source records mutations (`NMH_MUTATE=<selector>` in its comments) runs one with `NMH_MUTATE=<selector> make -C integration/<package> test-fx68k` (or `test-tg68k`): a mutation build, not run by `make test`. For example, `NMH_MUTATE=C11 make -C integration/ch4-shres-bitplane test-fx68k` prints `86 passed, 49 failed` and exits nonzero, as the package's record for `C11` says.
 
+A record gives what the TG68K build it was measured on printed. Where that could depend on which TG68K build runs (the record names a check or line that a normal run prints differently with `TG68K_KERNEL=shipped` than on the default build, or it argues from a TG68K cycle, slot, line count or window), the record was measured on the default build. The other records name only lines that a normal run prints the same on both TG68K builds, and their TG68K result may come from a `TG68K_KERNEL=shipped` build. To check one, run its selector on both: `NMH_MUTATE=<selector> make -B -C integration/<package> test-tg68k`, then the same with `TG68K_KERNEL=shipped`. A record about a private copy whose patch is not in this repository cannot be rerun from here.
+
 ## Graded against the manual
 
 | Package | What it grades |
