@@ -26,344 +26,277 @@
 // comparators, the expected values and the populations are the normal run's. A line that
 // consumes a failed precondition prints "precondition not met" and is neither green nor red.
 //
-// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: FIXTURE: H1 with FIXCONST holding $DEAD
-//   instead of $C3A5 (prog_h_h1_fixture.bin, FIXTURE_MUTANT); the markers, the samples and DONE
-//   are the normal run's. Every PC-ID line is gated on FIXTURE and reports the precondition as
-//   not met, and so does every line gated on a PC-ID line. Red on fx68k and tg68k (20 passed, 1
-//   failed): FIXTURE. Not graded: PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], P1-LINES
-//   [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3
-//   [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES
-//   [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c],
-//   P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, PC-ID [SA], PC-ID
-//   [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0], P3/P4-LINES [SA], P3/P4-LINES
-//   [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4,
-//   P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a)
-//   [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4.
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: FIXTURE: H1 with FIXCONST holding $DEAD instead
+//   of $C3A5 (prog_h_h1_fixture.bin, FIXTURE_MUTANT); the markers, the samples and DONE are the
+//   normal run's. Every PC-ID line is gated on FIXTURE and reports the precondition as not met, and
+//   so does every line gated on a PC-ID line. Red on fx68k and tg68k (20 passed, 1 failed):
+//   FIXTURE. Not graded: PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], P1-LINES [H1], P1-LINES
+//   [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1],
+//   P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2],
+//   A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a)
+//   [H2], P2(b), P2(c), P2, P2-CONTRAST, PC-ID [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID
+//   [SB0], PC-ID [SC0], P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0],
+//   P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a)
+//   [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST.
 // MUTATION PC-ID stimulus red NMH_MUTATE=X-OCS: PC-ID [H1]: H1 with the harness set to OCS
-//   (chipset_config clears the ECS bit); VPOSR bits 14-8 read the original-chipset value
-//   instead of the enhanced-Agnus PAL value. Red on fx68k and tg68k (72 passed, 1 failed):
-//   PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1],
-//   P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $00.
+//   (chipset_config clears the ECS bit); VPOSR bits 14-8 read the original-chipset value instead of
+//   the enhanced-Agnus PAL value. Red on fx68k and tg68k (66 passed, 1 failed): PC-ID [H1]. Not
+//   graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b),
+//   P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $00.
 // MUTATION PC-ID stimulus red NMH_MUTATE=X-NTSC: PC-ID [H1]: H1 with the harness set to NTSC
 //   (chipset_config sets the NTSC bit); VPOSR bits 14-8 read the NTSC value instead of the PAL
-//   value. p.299 prints the NTSC value as the un-prefixed "30", which is $30 read as
-//   hexadecimal and $1E read as decimal (page note 9); both cores read $30. Neither reading
-//   is a PAL value PC-ID accepts ($20, $14), so the line is red under either. Red on fx68k and
-//   tg68k (72 passed, 1 failed): PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1],
-//   P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]:
-//   VPOSR bits 14-8 = $30.
-// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: PC-MARK [H1]: H1 with MARK1's write
-//   omitted (prog_h_h1_halt.bin, MARK_OMIT); no marker appears, while the rest of the program,
-//   including DONE, still runs. Red on fx68k and tg68k (72 passed, 1 failed): PC-MARK [H1]. Not
-//   graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b),
-//   P2(c), P2.
-// MUTATION PC-MARK stimulus red NMH_MUTATE=X-NOMARK2: PC-MARK [H1]: H1 with MARK2's write
-//   omitted (prog_h_h1_nomark2.bin, MARK2_OMIT); MARK1 appears and nothing follows it, so the
-//   clause 'MARK2 later' fails alone. Red on fx68k and tg68k (72 passed, 1 failed): PC-MARK
-//   [H1]. Not graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a)
-//   [H1], P2(b), P2(c), P2.
-// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-S: PC-MARK [SA]: SA with MARK1's write
-//   omitted (prog_s_sa_halt.bin, MARK_OMIT); no marker appears, while the rest of the program,
-//   including DONE, still runs. Red on fx68k and tg68k (64 passed, 1 failed): PC-MARK [SA]. Not
-//   graded: P3/P4-LINES [SA], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0],
-//   P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c),
-//   P4-CONTRAST, P4.
-// MUTATION DONE stimulus red NMH_MUTATE=X-NODONE: DONE [H1]: H1 whose program stops in place
-//   after MARK2 without storing the DONE value (prog_h_h1_nodone.bin, NO_DONE); PC-ID and
-//   PC-MARK hold. Red on fx68k and tg68k (81 passed, 1 failed): DONE [H1]. Not graded: none.
+//   value. p.299 prints the NTSC value as the un-prefixed "30", which is $30 read as hexadecimal
+//   and $1E read as decimal (page note 9); both cores read $30. Neither reading is a PAL value
+//   PC-ID accepts ($20, $14), so the line is red under either. Red on fx68k and tg68k (66 passed, 1
+//   failed): PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1],
+//   P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $30.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: PC-MARK [H1]: H1 with MARK1's write omitted
+//   (prog_h_h1_halt.bin, MARK_OMIT); no marker appears, while the rest of the program, including
+//   DONE, still runs. Red on fx68k and tg68k (66 passed, 1 failed): PC-MARK [H1]. Not graded:
+//   P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-NOMARK2: PC-MARK [H1]: H1 with MARK2's write omitted
+//   (prog_h_h1_nomark2.bin, MARK2_OMIT); MARK1 appears and nothing follows it, so the clause 'MARK2
+//   later' fails alone. Red on fx68k and tg68k (66 passed, 1 failed): PC-MARK [H1]. Not graded:
+//   P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-S: PC-MARK [SA]: SA with MARK1's write omitted
+//   (prog_s_sa_halt.bin, MARK_OMIT); no marker appears, while the rest of the program, including
+//   DONE, still runs. Red on fx68k and tg68k (64 passed, 1 failed): PC-MARK [SA]. Not graded:
+//   P3/P4-LINES [SA], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a)
+//   [SB0], P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST.
+// MUTATION DONE stimulus red NMH_MUTATE=X-NODONE: DONE [H1]: H1 whose program stops in place after
+//   MARK2 without storing the DONE value (prog_h_h1_nodone.bin, NO_DONE); PC-ID and PC-MARK hold.
+//   Red on fx68k and tg68k (75 passed, 1 failed): DONE [H1]. Not graded: none.
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT: P1-LINES [H1]: H1's sampling loop shortened to
 //   1024 samples (prog_h_h1_short.bin, SHORT_LOOP), followed by a delay loop of 24000 iterations.
 //   The delay does not keep the MARK1..MARK2 window at the normal run's length: the window measures
 //   1021216 clk_sys cycles (fx68k) and 822584 (tg68k), against 799464 and 799352 in the normal run.
 //   It keeps the window long enough for P2-LINES [H1] to stay live: 719 graded periods (fx68k) and
-//   579 (tg68k), against the 320 required. Red on fx68k and tg68k (80 passed, 1 failed): P1-LINES
+//   579 (tg68k), against the 320 required. Red on fx68k and tg68k (74 passed, 1 failed): P1-LINES
 //   [H1]. Not graded: P1 [H1]. Measured: P1-LINES [H1]: 34 graded wraps, 1024 samples (fx68k), 34
 //   graded wraps, 1024 samples (tg68k); P2-LINES [H1]: 719 graded periods (fx68k), 579 graded
 //   periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2: P1-LINES [H2]: as X-SHORT, for H2
 //   (prog_h_h2_short.bin): the window measures 1016920 clk_sys cycles (fx68k) and 822200 (tg68k),
 //   against 799064 and 798968 in the normal run, not the same length; P2-LINES [H2] stays live with
-//   657 graded periods (fx68k) and 531 (tg68k). Red on fx68k and tg68k (80 passed, 1 failed):
+//   657 graded periods (fx68k) and 531 (tg68k). Red on fx68k and tg68k (74 passed, 1 failed):
 //   P1-LINES [H2]. Not graded: P1 [H2]. Measured: P1-LINES [H2]: 31 graded wraps, 1024 samples
 //   (fx68k), 31 graded wraps, 1024 samples (tg68k); P2-LINES [H2]: 657 graded periods (fx68k), 531
 //   graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H1C: P1-LINES [H1c]: as X-SHORT, for H1c
 //   (prog_h_h1c_short.bin): the window measures 1018720 clk_sys cycles (fx68k) and 821552 (tg68k),
 //   against 798448 and 798352 in the normal run, not the same length; P2-LINES [H1c] stays live
-//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (79 passed, 1 failed):
+//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (73 passed, 1 failed):
 //   P1-LINES [H1c]. Not graded: A1 [H1c], P1-CONTRAST [H1c]. Measured: P1-LINES [H1c]: 26 graded
 //   wraps, 1024 samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H1c]: 559 graded
 //   periods (fx68k), 450 graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2C: P1-LINES [H2c]: as X-SHORT, for H2c
 //   (prog_h_h2c_short.bin): the window measures 1018720 clk_sys cycles (fx68k) and 821552 (tg68k),
 //   against 798448 and 798352 in the normal run, not the same length; P2-LINES [H2c] stays live
-//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (79 passed, 1 failed):
+//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (73 passed, 1 failed):
 //   P1-LINES [H2c]. Not graded: A1 [H2c], P1-CONTRAST [H2c]. Measured: P1-LINES [H2c]: 26 graded
 //   wraps, 1024 samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H2c]: 559 graded
 //   periods (fx68k), 450 graded periods (tg68k).
-// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE: P2-LINES [H1]: H1 with all 16384 samples
-//   but MARK1 written only after the last of them, followed by a short delay loop
-//   (prog_h_h1_late.bin, LATE_MARK): the MARK1..MARK2 window holds far fewer than 320 line
-//   periods while the sampled population is the normal run's. Red on fx68k and tg68k (76
-//   passed, 1 failed): P2-LINES [H1]. Not graded: A2 [H1], P2(a) [H1], P2(b), P2(c), P2.
-//   Measured: P1-LINES [H1]: 564 graded wraps, 16384 samples (fx68k), 563 graded wraps, 16384
-//   samples (tg68k); P2-LINES [H1]: 83 graded periods (fx68k), 67 graded periods (tg68k).
+// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE: P2-LINES [H1]: H1 with all 16384 samples but
+//   MARK1 written only after the last of them, followed by a short delay loop (prog_h_h1_late.bin,
+//   LATE_MARK): the MARK1..MARK2 window holds far fewer than 320 line periods while the sampled
+//   population is the normal run's. Red on fx68k and tg68k (70 passed, 1 failed): P2-LINES [H1].
+//   Not graded: A2 [H1], P2(a) [H1], P2(b), P2(c), P2. Measured: P1-LINES [H1]: 564 graded wraps,
+//   16384 samples (fx68k), 563 graded wraps, 16384 samples (tg68k); P2-LINES [H1]: 83 graded
+//   periods (fx68k), 67 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H2: P2-LINES [H2]: as X-LATE, for H2
-//   (prog_h_h2_late.bin). Red on fx68k and tg68k (76 passed, 1 failed): P2-LINES [H2]. Not
-//   graded: A2 [H2], P2(a) [H2], P2(b), P2(c), P2. Measured: P1-LINES [H2]: 516 graded wraps,
-//   16384 samples (fx68k), 516 graded wraps, 16384 samples (tg68k); P2-LINES [H2]: 77 graded
-//   periods (fx68k), 61 graded periods (tg68k).
-// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H1C: P2-LINES [H1c]: as X-LATE, for H1c
-//   (prog_h_h1c_late.bin). Red on fx68k and tg68k (79 passed, 1 failed): P2-LINES [H1c]. Not
-//   graded: A2 [H1c], P2-CONTRAST. Measured: P1-LINES [H1c]: 439 graded wraps, 16384 samples
-//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H1c]: 64 graded periods
-//   (fx68k), 52 graded periods (tg68k).
-// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H2C: P2-LINES [H2c]: as X-LATE, for H2c
-//   (prog_h_h2c_late.bin). Red on fx68k and tg68k (79 passed, 1 failed): P2-LINES [H2c]. Not
-//   graded: A2 [H2c], P2-CONTRAST. Measured: P1-LINES [H2c]: 439 graded wraps, 16384 samples
-//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H2c]: 64 graded periods
-//   (fx68k), 52 graded periods (tg68k).
-// MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST: P1-COVER [H1]: H1's sampling loop replaced
-//   with a read-until-wrap-then-store-4 burst (prog_h_h1_burst.bin, BURST_MODE): consecutive
-//   graded sample stores are a whole line apart between bursts. Red on fx68k and tg68k (80
-//   passed, 1 failed): P1-COVER [H1]. Not graded: P1 [H1]. Measured: P1-COVER [H1]: largest
-//   consecutive-sample gap in the graded range = 148 CCK (fx68k), largest consecutive-sample
-//   gap in the graded range = 151 CCK (tg68k); P1-LINES [H1]: 398 graded wraps, 1600 samples.
-// MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST-H2: P1-COVER [H2]: as X-BURST, for H2
-//   (prog_h_h2_burst.bin). Red on fx68k and tg68k (80 passed, 1 failed): P1-COVER [H2]. Not
-//   graded: P1 [H2]. Measured: P1-COVER [H2]: largest consecutive-sample gap in the graded
-//   range = 164 CCK (fx68k), largest consecutive-sample gap in the graded range = 167 CCK
-//   (tg68k); P1-LINES [H2]: 398 graded wraps, 1600 samples.
-// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: A2 [H1]: H1 with audio channel 0 DMA started
-//   (prog_h_h1_aud0.bin, AUD0_ON: location, length 8 words, volume 64, period 124, enable;
-//   p.145, p.140, p.266): a non-refresh DMA access appears at the port, so a graded period's
-//   group no longer has exactly 4 members. Red on fx68k and tg68k (77 passed, 1 failed): A2
-//   [H1]. Not graded: P2(a) [H1], P2(b), P2(c), P2. Measured: P2-LINES [H1]: 563 graded periods
-//   (fx68k), 563 graded periods (tg68k).
-// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H2: A2 [H2]: as X-AUD0, for H2
-//   (prog_h_h2_aud0.bin). Red on fx68k and tg68k (77 passed, 1 failed): A2 [H2]. Not graded:
-//   P2(a) [H2], P2(b), P2(c), P2. Measured: P2-LINES [H2]: 516 graded periods (fx68k), 516
+//   (prog_h_h2_late.bin). Red on fx68k and tg68k (70 passed, 1 failed): P2-LINES [H2]. Not graded:
+//   A2 [H2], P2(a) [H2], P2(b), P2(c), P2. Measured: P1-LINES [H2]: 516 graded wraps, 16384 samples
+//   (fx68k), 516 graded wraps, 16384 samples (tg68k); P2-LINES [H2]: 77 graded periods (fx68k), 61
 //   graded periods (tg68k).
+// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H1C: P2-LINES [H1c]: as X-LATE, for H1c
+//   (prog_h_h1c_late.bin). Red on fx68k and tg68k (73 passed, 1 failed): P2-LINES [H1c]. Not
+//   graded: A2 [H1c], P2-CONTRAST. Measured: P1-LINES [H1c]: 439 graded wraps, 16384 samples
+//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H1c]: 64 graded periods (fx68k), 52
+//   graded periods (tg68k).
+// MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE-H2C: P2-LINES [H2c]: as X-LATE, for H2c
+//   (prog_h_h2c_late.bin). Red on fx68k and tg68k (73 passed, 1 failed): P2-LINES [H2c]. Not
+//   graded: A2 [H2c], P2-CONTRAST. Measured: P1-LINES [H2c]: 439 graded wraps, 16384 samples
+//   (fx68k), 438 graded wraps, 16384 samples (tg68k); P2-LINES [H2c]: 64 graded periods (fx68k), 52
+//   graded periods (tg68k).
+// MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST: P1-COVER [H1]: H1's sampling loop replaced
+//   with a read-until-wrap-then-store-4 burst (prog_h_h1_burst.bin, BURST_MODE): consecutive graded
+//   sample stores are a whole line apart between bursts. Red on fx68k and tg68k (74 passed, 1
+//   failed): P1-COVER [H1]. Not graded: P1 [H1]. Measured: P1-COVER [H1]: largest
+//   consecutive-sample gap in the graded range = 148 CCK (fx68k), largest consecutive-sample gap in
+//   the graded range = 151 CCK (tg68k); P1-LINES [H1]: 398 graded wraps, 1600 samples.
+// MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST-H2: P1-COVER [H2]: as X-BURST, for H2
+//   (prog_h_h2_burst.bin). Red on fx68k and tg68k (74 passed, 1 failed): P1-COVER [H2]. Not graded:
+//   P1 [H2]. Measured: P1-COVER [H2]: largest consecutive-sample gap in the graded range = 164 CCK
+//   (fx68k), largest consecutive-sample gap in the graded range = 167 CCK (tg68k); P1-LINES [H2]:
+//   398 graded wraps, 1600 samples.
+// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: A2 [H1]: H1 with audio channel 0 DMA started
+//   (prog_h_h1_aud0.bin, AUD0_ON: location, length 8 words, volume 64, period 124, enable; p.145,
+//   p.140, p.266): a non-refresh DMA access appears at the port, so a graded period's group no
+//   longer has exactly 4 members. Red on fx68k and tg68k (71 passed, 1 failed): A2 [H1]. Not
+//   graded: P2(a) [H1], P2(b), P2(c), P2. Measured: P2-LINES [H1]: 563 graded periods (fx68k), 563
+//   graded periods (tg68k).
+// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H2: A2 [H2]: as X-AUD0, for H2 (prog_h_h2_aud0.bin).
+//   Red on fx68k and tg68k (71 passed, 1 failed): A2 [H2]. Not graded: P2(a) [H2], P2(b), P2(c),
+//   P2. Measured: P2-LINES [H2]: 516 graded periods (fx68k), 516 graded periods (tg68k).
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H1C: A2 [H1c]: as X-AUD0, for H1c
-//   (prog_h_h1c_aud0.bin). Red on fx68k and tg68k (80 passed, 1 failed): A2 [H1c]. Not graded:
-//   P2-CONTRAST. Measured: P2-LINES [H1c]: 438 graded periods (fx68k), 438 graded periods
-//   (tg68k).
+//   (prog_h_h1c_aud0.bin). Red on fx68k and tg68k (74 passed, 1 failed): A2 [H1c]. Not graded:
+//   P2-CONTRAST. Measured: P2-LINES [H1c]: 438 graded periods (fx68k), 438 graded periods (tg68k).
 // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0-H2C: A2 [H2c]: as X-AUD0, for H2c
-//   (prog_h_h2c_aud0.bin). Red on fx68k and tg68k (80 passed, 1 failed): A2 [H2c]. Not graded:
-//   P2-CONTRAST. Measured: P2-LINES [H2c]: 438 graded periods (fx68k), 438 graded periods
-//   (tg68k).
-// MUTATION A1 stimulus red NMH_MUTATE=A1: A1 [H1c]: H1's graded samples (VARBEAMEN=1, bounded
-//   by N) in A1 [H1c]'s unchanged comparator, which expects the free-running range only
-//   VARBEAMEN=0 produces. Red on fx68k and tg68k (81 passed, 1 failed): A1 [H1c]. Not graded:
-//   none. Measured: A1 [H1c]: max graded H=$00B0.
-// MUTATION A1 stimulus red NMH_MUTATE=A1-H2: A1 [H2c]: as A1, H2's graded samples in A1 [H2c].
-//   Red on fx68k and tg68k (81 passed, 1 failed): A1 [H2c]. Not graded: none. Measured: A1
-//   [H2c]: max graded H=$00C0 (fx68k), max graded H=$00C0 (tg68k).
-// MUTATION A3 stimulus red NMH_MUTATE=A3: A3 [H1c]: H1's graded periods (VARBEAMEN=1, 177 CCK)
-//   in A3 [H1c]'s unchanged 227/228-CCK comparator. Red on fx68k and tg68k (61 passed, 1
-//   failed): A3 [H1c]. Not graded: P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2],
-//   P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2],
-//   P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5.
-// MUTATION A3 stimulus red NMH_MUTATE=A3-H2: A3 [H2c]: as A3, H2's graded periods in A3 [H2c].
-//   Red on fx68k and tg68k (61 passed, 1 failed): A3 [H2c]. Not graded: P1-COVER [H1], P1-COVER
-//   [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2
-//   [H1c], A2 [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST,
-//   A5-REF, A5.
-// MUTATION P1 stimulus red NMH_MUTATE=P1: P1 [H1]: H1c's graded samples (VARBEAMEN=0,
-//   unbounded) in P1 [H1]'s unchanged any-exceeds comparator. Red on fx68k and tg68k (81
-//   passed, 1 failed): P1 [H1]. Not graded: none. Measured: P1 [H1]: max graded H=$00E2,
-//   N=$00B0.
-// MUTATION P1 stimulus red NMH_MUTATE=P1-H2: P1 [H2]: as P1, H2c's graded samples in P1 [H2].
-//   Red on fx68k and tg68k (81 passed, 1 failed): P1 [H2]. Not graded: none. Measured: P1 [H2]:
-//   max graded H=$00E2, N=$00C0.
+//   (prog_h_h2c_aud0.bin). Red on fx68k and tg68k (74 passed, 1 failed): A2 [H2c]. Not graded:
+//   P2-CONTRAST. Measured: P2-LINES [H2c]: 438 graded periods (fx68k), 438 graded periods (tg68k).
+// MUTATION A1 stimulus red NMH_MUTATE=A1: A1 [H1c]: H1's graded samples (VARBEAMEN=1, bounded by N)
+//   in A1 [H1c]'s unchanged comparator, which expects the free-running range only VARBEAMEN=0
+//   produces. Red on fx68k and tg68k (75 passed, 1 failed): A1 [H1c]. Not graded: none. Measured:
+//   A1 [H1c]: max graded H=$00B0.
+// MUTATION A1 stimulus red NMH_MUTATE=A1-H2: A1 [H2c]: as A1, H2's graded samples in A1 [H2c]. Red
+//   on fx68k and tg68k (75 passed, 1 failed): A1 [H2c]. Not graded: none. Measured: A1 [H2c]: max
+//   graded H=$00C0 (fx68k), max graded H=$00C0 (tg68k).
+// MUTATION A3 stimulus red NMH_MUTATE=A3: A3 [H1c]: H1's graded periods (VARBEAMEN=1, 177 CCK) in
+//   A3 [H1c]'s unchanged 227/228-CCK comparator. Red on fx68k and tg68k (55 passed, 1 failed): A3
+//   [H1c]. Not graded: P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c],
+//   P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2],
+//   P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5.
+// MUTATION A3 stimulus red NMH_MUTATE=A3-H2: A3 [H2c]: as A3, H2's graded periods in A3 [H2c]. Red
+//   on fx68k and tg68k (55 passed, 1 failed): A3 [H2c]. Not graded: P1-COVER [H1], P1-COVER [H2],
+//   P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2
+//   [H2c], P1 [H1], P1 [H2], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5.
+// MUTATION P1 stimulus red NMH_MUTATE=P1: P1 [H1]: H1c's graded samples (VARBEAMEN=0, unbounded) in
+//   P1 [H1]'s unchanged any-exceeds comparator. Red on fx68k and tg68k (75 passed, 1 failed): P1
+//   [H1]. Not graded: none. Measured: P1 [H1]: max graded H=$00E2, N=$00B0.
+// MUTATION P1 stimulus red NMH_MUTATE=P1-H2: P1 [H2]: as P1, H2c's graded samples in P1 [H2]. Red
+//   on fx68k and tg68k (75 passed, 1 failed): P1 [H2]. Not graded: none. Measured: P1 [H2]: max
+//   graded H=$00E2, N=$00C0.
 // MUTATION P1-CONTRAST stimulus red NMH_MUTATE=P1C: P1-CONTRAST [H1c]: H1's graded samples
-//   (VARBEAMEN=1) in P1-CONTRAST [H1c]'s unchanged comparator, which expects a sample above N.
-//   Red on fx68k and tg68k (81 passed, 1 failed): P1-CONTRAST [H1c]. Not graded: none.
-//   Measured: P1-CONTRAST [H1c]: max graded H=$00B0, N=$00B0.
+//   (VARBEAMEN=1) in P1-CONTRAST [H1c]'s unchanged comparator, which expects a sample above N. Red
+//   on fx68k and tg68k (75 passed, 1 failed): P1-CONTRAST [H1c]. Not graded: none. Measured:
+//   P1-CONTRAST [H1c]: max graded H=$00B0, N=$00B0.
 // MUTATION P1-CONTRAST stimulus red NMH_MUTATE=P1C-H2: P1-CONTRAST [H2c]: as P1C, H2's graded
-//   samples in P1-CONTRAST [H2c]. Red on fx68k and tg68k (81 passed, 1 failed): P1-CONTRAST
-//   [H2c]. Not graded: none. Measured: P1-CONTRAST [H2c]: max graded H=$00C0, N=$00C0 (fx68k),
-//   max graded H=$00C0, N=$00C0 (tg68k).
-// MUTATION P2(a) stimulus red NMH_MUTATE=P2A: P2(a) [H1]: H1 with HTOTAL written again
-//   mid-loop, to $00C0 in place of $00B0 (prog_h_h1_retotal.bin, RETOTAL_MID), in P2(a) [H1]
-//   only; p.280 states no exception for a second write, so the graded periods after that point
-//   are page-predicted to differ from those before it. The conjunction P2 requires P2(a) [H1]
-//   and goes red with it. The capture prints its own PC-ID, PC-MARK, DONE and P2-LINES under
-//   the tag [H1,P2A]. Red on fx68k and tg68k (84 passed, 2 failed): P2(a) [H1], P2. Not graded:
-//   none. Measured: P2-LINES [H1,P2A]: 553 graded periods (fx68k), 550 graded periods (tg68k).
+//   samples in P1-CONTRAST [H2c]. Red on fx68k and tg68k (75 passed, 1 failed): P1-CONTRAST [H2c].
+//   Not graded: none. Measured: P1-CONTRAST [H2c]: max graded H=$00C0, N=$00C0 (fx68k), max graded
+//   H=$00C0, N=$00C0 (tg68k).
+// MUTATION P2(a) stimulus red NMH_MUTATE=P2A: P2(a) [H1]: H1 with HTOTAL written again mid-loop, to
+//   $00C0 in place of $00B0 (prog_h_h1_retotal.bin, RETOTAL_MID), in P2(a) [H1] only; p.280 states
+//   no exception for a second write, so the graded periods after that point are page-predicted to
+//   differ from those before it. The conjunction P2 requires P2(a) [H1] and goes red with it. The
+//   capture prints its own PC-ID, PC-MARK, DONE and P2-LINES under the tag [H1,P2A]. Red on fx68k
+//   and tg68k (78 passed, 2 failed): P2(a) [H1], P2. Not graded: none. Measured: P2-LINES [H1,P2A]:
+//   553 graded periods (fx68k), 550 graded periods (tg68k).
 // MUTATION P2 stimulus red NMH_MUTATE=P2A: the line requires P2(a) [H1] and goes red with it
 //   (above).
-// MUTATION P2(a) stimulus red NMH_MUTATE=P2A-H2: P2(a) [H2]: as P2A for H2: HTOTAL written
-//   again to $00D0 in place of $00C0 (prog_h_h2_retotal.bin), in P2(a) [H2] only; tag
-//   [H2,P2A-H2]. Red on fx68k and tg68k (84 passed, 2 failed): P2(a) [H2], P2. Not graded:
-//   none. Measured: P2-LINES [H2,P2A-H2]: 509 graded periods (fx68k), 506 graded periods (tg68k).
+// MUTATION P2(a) stimulus red NMH_MUTATE=P2A-H2: P2(a) [H2]: as P2A for H2: HTOTAL written again to
+//   $00D0 in place of $00C0 (prog_h_h2_retotal.bin), in P2(a) [H2] only; tag [H2,P2A-H2]. Red on
+//   fx68k and tg68k (78 passed, 2 failed): P2(a) [H2], P2. Not graded: none. Measured: P2-LINES
+//   [H2,P2A-H2]: 509 graded periods (fx68k), 506 graded periods (tg68k).
 // MUTATION P2 stimulus red NMH_MUTATE=P2A-H2: the line requires P2(a) [H2] and goes red with it
 //   (above).
-// MUTATION P2(b) stimulus red NMH_MUTATE=P2B: P2(b): H1c's and H2c's first periods
-//   (VARBEAMEN=0, d=0) in P2(b)'s unchanged delta comparator. Red on fx68k and tg68k (80
-//   passed, 2 failed): P2(b), P2. Not graded: none.
+// MUTATION P2(b) stimulus red NMH_MUTATE=P2B: P2(b): H1c's and H2c's first periods (VARBEAMEN=0,
+//   d=0) in P2(b)'s unchanged delta comparator. Red on fx68k and tg68k (74 passed, 2 failed):
+//   P2(b), P2. Not graded: none.
 // MUTATION P2 stimulus red NMH_MUTATE=P2B: the line requires P2(b) and goes red with it
 //   (above).
 // MUTATION P2(c) stimulus red NMH_MUTATE=P2C: P2(c): H1c's first period (VARBEAMEN=0, about 227
-//   CCK) in P2(c)'s unchanged N/N+1 comparator. Red on fx68k and tg68k (80 passed, 2 failed):
+//   CCK) in P2(c)'s unchanged N/N+1 comparator. Red on fx68k and tg68k (74 passed, 2 failed):
 //   P2(c), P2. Not graded: none.
 // MUTATION P2 stimulus red NMH_MUTATE=P2C: the line requires P2(c) and goes red with it
 //   (above).
-// MUTATION P2-CONTRAST stimulus red NMH_MUTATE=P2CON: P2-CONTRAST: H1's periods and H2's
-//   periods (VARBEAMEN=1) in the pooled-equality comparator of P2-CONTRAST in place of H1c's
-//   and H2c's; the pooled periods are no longer all equal. Red on fx68k and tg68k (81 passed, 1
-//   failed): P2-CONTRAST. Not graded: none.
+// MUTATION P2-CONTRAST stimulus red NMH_MUTATE=P2CON: P2-CONTRAST: H1's periods and H2's periods
+//   (VARBEAMEN=1) in the pooled-equality comparator of P2-CONTRAST in place of H1c's and H2c's; the
+//   pooled periods are no longer all equal. Red on fx68k and tg68k (75 passed, 1 failed):
+//   P2-CONTRAST. Not graded: none.
 // MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL: P3/P4-LINES [SA]: SA with PLANE holding
-//   only 32 lines of pattern instead of 256 (prog_s_sa_nobpl.bin, SHORT_PLANE); bitplane DMA
-//   still runs, so the population is a live, reduced but nonempty one. Red on fx68k and tg68k
-//   (65 passed, 1 failed): P3/P4-LINES [SA]. Not graded: A4, P3/P4(a) [SA], P3/P4(a) [SB],
-//   P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c),
-//   P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4. Measured: P3/P4-LINES [SA]: 32 class-0, 32
-//   class-1, 64 total graded output lines.
+//   only 32 lines of pattern instead of 256 (prog_s_sa_nobpl.bin, SHORT_PLANE); bitplane DMA still
+//   runs, so the population is a live, reduced but nonempty one. Red on fx68k and tg68k (65 passed,
+//   1 failed): P3/P4-LINES [SA]. Not graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC],
+//   P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST. Measured:
+//   P3/P4-LINES [SA]: 32 class-0, 32 class-1, 64 total graded output lines.
 // MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SB: P3/P4-LINES [SB]: as X-NOBPL, for SB
 //   (prog_s_sb_nobpl.bin). Red on fx68k and tg68k (65 passed, 1 failed): P3/P4-LINES [SB]. Not
 //   graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0],
-//   P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4. Measured:
-//   P3/P4-LINES [SB]: 32 class-0, 32 class-1, 64 total graded output lines.
+//   P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SB]: 32 class-0, 32
+//   class-1, 64 total graded output lines.
 // MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SC: P3/P4-LINES [SC]: as X-NOBPL, for SC
 //   (prog_s_sc_nobpl.bin). Red on fx68k and tg68k (65 passed, 1 failed): P3/P4-LINES [SC]. Not
 //   graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0],
-//   P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4. Measured:
-//   P3/P4-LINES [SC]: 32 class-0, 32 class-1, 64 total graded output lines.
-// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SA0: P3/P4-LINES [SA0]: as X-NOBPL, for
-//   SA0 (prog_s_sa0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES
-//   [SA0]. Not graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0],
-//   P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c),
-//   P4-CONTRAST, P4. Measured: P3/P4-LINES [SA0]: 32 class-0, 32 class-1, 64 total graded
-//   output lines.
-// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SB0: P3/P4-LINES [SB0]: as X-NOBPL, for
-//   SB0 (prog_s_sb0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES
-//   [SB0]. Not graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0],
-//   P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c),
-//   P4-CONTRAST, P4. Measured: P3/P4-LINES [SB0]: 32 class-0, 32 class-1, 64 total graded
-//   output lines.
-// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SC0: P3/P4-LINES [SC0]: as X-NOBPL, for
-//   SC0 (prog_s_sc0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES
-//   [SC0]. Not graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0],
-//   P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c),
-//   P4-CONTRAST, P4. Measured: P3/P4-LINES [SC0]: 32 class-0, 32 class-1, 64 total graded
-//   output lines.
-// MUTATION A4 stimulus red NMH_MUTATE=X-A4DOUBLE: A4: SA's plane data changed to 6 black, 6
-//   white, 2 black and 6 white words per line (prog_s_sa_a4double.bin, A4_DOUBLE): every line
-//   carries two transitions into white and two out of white, the first white span as wide as
-//   the normal one, so the transition clause fails alone. Red on fx68k and tg68k (66 passed, 1
-//   failed): A4. Not graded: P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0],
-//   P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b), P3(c), P3-CONTRAST, P3, P4(b), P4(c),
-//   P4-CONTRAST, P4. Measured: P3/P4-LINES [SA]: 256 class-0, 256 class-1, 512 total graded
-//   output lines; A4 class 0: 1536 lines, 256 without exactly one transition into and out of
-//   white; white run per run SA=192 SB=192 SC=192 SA0=192 SB0=192 SC0=192 .
-// MUTATION A4 stimulus red NMH_MUTATE=X-A4WIDTH: A4: SA's plane data changed to 14 black, 5
-//   white and 1 black words per line (prog_s_sa_a4width.bin, A4_WIDTH): one transition into and
-//   out of white per line, the white span a data word narrower, so the width clause fails
-//   alone. Red on fx68k and tg68k (66 passed, 1 failed): A4. Not graded: P3/P4(a) [SA],
-//   P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3(b),
-//   P3(c), P3-CONTRAST, P3, P4(b), P4(c), P4-CONTRAST, P4. Measured: P3/P4-LINES [SA]: 256
-//   class-0, 256 class-1, 512 total graded output lines; A4 class 0: 1536 lines, 0 without
-//   exactly one transition into and out of white; white run per run SA=160 SB=192 SC=192
-//   SA0=192 SB0=192 SC0=192 .
-// MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SA: P3/P4(a) [SA]: SA's plane data in lines
-//   0 to 127 carries the white span one data word earlier, same width (prog_s_sa_shift.bin,
-//   SHIFT_ROWS): dL and dT are no longer the same in every graded line. P3 and P4 require
-//   P3/P4(a) [SA] and go red with it. Red on fx68k and tg68k (75 passed, 3 failed): P3/P4(a)
-//   [SA], P3, P4. Not graded: P3(b), P3(c), P4(b), P4(c). Measured: P3/P4(a) [SA] class 0:
+//   P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SC]: 32 class-0, 32
+//   class-1, 64 total graded output lines.
+// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SA0: P3/P4-LINES [SA0]: as X-NOBPL, for SA0
+//   (prog_s_sa0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES [SA0]. Not
+//   graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0],
+//   P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SA0]: 32 class-0,
+//   32 class-1, 64 total graded output lines.
+// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SB0: P3/P4-LINES [SB0]: as X-NOBPL, for SB0
+//   (prog_s_sb0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES [SB0]. Not
+//   graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0],
+//   P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SB0]: 32 class-0,
+//   32 class-1, 64 total graded output lines.
+// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL-SC0: P3/P4-LINES [SC0]: as X-NOBPL, for SC0
+//   (prog_s_sc0_nobpl.bin). Red on fx68k and tg68k (64 passed, 1 failed): P3/P4-LINES [SC0]. Not
+//   graded: A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0],
+//   P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SC0]: 32 class-0,
+//   32 class-1, 64 total graded output lines.
+// MUTATION A4 stimulus red NMH_MUTATE=X-A4DOUBLE: A4: SA's plane data changed to 6 black, 6 white,
+//   2 black and 6 white words per line (prog_s_sa_a4double.bin, A4_DOUBLE): every line carries two
+//   transitions into white and two out of white, the first white span as wide as the normal one, so
+//   the transition clause fails alone. Red on fx68k and tg68k (66 passed, 1 failed): A4. Not
+//   graded: P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a)
+//   [SC0], A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4-LINES [SA]: 256 class-0, 256 class-1, 512
+//   total graded output lines; A4 class 0: 1536 lines, 256 without exactly one transition into and
+//   out of white; white run per run SA=192 SB=192 SC=192 SA0=192 SB0=192 SC0=192 .
+// MUTATION A4 stimulus red NMH_MUTATE=X-A4WIDTH: A4: SA's plane data changed to 14 black, 5 white
+//   and 1 black words per line (prog_s_sa_a4width.bin, A4_WIDTH): one transition into and out of
+//   white per line, the white span a data word narrower, so the width clause fails alone. Red on
+//   fx68k and tg68k (66 passed, 1 failed): A4. Not graded: P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a)
+//   [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST. Measured:
+//   P3/P4-LINES [SA]: 256 class-0, 256 class-1, 512 total graded output lines; A4 class 0: 1536
+//   lines, 0 without exactly one transition into and out of white; white run per run SA=160 SB=192
+//   SC=192 SA0=192 SB0=192 SC0=192 .
+// MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SA: P3/P4(a) [SA]: SA's plane data in lines 0
+//   to 127 carries the white span one data word earlier, same width (prog_s_sa_shift.bin,
+//   SHIFT_ROWS): dL and dT are no longer the same in every graded line. Red on fx68k and tg68k (75
+//   passed, 1 failed): P3/P4(a) [SA]. Not graded: none. Measured: P3/P4(a) [SA] class 0:
 //   dL=633..665 dT=505..537.
-// MUTATION P3 stimulus red NMH_MUTATE=X-SHIFT-SA: the line requires P3/P4(a) [SA] and goes red
-//   with it (above).
-// MUTATION P4 stimulus red NMH_MUTATE=X-SHIFT-SA: the line requires P3/P4(a) [SA] and goes red
-//   with it (above).
 // MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SB: P3/P4(a) [SB]: as X-SHIFT-SA, for SB
-//   (prog_s_sb_shift.bin). P3 requires P3/P4(a) [SB]. Red on fx68k and tg68k (78 passed, 2
-//   failed): P3/P4(a) [SB], P3. Not graded: P3(b), P3(c). Measured: P3/P4(a) [SB] class 0:
-//   dL=569..601 dT=505..537.
-// MUTATION P3 stimulus red NMH_MUTATE=X-SHIFT-SB: the line requires P3/P4(a) [SB] and goes red
-//   with it (above).
+//   (prog_s_sb_shift.bin). Red on fx68k and tg68k (75 passed, 1 failed): P3/P4(a) [SB]. Not graded:
+//   none. Measured: P3/P4(a) [SB] class 0: dL=569..601 dT=505..537.
 // MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SC: P3/P4(a) [SC]: as X-SHIFT-SA, for SC
-//   (prog_s_sc_shift.bin). P4 requires P3/P4(a) [SC]. Red on fx68k and tg68k (78 passed, 2
-//   failed): P3/P4(a) [SC], P4. Not graded: P4(b), P4(c). Measured: P3/P4(a) [SC] class 0:
-//   dL=633..665 dT=441..473.
-// MUTATION P4 stimulus red NMH_MUTATE=X-SHIFT-SC: the line requires P3/P4(a) [SC] and goes red
-//   with it (above).
+//   (prog_s_sc_shift.bin). Red on fx68k and tg68k (75 passed, 1 failed): P3/P4(a) [SC]. Not graded:
+//   none. Measured: P3/P4(a) [SC] class 0: dL=633..665 dT=441..473.
 // MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SA0: P3/P4(a) [SA0]: as X-SHIFT-SA, for SA0
-//   (prog_s_sa0_shift.bin). P3 and P4 require P3/P4(a) [SA0]; A5 is gated on it. Red on fx68k
-//   and tg68k (76 passed, 3 failed): P3/P4(a) [SA0], P3, P4. Not graded: A5, P3-CONTRAST,
-//   P4-CONTRAST. Measured: P3/P4(a) [SA0] class 0: dL=623..655 dT=557..589.
-// MUTATION P3 stimulus red NMH_MUTATE=X-SHIFT-SA0: the line requires P3/P4(a) [SA0] and goes
-//   red with it (above).
-// MUTATION P4 stimulus red NMH_MUTATE=X-SHIFT-SA0: the line requires P3/P4(a) [SA0] and goes
-//   red with it (above).
+//   (prog_s_sa0_shift.bin). A5 is gated on it. Red on fx68k and tg68k (72 passed, 1 failed):
+//   P3/P4(a) [SA0]. Not graded: A5, P3-CONTRAST, P4-CONTRAST. Measured: P3/P4(a) [SA0] class 0:
+//   dL=623..655 dT=557..589.
 // MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SB0: P3/P4(a) [SB0]: as X-SHIFT-SA, for SB0
-//   (prog_s_sb0_shift.bin). P3 requires P3/P4(a) [SB0]; A5 is gated on it. Red on fx68k and
-//   tg68k (78 passed, 2 failed): P3/P4(a) [SB0], P3. Not graded: A5, P3-CONTRAST. Measured:
-//   P3/P4(a) [SB0] class 0: dL=623..655 dT=557..589.
-// MUTATION P3 stimulus red NMH_MUTATE=X-SHIFT-SB0: the line requires P3/P4(a) [SB0] and goes
-//   red with it (above).
+//   (prog_s_sb0_shift.bin). A5 is gated on it. Red on fx68k and tg68k (73 passed, 1 failed):
+//   P3/P4(a) [SB0]. Not graded: A5, P3-CONTRAST. Measured: P3/P4(a) [SB0] class 0: dL=623..655
+//   dT=557..589.
 // MUTATION P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-SC0: P3/P4(a) [SC0]: as X-SHIFT-SA, for SC0
-//   (prog_s_sc0_shift.bin). P4 requires P3/P4(a) [SC0]; A5 is gated on it. Red on fx68k and
-//   tg68k (78 passed, 2 failed): P3/P4(a) [SC0], P4. Not graded: A5, P4-CONTRAST. Measured:
-//   P3/P4(a) [SC0] class 0: dL=623..655 dT=557..589.
-// MUTATION P4 stimulus red NMH_MUTATE=X-SHIFT-SC0: the line requires P3/P4(a) [SC0] and goes
-//   red with it (above).
-// MUTATION A5-REF stimulus red NMH_MUTATE=X-A5REF: A5-REF: SA0 with audio channel 0 DMA started
-//   on a one-word buffer at Chip address 0 (prog_s_sa0_a5ref.bin, AUD0_AT0; p.145, period 124
-//   per p.140/p.266): reads of word 0 join the groups, which no longer have exactly 4 accesses.
-//   Red on fx68k and tg68k (80 passed, 1 failed): A5-REF. Not graded: A5. Measured: A5-REF
-//   [SA0]: 314 refresh groups in the graded field, 288 with other than 4 accesses, 0
-//   first-access distances other than 227 or 228 CCK (fx68k), 314 refresh groups in the graded
-//   field, 287 with other than 4 accesses, 0 first-access distances other than 227 or 228 CCK
-//   (tg68k).
+//   (prog_s_sc0_shift.bin). A5 is gated on it. Red on fx68k and tg68k (73 passed, 1 failed):
+//   P3/P4(a) [SC0]. Not graded: A5, P4-CONTRAST. Measured: P3/P4(a) [SC0] class 0: dL=623..655
+//   dT=557..589.
+// MUTATION A5-REF stimulus red NMH_MUTATE=X-A5REF: A5-REF: SA0 with audio channel 0 DMA started on
+//   a one-word buffer at Chip address 0 (prog_s_sa0_a5ref.bin, AUD0_AT0; p.145, period 124 per
+//   p.140/p.266): reads of word 0 join the groups, which no longer have exactly 4 accesses. Red on
+//   fx68k and tg68k (74 passed, 1 failed): A5-REF. Not graded: A5. Measured: A5-REF [SA0]: 314
+//   refresh groups in the graded field, 288 with other than 4 accesses, 0 first-access distances
+//   other than 227 or 228 CCK (fx68k), 314 refresh groups in the graded field, 287 with other than
+//   4 accesses, 0 first-access distances other than 227 or 228 CCK (tg68k).
 // MUTATION A5 stimulus red NMH_MUTATE=A5: A5: the lines of the X-SHIFT-SB0 capture
 //   (prog_s_sb0_shift.bin; p.58 to p.60 place the landmark of half of its lines one data word
-//   earlier) in place of SB0's in A5's unchanged exact-equality comparator; the landmark's
-//   distance to the nearest refresh access is then not the same within a class. The capture
-//   prints its own PC-ID, PC-MARK and DONE under the tag [SB0,A5]. Red on fx68k and tg68k (84
-//   passed, 1 failed): A5. Not graded: none. Measured: A5 class 0 (VARHSYEN=0): dMR SA0=1681
-//   SB0=n/a SC0=1681.
-// MUTATION P3(c) stimulus red NMH_MUTATE=P3C: P3(c): SB replaced by a run with HSSTOP changed
-//   as well (prog_s_sbc.bin, s=$0020, e=$0040): the trailing edge's distance moves, so clause
-//   (c) fails alone. P3 requires P3(c). Red on fx68k and tg68k (80 passed, 2 failed): P3(c),
-//   P3. Not graded: none. Measured: P3 class 0: dL(SA)=665 dL(SB)=601 dT(SA)=537 dT(SB)=473
-//   dL(SA0)=655 dL(SB0)=655 dT(SA0)=589 dT(SB0)=589.
-// MUTATION P3 stimulus red NMH_MUTATE=P3C: the line requires P3(c) and goes red with it
-//   (above).
-// MUTATION P4(c) stimulus red NMH_MUTATE=P4C: P4(c): SC replaced by a run with HSSTRT changed
-//   as well (prog_s_scc.bin, s=$0020, e=$0040): the leading edge's distance moves, so clause
-//   (c) fails alone. P4 requires P4(c). Red on fx68k and tg68k (80 passed, 2 failed): P4(c),
-//   P4. Not graded: none. Measured: P4 class 0: dT(SA)=537 dT(SC)=473 dL(SA)=665 dL(SC)=601
-//   dL(SA0)=655 dL(SC0)=655 dT(SA0)=589 dT(SC0)=589.
-// MUTATION P4 stimulus red NMH_MUTATE=P4C: the line requires P4(c) and goes red with it
-//   (above).
-// MUTATION P3(b) stimulus red NMH_MUTATE=P3-NOMOVE: P3(b): SA's graded lines in place of SB's
-//   in P3(b) (s equal to SA's, so no move). P3 requires P3(b). Red on fx68k and tg68k (80
-//   passed, 2 failed): P3(b), P3. Not graded: none.
-// MUTATION P3 stimulus red NMH_MUTATE=P3-NOMOVE: the line requires P3(b) and goes red with it
-//   (above).
-// MUTATION P4(b) stimulus red NMH_MUTATE=P4-NOMOVE: P4(b): SA's graded lines in place of SC's
-//   in P4(b) (e equal to SA's, so no move). P4 requires P4(b). Red on fx68k and tg68k (80
-//   passed, 2 failed): P4(b), P4. Not graded: none.
-// MUTATION P4 stimulus red NMH_MUTATE=P4-NOMOVE: the line requires P4(b) and goes red with it
-//   (above).
+//   earlier) in place of SB0's in A5's unchanged exact-equality comparator; the landmark's distance
+//   to the nearest refresh access is then not the same within a class. The capture prints its own
+//   PC-ID, PC-MARK and DONE under the tag [SB0,A5]. Red on fx68k and tg68k (78 passed, 1 failed):
+//   A5. Not graded: none. Measured: A5 class 0 (VARHSYEN=0): dMR SA0=1681 SB0=n/a SC0=1681.
 // MUTATION P3-CONTRAST stimulus red NMH_MUTATE=P3CON: P3-CONTRAST: SA's and SB's graded lines
-//   (VARHSYEN=1) in place of SA0's and SB0's in P3-CONTRAST, whose comparator is unchanged. P3
-//   requires P3-CONTRAST. Red on fx68k and tg68k (80 passed, 2 failed): P3-CONTRAST, P3. Not
-//   graded: none. Measured: P3 class 0: dL(SA)=665 dL(SB)=601 dT(SA)=537 dT(SB)=537 dL(SA)=665
-//   dL(SB)=601 dT(SA)=537 dT(SB)=537.
-// MUTATION P3 stimulus red NMH_MUTATE=P3CON: the line requires P3-CONTRAST and goes red with it
-//   (above).
+//   (VARHSYEN=1) in place of SA0's and SB0's in P3-CONTRAST, whose comparator is unchanged. Red on
+//   fx68k and tg68k (75 passed, 1 failed): P3-CONTRAST. Not graded: none. Measured: P3 class 0:
+//   dL(SA)=665 dL(SB)=601 dT(SA)=537 dT(SB)=537 dL(SA)=665 dL(SB)=601 dT(SA)=537 dT(SB)=537.
 // MUTATION P4-CONTRAST stimulus red NMH_MUTATE=P4CON: P4-CONTRAST: SA's and SC's graded lines
-//   (VARHSYEN=1) in place of SA0's and SC0's in P4-CONTRAST, whose comparator is unchanged. P4
-//   requires P4-CONTRAST. Red on fx68k and tg68k (80 passed, 2 failed): P4-CONTRAST, P4. Not
-//   graded: none. Measured: P4 class 0: dT(SA)=537 dT(SC)=473 dL(SA)=665 dL(SC)=665 dL(SA)=665
-//   dL(SC)=665 dT(SA)=537 dT(SC)=473.
-// MUTATION P4 stimulus red NMH_MUTATE=P4CON: the line requires P4-CONTRAST and goes red with it
-//   (above).
+//   (VARHSYEN=1) in place of SA0's and SC0's in P4-CONTRAST, whose comparator is unchanged. Red on
+//   fx68k and tg68k (75 passed, 1 failed): P4-CONTRAST. Not graded: none. Measured: P4 class 0:
+//   dT(SA)=537 dT(SC)=473 dL(SA)=665 dL(SC)=665 dL(SA)=665 dL(SC)=665 dT(SA)=537 dT(SC)=473.
 // MUTATION NMH_MUTATE stimulus red NMH_MUTATE=BOGUS: a selector name no branch of the test
 //   knows (NMH_MUTATE: unknown selector); every other line is the normal run's. Red on fx68k
-//   (82 passed, 1 failed): NMH_MUTATE; on tg68k (82 passed, 1 failed): NMH_MUTATE.
+//   (76 passed, 1 failed): NMH_MUTATE; on tg68k (76 passed, 1 failed): NMH_MUTATE.
 
 #include <algorithm>
 #include <cstdint>
@@ -958,8 +891,6 @@ const SSub kSSubs[] = {
     {"X-SHIFT-SB0", 4, "prog_s_sb0_shift.bin"},
     {"X-SHIFT-SC0", 5, "prog_s_sc0_shift.bin"},
     {"X-A5REF",     3, "prog_s_sa0_a5ref.bin"},
-    {"P3C",         1, "prog_s_sbc.bin"},
-    {"P4C",         2, "prog_s_scc.bin"},
 };
 
 // Proposition selectors: one proposition line's input is replaced, nothing
@@ -968,7 +899,7 @@ const SSub kSSubs[] = {
 const char* const kPropSels[] = {
     "A1", "A1-H2", "A3", "A3-H2", "P1", "P1-H2", "P1C", "P1C-H2",
     "P2A", "P2A-H2", "P2B", "P2C", "P2CON",
-    "A5", "P3-NOMOVE", "P4-NOMOVE", "P3CON", "P4CON",
+    "A5", "P3CON", "P4CON",
 };
 
 bool known_selector(const std::string& s) {
@@ -1059,19 +990,17 @@ int main(int argc, char** argv) {
         "functional effect (SPECIFICATION.md sec.1, \"Parts of c4, c5 and c6 "
         "that have no proposition of their own\"); none of the bundled parts "
         "is independently observable. The claim also says which edge HSSTOP "
-        "sets (sync stop); P4 cannot show that: the video output the test "
-        "sees has passed a line doubler that re-times the chip's lines, so no "
-        "page-anchored reference for which edge moved survives to this "
-        "boundary. P4 grades, unlabelled, the move of dT = M - T relative to "
-        "the picture (the landmark M), a stated limit.");
+        "sets (sync stop); no assertion of this package shows that: the chip's "
+        "own HSYNC is not a top-level port (hs is the scan doubler's output), "
+        "so the stop edge's position in the chip's line is not checkable "
+        "through the ports. P4's picture-relative distance dT = M - T is "
+        "printed as MEASURED, not graded.");
     checks.record(
         "opus:8-appA-oos.c5-WITHDRAWN [p280]: HSSTRT -- as c4, for the "
         "start-position effect. The claim also says which edge HSSTRT sets "
-        "(sync start); P3 cannot show that, for the reason given at c4: the "
-        "line doubler re-times the chip's lines, so no page-anchored "
-        "reference for which edge moved survives to this boundary. P3 "
-        "grades, unlabelled, the move of dL = M - L relative to the picture "
-        "(the landmark M), a stated limit.");
+        "(sync start); no assertion of this package shows that, for the "
+        "reason given at c4. P3's picture-relative distance dL = M - L is "
+        "printed as MEASURED, not graded.");
     checks.record(
         "opus:8-appA-oos.c6-WITHDRAWN [p280]: HTOTAL -- as c4, for the "
         "highest-count effect. P1 (over the sampled readbacks) and P2 grade the "
@@ -1467,7 +1396,7 @@ int main(int argc, char** argv) {
     }
 
     // ---- P3/P4 clause (a), per run: dL and dT are exactly the same in every
-    // graded line of the run, in at least one parity class. MUTATION
+    // graded line of the run, in both parity classes. MUTATION
     // P3/P4(a) stimulus red NMH_MUTATE=X-SHIFT-<run>: see header.
     ClassStat st[6][2];
     bool a_ok[6] = {false, false, false, false, false, false};
@@ -1480,11 +1409,12 @@ int main(int argc, char** argv) {
             checks.note("P3/P4(a) " + tag + " class " + std::to_string(c) + ": dL=" +
                         range_str(st[i][c].dLlo, st[i][c].dLhi) + " dT=" + range_str(st[i][c].dTlo, st[i][c].dThi));
         if (gate(checks, "P3/P4(a) " + tag, pre)) {
-            a_ok[i] = st[i][0].use() || st[i][1].use();
+            a_ok[i] = st[i][0].use() && st[i][1].use();
             checks.expect(a_ok[i],
                 "P3/P4(a) " + tag + " [p280,p304,p305]: dL (the landmark's distance to the leading edge) and "
                 "dT (its distance to the trailing edge) are exactly the same in every graded line of "
-                "the run, in at least one parity class");
+                "the run, in both parity classes (graded lines: the 256 landmark-carrying chip lines of "
+                "the field as 512 output lines, not every horizontal line)");
         }
     }
 
@@ -1560,11 +1490,10 @@ int main(int argc, char** argv) {
                 "access (the reference, p.194, p.285) is exactly the same in SA0, SB0 and SC0, in "
                 "both parity classes");
         }
-        // With VARHSYEN=1, dMR is printed but not graded: the output has
-        // passed a line doubler that re-times the chip's lines, so a
-        // reference fixed in the chip's line cannot be used to attribute the
-        // live SA/SB/SC move to a specific edge at this boundary
-        // (SPECIFICATION.md P3 sec.7).
+        // With VARHSYEN=1, dMR is printed but not graded: the output's hs
+        // is the scan doubler's, not the chip's, so a reference fixed in the
+        // chip's line cannot be used to attribute the live SA/SB/SC move to
+        // a specific edge at this boundary (SPECIFICATION.md P3 sec.7).
         for (int cls = 0; cls < 2; ++cls) {
             DmrStat mA = class_dmr(sg[SA].cls[cls]), mB = class_dmr(sg[SB].cls[cls]), mC = class_dmr(sg[SC].cls[cls]);
             checks.note("A5 class " + std::to_string(cls) + " (VARHSYEN=1, not graded): dMR SA=" +
@@ -1575,50 +1504,53 @@ int main(int argc, char** argv) {
         checks.record(
             "A5-NOT-DISPOSITIVE: with VARHSYEN=1, dMR itself changes between SA/SB/SC even though "
             "DIWSTRT/DDFSTRT (hence M's chip-side position) are unchanged, because the video output "
-            "the test sees has passed a line doubler that re-times the chip's lines; no "
+            "the test sees is the scan doubler's, not the chip's (its hs is read out of the doubler's "
+            "line buffer, Amber.v); no "
             "page-anchored reference for which edge moved survives to this boundary. A5 cannot "
-            "attribute P3's or P4's live move to a specific edge, only confirm the apparatus is "
-            "exact when nothing moves (above).");
+            "attribute the move of P3's or P4's distances to a specific edge, only confirm the "
+            "apparatus is exact when nothing moves (above).");
     }
 
-    // ---- P3: HSSTRT alone sets the pulse's leading edge -------------------
-    // dL, dT are the landmark M's own distance to L and to T
-    // (SPECIFICATION.md P3 sec.3); anchor A5 (above) confirms the apparatus
-    // is exact when nothing moves, but cannot attribute which of L or M
-    // moved once HSSTRT genuinely changes the sync timing (recorded above,
-    // A5-NOT-DISPOSITIVE); P3 is graded in the picture-relative frame, a
-    // stated limit. The pages give no size or direction for the move, so it
-    // is graded as exact inequality, and the untouched edge as exact
-    // equality (sec.6 point 4). One line per clause, each graded in at least
-    // one parity class; the conjunction requires one class in which all hold.
-    // MUTATION P3-NOMOVE (b), P3C (c), P3CON (contrast): see header.
-    // P4 is the same with HSSTOP and SC.
+    // ---- P3, P4: HSSTRT / HSSTOP -----------------------------------------------
+    // dL, dT are the landmark M's own distance to L and to T (SPECIFICATION.md P3
+    // sec.3). The chip's own HSYNC is not a top-level port (nanomig.v:1626-1637: hs is
+    // the scan doubler's output, vs is passed through), so no assertion can show which
+    // HSYNC edge HSSTRT or HSSTOP moved. The moves of the distances (b), (c) are printed
+    // as MEASURED. Graded here: the contrast (VARHSYEN=0: neither distance changes),
+    // with P3/P4(a) and the anchors above. MUTATION P3CON / P4CON: see header.
+    checks.record(
+        "P3(b), P3(c), P3, P4(b), P4(c), P4: MEASURED, not graded. The video port carries hs, "
+        "the scan doubler's output (nanomig.v instantiates Amber with dblscan=1 and drives the "
+        "top-level hs from its _hsync_out), and vs, passed straight through; the chip's own HSYNC "
+        "(hs_in in nanomig.v) is not a top-level port, and the harness exposes none. A distance "
+        "from the picture to the edges of the output pulse does not show which HSYNC edge HSSTRT "
+        "or HSSTOP moved, so p.304's clauses (HSSTRT positions the start of HSYNC, HSSTOP its "
+        "stop) are not checkable through the ports. The distances are printed.");
     struct Prop {
         const char* name;       // "P3" or "P4"
         int moved;              // SB or SC
         int contrast;           // SB0 or SC0
         bool moves_dL;          // P3: the leading edge (dL) moves; P4: dT
-        const char* sel_nomove; const char* sel_con;
+        const char* sel_con;
         const char* edge_moved; const char* edge_kept;
     };
     const Prop props[2] = {
-        {"P3", SB, SB0, true,  "P3-NOMOVE", "P3CON", "dL (the landmark's distance to the leading edge)",
+        {"P3", SB, SB0, true,  "P3CON", "dL (the landmark's distance to the leading edge)",
          "dT (its distance to the trailing edge)"},
-        {"P4", SC, SC0, false, "P4-NOMOVE", "P4CON", "dT (the landmark's distance to the trailing edge)",
+        {"P4", SC, SC0, false, "P4CON", "dT (the landmark's distance to the trailing edge)",
          "dL (its distance to the leading edge)"},
     };
     for (const auto& p : props) {
         const std::string name = p.name;
-        const std::string mt = std::string("[") + s_label[SA] + "]", mm = std::string("[") + s_label[p.moved] + "]",
-                          mc = std::string("[") + s_label[p.contrast] + "]", ma0 = std::string("[") + s_label[SA0] + "]";
+        const std::string mm = std::string("[") + s_label[p.moved] + "]",
+                          mc = std::string("[") + s_label[p.contrast] + "]";
         auto pick = [&](const ClassStat& s) { return p.moves_dL ? s.dL : s.dT; };       // the moved edge's distance
         auto keep = [&](const ClassStat& s) { return p.moves_dL ? s.dT : s.dL; };       // the untouched edge's distance
         bool b_cls[2], c_cls[2], con_cls[2];
         for (int c = 0; c < 2; ++c) {
             // (b): the moved edge's distance differs between SA and the moved run.
-            const ClassStat& sm_b = (mv == p.sel_nomove) ? st[SA][c] : st[p.moved][c];
-            b_cls[c] = st[SA][c].use() && sm_b.use() && pick(sm_b) != pick(st[SA][c]);
-            // (c): the untouched edge's distance is exactly unchanged.
+            b_cls[c] = st[SA][c].use() && st[p.moved][c].use() && pick(st[p.moved][c]) != pick(st[SA][c]);
+            // (c): the untouched edge's distance is unchanged.
             c_cls[c] = st[SA][c].use() && st[p.moved][c].use() && keep(st[p.moved][c]) == keep(st[SA][c]);
             // contrast: with VARHSYEN=0 neither distance changes.
             const char* sb_name = (mv == p.sel_con) ? "SA" : "SA0";
@@ -1628,57 +1560,27 @@ int main(int argc, char** argv) {
             con_cls[c] = sb_c.use() && sm_c.use() && sm_c.dL == sb_c.dL && sm_c.dT == sb_c.dT;
             checks.note(name + " class " + std::to_string(c) + ": " + (p.moves_dL ? "dL" : "dT") + "(SA)=" +
                         std::to_string(pick(st[SA][c])) + " " + (p.moves_dL ? "dL" : "dT") + "(" + s_label[p.moved] +
-                        ")=" + std::to_string(pick(sm_b)) + " " + (p.moves_dL ? "dT" : "dL") + "(SA)=" +
+                        ")=" + std::to_string(pick(st[p.moved][c])) + " " + (p.moves_dL ? "dT" : "dL") + "(SA)=" +
                         std::to_string(keep(st[SA][c])) + " " + (p.moves_dL ? "dT" : "dL") + "(" + s_label[p.moved] +
                         ")=" + std::to_string(keep(st[p.moved][c])) + " dL(" + sb_name + ")=" + std::to_string(sb_c.dL) +
                         " dL(" + sm_name + ")=" + std::to_string(sm_c.dL) + " dT(" + sb_name +
                         ")=" + std::to_string(sb_c.dT) + " dT(" + sm_name + ")=" + std::to_string(sm_c.dT));
         }
-        auto any = [](const bool* v) { return v[0] || v[1]; };
+        auto yn = [](bool v) { return v ? "yes" : "no"; };
+        checks.note(name + "(b) (not graded): " + std::string(p.edge_moved) + " differs between SA and " +
+                    s_label[p.moved] + ": class 0 " + yn(b_cls[0]) + ", class 1 " + yn(b_cls[1]));
+        checks.note(name + "(c) (not graded): " + std::string(p.edge_kept) + " is unchanged between SA and " +
+                    s_label[p.moved] + ": class 0 " + yn(c_cls[0]) + ", class 1 " + yn(c_cls[1]));
 
-        const std::vector<std::pair<std::string, bool>> pre_move = {
-            {"PC-ID and PC-MARK [SA]", s_pc[SA]}, {"P3/P4-LINES [SA]", s_lines[SA]},
-            {std::string("PC-ID and PC-MARK ") + mm, s_pc[p.moved]}, {std::string("P3/P4-LINES ") + mm, s_lines[p.moved]},
-            {"A4", a4_ok}, {"P3/P4(a) [SA]", a_ok[SA]}, {std::string("P3/P4(a) ") + mm, a_ok[p.moved]}};
         const std::vector<std::pair<std::string, bool>> pre_con = {
             {"PC-ID and PC-MARK [SA0]", s_pc[SA0]}, {"P3/P4-LINES [SA0]", s_lines[SA0]},
             {std::string("PC-ID and PC-MARK ") + mc, s_pc[p.contrast]}, {std::string("P3/P4-LINES ") + mc, s_lines[p.contrast]},
             {"A4", a4_ok}, {"P3/P4(a) [SA0]", a_ok[SA0]}, {std::string("P3/P4(a) ") + mc, a_ok[p.contrast]}};
-        std::vector<std::pair<std::string, bool>> pre_all = {
-            {"PC-ID and PC-MARK [SA]", s_pc[SA]}, {std::string("PC-ID and PC-MARK ") + mm, s_pc[p.moved]},
-            {"PC-ID and PC-MARK [SA0]", s_pc[SA0]}, {std::string("PC-ID and PC-MARK ") + mc, s_pc[p.contrast]},
-            {"P3/P4-LINES [SA]", s_lines[SA]}, {std::string("P3/P4-LINES ") + mm, s_lines[p.moved]},
-            {"P3/P4-LINES [SA0]", s_lines[SA0]}, {std::string("P3/P4-LINES ") + mc, s_lines[p.contrast]},
-            {"A4", a4_ok}};
-
-        const std::string edge_phrase = std::string(p.edge_moved);
-        const std::string moved_run = s_label[p.moved];
-        if (gate(checks, name + "(b)", pre_move))
-            checks.expect(any(b_cls),
-                name + "(b) [p280,p304,p305]: while VARHSYEN and VARBEAMEN are both 1, " + edge_phrase +
-                " differs between SA and " + moved_run + " (exact inequality), in at least one parity class");
-        if (gate(checks, name + "(c)", pre_move))
-            checks.expect(any(c_cls),
-                name + "(c) [p280,p304,p305]: " + std::string(p.edge_kept) + " is exactly unchanged between SA and " +
-                moved_run + ", in at least one parity class");
         if (gate(checks, name + "-CONTRAST", pre_con))
-            checks.expect(any(con_cls),
+            checks.expect(con_cls[0] && con_cls[1],
                 name + "-CONTRAST [p280,p305] (VARHSYEN=0): neither dL nor dT differs between SA0 and " +
-                std::string(s_label[p.contrast]) + " (exact equality), in at least one parity class");
-        if (gate(checks, name, pre_all)) {
-            bool conj = false;
-            for (int c = 0; c < 2; ++c)
-                if (st[SA][c].use() && st[p.moved][c].use() && st[SA0][c].use() && st[p.contrast][c].use() &&
-                    b_cls[c] && c_cls[c] && con_cls[c])
-                    conj = true;
-            checks.expect(conj,
-                name + " [p280,p304,p305]: while VARHSYEN and VARBEAMEN are both 1, " + edge_phrase +
-                " differs between SA and " + moved_run + " (exact inequality) and " + std::string(p.edge_kept) +
-                " is exactly unchanged, and with VARHSYEN=0 neither changes, in at least one parity class; "
-                "graded relative to the picture (the landmark M): the line doubler re-times the chip's lines, so "
-                "this does not show which edge moved (A5-NOT-DISPOSITIVE) (conjunction of P3/P4(a) for the "
-                "four runs, " + name + "(b), " + name + "(c), " + name + "-CONTRAST in one class)");
-        }
+                std::string(s_label[p.contrast]) + " (exact equality), in both parity classes");
+        (void)mm;
     }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
