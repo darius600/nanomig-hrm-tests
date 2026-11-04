@@ -552,8 +552,10 @@ wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`, their
 three `_plus1` contrast variants, `prog_tx_n371_1c/1d/1e.s` (precondition
 contrasts), `prog_tx_n371_nomark3.s` (FIXTURE's contrast), and for the two
 single-word runs `prog_tx_n0_brk.s`, `prog_tx_n32396_brk.s` (1c's contrast)
-and `prog_tx_n0_stall.s`, `prog_tx_n32396_stall.s` (completion
-contrast); `fast_core.s` (P4's shared engine) and its wrappers
+`prog_tx_n0_stall.s`, `prog_tx_n32396_stall.s` (completion
+contrast), and `prog_tx_n0_mid.s`, `prog_tx_n32396_mid.s` (P2's uniform-grid
+contrasts: SERPER is rewritten right after the SERDAT write, while the word is
+being sent); `fast_core.s` (P4's shared engine) and its wrappers
 `prog_fast0.s`, `prog_fast1.s`, the contrasts `prog_fast1_4c/4d/4e/4f.s` and
 `prog_fast0_4c/4d/4e/4f.s`, the exactly-once contrasts `prog_fast1_once.s` and
 `prog_fast0_once.s`, and `prog_fast1_stall.s`, `prog_fast0_stall.s` (completion
@@ -668,7 +670,8 @@ change within one cycle). P2's pairwise U comparison (ii) is red through one
 pair only, U371/U32396: |U371-U32396| = 0.000827 against a tolerance of
 0.000072. The two other pairs pass: |U0-U371| = 0.000827 against 0.111180,
 and |U0-U32396| = 0.000000 against 0.111115 (graded on its own as the control
-P2-CTRL-PAIR). The red is not exercised by N=0 or N=32396 alone, only by
+P2-CTRL-PAIR). Clause (i) on the N=0 and the N=32396 run is graded on its own
+as the controls P2-CTRL-N0 and P2-CTRL-N32396, which pass. The red is not exercised by N=0 or N=32396 alone, only by
 back-to-back transmission (W>1): the R1 anchor, R2 standard, idle-window and
 completion preconditions on the N=0 and N=32396 runs all pass, on both
 standards and both cores.
@@ -716,7 +719,15 @@ line is named in the record of the line the selector is aimed at.
   keep printing FAIL. Their own records name the substitution through live
   inputs of the same comparator: the controls P1-CTRL-N0, P1-CTRL-N32396,
   P1-CTRL-WITHIN and P2-CTRL-PAIR print PASS at baseline and FAIL under
-  `P1-NPLUS1`.
+  `P1-NPLUS1`. P2's clause (ii) is the pairwise comparison in P2-CTRL-PAIR
+  (`P1-NPLUS1`). P2's clause (i) is the uniform-grid check in P2-CTRL-N0 and
+  P2-CTRL-N32396, which keep printing PASS under `P1-NPLUS1` (a uniform run at
+  the wrong period stays uniform) and print FAIL under `P2-MID-N0` and
+  `P2-MID-N32396` respectively: the program rewrites SERPER (3 for N=0, 16198
+  for N=32396) right after its SERDAT write, so the bit intervals after the
+  write differ from the ones before it and the TxD changes do not lie on one
+  uniform grid, with the run's R1, R2, DONE and IDLE preconditions still
+  PASS.
 - Each R1 anchor line has a stimulus contrast through its population and
   line-spacing clauses (R1, Contrast): `NMH_MUTATE=R1-READ`. The 5a C=8 lines
   are "unfalsifiable at this boundary": no stimulus the pages describe moves
@@ -753,6 +764,8 @@ FAIL.
 | `2c`, `2e` | FIXTURE-PAL |
 | `2d` | FIXTURE-PAL, 2a, 2e |
 | `P2` | 2a-2e, P2N0-*, P2N32396-* |
+| `P2-CTRL-N0` | the four P2N0-* lines |
+| `P2-CTRL-N32396` | the four P2N32396-* lines |
 | `P2-CTRL-PAIR` | 2a, P2N0-*, P2N32396-* |
 | `4c-<tag>`, `4f-<tag>` | `P4-DONE-<tag>` |
 | `4e-<tag>` | `P4-DONE-<tag>`, `4f-<tag>` |

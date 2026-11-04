@@ -63,6 +63,13 @@ start:
         move.w  #0,MARK
         move.w  #$0155,SERDAT(a0)
 
+        ifd MUT_MIDSERPER
+; ---- uniform-grid contrast: SERPER is rewritten while word 1 is being
+; sent, so the bit intervals after the write are not as long as the ones
+; before it ----
+        move.w  #MIDVAL,SERPER(a0)
+        endif
+
         ifd WMULTI
 ; ---- step 5: for k = 2 to WCOUNT ----
         moveq   #2,d1
