@@ -50,6 +50,21 @@
 //   PC-ID accepts ($20, $14), so the line is red under either. Red on fx68k and tg68k (66 passed, 1
 //   failed): PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1],
 //   P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $30.
+// MUTATION PC-ID stimulus red NMH_MUTATE=X-OCS-ALL: PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID
+//   [H2c], PC-ID [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0]: every run of
+//   both groups with the harness set to OCS (chipset_config clears the ECS bit), the programs
+//   unchanged; VPOSR bits 14-8 read the original-chipset value instead of the PAL value. Red on
+//   fx68k and tg68k (21 passed, 10 failed): PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], PC-ID
+//   [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0]. Not graded: P1-LINES [H1],
+//   P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER
+//   [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2
+//   [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1],
+//   P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES
+//   [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a)
+//   [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST,
+//   P4-CONTRAST. Measured: PC-ID [H1] = $00; PC-ID [H2] = $00; PC-ID [H1c] = $00; PC-ID [H2c] =
+//   $00; PC-ID [SA] = $00; PC-ID [SB] = $00; PC-ID [SC] = $00; PC-ID [SA0] = $00; PC-ID [SB0] =
+//   $00; PC-ID [SC0] = $00.
 // MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: PC-MARK [H1]: H1 with MARK1's write omitted
 //   (prog_h_h1_halt.bin, MARK_OMIT); no marker appears, while the rest of the program, including
 //   DONE, still runs. Red on fx68k and tg68k (66 passed, 1 failed): PC-MARK [H1]. Not graded:
@@ -63,9 +78,42 @@
 //   DONE, still runs. Red on fx68k and tg68k (64 passed, 1 failed): PC-MARK [SA]. Not graded:
 //   P3/P4-LINES [SA], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a)
 //   [SB0], P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-ALL: PC-MARK [H1], PC-MARK [H2], PC-MARK [H1c],
+//   PC-MARK [H2c], PC-MARK [SA], PC-MARK [SB], PC-MARK [SC], PC-MARK [SA0], PC-MARK [SB0], PC-MARK
+//   [SC0]: every run of both groups with MARK1's write omitted (prog_h_h1_halt.bin,
+//   prog_h_h2_halt.bin, prog_h_h1c_halt.bin, prog_h_h2c_halt.bin, prog_s_sa_halt.bin,
+//   prog_s_sb_halt.bin, prog_s_sc_halt.bin, prog_s_sa0_halt.bin, prog_s_sb0_halt.bin,
+//   prog_s_sc0_halt.bin; MARK_OMIT); no marker appears in any run, while the rest of each program,
+//   including DONE, still runs. Red on fx68k and tg68k (21 passed, 10 failed): PC-MARK [H1],
+//   PC-MARK [H2], PC-MARK [H1c], PC-MARK [H2c], PC-MARK [SA], PC-MARK [SB], PC-MARK [SC], PC-MARK
+//   [SA0], PC-MARK [SB0], PC-MARK [SC0]. Not graded: P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c],
+//   P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES
+//   [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1
+//   [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2,
+//   P2-CONTRAST, P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0],
+//   P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a)
+//   [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-NOMARK2-ALL: PC-MARK [H1], PC-MARK [H2], PC-MARK
+//   [H1c], PC-MARK [H2c]: every H run with MARK2's write omitted (prog_h_h1_nomark2.bin,
+//   prog_h_h2_nomark2.bin, prog_h_h1c_nomark2.bin, prog_h_h2c_nomark2.bin; MARK2_OMIT); MARK1
+//   appears and nothing follows it, so the clause 'MARK2 later' fails alone in each. The S runs
+//   have no MARK2 and are the normal runs. Red on fx68k and tg68k (42 passed, 4 failed): PC-MARK
+//   [H1], PC-MARK [H2], PC-MARK [H1c], PC-MARK [H2c]. Not graded: P1-LINES [H1], P1-LINES [H2],
+//   P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER
+//   [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c],
+//   A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2],
+//   P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5.
 // MUTATION DONE stimulus red NMH_MUTATE=X-NODONE: DONE [H1]: H1 whose program stops in place after
 //   MARK2 without storing the DONE value (prog_h_h1_nodone.bin, NO_DONE); PC-ID and PC-MARK hold.
 //   Red on fx68k and tg68k (75 passed, 1 failed): DONE [H1]. Not graded: none.
+// MUTATION DONE stimulus red NMH_MUTATE=X-NODONE-ALL: DONE [H1], DONE [H2], DONE [H1c], DONE [H2c],
+//   DONE [SA], DONE [SB], DONE [SC], DONE [SA0], DONE [SB0], DONE [SC0]: every run of both groups
+//   stops in place without storing the DONE value (prog_h_h1_nodone.bin, prog_h_h2_nodone.bin,
+//   prog_h_h1c_nodone.bin, prog_h_h2c_nodone.bin, prog_s_sa_nodone.bin, prog_s_sb_nodone.bin,
+//   prog_s_sc_nodone.bin, prog_s_sa0_nodone.bin, prog_s_sb0_nodone.bin, prog_s_sc0_nodone.bin;
+//   NO_DONE); PC-ID and PC-MARK hold, and the display DMA of the S runs keeps running. Red on fx68k
+//   and tg68k (66 passed, 10 failed): DONE [H1], DONE [H2], DONE [H1c], DONE [H2c], DONE [SA], DONE
+//   [SB], DONE [SC], DONE [SA0], DONE [SB0], DONE [SC0]. Not graded: none.
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT: P1-LINES [H1]: H1's sampling loop shortened to
 //   1024 samples (prog_h_h1_short.bin, SHORT_LOOP), followed by a delay loop of 24000 iterations.
 //   The delay does not keep the MARK1..MARK2 window at the normal run's length: the window measures
@@ -871,9 +919,26 @@ const HSub kHSubs[] = {
     {"X-AUD0-H2",   1, "prog_h_h2_aud0.bin", 0},
     {"X-AUD0-H1C",  2, "prog_h_h1c_aud0.bin", 0},
     {"X-AUD0-H2C",  3, "prog_h_h2c_aud0.bin", 0},
+    // Selectors that change every run of a group at once (one per precondition line).
+    {"X-OCS-ALL",       0, "prog_h_h1.bin", 1},
+    {"X-OCS-ALL",       1, "prog_h_h2.bin", 1},
+    {"X-OCS-ALL",       2, "prog_h_h1c.bin", 1},
+    {"X-OCS-ALL",       3, "prog_h_h2c.bin", 1},
+    {"X-HALT-ALL",      0, "prog_h_h1_halt.bin", 0},
+    {"X-HALT-ALL",      1, "prog_h_h2_halt.bin", 0},
+    {"X-HALT-ALL",      2, "prog_h_h1c_halt.bin", 0},
+    {"X-HALT-ALL",      3, "prog_h_h2c_halt.bin", 0},
+    {"X-NOMARK2-ALL",   0, "prog_h_h1_nomark2.bin", 0},
+    {"X-NOMARK2-ALL",   1, "prog_h_h2_nomark2.bin", 0},
+    {"X-NOMARK2-ALL",   2, "prog_h_h1c_nomark2.bin", 0},
+    {"X-NOMARK2-ALL",   3, "prog_h_h2c_nomark2.bin", 0},
+    {"X-NODONE-ALL",    0, "prog_h_h1_nodone.bin", 0},
+    {"X-NODONE-ALL",    1, "prog_h_h2_nodone.bin", 0},
+    {"X-NODONE-ALL",    2, "prog_h_h1c_nodone.bin", 0},
+    {"X-NODONE-ALL",    3, "prog_h_h2c_nodone.bin", 0},
 };
 
-struct SSub { const char* sel; int run; const char* bin; };
+struct SSub { const char* sel; int run; const char* bin; int cfg = 0; };  // cfg: 0 default, 1 OCS
 const SSub kSSubs[] = {
     {"X-HALT-S",    0, "prog_s_sa_halt.bin"},
     {"X-NOBPL",     0, "prog_s_sa_nobpl.bin"},
@@ -891,6 +956,25 @@ const SSub kSSubs[] = {
     {"X-SHIFT-SB0", 4, "prog_s_sb0_shift.bin"},
     {"X-SHIFT-SC0", 5, "prog_s_sc0_shift.bin"},
     {"X-A5REF",     3, "prog_s_sa0_a5ref.bin"},
+    // Selectors that change every S run at once (one per precondition line).
+    {"X-OCS-ALL",     0, "prog_s_sa.bin", 1},
+    {"X-OCS-ALL",     1, "prog_s_sb.bin", 1},
+    {"X-OCS-ALL",     2, "prog_s_sc.bin", 1},
+    {"X-OCS-ALL",     3, "prog_s_sa0.bin", 1},
+    {"X-OCS-ALL",     4, "prog_s_sb0.bin", 1},
+    {"X-OCS-ALL",     5, "prog_s_sc0.bin", 1},
+    {"X-HALT-ALL",    0, "prog_s_sa_halt.bin"},
+    {"X-HALT-ALL",    1, "prog_s_sb_halt.bin"},
+    {"X-HALT-ALL",    2, "prog_s_sc_halt.bin"},
+    {"X-HALT-ALL",    3, "prog_s_sa0_halt.bin"},
+    {"X-HALT-ALL",    4, "prog_s_sb0_halt.bin"},
+    {"X-HALT-ALL",    5, "prog_s_sc0_halt.bin"},
+    {"X-NODONE-ALL",  0, "prog_s_sa_nodone.bin"},
+    {"X-NODONE-ALL",  1, "prog_s_sb_nodone.bin"},
+    {"X-NODONE-ALL",  2, "prog_s_sc_nodone.bin"},
+    {"X-NODONE-ALL",  3, "prog_s_sa0_nodone.bin"},
+    {"X-NODONE-ALL",  4, "prog_s_sb0_nodone.bin"},
+    {"X-NODONE-ALL",  5, "prog_s_sc0_nodone.bin"},
 };
 
 // Proposition selectors: one proposition line's input is replaced, nothing
@@ -1317,8 +1401,10 @@ int main(int argc, char** argv) {
     bool s_lines[6] = {false, false, false, false, false, false};
     for (int i = 0; i < 6; ++i) {
         std::string bin = s_bin[i];
-        for (const auto& s : kSSubs) if (mv == s.sel && s.run == i) bin = s.bin;
-        scap[i] = run_s(dir + "/" + bin, default_cfg());
+        nmh::Config cfg = default_cfg();
+        for (const auto& s : kSSubs)
+            if (mv == s.sel && s.run == i) { bin = s.bin; cfg = s.cfg == 1 ? ocs_cfg() : default_cfg(); }
+        scap[i] = run_s(dir + "/" + bin, cfg);
         sg[i] = graded_lines_of(scap[i]);
     }
 

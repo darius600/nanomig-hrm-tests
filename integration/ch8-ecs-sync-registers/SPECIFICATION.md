@@ -307,6 +307,12 @@ on it report "precondition not met", and every other precondition stays green.
   - *Contrast (MARK2 later):* the same program with MARK2's write omitted.
     MARK1 appears and nothing follows it, PC-MARK fails through its second
     clause alone, and the rest of the program still runs.
+- **Every run.** The contrasts above name one run each. Four further
+  selectors (X-OCS-ALL, X-HALT-ALL, X-NOMARK2-ALL and X-NODONE-ALL, section 5)
+  apply the OCS, MARK1, MARK2 and DONE contrasts to every run of both groups
+  at once, so that the PC-ID, PC-MARK and DONE line of every run goes red
+  under some selector. They change the stimulus or the harness
+  configuration only.
 
 ## 4. Programs
 
@@ -431,6 +437,10 @@ met".
 | X-HALT-H | H1 with MARK1's write omitted | PC-MARK [H1] |
 | X-NOMARK2 | H1 with MARK2's write omitted | PC-MARK [H1] (second clause) |
 | X-HALT-S | SA with MARK1's write omitted | PC-MARK [SA] |
+| X-OCS-ALL | every run of both groups with the harness set to OCS | PC-ID [H1], [H2], [H1c], [H2c], [SA], [SB], [SC], [SA0], [SB0], [SC0] |
+| X-HALT-ALL | every run of both groups with MARK1's write omitted | PC-MARK [H1], [H2], [H1c], [H2c], [SA], [SB], [SC], [SA0], [SB0], [SC0] |
+| X-NOMARK2-ALL | every H run with MARK2's write omitted | PC-MARK [H1], [H2], [H1c], [H2c] (second clause) |
+| X-NODONE-ALL | every run of both groups holding in place without the DONE write | DONE [H1], [H2], [H1c], [H2c], [SA], [SB], [SC], [SA0], [SB0], [SC0] |
 | X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE [H1] |
 | X-SHORT, X-SHORT-H2, X-SHORT-H1C, X-SHORT-H2C | the run with a `DBRA` count of 16 blocks (1024 samples), followed by a delay loop; the window is not the normal run's length (measured per core below) but stays long enough for P2-LINES to stay live | P1-LINES [run] |
 | X-LATE, X-LATE-H2, X-LATE-H1C, X-LATE-H2C | the run with all 16384 samples but MARK1 written only after the last of them, followed by a delay loop that keeps the MARK1..MARK2 window short | P2-LINES [run] |
@@ -884,10 +894,14 @@ them, and nothing else changed.
 | `FIXTURE` | FIXTURE | PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, PC-ID [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0], P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST | 20 passed, 1 failed | 20 passed, 1 failed |
 | `X-OCS` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 66 passed, 1 failed | 66 passed, 1 failed |
 | `X-NTSC` | PC-ID [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 66 passed, 1 failed | 66 passed, 1 failed |
+| `X-OCS-ALL` | PC-ID [H1], PC-ID [H2], PC-ID [H1c], PC-ID [H2c], PC-ID [SA], PC-ID [SB], PC-ID [SC], PC-ID [SA0], PC-ID [SB0], PC-ID [SC0] | P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST | 21 passed, 10 failed | 21 passed, 10 failed |
 | `X-HALT-H` | PC-MARK [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 66 passed, 1 failed | 66 passed, 1 failed |
 | `X-NOMARK2` | PC-MARK [H1] | P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2 | 66 passed, 1 failed | 66 passed, 1 failed |
 | `X-HALT-S` | PC-MARK [SA] | P3/P4-LINES [SA], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5, P3-CONTRAST, P4-CONTRAST | 64 passed, 1 failed | 64 passed, 1 failed |
+| `X-HALT-ALL` | PC-MARK [H1], PC-MARK [H2], PC-MARK [H1c], PC-MARK [H2c], PC-MARK [SA], PC-MARK [SB], PC-MARK [SC], PC-MARK [SA0], PC-MARK [SB0], PC-MARK [SC0] | P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, P3/P4-LINES [SA], P3/P4-LINES [SB], P3/P4-LINES [SC], P3/P4-LINES [SA0], P3/P4-LINES [SB0], P3/P4-LINES [SC0], A4, P3/P4(a) [SA], P3/P4(a) [SB], P3/P4(a) [SC], P3/P4(a) [SA0], P3/P4(a) [SB0], P3/P4(a) [SC0], A5-REF, A5, P3-CONTRAST, P4-CONTRAST | 21 passed, 10 failed | 21 passed, 10 failed |
+| `X-NOMARK2-ALL` | PC-MARK [H1], PC-MARK [H2], PC-MARK [H1c], PC-MARK [H2c] | P1-LINES [H1], P1-LINES [H2], P1-LINES [H1c], P1-LINES [H2c], A1 [H1c], A1 [H2c], A3 [H1c], A3 [H2c], P1-COVER [H1], P1-COVER [H2], P2-LINES [H1], P2-LINES [H2], P2-LINES [H1c], P2-LINES [H2c], A2 [H1], A2 [H2], A2 [H1c], A2 [H2c], P1 [H1], P1 [H2], P1-CONTRAST [H1c], P1-CONTRAST [H2c], P2(a) [H1], P2(a) [H2], P2(b), P2(c), P2, P2-CONTRAST, A5-REF, A5 | 42 passed, 4 failed | 42 passed, 4 failed |
 | `X-NODONE` | DONE [H1] | - | 75 passed, 1 failed | 75 passed, 1 failed |
+| `X-NODONE-ALL` | DONE [H1], DONE [H2], DONE [H1c], DONE [H2c], DONE [SA], DONE [SB], DONE [SC], DONE [SA0], DONE [SB0], DONE [SC0] | - | 66 passed, 10 failed | 66 passed, 10 failed |
 | `X-SHORT` | P1-LINES [H1] | P1 [H1] | 74 passed, 1 failed | 74 passed, 1 failed |
 | `X-SHORT-H2` | P1-LINES [H2] | P1 [H2] | 74 passed, 1 failed | 74 passed, 1 failed |
 | `X-SHORT-H1C` | P1-LINES [H1c] | A1 [H1c], P1-CONTRAST [H1c] | 73 passed, 1 failed | 73 passed, 1 failed |

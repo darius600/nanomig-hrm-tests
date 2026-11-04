@@ -24,6 +24,9 @@
 ;                   relative to the sync pulse in half of the lines.
 ;   AUD0_AT0     -- X-A5REF: audio channel 0 DMA started on a one-word
 ;                   buffer at Chip address 0 (period 124, p.140/p.266).
+;   NO_DONE      -- X-NODONE-ALL: after MARK1 the program holds in place
+;                   without storing DONE_VALUE, so only the DONE line of
+;                   the test goes red; the display DMA keeps running.
 ; MARK1 is the word the test finds as the CPU write of $A5A5 at the
 ; Chip-memory port. ID holds the VPOSR value read before any BEAMCON0
 ; write (PC-ID). COPLIST and PLANE are filled by the CPU itself before the
@@ -163,4 +166,8 @@ start:
         else
         move.w  #$A5A5,MARK1
         endif
+        ifd     NO_DONE
+.stop:  bra.s   .stop                   ; X-NODONE-ALL: hold in place without the DONE write
+        else
         DONE
+        endif

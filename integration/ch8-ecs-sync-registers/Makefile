@@ -13,6 +13,12 @@ PROGS    := prog_h_h1 prog_h_h2 prog_h_h1c prog_h_h2c \
             prog_s_sa_a4double prog_s_sa_a4width \
             prog_s_sa_shift prog_s_sb_shift prog_s_sc_shift \
             prog_s_sa0_shift prog_s_sb0_shift prog_s_sc0_shift \
-            prog_s_sa0_a5ref
+            prog_s_sa0_a5ref \
+            prog_h_h2_halt prog_h_h1c_halt prog_h_h2c_halt \
+            prog_h_h2_nomark2 prog_h_h1c_nomark2 prog_h_h2c_nomark2 \
+            prog_h_h2_nodone prog_h_h1c_nodone prog_h_h2c_nodone \
+            prog_s_sb_halt prog_s_sc_halt prog_s_sa0_halt prog_s_sb0_halt prog_s_sc0_halt \
+            prog_s_sa_nodone prog_s_sb_nodone prog_s_sc_nodone \
+            prog_s_sa0_nodone prog_s_sb0_nodone prog_s_sc0_nodone
 
 include ../harness/nanomig.mk
