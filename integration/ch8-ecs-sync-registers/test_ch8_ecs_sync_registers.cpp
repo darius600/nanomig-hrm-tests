@@ -71,27 +71,36 @@
 // MUTATION DONE stimulus red NMH_MUTATE=X-NODONE: DONE [H1]: H1 whose program stops in place
 //   after MARK2 without storing the DONE value (prog_h_h1_nodone.bin, NO_DONE); PC-ID and
 //   PC-MARK hold. Red on fx68k and tg68k (81 passed, 1 failed): DONE [H1]. Not graded: none.
-// MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT: P1-LINES [H1]: H1's sampling loop
-//   shortened to 1024 samples (prog_h_h1_short.bin, SHORT_LOOP), followed by a delay loop that
-//   keeps the MARK1..MARK2 window as long as the normal run's. Red on fx68k and tg68k (80
-//   passed, 1 failed): P1-LINES [H1]. Not graded: P1 [H1]. Measured: P1-LINES [H1]: 34 graded
-//   wraps, 1024 samples (fx68k), 34 graded wraps, 1024 samples (tg68k); P2-LINES [H1]: 719
-//   graded periods (fx68k), 579 graded periods (tg68k).
+// MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT: P1-LINES [H1]: H1's sampling loop shortened to
+//   1024 samples (prog_h_h1_short.bin, SHORT_LOOP), followed by a delay loop of 24000 iterations.
+//   The delay does not keep the MARK1..MARK2 window at the normal run's length: the window measures
+//   1021216 clk_sys cycles (fx68k) and 822584 (tg68k), against 799464 and 799352 in the normal run.
+//   It keeps the window long enough for P2-LINES [H1] to stay live: 719 graded periods (fx68k) and
+//   579 (tg68k), against the 320 required. Red on fx68k and tg68k (80 passed, 1 failed): P1-LINES
+//   [H1]. Not graded: P1 [H1]. Measured: P1-LINES [H1]: 34 graded wraps, 1024 samples (fx68k), 34
+//   graded wraps, 1024 samples (tg68k); P2-LINES [H1]: 719 graded periods (fx68k), 579 graded
+//   periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2: P1-LINES [H2]: as X-SHORT, for H2
-//   (prog_h_h2_short.bin). Red on fx68k and tg68k (80 passed, 1 failed): P1-LINES [H2]. Not
-//   graded: P1 [H2]. Measured: P1-LINES [H2]: 31 graded wraps, 1024 samples (fx68k), 31 graded
-//   wraps, 1024 samples (tg68k); P2-LINES [H2]: 657 graded periods (fx68k), 531 graded periods
-//   (tg68k).
+//   (prog_h_h2_short.bin): the window measures 1016920 clk_sys cycles (fx68k) and 822200 (tg68k),
+//   against 799064 and 798968 in the normal run, not the same length; P2-LINES [H2] stays live with
+//   657 graded periods (fx68k) and 531 (tg68k). Red on fx68k and tg68k (80 passed, 1 failed):
+//   P1-LINES [H2]. Not graded: P1 [H2]. Measured: P1-LINES [H2]: 31 graded wraps, 1024 samples
+//   (fx68k), 31 graded wraps, 1024 samples (tg68k); P2-LINES [H2]: 657 graded periods (fx68k), 531
+//   graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H1C: P1-LINES [H1c]: as X-SHORT, for H1c
-//   (prog_h_h1c_short.bin). Red on fx68k and tg68k (79 passed, 1 failed): P1-LINES [H1c]. Not
-//   graded: A1 [H1c], P1-CONTRAST [H1c]. Measured: P1-LINES [H1c]: 26 graded wraps, 1024
-//   samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H1c]: 559 graded periods
-//   (fx68k), 450 graded periods (tg68k).
+//   (prog_h_h1c_short.bin): the window measures 1018720 clk_sys cycles (fx68k) and 821552 (tg68k),
+//   against 798448 and 798352 in the normal run, not the same length; P2-LINES [H1c] stays live
+//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (79 passed, 1 failed):
+//   P1-LINES [H1c]. Not graded: A1 [H1c], P1-CONTRAST [H1c]. Measured: P1-LINES [H1c]: 26 graded
+//   wraps, 1024 samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H1c]: 559 graded
+//   periods (fx68k), 450 graded periods (tg68k).
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT-H2C: P1-LINES [H2c]: as X-SHORT, for H2c
-//   (prog_h_h2c_short.bin). Red on fx68k and tg68k (79 passed, 1 failed): P1-LINES [H2c]. Not
-//   graded: A1 [H2c], P1-CONTRAST [H2c]. Measured: P1-LINES [H2c]: 26 graded wraps, 1024
-//   samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H2c]: 559 graded periods
-//   (fx68k), 450 graded periods (tg68k).
+//   (prog_h_h2c_short.bin): the window measures 1018720 clk_sys cycles (fx68k) and 821552 (tg68k),
+//   against 798448 and 798352 in the normal run, not the same length; P2-LINES [H2c] stays live
+//   with 559 graded periods (fx68k) and 450 (tg68k). Red on fx68k and tg68k (79 passed, 1 failed):
+//   P1-LINES [H2c]. Not graded: A1 [H2c], P1-CONTRAST [H2c]. Measured: P1-LINES [H2c]: 26 graded
+//   wraps, 1024 samples (fx68k), 26 graded wraps, 1024 samples (tg68k); P2-LINES [H2c]: 559 graded
+//   periods (fx68k), 450 graded periods (tg68k).
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-LATE: P2-LINES [H1]: H1 with all 16384 samples
 //   but MARK1 written only after the last of them, followed by a short delay loop
 //   (prog_h_h1_late.bin, LATE_MARK): the MARK1..MARK2 window holds far fewer than 320 line
@@ -1065,8 +1074,8 @@ int main(int argc, char** argv) {
         "(the landmark M), a stated limit.");
     checks.record(
         "opus:8-appA-oos.c6-WITHDRAWN [p280]: HTOTAL -- as c4, for the "
-        "highest-count effect. P1 and P2 grade the functional effect alone, "
-        "unlabelled.");
+        "highest-count effect. P1 (over the sampled readbacks) and P2 grade the "
+        "functional effect alone, unlabelled.");
 
     // ---- PC-ID, PC-MARK, DONE: shared preconditions, every H-group run --
     for (auto& r : hr) {
@@ -1111,7 +1120,8 @@ int main(int argc, char** argv) {
             if (ex.ok) for (size_t k = ex.wraps[1]; k < ex.hf.size(); ++k) maxH = std::max(maxH, ex.hf[k]);
             checks.note("A1 " + tag + ": max graded H=$" + hex_word(maxH));
             checks.expect(ex.ok && maxH >= (0xE2 - 16) && maxH <= 0xE3,
-                "A1 " + tag + " [p23]: the largest graded H with VARBEAMEN=0 lies between $E2-16 and $E3");
+                "A1 " + tag + " [p23]: the largest graded H with VARBEAMEN=0 lies between $E2-16 and $E3 "
+                "(the margin of 16 below $E2 is read off the implementation)");
         }
     }
 
@@ -1135,6 +1145,12 @@ int main(int argc, char** argv) {
 
     // ---- P1-COVER [H1]/[H2]: consecutive graded sample stores are never
     // more than 16 CCK apart, and at least one graded sample has H >= N-16.
+    checks.record(
+        "P1-COVER, A1: the 16-CCK bound on the gap between sample stores, and the matching N-16 "
+        "and $E2-16 endpoint margins, are read off the implementation; no page and no "
+        "instruction-timing contract gives them. The measured maximum gap per core is printed "
+        "on the P1-COVER lines. They gate the liveness of the sampling only (a sampler that stops "
+        "reading for a long stretch fails them) and are not cited for P1's universal clause.");
     for (int i = 0; i < 2; ++i) {
         HRun& r = hr[i];
         const std::string tag = std::string("[") + r.label + "]";
@@ -1147,13 +1163,17 @@ int main(int argc, char** argv) {
             for (size_t k = gs; k < ex.hf.size(); ++k) if (ex.hf[k] >= (uint16_t)(h_n[i] - 16)) near_end = true;
             checks.note("P1-COVER " + tag + ": largest consecutive-sample gap in the graded range = " +
                         std::to_string(max_gap / kCck) + " CCK");
+            checks.note("P1-COVER " + tag + ": measured maximum gap " + std::to_string(max_gap) +
+                        " clk_sys cycles, against a bound of " + std::to_string(16 * kCck) +
+                        " (16 CCK, read off the implementation)");
         }
         if (gate(checks, "P1-COVER " + tag,
                  {{"PC-ID and PC-MARK " + tag, r.pc}, {"A3 [H1c] and A3 [H2c]", kcck_ok}})) {
             r.cover = ex.ok && max_gap <= 16 * kCck && near_end;
             checks.expect(r.cover,
                 "P1-COVER " + tag + ": consecutive graded sample stores are never more than 16 CCK "
-                "apart, and at least one graded sample has H >= N-16");
+                "apart, and at least one graded sample has H >= N-16 (bound read off the "
+                "implementation; liveness of the sampling only)");
         }
     }
 
@@ -1161,6 +1181,9 @@ int main(int argc, char** argv) {
     for (auto& r : hr) {
         const std::string tag = std::string("[") + r.label + "]";
         checks.note("P2-LINES " + tag + ": " + std::to_string(r.d.periods.size()) + " graded periods");
+        if (r.cap.mark1 && r.cap.mark2 && *r.cap.mark2 > *r.cap.mark1)
+            checks.note("WINDOW " + tag + ": MARK1..MARK2 = " + std::to_string(*r.cap.mark2 - *r.cap.mark1) +
+                        " clk_sys cycles = " + std::to_string((*r.cap.mark2 - *r.cap.mark1) / kCck) + " CCK");
         if (gate(checks, "P2-LINES " + tag,
                  {{"PC-ID and PC-MARK " + tag, r.pc}, {"A3 [H1c] and A3 [H2c]", kcck_ok}})) {
             r.lines2 = r.d.ok && r.d.periods.size() >= 320;
@@ -1185,6 +1208,11 @@ int main(int argc, char** argv) {
     // ECS-mark clauses SPECIFICATION.md sec.1 declines, so no id is
     // carried here. MUTATION P1/P1-H2 (the proposition lines) and
     // P1C/P1C-H2 (the contrast lines): see header.
+    checks.record(
+        "P1: graded over the sampled readbacks only. The counter's value at an instant no readback "
+        "sampled is not observed (a CPU register read cannot occur every colour clock), so the "
+        "page's \"Highest number count\" (p.280) is not established for those instants; P2 grades "
+        "the line period, which does not rest on the readbacks.");
     for (int i = 0; i < 4; ++i) {
         HRun& r = hr[i];
         const bool contrast = i >= 2;
@@ -1213,7 +1241,8 @@ int main(int argc, char** argv) {
         checks.note(name + ": max graded H=$" + hex_word(maxH) + ", N=$" + hex_word(h_n[i]));
         if (!contrast) {
             checks.expect(!any_exceeds,
-                name + " [p280]: while VARBEAMEN is 1, no graded horizontal-position readback exceeds HTOTAL");
+                name + " [p280]: while VARBEAMEN is 1, no sampled graded horizontal-position readback "
+                "exceeds HTOTAL (graded over the sampled readbacks only)");
         } else {
             checks.expect(any_exceeds,
                 name + " [p280] (VARBEAMEN=0): at least one graded readback exceeds N, since HTOTAL's "

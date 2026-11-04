@@ -10,9 +10,12 @@
 ;                     including DONE, still runs.
 ;   FIXTURE_MUTANT -- FIXTURE: FIXCONST holds $DEAD instead of $C3A5.
 ;   SHORT_LOOP     -- X-SHORT*: 16 blocks (1024 samples) instead of 256
-;                     (16384), then a delay loop of HOLD_N iterations, so the
-;                     MARK1..MARK2 window keeps its length while the sampled
-;                     population shrinks.
+;                     (16384), then a delay loop of HOLD_N iterations. The
+;                     delay is not tuned to the normal run: the MARK1..MARK2
+;                     window comes out 3 to 28 percent longer, per core (the
+;                     test's X-SHORT records give the lengths), and long
+;                     enough for P2-LINES to stay live, so the sampled
+;                     population shrinks while the line count does not.
 ;   LATE_MARK      -- X-LATE*: MARK1 is written only after the sampling loop,
 ;                     followed by a delay loop of HOLD_N iterations, so the
 ;                     MARK1..MARK2 window shrinks while the sampled

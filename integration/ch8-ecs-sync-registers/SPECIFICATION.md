@@ -416,7 +416,7 @@ met".
 | X-NOMARK2 | H1 with MARK2's write omitted | PC-MARK [H1] (second clause) |
 | X-HALT-S | SA with MARK1's write omitted | PC-MARK [SA] |
 | X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE [H1] |
-| X-SHORT, X-SHORT-H2, X-SHORT-H1C, X-SHORT-H2C | the run with a `DBRA` count of 16 blocks (1024 samples), followed by a delay loop that keeps the MARK1..MARK2 window as long as the normal run's | P1-LINES [run] |
+| X-SHORT, X-SHORT-H2, X-SHORT-H1C, X-SHORT-H2C | the run with a `DBRA` count of 16 blocks (1024 samples), followed by a delay loop; the window is not the normal run's length (measured per core below) but stays long enough for P2-LINES to stay live | P1-LINES [run] |
 | X-LATE, X-LATE-H2, X-LATE-H1C, X-LATE-H2C | the run with all 16384 samples but MARK1 written only after the last of them, followed by a delay loop that keeps the MARK1..MARK2 window short | P2-LINES [run] |
 | X-BURST, X-BURST-H2 | H1 / H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER [H1] / [H2] |
 | X-AUD0, X-AUD0-H2, X-AUD0-H1C, X-AUD0-H2C | the run with audio channel 0 DMA started (p.145: location, length 8, volume 64, period 124, enable; p.266 gives 124 as the smallest period (p.140: 124 NTSC, 123 PAL), p.140 gives 64 as the maximum volume) | A2 [run] |
@@ -452,11 +452,15 @@ comparator and changes nothing else; section 7 lists the line each turns red.
 ### P1. With VARBEAMEN set, no horizontal position read back exceeds HTOTAL
 
 1. **Proposition.** While BEAMCON0 bit 7 (VARBEAMEN) is 1, no
-   horizontal-position value read back from VHPOSR exceeds the value
-   written to HTOTAL. p.280, with p.298, p.304 and p.305; `opus:8-appA-oos.c6`
-   bundles this functional clause with address, write-only, Agnus and
-   ECS-mark clauses section 1 declines, so no id is carried on this
-   assertion (recorded, section 1).
+   horizontal-position value read back from VHPOSR in the graded range
+   exceeds the value written to HTOTAL. p.280, with p.298, p.304 and p.305;
+   `opus:8-appA-oos.c6` bundles this functional clause with address,
+   write-only, Agnus and ECS-mark clauses section 1 declines, so no id is
+   carried on this assertion (recorded, section 1). P1 is graded over the
+   sampled readbacks only: the page's "Highest number count" is a statement
+   about the counter, and the counter's value at an instant no readback
+   sampled is not observed (point 4). The test prints a RECORDED line
+   saying so.
 2. **Stimulus.** Program H, runs H1 and H2.
 3. **Observation.** The 16384 words at SAMPLES, bits 7 to 0 (H), read from
    memory after MARK2.
@@ -472,11 +476,14 @@ comparator and changes nothing else; section 7 lists the line each turns red.
    (VARBEAMEN=1)" (p.280). p.304 describes the same field as "Highest number
    count in horizontal line" and as "the number of 280ns increments on the
    horizontal line". Under either reading, no count exceeds N (page note 2).
-   The quantifier is "highest", so every graded sample -- every actual
-   readback, not every color-clock instant of the counter's own value -- is
-   checked, over at least 320 lines. That is more than one PAL field of 313
-   lines (p.216), so the graded lines include a field boundary and vertical
-   blanking lines.
+   Every graded sample -- every actual readback in the graded range, not
+   every color-clock instant of the counter's own value -- is checked, over
+   at least 320 lines. That is more than one PAL field of 313 lines (p.216),
+   so the graded lines include a field boundary and vertical blanking lines.
+   The counter's values at the instants between two readbacks are not
+   observed; P1 is not read as a statement about them, and it does not
+   establish the page's universal "highest" for them. P2 grades the line
+   period, which does not rest on the readbacks.
 5. **Preconditions.**
    - PC-ID and PC-MARK of the run.
    - **P1-LINES [H1], [H2], [H1c], [H2c]:** the graded samples of the run
@@ -487,14 +494,17 @@ comparator and changes nothing else; section 7 lists the line each turns red.
      (compared as raw clk_sys cycles against 16 × the clk_sys-per-CCK
      ratio, not after integer-dividing first; this consumes kCck and
      records "precondition not met" unless both A3 lines hold), and
-     at least one graded sample has H ≥ N − 16, for each run. Together
-     these show that the sampling reached across the whole line, including
-     its end: they establish that no *readback* was missed, which is the
-     quantifier the proposition states (point 4). A gapless observation of
-     the counter's own value between readbacks is not achievable at this
-     boundary -- a CPU register read cannot occur every color clock -- so
-     P1-COVER is not read as proving that no unsampled instant exceeded N,
-     only that the readbacks it did take cover the line.
+     at least one graded sample has H ≥ N − 16, for each run. The bound of
+     16 color clocks, and the margin of 16 in N − 16, are read off the
+     implementation: no page and no instruction-timing contract gives them.
+     They gate the liveness of the sampling only -- a sampler that stops
+     reading for a long stretch, or never reaches the end of the line, fails
+     them -- and are not cited for the unsampled instants or for the
+     universal "highest" clause of the page (point 4). The measured maximum
+     gap is printed per core on the P1-COVER lines and recorded in section
+     7. A gapless observation of the counter's own value between readbacks
+     is not achievable at this boundary: a CPU register read cannot occur
+     every color clock.
 6. **Contrasting cases.**
    - Runs H1c and H2c (VARBEAMEN = 0, all else equal). Here the counter
      runs its standard course, "a value of $0 to $E2" (p.23). At least one
@@ -509,7 +519,8 @@ comparator and changes nothing else; section 7 lists the line each turns red.
    the same on p.216, p.285 and p.304.
    - **Anchor A1:** in H1c and H2c, the largest graded H lies between
      $E2 − 16 and $E3. p.23 gives $E2. With LOLDIS set, a 228-count line
-     would reach $E3 (page note 3). A1 is gated on its run's PC-ID, PC-MARK
+     would reach $E3 (page note 3). The margin of 16 below $E2 is read off
+     the implementation, as for P1-COVER (point 5). A1 is gated on its run's PC-ID, PC-MARK
      and P1-LINES and gates no other line.
 
 ### P2. With VARBEAMEN set, every line lasts N or N+1 color clocks, and HTOTAL changes it count for count
@@ -807,8 +818,18 @@ graded period within a run is identical (P2(a)). The conjunction (P2) is
 PASS on both cores.
 
 **P1-COVER.** Largest consecutive-sample gap in the graded range: H1 13
-CCK (fx68k) / 11 CCK (TG68K), H2 13 CCK (fx68k) / 11 CCK (TG68K) (bound:
-16).
+CCK = 104 `clk_sys` cycles (fx68k) / 11 CCK = 88 cycles (TG68K), H2 13 CCK =
+104 cycles (fx68k) / 11 CCK = 88 cycles (TG68K). The bound is 16 CCK = 128
+cycles, read off the implementation (section 6, P1 point 5); it guards
+liveness only.
+
+**Window.** MARK1..MARK2 in `clk_sys` cycles, fx68k / TG68K: H1 799464 /
+799352, H2 799064 / 798968, H1c and H2c 798448 / 798352. Under the
+X-SHORT selectors the window is H1 1021216 / 822584, H2 1016920 / 822200,
+H1c and H2c 1018720 / 821552: the delay loop does not keep it at the normal
+length. The graded periods in it (P2-LINES) are H1 719 / 579, H2 657 /
+531, H1c and H2c 559 / 450, against the 320 required, so P2-LINES stays
+live.
 
 **A2.** Every graded period in H1, H2, H1c and H2c contains exactly 4
 refresh accesses, on both cores.
