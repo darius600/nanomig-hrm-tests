@@ -1,7 +1,6 @@
 // test_ch8_ecs_sync_registers.cpp -- ch8-ecs-sync-registers. See
 // SPECIFICATION.md for every assertion's proposition, program, observed
-// value and expected value. This file only implements what
-// SPECIFICATION.md already committed to.
+// value and expected value. This file implements SPECIFICATION.md.
 //
 // NMH_MUTATE selects a mutated program, configuration or comparator input
 // in place of its normal counterpart, one assertion or precondition at a
@@ -46,10 +45,13 @@
 //   PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1],
 //   P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $00.
 // MUTATION PC-ID stimulus red NMH_MUTATE=X-NTSC: PC-ID [H1]: H1 with the harness set to NTSC
-//   (chipset_config sets the NTSC bit); VPOSR bits 14-8 read the enhanced-Agnus NTSC value
-//   instead of the PAL value. Red on fx68k and tg68k (72 passed, 1 failed): PC-ID [H1]. Not
-//   graded: P1-LINES [H1], P1-COVER [H1], P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b),
-//   P2(c), P2. Measured: PC-ID [H1]: VPOSR bits 14-8 = $30.
+//   (chipset_config sets the NTSC bit); VPOSR bits 14-8 read the NTSC value instead of the PAL
+//   value. p.299 prints the NTSC value as the un-prefixed "30", which is $30 read as
+//   hexadecimal and $1E read as decimal (page note 9); both cores read $30. Neither reading
+//   is a PAL value PC-ID accepts ($20, $14), so the line is red under either. Red on fx68k and
+//   tg68k (72 passed, 1 failed): PC-ID [H1]. Not graded: P1-LINES [H1], P1-COVER [H1],
+//   P2-LINES [H1], A2 [H1], P1 [H1], P2(a) [H1], P2(b), P2(c), P2. Measured: PC-ID [H1]:
+//   VPOSR bits 14-8 = $30.
 // MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: PC-MARK [H1]: H1 with MARK1's write
 //   omitted (prog_h_h1_halt.bin, MARK_OMIT); no marker appears, while the rest of the program,
 //   including DONE, still runs. Red on fx68k and tg68k (72 passed, 1 failed): PC-MARK [H1]. Not
@@ -441,6 +443,8 @@ nmh::Config ntsc_cfg()    { nmh::Config c; c.chipset_config = 0x0A; return c; } 
 // PC-ID: p.299's enhanced-Agnus PAL chip-identification value, accepted
 // under either radix reading of the manual's un-prefixed digits (page
 // note 9).
+// The page leaves the radix open (SPECIFICATION.md page note 9: the hex-side and the
+// decimal-side page evidence), so $20 and $14 are both accepted.
 bool pc_id_pal(uint16_t id) { uint16_t f = (id >> 8) & 0x7F; return f == 0x20 || f == 0x14; }
 
 std::string hex_word(uint16_t v) {
@@ -1012,16 +1016,29 @@ int main(int argc, char** argv) {
 
     // ---- Claims without a proposition (SPECIFICATION.md sec.1) ----------
     checks.record(
-        "opus:8-appA-oos.c1-WITHDRAWN [p280]: HBSTOP -- no page states the "
-        "condition under which the programmed position takes effect, or what "
-        "HBLANK does to R/G/B; not testable at the video output.");
+        "opus:8-appA-oos.c1-WITHDRAWN [p280]: HBSTOP -- p.304 calls HBSTRT and "
+        "HBSTOP \"Programmable blanking\" and p.80 says horizontal blanking limits "
+        "the displayable video, but no page states the condition under which the "
+        "programmed position takes effect, and the bundled write-only, Agnus, "
+        "ECS-mark and address clauses are not observable. A test of the blanking "
+        "effect would keep every documented candidate gate live together "
+        "(VARBEAMEN, HARDDIS, VARVBEN, BLANKEN) and contrast the black/non-black "
+        "R/G/B interval of an output line for two programmed positions; this "
+        "package does not build that test, and asserts nothing for this claim.");
     checks.record(
-        "opus:8-appA-oos.c2-WITHDRAWN [p280]: HBSTRT -- as c1.");
+        "opus:8-appA-oos.c2-WITHDRAWN [p280]: HBSTRT -- as c1: a test would "
+        "contrast the black/non-black R/G/B interval for two programmed HBSTRT "
+        "values with the same gates live; this package does not build it.");
     checks.record(
-        "opus:8-appA-oos.c3-WITHDRAWN [p280]: HCENTER -- no page names the "
-        "enabling condition, the field or the VSYNC edge it positions; the "
-        "effect lies in sub-line VSYNC timing the test sees only after the "
-        "line doubler.");
+        "opus:8-appA-oos.c3-WITHDRAWN [p280]: HCENTER -- p.304 names it the "
+        "\"Horizontal position for Vsync on interlace\"; no page says which of "
+        "VARVSYEN and VARHSYEN governs it, or which field or VSYNC edge it "
+        "positions. VSYNC is passed straight through the scan doubler "
+        "(nanomig_harness.h), so the within-line position of its transition is "
+        "visible at the video port. A test would set LACE with VARVSYEN, "
+        "VARHSYEN and VARBEAMEN and compare that position for two HCENTER "
+        "values over both fields; this package does not build that test, and "
+        "asserts nothing for this claim.");
     checks.record(
         "opus:8-display.c7-WITHDRAWN [p260]: \"analog RGB\" names a connector "
         "and a kind of monitor; the test sees digital R/G/B and separate H/V "
