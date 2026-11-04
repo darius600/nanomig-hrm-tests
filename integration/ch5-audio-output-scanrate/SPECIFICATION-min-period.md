@@ -1,7 +1,8 @@
 # Audio DMA at and below the minimum period: specification addendum
 
-This addendum specifies six propositions about audio DMA at, above and below
-the minimum sampling period that p.141 gives, in NTSC and in PAL. Its inputs
+This addendum specifies seven propositions (MP1-MP6 and MP5-RATE) about audio
+DMA at, above and below the minimum sampling period that p.141 gives, in NTSC
+and in PAL. Its inputs
 are the twelve claims in `claims-spec-stage.jsonl` (all printed on p.141; section
 1 says which of them a graded line establishes, and MP6 rests on pp.139 and 147
 and carries no claim id) and
@@ -29,7 +30,7 @@ on both.
 | sol:5-p141.c12, opus:5-rate.c18 | withdrawn: MP3 covers a sample of the values of "at least 123" |
 | sol:5-p141.c11, opus:5-rate.c17 | withdrawn: the PAL maximum, graded on one side exhaustively and on the other side on a sample |
 | sol:5-p141.c4, opus:5-rate.c8 | withdrawn: the reason "In order to save buffers" and the design maximum |
-| sol:5-p141.c3, opus:5-rate.c6 | withdrawn: the figure 31,469 |
+| sol:5-p141.c3, opus:5-rate.c6 | MP5-RATE: the one line that grades the sample capacity of the lines against the figure 31,469 |
 
 Why each is withdrawn, and what stays graded without its id:
 
@@ -61,23 +62,23 @@ Why each is withdrawn, and what stays graded without its id:
   periods below it. MP1 and MP2 are graded without these ids.
 - **sol:5-p141.c3, opus:5-rate.c6** ("The figure of 31,469 is a theoretical
   maximum", "2 samples/line * 262.5 lines/frame * 59.94 frames/second = 31,469
-  samples/second"): MP5 grades the per-line bound that the figure is derived
-  from, without these ids. The numeric figure is not graded. It is built from
-  262.5 lines per frame, that is lines that alternate between 228 and 227
-  colour clocks (p.23, p.194); the NTSC runs here show lines of 227 ticks only
-  and 31,538 samples/second (section 6.3), the 228-tick lines do not occur
-  (`NM-HRM-010`). The figure's per-line form, "Each audio channel is allocated
-  one DMA slot per horizontal scan line", is what MP5 grades.
+  samples/second"): carried by MP5-RATE (section 4), which grades the figure
+  itself: the sample capacity of the lines of the runs, two samples per line,
+  against 31,469 within the rounding of the page's own numbers. The figure is
+  built from 262.5 lines per frame, that is lines that alternate between 228
+  and 227 colour clocks (p.23, p.194). MP5 grades the per-line bound that the
+  figure is derived from, "Each audio channel is allocated one DMA slot per
+  horizontal scan line", without these ids.
 
 Other parts of the claims that no check here covers, and why:
 
 - **31,469 as a rate that is reached:** the page calls it "a theoretical
   maximum" and says in the next sentence that "the hardware is designed to
   handle 28,867 samples/second". No page predicts that any output reaches
-  31,469 samples/second, so nothing checks that it is reached. Only the bound
-  is checked (MP5), and only in NTSC, because the figure is built from NTSC
-  numbers (262.5 lines/frame, 59.94 frames/second). The page gives no PAL
-  figure.
+  31,469 samples/second, so nothing checks that it is reached. MP5 checks the
+  bound and MP5-RATE the capacity of the lines, and only in NTSC, because the
+  figure is built from NTSC numbers (262.5 lines/frame, 59.94
+  frames/second). The page gives no PAL figure.
 - **Period 0** inside "below 124": excluded. The pages do not say what the
   value 0 does. p.140 gives "the maximum is 65535"; p.159 speaks of "its full
   range 124-65536".
@@ -105,6 +106,7 @@ Other parts of the claims that no check here covers, and why:
 | MP3 | PAL | 123 and the set S_hi | as MP1 |
 | MP4 | PAL | every value 1-122 | at least one sample period does not carry the next sample; reuse is measured, not graded |
 | MP5 | NTSC | every value 1-113 | no line holds more than one data fetch of the channel |
+| MP5-RATE | NTSC | the runs of MP5 | the sample capacity of the lines, two samples per line, is 31,469 samples/second within the rounding of the page's numbers |
 | MP6 | both | every run of MP1-MP5 | channel 0's reads at its slot offset form passes of exactly 64 words, T to T+126 in order, each followed by T |
 
 ## 3. Common setup
@@ -752,8 +754,8 @@ failed", not graded.
 
 1. **Proposition.** In NTSC, audio channel 0 never receives more than one
    data word (two samples) in one horizontal line, however short the
-   period. p.141. No claim id is carried (section 1: the figure 31,469 is not
-   graded).
+   period. p.141. No claim id is carried (the figure 31,469 is graded by
+   MP5-RATE).
 2. **Stimulus.** The NTSC runs of MP2-lo (`P` = 1-113). At these periods
    the channel would need more than one word per line.
 3. **Observation.** The Chip-memory port, in the port window (F5). The
@@ -770,12 +772,9 @@ failed", not graded.
    p.141 derives from it ("2 samples/line * 262.5 lines/frame * 59.94
    frames/second = 31,469 samples/second", "a theoretical maximum") is
    reported as 2 * (reads in the complete lines) / (duration of those complete
-   lines in seconds), not graded. The duration is that of the complete lines
-   the reads were counted in, never the length of the whole window. With
-   lines of 227 ticks the figure is 2 * 3,579,545 / 227 = 31,538
-   samples/second, 0.2 % above p.141's 31,469, which rests on 227.5-tick lines
-   (262.5 lines/frame); the record says that the figure follows from the
-   227-tick lines of the NTSC runs (`NM-HRM-010`).
+   lines in seconds), not graded here; MP5-RATE grades the capacity of the
+   lines against it. The duration is that of the complete lines the reads were
+   counted in, never the length of the whole window.
 5. **Preconditions.** MC1-MC5. MC5's requirement that fetches appear in the
    first and last tenth of the window keeps a channel that stopped fetching
    from passing as "at most one per line".
@@ -796,6 +795,57 @@ failed", not graded.
    wrong implementation: green, one read per channel in every line.
 7. **Reference frames.** F4 (line), checked by MC4's anchor checks and by
    F1 (c). F5 (port window), checked by MC5.
+
+### MP5-RATE. NTSC: the sample capacity of the lines is 31,469 samples/second
+
+1. **Proposition.** In NTSC, a channel can retrieve two data samples in each
+   horizontal line (MP5), so the sample capacity of the lines, two samples per
+   line, is the figure p.141 prints. Claims sol:5-p141.c3, opus:5-rate.c6;
+   p.141: "The figure of 31,469 is a theoretical maximum" and "2 samples/line *
+   262.5 lines/frame * 59.94 frames/second = 31,469 samples/second". The
+   proposition grades the figure, not a rate that an output reaches (section
+   1).
+2. **Stimulus.** None of its own: the NTSC runs of MP5 (`P` = 1-113).
+3. **Observation.** The complete lines (F4) of the port windows (F5) of those
+   runs, in the runs whose preconditions are the preconditions of MP5
+   (item 5). Let `n` be the number of those lines in all the graded runs
+   together and `Lbar` the mean length of those lines in ticks (the spacing of
+   consecutive line starts of F4 in system clock cycles, divided by the cycles
+   per tick of F1). There are 3,579,545 ticks per second (p.141: the clock
+   interval 0.279365 microsecond), so there are 3,579,545 / `Lbar` lines per
+   second, and the capacity is `C = 2 * 3,579,545 / Lbar` samples/second, two
+   samples per line. The pages' lines alternate 228 and 227 ticks (p.23), and
+   their mean is the mean of the alternation. The port gives no field
+   boundary, so `Lbar` is taken over all lines of all graded runs and not over
+   a counted number of fields. An alternation of 228 and 227 that is cut at its
+   ends changes the sum of the lengths by at most 0.5 tick, so it moves `Lbar`
+   by at most `0.5 / n` ticks and `C` by at most `31,469 * 0.5 / (227.5 * n)`
+   samples/second; `n` is printed, and the bound is far below the tolerance of
+   item 4.
+4. **Expected.** `|C - 31,469| <= 3.125` samples/second. The tolerance is the
+   rounding of the page's own numbers and nothing else: the figure 31,469 is
+   printed to the unit (0.5 samples/second), and it is the product `2 * 262.5
+   * 59.94` with 59.94 printed to 0.01 frame/second, that is 0.005 * 525 =
+   2.625 samples/second; the two are added, 0.5 + 2.625 = 3.125. A mean line of
+   227.5 ticks gives `C` = 2 * 3,579,545 / 227.5 = 31,468.5, 0.5 from the
+   figure. Lines of 227 ticks give 31,538, 69 samples/second above it, and
+   lines of 228 ticks give 31,399, 70 below it. Quantifier: the figure is a
+   statement about the lines of the whole field, so it is graded on every
+   complete line of every graded run, not on one run.
+5. **Preconditions.** The preconditions of MP5 in each run (MC1-MC5, section
+   3.7). The line is graded over the runs that hold them; their number and
+   `n` are printed. If no run holds them, the line is NOT GRADED (RECORDED),
+   never green.
+6. **Contrast.** No stimulus is known that gives the lines a mean of 227.5
+   ticks: HTOTAL (p.304) changes a line by whole colour clocks, and the pages
+   name no register that alternates 227 and 228. The contrast is therefore a
+   data substitution into the unchanged comparator, named: the lengths of the
+   lines of the graded runs are replaced by 227 and 228 ticks in alternation,
+   line after line, and the comparator of items 3 and 4 is applied to them.
+   Their mean is 227.5 ticks, `C` = 31,468.5, and the line must be green: the
+   comparator accepts the length the page's figure rests on, so its red on the
+   runs' own lines is a result of those lines. The selector is `MP5ALT`.
+7. **Reference frames.** F1 (tick), F4 (line), F5 (port window).
 
 ### MP6. Both standards: every pass restarts at the start of the data
 
