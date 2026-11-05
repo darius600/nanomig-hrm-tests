@@ -12,6 +12,10 @@
 ;
 ; SPECIFICATION.md P9 leg W (live width source).
 
+        ifnd    ICRBIT
+ICRBIT          equ     1
+        endc
+
 P9W_S           equ     RESULTS+8       ; NSAMP words
 P9W_POLL        equ     RESULTS+8+300*2 ; stop-poll count
 P9W_I           equ     P9W_POLL+2      ; ICR value that showed the underflow
@@ -47,7 +51,7 @@ start:
         move.w  d0,(a1)+
         moveq   #0,d3
         move.b  ICR,d3
-        btst    #1,d3
+        btst    #ICRBIT,d3
         beq.s   .no
         move.w  d3,P9W_I
         move.b  #DDRB_INIT,PRB           ; the CPU drives the pin low

@@ -11,6 +11,9 @@
         ifnd    WAITCNT
 WAITCNT         equ     2200
         endc
+        ifnd    LATCHA
+LATCHA          equ     3
+        endc
 
 P811_I          equ     RESULTS+8
 P811_V          equ     RESULTS+10
@@ -26,7 +29,7 @@ MK_811_STOP_B   equ     $0C100A
 start:
         SETUP
         move.b  #$00,CIAA_CRA
-        RLATCH  CIAA_TALO,CIAA_TAHI,3
+        RLATCH  CIAA_TALO,CIAA_TAHI,LATCHA
         move.b  #$00,CIAA_CRB
         RLATCH  CIAA_TBLO,CIAA_TBHI,$FFFF
         move.b  PARAM_A+1,CIAA_CRB      ; $41 (mode 10) or $61 (mode 11), E7

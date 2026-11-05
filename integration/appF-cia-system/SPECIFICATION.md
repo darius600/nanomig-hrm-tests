@@ -686,7 +686,7 @@ O2 (the drive LED) is not graded at this port. O2's own legs and its calibration
 
 This section is generated from the output `make test` prints on each core (fx68k and TG68K); it contains nothing else.
 
-fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
+fx68k: 101 passed, 30 failed. TG68K: 101 passed, 30 failed.
 
 ### 5.1 Graded lines
 
@@ -725,6 +725,7 @@ fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 | EP3 | PASS | PASS |
 | F1-ANCHOR | PASS | PASS |
 | F1-ANCHOR-CONTRAST | PASS | PASS |
+| P3-POP | PASS | PASS |
 | P3-PRE | PASS | PASS |
 | P3 | FAIL | FAIL |
 | P3-GREENCTL | PASS | PASS |
@@ -764,14 +765,18 @@ fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 | P7.5-WINDOW | PASS | PASS |
 | P7.5-WINDOW-CIAB | PASS | PASS |
 | P7.5 | FAIL | FAIL |
+| P7.5-COUNTING | FAIL | FAIL |
 | P7.5-CONTRAST | PASS | PASS |
 | P7.5-CIAA-INMODE-PRE | PASS | PASS |
 | P7.5-CIAA-INMODE | FAIL | FAIL |
 | P8.65-MODE01-WINDOW | PASS | PASS |
 | P8.65-MODE01-WINDOW-CIAB | PASS | PASS |
 | P8.65-MODE01 | FAIL | FAIL |
+| P8.65-MODE01-COUNTING | FAIL | FAIL |
 | P8.65-MODE01-CONTRAST | PASS | PASS |
 | P7.6-CIAA | PASS | PASS |
+| P7.6-CIAA-SELECT-PRE | PASS | PASS |
+| P7.6-CIAA-SELECT | FAIL | FAIL |
 | P7.6-CIAA-CONTRAST | PASS | PASS |
 | P7.6-CIAB-PRE | PASS | PASS |
 | P7.6-CIAB | FAIL | FAIL |
@@ -782,6 +787,8 @@ fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 | P8.65-MODE10-CONTRAST | PASS | PASS |
 | P8.65-MODE11-WINDOW | PASS | PASS |
 | P8.65-MODE11-WINPRE | PASS | PASS |
+| P8.65-MODE11-PAIRN | PASS | PASS |
+| P8.65-MODE11-PAIRK | FAIL | FAIL |
 | P8.7-PRE | PASS | PASS |
 | P8.7-POP | PASS | PASS |
 | P8.7-RUNX | PASS | PASS |
@@ -848,6 +855,7 @@ both: EP1 dedicated run: CIAA CRA=$00 CRB=$00; CIAB CRA=$00 CRB=$00
 both: EP2 dedicated run: reads below $1000 outside a refresh group=0, other accesses outside the CPU ranges=0, F1 anchor holds=yes
 both: EP3 dedicated run: final marker written, completion word=$600D
 both: F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1256 line marks, spacing 454.00..454.00 T_CPU
+both: P3-POP PRB/ICR stores captured: CIAA/TA 600/600; CIAA/TB 600/600; CIAB/TA 600/600; CIAB/TB 600/600
 fx68k: P3 CIAA/TA T=0 Q=88; CIAA/TB T=0 Q=88; CIAB/TA T=0 Q=88; CIAB/TB T=0 Q=88
 fx68k: P3-GREENCTL CIAB/TB: T=113 Q=113 pairing holds, level before the first flag is 1
 fx68k: P4 ciaa_ta L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold
@@ -890,11 +898,17 @@ fx68k: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverag
 fx68k: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage not met, bit n set in 17 of 400 samples, one high residue holds
 fx68k: P4-GREENCTL usable latches: CIAB/TA=3 CIAB/TB=3
 both: P9-LEGF P(40)=41 P(41)=42 P(64)=65 P(100)=101
+both: P9-LEGF CIAB/TA P(40)=41 P(41)=42 P(64)=65 P(100)=101
 fx68k: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E
+fx68k: P9-LEGF-TRANSITIONS CIAB/TA L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E
 fx68k: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 173 PRB transitions in the 600 samples, P(40)=41, s=11.87E
+fx68k: P9-LEGF-TRANSITIONS-GREENCTL CIAB/TA P(40)=41 (uniquely determined), 173 PRB transitions in the 600 samples, P(40)=41, s=11.87E
 both: P9-LEGW polls=1/1 icr=$02/$02 s0=$7F/$7F (L=40 / L=100)
+both: P9-LEGW CIAB/TA polls=1/1 icr=$01/$01 s0=$BF/$BF (L=40 / L=100)
 fx68k: P9-LEGW W(40)=? W(100)=? s=5.000000E
+fx68k: P9-LEGW CIAB/TA W(40)=? W(100)=? s=5.000000E
 fx68k: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=114.000000 s=10.020101E
+fx68k: P9-LEGW-GREENCTL CIAB/TA W(40)=53.000000 W(100)=114.000000 s=10.020101E
 fx68k: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$7424
 fx68k: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$7424
 fx68k: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$7424
@@ -904,13 +918,14 @@ fx68k: P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O
 fx68k: P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02
-fx68k: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
+fx68k: P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744
 fx68k: P7.5 CIAB v=$0744 W=2236.000000E
 fx68k: P7.5-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 2236 in [2229.60, 2242.00]
 fx68k: P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0544 (the page's count is 8)
-fx68k: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
+fx68k: P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744
 fx68k: P8.65-MODE01 CIAB v=$0744 W=2236.000000E
 fx68k: P8.65-MODE01-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 2236 in [2229.60, 2242.00]
+fx68k: P7.6-CIAA-SELECT i=$08 v=$1000 W=2236.000000E
 both: P7.6-CIAA-CONTRAST i=$00 (key not sent)
 fx68k: P7.6-CIAB TA samples=136 SP seen=no
 both: P7.6-CIAB-CONTRAST SP seen=no
@@ -921,8 +936,8 @@ both: P8.65-M10 CIAB: measured P(30)=31 (uniquely determined)
 fx68k: P8.65-M10 CIAB: nA=48 v=$FFCF flagged=48
 both: P8.65-M10 contrast CIAB: measured P(30)=31 (uniquely determined)
 fx68k: P8.65-M10 contrast CIAB: nA=48 v=$FA0F flagged=48
-fx68k: P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=559, D_Y(N)=559 (equal), windows hold
-fx68k: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=559 >= D_X(K)=559; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
+fx68k: P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=559 (equal), windows hold
+fx68k: P8.65-MODE11-PAIRK D_Y(K)=559 >= D_X(K)=559
 fx68k: P8.65-MODE11 D_X(N)=559 D_Y(N)=559 D_X(K)=559 D_Y(K)=559 window(N)=89440/89440 window(K)=89440/89440
 fx68k: P8.7-PRE CIAB run X: T0=111 lines-measured=111
 fx68k: P8.7-PRE CIAB run Y: T0=111 lines-measured=111
@@ -947,14 +962,14 @@ both: P10-sol:F-timers.c13 members: P2(CIAA/TA) NOT GRADED; P2(CIAA/TB) NOT GRAD
 both: P10-opus:F-timers.c12 members: P3(CIAA/TA) NOT GRADED; P3(CIAA/TB) NOT GRADED; P3(CIAB/TA) FAIL; P3(CIAB/TB) FAIL; P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL
 both: P10-sol:F-cra.c16 members: P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL
 both: P10-opus:F-crb.c3 members: P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL
-both: P10-sol:F-cra.c13 members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL
-both: P10-sol:F-crb.c7 members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 FAIL; P8.65-10 PASS; P8.65-11 NOT GRADED
-both: P10-opus:F-cra.c12 members: P7.0-STOP PASS; P1-CONTROL(CIAA/TA) NOT GRADED; P1-CONTROL(CIAB/TA) PASS; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL; P7.3-CONT PASS; P7.4 PASS; P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; SPMODE=0 (bit 6, no line shows that it selects the input mode) NOT GRADED; P7.7 PASS
-both: P10-opus:F-cra.c13 members: P7.0-START PASS; P1-MAIN(CIAA/TA) NOT GRADED; P1-MAIN(CIAB/TA) FAIL; P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P7.3-ONESHOT PASS; P7.4 PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.6-CIAB FAIL
+both: P10-sol:F-cra.c13 members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.5-COUNTING FAIL
+both: P10-sol:F-crb.c7 members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 FAIL; P8.65-10 PASS; P8.65-MODE01-COUNTING FAIL; P8.65-11 FAIL
+both: P10-opus:F-cra.c12 members: P7.0-STOP PASS; P1-CONTROL(CIAA/TA) NOT GRADED; P1-CONTROL(CIAB/TA) PASS; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL; P7.3-CONT PASS; P7.4 PASS; P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.6-CIAA PASS; P7.6-CIAA-SELECT FAIL; P7.7 PASS
+both: P10-opus:F-cra.c13 members: P7.0-START PASS; P1-MAIN(CIAA/TA) NOT GRADED; P1-MAIN(CIAB/TA) FAIL; P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P7.3-ONESHOT PASS; P7.4 PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.5-COUNTING FAIL; P7.6-CIAB FAIL; P7.6-CIAB-GREENCTL PASS
 both: P10-opus:F-crb.c13 members: P8.0-STOP PASS; P1-CONTROL(CIAA/TB) NOT GRADED; P1-CONTROL(CIAB/TB) PASS; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL; P8.3-CONT PASS; P8.4 PASS; P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.7-RUNY PASS
-both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.7-RUNX PASS
-both: P10-opus:F-timers.c6 members: P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL; P9-LEGF PASS; P9-LEGF-TRANSITIONS FAIL; P9-LEGW FAIL; P8.65-10 PASS
-both: per-run population: 133 captures of 118 programs, 133 loaded
+both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.65-MODE01-COUNTING FAIL; P8.7-RUNX PASS
+both: P10-opus:F-timers.c6 members: P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL; P9-LEGF(CIAA/TA) NOT GRADED; P9-LEGF(CIAA/TB) NOT GRADED; P9-LEGF(CIAB/TA) PASS; P9-LEGF(CIAB/TB) PASS; P9-LEGF-TRANSITIONS(CIAA/TA) NOT GRADED; P9-LEGF-TRANSITIONS(CIAA/TB) NOT GRADED; P9-LEGF-TRANSITIONS(CIAB/TA) FAIL; P9-LEGF-TRANSITIONS(CIAB/TB) FAIL; P9-LEGW(CIAA/TA) NOT GRADED; P9-LEGW(CIAA/TB) NOT GRADED; P9-LEGW(CIAB/TA) FAIL; P9-LEGW(CIAB/TB) FAIL; P8.65-10 PASS
+both: per-run population: 145 captures of 128 programs, 145 loaded
 TG68K: P3 CIAA/TA T=0 Q=79; CIAA/TB T=0 Q=79; CIAB/TA T=0 Q=79; CIAB/TB T=0 Q=79
 TG68K: P3-GREENCTL CIAB/TB: T=103 Q=103 pairing holds, level before the first flag is 1
 TG68K: P4 ciaa_ta L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold
@@ -980,9 +995,13 @@ TG68K: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverag
 TG68K: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage met, bit n set in 9 of 400 samples, one high residue holds
 TG68K: P4-GREENCTL usable latches: CIAB/TA=5 CIAB/TB=5
 TG68K: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=8.05E
+TG68K: P9-LEGF-TRANSITIONS CIAB/TA L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=8.05E
 TG68K: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.79E
+TG68K: P9-LEGF-TRANSITIONS-GREENCTL CIAB/TA P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.79E
 TG68K: P9-LEGW W(40)=? W(100)=? s=4.086957E
+TG68K: P9-LEGW CIAB/TA W(40)=? W(100)=? s=4.086957E
 TG68K: P9-LEGW-GREENCTL W(40)=50.000000 W(100)=113.000000 s=9.025126E
+TG68K: P9-LEGW-GREENCTL CIAB/TA W(40)=50.000000 W(100)=113.000000 s=9.025126E
 TG68K: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$768D
 TG68K: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$768D
 TG68K: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$768D
@@ -992,19 +1011,20 @@ TG68K: P8.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O
 TG68K: P7.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)
 TG68K: P8.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)
 TG68K: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0; CIAB c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0
-TG68K: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
+TG68K: P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A
 TG68K: P7.5 CIAB v=$090A W=1782.000000E
 TG68K: P7.5-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 1782 in [1776.60, 1788.00]
 TG68K: P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0772 (the page's count is 8)
-TG68K: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
+TG68K: P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A
 TG68K: P8.65-MODE01 CIAB v=$090A W=1782.000000E
 TG68K: P8.65-MODE01-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 1782 in [1776.60, 1788.00]
+TG68K: P7.6-CIAA-SELECT i=$08 v=$1000 W=1782.000000E
 TG68K: P7.6-CIAB TA samples=111 SP seen=no
 TG68K: P8.65-M10 CIAA: nA=39 v=$FFD8 flagged=39
 TG68K: P8.65-M10 CIAB: nA=39 v=$FFD8 flagged=39
 TG68K: P8.65-M10 contrast CIAB: nA=39 v=$FB21 flagged=39
-TG68K: P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=445, D_Y(N)=445 (equal), windows hold
-TG68K: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=445 >= D_X(K)=445; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
+TG68K: P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=445 (equal), windows hold
+TG68K: P8.65-MODE11-PAIRK D_Y(K)=445 >= D_X(K)=445
 TG68K: P8.65-MODE11 D_X(N)=445 D_Y(N)=445 D_X(K)=445 D_Y(K)=445 window(N)=71280/71280 window(K)=71280/71280
 TG68K: P8.7-PRE CIAB run X: T0=89 lines-measured=88
 TG68K: P8.7-PRE CIAB run Y: T0=89 lines-measured=88
@@ -1026,13 +1046,11 @@ both: P1-LP/P1-O2 [p244]: not graded -- measured: LED when the CPU leaves reset=
 both: LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2
 fx68k: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=88; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=88
 both: P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured over the six latch runs of CIAA/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAA/TB: PRB $FF, bit n set in 2400 of 2400 samples
-both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL); both are selected through NMH_MUTATE
-both: P7.5-COUNTING [p348,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of INMODE=CNT are FAIL or not graded, never PASS
-both: P7.5-CIAA-INMODE-COUNTING [p348,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of INMODE=CNT are FAIL or not graded, never PASS
-both: P8.65-MODE01-COUNTING [p349,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of INMODE=CNT are FAIL or not graded, never PASS
+both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF, and P9-LEGF-TA on CIAB/timer A), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL, and P9-LEGW-GREENCTL-TA on CIAB/timer A); all are selected through NMH_MUTATE
+both: P7.5-CIAB-COUNTING [p348,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is POUT, which nothing drives, so CIAB's timer sees no edge and only the zero-edge half is graded on it; the counting half is graded on CIAA, whose CNT is KCLK
+both: P8.65-MODE01-CIAB-COUNTING [p349,p351]: not graded -- the counting half of INMODE=CNT ("counts positive CNT transitions", p348, p349) needs a CNT source whose edges are known to reach the timer; CIAB's CNT is POUT, which nothing drives, so CIAB's timer sees no edge and only the zero-edge half is graded on it; the counting half is graded on CIAA, whose CNT is KCLK
 fx68k: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0748, with-key v=$0748 -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
 fx68k: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$0748, with-key v=$0748 -- P8.65 mode 01's own CIAB leg carries the red without it
-both: P8.65-MODE11: not graded -- p349 counts timer A underflows in mode 11 "while the CNT pin is held high"; the boundary does not expose the level of CNT at timer B (no port carries KCLK or CIAA's CNT), so equal decrements of pair N are as well the answer of an ignored CRB bit 5 as of CNT held high
 both: opus:F-signals.c2 declined: the claim says that phi2 is connected to the 680x0 "E" clock; P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary
 both: sol:F-signals.c70 declined: the claim says that phi2 is connected to the 680x0 "E" clock; P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary
 both: opus:F-portsig.c47 declined: "PC...not used" (CIAB): no output this package sees shows a PC pin on either CIA, and "not used" describes no behaviour

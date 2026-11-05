@@ -7,9 +7,14 @@
 ;   Baseline: LATCHVAL=60, CRVAL=$07 (START,PBON,toggle,continuous).
 ;   Pre3.1's own contrast: LATCHVAL=2.
 ;   Pre3.2's own contrast: CRVAL=$06 (not started).
+;   P3-POP's own contrast: NSAMP=599 (one store fewer in each of the two streams).
 ;   Contrasting case: CRVAL=$03 (pulse) or $05 (PBON=0).
 ;
 ; SPECIFICATION.md P3.
+
+        ifnd    NSAMP
+NSAMP           equ     600
+        endc
 
 P3_PRB          equ     RESULTS+8       ; 600 words
 P3_ICR          equ     P3_PRB+600*2    ; 600 words
@@ -26,7 +31,7 @@ start:
         moveq   #0,d0
         move.b  ICR,d0                  ; discard
         move.b  #CRVAL,CR
-        RSAMPLE2 600,P3_PRB,PRB,P3_ICR,ICR
+        RSAMPLE2 NSAMP,P3_PRB,PRB,P3_ICR,ICR
         moveq   #0,d0
         move.b  PRB,d0
         move.w  d0,P3_PRB_LAST

@@ -26,29 +26,28 @@
 // P2 controls, so it does not share a run with them. A capture that fails EP1, EP2, EP3 or F1's anchor
 // makes every line that consumed it not graded (SPECIFICATION.md 1.2).
 //
-// A P10 row joins the verdicts of its members and cannot print PASS on either core:
-// CIA-A's PRB read-back is not live (Pre1.4/O1), so the row's members on its
-// instances are never graded, the INMODE=CNT members grade only part of their claim
-// (FAIL or not graded), and the members for mode 11 and for SPMODE=0 are not graded.
-// Its record is "none impossible"; it names, as the demonstration of the join, the
-// selectors that falsify the preconditions of the members that fail, with which the row
-// prints RECORDED, not graded, instead of FAIL, and the other lines that run moves. The
+// A P10 row joins the verdicts of its members. A row whose members include an instance whose PRB read-back is not live
+// (CIA-A's, Pre1.4/O1) cannot print PASS on the pinned chip set or on any copy of it: that member is never graded. Its
+// record is "none impossible"; it names, as the demonstration of the join, the selectors that falsify the preconditions
+// of the members that fail, with which the row prints RECORDED, not graded, instead of FAIL, and the other lines that run
+// moves. The rows of the CRA and CRB INMODE fields (P10-sol:F-cra.c13, P10-sol:F-crb.c7) have no such member; their
+// record is "implementation green": the row prints PASS on the conf copy of the chip set and FAIL on the pinned one.
 // result token "green" is kept for a printed PASS.
 //
 // MUTATION FIXTURE stimulus red the program stores $BEE0 as its fixture word (p1_ciaa_ta_fixture.bin): the delivered word is not $BEEF, via NMH_MUTATE=FIXTURE. fx68k: FIXTURE PASS -> FAIL [FIXTURE delivered word=$BEE0]; TG68K: FIXTURE PASS -> FAIL [FIXTURE delivered word=$BEE0]
 // MUTATION EP1 stimulus red a write to CIAA CRA precedes SETUP's own read (ep1_contrast.bin): the read returns $0A instead of $00, via NMH_MUTATE=EP1. fx68k: EP1 PASS -> FAIL [EP1 dedicated run: CIAA CRA=$0A CRB=$00; CIAB CRA=$00 CRB=$00]; TG68K: EP1 PASS -> FAIL [EP1 dedicated run: CIAA CRA=$0A CRB=$00; CIAB CRA=$00 CRB=$00]
 // MUTATION EP2 stimulus red Copper DMA started in the window (ep2_contrast.bin): the Copper's own fetch of $0C3000 appears at the Chip-memory port, via NMH_MUTATE=EP2. fx68k: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=1, other accesses outside the CPU ranges=4, F1 anchor holds=yes]; TG68K: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=5, other accesses outside the CPU ranges=4, F1 anchor holds=no]
-// MUTATION EP2 stimulus red Copper DMA started from a list in low Chip memory (ep2_contrast_low.bin): the Copper's own fetch lands below $1000 outside a refresh group (the run's MEASURED line gives the count), via NMH_MUTATE=EP2-LOW. fx68k: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=2, other accesses outside the CPU ranges=0, F1 anchor holds=yes]; TG68K: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=7, other accesses outside the CPU ranges=0, F1 anchor holds=no]
+// MUTATION EP2 stimulus red Copper DMA started from a list in low Chip memory (ep2_contrast_low.bin): the Copper's own fetch lands below $1000 outside a refresh group (the run's MEASURED line gives the count), via NMH_MUTATE=EP2-LOW. fx68k: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=2, other accesses outside the CPU ranges=0, F1 anchor holds=yes]; TG68K: EP2 PASS -> FAIL [EP2 dedicated run: reads below $1000 outside a refresh group=6, other accesses outside the CPU ranges=0, F1 anchor holds=no]
 // MUTATION EP3 stimulus red the program completes its work, stores $600E in its completion word and then the final marker (p1_ciaa_ta_ep3.bin): the final marker appears and the completion word is not $600D, via NMH_MUTATE=EP3. fx68k: EP3 PASS -> FAIL [EP3 dedicated run: final marker written, completion word=$600E]; TG68K: EP3 PASS -> FAIL [EP3 dedicated run: final marker written, completion word=$600E]
-// MUTATION F1-ANCHOR stimulus red shorter lines (HTOTAL, BEAMCON0) set after the first marker (p1_ciaa_ta_f1.bin): consecutive refresh line marks are no longer 454*T_CPU apart, via NMH_MUTATE=F1-ANCHOR. fx68k: F1-ANCHOR PASS -> FAIL; F1-ANCHOR-CONTRAST PASS -> FAIL [F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1257 line marks, spacing 402.00..454.00 T_CPU]; TG68K: F1-ANCHOR PASS -> FAIL; F1-ANCHOR-CONTRAST PASS -> FAIL [F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1257 line marks, spacing 402.00..512.00 T_CPU]
+// MUTATION F1-ANCHOR stimulus red shorter lines (HTOTAL, BEAMCON0) set after the first marker (p1_ciaa_ta_f1.bin): consecutive refresh line marks are no longer 454*T_CPU apart, via NMH_MUTATE=F1-ANCHOR. fx68k: F1-ANCHOR PASS -> FAIL; F1-ANCHOR-CONTRAST PASS -> FAIL [F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1257 line marks, spacing 402.00..454.00 T_CPU]; TG68K: F1-ANCHOR PASS -> FAIL; F1-ANCHOR-CONTRAST PASS -> FAIL [F1-ANCHOR dedicated run: T_CPU=4 clk_sys, 1256 line marks, spacing 402.00..512.00 T_CPU]
 // MUTATION F1-ANCHOR-CONTRAST none impossible unfalsifiable at this boundary: the line only compares the measured line marks against 1.25*T_CPU, and no stimulus makes line marks 454 or 456 apart at 1.25*T_CPU while they are not at T_CPU. fx68k: F1-ANCHOR-CONTRAST PASS in the normal run; with NMH_MUTATE=F1-ANCHOR F1-ANCHOR-CONTRAST PASS -> FAIL; F1-ANCHOR PASS -> FAIL; TG68K: F1-ANCHOR-CONTRAST PASS in the normal run; with NMH_MUTATE=F1-ANCHOR F1-ANCHOR-CONTRAST PASS -> FAIL; F1-ANCHOR PASS -> FAIL
-// MUTATION EP1-PER-RUN stimulus red the CIAA/timer-B P1 program writes CIAA CRA before its first read of it (p1_ciaa_tb_ep1.bin): that capture's EP1 words are not all $00, via NMH_MUTATE=EP1-PER-RUN. fx68k: EP1-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded [EP1-PER-RUN failed on: p1_ciaa_tb_ep1.bin]; TG68K: EP1-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded [EP1-PER-RUN failed on: p1_ciaa_tb_ep1.bin]
-// MUTATION EP2-PER-RUN stimulus red the CIAA/timer-B P1 program starts Copper DMA from a list in low Chip memory (p1_ciaa_tb_ep2.bin): a non-refresh low-address fetch in that capture's window, via NMH_MUTATE=EP2-PER-RUN. fx68k: EP2-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded [EP2-PER-RUN failed on: p1_ciaa_tb_ep2.bin]; TG68K: EP2-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded; F1-ANCHOR-PER-RUN PASS -> FAIL [F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_ep2.bin | EP2-PER-RUN failed on: p1_ciaa_tb_ep2.bin]
-// MUTATION EP3-PER-RUN stimulus red the CIAA/timer-B P1 program stores $600E in its completion word and then the final marker (p1_ciaa_tb_ep3.bin): that capture reaches DONE and its completion word is not $600D, via NMH_MUTATE=EP3-PER-RUN. fx68k: EP3-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded [EP3-PER-RUN failed on (final marker present, completion word not $600D): p1_ciaa_tb_ep3.bin]; TG68K: EP3-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded [EP3-PER-RUN failed on (final marker present, completion word not $600D): p1_ciaa_tb_ep3.bin]
-// MUTATION F1-ANCHOR-PER-RUN stimulus red the CIAA/timer-B P1 program sets shorter lines after the first marker (p1_ciaa_tb_f1.bin): that capture's line marks are off the cadence, via NMH_MUTATE=F1-ANCHOR-PER-RUN. fx68k: F1-ANCHOR-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded; EP2-PER-RUN PASS -> FAIL [F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_f1.bin | EP2-PER-RUN failed on: p1_ciaa_tb_f1.bin]; TG68K: F1-ANCHOR-PER-RUN PASS -> FAIL; 20 lines of P1, P2, P3, P4 PASS -> not graded; 20 lines of P1, P2, P3, P4, P10 rows FAIL -> not graded; EP2-PER-RUN PASS -> FAIL [F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_f1.bin | EP2-PER-RUN failed on: p1_ciaa_tb_f1.bin]
-// MUTATION P1-PRE1.1 stimulus red CIAB/timer B's pull-up reference read with DDRB bit n=1 and the data bit 0 beforehand (p1_ciab_tb_pre11.bin), via NMH_MUTATE=P1-PRE11. fx68k: P1-PRE1.1 PASS -> FAIL [P1 CIAB/TB: r0=$7F a2=$7F a1=$7F b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]; TG68K: P1-PRE1.1 PASS -> FAIL [P1 CIAB/TB: r0=$7F a2=$7F a1=$7F b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]
-// MUTATION P1-PRE1.2 stimulus red CIAB/timer B's step-4 latch changed to $FFFF (p1_ciab_tb_pre12.bin): the poll limit runs out, via NMH_MUTATE=P1-PRE12. fx68k: P1-PRE1.2 PASS -> FAIL; TG68K: P1-PRE1.2 PASS -> FAIL
-// MUTATION P1-PRE1.3 stimulus red CIAB/timer B's step-7 latch changed to $0004 (p1_ciab_tb_pre13.bin): an underflow happens during leg C, via NMH_MUTATE=P1-PRE13. fx68k: P1-PRE1.3 PASS -> FAIL; TG68K: P1-PRE1.3 PASS -> FAIL
+// MUTATION EP1-PER-RUN stimulus red the CIAA/timer-B P1 program writes CIAA CRA before its first read of it (p1_ciaa_tb_ep1.bin): that capture's EP1 words are not all $00, via NMH_MUTATE=EP1-PER-RUN. fx68k: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6, P10-sol:F-cra.c13 FAIL -> not graded; EP1-PER-RUN PASS -> FAIL [EP1-PER-RUN failed on: p1_ciaa_tb_ep1.bin]; TG68K: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6, P10-sol:F-cra.c13 FAIL -> not graded; EP1-PER-RUN PASS -> FAIL [EP1-PER-RUN failed on: p1_ciaa_tb_ep1.bin]
+// MUTATION EP2-PER-RUN stimulus red the CIAA/timer-B P1 program starts Copper DMA from a list in low Chip memory (p1_ciaa_tb_ep2.bin): a non-refresh low-address fetch in that capture's window, via NMH_MUTATE=EP2-PER-RUN. fx68k: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; EP2-PER-RUN PASS -> FAIL [EP2-PER-RUN failed on: p1_ciaa_tb_ep2.bin]; TG68K: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; F1-ANCHOR-PER-RUN, EP2-PER-RUN PASS -> FAIL [EP2-PER-RUN failed on: p1_ciaa_tb_ep2.bin | F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_ep2.bin]
+// MUTATION EP3-PER-RUN stimulus red the CIAA/timer-B P1 program stores $600E in its completion word and then the final marker (p1_ciaa_tb_ep3.bin): that capture reaches DONE and its completion word is not $600D, via NMH_MUTATE=EP3-PER-RUN. fx68k: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; EP3-PER-RUN PASS -> FAIL [EP3-PER-RUN failed on (final marker present, completion word not $600D): p1_ciaa_tb_ep3.bin]; TG68K: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; EP3-PER-RUN PASS -> FAIL [EP3-PER-RUN failed on (final marker present, completion word not $600D): p1_ciaa_tb_ep3.bin]
+// MUTATION F1-ANCHOR-PER-RUN stimulus red the CIAA/timer-B P1 program sets shorter lines after the first marker (p1_ciaa_tb_f1.bin): that capture's line marks are off the cadence, via NMH_MUTATE=F1-ANCHOR-PER-RUN. fx68k: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; F1-ANCHOR-PER-RUN, EP2-PER-RUN PASS -> FAIL [F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_f1.bin | EP2-PER-RUN failed on: p1_ciaa_tb_f1.bin]; TG68K: P1-PRE1.1, P1-PRE1.2, P1-PRE1.3, P1-PRE1.4/O1, P1-OTHERBITS, P2-PRE2.1, P2-PRE2.2, P2-PRE2.3, P2-PRE2.4, P2-GREENCTL-PRE2.2, P2-GREENCTL-PRE2.3, P2-GREENCTL-PRE2.4, P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL, P3-POP, P3-PRE, P3-GREENCTL, P4-PRE, P4-GREENCTL PASS -> not graded; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN, P2-LEGR, P2-MAIN, P2-LEGH, P2-TOGGLE, P3, P4, P10-sol:F-timers.c13, P10-opus:F-timers.c12, P10-sol:F-cra.c16, P10-opus:F-crb.c3, P10-sol:F-cra.c13, P10-sol:F-crb.c7, P10-opus:F-cra.c12, P10-opus:F-cra.c13, P10-opus:F-crb.c13, P10-opus:F-crb.c14, P10-opus:F-timers.c6 FAIL -> not graded; F1-ANCHOR-PER-RUN, EP2-PER-RUN PASS -> FAIL [F1-ANCHOR-PER-RUN failed on: p1_ciaa_tb_f1.bin | EP2-PER-RUN failed on: p1_ciaa_tb_f1.bin]
+// MUTATION P1-PRE1.1 stimulus red CIAB/timer B's pull-up reference read with DDRB bit n=1 and the data bit 0 beforehand (p1_ciab_tb_pre11.bin), via NMH_MUTATE=P1-PRE11. fx68k: P1-PRE1.1 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded [P1 CIAB/TB: r0=$7F a2=$7F a1=$7F b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]; TG68K: P1-PRE1.1 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded [P1 CIAB/TB: r0=$7F a2=$7F a1=$7F b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]
+// MUTATION P1-PRE1.2 stimulus red CIAB/timer B's step-4 latch changed to $FFFF (p1_ciab_tb_pre12.bin): the poll limit runs out, via NMH_MUTATE=P1-PRE12. fx68k: P1-PRE1.2 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded; TG68K: P1-PRE1.2 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded
+// MUTATION P1-PRE1.3 stimulus red CIAB/timer B's step-7 latch changed to $0004 (p1_ciab_tb_pre13.bin): an underflow happens during leg C, via NMH_MUTATE=P1-PRE13. fx68k: P1-PRE1.3 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded; TG68K: P1-PRE1.3 PASS -> FAIL; P1-MAIN-CRA, P1-MAIN-CRB, P1-MAIN FAIL -> not graded
 // MUTATION P1-PRE1.4/O1 stimulus red CIAB/timer B's O1-contrast leg left at data bit n=0 instead of 1 (p1_ciab_tb_pre14.bin): the "data 1 reads 1" half of the precondition no longer holds, via NMH_MUTATE=P1-PRE14. fx68k: P1-PRE1.4/O1 PASS -> FAIL; P1-MAIN-CRB, P10-opus:F-crb.c3, P10-opus:F-crb.c13 FAIL -> not graded [P1 CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$7B d2=$FB]; TG68K: P1-PRE1.4/O1 PASS -> FAIL; P1-MAIN-CRB, P10-opus:F-crb.c3, P10-opus:F-crb.c13 FAIL -> not graded [P1 CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$7B d2=$FB]
 // MUTATION P1-MAIN-CRA stimulus green the PBON=0 runs through the same comparator (grade_p1): P1-CONTROL below. fx68k: P1-CONTROL PASS (P1-MAIN-CRA FAIL) [P1-CONTROL CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB | P1-CONTROL CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB | P1 CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB]; TG68K: P1-CONTROL PASS (P1-MAIN-CRA FAIL) [P1-CONTROL CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB | P1-CONTROL CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB | P1 CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB]
 // MUTATION P1-MAIN-CRB stimulus green the PBON=0 runs through the same comparator (grade_p1): P1-CONTROL below. fx68k: P1-CONTROL PASS (P1-MAIN-CRB FAIL) [P1-CONTROL CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB | P1-CONTROL CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB | P1 CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]; TG68K: P1-CONTROL PASS (P1-MAIN-CRB FAIL) [P1-CONTROL CIAB/TA: r0=$FF a2=$FF a1=$FF b1=$FD c1=$BB d1=$BB o1c=$FB d2=$FB | P1-CONTROL CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB | P1 CIAB/TB: r0=$FF a2=$FF a1=$FF b1=$FD c1=$7B d1=$7B o1c=$FB d2=$FB]
@@ -62,10 +61,10 @@
 // MUTATION P2-MAIN stimulus green a CPU-driven rise at every start through the same comparator: P2-MAIN-GREENCTL below. fx68k: P2-MAIN-GREENCTL PASS (P2-MAIN FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]; TG68K: P2-MAIN-GREENCTL PASS (P2-MAIN FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]
 // MUTATION P2-LEGH stimulus green a CPU-driven high at each leg-H start through the same comparator: P2-LEGH-GREENCTL below. fx68k: P2-LEGH-GREENCTL PASS (P2-LEGH FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]; TG68K: P2-LEGH-GREENCTL PASS (P2-LEGH FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]
 // MUTATION P2-TOGGLE stimulus green the CPU-driven level through legs R, S and H together: P2-TOGGLE-GREENCTL below. fx68k: P2-TOGGLE-GREENCTL PASS (P2-TOGGLE FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]; TG68K: P2-TOGGLE-GREENCTL PASS (P2-TOGGLE FAIL) [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$FF h3=$FF s0=$7F | P2 CIAB/TA: r1=$FF z1=$BF z2=$BF z3=$BF z4=$BF h1=$BF h2=$BF h3=$BF s0=$BF | P2 CIAB/TB: r1=$FF z1=$7F z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]
-// MUTATION P2-PRE2.2 stimulus red CIAB/timer B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): the poll count of start 1 hits the limit and its TB flag reads 0, via NMH_MUTATE=P2-PRE22. fx68k: P2-PRE2.2 PASS -> FAIL [CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]; TG68K: P2-PRE2.2 PASS -> FAIL [CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]
+// MUTATION P2-PRE2.2 stimulus red CIAB/timer B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): the poll count of start 1 hits the limit and its TB flag reads 0, via NMH_MUTATE=P2-PRE22. fx68k: P2-PRE2.2 PASS -> FAIL; P2-TOGGLE FAIL -> not graded [CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]; TG68K: P2-PRE2.2 PASS -> FAIL; P2-TOGGLE FAIL -> not graded [CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]
 // MUTATION P2-PRE2.1 stimulus red CIAB/timer B's program writes the latch $FFFF and CR<-$07 (START, PBON, toggle, continuous) before leg R's write (p2_ciab_tb_pre21.bin): CR reads $07 where it read $00, via NMH_MUTATE=P2-PRE21. fx68k: P2-PRE2.1 PASS -> FAIL [P2-PRE2.1 CR before leg R's write: CIAA/TA=$00 CIAA/TB=$00 CIAB/TA=$00 CIAB/TB=$07]; TG68K: P2-PRE2.1 PASS -> FAIL [P2-PRE2.1 CR before leg R's write: CIAA/TA=$00 CIAA/TB=$00 CIAB/TA=$00 CIAB/TB=$07]
-// MUTATION P2-PRE2.3 stimulus red CIAB/timer B's start 1 written as $0D with DDRB bit n released for z_1's read only (p2_ciab_tb_pre23.bin): z_1 reads the pull-up's 1 and start 2 is not graded, via NMH_MUTATE=P2-PRE23. fx68k: P2-PRE2.3 PASS -> FAIL [CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0) | P2 CIAB/TB: r1=$FF z1=$FF z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]; TG68K: P2-PRE2.3 PASS -> FAIL [CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0) | P2 CIAB/TB: r1=$FF z1=$FF z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]
-// MUTATION P2-PRE2.4 stimulus red CIAB/timer B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the ih flag reads 1, via NMH_MUTATE=P2-PRE24. fx68k: P2-PRE2.4 PASS -> FAIL; TG68K: P2-PRE2.4 PASS -> FAIL
+// MUTATION P2-PRE2.3 stimulus red CIAB/timer B's start 1 written as $0D with DDRB bit n released for z_1's read only (p2_ciab_tb_pre23.bin): z_1 reads the pull-up's 1 and start 2 is not graded, via NMH_MUTATE=P2-PRE23. fx68k: P2-PRE2.3 PASS -> FAIL; P2-TOGGLE FAIL -> not graded [CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0) | P2 CIAB/TB: r1=$FF z1=$FF z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]; TG68K: P2-PRE2.3 PASS -> FAIL; P2-TOGGLE FAIL -> not graded [CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0) | P2 CIAB/TB: r1=$FF z1=$FF z2=$7F z3=$7F z4=$7F h1=$7F h2=$7F h3=$7F s0=$7F]
+// MUTATION P2-PRE2.4 stimulus red CIAB/timer B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the ih flag reads 1, via NMH_MUTATE=P2-PRE24. fx68k: P2-PRE2.4 PASS -> FAIL; P2-TOGGLE FAIL -> not graded; TG68K: P2-PRE2.4 PASS -> FAIL; P2-TOGGLE FAIL -> not graded
 // MUTATION P2-LEGR-GREENCTL stimulus red a start, with the CPU raising the line, before leg R's write (p2c_ciab_tb_legr.bin): r1 bit n reads 1 where the page predicts 0, via NMH_MUTATE=P2-LEGR-GREENCTL. fx68k: P2-LEGR-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$FF h1=$FF h3=$FF s0=$7F]; TG68K: P2-LEGR-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$FF h1=$FF h3=$FF s0=$7F]
 // MUTATION P2-MAIN-GREENCTL stimulus red start 4 written as $0C (START=0) with no CPU raise (p2c_ciab_tb_k4.bin): s_4 shows no rise, via NMH_MUTATE=P2-MAIN-GREENCTL. fx68k: P2-MAIN-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL; TG68K: P2-MAIN-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL
 // MUTATION P2-LEGH-GREENCTL stimulus red no CPU raise after leg H's first start (p2c_ciab_tb_h1.bin): h1 bit n reads 0, via NMH_MUTATE=P2-LEGH-GREENCTL. fx68k: P2-LEGH-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$7F h3=$FF s0=$7F]; TG68K: P2-LEGH-GREENCTL PASS -> FAIL; P2-TOGGLE-GREENCTL PASS -> FAIL [P2-GREENCTL CIAB/TA: r1=$BF h1=$FF h3=$FF s0=$BF; CIAB/TB: r1=$7F h1=$7F h3=$FF s0=$7F]
@@ -73,23 +72,27 @@
 // MUTATION P2-GREENCTL-PRE2.2 stimulus red the CPU-driven leg-S latch changed to $FFFF (p2c_ciab_tb_pre22.bin): the poll count of start 1 hits the limit, via NMH_MUTATE=P2-GREENCTL-PRE22. fx68k: P2-GREENCTL-PRE2.2 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded [CPU CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CPU CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CPU CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]; TG68K: P2-GREENCTL-PRE2.2 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded [CPU CIAB/TB start 2 not graded (Pre2.2: start 1's one-shot had not ended before the restart) | CPU CIAB/TB start 3 not graded (Pre2.2: start 2's one-shot had not ended before the restart) | CPU CIAB/TB start 4 not graded (Pre2.2: start 3's one-shot had not ended before the restart)]
 // MUTATION P2-GREENCTL-PRE2.3 stimulus red DDRB bit n released for z_1's read in the CPU-driven run (p2c_ciab_tb_pre23.bin): z_1 reads the pull-up's 1, via NMH_MUTATE=P2-GREENCTL-PRE23. fx68k: P2-GREENCTL-PRE2.3 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded [CPU CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0)]; TG68K: P2-GREENCTL-PRE2.3 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded [CPU CIAB/TB start 2 not graded (Pre2.3: level before is 1, not 0)]
 // MUTATION P2-GREENCTL-PRE2.4 stimulus red the CPU-driven leg-H latch changed to $0008 (p2c_ciab_tb_pre24.bin): the ih flag reads 1, via NMH_MUTATE=P2-GREENCTL-PRE24. fx68k: P2-GREENCTL-PRE2.4 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded; TG68K: P2-GREENCTL-PRE2.4 PASS -> FAIL; P2-LEGR-GREENCTL, P2-MAIN-GREENCTL, P2-LEGH-GREENCTL, P2-TOGGLE-GREENCTL PASS -> not graded
-// MUTATION P3-PRE stimulus red CIAB/timer B's latch changed to 2 (p3_ciab_tb_l2.bin): flags appear in consecutive reads, via NMH_MUTATE=P3-PRE31. fx68k: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [P3 CIAB/TB T=0 Q=600]; TG68K: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [P3 CIAB/TB T=0 Q=600]
-// MUTATION P3-PRE stimulus red CIAB/timer B's run with CR<-$06 (p3_ciab_tb_nostart.bin): no underflow, |Q|=0, via NMH_MUTATE=P3-PRE32. fx68k: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [P3 CIAB/TB T=0 Q=0]; TG68K: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [P3 CIAB/TB T=0 Q=0]
-// MUTATION P3 stimulus green a CPU-driven toggle through the same predicate: P3-GREENCTL below. fx68k: P3-GREENCTL PASS (P3 FAIL) [P3-GREENCTL CIAB/TB: T=113 Q=113 pairing holds, level before the first flag is 1 | P3 CIAB/TB T=0 Q=88]; TG68K: P3-GREENCTL PASS (P3 FAIL) [P3-GREENCTL CIAB/TB: T=103 Q=103 pairing holds, level before the first flag is 1 | P3 CIAB/TB T=0 Q=79]
+// MUTATION P3-PRE stimulus red CIAB/timer B's latch changed to 2 (p3_ciab_tb_l2.bin): flags appear in consecutive reads, via NMH_MUTATE=P3-PRE31. fx68k: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [CIAB/TB T=0 Q=600]; TG68K: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [CIAB/TB T=0 Q=600]
+// MUTATION P3-PRE stimulus red CIAB/timer B's run with CR<-$06 (p3_ciab_tb_nostart.bin): no underflow, |Q|=0, via NMH_MUTATE=P3-PRE32. fx68k: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [CIAB/TB T=0 Q=0]; TG68K: P3-PRE PASS -> FAIL; P3 FAIL -> not graded [CIAB/TB T=0 Q=0]
+// MUTATION P3-POP stimulus red CIAB/timer B's sampler runs 599 iterations in place of 600 (p3_ciab_tb_short.bin) and reaches DONE: 599 PRB stores and 599 ICR stores are captured, via NMH_MUTATE=P3-POP. fx68k: P3-POP PASS -> FAIL; P3 FAIL -> not graded [P3-POP PRB/ICR stores captured: CIAA/TA 600/600; CIAA/TB 600/600; CIAB/TA 600/600; CIAB/TB 599/599]; TG68K: P3-POP PASS -> FAIL; P3 FAIL -> not graded [P3-POP PRB/ICR stores captured: CIAA/TA 600/600; CIAA/TB 600/600; CIAB/TA 600/600; CIAB/TB 599/599]
+// MUTATION P3 stimulus green a CPU-driven toggle through the same predicate: P3-GREENCTL below. fx68k: P3-GREENCTL PASS (P3 FAIL) [P3-GREENCTL CIAB/TB: T=113 Q=113 pairing holds, level before the first flag is 1 | CIAB/TB T=0 Q=88]; TG68K: P3-GREENCTL PASS (P3 FAIL) [P3-GREENCTL CIAB/TB: T=103 Q=103 pairing holds, level before the first flag is 1 | CIAB/TB T=0 Q=79]
 // MUTATION P3-GREENCTL stimulus red the level before the first flag written as 0 instead of 1 (p3_ciab_tb_cputoggle_low.bin): the level conjunct of P3's predicate fails while the pairing holds, via NMH_MUTATE=P3-GREENCTL. fx68k: P3-GREENCTL PASS -> FAIL [P3-GREENCTL CIAB/TB: T=113 Q=113 pairing holds, level before the first flag is not 1]; TG68K: P3-GREENCTL PASS -> FAIL [P3-GREENCTL CIAB/TB: T=103 Q=103 pairing holds, level before the first flag is not 1]
-// MUTATION P4-PRE stimulus red five of CIAB/timer B's six latch runs not started (p4_ciab_tb_l21_nostart.bin, l22, l23, l24, l25; only L=20 runs): fewer than two usable latches of CIAB/timer B, via NMH_MUTATE=P4-PRE. fx68k: P4-PRE PASS -> FAIL; P4, P10-opus:F-cra.c12, P10-opus:F-crb.c13 FAIL -> not graded [P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=21: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=22: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=23: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=24: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=25: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 usable latches CIAB/TB=0]; TG68K: P4-PRE PASS -> FAIL; P4, P10-opus:F-cra.c12, P10-opus:F-crb.c13 FAIL -> not graded [P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=21: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=22: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=23: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=24: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=25: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 usable latches CIAB/TB=1]
+// MUTATION P4-PRE stimulus red five of CIAB/timer B's six latch runs not started (p4_ciab_tb_l21_nostart.bin, l22, l23, l24, l25; only L=20 runs): fewer than two usable latches of CIAB/timer B, via NMH_MUTATE=P4-PRE. fx68k: P4-PRE PASS -> FAIL; P4, P10-opus:F-crb.c13 FAIL -> not graded [P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=21: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=22: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=23: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=24: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=25: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 usable latches: CIAA/TA=4 CIAA/TB=4 CIAB/TA=4 CIAB/TB=0]; TG68K: P4-PRE PASS -> FAIL; P4, P10-opus:F-crb.c13 FAIL -> not graded [P4 ciab_tb L=20: measured P(L)=21 (uniquely determined), coverage met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=21: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=22: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=23: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=24: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 ciab_tb L=25: measured P(L)=0 (not uniquely determined), coverage not met, bit n set in 400 of 400 samples, one high residue does not hold | P4 usable latches: CIAA/TA=6 CIAA/TB=6 CIAB/TA=6 CIAB/TB=1]
 // MUTATION P4 stimulus green a CPU-driven pulse at one fixed phase of the timer's period through the same comparator: P4-GREENCTL below. fx68k: P4-GREENCTL PASS (P4 FAIL) [P4-GREENCTL usable latches: CIAB/TA=3 CIAB/TB=3 | P4 [p341,p342], graded instances: measured over the six latch runs of CIAB/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAB/TB: PRB $FF, bit n set in 2400 of 2400 samples]; TG68K: P4-GREENCTL PASS (P4 FAIL) [P4-GREENCTL usable latches: CIAB/TA=5 CIAB/TB=5 | P4 [p341,p342], graded instances: measured over the six latch runs of CIAB/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAB/TB: PRB $FF, bit n set in 2400 of 2400 samples]
 // MUTATION P4-GREENCTL stimulus red CIAB/timer B's L=40 control table with a second high count value (p4c_ciab_tb_l40_two.bin): two residues read high and the single-residue comparator fails, via NMH_MUTATE=P4-GREENCTL. fx68k: P4-GREENCTL PASS -> FAIL [P4-GREENCTL ciab_tb L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 19 of 400 samples, one high residue does not hold]; TG68K: P4-GREENCTL PASS -> FAIL [P4-GREENCTL ciab_tb L=40: measured P(L)=41 (uniquely determined), coverage met, bit n set in 19 of 400 samples, one high residue does not hold]
 // MUTATION P9-LEGF-PRE stimulus red CIAB/timer B's L=40 run not started (p9_legf_ciab_tb_l40_nostart.bin): no flags, so no period is determined, via NMH_MUTATE=P10-NOPERIOD-L40. fx68k: P9-LEGF-PRE PASS -> FAIL; P9-LEGF PASS -> not graded; P9-LEGF-TRANSITIONS FAIL -> not graded [P9-LEGF P(40)=0 P(41)=42 P(64)=65 P(100)=101 | P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=0, s=0.00E]; TG68K: P9-LEGF-PRE PASS -> FAIL; P9-LEGF PASS -> not graded; P9-LEGF-TRANSITIONS FAIL -> not graded [P9-LEGF P(40)=0 P(41)=42 P(64)=65 P(100)=101 | P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=0, s=0.00E]
 // MUTATION P9-LEGF stimulus red CIAB/timer B's L=41 run made with a latch of 42 (p9_legf_ciab_tb_l41_m.bin): the period offset is one larger than the other three, via NMH_MUTATE=P9-LEGF. fx68k: P9-LEGF PASS -> FAIL [P9-LEGF P(40)=41 P(41)=43 P(64)=65 P(100)=101]; TG68K: P9-LEGF PASS -> FAIL [P9-LEGF P(40)=41 P(41)=43 P(64)=65 P(100)=101]
+// MUTATION P9-LEGF stimulus red CIAB/timer A's L=41 run made with a latch of 42 (p9_legf_ciab_ta_l41_m.bin): the period offset of that run is one larger than the other three of the instance, via NMH_MUTATE=P9-LEGF-TA. fx68k: P9-LEGF PASS -> FAIL [P9-LEGF CIAB/TA P(40)=41 P(41)=43 P(64)=65 P(100)=101]; TG68K: P9-LEGF PASS -> FAIL [P9-LEGF CIAB/TA P(40)=41 P(41)=43 P(64)=65 P(100)=101]
 // MUTATION P9-LEGF-TRANSITIONS stimulus green a CPU-driven transition train through the same comparator: P9-LEGF-TRANSITIONS-GREENCTL below. fx68k: P9-LEGF-TRANSITIONS-GREENCTL PASS (P9-LEGF-TRANSITIONS FAIL) [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 173 PRB transitions in the 600 samples, P(40)=41, s=11.87E | P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E]; TG68K: P9-LEGF-TRANSITIONS-GREENCTL PASS (P9-LEGF-TRANSITIONS FAIL) [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.79E | P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=8.05E]
-// MUTATION P9-LEGF-TRANSITIONS-GREENCTL stimulus red the CPU inverts PRB bit 7 after every second flagged read (p9_legf_ciab_tb_cputoggle_skip.bin): consecutive transitions are about 2*P(L) apart and the spacing comparator fails, via NMH_MUTATE=P9-LEGF-TRANSITIONS-GREENCTL. fx68k: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 88 PRB transitions in the 600 samples, P(40)=41, s=12.03E]; TG68K: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 80 PRB transitions in the 600 samples, P(40)=41, s=10.98E]
+// MUTATION P9-LEGF-TRANSITIONS-GREENCTL stimulus red the CPU inverts PRB bit 7 after every second flagged read (p9_legf_ciab_tb_cputoggle_skip.bin): consecutive transitions are about 2*P(L) apart and the spacing comparator fails, via NMH_MUTATE=P9-LEGF-TRANSITIONS-GREENCTL. fx68k: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 88 PRB transitions in the 600 samples, P(40)=41, s=12.03E]; TG68K: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 80 PRB transitions in the 600 samples, P(40)=41, s=10.93E]
+// MUTATION P9-LEGF-TRANSITIONS-GREENCTL stimulus red on CIAB/timer A the CPU inverts PRB bit 6 after every second flagged read (p9_legf_ciab_ta_cputoggle_skip.bin): consecutive transitions are about 2*P(L) apart, via NMH_MUTATE=P9-LEGF-TRANSITIONS-GREENCTL-TA. fx68k: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL CIAB/TA P(40)=41 (uniquely determined), 88 PRB transitions in the 600 samples, P(40)=41, s=12.03E]; TG68K: P9-LEGF-TRANSITIONS-GREENCTL PASS -> FAIL [P9-LEGF-TRANSITIONS-GREENCTL CIAB/TA P(40)=41 (uniquely determined), 80 PRB transitions in the 600 samples, P(40)=41, s=10.93E]
 // MUTATION P9-LEGW-PRE2.2 stimulus red the L=40 leg-W latch changed to $FFFF (p9_legw_l40_nouf.bin): the one-shot has not ended when the sampler closes and the TB flag reads 0, via NMH_MUTATE=P9-LEGW-PRE22 (the line covers the L=40 and the L=100 run). fx68k: P9-LEGW-PRE2.2 PASS -> FAIL; P9-LEGW FAIL -> not graded [P9-LEGW polls=1000/1 icr=$00/$02 s0=$7F/$7F (L=40 / L=100)]; TG68K: P9-LEGW-PRE2.2 PASS -> FAIL; P9-LEGW FAIL -> not graded [P9-LEGW polls=1000/1 icr=$00/$02 s0=$7F/$7F (L=40 / L=100)]
 // MUTATION P9-LEGW-PRE2.3 stimulus red the L=40 leg-W run leaves DDRB bit 7 an input (p9_legw_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-PRE23 (the line covers the L=40 and the L=100 run). fx68k: P9-LEGW-PRE2.3 PASS -> FAIL; P9-LEGW FAIL -> not graded [P9-LEGW polls=1/1 icr=$02/$02 s0=$FF/$7F (L=40 / L=100)]; TG68K: P9-LEGW-PRE2.3 PASS -> FAIL; P9-LEGW FAIL -> not graded [P9-LEGW polls=1/1 icr=$02/$02 s0=$FF/$7F (L=40 / L=100)]
 // MUTATION P9-LEGW stimulus green a CPU-driven width through the same comparator: P9-LEGW-GREENCTL below. fx68k: P9-LEGW-GREENCTL PASS (P9-LEGW FAIL) [P9-LEGW-GREENCTL W(40)=53.000000 W(100)=114.000000 s=10.020101E | P9-LEGW W(40)=? W(100)=? s=5.000000E]; TG68K: P9-LEGW-GREENCTL PASS (P9-LEGW FAIL) [P9-LEGW-GREENCTL W(40)=50.000000 W(100)=113.000000 s=9.025126E | P9-LEGW W(40)=? W(100)=? s=4.086957E]
-// MUTATION P9-LEGW-GREENCTL-PRE2.2 stimulus red the CPU-driven L=40 latch changed to $FFFF (p9_legw_ctl_l40_nouf.bin): the one-shot has not ended when the sampler closes and no TB flag is read, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE22 (the line covers the L=40 and the L=100 run). fx68k: P9-LEGW-GREENCTL-PRE2.2 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded [P9-LEGW-GREENCTL W(40)=? W(100)=114.000000 s=10.016722E]; TG68K: P9-LEGW-GREENCTL-PRE2.2 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded [P9-LEGW-GREENCTL W(40)=? W(100)=113.000000 s=10.013378E]
+// MUTATION P9-LEGW-GREENCTL-PRE2.2 stimulus red the CPU-driven L=40 latch changed to $FFFF (p9_legw_ctl_l40_nouf.bin): the one-shot has not ended when the sampler closes and no TB flag is read, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE22 (the line covers the L=40 and the L=100 run). fx68k: P9-LEGW-GREENCTL-PRE2.2 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded [P9-LEGW-GREENCTL W(40)=? W(100)=114.000000 s=10.016722E]; TG68K: P9-LEGW-GREENCTL-PRE2.2 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded [P9-LEGW-GREENCTL W(40)=? W(100)=113.000000 s=9.016722E]
 // MUTATION P9-LEGW-GREENCTL-PRE2.3 stimulus red the CPU-driven L=40 run leaves DDRB bit 7 an input for the read before the start (p9_legw_ctl_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE23 (the line covers the L=40 and the L=100 run). fx68k: P9-LEGW-GREENCTL-PRE2.3 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded; TG68K: P9-LEGW-GREENCTL-PRE2.3 PASS -> FAIL; P9-LEGW-GREENCTL PASS -> not graded
 // MUTATION P9-LEGW-GREENCTL stimulus red the CPU-driven L=40 run made with a latch of 20 (p9_legw_ctl_l20.bin): W(100)-W(20) is about 80, outside 60+-s, via NMH_MUTATE=P9-LEGW-GREENCTL. fx68k: P9-LEGW-GREENCTL PASS -> FAIL [P9-LEGW-GREENCTL W(40)=33.000000 W(100)=114.000000 s=10.020101E]; TG68K: P9-LEGW-GREENCTL PASS -> FAIL [P9-LEGW-GREENCTL W(40)=32.000000 W(100)=113.000000 s=9.025126E]
+// MUTATION P9-LEGW-GREENCTL stimulus red the CPU-driven L=40 run on CIAB/timer A made with a latch of 20 (p9_legw_ctl_ta_l20.bin): W(100)-W(20) is about 80, outside 60+-s, via NMH_MUTATE=P9-LEGW-GREENCTL-TA. fx68k: P9-LEGW-GREENCTL PASS -> FAIL [P9-LEGW-GREENCTL CIAB/TA W(40)=33.000000 W(100)=114.000000 s=10.020101E]; TG68K: P9-LEGW-GREENCTL PASS -> FAIL [P9-LEGW-GREENCTL CIAB/TA W(40)=32.000000 W(100)=113.000000 s=9.025126E]
 // MUTATION P5-PRE51 stimulus red CIAB/timer B's D2 run made with R-LATCH($1000) (p5a_ciab_tb_d2_pre51.bin): the TB flag is set in the window, via NMH_MUTATE=P5-PRE51. fx68k: P5-PRE51 PASS -> FAIL; P5-LEGA PASS -> not graded [P5-LEGA CIAB/TB tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=64808.000000]; TG68K: P5-PRE51 PASS -> FAIL; P5-LEGA PASS -> not graded [P5-LEGA CIAB/TB tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=63144.000000]
 // MUTATION P5-PRE52 stimulus red CIAB/timer B's D1 run made without the stop write (p5a_ciab_tb_d1_pre52.bin): the second read of the counter differs from the first, via NMH_MUTATE=P5-PRE52. fx68k: P5-PRE52 PASS -> FAIL; P5-LEGA PASS -> not graded [P5-LEGA CIAB/TB tau1=202024.000000 tau2=1937440.000000 delta1=5061.000000 delta2=48436.000000]; TG68K: P5-PRE52 PASS -> FAIL; P5-LEGA PASS -> not graded [P5-LEGA CIAB/TB tau1=160928.000000 tau2=1543120.000000 delta1=4031.000000 delta2=38578.000000]
 // MUTATION P5-LEGA stimulus red CIAB/timer B's D2 run with CR<-$00 as its start write (p5a_ciab_tb_d2_nostart.bin): the counter does not move, so Delta2-Delta1 is far from round((tau2-tau1)/(10*T_CPU)), via NMH_MUTATE=P5-LEGA. fx68k: P5-LEGA PASS -> FAIL [P5-LEGA CIAB/TB tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=0.000000]; TG68K: P5-LEGA PASS -> FAIL [P5-LEGA CIAB/TB tau1=161040.000000 tau2=1543120.000000 delta1=4026.000000 delta2=0.000000]
@@ -97,88 +100,102 @@
 // MUTATION P5-PRE53 stimulus red CIAB/timer B's leg-(b) sampler runs 255 iterations (p5b_ciab_tb_short.bin): 255 of the 256 samples, via NMH_MUTATE=P5-PRE53-POP. fx68k: P5-PRE53 PASS -> FAIL; P5-LEGB PASS -> not graded [P5-PRE53 CIAB/TB: samples=255 values={0.00,2.00}*T_CPU, residues mod T_E={0,2} | P5-LEGB adjacent pairs that differ from e_(i+1)-e_i: CIAA/TA 0 of 255; CIAA/TB 0 of 255; CIAB/TA 0 of 255; CIAB/TB ? of 255]; TG68K: P5-PRE53 PASS -> FAIL; P5-LEGB PASS -> not graded [P5-PRE53 CIAB/TB: samples=255 values={0.00,2.00}*T_CPU, residues mod T_E={0,2} | P5-LEGB adjacent pairs that differ from e_(i+1)-e_i: CIAA/TA 0 of 255; CIAA/TB 0 of 255; CIAB/TA 0 of 255; CIAB/TB ? of 255]
 // MUTATION P5-LEGB stimulus red CIAB/timer B's leg-(b) run with CR<-$00 as its start write (p5b_ciab_tb_nostart.bin): v_i is constant where e_(i+1)-e_i is not a multiple of 256, via NMH_MUTATE=P5-LEGB. fx68k: P5-LEGB PASS -> FAIL [P5-LEGB adjacent pairs that differ from e_(i+1)-e_i: CIAA/TA 0 of 255; CIAA/TB 0 of 255; CIAB/TA 0 of 255; CIAB/TB 255 of 255]; TG68K: P5-LEGB PASS -> FAIL [P5-LEGB adjacent pairs that differ from e_(i+1)-e_i: CIAA/TA 0 of 255; CIAA/TB 0 of 255; CIAB/TA 0 of 255; CIAB/TB 255 of 255]
 // MUTATION P5-CONTRAST implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`), run with NMH_MUTATE=P5-CONTRAST: CIAB/timer B under CRB<-$21 sees no positive CNT transition (CIAB's CNT is POUT, undriven, high), holds, and Delta1=Delta2=0; the same selector on the unmodified build. fx68k (conf copy): P5-CONTRAST PASS [P5-CONTRAST CIAB/TB Delta1=0 Delta2=0]; unmodified build: P5-CONTRAST FAIL [P5-CONTRAST CIAB/TB Delta1=5054 Delta2=48436]; TG68K (conf copy): P5-CONTRAST PASS [P5-CONTRAST CIAB/TB Delta1=0 Delta2=0]; unmodified build: P5-CONTRAST FAIL [P5-CONTRAST CIAB/TB Delta1=4026 Delta2=38578]
-// MUTATION P6-PRE61 stimulus red K3's loop body holds three or five NOPs, whichever makes the measured I3 a multiple of T_E on the core (p6_k123_n3.bin, p6_k123_n5.bin), via NMH_MUTATE=P6-PRE61. fx68k: P6-PRE61 PASS -> FAIL; P6-K3 PASS -> not graded [P6-PRE61 selected program: p6_k123_n3.bin (three NOPs: I3=200 clk_sys; five NOPs: I3=232 clk_sys; T_E=40 clk_sys) | P6 K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=200 clk_sys]; TG68K: P6-PRE61 PASS -> FAIL; P6-K3 PASS -> not graded [P6-PRE61 selected program: p6_k123_n5.bin (three NOPs: I3=208 clk_sys; five NOPs: I3=240 clk_sys; T_E=40 clk_sys) | P6 K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=240 clk_sys]
-// MUTATION P6-PRE62 stimulus red K1 runs 199 iterations (p6_k123_short.bin), via NMH_MUTATE=P6-PRE62. fx68k: P6-PRE62 PASS -> FAIL; P6-K1K2, P6-K3 PASS -> not graded [P6 K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=184 clk_sys]; TG68K: P6-PRE62 PASS -> FAIL; P6-K1K2, P6-K3 PASS -> not graded
-// MUTATION P6-PRE63 stimulus red the CIA loops (p6_k123.bin's K1, p5b_ciab_tb.bin, p9_legw_l40.bin) in place of the Chip-memory twins: they wait for the E clock in every iteration, so their iteration time is a multiple of T_E, via NMH_MUTATE=P6-PRE63. fx68k: P6-PRE63 PASS -> FAIL [P6-PRE63 K1 twin I=200 clk_sys, I mod T_E=0; P5(b) twin I=200 clk_sys, I mod T_E=0; P9(W) twin I=200 clk_sys, I mod T_E=0, T_E=40]; TG68K: P6-PRE63 PASS -> FAIL [P6-PRE63 K1 twin I=200 clk_sys, I mod T_E=0; P5(b) twin I=200 clk_sys, I mod T_E=0; P9(W) twin I=200 clk_sys, I mod T_E=0, T_E=40]
+// MUTATION P6-PRE61 stimulus red K3's loop body holds three, five or six NOPs (p6_k123_n3.bin, p6_k123_n5.bin, p6_k123_n6.bin) and the run uses the first whose measured I3 is a multiple of T_E on the core under test, so that I3 is a multiple of T_E, via NMH_MUTATE=P6-PRE61. fx68k: P6-PRE61 PASS -> FAIL; P6-K3 PASS -> not graded [P6-PRE61 selected program: p6_k123_n3.bin (three NOPs: I3=200 clk_sys; five NOPs: I3=232 clk_sys; six NOPs: I3=248 clk_sys; T_E=40 clk_sys) | P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=200 clk_sys, T_E=40]; TG68K: P6-PRE61 PASS -> FAIL; P6-K3 PASS -> not graded [P6-PRE61 selected program: p6_k123_n6.bin (three NOPs: I3=192 clk_sys; five NOPs: I3=224 clk_sys; six NOPs: I3=240 clk_sys; T_E=40 clk_sys) | P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=240 clk_sys, T_E=40]
+// MUTATION P6-PRE62 stimulus red K1 runs 199 iterations (p6_k123_short.bin), via NMH_MUTATE=P6-PRE62. fx68k: P6-PRE62 PASS -> FAIL; P6-K1K2, P6-K3 PASS -> not graded [P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={-2.00,0.00}*T_CPU, residues mod T_E={0,8}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=184 clk_sys, T_E=40]; TG68K: P6-PRE62 PASS -> FAIL; P6-K1K2, P6-K3 PASS -> not graded [P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=176 clk_sys, T_E=40]
+// MUTATION P6-PRE63 stimulus red the CIA loops (p6_k123.bin's K1, p5b_ciab_tb.bin, p9_legw_l40.bin) in place of the Chip-memory twins: they wait for the E clock in every iteration, so their iteration time is a multiple of T_E, via NMH_MUTATE=P6-PRE63. fx68k: P6-PRE63 PASS -> FAIL [P6-PRE63 K1 twin I=200 clk_sys, I mod T_E=0; P5(b) twin I=200 clk_sys, I mod T_E=0; P9(W) twin I=200 clk_sys, I mod T_E=0, T_E=40]; TG68K: P6-PRE63 PASS -> FAIL [P6-PRE63 K1 twin I=160 clk_sys, I mod T_E=0; P5(b) twin I=160 clk_sys, I mod T_E=0; P9(W) twin I=160 clk_sys, I mod T_E=0, T_E=40]
 // MUTATION P6-K1K2 stimulus red K1 reads a Chip-memory byte instead of CIAA PRB, its loop body padded with two NOPs as K3's is (p6_k123_k1chip.bin): its stores take five phases of the E cycle, via NMH_MUTATE=P6-K1K2. fx68k: P6-K1K2 PASS -> FAIL [P6 K1 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]; TG68K: P6-K1K2 PASS -> FAIL [P6 K1 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]
-// MUTATION P6-K3 stimulus red K3 alternates a read of CIAA PRB with a read of the Chip-memory byte (p6_k123_k3mix.bin): its stores take fewer than the five phases and the measured I3 is still not a multiple of T_E, via NMH_MUTATE=P6-K3. fx68k: P6-K3 PASS -> FAIL [P6 K3 values={-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,8}; I3=112 clk_sys]; TG68K: P6-K3 PASS -> FAIL [P6 K3 values={-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,8}; I3=112 clk_sys]
+// MUTATION P6-K3 stimulus red K3 alternates a read of CIAA PRB with a read of the Chip-memory byte (p6_k123_k3mix.bin): its stores take fewer than the five phases and the measured I3 is still not a multiple of T_E, via NMH_MUTATE=P6-K3. fx68k: P6-K3 PASS -> FAIL [P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,8}; I3=112 clk_sys, T_E=40]; TG68K: P6-K3 PASS -> FAIL [P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,8}; I3=112 clk_sys, T_E=40]
 // MUTATION P6-P4LOOP stimulus red P4's ICR stores are Chip-memory reads taken after one NOP in every second iteration (p4_ciab_tb_l20_yspread.bin): the ICR stores take four phases while the PRB stores take two, via NMH_MUTATE=P6-P4LOOP-ICR. fx68k: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; ICR values={-4.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6}]; TG68K: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; ICR values={-4.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6}]
-// MUTATION P6-P4LOOP stimulus red P4's PRB stores are Chip-memory reads taken after one NOP in every second iteration (p4_ciab_tb_l20_xspread.bin): the PRB stores take four phases while the ICR stores take two, via NMH_MUTATE=P6-P4LOOP-PRB. fx68k: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={-4.00,-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,6,8}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}]; TG68K: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,8}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}]
+// MUTATION P6-P4LOOP stimulus red P4's PRB stores are Chip-memory reads taken after one NOP in every second iteration (p4_ciab_tb_l20_xspread.bin): the PRB stores take four phases while the ICR stores take two, via NMH_MUTATE=P6-P4LOOP-PRB. fx68k: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={-4.00,-2.00,0.00,2.00}*T_CPU, residues mod T_E={0,2,6,8}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}]; TG68K: P6-P4LOOP PASS -> FAIL [P6-P4LOOP PRB values={-4.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}]
 // MUTATION P6-P5BLOOP stimulus red P5 leg (b)'s sampler reads a Chip-memory byte instead of the LO register, its loop body padded with two NOPs (p5b_ciab_tb_chip.bin): its stores take five phases, via NMH_MUTATE=P6-P5BLOOP. fx68k: P6-P5BLOOP PASS -> FAIL [P6-P5BLOOP values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]; TG68K: P6-P5BLOOP PASS -> FAIL [P6-P5BLOOP values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]
 // MUTATION P6-P9LOOP stimulus red P9 leg W's sampler reads a Chip-memory byte instead of PRB, its loop body padded with two NOPs (p9_legw_l40_chip.bin): its stores take five phases, via NMH_MUTATE=P6-P9LOOP. fx68k: P6-P9LOOP PASS -> FAIL [P6-P9LOOP values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]; TG68K: P6-P9LOOP PASS -> FAIL [P6-P9LOOP values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}]
-// MUTATION P70-PRE stimulus red CIAB/timer A's latch changed to $0100 (p7_ciab_start_stpre.bin): TA is set at the end, via NMH_MUTATE=P70-PRE. fx68k: P70-PRE PASS -> FAIL; P7.0-STOP, P7.0-START PASS -> not graded [P70 CIAB/CRA: u1=$0100 u2=$0100 u3=$002F]; TG68K: P70-PRE PASS -> FAIL; P7.0-STOP, P7.0-START PASS -> not graded [P70 CIAB/CRA: u1=$0100 u2=$0100 u3=$00E6]
-// MUTATION P7.0-STOP stimulus red CIAB/timer A started during the first delay (p7_ciab_start_contrast.bin): u2 differs from u1, via NMH_MUTATE=P7.0-STOP. fx68k: P7.0-STOP PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$7FF8 u3=$7415]; TG68K: P7.0-STOP PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$7FFA u3=$71CC]
+// MUTATION P70-PRE stimulus red CIAB/timer A's latch changed to $0100 (p7_ciab_start_stpre.bin): TA is set at the end, via NMH_MUTATE=P70-PRE. fx68k: P70-PRE PASS -> FAIL; P7.0-STOP, P7.0-START PASS -> not graded [P70 CIAB/CRA: u1=$0100 u2=$0100 u3=$002F]; TG68K: P70-PRE PASS -> FAIL; P7.0-STOP, P7.0-START PASS -> not graded [P70 CIAB/CRA: u1=$0100 u2=$0100 u3=$0096]
+// MUTATION P7.0-STOP stimulus red CIAB/timer A started during the first delay (p7_ciab_start_contrast.bin): u2 differs from u1, via NMH_MUTATE=P7.0-STOP. fx68k: P7.0-STOP PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$7FF8 u3=$7415]; TG68K: P7.0-STOP PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$7FFA u3=$7681]
 // MUTATION P7.0-START stimulus red CIAB/timer A's start write CR<-$00 in place of $01 (p7_ciab_start_nostart.bin): u3 equals u2, via NMH_MUTATE=P7.0-START. fx68k: P7.0-START PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$8000]; TG68K: P7.0-START PASS -> FAIL [P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$8000]
 // MUTATION P7.3-PRE stimulus red CIAB's sampler loop padded beyond 20 E periods (p7_ciab_run_pad.bin, run with a raised budget): consecutive ICR stores are further apart, via NMH_MUTATE=P73-PRE. fx68k: P7.3-PRE PASS -> FAIL; P7.3-ONESHOT, P7.3-CONT, P7.3-CONTRAST PASS -> not graded [P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=399 stores O=400 C=400]; TG68K: P7.3-PRE PASS -> FAIL; P7.3-ONESHOT, P7.3-CONT, P7.3-CONTRAST PASS -> not graded [P7.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=399 stores O=400 C=400]
 // MUTATION P7.3-PRE stimulus red CIAB's sampler runs 399 iterations (p7_ciab_run_short.bin): 399 of the 400 ICR stores, via NMH_MUTATE=P73-PRE-POP. fx68k: P7.3-PRE PASS -> FAIL; P7.3-ONESHOT, P7.3-CONT, P7.3-CONTRAST PASS -> not graded [P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=399 C=399]; TG68K: P7.3-PRE PASS -> FAIL; P7.3-ONESHOT, P7.3-CONT, P7.3-CONTRAST PASS -> not graded [P7.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=399 C=399]
-// MUTATION P7.3-ONESHOT stimulus red CIAA's leg O started with $08 (one-shot, START=0) instead of $09, poked through the parameter block: leg O shows no TA flag, via NMH_MUTATE=P7.3-ONESHOT. fx68k: P7.3-ONESHOT PASS -> FAIL [P7.3 CIAA flags O=0 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-ONESHOT PASS -> FAIL [P7.3 CIAA flags O=0 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
-// MUTATION P7.3-CONT stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: leg C shows exactly one TA flag, via NMH_MUTATE=P7.3-CONT. fx68k: P7.3-CONT PASS -> FAIL; P7.3-CONTRAST PASS -> FAIL [P7.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-CONT PASS -> FAIL; P7.3-CONTRAST PASS -> FAIL [P7.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
-// MUTATION P7.3-CONTRAST stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: the leg shows exactly one TA flag, so the line's check that leg C does not show exactly one flag fails, via NMH_MUTATE=P7.3-CONT. fx68k: P7.3-CONTRAST PASS -> FAIL; P7.3-CONT PASS -> FAIL [P7.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-CONTRAST PASS -> FAIL; P7.3-CONT PASS -> FAIL [P7.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P7.3-ONESHOT stimulus red CIAA's leg O started with $08 (one-shot, START=0) instead of $09, poked through the parameter block: leg O shows no TA flag, via NMH_MUTATE=P7.3-ONESHOT. fx68k: P7.3-ONESHOT PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-ONESHOT PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P7.3-CONT stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: leg C shows exactly one TA flag, via NMH_MUTATE=P7.3-CONT. fx68k: P7.3-CONT PASS -> FAIL; P7.3-CONTRAST PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-CONT PASS -> FAIL; P7.3-CONTRAST PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P7.3-CONTRAST stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: the leg shows exactly one TA flag, so the line's check that leg C does not show exactly one flag fails, via NMH_MUTATE=P7.3-CONT. fx68k: P7.3-CONTRAST PASS -> FAIL; P7.3-CONT PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P7.3-CONTRAST PASS -> FAIL; P7.3-CONT PASS -> FAIL [P7.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
 // MUTATION P7.4-PRE stimulus red CIAB's stopped leg without a start write (p7_ciab_load_nostart.bin): v1 is $4000, via NMH_MUTATE=P74-PRE. fx68k: P7.4-PRE PASS -> FAIL; P7.4 PASS -> not graded [P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$4000 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)]; TG68K: P7.4-PRE PASS -> FAIL; P7.4 PASS -> not graded [P7.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$4000 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)]
 // MUTATION P7.4 stimulus red CIAB's stopped leg with CR<-$00 instead of $10 (p7_ciab_load_ld0.bin): v2 equals v1, via NMH_MUTATE=P74-LD0. fx68k: P7.4 PASS -> FAIL [P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$3819 c=$00 v3=$FF91 (counted 110, bound 116.40)]; TG68K: P7.4 PASS -> FAIL [P7.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$39B5 c=$00 v3=$FFA6 (counted 89, bound 95.00)]
 // MUTATION P7.4 stimulus red CIAB's running leg with CR<-$01 instead of $11 (p7_ciab_load_run01.bin): $FFFF-v3 is about 5100, above (D-A)/T_E+1, via NMH_MUTATE=P74-CONTRAST. fx68k: P7.4 PASS -> FAIL [P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$EBD3 (counted 5164, bound 116.40)]; TG68K: P7.4 PASS -> FAIL [P7.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$EFEC (counted 4115, bound 95.00)]
 // MUTATION P7.7-PRE stimulus red CIAB's $81 run with a different delay count (p7_ciab_unused81_delay.bin): the bracket-to-bracket times of the two runs differ by more than one E period, via NMH_MUTATE=P77-PRE. fx68k: P7.7-PRE PASS -> FAIL; P7.7 PASS -> not graded [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$01 w81=$7AFF c2(01)=$01 w01=$7C02]; TG68K: P7.7-PRE PASS -> FAIL; P7.7 PASS -> not graded [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0; CIAB c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7CD0]
 // MUTATION P7.7 stimulus red CIAB's $81 run with CR<-$80 (START=0) as its second write (p7_ciab_unused81_startoff.bin): c2 reads $00 and w stays $8000, via NMH_MUTATE=P77-STARTOFF. fx68k: P7.7 PASS -> FAIL [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$00 w81=$8000 c2(01)=$01 w01=$7C02]; TG68K: P7.7 PASS -> FAIL [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0; CIAB c1(81)=$00 c2(81)=$00 w81=$8000 c2(01)=$01 w01=$7CD0]
 // MUTATION P7.7 stimulus red CIAB's $81 run with CR<-$02 (a used bit) in place of CR<-$80 as its first write (p7_ciab_unused_c1contrast.bin): c1 reads $02, via NMH_MUTATE=P77-C1CONTRAST. fx68k: P7.7 PASS -> FAIL [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$02 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02]; TG68K: P7.7 PASS -> FAIL [P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0; CIAB c1(81)=$02 c2(81)=$01 w81=$7CD0 c2(01)=$01 w01=$7CD0]
-// MUTATION P7.5-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P7.5-WINDOW. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 2236 over W=2236E, i=$00, v=$0744]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 1782 over W=1782E, i=$00, v=$090A]
-// MUTATION P7.5-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p7_ciaa_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-W. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 218 over W=218E, i=$08, v=$0F26]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 255 over W=255E, i=$08, v=$0F01]
+// MUTATION P7.5-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P7.5-WINDOW. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$00, v=$0744]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$00, v=$090A]
+// MUTATION P7.5-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p7_ciaa_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-W. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 218 (the page's count is 8) over W=218.000000E, i=$08, v=$0F26]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 175 (the page's count is 8) over W=175.000000E, i=$08, v=$0F51]
 // MUTATION P7.5-WINDOW-CIAB stimulus red CIAB's wait of 200 dbra iterations instead of 2200 (p7_ciab_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-CIAB. fx68k: P7.5-WINDOW-CIAB PASS -> FAIL; P7.5 FAIL -> not graded [P7.5 CIAB v=$0F26 W=218.000000E]; TG68K: P7.5-WINDOW-CIAB PASS -> FAIL; P7.5 FAIL -> not graded [P7.5 CIAB v=$0F51 W=175.000000E]
-// MUTATION P7.5 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAB's timer A in CRA INMODE=CNT sees no positive CNT transition (POUT undriven, high) and holds v=$1000 over the window, and the MEASURED line for CIAA shows the decrement over one key code. fx68k (conf copy): P7.5 PASS [P7.5 CIAB v=$1000 W=2236.000000E | P7.5-CIAA decrement 8 over W=2236E, i=$08, v=$0FF8]; unmodified build: P7.5 FAIL [P7.5 CIAB v=$0744 W=2236.000000E | P7.5-CIAA decrement 2236 over W=2236E, i=$08, v=$0744]; TG68K (conf copy): P7.5 PASS [P7.5 CIAB v=$1000 W=1782.000000E | P7.5-CIAA decrement 8 over W=1782E, i=$08, v=$0FF8]; unmodified build: P7.5 FAIL [P7.5 CIAB v=$090A W=1782.000000E | P7.5-CIAA decrement 1782 over W=1782E, i=$08, v=$090A]
+// MUTATION P7.5 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAB's timer A in CRA INMODE=CNT sees no positive CNT transition (POUT undriven, high) and holds v=$1000 over the window, and the MEASURED line for CIAA shows the decrement over one key code. fx68k (conf copy): P7.5 PASS [P7.5 CIAB v=$1000 W=2236.000000E | P7.5-COUNTING CIAA decrement 8 (the page's count is 8) over W=2236.000000E, i=$08, v=$0FF8]; unmodified build: P7.5 FAIL [P7.5 CIAB v=$0744 W=2236.000000E | P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P7.5 PASS [P7.5 CIAB v=$1000 W=1782.000000E | P7.5-COUNTING CIAA decrement 8 (the page's count is 8) over W=1782.000000E, i=$08, v=$0FF8]; unmodified build: P7.5 FAIL [P7.5 CIAB v=$090A W=1782.000000E | P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
 // MUTATION P7.5-CONTRAST stimulus red CIAB's start write CR<-$20 (not started) instead of $01 (p7_ciab_inmode_nostart.bin): $1000-v is 0, below (stop_before-start_after)/T_E-1, via NMH_MUTATE=P75-CONTRAST-MUT. fx68k: P7.5-CONTRAST PASS -> FAIL [P7.5-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 0 in [2229.60, 2242.00]]; TG68K: P7.5-CONTRAST PASS -> FAIL [P7.5-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 0 in [1776.60, 1788.00]]
 // MUTATION P7.5-CIAA-INMODE-PRE stimulus red the key code scheduled 100 E periods after the first interval's ready marker (NMH_MUTATE=P7.5-CIAA-INMODE-PRE): the key code is sent before the first interval ends, so the zero-edge precondition fails. fx68k: P7.5-CIAA-INMODE-PRE PASS -> FAIL; P7.5-CIAA-INMODE FAIL -> not graded [P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$08 (first interval, no CNT edge); after the second start, with one key code: i2=$00 v2=$0544 (the page's count is 8)]; TG68K: P7.5-CIAA-INMODE-PRE PASS -> FAIL; P7.5-CIAA-INMODE FAIL -> not graded [P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$08 (first interval, no CNT edge); after the second start, with one key code: i2=$00 v2=$0772 (the page's count is 8)]
 // MUTATION P7.5-CIAA-INMODE implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAA's timer A in CRA INMODE=CNT holds v1=$1000 over the interval with no CNT edge, and the MEASURED line shows the decrement over the second interval, which holds one key code. fx68k (conf copy): P7.5-CIAA-INMODE PASS [P7.5-CIAA-INMODE CIAA v1=$1000 i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0FF8 (the page's count is 8)]; unmodified build: P7.5-CIAA-INMODE FAIL [P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0544 (the page's count is 8)]; TG68K (conf copy): P7.5-CIAA-INMODE PASS [P7.5-CIAA-INMODE CIAA v1=$1000 i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0FF8 (the page's count is 8)]; unmodified build: P7.5-CIAA-INMODE FAIL [P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0772 (the page's count is 8)]
+// MUTATION P7.5-COUNTING implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAA's CNT is KCLK, so the one completed key code gives eight positive transitions and CIAA's timer A in CRA INMODE=CNT counts exactly eight over the window ($1000-v=8, i has SP=1); the same line on the unmodified build. fx68k (conf copy): P7.5-COUNTING PASS [P7.5-COUNTING CIAA decrement 8 (the page's count is 8) over W=2236.000000E, i=$08, v=$0FF8]; unmodified build: P7.5-COUNTING FAIL [P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P7.5-COUNTING PASS [P7.5-COUNTING CIAA decrement 8 (the page's count is 8) over W=1782.000000E, i=$08, v=$0FF8]; unmodified build: P7.5-COUNTING FAIL [P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
+// MUTATION P7.5-COUNTING stimulus red on that copy, CRA written $01 (INMODE=phi2) in place of $21 with the same key code at the same time (p7_ciaa_inmode_phi2.bin): the timer counts phi2, not the eight KCLK transitions, via NMH_MUTATE=P7.5-COUNTING. fx68k (conf copy): P7.5-COUNTING, P10-sol:F-cra.c13 PASS -> FAIL [P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P7.5-COUNTING, P10-sol:F-cra.c13 PASS -> FAIL [P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
 // MUTATION P7.5-CIAB-GREENCTL-PRE stimulus red the key code scheduled 100 E periods after the first interval's ready marker (NMH_MUTATE=P75-GREENCTL-PRE): the ICR read after the first interval has SP=1 and the key is sent before that interval ends. fx68k: P7.5-CIAA-INMODE-PRE PASS -> FAIL; P7.5-CIAA-INMODE FAIL -> not graded; new: P7.5-CIAB-GREENCTL-PRE FAIL, P7.5-CIAB-GREENCTL not graded [P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$08 (first interval, no CNT edge); after the second start, with one key code: i2=$00 v2=$0544 (the page's count is 8) | P7.5-CIAB-GREENCTL CIAA v1=$0DFE i1=$08 i2=$00 v2=$0544]; TG68K: P7.5-CIAA-INMODE-PRE PASS -> FAIL; P7.5-CIAA-INMODE FAIL -> not graded; new: P7.5-CIAB-GREENCTL-PRE FAIL, P7.5-CIAB-GREENCTL not graded [P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$08 (first interval, no CNT edge); after the second start, with one key code: i2=$00 v2=$0772 (the page's count is 8) | P7.5-CIAB-GREENCTL CIAA v1=$0E66 i1=$08 i2=$00 v2=$0772]
 // MUTATION P7.5-CIAB-GREENCTL implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`) run with NMH_MUTATE=P75-GREENCTL: CIAA's CNT is KCLK, so v1 is $1000 after the interval with no edge and v2 is $0FF8 after the interval with the key code (eight positive transitions); the same selector on the unmodified build. fx68k (conf copy): P7.5-CIAB-GREENCTL PASS [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$08 v2=$0FF8]; unmodified build: P7.5-CIAB-GREENCTL FAIL [P7.5-CIAB-GREENCTL CIAA v1=$0DFE i1=$00 i2=$08 v2=$0544]; TG68K (conf copy): P7.5-CIAB-GREENCTL PASS [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$08 v2=$0FF8]; unmodified build: P7.5-CIAB-GREENCTL FAIL [P7.5-CIAB-GREENCTL CIAA v1=$0E66 i1=$00 i2=$08 v2=$0772]
 // MUTATION P7.5-CIAB-GREENCTL stimulus red on that copy, the key code left out of the second interval (NMH_MUTATE=P75-GREENCTL-NOKEY): v2 stays $1000, where v1-v2 should be 8. fx68k (conf copy): P7.5-CIAB-GREENCTL PASS -> FAIL; P8.65-MODE01-CIAB-GREENCTL PASS -> FAIL [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000 | P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000]; TG68K (conf copy): P7.5-CIAB-GREENCTL PASS -> FAIL; P8.65-MODE01-CIAB-GREENCTL PASS -> FAIL [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000 | P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000]
-// MUTATION P7.5-WINDOW stimulus red CIAA's R-KEY left out (NMH_MUTATE=P76CIAA): no key code is sent and i has SP=0. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 2236 over W=2236E, i=$00, v=$0744]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded [P7.5-CIAA decrement 1782 over W=1782E, i=$00, v=$090A]
-// MUTATION P7.6-CIAA implementation red the sp copy of the chip set (sp.patch, a fault against p. 345 and not a conforming copy; `make sp-test-<core>`) in which a key code does not set CIA-A's SP flag: i has SP=0 while every timing clause holds, so P7.6-CIAA prints FAIL and P7.5-WINDOW is red with it; no stimulus of this package makes SP=0 in a run whose timing clauses hold. fx68k (sp copy): P7.6-CIAA PASS -> FAIL; P7.5-WINDOW, P8.65-MODE01-WINDOW, P8.65-MODE11-WINDOW PASS -> FAIL; TG68K (sp copy): P7.6-CIAA PASS -> FAIL; P7.5-WINDOW, P8.65-MODE01-WINDOW, P8.65-MODE11-WINDOW PASS -> FAIL
+// MUTATION P7.5-WINDOW stimulus red CIAA's R-KEY left out (NMH_MUTATE=P76CIAA): no key code is sent and i has SP=0. fx68k: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$00, v=$0744]; TG68K: P7.5-WINDOW PASS -> FAIL; P7.6-CIAA PASS -> not graded; P7.5-COUNTING FAIL -> not graded [P7.5-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$00, v=$090A]
+// MUTATION P7.6-CIAA implementation red the sp copy of the chip set (sp.patch, a fault against p. 345 and not a conforming copy; `make sp-test-<core>`) in which a key code does not set CIA-A's SP flag: i has SP=0 while every timing clause holds, so P7.6-CIAA prints FAIL and P7.5-WINDOW is red with it. fx68k (sp copy): P7.5-WINDOW, P8.65-MODE01-WINDOW, P7.6-CIAA, P8.65-MODE11-WINDOW PASS -> FAIL; P7.5-COUNTING, P8.65-MODE01-COUNTING, P8.65-MODE11-PAIRK FAIL -> not graded; P7.6-CIAA-SELECT FAIL -> PASS; P8.65-MODE11-PAIRN PASS -> not graded; TG68K (sp copy): P7.5-WINDOW, P8.65-MODE01-WINDOW, P7.6-CIAA, P8.65-MODE11-WINDOW PASS -> FAIL; P7.5-COUNTING, P8.65-MODE01-COUNTING, P8.65-MODE11-PAIRK FAIL -> not graded; P7.6-CIAA-SELECT FAIL -> PASS; P8.65-MODE11-PAIRN PASS -> not graded
 // MUTATION P7.6-CIAA-CONTRAST stimulus red the key sent in the run whose comparator expects SP=0: SP=1, via NMH_MUTATE=P76CIAA-CONTRAST-MUT. fx68k: P7.6-CIAA-CONTRAST PASS -> FAIL [P7.6-CIAA-CONTRAST i=$08 (key sent)]; TG68K: P7.6-CIAA-CONTRAST PASS -> FAIL [P7.6-CIAA-CONTRAST i=$08 (key sent)]
+// MUTATION P7.6-CIAA-SELECT-PRE stimulus red the key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first, no key is sent and the timing clauses fail, via NMH_MUTATE=P76CIAA-SELECT-WINDOW. fx68k: P7.6-CIAA-SELECT-PRE PASS -> FAIL; P7.6-CIAA-SELECT FAIL -> not graded [P7.6-CIAA-SELECT i=$00 v=$1000 W=2236.000000E]; TG68K: P7.6-CIAA-SELECT-PRE PASS -> FAIL; P7.6-CIAA-SELECT FAIL -> not graded [P7.6-CIAA-SELECT i=$00 v=$1000 W=1782.000000E]
+// MUTATION P7.6-CIAA-SELECT implementation green the sp copy of the chip set (sp.patch, a fault against p. 345 and not a conforming copy) in which a key code never sets SP: i has SP=0 with every timing clause holding, whatever CRA bit 6 holds, so the comparator prints PASS; the same line on the unmodified build. fx68k (sp copy): P7.6-CIAA-SELECT PASS [P7.6-CIAA-SELECT i=$00 v=$1000 W=2236.000000E]; unmodified build: P7.6-CIAA-SELECT FAIL [P7.6-CIAA-SELECT i=$08 v=$1000 W=2236.000000E]; TG68K (sp copy): P7.6-CIAA-SELECT PASS [P7.6-CIAA-SELECT i=$00 v=$1000 W=1782.000000E]; unmodified build: P7.6-CIAA-SELECT FAIL [P7.6-CIAA-SELECT i=$08 v=$1000 W=1782.000000E]
+// MUTATION P7.6-CIAA-SELECT stimulus red on the unmodified build CR<-$01 (bit 6 = 0, p7_ciaa_inmode_phi2.bin) in place of $40 with the same key at the same time: SP=1 where the line expects SP=0; the line is red in the normal run as well, so the mutation shows no change there, via NMH_MUTATE=P76CIAA-SELECT. fx68k: P7.6-CIAA-SELECT FAIL in the normal run and FAIL in this run [P7.6-CIAA-SELECT i=$08 v=$0744 W=2236.000000E]; TG68K: P7.6-CIAA-SELECT FAIL in the normal run and FAIL in this run [P7.6-CIAA-SELECT i=$08 v=$090A W=1782.000000E]
 // MUTATION P7.6-CIAB-PRE stimulus red CIAB's start write CR<-$40 (not started) instead of $41 (p76_ciab_pre.bin): no TA flag, via NMH_MUTATE=P76CIAB-PRE. fx68k: P7.6-CIAB-PRE PASS -> FAIL; P7.6-CIAB FAIL -> not graded [P7.6-CIAB TA samples=0 SP seen=no]; TG68K: P7.6-CIAB-PRE PASS -> FAIL; P7.6-CIAB FAIL -> not graded [P7.6-CIAB TA samples=0 SP seen=no]
 // MUTATION P7.6-CIAB stimulus green the same SPMODE-output program run on CIA-A (p76_ciaa.bin): at least one ICR sample has SP=1, the line P7.6-CIAB-GREENCTL below. fx68k: P7.6-CIAB-GREENCTL PASS (P7.6-CIAB FAIL) [P7.6-CIAB-GREENCTL SP seen=yes | P7.6-CIAB TA samples=136 SP seen=no]; TG68K: P7.6-CIAB-GREENCTL PASS (P7.6-CIAB FAIL) [P7.6-CIAB-GREENCTL SP seen=yes | P7.6-CIAB TA samples=111 SP seen=no]
 // MUTATION P7.6-CIAB-CONTRAST stimulus red the output-mode program run on CIA-A (p76_ciaa.bin) in place of CIAB's input-mode run: SP is seen, via NMH_MUTATE=P76CIAB-CONTRAST-MUT. fx68k: P7.6-CIAB-CONTRAST PASS -> FAIL [P7.6-CIAB-CONTRAST SP seen=yes]; TG68K: P7.6-CIAB-CONTRAST PASS -> FAIL [P7.6-CIAB-CONTRAST SP seen=yes]
 // MUTATION P7.6-CIAB-GREENCTL stimulus red CIA-A with CR<-$01 (SPMODE input) instead of $41 and no key (p76_ciaa_in.bin): no ICR sample has SP=1, via NMH_MUTATE=P76CIAB-GREENCTL-RED. fx68k: P7.6-CIAB-GREENCTL PASS -> FAIL [P7.6-CIAB-GREENCTL SP seen=no]; TG68K: P7.6-CIAB-GREENCTL PASS -> FAIL [P7.6-CIAB-GREENCTL SP seen=no]
-// MUTATION P80-PRE stimulus red CIAB/timer B's latch changed to $0100 (p8_ciab_start_stpre.bin): TB is set at the end, via NMH_MUTATE=P80-PRE. fx68k: P80-PRE PASS -> FAIL; P8.0-STOP, P8.0-START PASS -> not graded [P80 CIAB/CRB: u1=$0100 u2=$0100 u3=$002F]; TG68K: P80-PRE PASS -> FAIL; P8.0-STOP, P8.0-START PASS -> not graded [P80 CIAB/CRB: u1=$0100 u2=$0100 u3=$00E6]
-// MUTATION P8.0-STOP stimulus red CIAB/timer B started during the first delay (p8_ciab_start_contrast.bin): u2 differs from u1, via NMH_MUTATE=P8.0-STOP. fx68k: P8.0-STOP PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$7FF8 u3=$7415]; TG68K: P8.0-STOP PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$7FFA u3=$71CC]
+// MUTATION P80-PRE stimulus red CIAB/timer B's latch changed to $0100 (p8_ciab_start_stpre.bin): TB is set at the end, via NMH_MUTATE=P80-PRE. fx68k: P80-PRE PASS -> FAIL; P8.0-STOP, P8.0-START PASS -> not graded [P80 CIAB/CRB: u1=$0100 u2=$0100 u3=$002F]; TG68K: P80-PRE PASS -> FAIL; P8.0-STOP, P8.0-START PASS -> not graded [P80 CIAB/CRB: u1=$0100 u2=$0100 u3=$0096]
+// MUTATION P8.0-STOP stimulus red CIAB/timer B started during the first delay (p8_ciab_start_contrast.bin): u2 differs from u1, via NMH_MUTATE=P8.0-STOP. fx68k: P8.0-STOP PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$7FF8 u3=$7415]; TG68K: P8.0-STOP PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$7FFA u3=$7681]
 // MUTATION P8.0-START stimulus red CIAB/timer B's start write CR<-$00 in place of $01 (p8_ciab_start_nostart.bin): u3 equals u2, via NMH_MUTATE=P8.0-START. fx68k: P8.0-START PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$8000]; TG68K: P8.0-START PASS -> FAIL [P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$8000]
 // MUTATION P8.3-PRE stimulus red CIAB's sampler loop padded beyond 20 E periods (p8_ciab_run_pad.bin, run with a raised budget): consecutive ICR stores are further apart, via NMH_MUTATE=P83-PRE. fx68k: P8.3-PRE PASS -> FAIL; P8.3-ONESHOT, P8.3-CONT, P8.3-CONTRAST PASS -> not graded [P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=399 stores O=400 C=400]; TG68K: P8.3-PRE PASS -> FAIL; P8.3-ONESHOT, P8.3-CONT, P8.3-CONTRAST PASS -> not graded [P8.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=399 stores O=400 C=400]
 // MUTATION P8.3-PRE stimulus red CIAB's sampler runs 399 iterations (p8_ciab_run_short.bin): 399 of the 400 ICR stores, via NMH_MUTATE=P83-PRE-POP. fx68k: P8.3-PRE PASS -> FAIL; P8.3-ONESHOT, P8.3-CONT, P8.3-CONTRAST PASS -> not graded [P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=399 C=399]; TG68K: P8.3-PRE PASS -> FAIL; P8.3-ONESHOT, P8.3-CONT, P8.3-CONTRAST PASS -> not graded [P8.3 CIAA flags O=1 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=399 C=399]
-// MUTATION P8.3-ONESHOT stimulus red CIAA's leg O started with $08 (one-shot, START=0) instead of $09, poked through the parameter block: leg O shows no TB flag, via NMH_MUTATE=P8.3-ONESHOT. fx68k: P8.3-ONESHOT PASS -> FAIL [P8.3 CIAA flags O=0 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-ONESHOT PASS -> FAIL [P8.3 CIAA flags O=0 C=39 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
-// MUTATION P8.3-CONT stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: leg C shows exactly one TB flag, via NMH_MUTATE=P8.3-CONT. fx68k: P8.3-CONT PASS -> FAIL; P8.3-CONTRAST PASS -> FAIL [P8.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-CONT PASS -> FAIL; P8.3-CONTRAST PASS -> FAIL [P8.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
-// MUTATION P8.3-CONTRAST stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: the leg shows exactly one TB flag, so the line's check that leg C does not show exactly one flag fails, via NMH_MUTATE=P8.3-CONT. fx68k: P8.3-CONTRAST PASS -> FAIL; P8.3-CONT PASS -> FAIL [P8.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-CONTRAST PASS -> FAIL; P8.3-CONT PASS -> FAIL [P8.3 CIAA flags O=1 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P8.3-ONESHOT stimulus red CIAA's leg O started with $08 (one-shot, START=0) instead of $09, poked through the parameter block: leg O shows no TB flag, via NMH_MUTATE=P8.3-ONESHOT. fx68k: P8.3-ONESHOT PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-ONESHOT PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P8.3-CONT stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: leg C shows exactly one TB flag, via NMH_MUTATE=P8.3-CONT. fx68k: P8.3-CONT PASS -> FAIL; P8.3-CONTRAST PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-CONT PASS -> FAIL; P8.3-CONTRAST PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
+// MUTATION P8.3-CONTRAST stimulus red CIAA's leg C started with $09 (one-shot) instead of $01, poked through the parameter block: the leg shows exactly one TB flag, so the line's check that leg C does not show exactly one flag fails, via NMH_MUTATE=P8.3-CONT. fx68k: P8.3-CONTRAST PASS -> FAIL; P8.3-CONT PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400]; TG68K: P8.3-CONTRAST PASS -> FAIL; P8.3-CONT PASS -> FAIL [P8.3 CIAA flags O=0 C=1 stores O=400 C=400; CIAB flags O=1 C=39 stores O=400 C=400]
 // MUTATION P8.4-PRE stimulus red CIAB's stopped leg without a start write (p8_ciab_load_nostart.bin): v1 is $4000, via NMH_MUTATE=P84-PRE. fx68k: P8.4-PRE PASS -> FAIL; P8.4 PASS -> not graded [P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$4000 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)]; TG68K: P8.4-PRE PASS -> FAIL; P8.4 PASS -> not graded [P8.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$4000 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00)]
 // MUTATION P8.4 stimulus red CIAB's stopped leg with CR<-$00 instead of $10 (p8_ciab_load_ld0.bin): v2 equals v1, via NMH_MUTATE=P84-LD0. fx68k: P8.4 PASS -> FAIL [P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$3819 c=$00 v3=$FF91 (counted 110, bound 116.40)]; TG68K: P8.4 PASS -> FAIL [P8.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$39B5 c=$00 v3=$FFA6 (counted 89, bound 95.00)]
 // MUTATION P8.4 stimulus red CIAB's running leg with CR<-$01 instead of $11 (p8_ciab_load_run01.bin): $FFFF-v3 is about 5100, above (D-A)/T_E+1, via NMH_MUTATE=P84-CONTRAST. fx68k: P8.4 PASS -> FAIL [P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$EBD3 (counted 5164, bound 116.40)]; TG68K: P8.4 PASS -> FAIL [P8.4 CIAA v1=$39B5 v2=$4000 c=$00 v3=$FFA6 (counted 89, bound 95.00); CIAB v1=$39B5 v2=$4000 c=$00 v3=$EFEC (counted 4115, bound 95.00)]
-// MUTATION P8.65-MODE01-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P8.65-MODE01-WINDOW. fx68k: P8.65-MODE01-WINDOW PASS -> FAIL [P8.65-MODE01 CIAA decrement 2236 over W=2236E, i=$00, v=$0744]; TG68K: P8.65-MODE01-WINDOW PASS -> FAIL [P8.65-MODE01 CIAA decrement 1782 over W=1782E, i=$00, v=$090A]
-// MUTATION P8.65-MODE01-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p8_ciaa_inmode01_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P8.65-MODE01-WINDOW-W. fx68k: P8.65-MODE01-WINDOW PASS -> FAIL [P8.65-MODE01 CIAA decrement 218 over W=218E, i=$08, v=$0F26]; TG68K: P8.65-MODE01-WINDOW PASS -> FAIL [P8.65-MODE01 CIAA decrement 255 over W=255E, i=$08, v=$0F01]
-// MUTATION P8.65-MODE01-WINDOW-CIAB stimulus red CIAB's wait of 200 dbra iterations instead of 2200 (p8_ciab_inmode01_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P8.65-MODE01-WINDOW-CIAB. fx68k: P8.65-MODE01-WINDOW-CIAB PASS -> FAIL; P8.65-MODE01, P10-sol:F-crb.c7 FAIL -> not graded [P8.65-MODE01 CIAB v=$0F26 W=218.000000E]; TG68K: P8.65-MODE01-WINDOW-CIAB PASS -> FAIL; P8.65-MODE01, P10-sol:F-crb.c7 FAIL -> not graded [P8.65-MODE01 CIAB v=$0F51 W=175.000000E]
-// MUTATION P8.65-MODE01 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAB's timer B in CRB INMODE=01 sees no positive CNT transition (POUT undriven, high) and holds v=$1000 over the window, and the MEASURED line for CIAA shows the decrement over one key code. fx68k (conf copy): P8.65-MODE01 PASS [P8.65-MODE01 CIAB v=$1000 W=2236.000000E | P8.65-MODE01 CIAA decrement 8 over W=2236E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01 FAIL [P8.65-MODE01 CIAB v=$0744 W=2236.000000E | P8.65-MODE01 CIAA decrement 2236 over W=2236E, i=$08, v=$0744]; TG68K (conf copy): P8.65-MODE01 PASS [P8.65-MODE01 CIAB v=$1000 W=1782.000000E | P8.65-MODE01 CIAA decrement 8 over W=1782E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01 FAIL [P8.65-MODE01 CIAB v=$090A W=1782.000000E | P8.65-MODE01 CIAA decrement 1782 over W=1782E, i=$08, v=$090A]
+// MUTATION P8.65-MODE01-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P8.65-MODE01-WINDOW. fx68k: P8.65-MODE01-WINDOW PASS -> FAIL; P8.65-MODE01-COUNTING FAIL -> not graded [P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$00, v=$0744]; TG68K: P8.65-MODE01-WINDOW PASS -> FAIL; P8.65-MODE01-COUNTING FAIL -> not graded [P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$00, v=$090A]
+// MUTATION P8.65-MODE01-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p8_ciaa_inmode01_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P8.65-MODE01-WINDOW-W. fx68k: P8.65-MODE01-WINDOW PASS -> FAIL; P8.65-MODE01-COUNTING FAIL -> not graded [P8.65-MODE01-COUNTING CIAA decrement 218 (the page's count is 8) over W=218.000000E, i=$08, v=$0F26]; TG68K: P8.65-MODE01-WINDOW PASS -> FAIL; P8.65-MODE01-COUNTING FAIL -> not graded [P8.65-MODE01-COUNTING CIAA decrement 175 (the page's count is 8) over W=175.000000E, i=$08, v=$0F51]
+// MUTATION P8.65-MODE01-WINDOW-CIAB stimulus red CIAB's wait of 200 dbra iterations instead of 2200 (p8_ciab_inmode01_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P8.65-MODE01-WINDOW-CIAB. fx68k: P8.65-MODE01-WINDOW-CIAB PASS -> FAIL; P8.65-MODE01 FAIL -> not graded [P8.65-MODE01 CIAB v=$0F26 W=218.000000E]; TG68K: P8.65-MODE01-WINDOW-CIAB PASS -> FAIL; P8.65-MODE01 FAIL -> not graded [P8.65-MODE01 CIAB v=$0F51 W=175.000000E]
+// MUTATION P8.65-MODE01 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAB's timer B in CRB INMODE=01 sees no positive CNT transition (POUT undriven, high) and holds v=$1000 over the window, and the MEASURED line for CIAA shows the decrement over one key code. fx68k (conf copy): P8.65-MODE01 PASS [P8.65-MODE01 CIAB v=$1000 W=2236.000000E | P8.65-MODE01-COUNTING CIAA decrement 8 (the page's count is 8) over W=2236.000000E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01 FAIL [P8.65-MODE01 CIAB v=$0744 W=2236.000000E | P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P8.65-MODE01 PASS [P8.65-MODE01 CIAB v=$1000 W=1782.000000E | P8.65-MODE01-COUNTING CIAA decrement 8 (the page's count is 8) over W=1782.000000E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01 FAIL [P8.65-MODE01 CIAB v=$090A W=1782.000000E | P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
+// MUTATION P8.65-MODE01-COUNTING implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): CIAA's CNT is KCLK, so the one completed key code gives eight positive transitions and CIAA's timer B in CRB INMODE=01 counts exactly eight over the window ($1000-v=8, i has SP=1); the same line on the unmodified build. fx68k (conf copy): P8.65-MODE01-COUNTING PASS [P8.65-MODE01-COUNTING CIAA decrement 8 (the page's count is 8) over W=2236.000000E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01-COUNTING FAIL [P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P8.65-MODE01-COUNTING PASS [P8.65-MODE01-COUNTING CIAA decrement 8 (the page's count is 8) over W=1782.000000E, i=$08, v=$0FF8]; unmodified build: P8.65-MODE01-COUNTING FAIL [P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
+// MUTATION P8.65-MODE01-COUNTING stimulus red on that copy, CRB written $01 (INMODE=phi2) in place of $21 with the same key code at the same time (p8_ciaa_inmode01_phi2.bin): the timer counts phi2, not the eight KCLK transitions, via NMH_MUTATE=P8.65-MODE01-COUNTING. fx68k (conf copy): P8.65-MODE01-COUNTING, P10-sol:F-crb.c7 PASS -> FAIL [P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744]; TG68K (conf copy): P8.65-MODE01-COUNTING, P10-sol:F-crb.c7 PASS -> FAIL [P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A]
 // MUTATION P8.65-MODE01-CONTRAST stimulus red CIAB's start write CRB<-$20 (not started) instead of $01 (p8_ciab_inmode01_nostart.bin): $1000-v is 0, below (stop_before-start_after)/T_E-1, via NMH_MUTATE=P8.65-MODE01-CONTRAST. fx68k: P8.65-MODE01-CONTRAST PASS -> FAIL [P8.65-MODE01-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 0 in [2229.60, 2242.00]]; TG68K: P8.65-MODE01-CONTRAST PASS -> FAIL [P8.65-MODE01-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 0 in [1776.60, 1788.00]]
 // MUTATION P8.65-MODE01-CIAB-GREENCTL-PRE stimulus red the key code scheduled 100 E periods after the first interval's ready marker (NMH_MUTATE=P865M01-GREENCTL-PRE): the ICR read after the first interval has SP=1 and the key is sent before that interval ends. fx68k: no line moves; new: P8.65-MODE01-CIAB-GREENCTL-PRE FAIL, P8.65-MODE01-CIAB-GREENCTL not graded [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$0DFE i1=$08 i2=$00 v2=$0544]; TG68K: no line moves; new: P8.65-MODE01-CIAB-GREENCTL-PRE FAIL, P8.65-MODE01-CIAB-GREENCTL not graded [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$0E66 i1=$08 i2=$00 v2=$0772]
 // MUTATION P8.65-MODE01-CIAB-GREENCTL implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`) run with NMH_MUTATE=P865M01-GREENCTL: CIAA's CNT is KCLK, so v1 is $1000 after the interval with no edge and v2 is $0FF8 after the interval with the key code; the same selector on the unmodified build. fx68k (conf copy): P8.65-MODE01-CIAB-GREENCTL PASS [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$08 v2=$0FF8]; unmodified build: P8.65-MODE01-CIAB-GREENCTL FAIL [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$0DFE i1=$00 i2=$08 v2=$0544]; TG68K (conf copy): P8.65-MODE01-CIAB-GREENCTL PASS [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$08 v2=$0FF8]; unmodified build: P8.65-MODE01-CIAB-GREENCTL FAIL [P8.65-MODE01-CIAB-GREENCTL CIAA v1=$0E66 i1=$00 i2=$08 v2=$0772]
 // MUTATION P8.65-MODE01-CIAB-GREENCTL stimulus red on that copy, the key code left out of the second interval (NMH_MUTATE=P865M01-GREENCTL-NOKEY): v2 stays $1000, where v1-v2 should be 8. fx68k (conf copy): P8.65-MODE01-CIAB-GREENCTL PASS -> FAIL; P7.5-CIAB-GREENCTL PASS -> FAIL [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000 | P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000]; TG68K (conf copy): P8.65-MODE01-CIAB-GREENCTL PASS -> FAIL; P7.5-CIAB-GREENCTL PASS -> FAIL [P7.5-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000 | P8.65-MODE01-CIAB-GREENCTL CIAA v1=$1000 i1=$00 i2=$00 v2=$1000]
-// MUTATION P8.65-MODE10-PRE stimulus red CIAB's R-LATCH_A(2) instead of 30 (p865_ciab_mode10_shortlatch.bin): flags appear in consecutive reads and no period is determined, via NMH_MUTATE=M10-PRE. fx68k: P8.65-MODE10-PRE PASS -> FAIL; P8.65-MODE10 PASS -> not graded [P8.65-M10 CIAB: measured P(30)=2 (not uniquely determined) | P8.65-M10 CIAB: nA=301 v=$FE0A flagged=300]; TG68K: P8.65-MODE10-PRE PASS -> FAIL; P8.65-MODE10 PASS -> not graded [P8.65-M10 CIAB: measured P(30)=2 (not uniquely determined) | P8.65-M10 CIAB: nA=301 v=$FE0A flagged=300]
+// MUTATION P8.65-MODE10-PRE stimulus red CIAB's R-LATCH_A(2) instead of 30 (p865_ciab_mode10_shortlatch.bin): flags appear in consecutive reads and no period is determined, via NMH_MUTATE=M10-PRE. fx68k: P8.65-MODE10-PRE PASS -> FAIL; P8.65-MODE10 PASS -> not graded [P8.65-M10 CIAB: measured P(30)=2 (not uniquely determined) | P8.65-M10 CIAB: nA=301 v=$FE0A flagged=300]; TG68K: P8.65-MODE10-PRE PASS -> FAIL; P8.65-MODE10 PASS -> not graded [P8.65-M10 CIAB: measured P(30)=2 (not uniquely determined) | P8.65-M10 CIAB: nA=301 v=$FE65 flagged=300]
 // MUTATION P8.65-MODE10 stimulus red CIAB's CRB<-$01 (mode 00, phi2) in place of $41 (p865_ciab_mode10_contrast.bin): $FFFF-v counts the E cycles of the window, not N_A, via NMH_MUTATE=M10. fx68k: P8.65-MODE10 PASS -> FAIL [P8.65-M10 CIAB: nA=48 v=$FA0F flagged=48]; TG68K: P8.65-MODE10 PASS -> FAIL [P8.65-M10 CIAB: nA=39 v=$FB21 flagged=39]
 // MUTATION P8.65-MODE10-CONTRAST stimulus red the mode-10 run (p865_ciab_mode10.bin) in place of CRB<-$01 (mode 00): $FFFF-v is N_A, far below (stop_before-start_after)/T_E-1, via NMH_MUTATE=M10-CONTRAST. fx68k: P8.65-MODE10-CONTRAST PASS -> FAIL [P8.65-M10 contrast CIAB: nA=48 v=$FFCF flagged=48]; TG68K: P8.65-MODE10-CONTRAST PASS -> FAIL [P8.65-M10 contrast CIAB: nA=39 v=$FFD8 flagged=39]
-// MUTATION P8.65-MODE11-WINDOW stimulus red the key code of pair K scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=M11-WINDOW. fx68k: P8.65-MODE11-WINDOW PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=559, D_Y(N)=559 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)]; TG68K: P8.65-MODE11-WINDOW PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=445, D_Y(N)=445 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)]
-// MUTATION P8.65-MODE11-WINDOW stimulus red both runs of pair N with a wait of 200 dbra iterations instead of 2200 (p865_ciaa_mode11_short.bin): W is shorter than 1500 E periods and the two windows stay equal, via NMH_MUTATE=M11-WINDOW-W. fx68k: P8.65-MODE11-WINDOW PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=54, D_Y(N)=54 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=54 D_Y(N)=54 D_X(K)=559 D_Y(K)=559 window(N)=8720/8720 window(K)=89440/89440]; TG68K: P8.65-MODE11-WINDOW PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=43, D_Y(N)=43 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=43 D_Y(N)=43 D_X(K)=445 D_Y(K)=445 window(N)=7000/7000 window(K)=71280/71280]
-// MUTATION P8.65-MODE11-WINPRE stimulus red pair N's run Y with a wait of 2300 dbra iterations instead of 2200 (p865_ciaa_mode11_w2300.bin): the two windows differ, via NMH_MUTATE=M11-WINPRE. fx68k: P8.65-MODE11-WINPRE PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=559, D_Y(N)=584 (not equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=559 D_Y(N)=584 D_X(K)=559 D_Y(K)=559 window(N)=89440/93480 window(K)=89440/89440]; TG68K: P8.65-MODE11-WINPRE PASS -> FAIL [P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=445, D_Y(N)=465 (not equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=445 D_Y(N)=465 D_X(K)=445 D_Y(K)=445 window(N)=71280/74480 window(K)=71280/71280]
+// MUTATION P8.65-MODE11-WINDOW stimulus red the key code of pair K scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=M11-WINDOW. fx68k: P8.65-MODE11-WINDOW PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=559 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)]; TG68K: P8.65-MODE11-WINDOW PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=445 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)]
+// MUTATION P8.65-MODE11-WINDOW stimulus red both runs of pair N with a wait of 200 dbra iterations instead of 2200 (p865_ciaa_mode11_short.bin): W is shorter than 1500 E periods and the two windows stay equal, via NMH_MUTATE=M11-WINDOW-W. fx68k: P8.65-MODE11-WINDOW PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=54, D_Y(N)=54 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=54 D_Y(N)=54 D_X(K)=559 D_Y(K)=559 window(N)=8720/8720 window(K)=89440/89440]; TG68K: P8.65-MODE11-WINDOW PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=43, D_Y(N)=43 (equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=43 D_Y(N)=43 D_X(K)=445 D_Y(K)=445 window(N)=7000/7000 window(K)=71280/71280]
+// MUTATION P8.65-MODE11-WINPRE stimulus red pair N's run Y with a wait of 2300 dbra iterations instead of 2200 (p865_ciaa_mode11_w2300.bin): the two windows differ, via NMH_MUTATE=M11-WINPRE. fx68k: P8.65-MODE11-WINPRE PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=584 (not equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=559 D_Y(N)=584 D_X(K)=559 D_Y(K)=559 window(N)=89440/93480 window(K)=89440/89440]; TG68K: P8.65-MODE11-WINPRE PASS -> FAIL; P8.65-MODE11-PAIRN PASS -> not graded; P8.65-MODE11-PAIRK FAIL -> not graded [P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=465 (not equal), windows do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed) | P8.65-MODE11 D_X(N)=445 D_Y(N)=465 D_X(K)=445 D_Y(K)=445 window(N)=71280/74480 window(K)=71280/71280]
+// MUTATION P8.65-MODE11-PAIRN stimulus red run Y with timer A's latch 4 in place of 3 (p865_ciaa_mode11_lat4.bin): the two windows stay equally long and timer A offers timer B fewer underflows in run Y than in run X, via NMH_MUTATE=M11-PAIRN-LATCH. fx68k: P8.65-MODE11-PAIRN PASS -> FAIL [P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=447 (not equal), windows hold]; TG68K: P8.65-MODE11-PAIRN PASS -> FAIL [P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=356 (not equal), windows hold]
+// MUTATION P8.65-MODE11-PAIRN stimulus red on the conf copy, a key code sent in run Y only: KCLK goes low in run Y and a conforming mode 11 counts fewer underflows there; the unmodified build ignores CNT in mode 11 and counts as many, via NMH_MUTATE=M11-PAIRN. fx68k (conf copy): P8.65-MODE11-PAIRN PASS -> FAIL [P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=531 (not equal), windows hold]; unmodified build: P8.65-MODE11-PAIRN PASS [P8.65-MODE11-PAIRN D_X(N)=559, D_Y(N)=559 (equal), windows hold]; TG68K (conf copy): P8.65-MODE11-PAIRN PASS -> FAIL [P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=417 (not equal), windows hold]; unmodified build: P8.65-MODE11-PAIRN PASS [P8.65-MODE11-PAIRN D_X(N)=445, D_Y(N)=445 (equal), windows hold]
+// MUTATION P8.65-MODE11-PAIRK implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): KCLK is CIAA's CNT and is low during each keyed bit, mode 11 does not count the timer A underflows that fall there, and D_Y(K) < D_X(K); the same line on the unmodified build. fx68k (conf copy): P8.65-MODE11-PAIRK PASS [P8.65-MODE11-PAIRK D_Y(K)=531 < D_X(K)=559]; unmodified build: P8.65-MODE11-PAIRK FAIL [P8.65-MODE11-PAIRK D_Y(K)=559 >= D_X(K)=559]; TG68K (conf copy): P8.65-MODE11-PAIRK PASS [P8.65-MODE11-PAIRK D_Y(K)=417 < D_X(K)=445]; unmodified build: P8.65-MODE11-PAIRK FAIL [P8.65-MODE11-PAIRK D_Y(K)=445 >= D_X(K)=445]
+// MUTATION P8.65-MODE11-PAIRK stimulus red on that copy, run Y written with the mode-10 value $41 in place of $61: both runs count every timer A underflow, D_Y = D_X, via NMH_MUTATE=M11-PAIRK. fx68k (conf copy): P8.65-MODE11-PAIRK PASS -> FAIL [P8.65-MODE11-PAIRK D_Y(K)=559 >= D_X(K)=559]; TG68K (conf copy): P8.65-MODE11-PAIRK PASS -> FAIL [P8.65-MODE11-PAIRK D_Y(K)=445 >= D_X(K)=445]
 // MUTATION P8.7-PRE stimulus red run X's setup without the LSB write of TOD<-0 (p87_ciab_x_nolsb.bin): TOD stays stopped and T0 is 0, via NMH_MUTATE=P87-PRE. fx68k: P8.7-PRE PASS -> FAIL; P8.7-RUNX, P8.7-RUNY PASS -> not graded [P8.7-PRE CIAB run X: T0=1 lines-measured=111 | P8.7-RUNX CIAB: firstMatch=? firstALRM=? | P8.7 CIAB T0(X)=1 T1X=1 T0(Y)=111 T1Y=4096 linesX=1 linesY=0]; TG68K: P8.7-PRE PASS -> FAIL; P8.7-RUNX, P8.7-RUNY PASS -> not graded [P8.7-PRE CIAB run X: T0=1 lines-measured=88 | P8.7-RUNX CIAB: firstMatch=? firstALRM=? | P8.7 CIAB T0(X)=1 T1X=1 T0(Y)=89 T1Y=4096 linesX=1 linesY=0]
 // MUTATION P8.7-POP stimulus red run X's sampler of 449 iterations (p87_ciab_x_short.bin): 449 of the 450 TODLO and ICR stores, via NMH_MUTATE=P87-POP. fx68k: P8.7-POP PASS -> FAIL; P8.7-RUNX, P8.7-RUNY PASS -> not graded; TG68K: P8.7-POP PASS -> FAIL; P8.7-RUNX, P8.7-RUNY PASS -> not graded
-// MUTATION P8.7-RUNX stimulus red CIAB's run X with CRB<-$00 in place of $80 for its TOD writes, poked through the parameter block: the TOD is set to A and no alarm is set, via NMH_MUTATE=P8.7-RUNX. fx68k: P8.7-RUNX PASS -> FAIL [P8.7-RUNX CIAB: firstMatch=0 firstALRM=? | P8.7 CIAB T0(X)=111 T1X=123 T0(Y)=111 T1Y=4096 linesX=1 linesY=0]; TG68K: P8.7-RUNX PASS -> FAIL [P8.7-RUNX CIAB: firstMatch=0 firstALRM=? | P8.7 CIAB T0(X)=89 T1X=101 T0(Y)=89 T1Y=4096 linesX=1 linesY=0]
-// MUTATION P8.7-RUNY stimulus red CIAB's run Y with CRB<-$80 in place of $00 for its TOD writes, poked through the parameter block: the alarm is set to A and TOD keeps counting from its setup, via NMH_MUTATE=P8.7-RUNY. fx68k: P8.7-RUNY PASS -> FAIL [P8.7 CIAB T0(X)=111 T1X=112 T0(Y)=111 T1Y=112 linesX=1 linesY=0]; TG68K: P8.7-RUNY PASS -> FAIL [P8.7 CIAB T0(X)=89 T1X=90 T0(Y)=89 T1Y=90 linesX=1 linesY=0]
-// MUTATION P8.7-CIAA-RUNX stimulus red CIAA's run X with CRB<-$00 in place of $80 for its TOD writes, poked through the parameter block: the TOD is set to A and T1-T0 is far above 2, via NMH_MUTATE=P8.7-CIAA-RUNX. fx68k: P8.7-CIAA-RUNX PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=4096]; TG68K: P8.7-CIAA-RUNX PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=4096]
-// MUTATION P8.7-CIAA-RUNY stimulus red CIAA's run Y with CRB<-$80 in place of $00 for its TOD writes, poked through the parameter block: the alarm is set to A and T1-A is far below 0, via NMH_MUTATE=P8.7-CIAA-RUNY. fx68k: P8.7-CIAA-RUNY PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=0 T0(Y)=0 T1Y=0]; TG68K: P8.7-CIAA-RUNY PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=0 T0(Y)=0 T1Y=0]
-// MUTATION P10-sol:F-timers.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P2, P3 and P4 are never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (CIAB/timer B's P2 leg-S latch $FFFF, its P3 latch 2, five of its six P4 latch runs not started, leg F's L=40 run not started, leg W's L=40 latch $FFFF, CIAB/timer B's P1 step-4 latch $FFFF, CIAB's P7.5 wait of 200 dbra iterations, the key code of the P7.5-CIAA-INMODE run sent in its first interval, CIAB's P7.6 timer not started, CIAB's P8.65 mode 01 wait of 200 dbra iterations). fx68k: normal run FAIL (FAIL members: P2(CIAB/TA), P2(CIAB/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P2(CIAA/TA), P2(CIAA/TB), P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P2(CIAA/TA), P2(CIAA/TB), P2(CIAB/TA), P2(CIAB/TB), P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P2(CIAB/TA), P2(CIAB/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P2(CIAA/TA), P2(CIAA/TB), P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P2(CIAA/TA), P2(CIAA/TB), P2(CIAB/TA), P2(CIAB/TB), P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB))
-// MUTATION P10-opus:F-timers.c12 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB))
-// MUTATION P10-sol:F-cra.c16 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer A; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P3(CIAB/TA), P4(CIAB/TA); NOT GRADED members: P3(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAB/TA), P4(CIAA/TA), P4(CIAB/TA)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TA), P4(CIAB/TA); NOT GRADED members: P3(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAB/TA), P4(CIAA/TA), P4(CIAB/TA))
-// MUTATION P10-opus:F-crb.c3 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P3(CIAB/TB), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TB), P3(CIAB/TB), P4(CIAA/TB), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TB), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TB), P3(CIAB/TB), P4(CIAA/TB), P4(CIAB/TB))
-// MUTATION P10-sol:F-cra.c13 none impossible no stimulus of this package makes the row print PASS: P7.5 and P7.5-CIAA-INMODE grade only the zero-edge half of INMODE=CNT, so their members are FAIL or not graded; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P7.5, P7.5-CIAA-INMODE; NOT GRADED members: none); with the selectors not graded (FAIL members: none; NOT GRADED: P7.5, P7.5-CIAA-INMODE); TG68K: normal run FAIL (FAIL members: P7.5, P7.5-CIAA-INMODE; NOT GRADED members: none); with the selectors not graded (FAIL members: none; NOT GRADED: P7.5, P7.5-CIAA-INMODE)
-// MUTATION P10-sol:F-crb.c7 none impossible no stimulus of this package makes the row print PASS: mode 11's member is never graded and mode 01's grades only the zero-edge half of INMODE=01; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P8.65-01; NOT GRADED members: P8.65-11); with the selectors not graded (FAIL members: none; NOT GRADED: P8.65-01, P8.65-11); TG68K: normal run FAIL (FAIL members: P8.65-01; NOT GRADED members: P8.65-11); with the selectors not graded (FAIL members: none; NOT GRADED: P8.65-01, P8.65-11)
-// MUTATION P10-opus:F-cra.c12 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-CONTROL and P4 are never graded on CIAA/timer A, and the member for SPMODE=0 (bit 6) is never graded; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P4(CIAB/TA); NOT GRADED members: P1-CONTROL(CIAA/TA), P4(CIAA/TA), SPMODE=0 (bit 6, no line shows that it selects the input mode)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TA), P4(CIAA/TA), P4(CIAB/TA), SPMODE=0 (bit 6, no line shows that it selects the input mode)); TG68K: normal run FAIL (FAIL members: P4(CIAB/TA); NOT GRADED members: P1-CONTROL(CIAA/TA), P4(CIAA/TA), SPMODE=0 (bit 6, no line shows that it selects the input mode)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TA), P4(CIAA/TA), P4(CIAB/TA), SPMODE=0 (bit 6, no line shows that it selects the input mode))
-// MUTATION P10-opus:F-cra.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1 PBON=1 and P3 are never graded on CIAA/timer A, and P7.5 and P7.5-CIAA-INMODE grade only the zero-edge half of INMODE=CNT; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P1-MAIN(CIAB/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.6-CIAB; NOT GRADED members: P1-MAIN(CIAA/TA), P3(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TA), P1-MAIN(CIAB/TA), P3(CIAA/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.6-CIAB); TG68K: normal run FAIL (FAIL members: P1-MAIN(CIAB/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.6-CIAB; NOT GRADED members: P1-MAIN(CIAA/TA), P3(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TA), P1-MAIN(CIAB/TA), P3(CIAA/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.6-CIAB)
-// MUTATION P10-opus:F-crb.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-CONTROL and P4 are never graded on CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P4(CIAB/TB); NOT GRADED members: P1-CONTROL(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TB), P4(CIAA/TB), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P4(CIAB/TB); NOT GRADED members: P1-CONTROL(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TB), P4(CIAA/TB), P4(CIAB/TB))
-// MUTATION P10-opus:F-crb.c14 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1 PBON=1 and P3 are never graded on CIAA/timer B, and P8.65 mode 01 grades only the zero-edge half of INMODE=01; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P1-MAIN(CIAB/TB), P3(CIAB/TB), P8.65-01; NOT GRADED members: P1-MAIN(CIAA/TB), P3(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TB), P1-MAIN(CIAB/TB), P3(CIAA/TB), P3(CIAB/TB), P8.65-01); TG68K: normal run FAIL (FAIL members: P1-MAIN(CIAB/TB), P3(CIAB/TB), P8.65-01; NOT GRADED members: P1-MAIN(CIAA/TB), P3(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TB), P1-MAIN(CIAB/TB), P3(CIAA/TB), P3(CIAB/TB), P8.65-01)
-// MUTATION P10-opus:F-timers.c6 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P4 is never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB. fx68k: normal run FAIL (FAIL members: P4(CIAB/TA), P4(CIAB/TB), P9-LEGF-TRANSITIONS, P9-LEGW; NOT GRADED members: P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB), P9-LEGF, P9-LEGF-TRANSITIONS, P9-LEGW); TG68K: normal run FAIL (FAIL members: P4(CIAB/TA), P4(CIAB/TB), P9-LEGF-TRANSITIONS, P9-LEGW; NOT GRADED members: P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB), P9-LEGF, P9-LEGF-TRANSITIONS, P9-LEGW)
+// MUTATION P8.7-RUNX stimulus red CIAB's run X with CRB<-$00 in place of $80 for its TOD writes, poked through the parameter block: the TOD is set to A and no alarm is set, via NMH_MUTATE=P8.7-RUNX. fx68k: P8.7-RUNX PASS -> FAIL [P8.7-RUNX CIAB: firstMatch=0 firstALRM=? | P8.7 CIAB T0(X)=111 T1X=123 T0(Y)=111 T1Y=112 linesX=1 linesY=0]; TG68K: P8.7-RUNX PASS -> FAIL [P8.7-RUNX CIAB: firstMatch=0 firstALRM=? | P8.7 CIAB T0(X)=89 T1X=101 T0(Y)=89 T1Y=90 linesX=1 linesY=0]
+// MUTATION P8.7-RUNY stimulus red CIAB's run Y with CRB<-$80 in place of $00 for its TOD writes, poked through the parameter block: the alarm is set to A and TOD keeps counting from its setup, via NMH_MUTATE=P8.7-RUNY. fx68k: P8.7-RUNY PASS -> FAIL [P8.7 CIAB T0(X)=111 T1X=123 T0(Y)=111 T1Y=112 linesX=1 linesY=0]; TG68K: P8.7-RUNY PASS -> FAIL [P8.7 CIAB T0(X)=89 T1X=101 T0(Y)=89 T1Y=90 linesX=1 linesY=0]
+// MUTATION P8.7-CIAA-RUNX stimulus red CIAA's run X with CRB<-$00 in place of $80 for its TOD writes, poked through the parameter block: the TOD is set to A and T1-T0 is far above 2, via NMH_MUTATE=P8.7-CIAA-RUNX. fx68k: P8.7-CIAA-RUNX PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=0]; TG68K: P8.7-CIAA-RUNX PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=0]
+// MUTATION P8.7-CIAA-RUNY stimulus red CIAA's run Y with CRB<-$80 in place of $00 for its TOD writes, poked through the parameter block: the alarm is set to A and T1-A is far below 0, via NMH_MUTATE=P8.7-CIAA-RUNY. fx68k: P8.7-CIAA-RUNY PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=0]; TG68K: P8.7-CIAA-RUNY PASS -> FAIL [P8.7 CIAA T0(X)=0 T1X=4096 T0(Y)=0 T1Y=0]
+// MUTATION P10-sol:F-timers.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P2, P3 and P4 are never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P2(CIAB/TA), P2(CIAB/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P2(CIAA/TA), P2(CIAA/TB), P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P2(CIAA/TA), P2(CIAA/TB), P2(CIAB/TA), P2(CIAB/TB), P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P2(CIAB/TA), P2(CIAB/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P2(CIAA/TA), P2(CIAA/TB), P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P2(CIAA/TA), P2(CIAA/TB), P2(CIAB/TA), P2(CIAB/TB), P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB))
+// MUTATION P10-opus:F-timers.c12 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TA), P3(CIAB/TB), P4(CIAB/TA), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TA), P3(CIAA/TB), P4(CIAA/TA), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAA/TB), P3(CIAB/TA), P3(CIAB/TB), P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB))
+// MUTATION P10-sol:F-cra.c16 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer A; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P3(CIAB/TA), P4(CIAB/TA); NOT GRADED members: P3(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAB/TA), P4(CIAA/TA), P4(CIAB/TA)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TA), P4(CIAB/TA); NOT GRADED members: P3(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TA), P3(CIAB/TA), P4(CIAA/TA), P4(CIAB/TA))
+// MUTATION P10-opus:F-crb.c3 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P3 and P4 are never graded on CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P3(CIAB/TB), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TB), P3(CIAB/TB), P4(CIAA/TB), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P3(CIAB/TB), P4(CIAB/TB); NOT GRADED members: P3(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P3(CIAA/TB), P3(CIAB/TB), P4(CIAA/TB), P4(CIAB/TB))
+// MUTATION P10-sol:F-cra.c13 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): every member of the row passes on it, so the row prints PASS; the row has no member on a CIA-A PRB read-back, so nothing makes it impossible; the same selectors on the unmodified build print FAIL. fx68k (conf copy): P10-sol:F-cra.c13 PASS [members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 PASS; P7.5-CIAA-INMODE PASS; P7.5-COUNTING PASS]; unmodified build: FAIL (FAIL members: P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING); TG68K (conf copy): P10-sol:F-cra.c13 PASS [members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 PASS; P7.5-CIAA-INMODE PASS; P7.5-COUNTING PASS]; unmodified build: FAIL (FAIL members: P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING)
+// MUTATION P10-sol:F-cra.c13 stimulus red on that copy, CIAA's timer A written $01 (INMODE=phi2) in place of $21 with the same key at the same time (p7_ciaa_inmode_phi2.bin): the member P7.5-COUNTING is FAIL, via NMH_MUTATE=P7.5-COUNTING. fx68k (conf copy): P10-sol:F-cra.c13 PASS -> FAIL [members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 PASS; P7.5-CIAA-INMODE PASS; P7.5-COUNTING FAIL]; TG68K (conf copy): P10-sol:F-cra.c13 PASS -> FAIL [members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 PASS; P7.5-CIAA-INMODE PASS; P7.5-COUNTING FAIL]
+// MUTATION P10-sol:F-crb.c7 implementation green the conf copy of the chip set (conf.patch; `make conf-test-<core>`): every member of the row passes on it, so the row prints PASS; the row has no member on a CIA-A PRB read-back, so nothing makes it impossible; the same selectors on the unmodified build print FAIL. fx68k (conf copy): P10-sol:F-crb.c7 PASS [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING PASS; P8.65-11 PASS]; unmodified build: FAIL (FAIL members: P8.65-01, P8.65-MODE01-COUNTING, P8.65-11); TG68K (conf copy): P10-sol:F-crb.c7 PASS [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING PASS; P8.65-11 PASS]; unmodified build: FAIL (FAIL members: P8.65-01, P8.65-MODE01-COUNTING, P8.65-11)
+// MUTATION P10-sol:F-crb.c7 stimulus red on that copy, CIAA's timer B written $01 (mode 00) in place of $21 with the same key at the same time (p8_ciaa_inmode01_phi2.bin): the member P8.65-MODE01-COUNTING is FAIL, via NMH_MUTATE=P8.65-MODE01-COUNTING. fx68k (conf copy): P10-sol:F-crb.c7 PASS -> FAIL [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING FAIL; P8.65-11 PASS]; TG68K (conf copy): P10-sol:F-crb.c7 PASS -> FAIL [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING FAIL; P8.65-11 PASS]
+// MUTATION P10-sol:F-crb.c7 stimulus red on that copy, run Y of pair K written with the mode-10 value (the member for mode 11 is FAIL; the same run selects M11-PAIRN), via NMH_MUTATE=M11-PAIRK. fx68k (conf copy): P10-sol:F-crb.c7 PASS -> FAIL [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING PASS; P8.65-11 FAIL]; TG68K (conf copy): P10-sol:F-crb.c7 PASS -> FAIL [members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 PASS; P8.65-10 PASS; P8.65-MODE01-COUNTING PASS; P8.65-11 FAIL]
+// MUTATION P10-opus:F-cra.c12 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-CONTROL and P4 are never graded on CIAA/timer A; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P4(CIAB/TA), P7.6-CIAA-SELECT; NOT GRADED members: P1-CONTROL(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TA), P4(CIAA/TA), P4(CIAB/TA), P7.6-CIAA, P7.6-CIAA-SELECT); TG68K: normal run FAIL (FAIL members: P4(CIAB/TA), P7.6-CIAA-SELECT; NOT GRADED members: P1-CONTROL(CIAA/TA), P4(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TA), P4(CIAA/TA), P4(CIAB/TA), P7.6-CIAA, P7.6-CIAA-SELECT)
+// MUTATION P10-opus:F-cra.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-MAIN and P3 are never graded on CIAA/timer A; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P1-MAIN(CIAB/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING, P7.6-CIAB; NOT GRADED members: P1-MAIN(CIAA/TA), P3(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TA), P1-MAIN(CIAB/TA), P3(CIAA/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING, P7.6-CIAB); TG68K: normal run FAIL (FAIL members: P1-MAIN(CIAB/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING, P7.6-CIAB; NOT GRADED members: P1-MAIN(CIAA/TA), P3(CIAA/TA)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TA), P1-MAIN(CIAB/TA), P3(CIAA/TA), P3(CIAB/TA), P7.5, P7.5-CIAA-INMODE, P7.5-COUNTING, P7.6-CIAB)
+// MUTATION P10-opus:F-crb.c13 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-CONTROL and P4 are never graded on CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P4(CIAB/TB); NOT GRADED members: P1-CONTROL(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TB), P4(CIAA/TB), P4(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P4(CIAB/TB); NOT GRADED members: P1-CONTROL(CIAA/TB), P4(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-CONTROL(CIAA/TB), P4(CIAA/TB), P4(CIAB/TB))
+// MUTATION P10-opus:F-crb.c14 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P1-MAIN and P3 are never graded on CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P1-MAIN(CIAB/TB), P3(CIAB/TB), P8.65-01, P8.65-MODE01-COUNTING; NOT GRADED members: P1-MAIN(CIAA/TB), P3(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TB), P1-MAIN(CIAB/TB), P3(CIAA/TB), P3(CIAB/TB), P8.65-01, P8.65-MODE01-COUNTING); TG68K: normal run FAIL (FAIL members: P1-MAIN(CIAB/TB), P3(CIAB/TB), P8.65-01, P8.65-MODE01-COUNTING; NOT GRADED members: P1-MAIN(CIAA/TB), P3(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P1-MAIN(CIAA/TB), P1-MAIN(CIAB/TB), P3(CIAA/TB), P3(CIAB/TB), P8.65-01, P8.65-MODE01-COUNTING)
+// MUTATION P10-opus:F-timers.c6 none impossible no stimulus of this package makes the row print PASS: CIA-A's PRB read-back is not live (Pre1.4/O1), so P4, P9-LEGF, P9-LEGF-TRANSITIONS and P9-LEGW are never graded on CIAA/timer A and CIAA/timer B; the join leaves FAIL when the preconditions of the members that fail are falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P7.5-WINDOW-W,P76CIAA-SELECT-WINDOW,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB,P8.65-MODE01-WINDOW-W,M11-WINDOW-W. fx68k: normal run FAIL (FAIL members: P4(CIAB/TA), P4(CIAB/TB), P9-LEGF-TRANSITIONS(CIAB/TA), P9-LEGF-TRANSITIONS(CIAB/TB), P9-LEGW(CIAB/TA), P9-LEGW(CIAB/TB); NOT GRADED members: P4(CIAA/TA), P4(CIAA/TB), P9-LEGF(CIAA/TA), P9-LEGF(CIAA/TB), P9-LEGF-TRANSITIONS(CIAA/TA), P9-LEGF-TRANSITIONS(CIAA/TB), P9-LEGW(CIAA/TA), P9-LEGW(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB), P9-LEGF(CIAA/TA), P9-LEGF(CIAA/TB), P9-LEGF(CIAB/TA), P9-LEGF(CIAB/TB), P9-LEGF-TRANSITIONS(CIAA/TA), P9-LEGF-TRANSITIONS(CIAA/TB), P9-LEGF-TRANSITIONS(CIAB/TA), P9-LEGF-TRANSITIONS(CIAB/TB), P9-LEGW(CIAA/TA), P9-LEGW(CIAA/TB), P9-LEGW(CIAB/TA), P9-LEGW(CIAB/TB)); TG68K: normal run FAIL (FAIL members: P4(CIAB/TA), P4(CIAB/TB), P9-LEGF-TRANSITIONS(CIAB/TA), P9-LEGF-TRANSITIONS(CIAB/TB), P9-LEGW(CIAB/TA), P9-LEGW(CIAB/TB); NOT GRADED members: P4(CIAA/TA), P4(CIAA/TB), P9-LEGF(CIAA/TA), P9-LEGF(CIAA/TB), P9-LEGF-TRANSITIONS(CIAA/TA), P9-LEGF-TRANSITIONS(CIAA/TB), P9-LEGW(CIAA/TA), P9-LEGW(CIAA/TB)); with the selectors not graded (FAIL members: none; NOT GRADED: P4(CIAA/TA), P4(CIAA/TB), P4(CIAB/TA), P4(CIAB/TB), P9-LEGF(CIAA/TA), P9-LEGF(CIAA/TB), P9-LEGF(CIAB/TA), P9-LEGF(CIAB/TB), P9-LEGF-TRANSITIONS(CIAA/TA), P9-LEGF-TRANSITIONS(CIAA/TB), P9-LEGF-TRANSITIONS(CIAB/TA), P9-LEGF-TRANSITIONS(CIAB/TB), P9-LEGW(CIAA/TA), P9-LEGW(CIAA/TB), P9-LEGW(CIAB/TA), P9-LEGW(CIAB/TB))
 //
 // P1-LP, P1-O2 and LED-R are recorded, not asserted, and have no record.
 
@@ -1211,6 +1228,7 @@ int main(int argc, char** argv) {
     struct PropVerdicts {
         using V4 = std::array<V, 4>;
         V4 p1_main{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
+        V4 p1_main_ob{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};   // P1-MAIN's per-instance verdict, other-bits clause included
         V4 p1_control{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
         V4 p2{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
         V4 p3{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
@@ -1218,13 +1236,16 @@ int main(int argc, char** argv) {
         V4 p5{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
         V p70_stop = V::NOTGRADED, p70_start = V::NOTGRADED;
         V p73_oneshot = V::NOTGRADED, p73_cont = V::NOTGRADED;
-        V p74 = V::NOTGRADED, p75 = V::NOTGRADED, p75_ciaa = V::NOTGRADED;
-        V p76_ciab = V::NOTGRADED, p77 = V::NOTGRADED;
+        V p74 = V::NOTGRADED, p75 = V::NOTGRADED, p75_ciaa = V::NOTGRADED, p75_count = V::NOTGRADED;
+        V p76_ciab = V::NOTGRADED, p76_ciaa = V::NOTGRADED, p76_ciaa_sel = V::NOTGRADED, p76_ciab_ctl = V::NOTGRADED,
+          p77 = V::NOTGRADED;
         V p80_stop = V::NOTGRADED, p80_start = V::NOTGRADED;
         V p83_oneshot = V::NOTGRADED, p83_cont = V::NOTGRADED, p84 = V::NOTGRADED;
-        V p865_01 = V::NOTGRADED, p865_10 = V::NOTGRADED, p865_11 = V::NOTGRADED;
+        V p865_01 = V::NOTGRADED, p865_01_count = V::NOTGRADED, p865_10 = V::NOTGRADED, p865_11 = V::NOTGRADED;
         V p87_x = V::NOTGRADED, p87_y = V::NOTGRADED;
-        V p9_legf = V::NOTGRADED, p9_legf_trans = V::NOTGRADED, p9_legw = V::NOTGRADED;
+        V4 p9_legf{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
+        V4 p9_legf_trans{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
+        V4 p9_legw{V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
         // inputs of the preconditions P10 conjoins that are printed before the section that needs them
         bool p1_pre_ok = false;
         bool p6_p9loop_ok = false;
@@ -1320,31 +1341,39 @@ int main(int argc, char** argv) {
     const int n_live_crb = int(gb.o1_live) + int(gd.o1_live);
     const int n_live_all = n_live_cra + n_live_crb;
     const std::string no_live = "no instance has a live read-back (Pre1.4/O1)";
-    bool cra_ok = p1_main_ok(ga) && p1_main_ok(gc);
-    bool crb_ok = p1_main_ok(gb) && p1_main_ok(gd);
     bool otherbits_all = ga.otherbits_ok && gb.otherbits_ok && gc.otherbits_ok && gd.otherbits_ok;
-    bool main_ok = cra_ok && crb_ok && otherbits_all;
     {
         const P1Legs* gs[4] = {&ga, &gb, &gc, &gd};
         pv.p1_pre_ok = pre11 && pre12 && pre13;
         for (int i = 0; i < 4; ++i)
+        {
             pv.p1_main[i] = (!gs[i]->o1_live || !pv.p1_pre_ok) ? V::NOTGRADED : vof(true, p1_main_ok(*gs[i]));
+            pv.p1_main_ob[i] = (!gs[i]->o1_live || !pv.p1_pre_ok) ? V::NOTGRADED
+                                                                   : vof(true, p1_main_ok(*gs[i]) && gs[i]->otherbits_ok);
+        }
     }
 
-    emit(checks, n_live_cra > 0, cra_ok, "P1-MAIN-CRA",
+    // The id-bearing lines are the join over the instances they name (SPECIFICATION.md P1): FAIL if any instance
+    // fails, PASS only if every instance passes, NOT GRADED otherwise. CIA-A's instances are NOT GRADED (Pre1.4/O1),
+    // so the join is FAIL or NOT GRADED on a design whose CIA-A read-back is not live.
+    const V v_cra = join({pv.p1_main[0], pv.p1_main[2]}), v_crb = join({pv.p1_main[1], pv.p1_main[3]}),
+            v_main = join({pv.p1_main_ob[0], pv.p1_main_ob[1], pv.p1_main_ob[2], pv.p1_main_ob[3]});
+    emit(checks, v_cra != V::NOTGRADED, v_cra == V::PASS, "P1-MAIN-CRA",
          "P1-MAIN-CRA [p349: sol:F-cra.c17]: PBON=1 puts timer A's output on PB6, "
-         "forcing an output over DDRB and the PR data, for the timer-A instances "
-         "whose read-back is live (Pre1.4/O1)", "no timer-A instance has a live read-back (Pre1.4/O1)");
-    emit(checks, n_live_crb > 0, crb_ok, "P1-MAIN-CRB",
+         "forcing an output over DDRB and the PR data; the join over the two timer-A instances (CIAA/timer A, "
+         "CIAB/timer A): FAIL if either fails, PASS only if both pass, not graded otherwise", 
+         "no timer-A instance is graded, or a precondition of P1 failed (CIAA/timer A: Pre1.4/O1)");
+    emit(checks, v_crb != V::NOTGRADED, v_crb == V::PASS, "P1-MAIN-CRB",
          "P1-MAIN-CRB [p349: sol:F-crb.c3, opus:F-crb.c2; p350: sol:F-crb.c14]: PBON=1 "
-         "puts timer B's output on PB7, forcing an output over DDRB and the PR data, "
-         "for the timer-B instances whose read-back is live (Pre1.4/O1)",
-         "no timer-B instance has a live read-back (Pre1.4/O1)");
-    emit(checks, n_live_all > 0, main_ok, "P1-MAIN",
+         "puts timer B's output on PB7, forcing an output over DDRB and the PR data; the join over the two "
+         "timer-B instances (CIAA/timer B, CIAB/timer B): FAIL if either fails, PASS only if both pass, not graded otherwise",
+         "no timer-B instance is graded, or a precondition of P1 failed (CIAA/timer B: Pre1.4/O1)");
+    emit(checks, v_main != V::NOTGRADED, v_main == V::PASS, "P1-MAIN",
         "P1-MAIN [p342: opus:F-timers.c10, opus:F-timers.c11, sol:F-timers.c12; "
         "p341: opus:F-ports.c7, sol:F-ports.c7]: PBON=1 puts the timer's output on PB6 (timer A) or "
-        "PB7 (timer B) only, forcing an output over DDRB and the PR data, for the instances whose "
-        "read-back is live, including the other-bits clause", no_live);
+        "PB7 (timer B) only, forcing an output over DDRB and the PR data, including the other-bits clause; the join "
+        "over the four instances: FAIL if any fails, PASS only if all four pass, not graded otherwise",
+        "no instance is graded, or a precondition of P1 failed (CIAA's instances: Pre1.4/O1)");
 
     emit(checks, n_live_all > 0, otherbits_all, "P1-OTHERBITS",
         "P1-OTHERBITS [p342]: bits 0-5 of b1 and c1 match this instance's own written pattern, and bit "
@@ -1608,18 +1637,6 @@ int main(int argc, char** argv) {
     p2_dump(p2a, "P2 CIAA/TA"); p2_dump(p2b, "P2 CIAA/TB");
     p2_dump(p2c, "P2 CIAB/TA"); p2_dump(p2d_view, "P2 CIAB/TB");
 
-    {
-        const V vr = vof(n_legr > 0, p2_legr_all), vs = vof(p2_main_graded, p2_legs_all),
-                vh = vof(n_legh > 0, p2_legh_all);
-        const bool any_fail = vr == V::FAIL || vs == V::FAIL || vh == V::FAIL;
-        const bool any_ng = vr == V::NOTGRADED || vs == V::NOTGRADED || vh == V::NOTGRADED;
-        const V p2_toggle = any_fail ? V::FAIL : any_ng ? V::NOTGRADED : V::PASS;
-        emit(checks, p2_toggle != V::NOTGRADED, p2_toggle == V::PASS, "P2-TOGGLE",
-             "P2-TOGGLE [p342] opus:F-timers.c14: the toggle output is set low by RES and set high whenever "
-             "the timer is started, whether it was low or high before (legs R, S and H together)",
-             "a leg (R, S or H) has no graded population");
-    }
-
     checks.record("LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2");
 
     {
@@ -1634,6 +1651,18 @@ int main(int argc, char** argv) {
             if (!live[i] || !pre21[i] || !p2_pre_ok || !rs[i]->graded_any) { pv.p2[i] = V::NOTGRADED; continue; }
             pv.p2[i] = vof(true, p2_legr_component(*cs[i], ms[i]) && rs[i]->all_ok && p2_legh_component(*cs[i], ms[i]));
         }
+    }
+
+    {
+        // P2-TOGGLE is the join over the four instances' verdicts (legs R, S and H together, each already conjoined
+        // with the instance's preconditions): FAIL if any instance fails, PASS only if all four pass, not graded
+        // otherwise. CIA-A's instances are not graded (Pre1.4/O1).
+        const V p2_toggle = join({pv.p2[0], pv.p2[1], pv.p2[2], pv.p2[3]});
+        emit(checks, p2_toggle != V::NOTGRADED, p2_toggle == V::PASS, "P2-TOGGLE",
+             "P2-TOGGLE [p342] opus:F-timers.c14: the toggle output is set low by RES and set high whenever "
+             "the timer is started, whether it was low or high before (legs R, S and H together); the join over the "
+             "four instances: FAIL if any fails, PASS only if all four pass, not graded otherwise",
+             "no instance is graded (CIAA's instances: Pre1.4/O1) or a precondition of P2 failed");
     }
 
     // ---- P2 live controls (SPECIFICATION.md P2, "Live controls"): the same
@@ -1769,8 +1798,8 @@ int main(int argc, char** argv) {
     // ---- P3 (toggle mode inverts on every underflow, and at no other time) -
     checks.begin("P3", {"P1"});
     struct P3Result {
-        bool loaded=false, pairing_ok=false, level_ok=false, pre31_ok=false, pre32_ok=false; int nT=0,nQ=0;
-        int n_prb=0, n_high=0; uint16_t prb_min=0xFFFF, prb_max=0;   // the PRB samples as read
+        bool loaded=false, pairing_ok=false, level_ok=false, pre31_ok=false, pre32_ok=false, pop_ok=false; int nT=0,nQ=0;
+        int n_prb=0, n_icr=0, n_high=0; uint16_t prb_min=0xFFFF, prb_max=0;   // the PRB samples as read
     };
     auto p3_predicate = [](const P3Result& r) { return r.pairing_ok && r.level_ok; };
     auto grade_p3 = [&](const std::string& bin, uint16_t n_mask, uint16_t icrmask) {
@@ -1791,9 +1820,13 @@ int main(int argc, char** argv) {
                 s.prb_max = std::max<uint16_t>(s.prb_max, *prb.value[i] & 0xFF);
                 if (*prb.value[i] & n_mask) ++s.n_high;
             }
+            if (icr.value[i]) ++s.n_icr;
             bits[i] = prb.value[i] && (*prb.value[i] & n_mask);
             flags[i] = icr.value[i] && (*icr.value[i] & icrmask);
         }
+        // the population P3 quantifies over: all 600 PRB stores and all 600 ICR stores (the one more PRB read
+        // after the last ICR read is the loaded condition above)
+        s.pop_ok = s.n_prb == 600 && s.n_icr == 600;
         std::vector<int> T, Q;
         for (int i=0;i+1<601;++i) if (bits[i] != bits[i+1]) T.push_back(i);
         for (int i=0;i<600;++i) if (flags[i]) Q.push_back(i);
@@ -1817,12 +1850,22 @@ int main(int argc, char** argv) {
     {
         // Mutations of Pre3.1 and Pre3.2 replace CIAB/timer B's own run.
         std::string d_bin = dir + (sel("P3-PRE31") ? "/p3_ciab_tb_l2.bin"
-                                   : sel("P3-PRE32") ? "/p3_ciab_tb_nostart.bin" : "/p3_ciab_tb.bin");
+                                   : sel("P3-PRE32") ? "/p3_ciab_tb_nostart.bin"
+                                   : sel("P3-POP") ? "/p3_ciab_tb_short.bin" : "/p3_ciab_tb.bin");
         P3Result r_a = grade_p3(dir+"/p3_ciaa_ta.bin", 0x40, kIcrTa);
         P3Result r_b = grade_p3(dir+"/p3_ciaa_tb.bin", 0x80, kIcrTb);
         P3Result r_c = grade_p3(dir+"/p3_ciab_ta.bin", 0x40, kIcrTa);
         P3Result r_d = grade_p3(d_bin, 0x80, kIcrTb);
-        // Preconditions first: P3 is graded only where they hold.
+        // The population first: "every underflow" and "every transition" need all 600 PRB and 600 ICR stores of
+        // each of the four runs; P3 is not graded where one is missing.
+        const bool p3_pop_ok = r_a.pop_ok && r_b.pop_ok && r_c.pop_ok && r_d.pop_ok;
+        checks.expect(p3_pop_ok, "P3-POP [SPECIFICATION.md P3]: all 600 PRB stores and all 600 ICR stores of the "
+                      "run are captured (and the PRB read after the last ICR read), for all four instances");
+        checks.note("P3-POP PRB/ICR stores captured: CIAA/TA " + std::to_string(r_a.n_prb) + "/" + std::to_string(r_a.n_icr) +
+                    "; CIAA/TB " + std::to_string(r_b.n_prb) + "/" + std::to_string(r_b.n_icr) +
+                    "; CIAB/TA " + std::to_string(r_c.n_prb) + "/" + std::to_string(r_c.n_icr) +
+                    "; CIAB/TB " + std::to_string(r_d.n_prb) + "/" + std::to_string(r_d.n_icr));
+        // Preconditions next: P3 is graded only where they hold.
         bool p3_pre_ok = r_a.pre31_ok && r_a.pre32_ok && r_b.pre31_ok && r_b.pre32_ok &&
                          r_c.pre31_ok && r_c.pre32_ok && r_d.pre31_ok && r_d.pre32_ok;
         checks.expect(p3_pre_ok, "P3-PRE [SPECIFICATION.md P3]: underflows are separated by at least 3 "
@@ -1841,14 +1884,14 @@ int main(int argc, char** argv) {
             const P3Result* rs[4] = {&r_a, &r_b, &r_c, &r_d};
             const bool live[4] = {ga.o1_live, gb.o1_live, gc.o1_live, gd.o1_live};
             for (int i = 0; i < 4; ++i)
-                pv.p3[i] = (!live[i] || !p3_pre_ok) ? V::NOTGRADED : vof(true, p3_predicate(*rs[i]));
+                pv.p3[i] = (!live[i] || !p3_pre_ok || !p3_pop_ok) ? V::NOTGRADED : vof(true, p3_predicate(*rs[i]));
         }
-        emit(checks, p3_pre_ok && n3_ta + n3_tb > 0, p3_ta_ok && p3_tb_ok, "P3",
+        emit(checks, p3_pop_ok && p3_pre_ok && n3_ta + n3_tb > 0, p3_ta_ok && p3_tb_ok, "P3",
              "P3 [p342,p348,p349,p350]: every underflow has its transition and every "
              "transition has its underflow (paired within one iteration; one more PRB read follows the last ICR read, "
              "so the last flag is paired too), and the level before "
              "the first flag is 1, for the instances whose read-back is live (Pre1.4/O1)",
-             p3_pre_ok ? "no instance has a live read-back (Pre1.4/O1)" : "P3-PRE failed");
+             !p3_pop_ok ? "P3-POP failed" : p3_pre_ok ? "no instance has a live read-back (Pre1.4/O1)" : "P3-PRE failed");
         auto p3_stat = [](const P3Result& r) {
             if (r.n_prb == 0) return std::string("no PRB sample stored");
             return "PRB " + hex2(r.prb_min) + (r.prb_min == r.prb_max ? "" : ".." + hex2(r.prb_max)) + " in " +
@@ -1950,10 +1993,13 @@ int main(int argc, char** argv) {
     }
 
     // ---- P9 (the latch is the divider of the input clock) -----------------
+    // The instances graded are the two of CIAB, timer B and timer A (the instances whose PRB read-back is live, Pre1.4/O1);
+    // CIAA's two timers are not graded, for P1's reason, and their members are NOT GRADED. Each line is the join over
+    // the instances graded: FAIL if either fails, PASS only if both pass.
     checks.begin("P9");
     {
         // Leg F: reuses P3's own mechanism (toggle mode, R-SAMPLE(600;PRB,ICR)),
-        // CIAB/timer B, for L in {40,41,64,100} (SPECIFICATION.md P9 leg F).
+        // CIAB/timer B and CIAB/timer A, for L in {40,41,64,100} (SPECIFICATION.md P9 leg F).
         auto period_of = [&](const std::string& bin, uint16_t icrmask) -> PeriodResult {
             Capture c = run_capture(bin, kRunBudget, {});
             SampleSeries icr = read_series(c.log, kResults+8+600*2, 600);
@@ -1969,30 +2015,42 @@ int main(int argc, char** argv) {
                                                              : "/p9_legf_ciab_tb_l41.bin"), kIcrTb);
         PeriodResult p64 = period_of(dir+"/p9_legf_ciab_tb_l64.bin", kIcrTb);
         PeriodResult p100 = period_of(dir+"/p9_legf_ciab_tb_l100.bin", kIcrTb);
-        // P9-LEGF-PRE: all four runs completed with F1's anchor and each period is uniquely determined (F3: at
+        const std::string l40abin = dir + "/p9_legf_ciab_ta_l40.bin";
+        PeriodResult a40 = period_of(l40abin, kIcrTa);
+        PeriodResult a41 = period_of(dir + (sel("P9-LEGF-TA") ? "/p9_legf_ciab_ta_l41_m.bin"
+                                                               : "/p9_legf_ciab_ta_l41.bin"), kIcrTa);
+        PeriodResult a64 = period_of(dir+"/p9_legf_ciab_ta_l64.bin", kIcrTa);
+        PeriodResult a100 = period_of(dir+"/p9_legf_ciab_ta_l100.bin", kIcrTa);
+        // P9-LEGF-PRE: all eight runs completed with F1's anchor and each period is uniquely determined (F3: at
         // least 16 flags, iteration spacing at most P/2); P9-LEGF and P9-LEGF-TRANSITIONS are graded only where
-        // it holds (the transitions' own L=40 run is the same program as the first of the four).
-        const bool legf_pre = p40.ok && p41.ok && p64.ok && p100.ok;
+        // it holds (the transitions' own L=40 runs are the same programs as the first of the four of each instance).
+        const bool legf_pre = p40.ok && p41.ok && p64.ok && p100.ok && a40.ok && a41.ok && a64.ok && a100.ok;
         checks.expect(legf_pre, "P9-LEGF-PRE [SPECIFICATION.md P9, F3]: each of the L=40, 41, 64 and 100 runs of "
-                      "CIAB/timer B completed with F1's anchor and its period P(L) is uniquely determined (at least "
-                      "16 flags, iteration spacing at most P/2)");
-        int64_t d40=p40.P-40, d41=p41.P-41, d64=p64.P-64, d100=p100.P-100;
-        bool delta_ok = legf_pre && d40==d41 && d41==d64 && d64==d100 && (d40==0||d40==1);
-        pv.p9_legf = vof(legf_pre, delta_ok);
+                      "CIAB/timer B and of CIAB/timer A completed with F1's anchor and its period P(L) is uniquely "
+                      "determined (at least 16 flags, iteration spacing at most P/2)");
+        auto delta_of = [&](const PeriodResult& x40, const PeriodResult& x41, const PeriodResult& x64, const PeriodResult& x100) {
+            const int64_t d40 = x40.P-40, d41 = x41.P-41, d64 = x64.P-64, d100 = x100.P-100;
+            return legf_pre && d40==d41 && d41==d64 && d64==d100 && (d40==0||d40==1);
+        };
+        const bool delta_ok_b = delta_of(p40, p41, p64, p100), delta_ok_a = delta_of(a40, a41, a64, a100);
+        pv.p9_legf[3] = vof(legf_pre, delta_ok_b);
+        pv.p9_legf[2] = vof(legf_pre, delta_ok_a);
         // opus:F-timers.c6/sol:F-timers.c8 bundle more than one proposition
         // (P4, leg F, leg W and P8.65 mode 10); P10 carries them (its own
         // row), not this component line (SPECIFICATION.md P10: "None
         // graded whole here").
-        emit(checks, legf_pre, delta_ok, "P9-LEGF", "P9-LEGF [p341]: delta = P(L)-L is the same for L=40,41,64,100 "
-             "and is 0 or 1 (CIAB/timer B)", "P9-LEGF-PRE failed");
+        emit(checks, legf_pre, delta_ok_b && delta_ok_a, "P9-LEGF", "P9-LEGF [p341]: delta = P(L)-L is the same for L=40,41,64,100 "
+             "and is 0 or 1, on CIAB/timer B and on CIAB/timer A (the join: both must hold)", "P9-LEGF-PRE failed");
         checks.note("P9-LEGF P(40)=" + std::to_string(p40.P) + " P(41)=" + std::to_string(p41.P) +
                     " P(64)=" + std::to_string(p64.P) + " P(100)=" + std::to_string(p100.P));
+        checks.note("P9-LEGF CIAB/TA P(40)=" + std::to_string(a40.P) + " P(41)=" + std::to_string(a41.P) +
+                    " P(64)=" + std::to_string(a64.P) + " P(100)=" + std::to_string(a100.P));
 
         // "Consecutive PRB transitions are P(L) +- s E periods apart"
         // (SPECIFICATION.md P9), s the PRB sampling spacing (leg F's own
         // R-SAMPLE2 iteration time in E periods, measured in the run).
         struct TransResult { bool run_ok = false, ok = false; size_t n = 0; double s_e = 0; };
-        auto transitions_of = [&](const std::string& bin, const PeriodResult& pr) {
+        auto transitions_of = [&](const std::string& bin, const PeriodResult& pr, uint16_t n_mask) {
             TransResult r;
             Capture c = run_capture(bin, kRunBudget, {});
             SampleSeries prb = read_series(c.log, kResults+8, 600);
@@ -2005,7 +2063,7 @@ int main(int argc, char** argv) {
                 if (!prb.cycle[i] || !prb.value[i]) continue;
                 if (!have) { t0 = *prb.cycle[i]; have = true; }
                 e_all.push_back((int64_t)e_index(*prb.cycle[i], t0, anc.t_cpu));
-                bit_all.push_back((*prb.value[i] & 0x80) != 0);
+                bit_all.push_back((*prb.value[i] & n_mask) != 0);
                 if (prev) { sum += double(*prb.cycle[i] - *prev) / (10.0*double(anc.t_cpu)); ++n; }
                 prev = prb.cycle[i];
             }
@@ -2025,31 +2083,41 @@ int main(int argc, char** argv) {
             return std::to_string(r.n) + " PRB transitions in the 600 samples, P(40)=" + std::to_string(pr.P) +
                    ", s=" + b + "E";
         };
-        TransResult tr = transitions_of(l40bin, p40);
-        pv.p9_legf_trans = vof(legf_pre && tr.run_ok, tr.ok);
-        emit(checks, legf_pre && tr.run_ok, tr.ok, "P9-LEGF-TRANSITIONS", "P9-LEGF-TRANSITIONS [p341,p342]: "
-             "consecutive PRB transitions are P(L) +-s E periods apart, s the sampling spacing (CIAB/timer B, L=40)",
-             legf_pre ? "the L=40 transition run did not complete with F1's anchor" : "P9-LEGF-PRE failed");
+        TransResult tr = transitions_of(l40bin, p40, 0x80);
+        TransResult tra = transitions_of(l40abin, a40, 0x40);
+        pv.p9_legf_trans[3] = vof(legf_pre && tr.run_ok, tr.ok);
+        pv.p9_legf_trans[2] = vof(legf_pre && tra.run_ok, tra.ok);
+        emit(checks, legf_pre && tr.run_ok && tra.run_ok, tr.ok && tra.ok, "P9-LEGF-TRANSITIONS", "P9-LEGF-TRANSITIONS [p341,p342]: "
+             "consecutive PRB transitions are P(L) +-s E periods apart, s the sampling spacing (L=40, CIAB/timer B and "
+             "CIAB/timer A; the join: both must hold)",
+             legf_pre ? "an L=40 transition run did not complete with F1's anchor" : "P9-LEGF-PRE failed");
         checks.note("P9-LEGF-TRANSITIONS CIAB/TB L=40: " + trans_text(tr, p40));
+        checks.note("P9-LEGF-TRANSITIONS CIAB/TA L=40: " + trans_text(tra, a40));
 
         // P9-LEGF-TRANSITIONS-GREENCTL: the same period measurement and the same
         // transition-spacing comparator on a live transition train. The CPU
-        // (PBON=0, DDRB bit 7 an output) inverts PRB bit 7 after every flagged
-        // ICR read, so its transitions follow the underflows, L=40.
+        // (PBON=0, DDRB bit n an output) inverts PRB bit n after every flagged
+        // ICR read, so its transitions follow the underflows, L=40, on timer B and on timer A.
         {
             std::string cbin = dir + (sel("P9-LEGF-TRANSITIONS-GREENCTL") ? "/p9_legf_ciab_tb_cputoggle_skip.bin"
                                                                            : "/p9_legf_ciab_tb_cputoggle.bin");
+            std::string cabin = dir + (sel("P9-LEGF-TRANSITIONS-GREENCTL-TA") ? "/p9_legf_ciab_ta_cputoggle_skip.bin"
+                                                                               : "/p9_legf_ciab_ta_cputoggle.bin");
             PeriodResult pc = period_of(cbin, kIcrTb);
-            TransResult ctl = transitions_of(cbin, pc);
+            TransResult ctl = transitions_of(cbin, pc, 0x80);
+            PeriodResult pca = period_of(cabin, kIcrTa);
+            TransResult ctla = transitions_of(cabin, pca, 0x40);
             checks.note("P9-LEGF-TRANSITIONS-GREENCTL P(40)=" + std::to_string(pc.P) +
                         (pc.ok ? " (uniquely determined)" : " (not uniquely determined)") + ", " + trans_text(ctl, pc));
-            emit(checks, pc.ok && ctl.run_ok, ctl.ok, "P9-LEGF-TRANSITIONS-GREENCTL", "P9-LEGF-TRANSITIONS-GREENCTL "
-                 "[p341,p342]: the same comparator passes on "
-                 "a CPU-driven transition train that follows the underflows (CIAB/timer B, L=40, "
-                 "PBON=0)", "the CPU-driven run's period is not uniquely determined or the run did not complete");
+            checks.note("P9-LEGF-TRANSITIONS-GREENCTL CIAB/TA P(40)=" + std::to_string(pca.P) +
+                        (pca.ok ? " (uniquely determined)" : " (not uniquely determined)") + ", " + trans_text(ctla, pca));
+            emit(checks, pc.ok && ctl.run_ok && pca.ok && ctla.run_ok, ctl.ok && ctla.ok, "P9-LEGF-TRANSITIONS-GREENCTL",
+                 "P9-LEGF-TRANSITIONS-GREENCTL [p341,p342]: the same comparator passes on "
+                 "a CPU-driven transition train that follows the underflows (CIAB/timer B and CIAB/timer A, L=40, "
+                 "PBON=0)", "a CPU-driven run's period is not uniquely determined or the run did not complete");
         }
 
-        // Leg W: P2 leg S's own mechanics, CIAB/timer B, for L in {40,100}.
+        // Leg W: P2 leg S's own mechanics, CIAB/timer B and CIAB/timer A, for L in {40,100}.
         // Each run also stores the level before its start (Pre2.3) and, after
         // the sampler, the stop-poll count and the ICR value (Pre2.2).
         constexpr uint32_t kP9wPoll = kResults + 8 + 300*2;
@@ -2059,11 +2127,11 @@ int main(int argc, char** argv) {
             bool loaded=false;
             std::optional<double> w;
             double s_e=0;
-            bool underflow_ok=false;   // Pre2.2: the one-shot had ended when the sampler closed, TB flag read set
+            bool underflow_ok=false;   // Pre2.2: the one-shot had ended when the sampler closed, the timer's flag read set
             bool level_ok=false;       // Pre2.3: the level before the start is 0
             uint16_t poll=0, icr=0, s0=0;
         };
-        auto width_of = [&](const std::string& bin) -> WidthRun {
+        auto width_of = [&](const std::string& bin, uint16_t n_mask, uint16_t icr_mask) -> WidthRun {
             WidthRun r;
             Capture c = run_capture(bin, kRunBudget, {kP9wPoll, kP9wI, kP9wS0});
             Anchor anc = measure_anchor(c.log);
@@ -2072,8 +2140,8 @@ int main(int argc, char** argv) {
             if (pk_ok(c,0)) r.poll = pk(c,0);
             if (pk_ok(c,1)) r.icr = pk(c,1);
             if (pk_ok(c,2)) r.s0 = pk(c,2);
-            r.underflow_ok = r.loaded && pk_ok(c,0) && pk_ok(c,1) && r.poll == 1 && (r.icr & kIcrTb);
-            r.level_ok = r.loaded && pk_ok(c,2) && !(r.s0 & 0x80);
+            r.underflow_ok = r.loaded && pk_ok(c,0) && pk_ok(c,1) && r.poll == 1 && (r.icr & icr_mask);
+            r.level_ok = r.loaded && pk_ok(c,2) && !(r.s0 & n_mask);
             if (!r.loaded || !anc.ok || !mpost) return r;
             // NSAMP differs per L (200 for 40, 300 for 100); read a generous 300-slot window --
             // slots beyond the program's own NSAMP simply have no value and are skipped.
@@ -2084,7 +2152,7 @@ int main(int argc, char** argv) {
                 if (!s.cycle[i] || !s.value[i]) continue;
                 if (prev_cyc) { sum += double(*s.cycle[i] - *prev_cyc) / (10.0*double(anc.t_cpu)); ++n; }
                 prev_cyc = s.cycle[i];
-                bool high = (*s.value[i] & 0x80) != 0;
+                bool high = (*s.value[i] & n_mask) != 0;
                 if (have_prev && prev_high && !high && !r.w) r.w = e_index(*s.cycle[i], *mpost, anc.t_cpu);
                 prev_high = high; have_prev = true;
             }
@@ -2101,33 +2169,41 @@ int main(int argc, char** argv) {
         std::string w40bin = dir + (sel("P9-LEGW-PRE22") ? "/p9_legw_l40_nouf.bin"
                                     : sel("P9-LEGW-PRE23") ? "/p9_legw_l40_lvl1.bin"
                                     : "/p9_legw_l40.bin");
-        WidthRun w40 = width_of(w40bin);
-        WidthRun w100 = width_of(dir+"/p9_legw_l100.bin");
-        bool w_pre22 = w40.underflow_ok && w100.underflow_ok;
-        bool w_pre23 = w40.level_ok && w100.level_ok;
+        WidthRun w40 = width_of(w40bin, 0x80, kIcrTb);
+        WidthRun w100 = width_of(dir+"/p9_legw_l100.bin", 0x80, kIcrTb);
+        WidthRun wa40 = width_of(dir+"/p9_legw_ta_l40.bin", 0x40, kIcrTa);
+        WidthRun wa100 = width_of(dir+"/p9_legw_ta_l100.bin", 0x40, kIcrTa);
+        bool w_pre22 = w40.underflow_ok && w100.underflow_ok && wa40.underflow_ok && wa100.underflow_ok;
+        bool w_pre23 = w40.level_ok && w100.level_ok && wa40.level_ok && wa100.level_ok;
         checks.expect(w_pre22, "P9-LEGW-PRE2.2 [p342]: the one-shot has ended when the sampler "
-                      "closes (CR bit 0 read 0 at the first poll) and the ICR read shows the TB flag "
-                      "(CIAB/timer B, L=40 and L=100)");
+                      "closes (CR bit 0 read 0 at the first poll) and the ICR read shows the timer's flag "
+                      "(CIAB/timer B and CIAB/timer A, L=40 and L=100)");
         checks.expect(w_pre23, "P9-LEGW-PRE2.3 [p342]: the level before the start is 0 "
-                      "(CIAB/timer B, L=40 and L=100)");
+                      "(CIAB/timer B and CIAB/timer A, L=40 and L=100)");
         checks.note("P9-LEGW polls=" + std::to_string(w40.poll) + "/" + std::to_string(w100.poll) +
                     " icr=" + hex2(w40.icr) + "/" + hex2(w100.icr) +
                     " s0=" + hex2(w40.s0) + "/" + hex2(w100.s0) + " (L=40 / L=100)");
-        double s_meas = std::max(w40.s_e, w100.s_e);
+        checks.note("P9-LEGW CIAB/TA polls=" + std::to_string(wa40.poll) + "/" + std::to_string(wa100.poll) +
+                    " icr=" + hex2(wa40.icr) + "/" + hex2(wa100.icr) +
+                    " s0=" + hex2(wa40.s0) + "/" + hex2(wa100.s0) + " (L=40 / L=100)");
+        double s_meas = std::max(w40.s_e, w100.s_e), sa_meas = std::max(wa40.s_e, wa100.s_e);
         bool w_graded = w_pre22 && w_pre23;
-        bool w_ok = width_ok(w40, w100);
-        pv.p9_legw = w_graded ? vof(true, w_ok) : V::NOTGRADED;
+        bool w_ok_b = width_ok(w40, w100), w_ok_a = width_ok(wa40, wa100);
+        pv.p9_legw[3] = w_graded ? vof(true, w_ok_b) : V::NOTGRADED;
+        pv.p9_legw[2] = w_graded ? vof(true, w_ok_a) : V::NOTGRADED;
         if (w_graded) {
-            checks.expect(w_ok, "P9-LEGW [p341]: W(100)-W(40) = 60+-s, s the run's own measured PRB sampling "
-                          "spacing, CIAB/timer B");
+            checks.expect(w_ok_b && w_ok_a, "P9-LEGW [p341]: W(100)-W(40) = 60+-s, s the run's own measured PRB sampling "
+                          "spacing, on CIAB/timer B and on CIAB/timer A (the join: both must hold)");
         } else {
             checks.record("P9-LEGW [p341]: not graded -- P9-LEGW-PRE2.2 or P9-LEGW-PRE2.3 failed");
         }
         checks.note("P9-LEGW W(40)=" + width_str(w40) + " W(100)=" + width_str(w100) +
                     " s=" + std::to_string(s_meas) + "E");
+        checks.note("P9-LEGW CIAB/TA W(40)=" + width_str(wa40) + " W(100)=" + width_str(wa100) +
+                    " s=" + std::to_string(sa_meas) + "E");
 
         // P9-LEGW-GREENCTL: the same width comparator on a live width source.
-        // The CPU (PBON=0) sets PRB bit 7 right after the start marker and
+        // The CPU (PBON=0) sets PRB bit n right after the start marker and
         // clears it after the ICR read that shows the underflow; the same
         // underflow and level-before preconditions are asserted on these runs.
         {
@@ -2135,20 +2211,27 @@ int main(int argc, char** argv) {
                                         : sel("P9-LEGW-GREENCTL-PRE22") ? "/p9_legw_ctl_l40_nouf.bin"
                                         : sel("P9-LEGW-GREENCTL-PRE23") ? "/p9_legw_ctl_l40_lvl1.bin"
                                         : "/p9_legw_ctl_l40.bin");
-            WidthRun c40 = width_of(c40bin);
-            WidthRun c100 = width_of(dir+"/p9_legw_ctl_l100.bin");
-            checks.expect(c40.underflow_ok && c100.underflow_ok, "P9-LEGW-GREENCTL-PRE2.2 [p342]: the one-shot has "
-                          "ended when the sampler closes and the sampler read the TB flag (CPU-driven, "
-                          "CIAB/timer B, L=40 and L=100)");
-            checks.expect(c40.level_ok && c100.level_ok, "P9-LEGW-GREENCTL-PRE2.3 [p342]: the level before the "
-                          "start is 0 (CPU-driven, CIAB/timer B, L=40 and L=100)");
-            bool c_pre = c40.underflow_ok && c100.underflow_ok && c40.level_ok && c100.level_ok;
+            WidthRun c40 = width_of(c40bin, 0x80, kIcrTb);
+            WidthRun c100 = width_of(dir+"/p9_legw_ctl_l100.bin", 0x80, kIcrTb);
+            WidthRun ca40 = width_of(dir + (sel("P9-LEGW-GREENCTL-TA") ? "/p9_legw_ctl_ta_l20.bin"
+                                            : "/p9_legw_ctl_ta_l40.bin"), 0x40, kIcrTa);
+            WidthRun ca100 = width_of(dir+"/p9_legw_ctl_ta_l100.bin", 0x40, kIcrTa);
+            const bool c_uf = c40.underflow_ok && c100.underflow_ok && ca40.underflow_ok && ca100.underflow_ok;
+            const bool c_lv = c40.level_ok && c100.level_ok && ca40.level_ok && ca100.level_ok;
+            checks.expect(c_uf, "P9-LEGW-GREENCTL-PRE2.2 [p342]: the one-shot has "
+                          "ended when the sampler closes and the sampler read the timer's flag (CPU-driven, "
+                          "CIAB/timer B and CIAB/timer A, L=40 and L=100)");
+            checks.expect(c_lv, "P9-LEGW-GREENCTL-PRE2.3 [p342]: the level before the "
+                          "start is 0 (CPU-driven, CIAB/timer B and CIAB/timer A, L=40 and L=100)");
+            bool c_pre = c_uf && c_lv;
             checks.note("P9-LEGW-GREENCTL W(40)=" + width_str(c40) + " W(100)=" + width_str(c100) +
                         " s=" + std::to_string(std::max(c40.s_e, c100.s_e)) + "E");
+            checks.note("P9-LEGW-GREENCTL CIAB/TA W(40)=" + width_str(ca40) + " W(100)=" + width_str(ca100) +
+                        " s=" + std::to_string(std::max(ca40.s_e, ca100.s_e)) + "E");
             if (c_pre) {
-                checks.expect(width_ok(c40, c100), "P9-LEGW-GREENCTL [p341]: the same comparator passes on a "
-                              "CPU-driven width that follows the latch: W(100)-W(40) = 60+-s (CIAB/timer B, "
-                              "PBON=0)");
+                checks.expect(width_ok(c40, c100) && width_ok(ca40, ca100), "P9-LEGW-GREENCTL [p341]: the same comparator "
+                              "passes on a CPU-driven width that follows the latch: W(100)-W(40) = 60+-s (CIAB/timer B "
+                              "and CIAB/timer A, PBON=0)");
             } else {
                 checks.record("P9-LEGW-GREENCTL [p341]: not graded -- P9-LEGW-GREENCTL-PRE2.2 or "
                               "P9-LEGW-GREENCTL-PRE2.3 failed");
@@ -2156,11 +2239,11 @@ int main(int argc, char** argv) {
         }
 
         // Contrasting cases (SPECIFICATION.md P9): leg F's is the L=41 run made
-        // with a latch of 42 (NMH_MUTATE=P9-LEGF); leg W's is the CPU-driven L=40
-        // run made with a latch of 20 (NMH_MUTATE=P9-LEGW-GREENCTL).
+        // with a latch of 42 (NMH_MUTATE=P9-LEGF, and P9-LEGF-TA on timer A); leg W's is the CPU-driven L=40
+        // run made with a latch of 20 (NMH_MUTATE=P9-LEGW-GREENCTL, and P9-LEGW-GREENCTL-TA on timer A).
         checks.record("P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with "
-                      "a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 "
-                      "(P9-LEGW-GREENCTL); both are selected through NMH_MUTATE");
+                      "a latch of 42 (P9-LEGF, and P9-LEGF-TA on CIAB/timer A), leg W's the CPU-driven L=40 run made with a latch of 20 "
+                      "(P9-LEGW-GREENCTL, and P9-LEGW-GREENCTL-TA on CIAB/timer A); all are selected through NMH_MUTATE");
     }
 
     // ========================================================================
@@ -2463,12 +2546,12 @@ int main(int argc, char** argv) {
     };
     InmodeResult p75a, p75b;
     InmodeResult p865_01a, p865_01b;
-    // The reason the counting half of INMODE=CNT is not graded (P7.5, P7.5-CIAA-INMODE, P8.65-MODE01).
+    // The reason the counting half of INMODE=CNT is not graded on CIAB (P7.5, P8.65-MODE01): CIAB's CNT has no driver.
+    // CIAA's counting half is graded (P7.5-COUNTING, P8.65-MODE01-COUNTING), on the eight KCLK pulses of one key code.
     const std::string counting_why =
         "the counting half of INMODE=CNT (\"counts positive CNT transitions\", p348, p349) needs a CNT source whose "
-        "edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's "
-        "CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of "
-        "INMODE=CNT are FAIL or not graded, never PASS";
+        "edges are known to reach the timer; CIAB's CNT is POUT, which nothing drives, so CIAB's timer sees no edge "
+        "and only the zero-edge half is graded on it; the counting half is graded on CIAA, whose CNT is KCLK";
     // The window precondition (SPECIFICATION.md P7.5): 1500 <= W <= 3000 E periods; where a key is sent, the key
     // code is put on the port group at least 100 E periods after the ready marker, which follows the start write,
     // and before the ICR read; the ICR read (i) shows SP=1; the stop write comes after.
@@ -2531,7 +2614,8 @@ int main(int argc, char** argv) {
         // Stimulus changes, one selector each: the CIAA run without a key (P76CIAA), with the key scheduled after
         // the stop write (P7.5-WINDOW) or with a wait that makes W shorter than 1500 E periods (P7.5-WINDOW-W);
         // the CIAB run with the short wait (P7.5-WINDOW-CIAB).
-        p75a = grade_inmode(dir + (sel("P7.5-WINDOW-W") ? "/p7_ciaa_inmode_short.bin" : "/p7_ciaa_inmode.bin"),
+        p75a = grade_inmode(dir + (sel("P7.5-WINDOW-W") ? "/p7_ciaa_inmode_short.bin"
+                                   : sel("P7.5-COUNTING") ? "/p7_ciaa_inmode_phi2.bin" : "/p7_ciaa_inmode.bin"),
                             !sel("P76CIAA"), sel("P7.5-WINDOW") ? 3500 : 100);
         p75b = grade_inmode(dir + (sel("P7.5-WINDOW-CIAB") ? "/p7_ciab_inmode_short.bin"
                                    : "/p7_ciab_inmode.bin"), false);
@@ -2542,17 +2626,25 @@ int main(int argc, char** argv) {
         checks.expect(win_b, "P7.5-WINDOW-CIAB [SPECIFICATION.md P7.5]: on CIAB the stop write follows the ready "
                       "marker and W lies in [1500,3000] E periods");
         bool ciab_ok = p75b.loaded && p75b.v == 0x1000;
-        // Only the zero-edge half of INMODE=CNT is graded, so the P10 member is FAIL or not graded, never PASS.
-        pv.p75 = (win_b && !ciab_ok) ? V::FAIL : V::NOTGRADED;
+        // The zero-edge half of INMODE=CNT on CIAB; the counting half is P7.5-COUNTING (CIAA), the other P10 member.
+        pv.p75 = vof(win_b, ciab_ok);
         emit(checks, win_b, ciab_ok, "P7.5", "P7.5 [p348,p351]: INMODE=CNT, zero-edge half: with CRA INMODE=CNT, CIAB's "
              "timer A (CNT undriven, no positive transition) does not move over the window: v=$1000",
              "P7.5-WINDOW-CIAB failed");
-        checks.record("P7.5-COUNTING [p348,p351]: not graded -- " + counting_why);
-        checks.note("P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK "
-                    "pulses) in the window, decremented by " + std::to_string(0x1000 - int(p75a.v)) + " (the page's "
-                    "count is 8) over W=" + std::to_string(p75a.w_e) + "E, i=" + hex2(p75a.i) + ", v=" + hex4(p75a.v) +
-                    "; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE "
-                    "bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge");
+        checks.record("P7.5-CIAB-COUNTING [p348,p351]: not graded -- " + counting_why);
+        // P7.5-COUNTING: CIAA's timer A, CRA INMODE=CNT, over the window with one completed key code: p351 wires CIAA's
+        // CNT to KCLK and p357 gives eight pulses (low then high) per code, so the timer counts exactly eight. Graded
+        // where P7.5-WINDOW holds (the code sent in time, i has SP=1, W in its window).
+        {
+            const int dec_a = 0x1000 - int(p75a.v);
+            const bool ok = p75a.loaded && dec_a == 8;
+            pv.p75_count = vof(win_a, ok);
+            emit(checks, win_a, ok, "P7.5-COUNTING", "P7.5-COUNTING [p348,p351,p357]: CIAA's timer A, CRA INMODE=CNT (CR<-$21, "
+                 "started from the latch $1000), counts the eight positive KCLK transitions of the one completed key "
+                 "code in the window: $1000-v=8", "P7.5-WINDOW failed");
+            checks.note("P7.5-COUNTING CIAA decrement " + std::to_string(dec_a) + " (the page's count is 8) over W=" +
+                        std::to_string(p75a.w_e) + "E, i=" + hex2(p75a.i) + ", v=" + hex4(p75a.v));
+        }
         checks.note("P7.5 CIAB v=" + hex4(p75b.v) + " W=" + std::to_string(p75b.w_e) + "E");
 
         // P7.5-CONTRAST is the page's own contrasting case: CR<-$01 (phi2) counts the E cycles between the
@@ -2584,11 +2676,10 @@ int main(int argc, char** argv) {
                           "long enough that a timer counting phi2 would have counted at least one pulse "
                           "(count_bounds' lower bound is at least 1)");
             const bool ok = cr.loaded && cr.v1 == 0x1000;
-            pv.p75_ciaa = (pre && !ok) ? V::FAIL : V::NOTGRADED;   // the zero-edge half only: FAIL or not graded
+            pv.p75_ciaa = vof(pre, ok);   // the zero-edge half; the counting half is P7.5-COUNTING
             emit(checks, pre, ok, "P7.5-CIAA-INMODE", "P7.5-CIAA-INMODE [p348,p351]: INMODE=CNT, zero-edge half: with CRA "
                  "INMODE=CNT (CR<-$21, started), CIAA's timer A does not move over an interval in which no CNT edge "
                  "occurs: v1=$1000", "P7.5-CIAA-INMODE-PRE failed");
-            checks.record("P7.5-CIAA-INMODE-COUNTING [p348,p351]: not graded -- " + counting_why);
             checks.note("P7.5-CIAA-INMODE CIAA v1=" + hex4(cr.v1) + " i1=" + hex2(cr.i1) + " (first interval, no CNT edge); "
                         "after the second start, with one key code: i2=" + hex2(cr.i2) + " v2=" + hex4(cr.v2) +
                         " (the page's count is 8)");
@@ -2611,7 +2702,8 @@ int main(int argc, char** argv) {
         // P8.65 mode 01 (CRB INMODE=01, CNT). Selectors: the CIAA key code after the stop write (P8.65-MODE01-WINDOW) or
         // the short wait (P8.65-MODE01-WINDOW-W); the CIAB short wait (P8.65-MODE01-WINDOW-CIAB); the CIAB timer not
         // started in the contrast's run (P8.65-MODE01-CONTRAST).
-        p865_01a = grade_inmode(dir + (sel("P8.65-MODE01-WINDOW-W") ? "/p8_ciaa_inmode01_short.bin" : "/p8_ciaa_inmode01.bin"),
+        p865_01a = grade_inmode(dir + (sel("P8.65-MODE01-WINDOW-W") ? "/p8_ciaa_inmode01_short.bin"
+                                       : sel("P8.65-MODE01-COUNTING") ? "/p8_ciaa_inmode01_phi2.bin" : "/p8_ciaa_inmode01.bin"),
                                 true, sel("P8.65-MODE01-WINDOW") ? 3500 : 100);
         p865_01b = grade_inmode(dir + (sel("P8.65-MODE01-WINDOW-CIAB") ? "/p8_ciab_inmode01_short.bin"
                                        : "/p8_ciab_inmode01.bin"), false);
@@ -2622,16 +2714,23 @@ int main(int argc, char** argv) {
         checks.expect(m01_win_b, "P8.65-MODE01-WINDOW-CIAB [SPECIFICATION.md P8.65]: on CIAB the stop write follows the "
                       "ready marker and W lies in [1500,3000] E periods");
         bool m01_ciab_ok = p865_01b.loaded && p865_01b.v == 0x1000;
-        pv.p865_01 = (m01_win_b && !m01_ciab_ok) ? V::FAIL : V::NOTGRADED;   // the zero-edge half only
+        pv.p865_01 = vof(m01_win_b, m01_ciab_ok);   // the zero-edge half; the counting half is P8.65-MODE01-COUNTING
         emit(checks, m01_win_b, m01_ciab_ok, "P8.65-MODE01", "P8.65-MODE01 [p349,p351]: INMODE=01 (CNT), zero-edge half: "
              "with CRB INMODE=01, CIAB's timer B (CNT undriven, no positive transition) does not move over the window: "
              "v=$1000", "P8.65-MODE01-WINDOW-CIAB failed");
-        checks.record("P8.65-MODE01-COUNTING [p349,p351]: not graded -- " + counting_why);
-        checks.note("P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK "
-                    "pulses) in the window, decremented by " + std::to_string(0x1000 - int(p865_01a.v)) + " (the page's "
-                    "count is 8) over W=" + std::to_string(p865_01a.w_e) + "E, i=" + hex2(p865_01a.i) + ", v=" +
-                    hex4(p865_01a.v) + "; no port shows KCLK at the timer's CNT input, so this decrement cannot "
-                    "separate an ignored INMODE field from a KCLK pulse that does not reach CNT");
+        checks.record("P8.65-MODE01-CIAB-COUNTING [p349,p351]: not graded -- " + counting_why);
+        // P8.65-MODE01-COUNTING: CIAA's timer B, CRB INMODE=01, over the window with one completed key code (p351, p357):
+        // exactly eight, graded where P8.65-MODE01-WINDOW holds.
+        {
+            const int dec_a = 0x1000 - int(p865_01a.v);
+            const bool ok = p865_01a.loaded && dec_a == 8;
+            pv.p865_01_count = vof(m01_win_a, ok);
+            emit(checks, m01_win_a, ok, "P8.65-MODE01-COUNTING", "P8.65-MODE01-COUNTING [p349,p351,p357]: CIAA's timer B, CRB "
+                 "INMODE=01 (CRB<-$21, started from the latch $1000), counts the eight positive KCLK transitions of the one "
+                 "completed key code in the window: $1000-v=8", "P8.65-MODE01-WINDOW failed");
+            checks.note("P8.65-MODE01-COUNTING CIAA decrement " + std::to_string(dec_a) + " (the page's count is 8) over W=" +
+                        std::to_string(p865_01a.w_e) + "E, i=" + hex2(p865_01a.i) + ", v=" + hex4(p865_01a.v));
+        }
         checks.note("P8.65-MODE01 CIAB v=" + hex4(p865_01b.v) + " W=" + std::to_string(p865_01b.w_e) + "E");
 
         // P8.65-MODE01-CONTRAST is the page's own contrasting case: CRB<-$01 (mode 00, phi2) counts the E cycles between
@@ -2698,10 +2797,30 @@ int main(int argc, char** argv) {
         // Graded under P7.5-WINDOW's timing clauses (the key code sent in time, W in its window); SP=1 is its result.
         const bool ciaa_timing = window_timing(p75a, true);
         bool ciaa_ok = p75a.loaded && (p75a.i & kIcrSp);
+        pv.p76_ciaa = vof(ciaa_timing, ciaa_ok);
         emit(checks, ciaa_timing, ciaa_ok, "P7.6-CIAA", "P7.6-CIAA [p345,p351,p357]: with CRA bit 6 = 0 a key code reaches "
              "the serial port: SP=1 in i, the ICR read P7.5's CIAA run makes before its stop write (a live input "
-             "path while bit 6 is 0; it does not show that bit 6 selects the input mode)",
+             "path while bit 6 is 0; P7.6-CIAA-SELECT shows that bit 6 selects it)",
              "the timing clauses of P7.5-WINDOW (the key code sent in time, W in its window) failed");
+        // P7.6-CIAA-SELECT: the same run with the same key code at the same time, CRA bit 6 = 1 (SPMODE output) and timer A
+        // stopped (CR<-$40): p345 has the output mode shift on timer A underflows, and a stopped timer has none, so SP=0.
+        // Graded under the timing clauses of P7.5-WINDOW. Its mutation sends the run of CR<-$01 (bit 6 = 0), which shows SP=1.
+        {
+            InmodeResult sr = grade_inmode(dir + (sel("P76CIAA-SELECT") ? "/p7_ciaa_inmode_phi2.bin" : "/p76_ciaa_sel.bin"), true,
+                                           sel("P76CIAA-SELECT-WINDOW") ? 3500 : 100);
+            const bool sel_timing = window_timing(sr, true);
+            const bool sel_ok = sr.loaded && !(sr.i & kIcrSp);
+            checks.expect(sel_timing, "P7.6-CIAA-SELECT-PRE [SPECIFICATION.md P7.6]: in the run with CRA bit 6 = 1 the ready marker, "
+                          "the ICR read, the marker before the stop write and the marker after it come in that order, the key code "
+                          "is sent at least 100 E periods after the ready marker and before the ICR read, and W lies in "
+                          "[1500,3000] E periods");
+            pv.p76_ciaa_sel = vof(sel_timing, sel_ok);
+            emit(checks, sel_timing, sel_ok, "P7.6-CIAA-SELECT", "P7.6-CIAA-SELECT [p345,p348,p351,p357]: with CRA bit 6 = 1 (SPMODE "
+                 "output) and timer A stopped (CR<-$40), the key code of P7.6-CIAA, sent at the same time, leaves SP=0 in i "
+                 "(the output mode shifts on timer A underflows, and a stopped timer has none)",
+                 "P7.6-CIAA-SELECT-PRE failed");
+            checks.note("P7.6-CIAA-SELECT i=" + hex2(sr.i) + " v=" + hex4(sr.v) + " W=" + std::to_string(sr.w_e) + "E");
+        }
         // The contrast is the same run without R-KEY: SP=0. Its mutation sends the key (P76CIAA-CONTRAST-MUT).
         {
             InmodeResult ciaa_noKey = grade_inmode(dir+"/p7_ciaa_inmode.bin", sel("P76CIAA-CONTRAST-MUT"));
@@ -2747,6 +2866,7 @@ int main(int argc, char** argv) {
                                      kRunBudget, {});
             SampleSeries icra = read_series(ca.log, kResults+8, 300);
             bool anySpA = false; for (auto& v : icra.value) if (v && (*v & kIcrSp)) anySpA = true;
+            pv.p76_ciab_ctl = vof(ca.loaded && ca.done.has_value(), anySpA);
             checks.expect(ca.loaded && ca.done.has_value() && anySpA,
                           "P7.6-CIAB-GREENCTL [SPECIFICATION.md P7.6]: the same program run on CIA-A "
                           "gives at least one SP=1 sample, through the same comparator P7.6-CIAB's red "
@@ -2873,10 +2993,11 @@ int main(int argc, char** argv) {
         // dbra iterations in both runs of pair N (M11-WINDOW-W), a wait of 2300 in pair N's run Y (M11-WINPRE).
         const std::string bshort = dir + "/p865_ciaa_mode11_short.bin";
         M11 nx = run_m11(sel("M11-WINDOW-W") ? bshort : b11, 0x41, false);
-        M11 ny = run_m11(sel("M11-WINDOW-W") ? bshort : sel("M11-WINPRE") ? dir + "/p865_ciaa_mode11_w2300.bin" : b11,
-                         0x61, false);
+        M11 ny = run_m11(sel("M11-WINDOW-W") ? bshort : sel("M11-WINPRE") ? dir + "/p865_ciaa_mode11_w2300.bin"
+                         : sel("M11-PAIRN-LATCH") ? dir + "/p865_ciaa_mode11_lat4.bin" : b11,
+                         0x61, sel("M11-PAIRN"));
         M11 kx = run_m11(b11, 0x41, true, sel("M11-WINDOW") ? 3500 : 100);
-        M11 ky = run_m11(b11, 0x61, true, sel("M11-WINDOW") ? 3500 : 100);
+        M11 ky = run_m11(b11, sel("M11-PAIRK") ? 0x41 : 0x61, true, sel("M11-WINDOW") ? 3500 : 100);
         bool windows_ok = m11_window_ok(nx, false) && m11_window_ok(ny, false) && m11_window_ok(kx, true) && m11_window_ok(ky, true);
         checks.expect(windows_ok, "P8.65-MODE11-WINDOW [p345,p357]: in all four runs the stop write follows the ready marker "
                       "and W lies in [1500,3000] E periods; in pair K the key code is sent at least 100 E periods after the "
@@ -2888,25 +3009,27 @@ int main(int argc, char** argv) {
                       "write) are equally long in system clock cycles, so modes 10 and 11 are offered "
                       "the same timer A underflows");
         const bool m11_pre = windows_ok && windows_eq;
-        // Pair N is measured, not graded: p349 gives mode 11 as "timer A underflows while CNT is held high", and the
-        // fixture shows neither the level of CNT at timer B nor that a high level reaches it, so D_Y = D_X with no key
-        // sent is as well the answer of an ignored CRB bit 5 as of CNT held high.
+        // The two pairs (SPECIFICATION.md P8.65 mode 11). p349: mode 10 counts every timer A underflow, mode 11 only
+        // those "while CNT pin is held high". p357-p358: KCLK is high before the transmission and goes low during each
+        // keyed bit, and timer A (latch 3) underflows every 3 or 4 E periods, so underflows fall in those low intervals.
+        // Pair N (no key): CNT is high throughout, so D_Y = D_X. Pair K (key): D_Y < D_X. Each is graded where the windows
+        // hold (P8.65-MODE11-WINDOW, P8.65-MODE11-WINPRE); the boundary need not show CNT, only the decrements.
         const bool pairN_equal = nx.loaded && ny.loaded && nx.v == ny.v;
-        checks.note("P8.65-MODE11-PAIRN [p349,p357]: not graded -- with no key sent, D_X(N)=" + std::to_string(0xFFFF - nx.v) +
-                    ", D_Y(N)=" + std::to_string(0xFFFF - ny.v) + (pairN_equal ? " (equal)" : " (not equal)") + ", windows " +
-                    std::string(m11_pre ? "hold" : "do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)"));
-        checks.record("P8.65-MODE11: not graded -- p349 counts timer A underflows in mode 11 \"while the CNT pin is held "
-                      "high\"; the boundary does not expose the level of CNT at timer B (no port carries KCLK or CIAA's "
-                      "CNT), so equal decrements of pair N are as well the answer of an ignored CRB bit 5 as of CNT held high");
-        // Pair K's "D_Y<D_X" is measured, not graded: no port shows KCLK at timer B's CNT input, so a D_Y equal to D_X
-        // is as well the answer of an ignored mode-11 selection as of a KCLK that does not reach CNT.
         const bool pairK_lt = kx.loaded && ky.loaded && (0xFFFF - ky.v) < (0xFFFF - kx.v);
-        checks.note("P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=" + std::to_string(0xFFFF - ky.v) +
-                    (pairK_lt ? " <" : " >=") + " D_X(K)=" + std::to_string(0xFFFF - kx.v) +
-                    "; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection "
-                    "from a KCLK that does not reach CNT");
-        // Neither half of mode 11's claim (counts while CNT is high, not while CNT is low) is graded.
-        pv.p865_11 = V::NOTGRADED;
+        const bool pairN_graded = m11_pre && nx.loaded && ny.loaded, pairK_graded = m11_pre && kx.loaded && ky.loaded;
+        emit(checks, pairN_graded, pairN_equal, "P8.65-MODE11-PAIRN", "P8.65-MODE11-PAIRN [p349,p357]: with no key sent, CNT is "
+             "high throughout, so mode 11 counts every timer A underflow that mode 10 counts: D_Y = D_X (CIAA)",
+             "P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed");
+        emit(checks, pairK_graded, pairK_lt, "P8.65-MODE11-PAIRK", "P8.65-MODE11-PAIRK [p349,p357,p358]: with a key sent, KCLK is low "
+             "during each keyed bit and the timer A underflows that fall there are not counted in mode 11: D_Y < D_X (CIAA)",
+             "P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed");
+        checks.note("P8.65-MODE11-PAIRN D_X(N)=" + std::to_string(0xFFFF - nx.v) + ", D_Y(N)=" + std::to_string(0xFFFF - ny.v) +
+                    (pairN_equal ? " (equal)" : " (not equal)") + ", windows " +
+                    std::string(m11_pre ? "hold" : "do not hold (P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE failed)"));
+        checks.note("P8.65-MODE11-PAIRK D_Y(K)=" + std::to_string(0xFFFF - ky.v) + (pairK_lt ? " <" : " >=") + " D_X(K)=" +
+                    std::to_string(0xFFFF - kx.v));
+        // The row's member for mode 11 is the conjunction of the two pairs.
+        pv.p865_11 = join({vof(pairN_graded, pairN_equal), vof(pairK_graded, pairK_lt)});
         checks.note("P8.65-MODE11 D_X(N)=" + std::to_string(0xFFFF-nx.v) + " D_Y(N)=" + std::to_string(0xFFFF-ny.v) +
                     " D_X(K)=" + std::to_string(0xFFFF-kx.v) + " D_Y(K)=" + std::to_string(0xFFFF-ky.v) +
                     " window(N)=" + std::to_string(nx.window) + "/" + std::to_string(ny.window) +
@@ -3166,20 +3289,28 @@ int main(int argc, char** argv) {
         // (P6-PRE61: three NOPs or five, whichever makes the measured I3 a multiple on this core).
         Capture c;
         if (sel("P6-PRE61")) {
-            Capture c3 = run_capture(dir+"/p6_k123_n3.bin", kRunBudget, {});
-            Capture c5 = run_capture(dir+"/p6_k123_n5.bin", kRunBudget, {});
-            auto i3_of = [](const Capture& cc) -> std::pair<int64_t, uint64_t> {
-                SampleSeries k3 = read_series(cc.log, kResults+808, 200);
-                Anchor a = measure_anchor(cc.log);
-                return {modal_interval(k3), a.t_cpu};
-            };
-            auto [i3a, ta] = i3_of(c3);
-            auto [i3b, tb] = i3_of(c5);
-            const bool pick3 = ta > 0 && i3a % (10 * (int64_t)ta) == 0;
-            c = pick3 ? c3 : c5;
-            checks.note("P6-PRE61 selected program: " + std::string(pick3 ? "p6_k123_n3.bin" : "p6_k123_n5.bin") +
-                        " (three NOPs: I3=" + std::to_string(i3a) + " clk_sys; five NOPs: I3=" + std::to_string(i3b) +
-                        " clk_sys; T_E=" + std::to_string(10 * (int64_t)ta) + " clk_sys)");
+            // K3's loop body holds three, five or six NOPs; the program that makes I3 a multiple of T_E on this core is
+            // the first of the three whose measured I3 is one (each run's own T_E).
+            const char* cand[3] = {"/p6_k123_n3.bin", "/p6_k123_n5.bin", "/p6_k123_n6.bin"};
+            const char* cname[3] = {"three", "five", "six"};
+            std::optional<int> pick;
+            std::string txt;
+            Capture caps[3];
+            int64_t i3s[3] = {0, 0, 0};
+            uint64_t tes[3] = {0, 0, 0};
+            for (int k = 0; k < 3; ++k) {
+                caps[k] = run_capture(dir + cand[k], kRunBudget, {});
+                SampleSeries k3s = read_series(caps[k].log, kResults+808, 200);
+                Anchor a = measure_anchor(caps[k].log);
+                i3s[k] = modal_interval(k3s);
+                tes[k] = 10 * a.t_cpu;
+                if (!pick && a.t_cpu > 0 && i3s[k] % (10 * (int64_t)a.t_cpu) == 0) pick = k;
+                txt += std::string(txt.empty() ? "" : "; ") + cname[k] + " NOPs: I3=" + std::to_string(i3s[k]) + " clk_sys";
+            }
+            const int chosen = pick ? *pick : 1;
+            c = caps[chosen];
+            checks.note("P6-PRE61 selected program: " + std::string(cand[chosen]).substr(1) + " (" + txt + "; T_E=" +
+                        std::to_string(tes[chosen]) + " clk_sys" + (pick ? "" : "; no candidate has an I3 that is a multiple of T_E") + ")");
         } else {
             c = run_capture(dir + (sel("P6-PRE62") ? "/p6_k123_short.bin"
                                    : sel("P6-K1K2") ? "/p6_k123_k1chip.bin"
@@ -3318,7 +3449,8 @@ int main(int argc, char** argv) {
         };
         const std::initializer_list<int> all4 = {0, 1, 2, 3}, ta = {0, 2}, tb = {1, 3};
         // the leg-W width, conjoined with P6's E-index frame for leg S's loop (P9 Preconditions)
-        const V p9_legw = pv.p6_p9loop_ok ? pv.p9_legw : V::NOTGRADED;
+        PropVerdicts::V4 p9_legw = pv.p9_legw;
+        if (!pv.p6_p9loop_ok) p9_legw = {V::NOTGRADED, V::NOTGRADED, V::NOTGRADED, V::NOTGRADED};
 
         Members m1;
         add4(m1, pv.p2, "P2", all4); add4(m1, pv.p3, "P3", all4); add4(m1, pv.p4, "P4", all4);
@@ -3339,32 +3471,35 @@ int main(int argc, char** argv) {
             "(P3, P4, timer-B instances)", m4);
         Members m5;
         add4(m5, pv.p5, "P5", ta); m5.push_back({pv.p75, "P7.5"}); m5.push_back({pv.p75_ciaa, "P7.5-CIAA-INMODE"});
-        row("P10-sol:F-cra.c13 [p349: sol:F-cra.c13]: CRA INMODE: 0 phi2, 1 CNT (P5, timer-A instances, P7.5 on CIAB and "
-            "P7.5-CIAA-INMODE)", m5);
+        m5.push_back({pv.p75_count, "P7.5-COUNTING"});
+        row("P10-sol:F-cra.c13 [p349: sol:F-cra.c13]: CRA INMODE: 0 phi2, 1 CNT (P5, timer-A instances, P7.5 on CIAB, "
+            "P7.5-CIAA-INMODE and P7.5-COUNTING)", m5);
         Members m6;
         add4(m6, pv.p5, "P5", tb); m6.push_back({pv.p865_01, "P8.65-01"}); m6.push_back({pv.p865_10, "P8.65-10"});
-        m6.push_back({pv.p865_11, "P8.65-11"});
+        m6.push_back({pv.p865_01_count, "P8.65-MODE01-COUNTING"}); m6.push_back({pv.p865_11, "P8.65-11"});
         row("P10-sol:F-crb.c7 [p349,p350: sol:F-crb.c7, sol:F-crb.c10]: CRB INMODE: 00 phi2, 01 CNT, 10 timer A "
             "underflows, 11 timer A underflows while CNT is high (P5, timer-B instances, and P8.65 "
-            "modes 01, 10 and 11)", m6);
+            "modes 01 (zero-edge half and CIAA's count), 10 and 11 (pairs N and K))", m6);
 
         // The bitmap claims split one row per id (each over its own settings), not one row over "every field"
         // (SPECIFICATION.md P10: LOAD has no 0-setting, Section 0). A setting's verdict joins only what grades that setting.
         Members m7;
         m7.push_back({pv.p70_stop, "P7.0-STOP"}); add4(m7, pv.p1_control, "P1-CONTROL", ta); add4(m7, pv.p4, "P4", ta);
         m7.push_back({pv.p73_cont, "P7.3-CONT"}); m7.push_back({pv.p74, "P7.4"}); add4(m7, pv.p5, "P5", ta);
-        m7.push_back({V::NOTGRADED, "SPMODE=0 (bit 6, no line shows that it selects the input mode)"});
+        m7.push_back({pv.p76_ciaa, "P7.6-CIAA"}); m7.push_back({pv.p76_ciaa_sel, "P7.6-CIAA-SELECT"});
         m7.push_back({pv.p77, "P7.7"});
         row("P10-opus:F-cra.c12 [p349: opus:F-cra.c12]: every 0-setting field of the CRA bitmap (P7.0 START=0; P1-CONTROL "
             "PBON=0; P4 OUTMODE=0, timer-A instances; P7.3 RUNMODE=0; P7.4 LOAD=1 force load and the read-back 0; "
-            "P5 INMODE=0, timer-A instances; bit 6 SPMODE=0, not graded; P7.7 bit 7 unused)", m7);
+            "P5 INMODE=0, timer-A instances; bit 6 SPMODE=0 (P7.6-CIAA and P7.6-CIAA-SELECT); P7.7 bit 7 unused)", m7);
         Members m8;
         m8.push_back({pv.p70_start, "P7.0-START"}); add4(m8, pv.p1_main, "P1-MAIN", ta); add4(m8, pv.p3, "P3", ta);
         m8.push_back({pv.p73_oneshot, "P7.3-ONESHOT"}); m8.push_back({pv.p74, "P7.4"}); m8.push_back({pv.p75, "P7.5"});
-        m8.push_back({pv.p75_ciaa, "P7.5-CIAA-INMODE"}); m8.push_back({pv.p76_ciab, "P7.6-CIAB"});
+        m8.push_back({pv.p75_ciaa, "P7.5-CIAA-INMODE"}); m8.push_back({pv.p75_count, "P7.5-COUNTING"});
+        m8.push_back({pv.p76_ciab, "P7.6-CIAB"}); m8.push_back({pv.p76_ciab_ctl, "P7.6-CIAB-GREENCTL"});
         row("P10-opus:F-cra.c13 [p349: opus:F-cra.c13]: every 1-setting field of the CRA bitmap (P7.0 START=1; P1 PBON=1, "
-            "timer-A instances; P3 OUTMODE=1, timer-A instances; P7.3 RUNMODE=1; P7.4 LOAD=1; P7.5 and "
-            "P7.5-CIAA-INMODE INMODE=1; P7.6-CIAB SPMODE=1)", m8);
+            "timer-A instances; P3 OUTMODE=1, timer-A instances; P7.3 RUNMODE=1; P7.4 LOAD=1; P7.5, "
+            "P7.5-CIAA-INMODE and P7.5-COUNTING INMODE=1; P7.6-CIAB and the CIAA output-mode run of "
+            "P7.6-CIAB-GREENCTL, SPMODE=1)", m8);
         Members m9;
         m9.push_back({pv.p80_stop, "P8.0-STOP"}); add4(m9, pv.p1_control, "P1-CONTROL", tb); add4(m9, pv.p4, "P4", tb);
         m9.push_back({pv.p83_cont, "P8.3-CONT"}); m9.push_back({pv.p84, "P8.4"}); add4(m9, pv.p5, "P5", tb);
@@ -3375,14 +3510,15 @@ int main(int argc, char** argv) {
         Members m10;
         m10.push_back({pv.p80_start, "P8.0-START"}); add4(m10, pv.p1_main, "P1-MAIN", tb); add4(m10, pv.p3, "P3", tb);
         m10.push_back({pv.p83_oneshot, "P8.3-ONESHOT"}); m10.push_back({pv.p84, "P8.4"});
-        m10.push_back({pv.p865_01, "P8.65-01"}); m10.push_back({pv.p87_x, "P8.7-RUNX"});
+        m10.push_back({pv.p865_01, "P8.65-01"}); m10.push_back({pv.p865_01_count, "P8.65-MODE01-COUNTING"});
+        m10.push_back({pv.p87_x, "P8.7-RUNX"});
         row("P10-opus:F-crb.c14 [p350: opus:F-crb.c14]: every 1-setting field of the CRB bitmap (P8.0 START=1; P1 PBON=1, "
             "timer-B instances; P3 OUTMODE=1, timer-B instances; P8.3 RUNMODE=1; P8.4 LOAD=1; P8.65 "
-            "mode 01 (INMODE=01, CNT); P8.7 run X ALARM=1)", m10);
+            "mode 01 (INMODE=01, CNT: its zero-edge half and P8.65-MODE01-COUNTING); P8.7 run X ALARM=1)", m10);
 
         Members m11;
-        add4(m11, pv.p4, "P4", all4); m11.push_back({pv.p9_legf, "P9-LEGF"});
-        m11.push_back({pv.p9_legf_trans, "P9-LEGF-TRANSITIONS"}); m11.push_back({p9_legw, "P9-LEGW"});
+        add4(m11, pv.p4, "P4", all4); add4(m11, pv.p9_legf, "P9-LEGF", all4);
+        add4(m11, pv.p9_legf_trans, "P9-LEGF-TRANSITIONS", all4); add4(m11, p9_legw, "P9-LEGW", all4);
         m11.push_back({pv.p865_10, "P8.65-10"});
         row("P10-opus:F-timers.c6 [p341: opus:F-timers.c6, sol:F-timers.c8]: the modes allow long time delays, variable "
             "width pulses, pulse trains, and variable frequency waveforms; the latch is a divider of the "
