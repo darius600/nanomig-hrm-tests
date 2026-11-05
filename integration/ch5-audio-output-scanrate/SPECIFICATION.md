@@ -454,7 +454,7 @@ A failing precondition means "not graded", never green.
 
 | Id | Precondition | How the test checks it | Contrasting case (precondition goes red; the program still finishes) |
 |---|---|---|---|
-| A1 | Audio DMA for the table ran, pass after pass, from its first restart on, long enough to cover the window | F2's anchor check holds from t_2 on, with at least N + 3 reads of the table's first word (t_1 ... t_(N+3)), and the last of them lies at or after the window's end e (2.5). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
+| A1 | Audio DMA for the table ran, pass after pass, from its first restart on, long enough to cover the window | F2's anchor check holds from t_2 on, with at least N + 3 reads of the table's first word (t_1 ... t_(N+3)), and the last of them lies at or after the window's end e (2.5). The length of the first pass is not examined | DMACON = $8201 as in the normal run, and DMACON = $0001 (AUD0EN cleared) written 20 lines later: the DMA reads the table for a few passes and stops, short of the N + 3 reads of its first word |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0). Graded once per program that reads the output: the audio program (T1, T2, T3) and T2S's own program | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples and equals the programmed held level r_T (2.5) | (1) AUD0PER = 129 for T1 only (the other tables keep 128): T1's held levels last 1032 samples against the programmed 1024, so the median run is not r_T and A3 goes red for T1. (2) A systematic merge (T1 with every pair of adjacent codes equal: $0000, $2020, $4040, $6060): every level lasts twice as long, the median run is 2048 against the programmed 1024, and A3 goes red for T1. A4, A5 and the propositions of T1 are then not graded |
 | A4 | The window holds enough levels | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3. The fitted \|b\|, the output change per LSB in raw port counts, is printed as a MEASURED line and not graded: p. 265 gives the step only as 3 mV at the analog output, and the harness gives only the port's width, so no page or harness statement supplies a minimum number of raw counts per LSB | T1's AUD0VOL is set to 0 seven lines after its DMA starts (p. 266: "000000=no output"), inside the window: the output is flat from there on, the runs before it keep their length (A3 holds) and L has fewer than 2K entries |
@@ -797,15 +797,16 @@ not enter the count, and the last level is graded like the rest.
      cells per word" above).
    - **B1:** in run F, write $0100 instead of $8100. Bit 15 = 0 clears
      instead of sets, bit 8 reads 0, and B1 goes red.
-   - **B2:** in run F, write DMACON = $8010 instead of $8210 (DMAEN, bit 9,
-     clear; DSKEN, bit 4, stays set). p. 247's step 1 already asks to
-     "enable disk DMA in the DMACON register"; p. 248 makes DMAON depend on
-     "the DSKEN & DMAEN bits in DMACON" and p. 278 mirrors "Bit09 (DMAEN) in
-     DMACON" into the same bit -- both pages agree that clearing DMACON's
-     own DMAEN makes DMAON read 0, so B2 goes red. B3 for run F goes red as
-     well (no reads), since no disk DMA runs at all with the master enable
-     clear; that is this contrasting case's own necessary side effect, not
-     a separate defect. The DSKBLK poll times out, and the program finishes.
+   - **B2:** in run F, the transfer of all 544 words runs as in the normal
+     run (DMACON = $8210), the DSKBLK poll ends, and DMACON = $0200 (DMAEN,
+     bit 9, cleared; DSKEN, bit 4, stays set) is written before DSKBYTR is
+     read and stored. p. 247's step 1 already asks to "enable disk DMA in
+     the DMACON register"; p. 248 makes DMAON depend on "the DSKEN & DMAEN
+     bits in DMACON" and p. 278 mirrors "Bit09 (DMAEN) in DMACON" into the
+     same bit -- both pages agree that clearing DMACON's own DMAEN makes
+     DMAON read 0, so B2 goes red, with the 544 reads of buffer A made
+     (FIXTURE-DATA buffer-A and B3 for run F stay green) and DISKWRITE
+     (bit 13) still set.
    - **B3:** LENGTH = 100 (DSKLEN = $C064 in steps 5 and 6). Only 100 reads
      occur, fewer than 529, so B3 goes red.
    - **B4:** the F1 contrasting case (ECS configurations only).
@@ -885,14 +886,7 @@ otherwise.
   alike, identical on fx68k, the board's TG68K kernel and the shipped TG68K
   netlist (reads of the first word in all, against the N + 3 the table
   needs): T1 70 (11), T2 70 (11), T3 6 (5: its five frames hold 5.4 passes),
-  T2S 139 (11). The fallback bound of 200000 loop passes per wait was
-  scaled down in a copy outside the repository (never committed) and the
-  audio and disk programs run again, every verdict identical: down to 4000
-  passes on fx68k, down to 8000 on both TG68K kernels, and at 2000 on fx68k
-  and at 4000 on both TG68K kernels A1 goes red for at least one table,
-  because the bound ends a wait before the frame does. One frame therefore takes between 2000 and
-  4000 passes of the loop on fx68k and between 4000 and 8000 on the TG68K
-  kernels: the bound is at least 25 times a frame on every build.
+  T2S 139 (11).
 - **Audio port scale.** `nanomig_harness.h` documents only the width of
   `audio_left`/`audio_right` ("15 bits significant"), not their sign or
   scale. LEVELS(W) (2.5) reads the raw magnitude and recovers a continuous
@@ -979,8 +973,9 @@ otherwise.
   the normal run, 126 passed and 0 failed. Each has a selector that makes
   exactly its own lines print FAIL through the unchanged comparator and
   moves to RECORDED "not graded" the lines graded behind it. NODONE
-  replaces `prog_audio` by a program that never writes the done marker:
-  FIXTURE red in ECS/PAL and OCS/PAL on both cores. FIXCONST makes every
+  mutates the completion clause of the FIXTURE line itself: it replaces
+  `prog_audio` by a program that never writes the done marker, which cannot
+  also reach it. FIXTURE red in ECS/PAL and OCS/PAL on both cores. FIXCONST makes every
   program store a different constant: the nine FIXTURE-CONST lines red;
   A2 (prog_audio and T2S), and through it A3-A5 and P1-P4 of T1, T2 and T3,
   A3-A5 and P3B of T2S, C1, P5, and B1 and B2 of both disk runs, not graded;

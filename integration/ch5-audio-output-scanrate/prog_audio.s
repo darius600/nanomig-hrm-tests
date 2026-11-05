@@ -26,7 +26,8 @@
 ; its own assembly-time symbol (set by an including mutant source, the
 ; same "include this file with a symbol set" pattern as
 ; apparatus-vasm-program/prog_control.s):
-;   MUT_A1  T1's own DMA is never enabled (DMACON $8200 instead of $8201: A1 for T1 goes red)
+;   MUT_A1  T1's own DMA is stopped after MUT_A1LINES lines (DMACON $0001 written after the start): too few
+;           reads of its first word, a nonempty T1 population (A1 for T1 goes red)
 ;   MUT_A2  ADKCON $8001 (USE0V1) is set before the ADKCONR read (A2 goes red)
 ;   MUT_A3  T1's own AUD0PER is 129 instead of 128 (A3 for T1 goes red: the median run is 1032 samples,
 ;           not the programmed held level of 1024)
@@ -128,10 +129,19 @@ start:
         else
         move.w  #128,AUD0PER(a0)       ; p.140/p.266 minimum is 124; well above it
         endc
-        ifd     MUT_A1
-        move.w  #$8200,DMACON(a0)      ; MUT_A1: AUD0EN not set -- no audio reads
-        else
         move.w  #$8201,DMACON(a0)      ; SET, DMAEN, AUD0EN (p.144)
+        ifd     MUT_A1
+        move.w  VHPOSR(a0),d4
+        lsr.w   #8,d4                  ; d4 = the beam's line (low byte)
+        move.w  #MUT_A1LINES,d3
+.a1l    move.w  VHPOSR(a0),d5
+        lsr.w   #8,d5
+        cmp.b   d4,d5
+        beq.s   .a1l                   ; wait for the line to change ...
+        move.b  d5,d4
+        subq.w  #1,d3
+        bne.s   .a1l                   ; ... MUT_A1LINES times
+        move.w  #$0001,DMACON(a0)      ; MUT_A1: AUD0EN cleared after MUT_A1LINES lines -- too few passes
         endc
         ifd     MUT_A4
         move.w  VHPOSR(a0),d4

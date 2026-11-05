@@ -2,16 +2,16 @@
 //
 // It runs test_ch5_audio_output_scanrate.cpp (SPECIFICATION.md) and then
 // test_ch5_audio_min_period.cpp (SPECIFICATION-min-period.md) and prints one
-// combined summary line last. The earlier test's source is included
-// unchanged, with its main() renamed; its output is read back and re-emitted
-// without its own summary line, whose counts go into the combined one.
+// combined summary line last. The source of the first is included with its
+// main() renamed; its output is read back and re-emitted without its own
+// summary line, whose counts go into the combined one.
 //
 // The min-period test grades NTSC and PAL in two processes that run at the
 // same time (a forked child grades PAL and hands its output and counts back
 // through a temporary file), so a normal run needs about half the time of
 // running the two standards one after the other.
 //
-// NMH_MUTATE: a selector of the earlier test runs only that test (its own
+// NMH_MUTATE: a selector of the first test runs only that test (its own
 // summary stays); a selector of the min-period test runs only that one.
 
 #include <unistd.h>
@@ -59,7 +59,7 @@ bool split_summary(std::string& text, int& p, int& f) {
     return true;
 }
 
-const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MC1STD", "MC2DMA", "MC2ADK", "MC3LEN", "MC3OTH", "MC3A", "MC3B", "MC3F4", "MC3TIME",
+const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MP5ALT", "MC1STD", "MC2DMA", "MC2ADK", "MC3LEN", "MC3OTH", "MC3A", "MC3B", "MC3F4", "MC3TIME",
                                       "MC4LEN", "MC4CPU", "MC5MARK", "MC5STOP", "MC6PER", "MC6BELOW", "MP6LEN", "MP6GREEN", "FIXMP", "FIXDONE"};
 
 }  // namespace
@@ -80,10 +80,10 @@ int main(int argc, char** argv) {
     }
 
     int rc = 0;
-    std::string earlier = capture_stdout([&] { return audio_scanrate_main(argc, argv); }, rc);
+    std::string first = capture_stdout([&] { return audio_scanrate_main(argc, argv); }, rc);
     int ep = 0, ef = 0;
-    if (!split_summary(earlier, ep, ef)) { ep = 0; ef = 1; earlier += "FAIL: the earlier test printed no summary line\n"; }
-    std::fputs(earlier.c_str(), stdout);
+    if (!split_summary(first, ep, ef)) { ep = 0; ef = 1; first += "FAIL: test_ch5_audio_output_scanrate printed no summary line\n"; }
+    std::fputs(first.c_str(), stdout);
     std::fflush(stdout);
 
     FILE* t = std::tmpfile();

@@ -20,9 +20,10 @@
 ;               (B1 for run F's own contrasting case)
 ;   MUT_FASTS1  run S's ADKCON write becomes $8100 instead of $0100
 ;               (B1 for run S's own contrasting case)
-;   MUT_B2      run F's DMACON write becomes $8010 instead of $8210
-;               (DMAEN, bit 9, clear -- B2's own contrasting case; p.247,
-;               p.248 and p.278 agree DMAON then reads 0)
+;   MUT_B2      run F's transfer runs as in the normal run; DMACON $0200
+;               (DMAEN, bit 9, cleared) is then written before the DSKBYTR
+;               read, which comes after the transfer (B2's own contrasting
+;               case; p.247, p.248 and p.278 agree DMAON then reads 0)
 ;   MUT_B3      run F's steps 5 and 6 use LENGTH=100 (DSKLEN=$C064) instead of 544
 ;   MUT_F1      before run F, write VTOTAL/HTOTAL/BEAMCON0 (ECS only):
 ;               F1's and B4's own contrasting case. MUT_F1_NTSC selects
@@ -105,11 +106,7 @@ start:
         ifnd    MUT_FIXWRITE
         move.w  ADKCONR(a0),R_B1_F
         endc
-        ifd     MUT_B2
-        move.w  #$8010,DMACON(a0)              ; B2 mutation: DMAEN (bit 9) clear
-        else
         move.w  #$8210,DMACON(a0)              ; SET, DMAEN, DSKEN (p.247 step 1, p.278)
-        endc
         move.l  #DISKBUF_A,DSKPTH(a0)           ; one 32-bit write (p.246)
         move.w  #$4000,DSKLEN(a0)               ; p.247 step 2
         ifd     MUT_B3
@@ -119,8 +116,14 @@ start:
         move.w  #$C220,DSKLEN(a0)               ; DMAEN, WRITE, LENGTH=544 (p.247 step 3)
         move.w  #$C220,DSKLEN(a0)               ; p.247 step 4: starts the DMA
         endc
+        ifnd    MUT_B2
         move.w  DSKBYTR(a0),R_B2_F
+        endc
         POLL_DSKBLK
+        ifd     MUT_B2
+        move.w  #$0200,DMACON(a0)              ; B2 mutation: DMAEN (bit 9) cleared after the transfer,
+        move.w  DSKBYTR(a0),R_B2_F             ; then DSKBYTR read: DMAON=0
+        endc
         move.w  d4,R_SEEN_F
         move.w  #$4000,DSKLEN(a0)               ; p.247 step 5
         move.w  #$0002,INTREQ(a0)

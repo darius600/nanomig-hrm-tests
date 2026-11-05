@@ -11,11 +11,12 @@
 ;   MUT_MC3OTH   channel 1 on a copy of the table at T3, period 1000, volume 64; DMACON $8203 (3.7 MC3)
 ;   MUT_MC3A     AUD0PER <- 448 written after MUT_LINE lines of the wait (3.7 MC3, F1 (a))
 ;   MUT_MC3B     AUD0PER <- 224 written after MUT_LINE lines of the wait (3.7 MC3, F1 (b))
-;   MUT_MC3F4    one CPU read of the word at T+64 after MUT_LINE lines of the wait (3.7 MC3, F4)
+;   MUT_MC3F4    channel 0 is stopped and channel 1, set up on the same table, is started after MUT_LINE lines of the wait:
+;                the table is fetched in the audio slot of another channel (3.7 MC3, F4)
 ;   MUT_MC4LEN   AUD0LEN <- 65, bytes 0 and 2 at T+128 (3.7 MC4)
 ;   MUT_MC4CPU   one CPU read of the word at T+64 in the middle of the wait (3.7 MC4)
 ;   MUT_MC5MARK  the done marker is not stored (3.7 MC5)
-;   MUT_MC5STOP  DMACON <- $0001 after 200 lines of the wait and a delay of MUT_DELAY loop passes (3.7 MC5)
+;   MUT_MC5STOP  DMACON <- $0001 in line 200 of the wait, when the beam's horizontal counter reaches MUT_H (3.7 MC5)
 ;   MUT_MP6LEN   AUD0LEN <- 32 written after N_run / 2 lines of the wait, while the channel runs (4 MP6)
 ;   MUT_MP5CH1   channel 1 set up on the same table, period 64; DMACON $8203 (4 MP5)
 ;   MUT_FIXTURE  the fixture constant is $DEAD instead of $BEEF
@@ -136,6 +137,11 @@ start:
         move.w  #1000,AUD1PER(a0)
         move.w  #64,AUD1VOL(a0)
         endc
+        ifd     MUT_MC3F4
+        move.l  #T,AUD1LCH(a0)          ; channel 1 on the same table, volume 0 (step 4), DMA off until MUT_LINE
+        move.w  #64,AUD1LEN(a0)
+        move.w  MP_P,AUD1PER(a0)
+        endc
 
         ; ---- step 10 ----
         ifd     MUT_MC2DMA
@@ -177,8 +183,10 @@ start:
         ifd     MUT_MC5STOP
         cmp.w   #200,d6
         bne.s   .nostop
-        move.w  #MUT_DELAY,d0           ; delay in the line before the stop: a tuned value (specification 6.1)
-.sd     dbra    d0,.sd
+.sd      move.w  VHPOSR(a0),d0           ; the stop comes when the horizontal counter has reached MUT_H
+        andi.w  #$00FF,d0
+        cmp.w   #MUT_H,d0
+        bcs.s   .sd
         move.w  #$0001,DMACON(a0)
 .nostop
         endc
@@ -209,7 +217,8 @@ start:
         ifd     MUT_MC3F4
         cmp.w   #MUT_LINE,d6
         bne.s   .nof4
-        move.w  T+64,d0
+        move.w  #$0001,DMACON(a0)       ; channel 0 off ...
+        move.w  #$8202,DMACON(a0)       ; ... channel 1 on, from the start of the same table
 .nof4
         endc
         cmp.w   d7,d6

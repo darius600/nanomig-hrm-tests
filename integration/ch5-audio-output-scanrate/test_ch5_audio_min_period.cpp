@@ -5,10 +5,9 @@
 // the Chip-memory port log and the per-cycle audio samples of the run are
 // graded against the preconditions MC1-MC6 and then against the proposition.
 //
-// This source is included by test_ch5_audio_all.cpp, which runs it after the
-// package's earlier test and prints the one combined summary line. Run on its
-// own, a standard is selected by run_min_period(): NTSC and PAL are graded by
-// two processes that run at the same time.
+// This source is included by test_ch5_audio_all.cpp, which runs it after
+// test_ch5_audio_output_scanrate.cpp and prints the one combined summary line.
+// NTSC and PAL are graded by two processes that run at the same time.
 //
 // How the line and the slots are found: the `refresh` output of nanomig.v is
 // sampled once per system clock cycle. A refresh access is a rising edge of
@@ -21,10 +20,11 @@
 //
 // NMH_MUTATE selects the contrasting case of one assertion or precondition.
 // Unset, every section runs its normal programs. Selectors:
-//   MP1 MP2 MP3 MP4 MP5CH1 MP6LEN MP6GREEN MC1STD MC2DMA MC2ADK MC3LEN MC3OTH MC3A MC3B MC3F4 MC3TIME
+//   MP1 MP2 MP3 MP4 MP5CH1 MP5ALT MP6LEN MP6GREEN MC1STD MC2DMA MC2ADK MC3LEN MC3OTH MC3A MC3B MC3F4 MC3TIME
 //   MC4LEN MC4CPU MC5MARK MC5STOP MC6PER MC6BELOW FIXMP FIXDONE
 // A selector changes only the stimulus (the period value, the harness standard,
-// the program); the comparator of the line it turns red is the normal one.
+// the program); the comparator of the line it turns red is the normal one. MP5ALT
+// is the one data substitution: the line lengths fed to the unchanged MP5-RATE comparator.
 //
 // Every selector below reached DONE on both cores (FIXDONE excepted: its program has no DONE); each
 // MUTATION line states the result measured on fx68k and on TG68K (identical on both unless said).
@@ -33,9 +33,10 @@
 //   measured: fx68k and TG68K: P = 119 red (next 499 of 503 classified, reuse 0, repeat 2, skip 2); P = 64 red (next 732 of 936 classified,
 //   reuse 0, repeat 204); 22 passed, 2 failed
 // MUTATION MP2 stimulus red NMH_MUTATE=MP2: the NTSC MP2 comparator run at P = 124 and P = 64
-//   measured: fx68k and TG68K: P = 124 red in (a), (b) and (a) and (b) together (next 482 of 482, no sample played again); P = 64 green in
-//   all three (next 732 of 936, previous sample again 0, both buffered samples again 204); 25 passed, 3 failed. The P = 124 run is the
-//   input for which (b) is red, the P = 64 run the green input of the same comparator.
+//   measured: fx68k and TG68K: P = 124 red in (a), (b) and (a) and (b) together (next 482 of 482, previous sample again (reuse) 0, both buffered samples
+//   again (repeat) 0); P = 64 green in all three (next 732 of 936, reuse 0, repeat 204, on both cores); 25 passed, 3 failed. The P = 64 run is a control of the
+//   union line (a sample already played is played again, here by repeats), not of p.141's reuse form, which it does not exercise (reuse 0); the P = 124
+//   run is the red contrast. No period below 124 is claimed as a green control of the reuse form: reuse is 0 at every period of both standards.
 // MUTATION MP3 stimulus red NMH_MUTATE=MP3: the PAL MP3 comparator run at P = 119 and P = 64
 //   measured: fx68k and TG68K: P = 119 red (next 499 of 503, repeat 2, skip 2); P = 64 red (next 732 of 936, repeat 204); 22 passed, 2 failed
 // MUTATION MP4 stimulus red NMH_MUTATE=MP4: the PAL MP4 comparator run at P = 124 and P = 64
@@ -45,8 +46,13 @@
 //   period 64, DMACON $8203
 //   measured: fx68k and TG68K: MP5 green, one read per channel in every line (114 cycles: 1; 130 cycles: 1; 526 reads in 263 lines);
 //   MC1, MC2, MC4 with two slot offsets, MC5 green; 15 passed, 0 failed
-// MUTATION MP6 stimulus green NMH_MUTATE=MP6GREEN: MP6 is red in the normal run (P = 110, 116, 118), so the same comparator is run on two periods
-//   that are green in the normal run: NTSC and PAL, P = 64 and P = 124
+// MUTATION MP5-RATE stimulus green NMH_MUTATE=MP5ALT: COMPARATOR CONTROL by a named data substitution into the unchanged comparator, not a mutation: MP5-RATE is red in
+//   the normal run (31,538 samples/second), so NTSC P = 64 and P = 100, the runs of MP5 with their MP5 preconditions live, are graded with the length of every
+//   complete line of their port windows replaced by 227 and 228 ticks in alternation (mean 227.5 ticks)
+//   measured: fx68k and TG68K: MP5-RATE green (2 graded runs, 526 lines, 31468.5 samples/second, 0.5 from 31,469, tolerance 3.125); MP5 green in both runs;
+//   23 passed, 0 failed. No stimulus is known that gives the lines that mean (HTOTAL changes a line by whole colour clocks), hence the substitution
+// MUTATION MP6 stimulus green NMH_MUTATE=MP6GREEN: COMPARATOR CONTROL, not a mutation: MP6 is red in the normal run (P = 110, 116, 118), so the same comparator
+//   is run on two periods that are green in the normal run: NTSC and PAL, P = 64 and P = 124
 //   measured: fx68k and TG68K: MP6 green in both standards (2 runs graded, 7 complete passes in their windows); 42 passed, 0 failed
 // MUTATION MP6 stimulus red NMH_MUTATE=MP6LEN: NTSC and PAL P = 64 (green under MP6GREEN) with AUD0LEN <- 32 written once after N_run / 2 lines of the wait
 //   measured: fx68k and TG68K: MP6 red in both standards (4 short passes, the first a T that follows T+62 at 35866.0 ticks after the start of the
@@ -69,13 +75,14 @@
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3B: both reference runs with AUD0PER <- 224 written after 800 lines of the wait
 //   measured: fx68k and TG68K: MC3 anchor F1 (b) red in PAL and NTSC (mean spacing of table fetches over 192 fetches 5012.917 cycles against
 //   2 * D_ref = 7152.000, tolerance 9.466 cycles); items 1 and 2 and anchors F1 (a), F1 (c) and F4 green; 14 passed, 2 failed
-// MUTATION MC3 stimulus red NMH_MUTATE=MC3F4: both reference runs with one CPU read of the word at T+64 after 1140 lines of the wait
-//   measured: fx68k and TG68K: MC3 anchor F4 red in PAL and NTSC (228 table accesses in the port window at 2 different offsets from the line
-//   start; 0 refresh clusters of 1160 on fx68k and of 1160 on TG68K fail the shape check); items 1 and 2 and anchors F1 (a), (b) and (c) green;
-//   14 passed, 2 failed
+// MUTATION MC3 stimulus red NMH_MUTATE=MC3F4: both reference runs with channel 0 stopped (DMACON $0001) and channel 1, set up on the same table at volume 0, started
+//   (DMACON $8202) after 1140 lines of the wait: the table is fetched in another channel's audio slot (Figure 6-9)
+//   measured: fx68k and TG68K: MC3 anchor F4 red in PAL and NTSC (229 table fetches in the port window at 2 different offsets from the line
+//   start, 114 and 130 cycles; 0 refresh clusters of 1160 on fx68k and of 1160 on TG68K fail the shape check); items 1 and 2 and anchors F1 (a), (b) and (c) green;
+//   14 passed, 2 failed. A CPU read of a word of T is not a contrast of F4: the port names no bus master, so it is not told from a table fetch (MC4CPU is its contrast)
 // MUTATION MC3 stimulus red NMH_MUTATE=MC3TIME: both reference runs with AUD0PER 448 and the declaration left at 447
 //   measured: fx68k and TG68K: MC3 anchor F1 (c) red in PAL and NTSC (tick 8.0179 cycles, 895 complete lines of length 226.493 ticks, all outside
-//   226.875 ...); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1162 on TG68K, not four accesses two slots apart); items 1, 2 and anchors
+//   226.875 ... 228.125 in NTSC and outside 226.875 ... 227.125 and 227.375 ... 227.625 in PAL); anchor F4 green (0 of 1162 clusters on fx68k, 0 of 1162 on TG68K, not four accesses two slots apart); items 1, 2 and anchors
 //   (a), (b) green; 14 passed, 2 failed
 // MUTATION MC4 stimulus red NMH_MUTATE=MC4LEN: PAL P = 124 with AUD0LEN 65 and the bytes 0 and 2 at T+128
 //   measured: fx68k and TG68K: MC4 red (fetches off the table); MC1, MC2, MC5, MC6 green; 14 passed, 1 failed
@@ -83,11 +90,10 @@
 //   measured: fx68k and TG68K: MC4 red (a read off the channel offset); MC1, MC2, MC5, MC6 green; 14 passed, 1 failed
 // MUTATION MC5 stimulus red NMH_MUTATE=MC5MARK: PAL P = 124 without the done-marker store
 //   measured: fx68k and TG68K: MC5 red (marker absent); MC1, MC2, MC4, MC6 green; 14 passed, 1 failed
-// MUTATION MC5 stimulus red NMH_MUTATE=MC5STOP: PAL P = 64 with DMACON <- $0001 after 200 lines of the wait and a delay of 30 loop passes
-//   measured: fx68k and TG68K: MC5 red through both of its clauses (no read at the channel offset in the first and last
-//   tenth of the port window, the last such read before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of
-//   order). MC6 green on fx68k (largest distance from the grid 0.0000 ticks; 14 passed, 1 failed), red on TG68K
-//   (largest distance from the grid 1.0000 ticks; 13 passed, 2 failed): SPECIFICATION-min-period.md 6.1
+// MUTATION MC5 stimulus red NMH_MUTATE=MC5STOP: PAL P = 64 with DMACON <- $0001 in line 200 of the wait, when the beam's horizontal counter (VHPOSR bits 7-0) has reached 8
+//   measured: fx68k and TG68K: MC5 red through both of its clauses (no read at the channel offset in the first and last tenth of the port window, the last such read
+//   before the output window ends); MC1, MC2, MC4 green (2 wraps in the port window, 0 reads out of order); MC6 green (largest distance from the grid 0.0000 ticks);
+//   MP4 not graded (precondition failed); 14 passed, 1 failed
 // MUTATION MC6 stimulus red NMH_MUTATE=MC6PER: PAL with AUD0PER 129 written while 128 is declared
 //   measured: fx68k and TG68K: MC6 red (largest distance from the 128-tick grid 64 ticks); MC1, MC2, MC4, MC5 green; 14 passed, 1 failed
 // MUTATION MC6 stimulus red NMH_MUTATE=MC6BELOW: PAL with AUD0PER 101 written while 100 is declared, below the minimum
@@ -95,7 +101,8 @@
 //   failed); 14 passed, 1 failed
 // MUTATION FIXTURE-CONST stimulus red NMH_MUTATE=FIXMP: PAL P = 124 with the fixture constant $DEAD in place of $BEEF
 //   measured: fx68k and TG68K: FIXTURE-CONST red; behind it MC1-MC6 and the proposition not graded (RECORDED); 9 passed, 1 failed
-// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXDONE: PAL P = 124 run with prog_nodone, a program that never writes the done marker
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXDONE: the clause mutated is the completion clause of the FIXTURE line, "reached DONE": PAL P = 124 run with prog_nodone,
+//   a program that never writes the done marker, so this run cannot reach DONE
 //   measured: fx68k and TG68K: "reached DONE" red; behind it MC1-MC6 and the proposition not graded (RECORDED); 8 passed, 1 failed
 
 #include <cstdio>
@@ -185,8 +192,12 @@ Cap capture(const std::string& dir, const std::string& prog, bool ntsc, int P, i
         if ((i & 255) == 255 && h.peek_logical(0x0C0FFE).value_or(0) == 0x600D) { cap.done = true; break; }
     }
     auto pk = [&](uint32_t a) { return h.peek_logical(a).value_or(0xFFFF); };
-    cap.r0 = pk(kR + 0); cap.r2 = pk(kR + 2); cap.rmax = pk(kR + 4);
-    cap.rlines = pk(kR + 6); cap.rmark = pk(kR + 8); cap.kfix = pk(kKfix);
+    // FIXTURE-CONST first: no result slot is read unless the program-stored constant reads back.
+    cap.kfix = pk(kKfix);
+    if (cap.kfix == kFix) {
+        cap.r0 = pk(kR + 0); cap.r2 = pk(kR + 2); cap.rmax = pk(kR + 4);
+        cap.rlines = pk(kR + 6); cap.rmark = pk(kR + 8);
+    }
     cap.log = h.ram_log();
     cap.audio = h.audio();
     return cap;
@@ -416,21 +427,26 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
     }
     ck.expect(b_ok, "MC3 " + tag + " anchor F1 (b): the mean spacing of consecutive table fetches over whole passes is 2 * D_ref to within the resolution of the measurement, "
                     "one line over the number of fetches plus 2 / 256 cycle (p.138, p.139, p.165; p.141: one DMA slot per line)");
-    // F4: the line frame that F1 (c) measures with is asserted before it is used.
+    // F4: the line frame that F1 (c) measures with is asserted before it is used. A table fetch is a DMA read
+    // of T: a CPU access (is_cpu: the reset-vector window, the program, the result page) is not one. The port
+    // names no bus master, so a CPU read of T itself is not told from a fetch here; MC4 is the check that no
+    // such access occurs.
     bool f4_ok = false;
     {
         std::set<long> fo;
         long nf = 0;
         if (pw.ok)
             for (const auto& a : c.log) {
-                if (a.is_write || !in_t(a.word_addr) || a.cycle < pw.pw0 || a.cycle >= pw.pw1) continue;
+                if (a.is_write || is_cpu(a, c.prog_words) || !in_t(a.word_addr) || a.cycle < pw.pw0 || a.cycle >= pw.pw1) continue;
                 long li = line_of(L, a.cycle);
                 fo.insert(li < 0 ? -1 : (long)(a.cycle - L.start[(size_t)li]));
                 ++nf;
             }
         f4_ok = pw.ok && L.groups > 0 && L.bad == 0 && nf > 0 && fo.size() == 1 && *fo.begin() >= 0;
+        std::string os;
+        for (long o : fo) os += " " + S(o);
         ck.note("MC3 " + tag + ": F4 anchor: refresh clusters checked " + S((long)L.groups) + ", not four accesses two slots apart " + S((long)L.bad) +
-                "; table fetches in the port window " + S(nf) + " at " + S((long)fo.size()) + " different offset(s) from the line start");
+                "; table fetches in the port window " + S(nf) + " at " + S((long)fo.size()) + " different offset(s) from the line start (cycles:" + os + ")");
     }
     ck.expect(f4_ok, "MC3 " + tag + " anchor F4: every refresh cluster holds four accesses two slots apart and every table fetch of the port window lies at one offset from its line start (Figure 6-9, p.195)");
     bool c_ok = false;
@@ -441,18 +457,24 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
     }
     if (!ll.empty()) {
         double m = 0; for (double x : ll) m += x; m /= double(ll.size());
-        // Every complete line lies between the lengths the pages name, to within the output resolution s
-        // (one system cycle in ticks): NTSC 227 and 228 (p.23), PAL 227 (p.23) and 227.5 (p.304).
+        // NTSC: every complete line lies between the lengths p.23 names, 227 and 228, to within the output
+        // resolution s (one system cycle in ticks). PAL: p.23 says 227 ("In PAL, they are all 227 long") and
+        // p.304 says 227.5 ("227.5 colorclocks per scan line"); the pages conflict, so a line is accepted
+        // within s of 227 or within s of 227.5, and nothing between the two.
         const double lo = 227.0 - r.s, hi = (ntsc ? 228.0 : 227.5) + r.s;
         size_t n227 = 0, n228 = 0, nalt = 0, nbad = 0;
         for (size_t i = 0; i < ll.size(); ++i) {
-            if (ll[i] < lo || ll[i] > hi) ++nbad;
+            if (ntsc ? (ll[i] < lo || ll[i] > hi)
+                     : !(std::fabs(ll[i] - 227.0) <= r.s || std::fabs(ll[i] - 227.5) <= r.s)) ++nbad;
             if (std::fabs(ll[i] - 227.0) <= r.s) ++n227;
             else if (std::fabs(ll[i] - 228.0) <= r.s) ++n228;
             if (i > 0 && std::fabs(ll[i] - ll[i - 1]) > r.s) ++nalt;
         }
         c_ok = nbad == 0;
-        ck.note("MC3 " + tag + ": " + S((long)ll.size()) + " complete lines in the port window, mean length " + F(m) + " ticks, " + S((long)nbad) + " outside " + F(lo) + " ... " + F(hi) +
+        const std::string accepted = ntsc ? F(lo) + " ... " + F(hi) :
+            F(227.0 - r.s) + " ... " + F(227.0 + r.s) + " and " + F(227.5 - r.s) + " ... " + F(227.5 + r.s) +
+            (r.s >= 0.25 ? " (s >= 0.25: the two intervals touch)" : "");
+        ck.note("MC3 " + tag + ": " + S((long)ll.size()) + " complete lines in the port window, mean length " + F(m) + " ticks, " + S((long)nbad) + " outside " + accepted +
                 " ticks; lines of 227 ticks " + S((long)n227) +
                 ", of 228 ticks " + S((long)n228) + ", lines whose length differs from the line before " + S((long)nalt) +
                 (ntsc ? " (p.23's alternation of 228 and 227 and p.194's 227.5 mean are measured here, not graded; NM-HRM-010 grades them)" : " (reported, not graded)") + "; "
@@ -460,7 +482,8 @@ Ref eval_ref(Checks& ck, const Cap& c, bool ntsc, int declP, const std::string& 
                 S((long)low_reads(c, f0)) + " (cross-check only)");
     }
     ck.expect(c_ok, "MC3 " + tag + " anchor F1 (c): every complete line of the port window is " +
-                    std::string(ntsc ? "227 or 228 ticks long (p.23), to within the output resolution s" : "between 227 (p.23) and 227.5 (p.304) ticks long, to within the output resolution s"));
+                    std::string(ntsc ? "227 or 228 ticks long (p.23), to within the output resolution s"
+                                     : "227 ticks long (p.23) or 227.5 ticks long (p.304; the two pages conflict), to within the output resolution s, none in between"));
     r.cal = true;
     r.ok = item1 && item2 && a_ok && b_ok && f4_ok && c_ok;
     return r;
@@ -538,6 +561,32 @@ void mp6_summary(Checks& ck, const std::string& sn, const std::vector<Mp6>& rows
                        "each followed by T; periods that fail: " + (fail.empty() ? std::string("none") : fail));
 }
 
+// MP5-RATE: the complete lines of the port windows of the graded MP5 runs (specification MP5-RATE).
+// With `alt` set (NMH_MUTATE=MP5ALT) the length of every line is replaced by 227 and 228 ticks in alternation.
+struct Mp5Acc {
+    long runs = 0, lines = 0;
+    double ticks = 0;
+    bool alt = false;
+    void add(long nl, uint64_t cycles, double tk) {
+        ++runs;
+        if (alt) { for (long k = 0; k < nl; ++k) ticks += 227.0 + double((lines + k) & 1); }
+        else ticks += double(cycles) / tk;
+        lines += nl;
+    }
+};
+
+void mp5_rate(Checks& ck, const Mp5Acc& a) {
+    if (a.runs == 0 || a.lines == 0) { ck.record("MP5-RATE: not graded, no run holds the preconditions of MP5"); return; }
+    const double lbar = a.ticks / double(a.lines);                  // mean line length, ticks
+    const double cap = 2.0 * 3579545.0 / lbar;                      // samples/second, two samples per line
+    const double tol = 0.5 + 0.005 * 525.0;                         // 31,469 printed to the unit; 59.94 printed to 0.01 in 2 * 262.5 * 59.94
+    ck.note("MP5-RATE: " + S(a.runs) + " graded runs, " + S(a.lines) + " complete lines, mean length " + F(lbar, 4) + " ticks, capacity 2 * 3,579,545 / " +
+            F(lbar, 4) + " = " + F(cap, 1) + " samples/second, difference from 31,469 " + F(cap - 31469.0, 1) + ", tolerance " + F(tol, 3) +
+            (a.alt ? " (line lengths substituted: 227 and 228 ticks in alternation)" : ""));
+    ck.expect(std::fabs(cap - 31469.0) <= tol, "MP5-RATE (p.141; sol:5-p141.c3, opus:5-rate.c6): the sample capacity of the lines, 2 * 3,579,545 / (mean length of the complete lines "
+              "of the graded MP5 runs in ticks), is 31,469 samples/second to within 3.125, the rounding of 31,469 and of 59.94");
+}
+
 enum Kind { NONE = 0, ALLNEXT = 1, REUSE = 2 };
 
 struct RunSpec {
@@ -550,6 +599,7 @@ struct RunSpec {
     bool mp5 = false;
     std::string tag;
     std::vector<Mp6>* mp6out = nullptr;   // where the MP6 result of the run goes
+    Mp5Acc* mp5acc = nullptr;             // where the lines of a graded MP5 run go (MP5-RATE)
 };
 
 struct Cls { int n = 0, next = 0, reuse = 0, repeat = 0, skip = 0, unm = 0, after_unm = 0, other = 0; bool ok = false; };
@@ -767,12 +817,14 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
         if (pw.ok) {
             for (size_t i = 0; i + 1 < L.start.size(); ++i) {
                 if (!(L.start[i] >= pw.pw0 && L.start[i + 1] <= pw.pw1)) continue;
-                std::map<long, long> cnt;
-                for (const auto& a : c.log)
-                    if (!a.is_write && in_t(a.word_addr) && a.cycle >= L.start[i] && a.cycle < L.start[i + 1])
-                        ++cnt[(long)(a.cycle - L.start[i])];
-                long lt = 0, ex = 0;       // ex: reads at an offset that is no channel's (counted against the one channel when only one is set up)
-                for (auto& kv : cnt) { lt += kv.second; if (!allowed.count(kv.first)) ex += kv.second; }
+                std::map<long, long> cnt;      // per channel slot offset: every non-CPU read at it, at any address
+                long lt = 0, ex = 0;           // ex: reads of T at an offset that is no channel's (counted against the one channel when only one is set up)
+                for (const auto& a : c.log) {
+                    if (a.is_write || a.cycle < L.start[i] || a.cycle >= L.start[i + 1] || is_cpu(a, c.prog_words)) continue;
+                    const long off = (long)(a.cycle - L.start[i]);
+                    if (allowed.count(off)) { ++cnt[off]; ++lt; }
+                    else if (in_t(a.word_addr)) { ++ex; ++lt; }
+                }
                 for (long o : allowed) chmax[o] = std::max(chmax[o], (cnt.count(o) ? cnt[o] : 0) + (rs.nch == 1 ? ex : 0));
                 ++nl; tot += lt;
                 dur += L.start[i + 1] - L.start[i];
@@ -784,13 +836,13 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
         double secs = nl > 0 ? double(dur) / tk * 0.279365e-6 : 1.0;
         ck.note("MP5 " + tag + ": " + S(nl) + " complete lines, most table reads of one channel in one line (per slot offset)" + per + " " + S(tot) +
                 " reads in them, 2 * reads / duration of the complete lines = " + F(2.0 * double(tot) / secs, 0) +
-                " samples/second (reported, not graded; the figure follows from the " + F(lticks, 1) + "-tick lines of this run: one word per line of 227 ticks is 2 * 3,579,545 / 227 = 31,538, "
-                "p.141's 31,469 rests on 227.5-tick lines)");
+                " samples/second (reported, not graded here; the lines of this run are " + F(lticks, 1) + " ticks long on average; MP5-RATE grades the capacity of the lines)");
         if (!(ref.ok && mc1 && mc2 && mc4 && mc5)) {
             ck.record("MP5 " + tag + ": precondition failed (" + std::string(ref.ok ? "" : "MC3 ") + (mc1 ? "" : "MC1 ") + (mc2 ? "" : "MC2 ") +
                       (mc4 ? "" : "MC4 ") + (mc5 ? "" : "MC5 ") + "), not graded; the counts above are information only");
         } else {
             ck.expect(maxl <= 1 && nl > 0, "MP5 " + tag + " (p.141): no channel holds more than one data fetch in a line");
+            if (rs.mp5acc && nl > 0) rs.mp5acc->add(nl, dur, tk);
         }
     }
 
@@ -844,7 +896,7 @@ void run_one(Checks& ck, const std::string& dir, const RunSpec& rs, const Ref& r
         const bool again = k.reuse + k.repeat >= 1;
         ck.expect(again, id + " " + tag + sub + " (b) (p.141, p.164): at least one sample period plays a sample already played again where the next was due, "
                   "the previous sample again or both buffered samples again" + win);
-        ck.expect(k.next < k.n && again, id + " " + tag + sub + " (a) and (b) (p.141; sol:5-p141.c10, opus:5-rate.c15): at least one sample period does not carry the next sample "
+        ck.expect(k.next < k.n && again, id + " " + tag + sub + " (a) and (b) (p.141, p.164): at least one sample period does not carry the next sample "
                   "and at least one sample period plays a sample already played again" + win);
     } else {
         ck.expect(k.next < k.n, id + " " + tag + " (p.141): at least one sample period does not carry the next sample" + win);
@@ -878,9 +930,12 @@ void records(Checks& ck, bool ntsc) {
                   "withdrawn; MP1 grades the fourteen values of S_hi, and the periods " + gaps + " inside 'at least 124' are not tested, so the interval is not established; MP1 is graded without these ids");
         ck.record("p.141 (sol:5-p141.c4, opus:5-rate.c8: 'In order to save buffers, the hardware is designed to handle 28,867 samples/second'): withdrawn; no output shows the reason, "
                   "and no one assertion grades the design maximum on both sides of the threshold; MP1 and MP2 grade the periods at and below it without these ids");
-        ck.record("p.141 (sol:5-p141.c3, opus:5-rate.c6: 'The figure of 31,469 is a theoretical maximum', '2 samples/line * 262.5 lines/frame * 59.94 frames/second = 31,469 samples/second'): withdrawn; "
-                  "MP5 grades only that no channel holds more than one data fetch in a line, without these ids; the figure itself is not graded: the runs measure 31,538 samples/second on lines of 227 ticks "
-                  "(MEASURED in the MP5 lines), because the NTSC lines of the runs are all 227 ticks and the 228-tick lines of p.23, which make the 227.5-tick mean of the 262.5 lines, do not occur (NM-HRM-010)");
+        ck.record("p.141 (the figure of 31,469 samples/second): MP5-RATE grades the sample capacity of the lines against it; MP5 grades the per-line bound it is derived from; "
+                  "that an output reaches the figure is predicted by no page and is not tested");
+        ck.record("p.141 (sol:5-p141.c10, opus:5-rate.c15: 'If the period value is below 124, by the time the cycle count has reached 0, the audio DMA will not have had enough time to retrieve the next data sample and the previous sample will be reused'): "
+                  "withdrawn from the MP2 lines. p.141 names the previous sample, the reuse, c_j = c_{j-1}; p.164 ('the two samples in the buffer register will be repeated') names both buffered samples, "
+                  "the repeat, c_j = c_{j-1} - 1; the two pages differ on which sample comes back. The graded MP2 (b) and (a) and (b) lines grade what both imply, that a sample already played is played again "
+                  "where the next was due, a reuse or a repeat; the counts of each are MEASURED in the MP2 lines and none is graded on its own");
         ck.record("p.141 (how often the previous sample is reused below the minimum): the page does not say; only 'at least once' is graded, the counts are reported");
         ck.record("p.141 (what happens to the sample that arrives too late): the page does not say; skips are counted, not graded");
         ck.record("p.141 (the PAL figure of the theoretical maximum): the page gives none; MP5 is NTSC only");
@@ -908,6 +963,7 @@ void run_standard(Checks& ck, const std::string& dir, bool ntsc) {
     else      { for (int p = 1; p <= 122; ++p) ps.push_back(p); ps.push_back(123); }
     for (int p : kShi) ps.push_back(p);
     std::vector<Mp6> rows;
+    Mp5Acc acc;
     for (int p : ps) {
         RunSpec rs;
         rs.declNtsc = rs.cfgNtsc = ntsc;
@@ -916,9 +972,11 @@ void run_standard(Checks& ck, const std::string& dir, bool ntsc) {
         rs.kind = hi ? ALLNEXT : REUSE;
         rs.mp5 = ntsc && p <= 113;
         rs.mp6out = &rows;
+        rs.mp5acc = &acc;
         run_one(ck, dir, rs, ref);
     }
     mp6_summary(ck, ntsc ? "NTSC" : "PAL", rows);
+    if (ntsc) mp5_rate(ck, acc);
 }
 
 // One contrasting case. Returns false when mv names no selector of this file.
@@ -941,6 +999,16 @@ bool run_mutation(Checks& ck, const std::string& dir, const std::string& mv) {
         RunSpec r = spec(true, 64, NONE);
         r.prog = "prog_minper_mp5ch1"; r.declDma = 0x0203; r.nch = 2; r.mp5 = true;
         run_one(ck, dir, r, ref);
+    } else if (mv == "MP5ALT") {
+        Ref ref = do_ref(ck, dir, true);
+        Mp5Acc acc;
+        acc.alt = true;
+        for (int p : {64, 100}) {
+            RunSpec r = spec(true, p, NONE);
+            r.mp5 = true; r.mp5acc = &acc;
+            run_one(ck, dir, r, ref);
+        }
+        mp5_rate(ck, acc);
     } else if (mv == "MC1STD") {
         Ref rn = do_ref(ck, dir, true), rp = do_ref(ck, dir, false);
         RunSpec a = spec(true, 124, ALLNEXT); a.cfgNtsc = false; a.tag = "NTSC declared, harness PAL, P=124";

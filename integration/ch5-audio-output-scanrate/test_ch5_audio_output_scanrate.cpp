@@ -60,10 +60,10 @@
 // MUTATION P4 stimulus red NMH_MUTATE=P4: T3's word for code +5 (k=133) $0505 -> $0707
 //   measured: fx68k and TG68K: P4 red (ECS/PAL, OCS/PAL); no other line changes
 //   fx68k 46 passed, 2 failed; TG68K 46 passed, 2 failed
-// MUTATION A1 stimulus red NMH_MUTATE=A1: for T1, DMACON $8200 instead of $8201 (AUD0EN not set)
-//   measured: fx68k and TG68K: A1 for T1 red (ECS/PAL, OCS/PAL); FIXTURE-DATA T1 also red, no read of T1 at all;
-//   T1's A3, A4, A5, P1 and P2 not graded (RECORDED); A1 for T2 and T3 and every other line unchanged
-//   fx68k 34 passed, 4 failed; TG68K 34 passed, 4 failed
+// MUTATION A1 stimulus red NMH_MUTATE=A1: for T1, DMACON $8201 as in the normal run and DMACON $0001 (AUD0EN cleared) written 20 lines later
+//   measured: fx68k and TG68K: A1 for T1 red (ECS/PAL, OCS/PAL; 5 reads of T1's first word against the 11 required); FIXTURE-DATA T1 green
+//   (a nonempty T1 population, every word read); T1's A3, A4, A5, P1 and P2 not graded (RECORDED); A1 for T2 and T3 and every other line unchanged
+//   fx68k 36 passed, 2 failed; TG68K 36 passed, 2 failed
 // MUTATION A2 stimulus red NMH_MUTATE=A2: ADKCON $8001 (USE0V1) set before the ADKCONR read of prog_audio
 //   measured: fx68k and TG68K: A2 red (ECS/PAL, OCS/PAL); A3, A4, A5 and the propositions of every table not
 //   graded (RECORDED, "precondition A2 failed or not graded"); A1 of every table unchanged
@@ -105,8 +105,9 @@
 //   measured: fx68k and TG68K: P3B red (ECS/PAL, OCS/PAL); no other line changes (T2S's own program is
 //   independent of prog_audio.s)
 //   fx68k 20 passed, 2 failed; TG68K 20 passed, 2 failed
-// MUTATION FIXTURE stimulus red NMH_MUTATE=NODONE: prog_audio is replaced by prog_nodone, which never writes the
-//   done marker (the T2S, adkcon and disk sections are not run under this selector)
+// MUTATION FIXTURE stimulus red NMH_MUTATE=NODONE: the clause mutated is the completion clause of the FIXTURE line, "prog_audio reached DONE":
+//   prog_audio is replaced by prog_nodone, which never writes the done marker, so this run cannot reach DONE
+//   (the T2S, adkcon and disk sections are not run under this selector)
 //   measured: fx68k and TG68K: FIXTURE red for prog_audio (ECS/PAL, OCS/PAL), the audio lines not graded (RECORDED,
 //   "audio fixture did not complete"); 0 passed, 2 failed on both cores
 // MUTATION FIXTURE-CONST stimulus red NMH_MUTATE=FIXCONST: each of the four programs' own KFIX store becomes $DEAD instead of $BEEF
@@ -146,12 +147,11 @@
 // MUTATION B1 stimulus red NMH_MUTATE=FASTS1: run S's ADKCON write becomes $8100 instead of $0100
 //   measured: fx68k and TG68K: B1 for run S red (ECS/PAL, OCS/PAL, ECS/NTSC); no other line changes
 //   fx68k 45 passed, 3 failed; TG68K 45 passed, 3 failed
-// MUTATION B2 stimulus red NMH_MUTATE=B2: run F's DMACON write becomes $8010 instead of $8210 (DMAEN, bit 9,
-//   clear; p.247, p.248, p.278 agree DMAON then reads 0)
-//   measured: fx68k and TG68K: B2 for run F red (ECS/PAL, OCS/PAL, ECS/NTSC); B3 for run F and FIXTURE-DATA
-//   buffer-A also red (0 reads of buffer A at all), the necessary side effect of clearing the master DMA enable;
-//   B4 for run F and G1-G3 not graded (RECORDED); every other line unchanged
-//   fx68k 36 passed, 9 failed; TG68K 36 passed, 9 failed
+// MUTATION B2 stimulus red NMH_MUTATE=B2: run F transfers its 544 words as in the normal run; DMACON $0200 (DMAEN, bit 9, cleared) is then written before
+//   DSKBYTR is read and stored (p.247, p.248, p.278 agree DMAON then reads 0)
+//   measured: fx68k and TG68K: B2 for run F red (ECS/PAL, OCS/PAL, ECS/NTSC; the stored DSKBYTR is $B000: DMAON 0, DISKWRITE 1); FIXTURE-DATA buffer-A
+//   and B3 for run F green (544 reads of buffer A), B4 for run F green; G1-G3 RECORDED as in the normal run; every other line unchanged
+//   fx68k 45 passed, 3 failed; TG68K 45 passed, 3 failed
 // MUTATION B3 stimulus red NMH_MUTATE=B3: run F's LENGTH shrunk to 100 (DSKLEN=$C064) in steps 5 and 6
 //   measured: fx68k and TG68K: B3 for run F red ("100 found" against the required 529; ECS/PAL, OCS/PAL,
 //   ECS/NTSC); B4 for run F and G1-G3 not graded (RECORDED); every other line unchanged
@@ -1643,6 +1643,9 @@ int main(int argc, char** argv) {
                 graded_stored(wr_b1f, fast_f_bit, b1f_label);
             }
             {
+                char b2hex[8];
+                std::snprintf(b2hex, sizeof b2hex, "%04X", (unsigned)b2_f_v);
+                checks.note(std::string("DSKBYTR of run F ") + cs.label + " (the stored read): $" + b2hex);
                 std::string b2f_label = std::string("B2 for run F ") + cs.label +
                     ": DSKBYTR shows DMAON=1, DISKWRITE=1";
                 if (mv == "B2") b2f_label += " [NMH_MUTATE demonstrates this precondition red]";
@@ -1653,8 +1656,6 @@ int main(int argc, char** argv) {
                     ": disk DMA reads of buffer A, k=0..528 or more, one per k, in order (" +
                     std::to_string(f3f.times.size()) + " found)";
                 if (mv == "B3") b3f_label += " [NMH_MUTATE demonstrates this precondition red]";
-                else if (mv == "B2") b3f_label += " [B2's own side effect: clearing DMACON's master "
-                    "DMA enable (bit 9) stops all disk DMA, not just DMAON's readback]";
                 checks.expect(b3_f, b3f_label);
             }
             // B1 for run S: the same unchanged comparator ("ADKCONR bit 8 ==
@@ -1670,10 +1671,10 @@ int main(int argc, char** argv) {
                 ": disk DMA reads of buffer B, k=0..528 or more, one per k, in order (" +
                 std::to_string(f3s.times.size()) + " found)");
 
-            if (mv == "B2" || mv == "B3") {
-                checks.record(std::string("G1 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
-                checks.record(std::string("G2 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
-                checks.record(std::string("G3 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
+            if (mv == "B3") {
+                checks.record(std::string("G1 ") + cs.label + ": not graded under this precondition's own demonstration (B3)");
+                checks.record(std::string("G2 ") + cs.label + ": not graded under this precondition's own demonstration (B3)");
+                checks.record(std::string("G3 ") + cs.label + ": not graded under this precondition's own demonstration (B3)");
                 continue;
             }
 
