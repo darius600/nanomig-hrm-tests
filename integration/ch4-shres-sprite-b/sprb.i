@@ -23,12 +23,15 @@ DENISEID        equ     $07C    ; Appendix B p.290; PC0 reads this back (p.299)
 ; would normally be located at this address is not available. The OVL bit
 ; in one of the 8520 Chips disables the overlay" (p. 223; bit location,
 ; Appendix F: p. 339 lists pra at $BFE001, p. 351 names bit 0 "OVL ...
-; memory overlay bit"). The program clears it first, before anything else,
+; memory overlay bit"). The program clears it first, before anything else
+; (DDRA bit 0 to output, then OVL written 0; pp. 223, 341),
 ; because COPLIST/SPR0DAT/SPR1DAT/BPLBUF (SPECIFICATION.md 3.2) all sit
 ; below $080000.
 CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
 
 CLEAR_OVL       macro
+                move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
                 endm
 
