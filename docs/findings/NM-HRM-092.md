@@ -55,7 +55,7 @@ The module's header gives channel 0's minimum period as *"121 (120)"*, for the c
 
 ### Measured
 
-[`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) writes a 64-word table at T = $2000, every byte a different non-zero value, then AUD0LC = T, AUD0LEN = 64, AUD0VOL = 64, AUD0PER = P and DMACON = $8201, and waits by the beam; the only registers it reads are DMACONR, ADKCONR, VPOSR and VHPOSR, and every period is its own simulation. `MP6` takes channel 0's reads at its slot offset in the port window, at any address, and requires each read to follow the one before it, T+2i by T+2(i+1) and T+126 by T (`test_ch5_audio_min_period.cpp:488-522`); it is one line per standard over all of its runs (`:525-537`). Times are ticks after the start of the port window:
+[`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) writes a 64-word table at T = $2000, every byte a different non-zero value, then AUD0LC = T, AUD0LEN = 64, AUD0VOL = 64, AUD0PER = P and DMACON = $8201, and waits by the beam; the only registers it reads are DMACONR, ADKCONR, VPOSR and VHPOSR, and every period is its own simulation. `MP6` takes channel 0's reads at its slot offset in the port window, at any address, and requires each read to follow the one before it, T+2i by T+2(i+1) and T+126 by T (`test_ch5_audio_min_period.cpp:539-573`); it is one line per standard over all of its runs (`:576-589`). Times are ticks after the start of the port window:
 
 | P | reads past T+126 | first word read twice | pass ending early | `MP6` |
 |---|---|---|---|---|

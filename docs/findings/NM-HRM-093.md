@@ -49,7 +49,7 @@ Read together with the request on each word and a line of 227 colour clocks (228
 
 ### Measured
 
-[`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) plays a 64-word table on channel 0 at each period, every byte a different non-zero value, and cuts channel 0's output in the window into sample periods. Each is classified against the one before it: next, the previous sample again, both buffered samples again, or a skip (`test_ch5_audio_min_period.cpp:557-585`). `MP2` needs, at each period, one that is not next ((a)), one that plays a sample again ((b)), and both ((a) and (b)) (`:840-847`); `MP4` needs one that is not next (`:848-851`). MC6 holds at every one of these periods: the output changes on the P grid. Both standards and both cores print the same counts:
+[`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) plays a 64-word table on channel 0 at each period, every byte a different non-zero value, and cuts channel 0's output in the window into sample periods. Each is classified against the one before it: next, the previous sample again, both buffered samples again, or a skip (`test_ch5_audio_min_period.cpp:666-694`). `MP2` needs, at each period, one that is not next ((a)), one that plays a sample again ((b)), and both ((a) and (b)) (`:962-967`); `MP4` needs one that is not next (`:969-970`). MC6 holds at every one of these periods: the output changes on the P grid. Both standards and both cores print the same counts:
 
 | P | classified, NTSC and PAL | next | played again | verdict |
 |---|---:|---:|---:|---|
