@@ -95,7 +95,7 @@ of each wait. The package prints, the same on both cores:
 
 `EP2-PER-RUN` is green: between each run's first marker and its last, the
 chip-memory port shows only the CPU and memory refresh, so no disk DMA runs while
-the light is read. The package prints no FAIL for the light; its 26 FAILs on each core
+the light is read. The package prints no FAIL for the light; its 29 FAILs on each core
 belong to other findings, eleven of them to [NM-HRM-074](NM-HRM-074.md).
 
 What a user would see:
