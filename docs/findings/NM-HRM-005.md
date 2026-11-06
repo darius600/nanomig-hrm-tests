@@ -100,7 +100,7 @@ Where the bars start, in colour clocks from the ruler, over the four rounds:
 
 Over 33 rows the not-taken SKIP fits 8 - 0.15 colour clocks on A500 ECS and 8 - 0.08 on A500 OCS, where 4 would need the bars 22 pixels to the left. So a SKIP not taken and a WAIT satisfied on arrival take 8 and 8 memory cycle times, as NanoMig and the four implementations have it, and not p. 20's and p. 275's 4 for the SKIP or, as this page reads p. 20, 6 for the WAIT. With the SKIP taken no yellow shows and the blue bar starts where it starts with the SKIP not taken: the SKIP and the MOVE it skips together take 12, and the photograph does not divide that sum.
 
-The limits: the masked forms only; the taken SKIP only as that sum; `C5` and `C6`, a WAIT that blocks and then wakes, are not reached; p. 20's "one extra memory cycle to wake up" leaves open whether a satisfied WAIT's 8 divides as 6 and 2: read that way p. 20 prints the total, and only the SKIP figure is wrong. The bars are read from the photographs, with their start measured against the ruler; the programs were not run on a machine here.
+The limits: the masked forms only; the taken SKIP only as that sum; `C5` and `C6`, a WAIT that blocks and then wakes, are not reached; p. 20's "one extra memory cycle to wake up" leaves open whether a satisfied WAIT's 8 divides as 6 and 2: read that way p. 20's figures add up to 8, and only the SKIP figure is wrong. The bars are read from the photographs, with their start measured against the ruler; the programs were not run on a machine here.
 
 ### What practitioners report
 
