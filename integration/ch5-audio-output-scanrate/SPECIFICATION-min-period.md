@@ -1,6 +1,6 @@
 # Audio DMA at and below the minimum period: specification addendum
 
-This addendum specifies seven propositions (MP1-MP6 and MP5-RATE) about audio
+This addendum specifies eight propositions (MP1-MP6, MP5-FETCH and MP5-RATE) about audio
 DMA at, above and below the minimum sampling period that p.141 gives, in NTSC
 and in PAL. Its inputs
 are the twelve claims in `claims-spec-stage.jsonl` (all printed on p.141; section
@@ -117,8 +117,9 @@ Other parts of the claims that no check here covers, and why:
 | MP2 | NTSC | every value 1-123 | at least one sample period does not carry the next sample, and at least one plays a sample already played again |
 | MP3 | PAL | 123 and the set S_hi | as MP1 |
 | MP4 | PAL | every value 1-122 | at least one sample period does not carry the next sample; reuse is measured, not graded |
-| MP5 | NTSC | every value 1-113 | no line holds more than one data fetch of the channel |
-| MP5-RATE | NTSC | the runs of MP5 | the sample capacity of the lines, two samples per line, is 31,469 samples/second within the rounding of the page's numbers |
+| MP5 | NTSC | every value 1-113 (single-channel runs) | no line holds more than one data fetch of the single enabled channel |
+| MP5-FETCH | NTSC | the runs of MP5 whose period is short enough for a fetch in every line (2 P below the line length) | every complete line of the port window holds a data fetch of the channel |
+| MP5-RATE | NTSC | the runs of MP5 that are graded and green, and of MP5-FETCH that are green | the sample capacity of the lines, two samples per line, is 31,469 samples/second within the rounding of the page's numbers |
 | MP6 | both | every run of MP1-MP5 | channel 0's reads at its slot offset form passes of exactly 64 words, T to T+126 in order, each followed by T |
 
 ## 3. Common setup
@@ -327,23 +328,24 @@ spacing to one line / `n`. `D_ref` is the span of 256 level runs, each end
 known to one system clock cycle, so `2 * D_ref` is known to 2 / 256 cycle. The
 tolerance is the sum, one longest complete line of the window over `n`
 plus 2 / 256 cycle. It is not a percentage;
-(c) every complete line of F4 in the port window is as long as the pages say,
-in ticks, to within `s`, the output resolution (one system clock cycle). NTSC:
-every line is between 227 and 228 ticks long. p.23: "Every other line is a
-long line (228 color clocks, 0-$E3), with the others being 227 color clocks
-long." PAL: every line is within `s` of 227 ticks or within `s` of 227.5
-ticks, and none lies between the two. The two pages that state it give
-different values: p.23 says "In PAL, they are all 227 long", and p.304 lists
-"PAL (625 lines, 227.5 colorclocks per scan line)". The pages conflict and no
-line length lies between their two values, so no value between them is
-accepted; only a line that either page allows passes. If `s` were 0.25 tick or
-more the two intervals would touch; `s` is printed in the MEASURED line of
-the check. The calibration needs the length of each line, so it is the
-line that is graded, not a mean. Whether NTSC lines alternate between 228 and
-227 ticks, and the 227.5-clock mean of p.194 ("there are 227.5 "color
-clocks""), are printed as a MEASURED line and not graded here: `NM-HRM-010`
-grades them. The only tolerance of this anchor is `s`, which the measurement
-fixes.
+(c) NTSC: every complete line of F4 in the port window is between 227 and 228
+ticks long, to within `s`, the output resolution (one system clock cycle).
+p.23: "Every other line is a long line (228 color clocks, 0-$E3), with the
+others being 227 color clocks long." The calibration needs the length of each
+line, so it is the line that is graded, not a mean. Whether NTSC lines
+alternate between 228 and 227 ticks, and the 227.5-clock mean of p.194
+("there are 227.5 "color clocks""), are printed as a MEASURED line and not
+graded here: `NM-HRM-010` grades them. The only tolerance of this anchor is
+`s`, which the measurement fixes.
+PAL: not graded. The two pages that state the PAL line length give different
+values: p.23 says "In PAL, they are all 227 long", and p.304 lists "PAL (625
+lines, 227.5 colorclocks per scan line)". No length is supported by both
+pages, and a line of 227 ticks passes one page and contradicts the other. The
+anchor is a MEASURED line: it prints the number of complete lines of the port
+window, their mean, shortest and longest length in ticks, how many lie within
+`s` of 227 ticks (p.23), how many within `s` of 227.5 ticks (p.304) and how
+many in neither, and it names the conflict between the two pages. MC3 in PAL
+rests on the anchors F1 (a), F1 (b) and F4, which grade no line length.
 
 **F2. Level cycle.** In the reference run, the channel-0 output shows the table
 played in order. The 128 distinct levels that appear, in the order in which
@@ -536,12 +538,14 @@ their mean spacing is no longer `2 * D_ref`.
 *Contrast (F1 (c), time scale):* the reference run with `AUD0PER` <- 448 and
 the declaration left at 447. The tick comes out 448/447 times as long, so the
 lines measure about 227 * 447 / 448 = 226.5 ticks, below the lower limit of
-227 minus `s` in both standards, and F1 (c) fails through its own clause. The
+227 minus `s` in NTSC, and F1 (c) fails through its own clause there. In PAL
+F1 (c) is a MEASURED line (section 3.5) and has no contrast; the same run
+prints the shortened lines in it. The
 mismatch is small enough that the other anchors hold: the 0.5-cycle tolerance
 of the F4 cluster check (spacings of `2 * k` ticks, k up to 3) is not
 exceeded, so F4 stays green and the line set is not empty; anchors (a) and (b)
 are ratios of the same measurement and hold too. 448 is the smallest written
-period that leaves the limit: 446 gives 227.5 ticks, inside both ranges.
+period that leaves the limit: 446 gives 227.5 ticks, inside the range.
 *Contrast (F4):* the reference run with channel 0 stopped and channel 1, set
 up on the same table at volume 0, started after the last wrap of the port
 window (`DMACON` <- $0001, then <- $8202). Each audio channel has a fixed slot
@@ -740,8 +744,8 @@ failed", not graded.
 6. **Contrast.** The same run with `P = 119`. MP4 predicts that not every
    next sample is retrieved there (p.141, section 5, item 11), so the MP3
    check goes red. A second contrast is `P = 64`.
-7. **Reference frames.** As MP1. For PAL, F1 (c) accepts a line within `s` of
-   p.23's 227 ticks or within `s` of p.304's 227.5 ticks.
+7. **Reference frames.** As MP1. For PAL, F1 (c) is a MEASURED line: p.23's
+   227 ticks and p.304's 227.5 ticks conflict (section 5, item 8).
 
 ### MP4. PAL: below 123, not every next sample is retrieved in time
 
@@ -781,16 +785,23 @@ failed", not graded.
    data word (two samples) in one horizontal line, however short the
    period. p.141. No claim id is carried (the figure 31,469 is graded by
    MP5-RATE).
-2. **Stimulus.** The NTSC runs of MP2-lo (`P` = 1-113). At these periods
-   the channel would need more than one word per line.
+2. **Stimulus.** The NTSC runs of MP2-lo (`P` = 1-113) with the single
+   channel 0 enabled. At these periods the channel would need more than one
+   word per line. A run with more than one channel enabled is not graded
+   (item 6).
 3. **Observation.** The Chip-memory port, in the port window (F5). The
    channel is the slot offset of MC4 (F4); for each complete line (F4) in the
    window, the number of non-CPU reads at that offset, at any address, is
-   counted, per channel (as MC5 counts below the minimum). With one channel
-   set up, a read of the range at any other offset in the line is counted
-   against that channel too. The output
+   counted (as MC5 counts below the minimum). A read of the range at any other
+   offset in the line is counted against the channel too: with one channel
+   enabled, every read of the range belongs to it. The port gives no channel
+   identity, so with more than one channel enabled a read at another allowed
+   offset cannot be told from the other channel's own slot, and the count is
+   not a count of one channel; those runs print the counts per observed slot
+   offset as MEASURED lines and are not graded. The output
    is not used, so periods that the output cannot resolve are graded here too.
-4. **Expected.** In every complete line of the window, for every channel: at
+4. **Expected.** In every complete line of the window, for the single enabled
+   channel: at
    most 1. From p.141: "Each audio channel is allocated one DMA slot per
    horizontal scan line of the screen display. An audio channel can retrieve
    two data samples during each horizontal scan line." Quantifier: a maximum
@@ -809,7 +820,9 @@ failed", not graded.
    stimulus the pages permit makes one channel take a second slot in a line;
    a run with two channels on one table has two reads of the range in a
    line, but each channel still has one, and the page predicts exactly that.
-   A control run shows that the count is per channel: `P = 64` with channel 1
+   A control run shows what the port count of a two-channel run is, one read
+   per observed slot offset in every line, and nothing about which channel
+   made it: `P = 64` with channel 1
    also set up on the same table: `AUD1LCH/AUD1LCL` <- `T`, `AUD1LEN` <- 64,
    `AUD1PER` <- 64, `AUD1VOL` <- 0, and step 10 writes `DMACON` <- $8203,
    which is the declaration for this run (MC2). Each channel has its own
@@ -818,9 +831,56 @@ failed", not graded.
    per slot offset: two constant offsets, each with its own sequence in
    address order. Channel 1's output is on the other output, at volume 0, so
    it is "no output" (p.266). Expected, and the same on a correct and on a
-   wrong implementation: green, one read per channel in every line.
-7. **Reference frames.** F4 (line), checked by MC4's anchor checks and by
-   F1 (c). F5 (port window), checked by MC5.
+   wrong implementation: MP5 is not graded on this run (item 3); the
+   MEASURED line shows one read at each of the two observed slot offsets in
+   every line. Its other preconditions (MC1, MC2, MC4 with two slot offsets,
+   MC5) are green.
+7. **Reference frames.** F4 (line), checked by MC4's anchor checks and, in
+   NTSC, by F1 (c). F5 (port window), checked by MC5.
+
+### MP5-FETCH. NTSC: a channel whose period is short enough fetches in every line
+
+1. **Proposition.** In NTSC, in a run whose sample period `P` is so short that
+   two samples (one data word) are consumed in less than one line, the single
+   enabled channel makes a data fetch in every complete line of the port
+   window. p.141: "Each audio channel is allocated one DMA slot per horizontal
+   scan line of the screen display. An audio channel can retrieve two data
+   samples during each horizontal scan line." A word holds two samples
+   (p.138) and is fetched once (p.139, p.165), so a channel that consumes a
+   word in `2 * P` ticks, with `2 * P` below the length of a line, has used up
+   the word it fetched in the line before when the next slot comes, and the
+   page's one slot per line is taken in every line. No claim id is carried.
+   The line establishes the premise "two samples per line" of MP5-RATE's
+   formula for the runs it is graded on.
+2. **Stimulus.** The runs of MP5 (`P` = 1-113, single channel). A run is in
+   the population of this line when `2 * P`, with `P` the declared period, is
+   below the length in ticks of the shortest complete line of its port window
+   (F4, F1); with lines of 227 and 228 ticks that is `P` <= 113. If no run of
+   MP5 were in the population the line would be NOT GRADED (RECORDED), never
+   green.
+3. **Observation.** The Chip-memory port, in the port window (F5), for each
+   complete line (F4): the number of non-CPU reads at the channel's slot
+   offset (MC4), at any address, as MP5 counts them. The number of runs in the
+   population, of their complete lines, and of lines without such a read is
+   printed.
+4. **Expected.** No complete line of the port window of any run of the
+   population lacks a read at the channel's slot offset: with MP5 (at most one
+   per line) exactly one in every line. Quantifier: "every line of every run
+   of the population", graded as one line over the union, so one line without
+   a fetch in any run turns it red.
+5. **Preconditions.** For each run, the preconditions of MP5 (MC1-MC5) and
+   MP5 itself graded and green. A run that fails one is not in the
+   population, and its failure is the verdict of that line.
+6. **Contrast.** A stimulus with the population live that the page predicts
+   to fail: NTSC with `AUD0PER` written 120 and 100 declared. The declared
+   period is below 113.5, so the run is in the population, while the channel
+   consumes a word in 240 ticks, above the 227 of a line, and fetches only
+   once in 1.06 lines: some lines hold no fetch. MP5 (at most one) and
+   MC1-MC5 hold on that run, so MP5-FETCH is red through its own clause. MC6
+   would show that the declared period is not in effect and is not a
+   precondition of MP5. The same selector runs `P = 64` declared 64 as the
+   green input of the same comparator. The selector is `MP5FETCH`.
+7. **Reference frames.** F1 (tick), F4 (line), F5 (port window).
 
 ### MP5-RATE. NTSC: the sample capacity of the lines is 31,469 samples/second
 
@@ -833,8 +893,7 @@ failed", not graded.
    1).
 2. **Stimulus.** None of its own: the NTSC runs of MP5 (`P` = 1-113).
 3. **Observation.** The complete lines (F4) of the port windows (F5) of those
-   runs, in the runs whose preconditions are the preconditions of MP5
-   (item 5). Let `n` be the number of those lines in all the graded runs
+   runs, in the runs whose preconditions are those of item 5. Let `n` be the number of those lines in all the graded runs
    together and `Lbar` the mean length of those lines in ticks (the spacing of
    consecutive line starts of F4 in system clock cycles, divided by the cycles
    per tick of F1). There are 3,579,545 ticks per second (p.141: the clock
@@ -843,10 +902,14 @@ failed", not graded.
    samples per line. The pages' lines alternate 228 and 227 ticks (p.23), and
    their mean is the mean of the alternation. The port gives no field
    boundary, so `Lbar` is taken over all lines of all graded runs and not over
-   a counted number of fields. An alternation of 228 and 227 that is cut at its
-   ends changes the sum of the lengths by at most 0.5 tick, so it moves `Lbar`
-   by at most `0.5 / n` ticks and `C` by at most `31,469 * 0.5 / (227.5 * n)`
-   samples/second; `n` is printed, and the bound is far below the tolerance of
+   a counted number of fields. The lines of each run are cut out of a window
+   whose ends fall anywhere in the alternation of 228 and 227, and each
+   cut changes the sum of the lengths of that run's lines by at most 0.5 tick
+   against whole alternations. With `r` runs joined, the sum is off by at most
+   `r * 0.5` ticks, so `Lbar` is off by at most `r * 0.5 / n` ticks and `C` by
+   at most `31,469 * r * 0.5 / (227.5 * n)` samples/second; `r` and `n` are
+   printed. For the 113 runs of `P` = 1-113 and their 29,719 complete lines
+   that is 0.0019 tick and 0.26 samples/second, far below the tolerance of
    item 4.
 4. **Expected.** `|C - 31,469| <= 3.125` samples/second. The tolerance is the
    rounding of the page's own numbers and nothing else: the figure 31,469 is
@@ -858,19 +921,31 @@ failed", not graded.
    lines of 228 ticks give 31,399, 70 below it. Quantifier: the figure is a
    statement about the lines of the whole field, so it is graded on every
    complete line of every graded run, not on one run.
-5. **Preconditions.** The preconditions of MP5 in each run (MC1-MC5, section
-   3.7). The line is graded over the runs that hold them; their number and
-   `n` are printed. If no run holds them, the line is NOT GRADED (RECORDED),
-   never green.
-6. **Contrast.** No stimulus is known that gives the lines a mean of 227.5
-   ticks: HTOTAL (p.304) changes a line by whole colour clocks, and the pages
-   name no register that alternates 227 and 228. The contrast is therefore a
-   data substitution into the unchanged comparator, named: the lengths of the
-   lines of the graded runs are replaced by 227 and 228 ticks in alternation,
-   line after line, and the comparator of items 3 and 4 is applied to them.
-   Their mean is 227.5 ticks, `C` = 31,468.5, and the line must be green: the
-   comparator accepts the length the page's figure rests on, so its red on the
-   runs' own lines is a result of those lines. The selector is `MP5ALT`.
+5. **Preconditions.** In each run: the preconditions of MP5 (MC1-MC5, section
+   3.7), MP5 itself graded and green, and the run in the population of
+   MP5-FETCH with no line lacking a fetch. The last two make the factor "two
+   samples per line" of the formula a graded fact of every included run and
+   not an assumption. The line is graded over the runs that hold all of them;
+   their number `r` and `n` are printed, and so are the runs left out and
+   why. If no run holds them, the line is NOT GRADED (RECORDED), never green.
+6. **Contrast.** No stimulus on the repository's RTL is known that gives the
+   lines a mean of 227.5 ticks: HTOTAL (p.304) changes a line by whole colour
+   clocks, and the pages name no register that alternates 227 and 228. Two
+   records follow.
+   - *Comparator control* (`MP5ALT`): a data substitution into the unchanged
+     comparator, named: the lengths of the lines of the graded runs are
+     replaced by 227 and 228 ticks in alternation, line after line, and the
+     comparator of items 3 and 4 is applied to them. Their mean is 227.5
+     ticks, `C` = 31,468.5, and the line must be green. It is a self-test of
+     the arithmetic on lengths that are not measured at the port, and it is not
+     the green proof of the red on the runs' own lines.
+   - *Implementation green* (`NMH_ONLY=RATE make lc-test-fx68k`, `lc-test-tg68k`):
+     a private chip-set copy made from the tracked patch `ntsc_long.patch`,
+     whose NTSC lines alternate between 228 and 227 counts (p.23). On that
+     copy the runs, the preconditions, the population and the comparator are
+     those of the repository's RTL, with the lines measured at the port, and
+     the line prints its verdict through the unchanged comparator. The copy
+     is not tuned; its value is recorded as it prints.
 7. **Reference frames.** F1 (tick), F4 (line), F5 (port window).
 
 ### MP6. Both standards: every pass restarts at the start of the data
@@ -977,9 +1052,9 @@ failed", not graded.
 7. **Period 0.** p.140 "the maximum is 65535" against p.159 "its full range
    124-65536". What the value 0 does is not stated. It is excluded.
 8. **PAL line length.** p.23: "In PAL, they are all 227 long." p.304: "PAL
-   (625 lines, 227.5 colorclocks per scan line)". It affects only the
-   anchor check F1 (c), which accepts a line within `s` of either length and
-   none between them; for
+   (625 lines, 227.5 colorclocks per scan line)". No length is supported by
+   both pages. It affects only the anchor check F1 (c), which is a MEASURED
+   line in PAL (section 3.5) and prints the lengths and the conflict; for
    NTSC every line is graded against the two lengths p.23 names.
 9. **"Each allocated DMA time slot".** p.148 d: "Start retrieving audio data
    each allocated DMA time slot." Read literally, this would fetch in every
