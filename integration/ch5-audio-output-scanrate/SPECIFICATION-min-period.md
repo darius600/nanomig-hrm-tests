@@ -1217,14 +1217,22 @@ played again, and is green there.
   after an unmapped period.
 - MP1: 14 of 14 values of `S_hi` green. MP3: 15 of 15 (`P` = 123 and `S_hi`)
   green, MP3-123 included. At `P` = 428 the window holds 454 sample periods.
-- MP5: `P` = 1-113 green, at most one read at the channel's slot offset in a
-  line, 263 reads in the 263 complete lines, 31,538 samples/second over the
-  duration of those lines.
-- MP5-RATE: red. The 113 graded runs hold 29,719 complete lines of mean length
+- MP5: `P` = 1-113 green (single-channel runs), at most one read at the
+  channel's slot offset in a line, 263 reads in the 263 complete lines,
+  31,538 samples/second over the duration of those lines.
+- MP5-FETCH: green. The 113 runs of MP5 are in its population (2 P is at most
+  226 ticks, the shortest line 227), 29,719 complete lines, none without a read
+  at the channel's slot offset.
+- MP5-RATE: red. The 113 runs that are graded and green in MP5 and MP5-FETCH
+  hold 29,719 complete lines of mean length
   227.0000 ticks, so the capacity is 2 * 3,579,545 / 227.0000 = 31,537.8
-  samples/second, 68.8 above 31,469 against a tolerance of 3.125. The lines
+  samples/second, 68.8 above 31,469 against a tolerance of 3.125. The
+  endpoint error of the joined windows is at most 113 * 0.5 / 29,719 = 0.0019
+  tick, 0.26 samples/second. The lines
   of the NTSC runs are all 227 ticks long, not the 228 and 227 in alternation
   of p.23 whose mean of 227.5 ticks p.141's figure rests on (`NM-HRM-010`).
+  On the private copy of `ntsc_long.patch` the same line is green on both
+  cores (6.4).
 - MP6: NTSC 137 runs and PAL 137 runs graded, 525 complete passes in the
   windows of each standard. The line of each standard is red, and names `P` =
   110, 116 and 118; every other period is green. Evidence (identical on both
@@ -1237,6 +1245,9 @@ played again, and is green there.
     pass (T follows T+124 at 29,737 ticks).
 - `P` = 119-123 in the window `W = 60,000`: no off-table read, no double
   fetch, no short pass.
+- MC3 F1 (c) in PAL: a MEASURED line (section 3.5), not graded: 893 lines of
+  the port window, 227.000 ticks mean, shortest and longest, 893 within `s` of
+  227, none within `s` of 227.5, none in neither.
 - Totals, `make -k -B test`: both cores print `2678 passed, 18 failed`, of
   which SPECIFICATION.md's test contributes 126 passed, 0 failed. The 18
   failures are the MP2 lines at P = 120-123 ((a), (b) and (a) and (b)

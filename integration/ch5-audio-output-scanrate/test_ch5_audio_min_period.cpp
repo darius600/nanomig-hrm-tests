@@ -43,7 +43,7 @@
 //   measured: fx68k and TG68K: P = 119 red (next 499 of 503, repeat 2, skip 2); P = 64 red (next 732 of 936, repeat 204); 21 passed, 2 failed
 // MUTATION MP4 stimulus red NMH_MUTATE=MP4: the PAL MP4 comparator run at P = 124 and P = 64
 //   measured: fx68k and TG68K: P = 124 red (next 482 of 482); P = 64 green (next 732 of 936); 22 passed, 1 failed
-// MP5 (unfalsifiable at this boundary): no stimulus the pages permit makes the single enabled channel take a second slot in a line, so no
+// MUTATION MP5 none impossible unfalsifiable at this boundary: no stimulus the pages permit makes the single enabled channel take a second slot in a line, so no
 //   contrast can violate its bound. MP5 is graded on the single-channel runs only, label "the single enabled channel". NMH_MUTATE=MP5CH1 is a
 //   control, not a mutation, and its MP5 line is NOT GRADED: NTSC P = 64 with channel 1 also set up on the same table, period 64, DMACON $8203
 //   measured: fx68k and TG68K: MP5 not graded (2 channels enabled), the MEASURED line shows one read per observed slot offset (114 cycles: 1;
