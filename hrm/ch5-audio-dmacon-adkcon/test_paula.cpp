@@ -120,15 +120,18 @@
 // MEASUREMENT BASIS, DIRECT MODE: paula_audio_channel enters its
 //   processor-driven ("direct") path on an AUDxDAT write while dmaena is
 //   low, bypassing the DMA length/period counters entirely (page 137).
-//   With AUDxVOL=64 the multiply-path volume input collapses onto 63
-//   (paula_audio_mixer.v:25-31 OR's vol[6] into every bit fed to
-//   paula_audio_volume, per BOUNDARIES.md's own note #1) so a channel's
-//   sample S (signed 8-bit, from AUDxDAT's own high byte) produces
-//   ldata/rdata = S*63 once mixed with a silent (0) channel on the other
-//   half of that stereo side -- this is not assumed, it is the exact
-//   arithmetic that reproduces the evidence already measured for claim
-//   5-p150.c24 ("channel 0 alone peaked ldata at 8001" with AUD0VOL=64,
-//   AUD0DAT=0x7F7F: sample=0x7F=127, 127*63=8001, matched exactly).
+//   The two direct-mode assertions (DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA,
+//   CHANNELS-INDEPENDENTLY-PROGRAMMABLE) write AUDxVOL=63. The printed
+//   pages (pp.136/137) say only that sound is produced without DMA and
+//   that the channels are programmed independently; they name no output
+//   value. The expected values are the linear product of the signed 8-bit
+//   sample S (AUDxDAT's high byte) and the volume 63, once mixed with a
+//   silent (0) channel on the other half of that stereo side:
+//   S=0x7F=127 -> 127*63=8001, S=0x01 -> 63, S=0x40=64 -> 64*63=4032.
+//   Volume 63 is chosen so that these lines do not rest on what volume 64
+//   does. Table 5-9 (p.163) lists 64 = 0.0 dB and 63 = -0.1 dB as two
+//   distinct levels; whether volume 64 has a gain of its own is covered by
+//   NM-HRM-025, not by these lines.
 //   ldata sums channels 0+3, rdata sums channels 1+2
 //   (paula_audio_mixer.v:76-77, NM-HRM-002 territory, not retested here).
 //
@@ -834,7 +837,7 @@ int main(int argc, char** argv) {
     // Measured by VCD trace, not assumed.
     {
         Harness h1;
-        h1.write_reg(AUD0VOL_W, 64);
+        h1.write_reg(AUD0VOL_W, 63);
         h1.write_reg(AUD0PER_W, 8);  // Small period: lets the one word's two bytes (state 3, then 4) both emerge inside the capture window.
 #if MUT_DIRECT
         h1.write_reg(AUD0DAT_W, 0x0101);  // MUTATION: the "first" trial writes the SECOND trial's own word.
@@ -845,7 +848,7 @@ int main(int argc, char** argv) {
         int peak1 = signed_peak(t1.ldata);
 
         Harness h2;
-        h2.write_reg(AUD0VOL_W, 64);
+        h2.write_reg(AUD0VOL_W, 63);
         h2.write_reg(AUD0PER_W, 8);
         h2.write_reg(AUD0DAT_W, 0x0101);  // sample=0x01=1 (both bytes equal, order-independent); 1*63=63.
         Trace t2 = capture(h2, 200);
@@ -856,9 +859,11 @@ int main(int argc, char** argv) {
         bool distinct = first_matches && second_matches && peak1 != peak2;
         checks.expect(distinct,
             "DIRECT-MODE-PRODUCES-SOUND-WITHOUT-DMA: with DMAEN/AUD0EN never "
-            "set (dmaena permanently 0), writing AUD0VOL=64 then "
+            "set (dmaena permanently 0), writing AUD0VOL=63 then "
             "AUD0DAT=0x7F7F (sample=127) makes ldata peak at 127*63=8001 -- "
-            "matching the exact number already measured for this claim -- "
+            "(the page names no value; volume 63 is written so the line "
+            "does not rest on what volume 64 does, which NM-HRM-025 "
+            "covers: Table 5-9, p.163, lists 64 = 0.0 dB and 63 = -0.1 dB) "
             "and, from a separate fresh reset, a distinct AUD0DAT=0x0101 "
             "(sample=1) makes it peak at 1*63=63 instead -- proving both "
             "that sound is produced with no DMA at all and that this "
@@ -874,25 +879,25 @@ int main(int argc, char** argv) {
     // ---------------- CHANNELS-INDEPENDENTLY-PROGRAMMABLE ----------------
     {
         Harness h0;
-        arm_direct(h0, AUD0VOL_W, AUD0DAT_W, 64, 0x7F00);  // channel 0 sample=127.
+        arm_direct(h0, AUD0VOL_W, AUD0DAT_W, 63, 0x7F00);  // channel 0 sample=127.
         Trace t0 = capture(h0, 200);
         int ch0_ldata = signed_peak(t0.ldata);
         int ch0_rdata = signed_peak(t0.rdata);
 
         Harness h1;
-        arm_direct(h1, AUD1VOL_W, AUD1DAT_W, 64, 0x7F00);  // channel 1 sample=127.
+        arm_direct(h1, AUD1VOL_W, AUD1DAT_W, 63, 0x7F00);  // channel 1 sample=127.
         Trace t1 = capture(h1, 200);
         int ch1_ldata = signed_peak(t1.ldata);
 #if MUT_INDEP
-        arm_direct(h1, AUD0VOL_W, AUD0DAT_W, 64, 0x7F00);  // MUTATION: channel 0 armed too.
+        arm_direct(h1, AUD0VOL_W, AUD0DAT_W, 63, 0x7F00);  // MUTATION: channel 0 armed too.
         t1 = capture(h1, 200);
         ch1_ldata = signed_peak(t1.ldata);
 #endif
         int ch1_rdata = signed_peak(t1.rdata);
 
         Harness hboth;
-        arm_direct(hboth, AUD0VOL_W, AUD0DAT_W, 64, 0x7F00);  // channel 0 sample=127 -> 8001.
-        arm_direct(hboth, AUD1VOL_W, AUD1DAT_W, 64, 0x4000);  // channel 1 sample=64 -> 4032.
+        arm_direct(hboth, AUD0VOL_W, AUD0DAT_W, 63, 0x7F00);  // channel 0 sample=127 -> 8001.
+        arm_direct(hboth, AUD1VOL_W, AUD1DAT_W, 63, 0x4000);  // channel 1 sample=64 -> 4032.
         Trace tboth = capture(hboth, 200);
         int both_ldata = signed_peak(tboth.ldata);
         int both_rdata = signed_peak(tboth.rdata);
@@ -902,9 +907,12 @@ int main(int argc, char** argv) {
         bool both_ok = both_ldata == 8001 && both_rdata == 4032;
         checks.expect(ch0_alone_ok && ch1_alone_ok && both_ok,
             "CHANNELS-INDEPENDENTLY-PROGRAMMABLE: arming channel 0 alone "
-            "(AUD0VOL=64, AUD0DAT hi-byte 0x7F) peaks ldata at 8001 while "
+            "(AUD0VOL=63, AUD0DAT hi-byte 0x7F) peaks ldata at 8001 while "
             "rdata stays silent; arming channel 1 alone the same way peaks "
-            "rdata at 8001 while ldata stays silent; arming both at once, "
+            "rdata at 8001 while ldata stays silent (the page names no "
+            "value; volume 63 is written so the line does not rest on what "
+            "volume 64 does, which NM-HRM-025 covers: Table 5-9, p.163, "
+            "lists 64 = 0.0 dB and 63 = -0.1 dB); arming both at once, "
             "with DIFFERENT sample values (channel 0 0x7F -> 8001, channel "
             "1 0x40 -> 4032), makes both sides peak at their OWN "
             "independently-predicted value simultaneously, neither "
