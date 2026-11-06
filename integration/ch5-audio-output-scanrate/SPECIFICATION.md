@@ -728,8 +728,9 @@ not enter the count, and the last level is graded like the rest.
         is set, bounded by 8 vertical-blank requests (2.3). Store whether it
         was seen. It is not graded.
      9. DSKLEN = $4000 (p. 247 step 5). INTREQ = $0002.
-   - **No drive is selected.** The program's one CIA write is CLEAR_OVL, a
-     single write to CIA-A port A ($BFE001); drive selection is entirely on
+   - **No drive is selected.** The program's CIA writes are CLEAR_OVL: DDRA
+     ($BFE201, "Direction for port A (BFE001)", p. 339) and CIA-A port A
+     ($BFE001); drive selection is entirely on
      CIA-B port B (p. 241: "CIABPRB ($BFD100) eight output bits for disk
      selection, control and stepping"; p. 244-245: the PB bits, DSKSEL0-3
      and DSKMOTOR; p. 339-340: BFE001's own bits are /FIR1, /FIR0, /RDY,
@@ -863,14 +864,18 @@ mechanism `load_program()` itself uses; no program instruction writes it.
 Every item below is a labelled measurement, on both cores unless stated
 otherwise.
 
-- **Chip bank 0.** T1/T2/T3 and the two disk buffers sit below $080000
-  (2.1), inside the range the boot-time Kickstart overlay otherwise
-  redirects. Both `prog_audio.s` and `prog_diskrate.s` start with a single
-  write of $00 to $BFE001 (CIA-A port A, `CLEAR_OVL` in `ch5regs.i`).
-  Measured: this makes that range real memory for both the CPU's own
-  accesses and the audio/disk DMA engines'. CIA-A port A carries no
+- **Chip bank 0.** T1/T2/T3, T2S and the two disk buffers sit below
+  $080000 (2.1), the range p. 223 gives to the boot-time overlay.
+  `prog_audio.s`, `prog_t2s.s` and `prog_diskrate.s` each start with a write
+  of $03 to $BFE201 (CIA-A DDRA) and one of $02 to $BFE001 (CIA-A port A,
+  `CLEAR_OVL` in `ch5regs.i`), because of pp. 223, 341 and 354. p. 223 does
+  not separate CPU accesses from DMA accesses, and no run leaves the writes
+  out, so the package does not show what the overlay does to the audio and
+  disk DMA engines. Measured: with these writes the DMA engines' reads reach
+  this range (tables and buffers); these three programs make no CPU access
+  to it (`MUT_P1LAST`'s one byte write, a mutant, aside). CIA-A port A carries no
   drive-select line (those are CIA-B port B, p.241, p.244-245, p.339-340),
-  so P6's "no drive is selected" condition does not depend on this write.
+  so P6's "no drive is selected" condition does not depend on these writes.
 - **Time base.** F1's anchor, measured inside the interval it is used in
   (P6's own graded interval, read k=16 to k=528 of each run), comes out at
   227.00 color clocks per line on both cores, every configuration, inside
@@ -909,7 +914,8 @@ otherwise.
   passed or failed, so P1-P4, P3B and A1, A3-A5 do not depend on it.
   Measured, ECS/PAL and OCS/PAL alike: reads of the table's words before
   t_2, against the table's length. T1: 3 of 4 on all three builds. T2: 4 of
-  4. T3: 256 of 256. T2S (its own program, `prog_t2s.s`, run from a clean
+  4 on the first core, 3 of 4 on the second. T3: 256 of 256 on the first
+  core, 255 of 256 on the second. T2S (its own program, `prog_t2s.s`, run from a clean
   boot independent of T1/T2/T3): 2 of 2. With the anchor taken from t_2, A1
   holds for every table on all three builds, and P1-P4 and P3B are graded on
   every run.

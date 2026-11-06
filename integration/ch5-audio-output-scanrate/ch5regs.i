@@ -23,17 +23,19 @@ HTOTAL          equ     $1C0    ; W  ECS only (p.304)
 VTOTAL          equ     $1C8    ; W  ECS only (p.304)
 BEAMCON0        equ     $1DC    ; W  ECS only (p.304-305)
 
-; CIA-A Port A data register. A single write here, measured, is what
-; makes chip RAM below $080000 (the range the audio/disk pointer
-; registers must target, 2.1) real instead of the boot-time
-; Kickstart-shadow window. It is a CIA-A write only; no floppy drive
-; select line is touched (see SPECIFICATION.md section 5).
+; CIA-A Port A data and direction registers. With DDRA bit 0 set to output,
+; writing OVL (PRA bit 0) low makes chip RAM below $080000 (the range the
+; audio/disk pointer registers must target, 2.1) real instead of the
+; boot-time Kickstart-shadow window (pp. 223, 341). Both are CIA-A writes;
+; no floppy drive select line is touched (see SPECIFICATION.md section 5).
 CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
 
-; Clear the overlay: a write of $00 to CIA-A port A does this, measured
-; (see SPECIFICATION.md section 5). CIA-A port A carries no drive-select
+; Clear the overlay: DDRA <- $03, then PRA <- $02 (OVL low, /LED high; pp. 223,
+; 339, 341; see SPECIFICATION.md section 5). CIA-A carries no drive-select
 ; line (those are CIA-B port B, p.241, p.244-245, p.340); P6's "no drive
-; is selected" condition does not depend on this register.
+; is selected" condition does not depend on these registers.
 CLEAR_OVL       macro
-                move.b  #0,CIAAPRA
+                move.b  #$03,CIAADDRA
+                move.b  #$02,CIAAPRA
                 endm

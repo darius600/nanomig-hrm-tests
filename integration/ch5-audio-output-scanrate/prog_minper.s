@@ -24,7 +24,6 @@
         include "nanomig.i"
         include "ch5regs.i"
 
-CIAADDRA equ    $BFE201
 AUD1LCH equ     $0B0
 AUD1LEN equ     $0B4
 AUD1PER equ     $0B6
