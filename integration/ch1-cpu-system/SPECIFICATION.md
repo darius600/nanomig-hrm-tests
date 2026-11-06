@@ -1253,8 +1253,8 @@ anchors are P7.a and P7.b.
 ## 11. Build
 
 - **Addresses.** `PROGRAM_ORG` ($080400) is the harness's own fixed code
-  entry; every program's first instruction clears the boot overlay
-  (`CIAAPRA`, $BFE001, any write) so that the identity-mapped range
+  entry; every program's first instructions clear the boot overlay
+  (`CIAADDRA` $BFE201 <- $03, then `CIAAPRA` $BFE001 <- $00; pp. 223, 341) so that the identity-mapped range
   extends down to $000000, making 2.2's own literal addresses ($3E00, $3FF0,
   $4000-$458F, $8000 taken as "wherever code starts") real, writable chip
   RAM, including P1's abs.W cases and P5's exception vectors.
@@ -1272,18 +1272,18 @@ anchors are P7.a and P7.b.
   access at the operand, a write, and 7 of the 7 long-word cases showed no
   read and a write to both words; case 1 (.B (An)) shows a write of $A500
   and no read. The run's RAM-port log differs from P1's own run of the same
-  program under cpu_config=00: the first entry that differs is entry 54 (of
-  746 entries in this run and 718 in P1's run). P4's two relation lines are
+  program under cpu_config=00: the first entry that differs is entry 58 (of
+  750 entries in this run and 722 in P1's run). P4's two relation lines are
   green against p.13 and p.263 on the default TG68K build. The first core has
   no 68020 mode and does not run it.
 - **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10).
   D(68000 mode) is 1 on both cores and D(68020 mode) is 1 on the second core,
   the same image; the 68020-mode RAM-port log is identical, entry for entry,
-  to the 68000-mode log of the same image (239 entries). P6's relation line
+  to the 68000-mode log of the same image (245 entries). P6's relation line
   is red against p.13 on the TG68K build.
 - **Measured, P7 (section 9).** In the 68000 mode (both cores) MOVE SR stores
   $0708 at DEST and the TRAP handler runs (MRK_TRAP $7002, MRK_PRIV $0000;
-  24 port accesses in the window). In the 68010 and the 68020 mode the
+  24 port accesses in the window on the second core, 20 on the first). In the 68010 and the 68020 mode the
   instruction raises the privilege-violation exception: DEST keeps $5555,
   the privilege handler runs (MRK_PRIV $7001, MRK_TRAP $0000), and the
   exception frame is four words (21 port accesses). The records first differ

@@ -13,9 +13,9 @@
 ; the rules above still hold").
 ;
 ; Every program below clears the boot overlay (CLEAR_OVL) as its very
-; first instruction, exactly as ch2-copper-control, ch4-shres-sprite-b,
-; ch5-audio-output-scanrate and ch6-blitter-geometry already do: one CIA-A
-; write is what makes $000000-$07FFFF ordinary, real, identity-mapped chip
+; first instructions, exactly as ch2-copper-control, ch4-shres-sprite-b,
+; ch5-audio-output-scanrate and ch6-blitter-geometry already do: DDRA bit 0
+; set to output, then OVL written 0 (pp. 223, 341), makes $000000-$07FFFF ordinary, real, identity-mapped chip
 ; RAM at this boundary, needed for SPECIFICATION.md 2.2's literal
 ; addresses (including P1's own abs.W cases, 2.2: "P1's absolute-short
 ; cases need their operand below $8000", and P5's exception vectors,
@@ -70,7 +70,9 @@ FARZ            equ     $1FFFFE
 
 ; ---- CIA-A: clears the boot overlay (see header) ----------------------
 CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
 CLEAR_OVL       macro
+                move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
                 endm
 
