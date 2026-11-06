@@ -13,7 +13,7 @@
 | **Module** | `denise_collision.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/denise_collision.v#L62-L63) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63); inherited (identical in MiSTer and TC64) |
 | **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers): `make -C hrm/ch3-collision-registers test` · [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode): `make -C hrm/ch7-collision-playfield-mode test`; an expected red exits nonzero |
 | **Assertions** | 9 red. `hrm/ch3-collision-registers` (`32 passed, 4 failed`): `BITMAP-PAIR PF1-SPR01`, `PF1-SPR23`, `PF1-SPR45`, `PF1-SPR67` — expected exactly CLXDAT bit 1, 2, 3 or 4 set (`$0002`, `$0004`, `$0008`, `$0010`); the FAIL lines print no observed value, and the same stimulus reads `$0000` at `dblpf=0` in `A1-PLAYFIELD-MODE-INVARIANCE`. `hrm/ch7-collision-playfield-mode` (`16 passed, 5 failed`): `A1-PLAYFIELD-MODE-INVARIANCE PF1-SPR01`, `PF1-SPR23`, `PF1-SPR45`, `PF1-SPR67` — expected `CLXDAT & 0x7FFF` at `dblpf=0` equal to that at `dblpf=1`, observed `$0000` against `$0002`, `$0004`, `$0008`, `$0010`; `A3-PLAYFIELD-1-IS-ODD-BITPLANES dblpf=0` — expected only-BP1-matched to set bit 1, observed `$0000` |
-| **Verdict of the four** | **unanimous with NanoMig, against pp. 214 and 273**: WinUAE, vAmiga, Denise and Copperline all register a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well. Copperline's expression is NanoMig's term for term; WinUAE's changelog calls p. 214's sentence wrong and vAmiga's comment calls the gate a hardware oddity; vAmiga also applies it in dual-playfield mode where playfield 1 is opaque and shown ([`Denise.h:494-499`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.h#L494-L499)); outside the emulators, the 8373R4 dissection gates the playfield-1 match on the even planes when BPLCON0's DPF bit is clear, as NanoMig does — see *What other Commodore documents say*. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig, against pp. 214 and 273**: WinUAE, vAmiga, Denise and Copperline all register a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well. Copperline's expression is NanoMig's term for term; WinUAE's changelog calls p. 214's sentence wrong and vAmiga's comment calls the gate a hardware oddity; vAmiga also applies it in dual-playfield mode where playfield 1 is opaque and shown ([`Denise.h:494-499`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.h#L494-L499)); outside the emulators, the 8373R4 dissection gates the playfield-1 match on the even planes when BPLCON0's DPF bit is clear, as NanoMig does — see *What other Commodore documents say*. Hardware: not run here; photographs of an OCS and an ECS A500 show the gate on CLXDAT bits 1 and 3 (*What photographs of real machines show*) |
 | **Effort** | none; if the pages are confirmed as printed, S: drop `(dblpf | evenmatch)` from `denise_collision.v:62` |
 
 ---
@@ -113,9 +113,10 @@ they are green at the pinned revision and stayed green in that copy.
 ## Risks and unknowns
 
 - **One revision of silicon.** The 8373R4 dissection is of the ECS Denise, a work in
-  progress; the original chip set's Denise is not dissected, and for it the four
-  implementations, none of which conditions the gate on the chip set, are the only
-  witnesses. The gate and the DPF latch are traced transistor by transistor (sheets
+  progress; the original chip set's Denise is not dissected. For it the witnesses are
+  the four implementations, none of which conditions the gate on the chip set, and the
+  OCS photographs under *What photographs of real machines show*, which reach bits 1
+  and 3 only. The gate and the DPF latch are traced transistor by transistor (sheets
   7p and 7j); that CLXDAT bits 1 to 4 take the gated match is read from sheet 4hi,
   which draws bit 0's cell transistor by transistor and the others as blocks with
   their inputs, noting "layout of all cells is pretty similar"; the data-bus input is drawn for D0 alone (sheet 3a, where D0in
@@ -176,6 +177,31 @@ they are green at the pinned revision and stayed green in that copy.
 
   With DPF clear, in single-playfield mode, the odd-plane match that CLXDAT bits 1 to 4 record fails wherever an enabled even plane misses its match value; with DPF set the even planes drop out. That is NanoMig's playfield-2 term on line 62, and not what pp. 214 and 273 print.
 
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision),
+vAmiga's test suite, publishes a screen photograph per program. The file names say
+A500 ECS and A500 OCS; no chip revision is named. These programs draw CLXDAT, read
+once a frame, as 16 bars with bit 15 on top. Sprites 0 and 4 lie over bitplane 1 = 0
+with its match value 0, so playfield 1 matches under them in all three; the programs
+differ in BPLCON0's DPF bit and in whether bitplane 2 is enabled in `CLXCON`.
+
+| Program | DPF | `CLXCON` | Bitplane 2 under the sprites | Bars lit, the same on both photographs |
+|---|---|---|---|---|
+| [`sprcoll8`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8/sprcoll8.s) ([ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8/sprcoll8_A500_ECS.JPG), [OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8/sprcoll8_A500_OCS.JPG)) | clear | `$F0C0` | 1, its match value 0: no match | 15, 10, 0 |
+| [`sprcoll8d`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8d/sprcoll8d.s) ([ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8d/sprcoll8d_A500_ECS.JPG), [OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll8d/sprcoll8d_A500_OCS5.JPG)) | set | `$F0C0` | 1, its match value 0: no match | 15, 10, 3, 1, 0 |
+| [`sprcoll7`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll7/sprcoll7.s) ([ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll7/sprcoll7_A500_ECS.JPG), [OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/sprcoll7/sprcoll7_A500_OCS5.JPG)) | clear | `$F040` | not enabled | 15, 10, 7, 5, 3, 1, 0 |
+
+Bits 1 and 3 are playfield 1 to sprites 0 and 4. Under the same stimulus they are lit
+with DPF set and dark with DPF clear, and they are lit with DPF clear once bitplane 2
+leaves the comparison. That is the term `(dblpf | evenmatch)` of `denise_collision.v:62`,
+and not pp. 214 and 273 as printed. Sprites 2 and 6 are not used, so bits 2 and 4 show
+nothing. The suite's [README](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/collision/README.md) says the same of these programs:
+*"sprcol8 and sprcol8d exhibit a hardware oddity: If playfield 2 doesn't match in
+single-playfield mode, playfield 1 can't match either. In dual-playfield mode,
+everything works as expected."* The bars are read from the photographs, with the
+brightness of each bar measured; the programs were not run on a machine here.
+
 ### What practitioners report
 
 Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
@@ -190,7 +216,7 @@ Toni Wilen, WinUAE's author, says p. 214's single-versus-dual-playfield sentence
 
 **No RTL change.** NanoMig already gates playfield 1 on playfield 2 in
 single-playfield mode, as all four independent implementations and the 8373R4
-silicon do. Dropping the playfield-2 term from line 62,
+silicon do and as photographs of an OCS and an ECS A500 show. Dropping the playfield-2 term from line 62,
 
 ```verilog
 assign oddmatch = bm[6] & bm[4] & bm[2] & bm[0];
