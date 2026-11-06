@@ -12,10 +12,10 @@
 ; instruction in this program ever has to write the table data itself,
 ; only the pointer/length/period/volume/enable registers that tell the
 ; audio DMA engine where to read it. CLEAR_OVL (ch5regs.i) runs once,
-; first, because chip bank 0 (where the tables and T1_ADDR/T2_ADDR/T3_ADDR
-; sit, all below $080000 per 2.1) is the range p. 223 gives to the
-; overlay; no run leaves it out, so none shows what the overlay does to
-; the audio DMA engine (see SPECIFICATION.md section 5).
+; first: chip bank 0 (where the tables and T1_ADDR/T2_ADDR/T3_ADDR sit, all
+; below $080000 per 2.1) starts at the address from which p. 223 has the
+; ROM copy respond, and the page gives no end address. No run leaves it
+; out, so none shows what the overlay does to audio DMA (SPECIFICATION.md 5).
 ;
 ;
 ; P1-P4's own contrasting cases (T1's last word, every T1 word's bytes,

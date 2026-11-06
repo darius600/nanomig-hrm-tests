@@ -39,8 +39,9 @@ WAITBLT         macro
                 endm
 
 ; Clear the overlay (DDRA bit 0 to output, then OVL written 0; pp. 223, 341), because chip0's
-; RAM ($000000-$07FFFF) is the range p. 223 gives to the overlay; no run
-; leaves these writes out, so none shows what the overlay does to DMA.
+; RAM ($000000-$07FFFF) starts at the address from which p. 223 has the ROM
+; copy respond, with no end address; no run leaves these writes out, so
+; none shows what the overlay does to DMA.
 CLEAR_OVL       macro
                 move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA

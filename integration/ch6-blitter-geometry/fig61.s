@@ -3,9 +3,9 @@
 ; (6-dma-channels.c30, c31, c32, ch6-dma.f1, f2, f3). BLTAPT = word
 ; address 20 (byte $28), 7 words/row, 6 rows -- channel-A reads must
 ; cover exactly words 20..61. The overlay is cleared first: word 20 is
-; inside $000000-$07FFFF, the range p. 223 gives to the overlay. No run
-; leaves the clear out, so none shows what the overlay does to blitter
-; DMA.
+; close above $00000000, where p. 223 has the ROM copy start, and the page
+; gives no end address. No run leaves the clear out, so none shows what
+; the overlay does to blitter DMA.
         include "nanomig.i"
         include "geom.i"
 

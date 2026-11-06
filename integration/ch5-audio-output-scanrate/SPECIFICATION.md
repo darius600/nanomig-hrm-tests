@@ -865,7 +865,8 @@ Every item below is a labelled measurement, on both cores unless stated
 otherwise.
 
 - **Chip bank 0.** T1/T2/T3, T2S and the two disk buffers sit below
-  $080000 (2.1), the range p. 223 gives to the boot-time overlay.
+  $080000 (2.1), in the bank that starts where p. 223 has the ROM copy
+  respond; the page gives no end address.
   `prog_audio.s`, `prog_t2s.s` and `prog_diskrate.s` each start with a write
   of $03 to $BFE201 (CIA-A DDRA) and one of $02 to $BFE001 (CIA-A port A,
   `CLEAR_OVL` in `ch5regs.i`), because of pp. 223, 341 and 354. p. 223 does

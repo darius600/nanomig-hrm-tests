@@ -7,9 +7,9 @@
 ; sequence (p.247 steps 1-5). No drive is selected and the program makes
 ; no CIA-B write, so no floppy select/motor line is ever driven (2.9);
 ; the CIA-A writes (CLEAR_OVL) are made because chip bank 0, where the
-; two buffers sit (both below $080000, 2.1), is the range p. 223 gives to
-; the overlay; no run leaves them out, so none shows what the overlay does
-; to the disk DMA engine (see SPECIFICATION.md section 5).
+; two buffers sit (both below $080000, 2.1), starts at the address from
+; which p. 223 has the ROM copy respond, with no end address. No run leaves
+; them out, so none shows what the overlay does to disk DMA (SPECIFICATION.md 5).
 ;
 ; Buffers A and B are poked with $AAAA in every word by the C++ test
 ; before boot() (p.249/p.250: a run of data zeros encodes as $AAAA),

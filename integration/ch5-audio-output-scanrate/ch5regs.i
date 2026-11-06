@@ -24,10 +24,10 @@ VTOTAL          equ     $1C8    ; W  ECS only (p.304)
 BEAMCON0        equ     $1DC    ; W  ECS only (p.304-305)
 
 ; CIA-A Port A data and direction registers. With DDRA bit 0 set to output,
-; writing OVL (PRA bit 0) low makes chip RAM below $080000 (the range the
-; audio/disk pointer registers must target, 2.1) real instead of the
-; boot-time Kickstart-shadow window (pp. 223, 341). Both are CIA-A writes;
-; no floppy drive select line is touched (see SPECIFICATION.md section 5).
+; writing OVL (PRA bit 0) low disables the overlay (pp. 223, 341); what
+; that does to DMA no run here shows (SPECIFICATION.md section 5). The
+; audio/disk pointer registers target chip RAM below $080000 (2.1). Both are
+; CIA-A writes; no floppy drive select line is touched.
 CIAAPRA         equ     $BFE001
 CIAADDRA        equ     $BFE201
 
