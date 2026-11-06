@@ -18,7 +18,8 @@ PLANEBMP2       equ     SCRATCH+$22000  ; that no constant row modulo reaches
 PLANEBMP3       equ     SCRATCH+$23000  ; from one into the next
 
 ; DFF register offsets not in nanomig.i (not custom chip DMA registers).
-CIAAPRA         equ     $BFE001         ; any write here clears the overlay
+CIAAPRA         equ     $BFE001         ; PRA bit 0 is OVL (p.339)
+CIAADDRA        equ     $BFE201         ; DDRA, bit 0 = 1 drives OVL (p.341)
 
 ; DMACON: bit15 SET, bit10 BLTPRI(unused), bit9 DMAEN, bit6 BLTEN.
 DMACON_BLTEN    equ     $8240
@@ -37,10 +38,11 @@ WAITBLT         macro
                 bne.s   .wb\@
                 endm
 
-; Clear the overlay (any write to CIA-A, per minimig.v) so chip0's real
-; RAM ($000000-$07FFFF) is reachable instead of the read-only kickstart
-; shadow / disabled overlay window.
+; Clear the overlay (DDRA bit 0 to output, then OVL written 0; pp. 223, 341), because chip0's
+; RAM ($000000-$07FFFF) is the range p. 223 gives to the overlay; no run
+; leaves these writes out, so none shows what the overlay does to DMA.
 CLEAR_OVL       macro
+                move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
                 endm
 

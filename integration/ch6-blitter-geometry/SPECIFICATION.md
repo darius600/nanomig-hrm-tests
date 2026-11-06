@@ -433,9 +433,10 @@ columns x 6 rows) -- testable as the blit geometry it depicts rather than
 as a picture.
 
 Program: BLTAPT = word address 20 ($000028), a plain copy, width 7,
-height 6, BLTAMOD=0. The overlay is cleared first (any write to CIA-A):
-word 20 is inside $000000-$07FFFF, and while the overlay is active chip0's
-own bank is gated by "!ovl || cpu_hlt", not just CPU reads.
+height 6, BLTAMOD=0. The overlay is cleared first (DDRA bit 0 to output, then OVL written 0; pp. 223, 341):
+word 20 is inside $000000-$07FFFF, the range p. 223 gives to the overlay.
+No run leaves the writes out, so this program does not show what the
+overlay does to the blitter's DMA reads.
 
 Observed: `ram_log()`, channel A's read accesses, coalesced.
 
