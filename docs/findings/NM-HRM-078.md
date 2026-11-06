@@ -272,8 +272,9 @@ not ($0748 with and without a key on fx68k, $090D on TG68K).
   what KCLK pulses on CIA-A's CNT would give. They read what an unread bit 5
   gives, but with no KCLK path they would not read the page's values with bit 5
   read either, so a timer that read bit 5 and had no KCLK path would stay red
-  on them: these three do not isolate bit 5. The excess decrement is either an
-  ignored bit 5 or a missing KCLK path. Mode 11 counting as mode 10 is what
+  on them: these three do not isolate bit 5. The decrements of 2236 and 1782 are
+  what an ignored bit 5 gives; a missing KCLK path alone would leave the count
+  below 8, not above it. Mode 11 counting as mode 10 is what
   NanoMig's unread bit 5 gives; it is also what a timer that read bit 5 would
   give with a CNT that no key pulses, as MiSTer's does with CNT tied high.
 - **Mode 11 is graded on CIA-A only.** `P8.65-MODE11-PAIRN`, green, with no key
