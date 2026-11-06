@@ -1120,7 +1120,10 @@ both cores printed the same.
   contrast of the done marker (`FIXDONE`) runs `prog_nodone.s`, which
   SPECIFICATION.md's part of the package also uses. The data contrast of
   MP5-RATE (`MP5ALT`) has no program: it feeds the unchanged comparator line
-  lengths of 227 and 228 ticks in alternation. The period contrasts (MP1-MP4, MC3 time scale, MC6)
+  lengths of 227 and 228 ticks in alternation. The contrast of MP5-FETCH
+  (`MP5FETCH`) uses `prog_minper.s` with `AUD0PER` 120 poked and 100 declared.
+  The implementation record of MP5-RATE runs the programs of the normal run
+  against the private chip-set copy of `ntsc_long.patch`. The period contrasts (MP1-MP4, MC3 time scale, MC6)
   change only the poked parameter, the standard contrast (MC1) only the
   harness standard. The vasm listings of the normal program and of the MC2,
   MC4 and MP5 variants show `MOVE.W #$0002,(A1)` for the word at `T+128` and
@@ -1131,7 +1134,7 @@ both cores printed the same.
   of the MC3 contrasts, and the horizontal position 8 of the MC5 stop. The
   line number 753 is the one at which the write falls in the last runs of the
   256 level runs of the reference window: F1 (a) goes red and F1 (b), F1 (c)
-  and F4 stay green on both cores (section 6.4). The line number 800 falls
+  (NTSC) and F4 stay green on both cores (section 6.4). The line number 800 falls
   after those 256 runs and inside the port window. The line number 1140 falls
   after the last wrap of the port window and still inside it: F4 goes red, the
   229 table fetches lying at the two offsets 114 and 130 cycles, and F1 (b)
@@ -1166,10 +1169,10 @@ Reference run `P_ref = 447`, NTSC and PAL, fx68k and TG68K:
   The fetch time is known to one line, which is why the tolerance is a line
   over the number of fetches and not one cycle.
 - The 893 complete lines of the port window are all 227.000 ticks long in
-  NTSC and in PAL, none outside 226.875 ... 228.125 ticks (NTSC), and in PAL
-  all within `s` = 0.125 tick of 227 (226.875 ... 227.125), none in
-  227.375 ... 227.625 or between the two intervals, which do not touch since
-  `s` < 0.25, so F1 (c) holds in both. None is 228
+  NTSC and in PAL. NTSC: none outside 226.875 ... 228.125 ticks, so F1 (c)
+  holds. PAL: F1 (c) is a MEASURED line (p.23 says 227, p.304 says 227.5, no
+  length is supported by both); it prints 893 lines within `s` = 0.125 tick of
+  227, none within `s` of 227.5, none in neither. None is 228
   ticks and none differs from its predecessor: the NTSC alternation of p.23
   and the 227.5-clock mean of p.194 are not present at the port; they are
   printed and not graded (`NM-HRM-010`).
@@ -1254,8 +1257,10 @@ under `MC5STOP` (see its row).
 | `MP2` | MP2 | `P` = 124, `P` = 64 | 124 red in (a), (b) and (a) and (b); 64 green in all three (control of the union line: reuse 0, repeat 204) |
 | `MP3` | MP3 | `P` = 119, `P` = 64 | both red |
 | `MP4` | MP4 | `P` = 124, `P` = 64 | 124 red, 64 green |
-| `MP5CH1` | MP5 (control, not a mutation) | NTSC 64, channel 1 on `T` | green, one read per channel in every line |
-| `MP5ALT` | MP5-RATE (comparator control by a data substitution) | NTSC 64 and 100, line lengths replaced by 227 and 228 ticks in alternation | green (31,468.5 samples/second); the normal run is red (31,538) |
+| `MP5CH1` | MP5 (control, not a mutation) | NTSC 64, channel 1 on `T` | MP5 not graded (2 channels); one read per observed slot offset in every line, MEASURED |
+| `MP5FETCH` | MP5-FETCH | NTSC `AUD0PER` 120 declared 100; NTSC 64 as the green input | 120 declared 100 red (14 of 263 lines without a fetch), MC1-MC5 and MP5 green on it; 64 green |
+| `MP5ALT` | MP5-RATE (comparator control by a data substitution, not the red's green proof) | NTSC 64 and 100, line lengths replaced by 227 and 228 ticks in alternation | green (31,468.5 samples/second); the normal run is red (31,538) |
+| `NMH_ONLY=RATE` on `lc-test-fx68k`, `lc-test-tg68k` | MP5-RATE (implementation green) | private chip-set copy of `ntsc_long.patch`, NTSC lines 228 and 227 alternating | green on both cores: 31,468.5 samples/second over 29,606 lines of mean length 227.5000 ticks (the normal run is red at 31,537.8) |
 | `MP6GREEN` | MP6 (comparator control, not a mutation) | NTSC and PAL, `P` = 64 and 124 | green (the normal run is red at 110, 116, 118) |
 | `MP6LEN` | MP6 | NTSC and PAL 64, `AUD0LEN` <- 32 after `N_run / 2` lines | MP6 red in both (4 short passes: T follows T+62); MC1, MC2, MC4, MC5 green |
 | `MC1STD` | MC1 | declared and harness standard swapped | red in both |
@@ -1265,7 +1270,7 @@ under `MC5STOP` (see its row).
 | `MC3A` | MC3 anchor F1 (a) | `AUD0PER` <- 448 after 753 lines | red (deviation 7.938 cycles on both cores), the other lines green |
 | `MC3B` | MC3 anchor F1 (b) | `AUD0PER` <- 224 after 800 lines | red (5012.917 against 7152.000 cycles), the other lines green |
 | `MC3F4` | MC3 anchor F4 | channel 0 stopped and channel 1 on the same table started after 1140 lines | red (2 offsets, 114 and 130 cycles), the other lines green |
-| `MC3TIME` | MC3 anchor F1 (c) | `AUD0PER` 448 declared 447 | red, F4 and the other anchors green |
+| `MC3TIME` | MC3 anchor F1 (c), NTSC | `AUD0PER` 448 declared 447 | red in NTSC, F4 and the other anchors green; PAL F1 (c) is MEASURED (895 lines of 226.493 ticks, none within `s` of 227 or 227.5) |
 | `MC4LEN`, `MC4CPU` | MC4 | length 65, CPU read at `T+64` | red, other preconditions green |
 | `MC5MARK`, `MC5STOP` | MC5 | marker left out; stop in line 200 at `H` = 8 at `P` = 64 | red; MC5STOP: both clauses red, MC1, MC2, MC4, MC6 green |
 | `MC6PER`, `MC6BELOW` | MC6 | `AUD0PER` 129 declared 128, 101 declared 100 | red, 64 and 50 ticks from the grid |
@@ -1289,7 +1294,21 @@ under `MC5STOP` (see its row).
   of 227 ticks. The same comparator, fed 227 and 228 ticks in alternation for
   the lines of NTSC `P` = 64 and 100 (526 lines, mean 227.5 ticks), prints
   31,468.5 samples/second and is green on both cores. The substitution is
-  named because no stimulus makes the lines alternate.
+  named because no stimulus on the repository's RTL makes the lines alternate.
+  It checks the arithmetic of the comparator on lengths that are not measured
+  at the port, and it is not the green proof of the red; the green proof on
+  lines measured at the port is the implementation record below.
+- `NMH_ONLY=RATE` with `lc-test-fx68k` and `lc-test-tg68k`: the package against
+  a private copy of the chip-set RTL made from `ntsc_long.patch` (a copy of
+  `ch2-copper-beam/ntsc_long.patch`), whose NTSC lines alternate between 228
+  and 227 counts. The runs, the preconditions, the populations and the
+  comparator are those of the normal run; on both cores MP5-RATE prints
+  PASS: 113 graded runs, 29,606 complete lines of mean length 227.5000 ticks
+  (446 lines of 227 and 445 of 228 ticks in the 891 of the reference
+  window), capacity 31,468.5 samples/second, 0.5 below 31,469; MP5-FETCH is
+  green on the same runs; no other line moves against the repository's RTL
+  (800 passed, 1 failed there, 801 passed, 0 failed here). The copy is not
+  tuned.
 - `MC5STOP`: at `P` = 64 the port window holds 2 wraps and no read out of
   order up to the stop, so MC4 is green; MC5 is red through both clauses (no
   read at the channel offset in the first and last tenth of the window, the
@@ -1298,9 +1317,10 @@ under `MC5STOP` (see its row).
   is placed by the beam.
 - `MC3TIME`: with `AUD0PER` 448 the tick is measured as 8.0179 cycles. The
   port window holds 895 complete lines of mean length 226.493 ticks, all
-  outside 226.875 ... 228.125 ticks (NTSC) and outside 226.875 ... 227.125
-  and 227.375 ... 227.625 ticks (PAL), in both standards on both cores, so F1 (c) is red through its own
-  clause. The F4 anchor is green (0 of 1162 clusters fail the shape check), and items 1 and 2 and anchors (a) and (b) are
+  outside 226.875 ... 228.125 ticks in NTSC, so F1 (c) is red through its own
+  clause there, on both cores. In PAL the same 895 lines are printed in the
+  MEASURED line of F1 (c), none within `s` of 227 or of 227.5, and nothing is
+  graded. The F4 anchor is green (0 of 1162 clusters fail the shape check), and items 1 and 2 and anchors (a) and (b) are
   green.
 - `MC4LEN` and `MC4CPU` print no proposition line: MP3 is not graded behind
   a failing MC4 clause that section 3.7 does not release (MC4LEN: no wrap in

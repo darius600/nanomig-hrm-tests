@@ -13,6 +13,7 @@
 //
 // NMH_MUTATE: a selector of the first test runs only that test (its own
 // summary stays); a selector of the min-period test runs only that one.
+// NMH_ONLY=RATE (no NMH_MUTATE): only the NTSC runs of MP5 and the lines MP5-FETCH and MP5-RATE.
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -59,7 +60,7 @@ bool split_summary(std::string& text, int& p, int& f) {
     return true;
 }
 
-const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MP5ALT", "MC1STD", "MC2DMA", "MC2ADK", "MC3LEN", "MC3OTH", "MC3A", "MC3B", "MC3F4", "MC3TIME",
+const std::set<std::string> kMine = {"MP1", "MP2", "MP3", "MP4", "MP5CH1", "MP5FETCH", "MP5ALT", "MC1STD", "MC2DMA", "MC2ADK", "MC3LEN", "MC3OTH", "MC3A", "MC3B", "MC3F4", "MC3TIME",
                                       "MC4LEN", "MC4CPU", "MC5MARK", "MC5STOP", "MC6PER", "MC6BELOW", "MP6LEN", "MP6GREEN", "FIXMP", "FIXDONE"};
 
 }  // namespace
@@ -75,6 +76,17 @@ int main(int argc, char** argv) {
         std::printf("CORE: %s\n", NMH_XSTR(NANOMIG_CORE_NAME));
         minper::Checks ck;
         minper::run_mutation(ck, dir, mv);
+        std::printf("%d passed, %d failed\n", ck.passed, ck.failed);
+        return ck.failed == 0 ? 0 : 1;
+    }
+
+    // NMH_ONLY=RATE: only the NTSC runs that feed MP5-FETCH and MP5-RATE (the run of the private chip-set copy
+    // made from ntsc_long.patch, `make lc-test-fx68k`, `lc-test-tg68k`); a development aid on the normal build.
+    const char* only_env = std::getenv("NMH_ONLY");
+    if (only_env && std::string(only_env) == "RATE") {
+        std::printf("CORE: %s\n", NMH_XSTR(NANOMIG_CORE_NAME));
+        minper::Checks ck;
+        minper::run_rate(ck, dir);
         std::printf("%d passed, %d failed\n", ck.passed, ck.failed);
         return ck.failed == 0 ? 0 : 1;
     }
