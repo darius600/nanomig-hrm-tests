@@ -30,6 +30,7 @@ SPR0PTH         equ     $120
 SPR0CTL         equ     $142
 
 CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
 
 ; Marker word (SPECIFICATION.md Section 3): a CPU word write of a step number.
 MARKER          equ     $04F000
@@ -45,10 +46,12 @@ MARK            macro
                 move.w  #\1,MARKER
                 endm
 
-; Baseline (Section 3). The first instruction clears the boot overlay: while it
+; Baseline (Section 3). The first two instructions clear the boot overlay (DDRA
+; bit 0 to output, then OVL written 0; pp. 223, 341): while it
 ; is active, a CPU write below $080000 reaches no memory and a CPU read there
 ; is served from the Kickstart window.
 BASELINE        macro
+                move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
                 move.w  #$2700,sr
                 move.w  #$7FFF,CUSTOM+DMACON
