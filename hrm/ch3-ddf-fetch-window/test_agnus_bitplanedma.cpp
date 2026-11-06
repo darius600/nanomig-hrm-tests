@@ -758,9 +758,15 @@
 // requests. `dma` (l.472) gates on `plane[4:0] < bpu[3:0]`, so a `plane`
 // that structurally cannot exceed 3 caps the fetch at 4 bitplanes regardless
 // of `bpu`. Measured directly, not merely read: HIRES-BPU-CEILING-MAX-4-
-// PLANES below sets BPU=6 in hires and confirms reg_address_out $8C/$8D
-// (bitplanes 5-6) never fire, with the same BPU=6 in lores as a control
-// showing they DO fire there - the ceiling is real and hires-specific.
+// PLANES below sets BPU=4 in hires and confirms reg_address_out $88-$8B
+// (bitplanes 1-4) are fetched and no other plane is, sets BPU=6 in hires
+// and confirms $8C/$8D (bitplanes 5-6) never fire, with the same BPU=6 in
+// lores as a control showing they DO fire there - the ceiling is real and
+// hires-specific. The page does not say what BPU 5 or 6 do in hires:
+// Table 3-5 (p.48) and the BPLCON0 summary (p.90) list the codes 100
+// (bitplanes 1-4), 101 and 110, mark 111 as not used, and p.49 says only
+// "up to four bitplanes". Which of bitplanes 1-4 a hires BPU=6 run fetches
+// is therefore printed as a MEASURED line, not graded.
 // 3-res.c13/3-resolution.c6 ("up to four bitplanes" in hires) are graded on
 // that assertion, not declined.
 //
@@ -771,8 +777,8 @@
 // bitplane-to-playfield numbering is fixed (odd bitplanes 1/3/5/7 to
 // playfield 1, even 2/4/6/8 to playfield 2, p.68), not something the RTL
 // needs to compute, and the four planes HIRES-BPU-CEILING-MAX-4-PLANES
-// shows are the only ones ever fetched in hires - bitplanes 1-4 - split
-// into exactly two of each parity. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-
+// shows are fetched at hires BPU=4 - bitplanes 1-4 - split into exactly
+// two of each parity. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-
 // PLAYFIELD below measures that split directly (odd: reg $88/$8A; even:
 // $89/$8B), but 3-dual-planes.c4/3-dual.c18 are DECLINED there, not graded:
 // both name playfield 1/playfield 2 by their VISUAL identity, and which
@@ -795,6 +801,21 @@
 
 #include <verilated.h>
 #include "Vagnus_bitplanedma.h"
+
+// Stimulus selectors for the mutation records at the bottom of this file;
+// each changes only what the module is asked to do (-CFLAGS -DMUT_X=1).
+#ifndef MUT_HIRESBPU3
+#define MUT_HIRESBPU3 0
+#endif
+#ifndef MUT_HIRES6LORES
+#define MUT_HIRES6LORES 0
+#endif
+#ifndef MUT_LORESCTRL
+#define MUT_LORESCTRL 0
+#endif
+#ifndef MUT_DUALBPU3
+#define MUT_DUALBPU3 0
+#endif
 
 namespace {
 
@@ -1977,49 +1998,87 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- HIRES-BPU-CEILING-MAX-4-PLANES (p.49) ----------------
-    // The ceiling is not in the `bpu` register term (l.300) but in the
-    // plane encoder (l.457-461):
-    // in hires+FMODE0 the encoder itself is `{3'b000,~ddfseq[0],~ddfseq[1]}`
-    // - two bits wide, so `plane` can never reach 4 or 5 no matter what
-    // `bpu` says. See this file's IMPLEMENTATION NOTES above main(),
-    // including what p.48/p.90 say about BPU code 111.
+    // Three graded clauses in one expect: hires BPU=4 fetches exactly
+    // bitplanes 1-4 (Table 3-5 code 100, p.48, with p.49); hires BPU=6
+    // never fetches bitplanes 5 and 6 (p.49's ceiling); the lores BPU=6
+    // control still reaches bitplanes 5 and 6. The page does not say what
+    // BPU 5 or 6 do in hires, so which of bitplanes 1-4 the BPU=6 run
+    // fetches is a MEASURED line. In this RTL the ceiling is not in the
+    // `bpu` register term (l.300) but in the plane encoder (l.457-461).
+    // See this file's IMPLEMENTATION NOTES above main(), including what
+    // p.48/p.90 say about BPU code 111.
     {
-        Harness hh;
-        hh.setup_standard();
-        hh.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
-        hh.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
-        hh.write_reg(BPLCON0_ADDR, bplcon0_word(true, 6));  // hires, BPU=6 requested
-        LineResult hi = run_to_line(hh, 0x50);
+        Harness h4;
+        h4.setup_standard();
+        h4.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
+        h4.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
+#if MUT_HIRESBPU3
+        h4.write_reg(BPLCON0_ADDR, bplcon0_word(true, 3));  // MUTATION: hires BPU=3, bitplane 4 not requested.
+#else
+        h4.write_reg(BPLCON0_ADDR, bplcon0_word(true, 4));  // hires, BPU=4 (code 100)
+#endif
+        LineResult hi4 = run_to_line(h4, 0x50);
+
+        Harness h6;
+        h6.setup_standard();
+        h6.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
+        h6.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
+#if MUT_HIRES6LORES
+        h6.write_reg(BPLCON0_ADDR, bplcon0_word(false, 6));  // MUTATION: HIRES clear, so bitplanes 5-6 are reachable.
+#else
+        h6.write_reg(BPLCON0_ADDR, bplcon0_word(true, 6));  // hires, BPU=6 requested
+#endif
+        LineResult hi6 = run_to_line(h6, 0x50);
 
         Harness hl;
         hl.setup_standard();
         hl.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
         hl.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+#if MUT_LORESCTRL
+        hl.write_reg(BPLCON0_ADDR, bplcon0_word(false, 3));  // MUTATION: lores control with BPU=3.
+#else
         hl.write_reg(BPLCON0_ADDR, bplcon0_word(false, 6));  // lores, BPU=6 - control
+#endif
         LineResult lo = run_to_line(hl, 0x50);
 
-        bool hi_seen[8] = {false, false, false, false, false, false, false, false};
-        for (auto& f : hi.fetches) hi_seen[(f.reg - 0x88) & 7] = true;
+        bool hi4_seen[8] = {false, false, false, false, false, false, false, false};
+        for (auto& f : hi4.fetches) hi4_seen[(f.reg - 0x88) & 7] = true;
+        bool hi6_seen[8] = {false, false, false, false, false, false, false, false};
+        for (auto& f : hi6.fetches) hi6_seen[(f.reg - 0x88) & 7] = true;
         bool lo_seen[8] = {false, false, false, false, false, false, false, false};
         for (auto& f : lo.fetches) lo_seen[(f.reg - 0x88) & 7] = true;
 
-        bool hires_only_0to3 = hi_seen[0] && hi_seen[1] && hi_seen[2] && hi_seen[3] &&
-            !hi_seen[4] && !hi_seen[5] && !hi_seen[6] && !hi_seen[7];
+        bool hires4_exactly_planes_1_to_4 = hi4_seen[0] && hi4_seen[1] && hi4_seen[2] && hi4_seen[3] &&
+            !hi4_seen[4] && !hi4_seen[5] && !hi4_seen[6] && !hi4_seen[7];
+        bool hires6_never_planes_5_6 = !hi6_seen[4] && !hi6_seen[5];
         bool lores_reaches_4_and_5 = lo_seen[4] && lo_seen[5];
 
         checks.expect(
-            hires_only_0to3 && lores_reaches_4_and_5,
-            "HIRES-BPU-CEILING-MAX-4-PLANES: BPLCON0 HIRES=1, BPU=6 "
-            "(FMODE=0, the standard OCS/ECS fetch mode), DDFSTRT=$003C/"
-            "DDFSTOP=$00D4 - only reg_address_out $88/$89/$8A/$8B "
-            "(bitplanes 1-4) ever receive a dma cycle over the line; "
-            "$8C/$8D (bitplanes 5-6) never do, though BPU asks for 6. "
-            "Control: the SAME BPU=6 in LORES (DDFSTRT=$0038/DDFSTOP=$00D0) "
-            "DOES reach $8C/$8D - this RTL can address planes 5-6, so the "
-            "hires absence is a real ceiling, not this fixture never "
-            "trying. 'Note that in high resolution mode, you can have up "
-            "to four bitplanes in the playfield and, therefore, up to 16 "
-            "colors' (p.49). 3-res.c13, 3-resolution.c6.");
+            hires4_exactly_planes_1_to_4 && hires6_never_planes_5_6 && lores_reaches_4_and_5,
+            "HIRES-BPU-CEILING-MAX-4-PLANES: BPLCON0 HIRES=1, FMODE=0 (the "
+            "standard OCS/ECS fetch mode), DDFSTRT=$003C/DDFSTOP=$00D4. "
+            "(1) With BPU=4 (Table 3-5 code 100, p.48) exactly reg_address_out "
+            "$88/$89/$8A/$8B (bitplanes 1-4) receive a dma cycle over the "
+            "line and no other plane does. (2) With BPU=6 the registers "
+            "$8C/$8D (bitplanes 5-6) never receive one. (3) Control: BPU=6 "
+            "in LORES (DDFSTRT=$0038/DDFSTOP=$00D0) DOES reach $8C/$8D - "
+            "this RTL can address planes 5-6, so the hires absence is a "
+            "real ceiling, not this fixture never trying. The page does not "
+            "say what BPU 5-6 do in hires; which of bitplanes 1-4 the BPU=6 "
+            "run fetches is not graded here, it is the MEASURED line "
+            "printed below. 'Note that in high resolution mode, you can "
+            "have up to four bitplanes in the playfield and, therefore, up "
+            "to 16 colors' (p.49). 3-res.c13, 3-resolution.c6.");
+
+        std::string fetched6;
+        for (int p = 0; p < 4; ++p)
+            if (hi6_seen[p]) fetched6 += (fetched6.empty() ? "" : " ") + std::to_string(p + 1);
+        checks.note(
+            "hires BPU=6 (FMODE=0, DDFSTRT=$003C/DDFSTOP=$00D4): bitplanes "
+            "1-4 fetched over the line: " + (fetched6.empty() ? std::string("none") : fetched6) +
+            "; bitplanes 5-6 fetched: " + ((hi6_seen[4] || hi6_seen[5]) ? "yes" : "no") +
+            ". The page does not say what BPU 5 or 6 do in hires (Table 3-5 "
+            "p.48, p.90, p.49); not graded.");
     }
 
     // ---------------- DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD (p.68) ----------------
@@ -2028,7 +2087,11 @@ int main(int argc, char** argv) {
         h.setup_standard();
         h.write_reg(DDFSTRT_ADDR, DDFSTRT_HIRES_STD);
         h.write_reg(DDFSTOP_ADDR, DDFSTOP_HIRES_STD);
-        h.write_reg(BPLCON0_ADDR, bplcon0_word(true, 6));  // hires, BPU=6 requested
+#if MUT_DUALBPU3
+        h.write_reg(BPLCON0_ADDR, bplcon0_word(true, 3));  // MUTATION: hires BPU=3, bitplane 4 not requested.
+#else
+        h.write_reg(BPLCON0_ADDR, bplcon0_word(true, 4));  // hires, BPU=4 (code 100)
+#endif
         LineResult r = run_to_line(h, 0x50);
 
         bool seen[8] = {false, false, false, false, false, false, false, false};
@@ -2047,8 +2110,8 @@ int main(int argc, char** argv) {
         checks.expect(
             odd_count == 2 && even_count == 2 && odd_is_1_and_3 && even_is_2_and_4,
             "DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD: same HIRES=1, "
-            "BPU=6, FMODE=0 run as HIRES-BPU-CEILING-MAX-4-PLANES - of the "
-            "(at most 4) bitplanes this RTL ever fetches in hires, exactly "
+            "BPU=4, FMODE=0 run as the BPU=4 clause of HIRES-BPU-CEILING-"
+            "MAX-4-PLANES - of the four bitplanes fetched there, exactly "
             "the odd-numbered pair (bitplanes 1 and 3, reg $88/$8A) and "
             "exactly the even-numbered pair (bitplanes 2 and 4, reg "
             "$89/$8B) are present, never a third of either parity - 'In "
@@ -2057,7 +2120,7 @@ int main(int argc, char** argv) {
             "bitplanes 2 and 4 in playfield 2' (p.68). agnus_bitplanedma "
             "has no DBLPF/playfield port - this assertion tests the "
             "fetch-side half of the claim, the odd/even split of HIRES-"
-            "BPU-CEILING-MAX-4-PLANES' own 4-plane ceiling; which VISUAL "
+            "BPU-CEILING-MAX-4-PLANES' own BPU=4 fetch; which VISUAL "
             "playfield each parity renders to is Denise's boundary, not "
             "this module's.");
     }
@@ -2299,24 +2362,30 @@ int main(int argc, char** argv) {
 //        NOT shift. No stimulus this assertion explores can satisfy the
 //        manual's mode-based condition.
 //
-// 20. HIRES-BPU-CEILING-MAX-4-PLANES: the CONTROL half's stimulus changed -
-//    the lores run's BPU dropped from 6 to 3. Result: the control no longer
-//    reaches planes 5-6 (lores_reaches_4_and_5 false), so the overall
-//    condition failed even though the hires half was untouched - the
-//    control is not a decoration, this assertion's own pass condition
-//    depends on it. Reverted; rebuilt clean. (A more direct mutation -
-//    opening the hires ceiling itself via FMODE - does not apply here:
-//    FMODE only latches when `aga` is set (l.307,
-//    `else if (aga && ...) fmode <= data_in`), and `aga` is 0 for the whole
-//    of this Harness, always - checked, not assumed; grepped the file, one
-//    hit, in the constructor. AGA-mode fetch behaviour is NOT EXERCISED
-//    here, by the same scope decision that already keeps every other
-//    assertion in this file at aga=0.)
-// 21. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD: BPU dropped from 6 to 3
-//    in the hires run. Result: even_count dropped to 1 (plane index 3,
-//    bitplane 4, no longer reached), failing the "exactly two of each
-//    parity" check while HIRES-BPU-CEILING-MAX-4-PLANES (a separate run)
-//    stayed green. Reverted; rebuilt clean.
+// 20. HIRES-BPU-CEILING-MAX-4-PLANES has three clauses, each with its own
+//    selector (-CFLAGS -DMUT_X=1 through `make MUT=X`), each a stimulus
+//    change that leaves the comparator alone.
+//    HIRESBPU3: the hires BPU=4 run's BPU dropped to 3. Result: plane 4
+//    (reg 0x8B) is no longer fetched, the "exactly bitplanes 1-4" clause
+//    failed.
+//    HIRES6LORES: the BPU=6 run's HIRES bit cleared. Result: regs 0x8C/0x8D
+//    (bitplanes 5-6) are fetched, the "never bitplanes 5 and 6" clause
+//    failed; the BPU=4 run and the lores control were untouched.
+//    LORESCTRL: the lores control's BPU dropped from 6 to 3. Result: the
+//    control no longer reaches planes 5-6, so the overall condition failed
+//    even though both hires clauses were untouched - the control is not a
+//    decoration. (A more direct mutation - opening the hires ceiling itself
+//    via FMODE - does not apply here: FMODE only latches when `aga` is set
+//    (l.307, `else if (aga && ...) fmode <= data_in`), and `aga` is 0 for
+//    the whole of this Harness, always - checked, not assumed; grepped the
+//    file, one hit, in the constructor. AGA-mode fetch behaviour is NOT
+//    EXERCISED here, by the same scope decision that already keeps every
+//    other assertion in this file at aga=0.)
+// 21. DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD: selector DUALBPU3, the
+//    hires run's BPU dropped from 4 to 3. Result: even_count dropped to 1
+//    (plane index 3, bitplane 4, no longer reached), failing the "exactly
+//    two of each parity" check while HIRES-BPU-CEILING-MAX-4-PLANES (a
+//    separate run) stayed green.
 //
 // DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION carries no mutation record: it is a
 // MEASURED note, not a graded assertion (see its own comment above), and
@@ -2343,6 +2412,8 @@ int main(int argc, char** argv) {
 // MUTATION WIDER-PLAYFIELD-FIRST-LINE-UNCHANGED stimulus red: shared pointer helper made to add the modulo to the base address; addrs_m40 no longer equalled addrs_m0.
 // MUTATION MAX-WORDS-49-HIRES-AT-HW-LIMITS none impossible: already red at this package's true baseline; 49 is structurally unreachable (hires word count is always even in this RTL, confirmed by sweeping n=26..34), so no stimulus this assertion explores can turn it green.
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
-// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: control run's BPU dropped from 6 to 3 (lores); lores_reaches_4_and_5 false, control no longer reaches planes 5-6.
-// MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: BPU dropped from 6 to 3 (hires); even_count dropped to 1, plane index 3 (bitplane 4) no longer reached.
+// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_HIRESBPU3=1 drops the hires run's BPU from 4 to 3; plane 4 (reg 0x8B) is no longer fetched, hires4_exactly_planes_1_to_4 false (19/2 became 18/3, only this assertion newly red).
+// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_HIRES6LORES=1 clears HIRES on the BPU=6 run; regs 0x8C/0x8D (bitplanes 5-6) are fetched, hires6_never_planes_5_6 false (18/3, only this assertion newly red).
+// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_LORESCTRL=1 drops the lores control's BPU from 6 to 3; lores_reaches_4_and_5 false, control no longer reaches planes 5-6 (18/3, only this assertion newly red).
+// MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: -DMUT_DUALBPU3=1 drops the hires run's BPU from 4 to 3; even_count dropped to 1, plane index 3 (bitplane 4) no longer reached (18/3, only this assertion newly red).
 // ============================================================================
