@@ -13,7 +13,7 @@
 | **Module** | `gary.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); TC64 has the same A12 and A13 terms; inherited |
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; it prints both readings as `MEASURED` lines and grades neither. It exits nonzero on its one red, `CIA-DECODE-DONTCARE`, which is [NM-HRM-075](NM-HRM-075.md)'s |
 | **Assertions** | none: no assertion grades the claim |
-| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says. Hardware: not measured |
+| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says. Hardware: not run here; photographs named A500 ECS show the chip at `$BFE401` interrupting on level 2, the prose and the chosen addresses and not the printed patterns, for the pair of addresses and not for A0 alone (*What photographs of real machines show*) |
 | **Effort** | none — no RTL change: the correction is one exchange of the two printed patterns |
 | **Origin** | raised at classification by the appendix-F lot-E classifier; verified against the render of p.353 |
 
@@ -69,7 +69,7 @@ polarity (CIAA on A12 low, CIAB on A13 low) and not the printed patterns'
 
 ## Risks and unknowns
 
-- Nothing here was measured on hardware.
+- Hardware was not run here, apart from photographs named A500 ECS, which show the pair of addresses, not A0 alone (*What photographs of real machines show*).
 - A test built from the printed patterns rather than the prose would grade a
   correct decoder red; the four claims named in *Chapter* are deliberately not
   adjudicated at classification.
@@ -90,6 +90,14 @@ polarity (CIAA on A12 low, CIAB on A13 low) and not the printed patterns'
 | **Copperline** | [`src/cpu.rs:18-21`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L18-L21), [`:4154-4161`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L4154-L4161) | follows the prose: `CIA_A_BASE` is `0x00BF_E000` and `CIA_B_BASE` `0x00BF_D000`, 4K each, matched by address range, so CIA-A where A13 is high and A12 low |
 | **MiSTer** | [`rtl/gary.v:193-195`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195) | descendant — the same `sel_cia_a` and `sel_cia_b` terms as NanoMig |
 | **TC64** | [`rtl/minimig/gary.v:189-192`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/gary.v#L189-L192) | descendant — the same A12 and A13 terms |
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`timer3`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer3/timer3.s) and [`timer4`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer4/timer4.s) are named A500 ECS, a label and nothing more ([timer3](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer3/timer3_A500_ECS.JPG), [timer4](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer4/timer4_A500_ECS.JPG)). `timer3` loads timer A of the chip at `$BFE401` with `$10` and that of the chip at `$BFD400` with `$20` and starts both as one-shots ([`timer3.s:127-132`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer3/timer3.s#L127-L132)); `timer4` does the same for timer B ([`timer4.s:127-132`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer4/timer4.s#L127-L132)). The level-2 handler paints cyan ([`timer3.s:141`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer3/timer3.s#L141)) and the level-6 handler magenta ([`timer3.s:320`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CIA/CIA/Timer/timer3/timer3.s#L320)); p. 221 prints INT2 for CIAA and INT6 for CIAB.
+
+In `timer3` the cyan mark is at x 183 and the magenta mark at x 693, 510 pixels apart, 16 E periods plus the start offset; in `timer4` the cyan mark is at x 190 and the magenta at x 768. The two counts differ, so the screen could have shown the reverse: if the chip at `$BFE401` were CIAB, as the printed patterns have it, its shorter count would fire on level 6 and magenta would come first. Cyan comes first. That is the page's prose and chosen addresses, `$BFEr01` and `$BFDr00`, against the printed patterns.
+
+The limits: the two addresses differ in A13, A12 and A0 together, so A0 alone is not separated; the chip names come from p. 221's interrupt chart. The marks are read from the photographs, with position measured; the programs were not run on a machine here.
 
 ## Decision
 

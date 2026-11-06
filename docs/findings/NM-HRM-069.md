@@ -13,7 +13,7 @@
 | **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code; TC64 the same acknowledge, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
 | **Assertions** | `PARITY` and `A8` are red on both cores (37 passed, 3 failed each; the third red, `A4`, is filed on [NM-HRM-091](NM-HRM-091.md)). `PARITY`: expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45210 and 122 of 253 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `A8`: expected every 68000 access whose ready even-numbered slot a DMA access took to be granted exactly at the first free even-numbered slot, neither before it (an odd-numbered grant, the event `PARITY` counts) nor after it; observed 122 granted before it of 124 missed even cycles on fx68k and 120 of 127 on TG68K, none after a free even-numbered slot was left unused. `PARITY-REF` and `A8PRE` pass on both cores |
-| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not run here; photographs named A500 ECS show a CPU loop of odd length running unpadded with no DMA on, which is the no-DMA half of `PARITY`; the share-mode half and `A8` are not reached (*What photographs of real machines show*) |
 | **Effort** | S — one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
 
 ---
@@ -136,9 +136,11 @@ fx68k and on the default TG68K build alike, where Figure 6-9 draws plane 1.
 
 - **What weakens it: nobody implements the page.** All four implementations and
   both Minimig lines let the CPU take any colour clock DMA leaves free. The
-  finding rests on p. 196 and Figure 6-10, not on any implementation, and no
-  hardware was measured: a BRA.S loop timed with no DMA on a real Amiga would
-  settle which parity its fetches land on.
+  finding rests on p. 196 and Figure 6-10, not on any implementation, and
+  no hardware was measured apart from photographs named A500 ECS, which time
+  loops of two move instructions and a `dbra` with no DMA on and show the loops
+  unpadded; a BRA.S loop timed the same way, and any loop beside a share-mode
+  blit, would still be needed.
 - **The two cores differ, and neither difference is a verdict.** TG68K's loop
   has no two-clock step, so it is green without DMA because its bus timing never
   offers the chip an odd request, not because anything waits; beside the blit it
@@ -235,6 +237,14 @@ cycles** — three in WinUAE's constant, Denise's comment and Copperline's
 constant, two before vAmiga raises BLS — and none of them moves the released
 cycle to an even slot. On this point the four
 side with NanoMig and against p. 196's *only*.
+
+### What photographs of real machines show
+
+vAmigaTS, vAmiga's test suite, publishes a screen photograph per program. The photographs of [`timing1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing1/timing1.s) and [`timing2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing2/timing2.s) are named A500 ECS ([timing1](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing1/timing1_A500_ECS.jpeg), [timing2](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing2/timing2_A500_ECS.jpeg)), a machine label that names no CPU. Both turn all DMA off ([`timing1.s:35`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing1/timing1.s#L35)) and never enable the Copper ([`timing1.s:70`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing1/timing1.s#L70)), so the CPU's accesses to the chip bus are all there is, and loop writing COLOR00. The loop of `timing1` is two `move.w dn,COLOR00` and a `dbra` ([`timing1.s:89-92`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing1/timing1.s#L89-L92)), 12 + 12 + 10 = 34 clocks, 17 colour clocks; `timing2` has two `move.w #imm,$DFF180` and a `dbra` ([`timing2.s:89-92`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/CPU/Misc/Timing/timing2/timing2.s#L89-L92)), 50 clocks, 25 colour clocks. A rule that lets an access begin on an even colour clock only would pad the loops to 18 and 26.
+
+`timing1` draws dashes at a pitch of 91 pixels, 17 colour clocks, and the next lines shift by -32, -32 and -27 pixels, -6, -6 and -5 colour clocks; a loop of 18 would shift by +7. `timing2` draws bars of width 52.7 pixels at a pitch of 131.3, a ratio of 2.49, which is 25 over 10 and not 2.6, and its first lines step by -10.5 pixels per line, -2 colour clocks, which is 9 loops of 25 against a line of 227; a loop of 26 would step +7. The slopes are fixed by the instructions and need no pixel scale. So an access of an odd-length loop runs unpadded, on both parities: that is the no-DMA half of `PARITY`, against p. 196's "only the even-numbered memory access cycles", and as `fx68k` does in NanoMig.
+
+The limits: only the no-DMA half of `PARITY`. `bususage14` beside a blit has BLTPRI set and so is not share mode, and no program with a share-mode blit draws CPU stripes: `A8` and the share-mode half of `PARITY` are not reached. The programs run `dbra`, not `BRA.S` itself, which has the same internal clocks; the file name names no CPU. The bars are read from the photographs, with pitch and shift measured; the programs were not run on a machine here.
 
 ### What practitioners report
 

@@ -13,7 +13,7 @@
 | **Module** | `paula.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/paula.v#L137); inherited (MiSTer and TC64 carry the identical lines, cited in the witness table) |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: expected bit 15 of ADKCONR to follow the bit written, observed `0x7FFF`, bit 15 clear; the package reports `17 passed, 2 failed`; the other red, `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, is [NM-HRM-057](NM-HRM-057.md)'s |
-| **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not run here; photographs of a machine the file names do not give show bit 15 reading 0 after a write of `$FFFF` (*What photographs of real machines show*) |
 | **Effort** | none — no RTL change, only a documentation note on p.265 |
 
 ---
@@ -49,7 +49,7 @@ what was written, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`, red.
 
 - The decisive words are the shared bit table; p.265 never says in words whether
   ADKCONR returns bit 15, so the second reading above is not excluded by the page.
-- Real Paula's read of bit 15 is not measured; no named software depends on it.
+- Real Paula's read of bit 15 is not run here: photographs of a machine the file names do not give show it reading 0 after one write value, `$FFFF`; no named software depends on it.
 - NanoMig's fifteen-bit register is inherited (MiSTer and TC64 carry the
   identical lines); a read of bit 15 returns 0 in all six implementations below.
 
@@ -63,6 +63,14 @@ what was written, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`, red.
 | **Copperline** | bit 15 always 0 in practice | read unmasked ([`src/bus/custom_regs.rs:41`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L41)), write masks ([`src/chipset/paula.rs:1182-1184`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1182-L1184)) |
 | **MiSTer** | bit 15 always 0 | same observable, inherited (descendant): the identical lines, [`rtl/paula.v:127`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L127), [`:193`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L193) |
 | **TC64** | bit 15 always 0 | same observable, inherited (descendant): the identical lines, [`rtl/minimig/paula.v:146`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L146), [`:212`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L212) |
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`adkcon1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon1/adkcon1.s) and [`adkcon2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon2/adkcon2.s) ([adkcon1](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon1/adkcon1.JPG), [adkcon2](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon2/adkcon2.JPG)) carry no machine in their file names: they show a machine the file name does not give. `adkcon1` writes `$FFFF` to ADKCON and reads ADKCONR ([`adkcon1.s:43-44`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon1/adkcon1.s#L43-L44)); `adkcon2` writes `$7FFF` and reads it ([`adkcon2.s:43-44`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon2/adkcon2.s#L43-L44)). Both draw the 16 bits as bars, bit 15 first ([`adkcon1.s:154`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon1/adkcon1.s#L154), [`adkcon2.s:154`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Paula/Registers/ADKCON/adkcon2/adkcon2.s#L154)).
+
+In `adkcon1` bit 15 is dark, brightness 31 to 37, and bits 14 to 0 are bright, 191 to 222: fifteen bits written 1 read 1, and bit 15, written 1 as SET/CLR, reads 0. In `adkcon2` the sixteen bars show no step at bit 15 (131 and 129, 110 and 108, 121 and 119 at three positions). That is a read of 0 for bit 15, as NanoMig has it, and p. 265 is the likely defect, as this page asks.
+
+The limits: one write value for each program; `adkcon2` is a weak control, with no lit bar to compare against and a different exposure, so its brightness cannot be set beside `adkcon1`'s; the machine is not named. The bars are read from the photographs, with brightness measured; the programs were not run on a machine here.
 
 ## Decision
 

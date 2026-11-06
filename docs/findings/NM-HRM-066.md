@@ -13,7 +13,7 @@
 | **Module** | `agnus.v`, `agnus_bitplanedma.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L125) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L123); MiSTer has the same code; fixed in TC64 |
 | **Test** | [`hrm/ch7-dmacon-register-bits`](../../hrm/ch7-dmacon-register-bits): `make -C hrm/ch7-dmacon-register-bits test`; an expected red exits nonzero |
 | **Assertions** | 3 red, all with one lores bitplane (`BPLCON0 = $1200`): `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` (expected sprite 7 to lose fetches at $0030, observed 172 of 172), `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` (expected some of the eight channels reduced, observed none) and `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` (expected at least one channel disabled, with no SPRxDATA or SPRxDATB fetch on any line where the bitplane data fetch runs, at each of $0030, $0028, $0020 and $0018; observed 0 of 8 disabled at every one of the four). Their siblings at 2, 4 and 6 lores bitplanes, `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES`, are green in the same run; the package reports `30 passed, 3 failed` |
-| **Verdict of the four** | **3–1 for p. 82's sentence.** WinUAE, vAmiga and Denise stop sprite DMA once the bitplane fetch has started, at any plane count; Copperline keeps sprite 7 at $0030 at any plane count and asserts it in its own test. NanoMig is the one whose answer depends on the plane count — and Figure 6-9, read by plane with its own footnote, predicts NanoMig's counts slot for slot. Hardware: not measured |
+| **Verdict of the four** | **3–1 for p. 82's sentence.** WinUAE, vAmiga and Denise stop sprite DMA once the bitplane fetch has started, at any plane count; Copperline keeps sprite 7 at $0030 at any plane count and asserts it in its own test. NanoMig is the one whose answer depends on the plane count — and Figure 6-9, read by plane with its own footnote, predicts NanoMig's counts slot for slot. Hardware: not run here; photographs named A500 ECS and A500 OCS show, at two and at four lores planes, a sprite stall that Figure 6-9 read by plane does not give and NanoMig's `$2200` row does not match; one plane is not reached (*What photographs of real machines show*) |
 | **Effort** | S — two lines ported from TC64, one in `agnus_bitplanedma.v` and one in `agnus.v`; not run here |
 
 ---
@@ -139,7 +139,9 @@ lands on its slots, 90 when one does and 8 when both do.
   lores plane at $0030, and predicts every count NanoMig produces, the three
   reds' zeros included. The package grades the sentence with one lores plane, the
   one case in which the two readings differ at $0030; which describes the
-  silicon is a reading question, not a measurement. The finding rests on p. 82's
+  silicon is a reading question at one plane, which no photograph reaches; at two
+  and four planes photographs named A500 ECS and A500 OCS do not match the by-plane
+  counts (*What photographs of real machines show*). The finding rests on p. 82's
   sentence and three of four implementations.
 - **$0030 or $0028.** Copperline disables sprite 7 only when the fetch starts
   before $30, which contradicts p. 82's worked value directly.
@@ -148,7 +150,8 @@ lands on its slots, 90 when one does and 8 when both do.
   OCS.
 - Whether the three reds turn green with the change under *Decision* has not been
   run. Whether real Agnus blocks a sprite slot that no fetched plane uses is
-  not measured; WinUAE, vAmiga, Denise and TC64 say it does.
+  not measured at one plane; WinUAE, vAmiga, Denise and TC64 say it does, and
+  photographs named A500 ECS and A500 OCS show it at two and four planes.
 
 ## Independent evidence
 
@@ -168,7 +171,16 @@ printed. Copperline's dissent is deliberate and is not NanoMig's rule either:
 it disables all of sprite 7 or none of it by where the fetch starts, NanoMig
 takes individual fetches by which planes are fetched. They agree only at one
 lores plane, where the three reds are; with two or more planes NanoMig sides
-with the other three and against Copperline.
+with the other three and against Copperline, though at two planes the photographs
+under *What photographs of real machines show* do not match NanoMig's count of 90.
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`blocked1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked1/blocked1.s) to [`blocked4`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4.s) are named A500 ECS and A500 OCS, labels and nothing more, and do not show that the two are one machine each ([blocked4 ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4_A500_ECS.JPG), [blocked4 OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4_A500_OCS.JPG)). The programs move DDFSTRT line by line under eight armed sprites. `blocked4` runs two lores planes ([`blocked4.s:134`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4.s#L134)) and sets DDFSTRT to `$30` ([`blocked4.s:196`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4.s#L196)) and then `$34` ([`blocked4.s:212`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4.s#L212), [`blocked4.s:228`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked4/blocked4.s#L228)); `blocked2` runs two planes ([`blocked2.s:126`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked2/blocked2.s#L126)) and sweeps to `$18` ([`blocked2.s:145`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked2/blocked2.s#L145)); `blocked1` differs from `blocked2` in that one line, four planes ([`blocked1.s:126`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/blocked/blocked1/blocked1.s#L126)). No program runs one plane, which is the case of this page's three reds.
+
+The photographs show gaps in lines between the repeats of a sprite's data, 24 for a full stall and 20 for a half. Sprite 7 reads 24.0, 24.1, 15.9, 24.1 and 24.0 on A500 ECS, and the same followed by 19.9 on A500 OCS; sprite 6 at `$30` reads 16.0 and 20.0. Summed per sprite, the lag measured for sprite 7 is 32 lines on A500 ECS and 40 on A500 OCS. The lag predicted for sprites 0 to 7 with every slot blocked is 0, 8, 8, 16, 16, 24, 24, 32 (ECS timing) and 4, 8, 12, 16, 20, 24, 28, 40 (OCS timing), and with Figure 6-9 read by plane 0, 4, 4, 8, 8, 12, 12, 16: the measured values fit the first two and not the third. `blocked1` and `blocked2` stall 24 lines and show a gap of 40 lines at four planes and at two, where the by-plane reading predicts 28; `blocked3` repeats 24, 24, 16.
+
+So with two and with four lores planes a sprite is blocked by the fetch start whether or not a fetched plane uses its slots, which is p. 82 as printed at those plane counts, and NanoMig's `$2200` row (sprite 7 at 90 of 172, sprites 0 to 6 at 172) does not match; the green of `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` and its sibling at two planes is not confirmed by the photographs. The limits: one plane is not reached, so the three reds as filed are not; the blocks are eight lines; the hatched patches on sprite 6 appear on A500 OCS only. The bars are read from the photographs, with gaps measured in lines; the programs were not run on a machine here.
 
 ### What practitioners report
 

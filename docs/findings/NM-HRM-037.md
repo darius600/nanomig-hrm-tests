@@ -13,7 +13,7 @@
 | **Module** | `userio.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195); MiSTer is byte-identical; TC64 differs by build (it ANDs `_mthird1`, a constant 1 in its Chameleon builds; see *Independent evidence*): inherited |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge): `make -C hrm/ch8-pot-counter-start-and-charge test`; [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io): `make -C hrm/ch8-pot-pins-as-digital-io test`; [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map): `make -C hrm/ch8-controller-pin-function-map test`; [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout): `make -C hrm/ch8-potgo-register-bit-layout test`; an expected red exits nonzero |
 | **Assertions** | 14 red across four packages. In `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other eight reds are [NM-HRM-038](NM-HRM-038.md)'s): `opus:8-pot.c1`, `sol:8-pot.c1`, port 2 with every input the module reads asserted, 11 lines counted: expected both counters to count, observed `$0b00` (X stays 0); `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`, right connector with every joystick input asserted, 6 lines counted: expected `$0606`, observed `$0600`. In `hrm/ch8-pot-pins-as-digital-io` (33 passed, 4 failed): `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30`, `sol:8-dio.c31`, POTGOR bit 12 held at 1 through every external stimulus the fixture drives. In `hrm/ch8-controller-pin-function-map` (25 passed, 4 failed): `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16`, `sol:8-pin.c18`, port 2's X byte `$00` before and after maximum stimulus (port 1's `$00` → `$14`). In `hrm/ch8-potgo-register-bit-layout` (13 passed, 1 failed): `PROP-4`, with OUTRX=0 POTGOR bit 12 expected to track an external line, observed that no stimulus the fixture drives moves it. Controls pass on the same measurement basis in each |
-| **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three. Hardware: not measured here; the documents under *Independent evidence* agree with the manual |
+| **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three. Hardware: not run here; a photograph named A500 ECS shows POT1X live, counting and not stuck at zero, and says nothing about an RX input (*What photographs of real machines show*); the documents under *Independent evidence* agree with the manual |
 | **Effort** | S — one term on the right-hand side of `potcap[2]` in `userio.v`; which input is open |
 
 ---
@@ -71,7 +71,7 @@ interval and counts the lines that follow:
 - **Which input carries RX is a hardware question.** `_djoy2[5]` is what the
   neighbouring `potcap[3]` uses for the same connector; the page does not verify
   it against the wiring.
-- **No hardware measurement.** The documents under *Independent evidence* agree
+- **One photograph, no pin.** A photograph named A500 ECS shows POT1X counting; it shows nothing about which input carries RX or what was attached (*What photographs of real machines show*). The documents under *Independent evidence* agree
   with the manual. The Paula dissection is the silicon of one revision (8364R7),
   and its author hedges ("pretty much"). The A500 schematic is read from the
   drawing, not quoted.
@@ -112,6 +112,14 @@ implementation reads the manual that way.
   <!-- drawing: a500-a2000-trm-1987/p298.txt -->
 
   The right port's X potentiometer line exists on the board and is wired as the other three are.
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Mainboard/Ports/POT), vAmiga's test suite, publishes a screen photograph per program. The photograph of [`pot1dat1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Mainboard/Ports/POT/pot1dat1/pot1dat1.s) is named A500 ECS, a label and nothing more, with "(flickers)" in the file name ([pot1dat1](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Mainboard/Ports/POT/pot1dat1/pot1dat1_A500_ECS_%28flickers%29.JPG)). The program reads POT1DAT in the level-1 interrupt ([`pot1dat1.s:48`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Mainboard/Ports/POT/pot1dat1/pot1dat1.s#L48)), which the Copper raises at line `$C0` ([`pot1dat1.s:275-276`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Mainboard/Ports/POT/pot1dat1/pot1dat1.s#L275-L276)), draws the 16 bits as bars, and writes no POTGO. The low byte, the lower eight bars, is POT1X.
+
+The bars of both bytes are bright mid-greys, the high byte at 130, 164, 218, 196, 152, 220, 191 and 165 and the low byte at 94, 179, 219, 218, 142, 222, 177 and 164, the two tracking each other roughly. Neither byte is constant 0. So POT1X on this machine is live: it counts, and is not stuck at zero as `potcap[2]` of `userio.v` leaves it.
+
+The limits: this says nothing about an RX input. There is no stimulus, the device attached to the port is unknown, and a free-running counter read once a frame is not a stable value. The two other programs examined for this page, `cmp1hi` and `potout2`, read the high byte, POT1Y, and POT0DAT, and so are not cited. The bars are read from the photograph, with brightness measured; the program was not run on a machine here.
 
 ## Decision
 

@@ -13,7 +13,7 @@
 | **Module** | `agnus_bitplanedma.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339); inherited (MiSTer and TC64 have the same statement) |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window): `make -C hrm/ch3-ddf-fetch-window test`; an expected red exits nonzero |
 | **Assertions** | 1 red: `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE` in `hrm/ch3-ddf-fetch-window` — expected the first fetch unchanged between $0038 and $003C in lores and moved in hires; observed 135 → 143 in lores (OCS and ECS) and 127 → 135 in hires (OCS and ECS). The package reports `19 passed, 2 failed`; the other red is NM-HRM-007's |
-| **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused. Hardware: not run here; photographs named A500 OCS and A500 ECS show the visible left edge of a lores picture moving about 8 colour clocks between $0038 and $003C, so H3 is not ignored in lores (*What photographs of real machines show*) |
 | **Effort** | none — no RTL change (a documentation note on p.91 only) |
 
 ---
@@ -52,9 +52,8 @@ First fetch position, one bitplane, from the package's own harness:
 
 ## Risks and unknowns
 
-- Real Agnus is not measured: whether H3 is ignored in lores on silicon, and
-  whether ECS Agnus uses register bit 1 as the implementations do, is open.
-- The hires/ECS reading of 3 for $003A is recorded, not explained.
+- Real Agnus is not run here, but photographs named A500 OCS and A500 ECS show H3 not ignored in lores, and the edge moving with register bit 1 on the ECS-named machine and not on the OCS-named one (*What photographs of real machines show*); the visible edge is not the first fetch, so no value of the table above is read from them.
+- The hires/ECS reading of 3 for $003A is recorded, not explained; the photograph named A500 ECS shows an ordinary edge, 6.1 colour clocks, for hires at $3A.
 - Two Commodore documents disagree with p.91 and with NanoMig alike, and the
   8371 specification's own p.28 bit table agrees with p.91 on bits 7-2 and marks bits 1-0 unused, so that
   document does not settle it by itself.
@@ -92,6 +91,23 @@ respected in Hires Mode" is the outlier.
   <!-- corpus: agnus-8371-spec/p037.txt -->
 
   A note beside the bit-plane fetch timing diagram says data fetch start can only be specified at even multiples of 8 clocks, and that this is the position to specify for the normal width display, with a 20-word fetch for 320 pixels and a 40-word fetch for 640, as a render of the page shows. The note points at position 38 of the diagram; read in the register's units, a step of 8 leaves no place for H3 in either resolution. That matches neither p.91's hires-only H3 nor NanoMig, and it agrees with the shared patent specification's five bits.
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`ddf1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1.s) to [`ddf5`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf5/ddf5.s) are named A500 OCS and A500 ECS, labels and nothing more ([ddf1 OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1_A500_OCS.JPG), [ddf1 ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1_A500_ECS.JPG), [ddf3 OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf3/ddf3_A500_OCS.JPG), [ddf3 ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf3/ddf3_A500_ECS.JPG) and the like). The five programs differ in one line, `BASE`, the DDFSTRT value, `$38`, `$3A`, `$3C`, `$3E` and `$40` ([`ddf1.s:9`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1.s#L9), [`ddf3.s:9`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf3/ddf3.s#L9)). Each draws one bitplane, lores at [`ddf1.s:62`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1.s#L62) and hires at [`ddf1.s:247`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1.s#L247), and writes DDFSTRT = `BASE` per row ([`ddf1.s:64`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/DDF/DDF/ddf1/ddf1.s#L64)), against a Copper dash row whose red dash is the ruler.
+
+The left edge of the picture, in colour clocks from the red dash:
+
+| `BASE` | `$38` | `$3A` | `$3C` | `$3E` | `$40` |
+|---|---:|---:|---:|---:|---:|
+| lores, A500 OCS | 6.0 | 6.4 | 13.9 | 14.1 | 14.3 |
+| lores, A500 ECS | 5.8 | 14.0 | 14.0 | 14.3 | 14.3 |
+| hires, A500 OCS | 2.4 | 2.0 | 6.6 | 6.9 | 10.1 |
+| hires, A500 ECS | 2.0 | 6.1 | 6.0 | 10.3 | 10.2 |
+
+`$38` against `$3C` differ in H3 alone. In lores the edge moves, by about 8 colour clocks (6.0 to 13.9 on A500 OCS, 5.8 to 14.0 on A500 ECS), and in hires by about 4 (2.4 to 6.6, 2.0 to 6.0): H3 is not ignored in lores, on either label, as in NanoMig and in all four implementations, and not as p. 91 prints it. The lores right edge steps in 8 colour clocks as well, which may be what p. 91's sentence meant. The same photographs show register bit 1: on A500 OCS `$3A` lies with `$38`, on A500 ECS with `$3C`, and the hires `$3A` of A500 ECS is an ordinary 6.1. The programs also move DDFSTOP: on A500 OCS stopping at `$B2` against `$B4` adds 8 colour clocks at `$38`.
+
+The limits: the visible edge is not the first fetch, and in lores it moves 8 colour clocks on screen, not the +4 of the first-fetch table above; no value of that table, 135 to 143 least of all, is read from a photograph. One bitplane. The bars are read from the photographs, with position measured from the red dash; the programs were not run on a machine here.
 
 ## Decision
 

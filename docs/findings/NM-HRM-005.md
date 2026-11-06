@@ -1,20 +1,20 @@
-# NM-HRM-005 — WAIT and SKIP take longer than the manual states [RTL review]
+# NM-HRM-005 — a SKIP and a satisfied WAIT take 8 memory cycle times each, where pp. 20 and 275 print 4 and 6
 
 | | |
 |---|---|
 | **Lifecycle** | open |
-| **Filed against** | the RTL |
+| **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Does a real Amiga take 4 memory cycle times for a `SKIP` and 6 for a satisfied `WAIT`, as pp. 20 and 275 print, where NanoMig takes 8 and 8? Closes when a timing from a real machine is reported and, if it matches the print, NanoMig's `WAITSKIP1`/`WAITSKIP2` states take 4 memory cycle times for a `SKIP` and 6 for a satisfied `WAIT`, turning `P3`, `P4`, `P5`, `P6`, `AC5`, `AC6`, `C5` and `C6` green; if it matches NanoMig's 8 and 8, this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
-| **Scope** | `agnus_copper.v` at the DMA handshake: `SKIP` taken and not taken and a `WAIT` already satisfied on arrival (`P3` to `P6`, `AC5`, `AC6`), counted in memory cycle times; `C5` and `C6` count the bus grants of a `WAIT` that blocks and then wakes. Chip revision unknown; real hardware not measured |
+| **What is asked of a reader** | No RTL change follows from this; the red is against pp. 20 and 275, not against the RTL. Question: do pp. 20 and 275 need correcting, so that a `SKIP` and a satisfied `WAIT` read 8 memory cycle times each, as NanoMig takes them, where the pages print 4 and 6? Closes when an Amiga specialist records the figures of pp. 20 and 275 as corrected, or confirms that the pages hold as printed, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: an issue on this repository whose title begins with NM-HRM-005 |
+| **Scope** | `agnus_copper.v` at the DMA handshake: `SKIP` taken and not taken and a `WAIT` already satisfied on arrival (`P3` to `P6`, `AC5`, `AC6`), counted in memory cycle times; `C5` and `C6` count the bus grants of a `WAIT` that blocks and then wakes. Chip revision unknown; photographs of machines named A500 ECS and A500 OCS reach the masked forms of a `SKIP` not taken and a `WAIT` satisfied on arrival |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 2 — Coprocessor, printed p. 20, and Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids, which carry no reader prefix: `P3`, `P4`: `COP2-what-is-a-copper-instruction.c17`, `ch2-what-is-a-copper-instruction.c15` (p. 20); `P5`: `COP2-what-is-a-copper-instruction.c19`, `ch2-what-is-a-copper-instruction.c17` (p. 20); `P6`: `COP2-what-is-a-copper-instruction.c20` (p. 20); `C5`: `COP2-what-is-a-copper-instruction.c18`, `ch2-what-is-a-copper-instruction.c16` (p. 20); `C6`: `COP2-what-is-a-copper-instruction.c20`, `ch2-what-is-a-copper-instruction.c18` (p. 20); `AC5` and `AC6` (p. 275) carry no claim id |
 | **Module** | `agnus_copper.v` **lines 384-548**, the `copper_state` machine that spends the cycles — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_copper.v#L384-L548) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v); inherited |
 | **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times): `make -C hrm/ch2-copper-cycle-times test`; [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles): `make -C hrm/ch2-copper-cycles test`; an expected red exits nonzero |
 | **Assertions** | 8 red. In `hrm/ch2-copper-cycle-times` (`7 passed, 6 failed`): `P3` and `P4` (`SKIP` taken and not taken, expected 4, observed 8), `P5` (satisfied `WAIT`, 6 → 8), `P6` (`WAIT` − `MOVE`, 2 → 4), `AC5` (`SKIP`, p. 275, 4 → 8) and `AC6` (`SKIP`, 4 → 8; expository, not independent). In `hrm/ch2-copper-cycles` (`10 passed, 2 failed`): `C5` (`WAIT`, three bus grants expected) and `C6` (`WAIT` one grant more than a `MOVE` expected); the test's comment records two grants, the same as a `MOVE` |
-| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from their source code and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles. Hardware: not measured |
-| **Effort** | none — no RTL change is asked (a timing program on a real machine would decide it) |
+| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from their source code and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles. Hardware: not run here; photographs named A500 ECS and A500 OCS show a `SKIP` not taken and a `WAIT` satisfied on arrival, in their masked forms, at 8 memory cycle times each (*What photographs of real machines show*) |
+| **Effort** | none; if the pages are confirmed as printed, M: take 4 memory cycle times for a `SKIP` and 6 for a satisfied `WAIT` in the `WAITSKIP1` and `WAITSKIP2` states of `agnus_copper.v` (lines 384-548) |
 
 ---
 
@@ -52,7 +52,7 @@ Appendix A p. 275 defines the bus cycle against the memory cycle time and gives 
 
 ## Risks and unknowns
 
-- Real hardware is not measured.
+- Real hardware is not run here, apart from photographs named A500 ECS and A500 OCS, which reach a masked `SKIP` not taken and a masked `WAIT` satisfied on arrival, not `C5` and `C6`, and leave p. 20's wake-up cycle open (*What photographs of real machines show*).
 - The four emulators were read from their Copper state machines, not run. They are fewer than four independent witnesses: Copperline's comments name Minimig's `WAITSKIP1`/`WAITSKIP2` and vAmiga's `COP_WAIT1`/`COP_WAIT2` as the model for these cycles ([`:256-264`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L256-L264), [`:517-525`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L517-L525)), so its agreement weighs least. Its doc comment on `step_eligible_slot` still reads `MOVE/SKIP spans 4 color clocks and a WAIT 6` ([`src/chipset/copper.rs:690-694`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L690-L694)), which the states it documents do not do.
 - `AC6` is expository, not independent: given `AC4` and `AC5` it cannot fail on its own, so it is no separate corroboration.
 - The US patent text below closely paraphrases the manual's own Copper-timing text, so it is not an independent measurement.
@@ -86,6 +86,22 @@ Every row counts colour clocks on a free bus, and a colour clock is one memory c
 
   MOVE takes 4 slots and WAIT 6, so WAIT minus MOVE is 2. p027 gives SKIP the non-WAIT figure: 'All instructions (except for WAIT) require 2' bus cycles, so '4 memory cycle times are required per instruction. (memory cycles are 280 ns)'. Those are the manual's 4/6/2 in memory cycles, against NanoMig's 8/8/4.
 
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`waitmask1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask1/waitmask1.s) and [`skipmask1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/skipmask1/skipmask1.s) are named A500 ECS and A500 OCS, labels and nothing more ([waitmask1 ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask1/waitmask1_A500_ECS.JPG), [waitmask1 OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask1/waitmask1_A500_OCS.JPG), [skipmask1 ECS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/skipmask1/skipmask1_A500_ECS.JPG), [skipmask1 OCS](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/skipmask1/skipmask1_A500_OCS.JPG)). No bitplane DMA runs near horizontal positions `$30` to `$40` (DDFSTRT = `$C0`, [`waitmask1.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask1/waitmask1.s#L2), [`skipmask1.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/skipmask1/skipmask1.s#L2)). A ruler of MOVEs after a WAIT for ($4E,$38) is the reference ([`waitmask.i:191-192`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask.i#L191-L192)). In four rounds, at horizontal positions `$30`, `$32`, `$34` and `$36` ([`waitmask.i:194`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask.i#L194)), a masked WAIT whose mask `$10` is true on arrival ([`waitmask.i:209-212`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/waitmask.i#L209-L212)) is followed by two colour MOVEs; `skipmask1` does the same with a masked SKIP and then a yellow and a blue MOVE ([`skipmask.i:194-198`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Copper/mask/skipmask.i#L194-L198)). Each round starts 2 colour clocks later by beam position alone, which checks the scale of 5.39 to 5.43 pixels per colour clock without assuming that a MOVE takes 4.
+
+Where the bars start, in colour clocks from the ruler, over the four rounds:
+
+| | A500 ECS | A500 OCS | 8 predicts | 6 (WAIT) or 4 (SKIP) predicts |
+|---|---|---|---|---|
+| WAIT satisfied on arrival | -0.01, +1.96, +3.97, +5.87 | 0.00, +2.00, +4.06, +6.05 | 0, 2, 4, 6 | -2, 0, 2, 4 |
+| SKIP not taken, yellow | -0.11, +1.92, +3.87, +5.89 | -0.05, +1.95, +3.95, +5.91 | 0, 2, 4, 6 | -4, -2, 0, 2 |
+| SKIP taken, blue, rounds 1 to 3 | +3.98, +5.99, +7.98 | +4.03, +6.02, +8.03 | | |
+
+Over 33 rows the not-taken SKIP fits 8 - 0.15 colour clocks on A500 ECS and 8 - 0.08 on A500 OCS, where 4 would need the bars 22 pixels to the left. So a SKIP not taken and a WAIT satisfied on arrival take 8 and 8 memory cycle times, as NanoMig and the four implementations have it, and not the 4 and 6 of pp. 20 and 275. The taken SKIP sits 4 colour clocks further on, 8 plus the skipped MOVE's 4: a sum of 12, not a figure for the SKIP alone.
+
+The limits: the masked forms only; the taken SKIP only as that sum; `C5` and `C6`, a WAIT that blocks and then wakes, are not reached; p. 20's "one extra memory cycle to wake up" leaves open whether a satisfied WAIT's 8 divides as 6 and 2. The bars are read from the photographs, with their start measured against the ruler; the programs were not run on a machine here.
+
 ### What practitioners report
 
 Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t=19676): witnesses, never an oracle ([practitioner reports](../evidence/practitioner-reports.md)).
@@ -94,12 +110,10 @@ Reports from the forum thread [EAB 19676](https://eab.abime.net/showthread.php?t
 
 > "SKIP also "stops" the copper like WAIT due to LOAD2 "If not MOVE" condition and requires "wakeup" condition."
 
-SKIP and a satisfied WAIT share one longer path through the Copper's states, which fits the 8 and 8 the four implementations give; the post gives no cycle counts, so this is not the real-machine timing the page asks for.
+SKIP and a satisfied WAIT share one longer path through the Copper's states, which fits the 8 and 8 the four implementations give; the post gives no cycle counts; the real-machine timing is under *What photographs of real machines show*.
 
 ## Decision
 
-**None, and a patch would be the wrong instrument.** All four emulators produce NanoMig's numbers, so either the manual's cycle figures are wrong or every implementation shares a misreading.
+**No RTL change.** NanoMig already takes 8 memory cycle times for a `SKIP` and for a satisfied `WAIT`, as all four independent implementations do and as photographs named A500 ECS and A500 OCS show. Making `WAITSKIP1` and `WAITSKIP2` take 4 and 6 would meet the figures of pp. 20 and 275, which `P3` to `P6`, `AC5` and `AC6` grade; it would also make NanoMig the only implementation read here that takes them, and move it away from the photographs.
 
-**This is decidable on real hardware and by no other means available here.** A small 68k program timing a loop of `WAIT`s against a CIA timer, run on a real machine, settles it outright instead of mediating between a 1991 manual and five implementations, NanoMig and the four emulators. Both Copperline's `timing-test/` and vAmigaTS arrive independently at the same technique — probe programs booted from an ADF, results read from CRT photographs — and Copperline states the principle: *where real hardware and FS-UAE disagree, real hardware wins.*
-
-Until someone runs that, the status is "measured, matched by all four emulators, unresolved". The finding closes as stated in *What is asked of a reader*.
+The change, if one is made, belongs to the manual: pp. 20 and 275 print 4 for a `SKIP` and 6 for a satisfied `WAIT`, and the machine takes 8 and 8 in the masked forms the photographs reach. What they leave open is `C5` and `C6`, a `WAIT` that blocks and then wakes, which no program reaches, and how p. 20's "one extra memory cycle to wake up" divides a satisfied `WAIT`'s 8, as 6 and 2. The page closes as row 4 says.

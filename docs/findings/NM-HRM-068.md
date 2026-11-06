@@ -13,7 +13,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86); TC64 has the same constant one bit wider; inherited |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both PAL. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: expected an average of 227.5, observed 227.0 over four lines of 227. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: expected 625 lines and 227.5, observed 625 and 227.0; its line-count half matches. The control that writes HTOTAL and measures the line it produces is green. The package reports `28 passed, 5 failed`: the other three reds are the NTSC pair, [NM-HRM-010](NM-HRM-010.md)'s, and [NM-HRM-011](NM-HRM-011.md)'s |
-| **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC. Hardware: not run here; photographs named ACA500 ECS NTSC show equal lines with PAL forced by BEAMCON0 bit 5, against alternating lines without it, in that one configuration (*What photographs of real machines show*) |
 | **Effort** | none — no RTL change, at most a correction to p. 304's PAL row |
 | **See also** | [NM-HRM-010](NM-HRM-010.md) — the NTSC half of the same sentence, where the manual's two pages agree and NanoMig does not |
 
@@ -87,7 +87,10 @@ default:
 ## Risks and unknowns
 
 - **PAL hardware is not measured.** Only a PAL machine, or the PAL Agnus's
-  documentation, says whether any PAL configuration alternates line lengths.
+  documentation, says whether any PAL configuration alternates line lengths;
+  photographs named ACA500 ECS NTSC show equal lines with PAL forced by
+  BEAMCON0 bit 5 on a machine named NTSC, one configuration (*What photographs
+  of real machines show*).
 - **Could p. 304 mean something other than the line?** It introduces the list as
   *"scan rates supported in the V36 graphics.library"*, a software statement,
   beside a VGA row of 114.0. A figure the library uses for its own timing
@@ -108,6 +111,14 @@ The question put to each: how long is a PAL line?
 | **Copperline** | [`src/chipset/agnus.rs:9`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L9), [`:18`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L18), [`:841-859`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L841-L859) | <pre>if matches!(self.video_standard, VideoStandard::Ntsc) && lol {<br>&nbsp;&nbsp;&nbsp;&nbsp;NTSC_LONG_COLORCLOCKS_PER_LINE<br>} else {<br>&nbsp;&nbsp;&nbsp;&nbsp;COLORCLOCKS_PER_LINE<br>}</pre> with `pub const COLORCLOCKS_PER_LINE: u32 = 227;`, and `long_line_toggles()` is true only for NTSC. **Every PAL line is 227** |
 | **MiSTer** | [`rtl/agnus_beamcounter.v:86`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86), [`:281-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L281-L285) | descendant — identical to NanoMig: `parameter HTOTAL_VAL      = 8'd227 - 8'd1;`, and the long-line bit held clear in PAL |
 | **TC64** | [`rtl/minimig/agnus_beamcounter.v:102`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L102) | descendant — the same constant, one bit wider, `parameter HTOTAL_VAL      = 9'd227 - 9'd1;` |
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`ntsc3`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc3/ntsc3.s) and [`ntsc4`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc4/ntsc4.s) are named ACA500 ECS NTSC, a label and nothing more ([ntsc3](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc3/ntsc3_ACA500_ECS_NTSC.JPG), [ntsc4](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc4/ntsc4_ACA500_ECS_NTSC.JPG)). The two programs draw the same Copper bars and differ in the BEAMCON0 write: `$0020`, the PAL bit, in [`ntsc3.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc3/ntsc3.s#L2) and `$0000` in [`ntsc4.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc4/ntsc4.s#L2). A band painted from WAIT `$08BF`, a line that exists only in PAL ([`ntsc.i:247-248`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc.i#L247-L248)), is white at the bottom of the `ntsc3` photograph, luminance 255 where the other programs read 41 to 100, and the scaler's on-screen text reads PAL input.
+
+In `ntsc3` the line-to-line shift of the left block is 0.12 to 0.32 colour clocks, with one strand at 3.9 to 4.1 colour clocks from the ruler. In `ntsc4` it is 2.34 to 2.51: two kinds of line alternate (NM-HRM-010). So with PAL forced by BEAMCON0 bit 5 the lines are alike, as p. 23 and NanoMig have it, and not alternating as p. 304's "227.5" on the PAL row would have them, in this one configuration.
+
+The limits: PAL is forced by a register bit on a machine whose file name says NTSC; no stock PAL machine is photographed. The photograph shows equal lines, not the value 227, and it does not say that no PAL configuration alternates. The bars are read from the photographs, with position measured; the programs were not run on a machine here.
 
 ### What practitioners report
 

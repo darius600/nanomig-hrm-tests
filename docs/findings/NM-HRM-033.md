@@ -13,7 +13,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L295-L297) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L282-L284); inherited (MiSTer and TC64 have the same code) |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits): `make -C hrm/ch7-beamcon0-ecs-control-bits test`; the expected red exits nonzero |
 | **Assertions** | `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` — red: expected the toggle to stop with LOLDIS alone, observed it still toggles. The package totals 8 passed, 4 failed; this page grades only the P6 assertion. The two-bit measurement beside it is `P6-COMBINATION-MEASURED`, a `note()` (control toggles; LOLDIS + VARBEAMEN frozen) |
-| **Verdict of the four** | **all four implement LOLDIS on its own**; NanoMig is alone in also requiring VARBEAMEN. Hardware: not measured |
+| **Verdict of the four** | **all four implement LOLDIS on its own**; NanoMig is alone in also requiring VARBEAMEN. Hardware: not run here; photographs named ACA500 ECS NTSC show the alternation of the line length stopping with LOLDIS alone, against the program that writes no BEAMCON0 (*What photographs of real machines show*) |
 | **Effort** | S — one condition in `agnus_beamcounter.v` (the `if`/`else if` at L295 and L297), drop `&& varbeamen` |
 
 ---
@@ -47,7 +47,7 @@ Measured, VPOSR's LOL bit over four consecutive lines:
 
 ## Risks and unknowns
 
-- **Hardware was not measured.** Whether `&& varbeamen` was deliberate is open: on real ECS Agnus, is there a configuration in which LOLDIS is meant to be inert? If not, this is a plain transcription defect that has been inherited unchanged.
+- **Hardware was not run here, and VPOSR was not read.** Photographs named ACA500 ECS NTSC show LOLDIS alone stopping the alternation of the line length in one configuration; VPOSR bit 7 is inferred, not read, to follow. Whether `&& varbeamen` was deliberate is open for the configurations they do not show: on real ECS Agnus, is there one in which LOLDIS is meant to be inert? If not, this is a plain transcription defect that has been inherited unchanged.
 - **Copperline reads VARBEAMEN as a second way to stop the toggle**, a programmed line length having no long/short alternation to make. Denise takes the line length from HTOTAL under VARBEAMEN and still adds the toggled long-line cycle to it ([`events.cpp:479-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/events.cpp#L479-L480)), and WinUAE's per-line toggle does not look at VARBEAMEN. This page does not rest on that reading.
 - Only NTSC with `ecs=1` was measured.
 
@@ -65,6 +65,14 @@ Measured, VPOSR's LOL bit over four consecutive lines:
 WinUAE, vAmiga and Denise combine LOLDIS with the video standard and nothing
 else. Both Minimig lines carry the extra term unchanged, which is expected of
 descendants and says nothing about the manual.
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC), vAmiga's test suite, publishes a screen photograph per program. The photographs of [`ntsc2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc2/ntsc2.s) and [`ntsc5`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc5/ntsc5.s) are named ACA500 ECS NTSC, a label and nothing more ([ntsc2](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc2/ntsc2_ACA500_ECS_NTSC.JPG), [ntsc5](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc5/ntsc5_ACA500_ECS_NTSC.JPG)). Both programs draw six groups of Copper bars, a WAIT and 44 MOVEs each, and write VPOSW `$0080` and `$0000` from the same macros ([`ntsc5.s:5`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc5/ntsc5.s#L5), [`ntsc5.s:8`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc5/ntsc5.s#L8)). They differ in one write: [`ntsc5.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc5/ntsc5.s#L2) sets BEAMCON0 to `$0800`, LOLDIS alone with VARBEAMEN and PAL clear, and [`ntsc2.s:2`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Agnus/Misc/NTSC/ntsc2/ntsc2.s#L2) writes nothing.
+
+The photograph shows the line-to-line shift of the left block of bars; the right block is anchored by a WAIT and serves as the control. In `ntsc2` groups 0 and 1 shift by 2.30 and 2.10 CCK (right block 0.46 and 0.12), in groups 2 to 5 by 0.66 to 1.22 CCK, but there the right block moves by 0.61 to 1.06 as well, a slant of the display and not a Copper effect. In `ntsc5` all six groups shift by 0.09 to 0.15 CCK (right block 0.12 to 0.20). So with LOLDIS alone the alternation of the line length stops, in groups 0 and 1, the only two that discriminate: later VPOSW writes remove the strands in `ntsc2` regardless of value. The scaler's on-screen text reads NTSC input and there is no white band at the bottom of either photograph, so PAL is not selected. That is pp. 305 and 309 as printed, and not `loldis && varbeamen` in `agnus_beamcounter.v`.
+
+The limits: no program reads VPOSR, so that bit 7 stops toggling is inferred from the line length, and NanoMig's own `long_line` does not drive its line length (NM-HRM-010). The result is from one machine, with one write value of BEAMCON0, and the programs were not run on a machine here; the shifts are read from the photographs with the scale taken from the bar period.
 
 ## Decision
 

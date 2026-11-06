@@ -13,7 +13,7 @@
 | **Module** | `agnus_beamcounter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus_beamcounter.v#L89-L90) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L89-L90); inherited (MiSTer has the identical lines; TC64 the same two values with the blank held in a register) |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; [`hrm/ch7-vertb-vertical-blank-timing`](../../hrm/ch7-vertb-vertical-blank-timing): `make -C hrm/ch7-vertb-vertical-blank-timing test`; the expected reds exit nonzero |
 | **Assertions** | 3 red. `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL` (Table 3-13) — expected 29 blanked PAL lines, observed 26; the package reads `28 passed, 5 failed`, the other four reds are [NM-HRM-010](NM-HRM-010.md)'s and [NM-HRM-068](NM-HRM-068.md)'s. `NTSC-VBLANK-DURATION-20-LINES` (p. 219) — expected 20, observed 21; `PAL-VBLANK-DURATION-25-LINES` (p. 219) — expected 25, observed 26; that package reads `8 passed, 2 failed` |
-| **Verdict of the four** | **unanimous against Table 3-13's PAL row**: WinUAE and vAmiga end the hardwired PAL blank after line 25, as NanoMig does, Copperline after line 24 and Denise after line 23; none blanks to the $1D the table prints. In NTSC WinUAE ends it after line 20, as NanoMig does, vAmiga and Copperline after line 19, Denise after line 18. Hardware: not measured |
+| **Verdict of the four** | **unanimous against Table 3-13's PAL row**: WinUAE and vAmiga end the hardwired PAL blank after line 25, as NanoMig does, Copperline after line 24 and Denise after line 23; none blanks to the $1D the table prints. In NTSC WinUAE ends it after line 20, as NanoMig does, vAmiga and Copperline after line 19, Denise after line 18. Hardware: not run here; a photograph named A500 shows sprites armed by a write on line $1A and not by one on line $19, a sprite gate ending after line 25 and not the blank itself (*What photographs of real machines show*) |
 | **Effort** | none; if the hardwired PAL blank is confirmed to end at line 28, S: `VBSTOP_PAL_VAL` at `agnus_beamcounter.v:89` from 25 to 28 |
 
 ---
@@ -103,8 +103,8 @@ and 25 themselves are recorded, `vbl=1` on both, and not graded.
 
 ## Risks and unknowns
 
-- **Not measured:** a real PAL Agnus; the ECS programmable blank; the chip
-  revision.
+- **Not measured:** the blank itself on a real PAL Agnus; the ECS programmable blank; the chip
+  revision. One photograph named A500 shows the sprite gate ending after line 25, which is not the display (*What photographs of real machines show*).
 - **The two packages grade the two pages, and no implementation can be green in
   both.** `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL` needs line 26 blanked,
   `PAL-VBLANK-ENDS-BY-LINE-26` needs it clear; an implementation that blanks
@@ -137,6 +137,14 @@ The question put to each: on which line does the hardwired vertical blank end?
 
 The manual's PAL−NTSC gap is **eight** lines, 29 − 21; p. 219's is five, as
 NanoMig's, WinUAE's, Copperline's and Denise's; vAmiga's is six.
+
+### What photographs of real machines show
+
+[vAmigaTS](https://github.com/dirkwhoffmann/vAmigaTS/tree/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual), vAmiga's test suite, publishes a screen photograph per program. The photograph of [`vblen1`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s) is named A500, a label and nothing more ([vblen1](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1_A500.JPG)). With sprite DMA off from line `$08` ([`vblen1.s:148`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L148)) and on again at line `$1C` ([`vblen1.s:176`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L176)), the Copper writes eight sprites' SPRxPOS. Four are written around line `$19`: sprite 4 (VSTART `$1A`, [`vblen1.s:160`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L160)) and sprite 6 (`$1B`, [`vblen1.s:168`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L168)) written one line ahead, sprite 7 (`$1A`, [`vblen1.s:171`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L171)) written on line `$1A`, and sprite 5 (`$19`, [`vblen1.s:163`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L163)) written on line `$19`. Sprites 0 to 3 are written earlier, at VSTART `$06`, `$04`, `$0C` and `$0A` ([`vblen1.s:140`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L140), [`vblen1.s:143`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L143), [`vblen1.s:152`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L152), [`vblen1.s:155`](https://github.com/dirkwhoffmann/vAmigaTS/blob/e807e3256d73135f1960e7f9aef2c16d8a6a56b4/Denise/Sprites/manual/vblen1/vblen1.s#L155)).
+
+Sprites 4, 6 and 7 run from line `$2C`, the top of the picture, down to lines `$81`, `$91` and `$9A`, as their VSTOP says: they were armed. Sprite 5 and sprites 0 to 3 are single objects at their later positions: they were not. Sprite 5 against sprite 7 have the same write timing and differ by one line, the write on line `$19` (25) arming nothing and the write on line `$1A` (26) arming. So the sprite gate ends after line `$19`, which is p. 219's line 25 and NanoMig's, and not Table 3-13's `$1D`, if this gate is the blank; it is not Copperline's line 24 or Denise's line 23. The scale is 2.77 to 2.84 pixels per line, which is PAL-like, where NTSC photographs measure 3.34.
+
+The limits: this shows where sprites arm, not the blank itself, so Table 3-13 is not refuted as a statement about the display; the display opens at line `$2C`, so lines 26 to 28 cannot be seen; the file name gives "A500" only, and PAL is inferred from the scale. The bars are read from the photograph, with the sprites' extents measured in lines; the program was not run on a machine here.
 
 ### What practitioners report
 
