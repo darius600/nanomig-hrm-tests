@@ -686,7 +686,7 @@ O2 (the drive LED) is not graded at this port. O2's own legs and its calibration
 
 This section is generated from the output `make test` prints on each core (fx68k and TG68K); it contains nothing else.
 
-fx68k: 101 passed, 30 failed. TG68K: 101 passed, 30 failed.
+fx68k: 101 passed, 29 failed. TG68K: 101 passed, 29 failed.
 
 ### 5.1 Graded lines
 
@@ -776,7 +776,6 @@ fx68k: 101 passed, 30 failed. TG68K: 101 passed, 30 failed.
 | P8.65-MODE01-CONTRAST | PASS | PASS |
 | P7.6-CIAA | PASS | PASS |
 | P7.6-CIAA-SELECT-PRE | PASS | PASS |
-| P7.6-CIAA-SELECT | FAIL | FAIL |
 | P7.6-CIAA-CONTRAST | PASS | PASS |
 | P7.6-CIAB-PRE | PASS | PASS |
 | P7.6-CIAB | FAIL | FAIL |
@@ -925,7 +924,7 @@ fx68k: P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$00 (first interval, no CNT edge); afte
 fx68k: P8.65-MODE01-COUNTING CIAA decrement 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744
 fx68k: P8.65-MODE01 CIAB v=$0744 W=2236.000000E
 fx68k: P8.65-MODE01-CONTRAST counted E cycles: CIAA 2236 in [2229.60, 2242.00]; CIAB 2236 in [2229.60, 2242.00]
-fx68k: P7.6-CIAA-SELECT i=$08 v=$1000 W=2236.000000E
+fx68k: P7.6-CIAA-SELECT i=$08 v=$1000 W=2236.000000E: not graded -- with CRA bit 6 = 1 (SPMODE output) and timer A stopped (CR<-$40), pp. 345-346 make CNT an open-drain output and p. 357 says CIAA's KCLK is always driven by the keyboard; the pages assign no SP result to this case of a key code sent into the output mode
 both: P7.6-CIAA-CONTRAST i=$00 (key not sent)
 fx68k: P7.6-CIAB TA samples=136 SP seen=no
 both: P7.6-CIAB-CONTRAST SP seen=no
@@ -964,7 +963,7 @@ both: P10-sol:F-cra.c16 members: P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P4(CI
 both: P10-opus:F-crb.c3 members: P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL
 both: P10-sol:F-cra.c13 members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.5-COUNTING FAIL
 both: P10-sol:F-crb.c7 members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 FAIL; P8.65-10 PASS; P8.65-MODE01-COUNTING FAIL; P8.65-11 FAIL
-both: P10-opus:F-cra.c12 members: P7.0-STOP PASS; P1-CONTROL(CIAA/TA) NOT GRADED; P1-CONTROL(CIAB/TA) PASS; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL; P7.3-CONT PASS; P7.4 PASS; P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.6-CIAA PASS; P7.6-CIAA-SELECT FAIL; P7.7 PASS
+both: P10-opus:F-cra.c12 members: P7.0-STOP PASS; P1-CONTROL(CIAA/TA) NOT GRADED; P1-CONTROL(CIAB/TA) PASS; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL; P7.3-CONT PASS; P7.4 PASS; P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.6-CIAA PASS; P7.6-CIAB-CONTRAST PASS; P7.7 PASS
 both: P10-opus:F-cra.c13 members: P7.0-START PASS; P1-MAIN(CIAA/TA) NOT GRADED; P1-MAIN(CIAB/TA) FAIL; P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P7.3-ONESHOT PASS; P7.4 PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.5-COUNTING FAIL; P7.6-CIAB FAIL; P7.6-CIAB-GREENCTL PASS
 both: P10-opus:F-crb.c13 members: P8.0-STOP PASS; P1-CONTROL(CIAA/TB) NOT GRADED; P1-CONTROL(CIAB/TB) PASS; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL; P8.3-CONT PASS; P8.4 PASS; P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.7-RUNY PASS
 both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.65-MODE01-COUNTING FAIL; P8.7-RUNX PASS
@@ -1018,7 +1017,7 @@ TG68K: P7.5-CIAA-INMODE CIAA v1=$0E66 i1=$00 (first interval, no CNT edge); afte
 TG68K: P8.65-MODE01-COUNTING CIAA decrement 1782 (the page's count is 8) over W=1782.000000E, i=$08, v=$090A
 TG68K: P8.65-MODE01 CIAB v=$090A W=1782.000000E
 TG68K: P8.65-MODE01-CONTRAST counted E cycles: CIAA 1782 in [1776.60, 1788.00]; CIAB 1782 in [1776.60, 1788.00]
-TG68K: P7.6-CIAA-SELECT i=$08 v=$1000 W=1782.000000E
+TG68K: P7.6-CIAA-SELECT i=$08 v=$1000 W=1782.000000E: not graded -- with CRA bit 6 = 1 (SPMODE output) and timer A stopped (CR<-$40), pp. 345-346 make CNT an open-drain output and p. 357 says CIAA's KCLK is always driven by the keyboard; the pages assign no SP result to this case of a key code sent into the output mode
 TG68K: P7.6-CIAB TA samples=111 SP seen=no
 TG68K: P8.65-M10 CIAA: nA=39 v=$FFD8 flagged=39
 TG68K: P8.65-M10 CIAB: nA=39 v=$FFD8 flagged=39

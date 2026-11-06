@@ -40,7 +40,7 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb p1_ciab_tb_pre11 p1_ciab
             p8_ciab_inmode01_short p8_ciaa_inmode01_ctl p865_ciaa_mode11_short \
             p865_ciaa_mode11_w2300 p9_legf_ciab_tb_l40_nostart p87_ciab_x p87_ciab_y p87_ciab_x_nolsb p87_ciab_x_short \
             p87_ciaa_x p87_ciaa_y p1_ciab_tb_pbon0_pre11 p1_ciab_tb_pbon0_pre12 p1_ciab_tb_pbon0_pre13 \
-            p3_ciab_tb_short p6_k123_n6 p76_ciaa_sel p865_ciaa_mode11_lat4 p9_legf_ciab_ta_l40 p9_legf_ciab_ta_l41 p9_legf_ciab_ta_l64 \
+            p3_ciab_tb_short p6_k123_n6 p76_ciaa_sel p9_legf_ciab_ta_l40 p9_legf_ciab_ta_l41 p9_legf_ciab_ta_l64 \
             p9_legf_ciab_ta_l100 p9_legf_ciab_ta_l41_m p9_legf_ciab_ta_cputoggle p9_legf_ciab_ta_cputoggle_skip \
             p9_legw_ta_l40 p9_legw_ta_l100 p9_legw_ctl_ta_l20 p9_legw_ctl_ta_l40 p9_legw_ctl_ta_l100
 
