@@ -72,7 +72,7 @@ descendants and says nothing about the manual.
 
 The photograph shows the line-to-line shift of the left block of bars; the right block is anchored by a WAIT and serves as the control. In `ntsc2` groups 0 and 1 shift by 2.30 and 2.10 CCK (right block 0.46 and 0.12), in groups 2 to 5 by 0.66 to 1.22 CCK, but there the right block moves by 0.61 to 1.06 as well, a slant of the display and not a Copper effect. In `ntsc5` all six groups shift by 0.09 to 0.15 CCK (right block 0.12 to 0.20). So with LOLDIS alone the alternation of the line length stops, in groups 0 and 1, the only two that discriminate: later VPOSW writes remove the strands in `ntsc2` regardless of value. The scaler's on-screen text reads NTSC input and there is no white band at the bottom of either photograph, so PAL is not selected. That is pp. 305 and 309 as printed, and not `loldis && varbeamen` in `agnus_beamcounter.v`.
 
-The limits: no program reads VPOSR, so that bit 7 stops toggling is inferred from the line length, and NanoMig's own `long_line` does not drive its line length (NM-HRM-010). The result is from one machine, with one write value of BEAMCON0, and the programs were not run on a machine here; the shifts are read from the photographs with the scale taken from the bar period.
+The limits: no program reads VPOSR, so that bit 7 stops toggling is inferred from the line length, and NanoMig's own `long_line` does not drive its line length (NM-HRM-010). The result is from one label, with one write value of BEAMCON0, and the programs were not run on a machine here; the shifts are read from the photographs with the scale taken from the bar period.
 
 ## Decision
 

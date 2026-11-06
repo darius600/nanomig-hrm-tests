@@ -1,11 +1,11 @@
-# NM-HRM-038 — after POTGO START, the pot counters are not held in reset and the input lines are not dumped [RTL review]
+# NM-HRM-038 — after POTGO START, the pot counters count the reset interval into their final count and the input lines are not dumped [RTL review]
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Should `userio.v` hold the four pot counters at zero, and read POTGOR's input bits as 0, for the reset interval after a POTGO write with bit 0 set (p.235: seven or eight lines; Figure 8-5: eight), where it now increments on the very next `pot_cnt_en` tick (first increment after 0 lines, final count 18 after 8 + 10 lines) and reads 1 on a released input line? Closes when `userio.v` models the interval and the 32 reds under *Assertions* turn green (eight in `hrm/ch8-pot-counter-start-and-charge`, 24 on each core in `integration/ch8-controller-ports`), or when an Amiga specialist rejects the change, in which case, if the rejection means p.235 is wrong, this page is refiled against the printed page. |
+| **What is asked of a reader** | Should `userio.v` keep the reset interval after a POTGO write with bit 0 set (p.235: seven or eight lines; Figure 8-5: eight) out of the four pot counters' final count, and read POTGOR's input bits as 0 through it, where it now counts from the very next `pot_cnt_en` tick (final count 18 after 8 + 10 lines) and reads 1 on a released input line? Closes when `userio.v` models the interval and the 28 final-count and POTGOR reds turn green (four in `hrm/ch8-pot-counter-start-and-charge`, 24 on each core in `integration/ch8-controller-ports`), the four first-increment reds being decided apart, or when an Amiga specialist rejects the change, in which case, if the rejection means p.235 is wrong, this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | The pot counters and POTGOR's input bits after a POTGO write with bit 0 (START) set. Counters measured at `userio.v`; POTGOR measured at the system boundary in PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on both CPU cores. Chip revision: unknown; whether NTSC takes seven lines or eight is open |
 | **Software impact** | unknown; no named affected software |
@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge): `make -C hrm/ch8-pot-counter-start-and-charge test`; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports): `make -k -C integration/ch8-controller-ports test`; an expected red exits nonzero |
 | **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1`, `sol:8-pot.c16` (p.235 body text), `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), expected 7 or 8 lines (Figure 8-5: 8), observed 0; on the final count after 8 + 10 lines `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`, expected 10 or 11 (Figure 8-5: 10), observed 18 on all four counters. 24 red per core in `integration/ch8-controller-ports` (109 passed, 24 failed on each core), expected every input line 0 in POTGOR after START, observed $5500 in every counted read: `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`) and each configuration's aggregate over them (`P1-START`, `P1-START-NTSC+ECS`, `P1-START-PAL+OCS`, `P1-START-NTSC+OCS`), on fx68k and on TG68K. Green in each configuration on the same measurement basis: the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) |
 | **Verdict of the four** | **2–2 on the counter read, 3–1 on the POTGOR discharge, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the counter package's first-increment assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. On POTGOR, WinUAE, vAmiga and Denise discharge an input line through the interval, so a line nothing pulls up reads 0 there, as the integration package's assertions require; Copperline's POTGOR read has no discharge and returns 1 on a released line, as NanoMig's does. vAmiga's joystick, its mouse at the default setting, and Denise's joypad and mouse pull a released button's line high in every read, so with one attached those two read 1 as well. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7. Hardware: not run here; photographs named A500 ECS show the final count with the page and against NanoMig's 18, a read inside the interval not zero, which is against the hold at zero, and a POTGOR read of $0000 only if that exposure is `potgo1`'s (*What photographs of real machines show*) |
-| **Effort** | M — `userio.v` only — a reset-hold on the four pot counters (eight lines on PAL) and a START term in `potcap`, which START does not reach today |
+| **Effort** | M — `userio.v` only — the reset interval on the four pot counters (eight lines on PAL), a hold at zero or, as the photograph reads, a count through the interval and a restart at its end, and a START term in `potcap`, which START does not reach today |
 
 ---
 
@@ -141,12 +141,14 @@ POTGOR: `potgo1` and `potgo5` differ in START, `$0000` against `$0500`, but the 
 ## Decision
 
 Model the reset interval after a POTGO start once, for both halves the page
-describes. For eight scan lines on PAL, hold the four pot counters at zero, as
-Denise and Copperline do, and read POTGOR's bit as 0 for every pot line that is
+describes. For eight scan lines on PAL, keep the interval out of the final count: hold the
+four pot counters at zero, as Denise and Copperline do, or, as the photograph
+has it and WinUAE and vAmiga do, let them run and restart them at the end of
+the interval; and read POTGOR's bit as 0 for every pot line that is
 an input, whose capacitor START dumps (p.240 Table 8-4) while the read circuitry
 stays in its reset state (p.235), as WinUAE does, and vAmiga and Denise do with
-nothing attached to the port. By a reading of the code, that satisfies the
-counter package's eight reds, first increment and final count alike, and on the
+nothing attached to the port. By a reading of the code, the hold satisfies the
+counter package's eight reds, the restart the four final-count reds only; and on the
 POTGOR side `C0-Fc` to `C4-Fc` in the controller-ports package, bit 12 included,
 since the dump does not depend on a port; holding the counters alone leaves the
 latter red, because START does not reach `potcap`.

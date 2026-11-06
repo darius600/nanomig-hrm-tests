@@ -1,4 +1,4 @@
-# Six RTL decisions, and how two emulators answered them
+# Four RTL decisions and two questions for the manual, and how two emulators answered them
 
 Every finding in this suite ends the same way: the manual says one thing, the
 measurement says another, and **the pipeline stops there**. Deciding what the RTL
@@ -266,7 +266,7 @@ the printed page ([`findings/NM-HRM-004.md`](../findings/NM-HRM-004.md)); no RTL
 change follows from it, and whether p.310's CDANG-clear sentence describes the
 ECS Agnus is a question for someone who knows it.
 
-## NM-HRM-005 — a SKIP and a satisfied WAIT take 8 memory cycle times each, where pp. 20 and 275 print 4 and 6 - **filed against the printed page; photographs of real machines agree with NanoMig**
+## NM-HRM-005 — NanoMig takes 8 memory cycle times for a SKIP and a satisfied WAIT, where p. 20 prints 4 and 6 and p. 275 prints 4 for the SKIP - **filed against the printed page; photographs named A500 ECS and A500 OCS agree with NanoMig**
 
 | | |
 |---|---|
@@ -310,9 +310,9 @@ question is whether the manual's cycle figures need correcting.
 independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 asks for no
 RTL change: it is filed against the printed page, where Appendix B and p.310
 disagree, and NanoMig and both emulators follow Appendix B. NM-HRM-005 is filed
-against the printed page as well: vAmiga measures exactly NanoMig's three
-numbers, and photographs of real machines show the not-taken `SKIP` and the
-satisfied `WAIT` at 8 and 8; the maintained statement is
+against the printed page as well: vAmiga gives exactly NanoMig's three
+numbers, and photographs named A500 ECS and A500 OCS show a masked `SKIP` not taken and a
+masked satisfied `WAIT` at 8 and 8; the maintained statement is
 [`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md).
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from

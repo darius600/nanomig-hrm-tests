@@ -251,7 +251,7 @@ Module links point at the NanoMig revision the pages cite, `4315acb`.
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-037](findings/NM-HRM-037.md) | the right controller port's X potentiometer input does not exist | a test fails against the page |
-| [NM-HRM-038](findings/NM-HRM-038.md) | after POTGO START, the pot counters are not held in reset and the input lines are not dumped | a test fails against the page; the implementations split |
+| [NM-HRM-038](findings/NM-HRM-038.md) | after POTGO START, the pot counters count the reset interval into their final count and the input lines are not dumped | a test fails against the page; the implementations split |
 
 The marks and this list are derived from each page's header table by
 `hrm-testpipeline/tools/write_rtl_review.py`, which lives in the separate
