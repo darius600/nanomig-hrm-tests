@@ -760,8 +760,8 @@
 // of `bpu`. Measured directly, not merely read: HIRES-BPU-CEILING-MAX-4-
 // PLANES below sets BPU=4 in hires and confirms reg_address_out $88-$8B
 // (bitplanes 1-4) are fetched and no other plane is, sets BPU=6 in hires
-// and confirms $8C/$8D (bitplanes 5-6) never fire, with the same BPU=6 in
-// lores as a control showing they DO fire there - the ceiling is real and
+// and confirms no plane above 4 ($8C-$8F) ever fires, with the same BPU=6
+// in lores as a control showing $8C/$8D (bitplanes 5-6) DO fire there - the ceiling is real and
 // hires-specific. The page does not say what BPU 5 or 6 do in hires:
 // Table 3-5 (p.48) and the BPLCON0 summary (p.90) list the codes 100
 // (bitplanes 1-4), 101 and 110, mark 111 as not used, and p.49 says only
@@ -2000,7 +2000,7 @@ int main(int argc, char** argv) {
     // ---------------- HIRES-BPU-CEILING-MAX-4-PLANES (p.49) ----------------
     // Three graded clauses in one expect: hires BPU=4 fetches exactly
     // bitplanes 1-4 (Table 3-5 code 100, p.48, with p.49); hires BPU=6
-    // never fetches bitplanes 5 and 6 (p.49's ceiling); the lores BPU=6
+    // fetches no bitplane above 4 (p.49's ceiling); the lores BPU=6
     // control still reaches bitplanes 5 and 6. The page does not say what
     // BPU 5 or 6 do in hires, so which of bitplanes 1-4 the BPU=6 run
     // fetches is a MEASURED line. In this RTL the ceiling is not in the
@@ -2050,17 +2050,17 @@ int main(int argc, char** argv) {
 
         bool hires4_exactly_planes_1_to_4 = hi4_seen[0] && hi4_seen[1] && hi4_seen[2] && hi4_seen[3] &&
             !hi4_seen[4] && !hi4_seen[5] && !hi4_seen[6] && !hi4_seen[7];
-        bool hires6_never_planes_5_6 = !hi6_seen[4] && !hi6_seen[5];
+        bool hires6_no_plane_above_4 = !hi6_seen[4] && !hi6_seen[5] && !hi6_seen[6] && !hi6_seen[7];
         bool lores_reaches_4_and_5 = lo_seen[4] && lo_seen[5];
 
         checks.expect(
-            hires4_exactly_planes_1_to_4 && hires6_never_planes_5_6 && lores_reaches_4_and_5,
+            hires4_exactly_planes_1_to_4 && hires6_no_plane_above_4 && lores_reaches_4_and_5,
             "HIRES-BPU-CEILING-MAX-4-PLANES: BPLCON0 HIRES=1, FMODE=0 (the "
             "standard OCS/ECS fetch mode), DDFSTRT=$003C/DDFSTOP=$00D4. "
             "(1) With BPU=4 (Table 3-5 code 100, p.48) exactly reg_address_out "
             "$88/$89/$8A/$8B (bitplanes 1-4) receive a dma cycle over the "
-            "line and no other plane does. (2) With BPU=6 the registers "
-            "$8C/$8D (bitplanes 5-6) never receive one. (3) Control: BPU=6 "
+            "line and no other plane does. (2) With BPU=6 no register "
+            "above $8B ($8C-$8F, bitplanes 5-8) ever receives one. (3) Control: BPU=6 "
             "in LORES (DDFSTRT=$0038/DDFSTOP=$00D0) DOES reach $8C/$8D - "
             "this RTL can address planes 5-6, so the hires absence is a "
             "real ceiling, not this fixture never trying. The page does not "
@@ -2076,7 +2076,7 @@ int main(int argc, char** argv) {
         checks.note(
             "hires BPU=6 (FMODE=0, DDFSTRT=$003C/DDFSTOP=$00D4): bitplanes "
             "1-4 fetched over the line: " + (fetched6.empty() ? std::string("none") : fetched6) +
-            "; bitplanes 5-6 fetched: " + ((hi6_seen[4] || hi6_seen[5]) ? "yes" : "no") +
+            "; any bitplane above 4 fetched: " + ((hi6_seen[4] || hi6_seen[5] || hi6_seen[6] || hi6_seen[7]) ? "yes" : "no") +
             ". The page does not say what BPU 5 or 6 do in hires (Table 3-5 "
             "p.48, p.90, p.49); not graded.");
     }
@@ -2369,7 +2369,7 @@ int main(int argc, char** argv) {
 //    (reg 0x8B) is no longer fetched, the "exactly bitplanes 1-4" clause
 //    failed.
 //    HIRES6LORES: the BPU=6 run's HIRES bit cleared. Result: regs 0x8C/0x8D
-//    (bitplanes 5-6) are fetched, the "never bitplanes 5 and 6" clause
+//    (bitplanes 5-6) are fetched, the "no bitplane above 4" clause
 //    failed; the BPU=4 run and the lores control were untouched.
 //    LORESCTRL: the lores control's BPU dropped from 6 to 3. Result: the
 //    control no longer reaches planes 5-6, so the overall condition failed
@@ -2413,7 +2413,7 @@ int main(int argc, char** argv) {
 // MUTATION MAX-WORDS-49-HIRES-AT-HW-LIMITS none impossible: already red at this package's true baseline; 49 is structurally unreachable (hires word count is always even in this RTL, confirmed by sweeping n=26..34), so no stimulus this assertion explores can turn it green.
 // MUTATION DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE none impossible: already red at baseline; H3 (ddfstrt[3], register bit 2) is part of the position compare's unconditional `ddfstrt[8:3]` group, gated by neither `ecs` nor `hires`, so an H3-only-differing DDFSTRT pair always shifts the first fetch in lores too - no ecs/hires/DDFSTRT combination this assertion drives can satisfy the manual's mode-based condition.
 // MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_HIRESBPU3=1 drops the hires run's BPU from 4 to 3; plane 4 (reg 0x8B) is no longer fetched, hires4_exactly_planes_1_to_4 false (19/2 became 18/3, only this assertion newly red).
-// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_HIRES6LORES=1 clears HIRES on the BPU=6 run; regs 0x8C/0x8D (bitplanes 5-6) are fetched, hires6_never_planes_5_6 false (18/3, only this assertion newly red).
+// MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_HIRES6LORES=1 clears HIRES on the BPU=6 run; regs 0x8C/0x8D (bitplanes 5-6) are fetched, hires6_no_plane_above_4 false (18/3, only this assertion newly red).
 // MUTATION HIRES-BPU-CEILING-MAX-4-PLANES stimulus red: -DMUT_LORESCTRL=1 drops the lores control's BPU from 6 to 3; lores_reaches_4_and_5 false, control no longer reaches planes 5-6 (18/3, only this assertion newly red).
 // MUTATION DUAL-PLAYFIELD-HIRES-CEILING-2-PER-PLAYFIELD stimulus red: -DMUT_DUALBPU3=1 drops the hires run's BPU from 4 to 3; even_count dropped to 1, plane index 3 (bitplane 4) no longer reached (18/3, only this assertion newly red).
 // ============================================================================
