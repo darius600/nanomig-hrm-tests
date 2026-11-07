@@ -1774,7 +1774,12 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   it, and print phase 2 from the start of the modulator. **P12** to **P14** do the same
   with run lengths, which have to be exactly 200, 600 or 350 colour clocks.
 - **P15** compares the two plays of channel k from the channel's first fetch to the
-  stop, run by run.
+  stop, run by run, over the interval that both cover (the shorter of the two times from the
+  first fetch to the stop) and requires equal run counts there. On the TG68K board build the stop
+  of run A lies 352 system clocks after that of run B, and the 45th run of run A is complete
+  175, 191 and 207 system clocks after the stop of run B (k = 0, 1, 2): a run cut by the stop in
+  run B, outside the common interval; on fx68k the stops differ by 440 system clocks and the
+  runs are 56 and 56.
 - **P16** and **P17** write the eight words at read counts that the program fixes
   (14 reads before word 2 and 42 before each later word, tuned on this design) and
   prints where each write falls against the start of the frame before it. The preconditions
