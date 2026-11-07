@@ -36,7 +36,7 @@
 // MUTATION P2-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P2 is NOT GRADED
 // MUTATION P2 stimulus red the SET write for DMACON bit 0 in the sweep is left out, via NMH_MUTATE=OMIT
 // MUTATION P2-OMIT stimulus red the main program (the SET write for DMACON bit 0 present) through the unchanged comparator of the omit line, via NMH_MUTATE=INVOMIT
-// MUTATION P2 stimulus red the OCS run is the program that never finishes (NOT GRADED) and the ECS run the program without one SET write (fails), via NMH_MUTATE=JOINP2
+// MUTATION P2 stimulus red the ECS run is the program that never finishes (NOT GRADED) and the OCS run the program without one SET write (fails), via NMH_MUTATE=JOINP2
 // MUTATION P3-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P3-ON and P3 are NOT GRADED
 // MUTATION P3-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BPLEN still set, via NMH_MUTATE=G2 -- P3-ON and P3 are NOT GRADED
 // MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test), via NMH_MUTATE=G3 -- P3-ON and P3 are NOT GRADED
