@@ -2328,8 +2328,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
          "at least one write in [Q3,Q3+$20), the CPU's own destination, and none in [Q2,Q2+$20) in the window",
          np_in, noptr_cmp);
     line("P11-NOHI",
-         "P11-NOHI [p.186, p.269]: with the $054 MOVE replaced by a MOVE to COLOR00, under OCS and ECS, no write "
-         "in [Q2,Q2+$20) and none in [Q3,Q3+$20) in the window (BLTDPTH keeps the CPU's high word)",
+         "P11-NOHI [p.263, p.186, p.269]: with the $054 MOVE replaced by a MOVE to COLOR00, under OCS and ECS, no write "
+         "in [Q2,Q2+$20) and none in [Q3,Q3+$20) in the window (the Copper writes only the low word of the 32-bit BLTDPTH)",
          nh_in, nohi_cmp);
 }
 

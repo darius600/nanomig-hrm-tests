@@ -1206,11 +1206,15 @@ the real list and with both lists of the contrasting cases.
 - Replace the two pointer MOVEs by MOVEs to `$0180`. Expected: writes in the
   Q3 range and none in the Q2 range. This is graded in the normal run as
   P11-NOPTR.
-- Replace the `$054` MOVE by a MOVE to `$0180` with the same data. BLTDPTH
-  then keeps the high word the CPU wrote (`$0006`) and takes the low word the
-  Copper wrote (`$5000`): the pointer is `$65000`, in neither range. Expected:
-  no write in the Q2 range and none in the Q3 range. This is graded in the
-  normal run as P11-NOHI.
+- Replace the `$054` MOVE by a MOVE to `$0180` with the same data. The Copper
+  then writes only the low word of BLTDPTH, one of the pointer registers that
+  p.263 says "are organized as 32 bits on a long word boundary", with its high
+  word at `$054`. If the high word keeps what the CPU wrote (`$0006`), the
+  pointer is `$65000`, in neither range. No page says what a write of the low
+  word alone does to the high word; the expectation does not need it, since
+  only the replaced MOVE writes Q2's high word `$0007`. Expected: no write in
+  the Q2 range and none in the Q3 range. This is graded in the normal run as
+  P11-NOHI.
 - For G1: a branch-to-self before `END`.
 - For G2: leave DMAEN out of the enabling write. The Copper does not run, so
   P11-G(list-ran) prints `NOT GRADED` naming P11-G2.
