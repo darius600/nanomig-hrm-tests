@@ -1217,7 +1217,7 @@ graded, the measurement that stands in its place and the reason are in one place
 
 P1–P5 and P7 (the memory-cycle-parity half of this specification) and P8–P12 (the sprite-channel
 reuse half, read from the video output; see "Video apparatus and P8–P12" below) are built:
-`Makefile`, `test_ch2_dma_cycles.cpp`, 53 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
+`Makefile`, `test_ch2_dma_cycles.cpp`, 54 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
 K2b, K3, K4, K5, K6, T1, T2, T3, and for the video lines FRAMES, Q2–Q7, Q-REF, K9, IMG4) is its own graded line, printed before the lines that depend on it
 and never part of their graded expression (§2.11). K2b, K3, K4, K5, K6, T1, T2 and T3 are gated by the
 observation preconditions of the runs they grade, as P2–P5 and P7 are; P1's gate leaves out F2 and
