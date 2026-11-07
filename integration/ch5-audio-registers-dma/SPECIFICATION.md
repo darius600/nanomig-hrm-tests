@@ -77,11 +77,13 @@ a blitter pointer keeps its high 5 bits (p.309).
 | N_k (k = 1..7) | `$65000 + $100*k` | null sprite `$0000,$0000` |
 | F | `$66000` | 16 words `$FFFF` |
 | Zb | `$66100` | 16 words `$0000` |
+| M_k (k = 1..4) | `$66200 + $20*(k-1)` | P9's mixed source blocks, 16 words each, all `$0000` except one word: M_1 word 0 = `$0001`, M_2 word 7 = `$8000`, M_3 word 15 = `$0100`, M_4 word 15 = `$0100` |
+| Q3 | `$67000` | P11's CPU destination, `$20` bytes, all zero |
 | P | `$68000` | bitplane area, `$8000` bytes, all zero |
 | A_x^H | `$70000 + $1000*x` (= `A_x + $10000`) | audio data, 8 words (any values; P1 contrast C1) |
 | B_x | `$70800 + $1000*x` | audio data (any values; the location the Copper writes in P10) |
-| Q | `$74000` | blitter destination area, `$2000` bytes, all zero before each run |
-| Q2 | `$75000` | second blitter destination (P11), `$20` bytes |
+| Q | `$74000` | blitter destination area of P5, P7, P8 and P9, `$2000` bytes, all zero before each run |
+| Q2 | `$75000` | P11's blitter destination, `$20` bytes; it lies inside the address range of Q, and no run uses both |
 | G | `$78000` | CPU log area, `$4000` bytes |
 | R | `$7C000` | stored results (register values read by the program) |
 | MK | `$7D000` | marker word |
@@ -103,7 +105,10 @@ Every audio, sprite, bitplane, Copper and blitter-source area above is a
   therefore counts as a fetch by that block's agent, and a write in Q or Q2 as
   a blitter destination write.
 - **CPU accesses** are the accesses to the program image, the stack, G, R and
-  MK.
+  MK. Where a check counts them (P7), it counts the reads from the program
+  image (`$080400` up to but not including `$080800`) and the writes to G; the
+  loop that runs while P7's blit is in progress uses neither the stack nor R
+  nor MK.
 - **Refresh:** if the port record marks refresh accesses (or names the
   requester of each access), the test uses that mark to leave refresh out. If
   it does not, refresh accesses are not removed. A refresh access that falls
@@ -136,10 +141,10 @@ Every audio, sprite, bitplane, Copper and blitter-source area above is a
 | Id | The test asserts | Contrasting stimulus that turns the assertion red |
 |---|---|---|
 | G1 | The program finished: the final marker `END` was written, and every result word the proposition names was stored. | Insert a branch-to-self before `END`: G1 goes red. |
-| G2 | The DMACONR value that the program reads and stores right after each enabling DMACON write shows the intended bits among bits 10 and 8-0, and DMAEN (bit 9) set (the readback is P2). | Leave bit 9 out of the enabling write: the stored value shows bit 9 = 0, G2 goes red. p.144, "For any audio DMA to occur (or any other DMA, for that matter), the DMAEN bit in DMACON must be set", also predicts that the effect is absent. |
+| G2 | The DMACONR value that the program reads and stores right after each enabling DMACON write shows DMAEN (bit 9) set and the intended bits among 8-0 (the readback is P2). P7, P8 and P9 also read bit 10 (BLTPRI) in it, as they name; the other propositions do not read bit 10. | Leave bit 9 out of the enabling write: the stored value shows bit 9 = 0, G2 goes red. p.144, "For any audio DMA to occur (or any other DMA, for that matter), the DMAEN bit in DMACON must be set", also predicts that the effect is absent. |
 | G3 | No CPU write falls into any DMA block during any window. Where a run has several windows (P1, P10), every block is checked against every window, not only against its own. | Add one `MOVE.W` into the block under test inside the window: G3 goes red. For P1 and P10 also add it into a block inside a window that is not the block's own: G3 goes red. |
-| G4 | V(W) is at least the value the proposition names. | Set the delay count to 0: V(W) falls short, G4 goes red. |
-| G5 | Of DMACON bits 8-0, only the channels the proposition names are set during the window (from the same stored DMACONR value). | Also set SPREN (`$8020`) before the window: G5 goes red. |
+| G4 | V(W) is at least the value the proposition names, and where the proposition names a gap between two windows (P1, P10), at least one vertical-sync pulse start lies in each gap. | Set the delay count to 0: V(W) falls short, G4 goes red. Where there is a gap, also set the gap count to 0 with the delay count unchanged: only the gap clause goes red. |
+| G5 | Of DMACON bits 8-0, only the channels the proposition names are set during the window (from the same stored DMACONR value). | Also set a bit the proposition does not name: SPREN (`$8020`), or BPLEN for P6, before the window or in the enabling write as the proposition's stimulus says: G5 goes red. |
 
 Every contrasting case of a proposition that this table does not cover is
 also graded in the normal run, as an assertion of its own (P3-OFF, P9-SWAP and
@@ -271,8 +276,19 @@ of this proposition, is P1a and P1b together. P1a and P1b carry no claim id.
 - Which address the first fetch after an enable uses. p.164: "Because of
   pipelining in Agnus, the first data word must be thrown away", without
   saying from where.
-- The ECS extension of AUDxLCH to 5 bits. It belongs to other claims, and the
-  addresses here stay below `$80000`.
+- The width of the audio location pointer under OCS (AUDxLCH keeps 3 high
+  bits, 5 under ECS: p.139, p.266, p.290). That is NM-HRM-024's, tested in
+  `hrm/ch5-audio-location-pointer`; the addresses here stay below `$80000`
+  and this package grades nothing on it.
+
+**Measured, not graded.** Whether the chipset setting reaches the chip. p.299
+(Determining Chip Revisions) ties bits 14-8 of VPOSR (`$DFF004`) to the Agnus
+identification: "A value of 20 or 30 indicates that the enhanced HighRes Agnus
+is present". A program reads VPOSR once under OCS and once under ECS and
+stores it in R; the run prints bits 14-8 of each as a MEASURED line. The
+pages do not say which identification value the OCS or the ECS setting stands
+for, so nothing is graded. This is the one line of this package that reads a
+register the pages tie to the chipset.
 
 ### P2: DMACONR at $DFF002 reads back the DMA control bits held by DMACON
 
@@ -284,8 +300,11 @@ of this proposition, is P1a and P1b together. P1a and P1b carry no claim id.
 
 **Proposition.** A word read at `$DFF002` returns, in bits 10 and 8-0, the
 control bits last set or cleared through DMACON at `$DFF096`. Every one of
-these bits reads 1 after a SET write of it and 0 after a CLR write of it,
-whatever the other bits hold.
+these bits reads 1 after a SET write of it and 0 after a CLR write of it.
+Step 3 grades each bit with every other bit among 8-0 clear except DMAEN;
+steps 4 to 7 grade all bits set, DMAEN alone cleared with the others set
+(step 5), DMAEN set again, and all bits cleared. What one other bit reads while
+the rest hold further combinations is not graded.
 
 **Sources.**
 - p.278: "DMACONR 002 R A P DMA control (and blitter status) read" and "This
@@ -553,7 +572,9 @@ in the blocks [S_0, S_0 + `$100`) and [N_k, N_k + `$100`), inside
 "all the sprites" of p.114 over all eight channels.
 
 **Preconditions.**
-- G1, G2 (bits 9 and 5 set), G3, G5, and G4 with V ≥ 3.
+- G1, G2 (bits 9 and 5 set), G3, G5, and G4 with V ≥ 3. G3 covers all eight
+  blocks: no CPU write falls into [S_0, S_0 + `$100`) or [N_k, N_k + `$100`),
+  k = 1..7, inside the window.
 - Bitplane DMA is off (bit 8 clear in the stored value). p.114: "some sprites
   can become unusable when additional DMA cycles are allocated to displaying
   the screen".
@@ -561,8 +582,11 @@ in the blocks [S_0, S_0 + `$100`) and [N_k, N_k + `$100`), inside
 **Contrasting cases.**
 - `DMACON = $8200` in step 3. Expected: no read in any of the eight blocks.
   This run is graded in the normal run as P6-OFF.
-- For the bitplane precondition: also set BPLEN. The stored value shows
-  bit 8 set, and the precondition goes red.
+- For the bitplane precondition: also set BPLEN in the enabling write. The
+  stored value shows bit 8 set, and the precondition goes red.
+- For G3: one extra CPU write into S_0 inside the window; separately, one
+  extra CPU write into N_1 inside the window, which only the other seven
+  blocks' part of G3 sees.
 - For the other preconditions: section 2.6.
 
 **Reference frame.** Frames by vertical-sync pulses.
@@ -606,6 +630,13 @@ running", which includes a cycle the blitter does not use; p.198, "every
 available Chip memory cycle", says the same of the bus. The blit of USE code E
 is run as well, and graded as a further case: no cycle of it is free of a
 blitter access, so it grades the same sentence on a blit with no idle cycle.
+
+The CPU accesses that the D-only line counts fall in the cycles marked `-` in
+that sequence (p.188, Table 6-2), which the blit does not use. p.194 (priority
+order) and p.222 ("full (instead of partial) priority") speak of the cycles the
+blitter takes, while p.278 ("any bus cycles") and p.198 ("every available Chip
+memory cycle") cover every cycle; the line grades the wording of p.278 and
+p.198.
 
 **Stimulus.** Default configuration.
 
@@ -675,6 +706,11 @@ as P7-ON-E for the blit of USE code E.
   its own pair for P7-ON-E and P7-OFF-E: its BLTPRI-clear program through the
   zero-access comparator and its main program through the at-least-one
   comparator; both turn the line red.
+- For the "no other bit" part of G2: set SPREN in the enabling write as well
+  (`$8660`). The blit still runs and only G2 goes red.
+- For the "BLTPRI matches" part of G2: put the BLTPRI-clear programs in place
+  of the main programs. The stored value shows bit 10 clear where the run
+  intends it set, the blit still runs and only G2 goes red.
 - For the "blit ran" precondition: replace the BLTSIZE write by a write to
   COLOR00 (`$180`). No blit starts and the precondition goes red.
 - For the "CPU still wanted the bus" precondition: the CPU's logging loop runs
@@ -723,11 +759,13 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 1. `DMACON = $07FF`. Set up the blitter as in P5 step 2, with BLTDPT = Q.
 2. `DMACON = $8240`. BLTPRI stays clear, so the CPU gets cycles during the
    blit (p.198).
-3. Four idle reads: `MOVE.W $DFF002,(A4)+` with A4 = G.
+3. Four idle reads, each `MOVE.W $DFF002,D0` followed by `MOVE.W D0,(A4)+`
+   with A4 = G.
 4. Write marker `O`. `BLTSIZE = $2020`.
-5. Poll: `MOVE.W $DFF002,(A4)+` again and again. Stop after the first read,
-   other than the first read after BLTSIZE, whose bit 14 is 0, or after 8192
-   reads. Then make 8 more logged reads.
+5. Poll: the same two instructions again and again. Stop after the first
+   read, other than the first read after BLTSIZE, whose bit 14 is 0, or after
+   8180 reads (the 4 idle reads, up to 8180 poll reads and the 8 more reads
+   fill G's 8192 words and no more). Then make 8 more logged reads.
 6. Write marker `C`. Write `END`.
 
 **Observation.**
@@ -743,7 +781,7 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 - (b) Every read i ≥ 2 with T_w(i) < T_last shows bit 14 = 1. It was made
   after BLTSIZE and before the last destination write, so the blit was in
   progress (p.186). "Every" is graded over all such reads.
-- (c) The poll ends on a 0 before the 8192-read limit, and every read after
+- (c) The poll ends on a 0 before the 8180-read limit, and every read after
   that first 0 is also 0 (the 8 extra reads).
 - (d) Read 1 is not graded. p.186 says the first test "may not return the
   correct result", and p.187's note ("Starting with the Fat Agnus the blitter
@@ -823,14 +861,14 @@ destination channel is off.
 **Stimulus.** Default configuration.
 
 1. `DMACON = $07FF`, then `DMACON = $8240`.
-2. Five blits follow. For each one:
+2. Nine blits follow. For each one:
    - write the registers;
    - `BLTSIZE = $0104` (height 4, width 4: 16 words);
    - wait for the end: one dummy read of DMACONR, then read until bit 14
      is 0 (p.186), and store the read that showed bit 14 = 0 into G;
    - read DMACONR once more and store the value as Z_k in R.
 
-   All five use `BLTCON1 = 0`, `BLTDMOD = 0`, `BLTAMOD ($064) = 0` and
+   All nine use `BLTCON1 = 0`, `BLTDMOD = 0`, `BLTAMOD ($064) = 0` and
    `BLTAFWM = BLTALWM = $FFFF`.
 
 | k | BLTCON0 | Pointer | Logic output | D written | Expected Z_k bit 13 |
@@ -840,13 +878,21 @@ destination channel is off.
 | 3 | `$0100` | BLTDPT = Q + `$200` | all 0 | yes | 1 |
 | 4 | `$08F0` (USEA only, LF `$F0` "D = A", p.177) | BLTAPT ($050) = F | `$FFFF` | no | 0 |
 | 5 | `$08F0` | BLTAPT = Zb | `$0000` | no | 1 |
+| 6 | `$08F0` | BLTAPT = M_1 | `$0000` except word 0 = `$0001` | no | 0 |
+| 7 | `$08F0` | BLTAPT = M_2 | `$0000` except word 7 = `$8000` | no | 0 |
+| 8 | `$08F0` | BLTAPT = M_3 | `$0000` except word 15 = `$0100` | no | 0 |
+| 9 | `$09F0` (USEA and USED, LF `$F0`) | BLTAPT = M_4, BLTDPT = Q + `$400` | `$0000` except word 15 = `$0100` | yes | 0 |
 
-**Observation.** The five stored values Z_k, and the port accesses of each
+**Observation.** The nine stored values Z_k, and the port accesses of each
 blit.
 
 **Expected.** Bit 13 of Z_k as in the last column. Blits 1 to 3 show that the
 flag describes the latest blit. Blits 4 and 5 grade the "even if those
-destination bits are not written" of p.187.
+destination bits are not written" of p.187. Blits 6 to 8 leave one nonzero
+word in an otherwise zero output, first, in the middle and last, and blit 9
+does so with D written: p.222 ("always zero") and p.187 ("all destination
+bits") make the flag 0 whichever word carries the 1-bit, so a flag that
+looked at the first or the last word alone would read 1 in some of them.
 
 **Preconditions.**
 - G1: `DONE` and `END` were written, and every Z_k and every wait read was
@@ -854,25 +900,31 @@ destination bits are not written" of p.187.
   other bit among 10 and 8-0.
 - Blits 1 and 3 made 16 writes in their ranges, all with data `$0000`.
 - Blit 2 made 16 writes, all with data `$FFFF`.
-- Blits 4 and 5 made 16 reads in F (respectively Zb) and no write outside the
-  CPU areas.
+- Blits 4 to 8 made 16 reads in F, Zb, M_1, M_2 and M_3 respectively and no
+  write outside the CPU areas while they ran. Blit 9 made 16 reads in M_4 and
+  16 writes in [Q + `$400`, Q + `$420`).
 - Each Z_k was stored after the last port access of its blit and after a read
   with bit 14 = 0 (p.187: "only valid after the blitter has completed").
 
 **Contrasting cases.**
 - Exchange BLTCON0 between blits 1 and 2, and exchange F and Zb between
-  blits 4 and 5. The expected bits then change to 0, 1, 1, 1, 0. This run is
-  graded in the normal run as P9-SWAP, with that table.
+  blits 4 and 5. The expected bits then change to 0, 1, 1, 1, 0, 0, 0, 0, 0.
+  This run is graded in the normal run as P9-SWAP, with that table.
+- For blits 6 to 9: run the main program with M_1 to M_4 all `$0000`, a
+  change of the source blocks' content alone. Blits 6 to 9 then have a zero
+  output, the flag reads 1 where the table expects 0, every precondition
+  holds, and P9-MAIN goes red.
 - For the "after completion" precondition: drop the wait before Z_1. Z_1's
   store may then fall before the blit's last write, and the precondition goes
   red.
 - For the "16 writes" preconditions: blit 1 has BLTSIZE `$0103` (height 4,
   width 3: 12 words). It makes 12 writes of `$0000` and the precondition goes
   red; its logic output is still zero, so the expected bit 13 of Z_1 does not
-  change.
+  change. Separately, blit 9 has BLTSIZE `$0103` (12 words written).
 - For the "no write outside the CPU areas" precondition: blit 4 also uses D
   (BLTCON0 = `$09F0`, BLTDPT = Q + `$300`). It writes outside the CPU areas
-  and the precondition goes red.
+  and the precondition goes red. Separately, blit 7 also uses D (BLTDPT =
+  Q + `$500`), which the same precondition catches among the later blits.
 - For G2: also set SPREN in the enabling write. The stored values show
   bit 5 and G2 goes red.
 - For the other preconditions: section 2.6.
@@ -969,7 +1021,9 @@ of the contrasting case.
   COPEN among bits 8-0) and for each audio window (only channel x).
 - G2 for the Copper enable (bits 9 and 7) and for each audio window (bits 9
   and x), from the five stored readbacks.
-- G4: V ≥ 2 in [`K_O`, `K_C`] and in each W_x.
+- G4: V ≥ 2 in [`K_O`, `K_C`] and in each W_x, and at least one
+  vertical-sync pulse start between `C_x` and `O_(x+1)` for x = 0..2 (the gap
+  of P1 step 4).
 - The Copper ran the list: every word of [L, L + `$24`) was read at least
   once inside [`K_O`, `K_C`], the final WAIT at L + `$20` included. It comes
   after all eight MOVEs.
@@ -985,7 +1039,10 @@ of the contrasting case.
 - For G3: one extra CPU write into B_0 inside W_0; separately, one extra CPU
   write into B_0 inside W_1; and, separately, one extra CPU write into the last
   word of L inside [`K_O`, `K_C`].
-- For G4: a delay count of 0, so V(W_x) falls short of 2.
+- For G4: a delay count of 0, so V(W_x) falls short of 2; separately, a gap
+  count of 0 with the delay count unchanged, so only the gap clause fails;
+  and, separately, a Copper-window delay count of 2000, so that
+  [`K_O`, `K_C`] holds fewer than 2 pulses while the list is still read.
 - For G5: also set SPREN before the windows.
 - For the "Copper ran the list" precondition: point COP1LC at an end-of-list
   pair elsewhere (`$64100`) and keep COPEN set. The Copper runs, reads no
@@ -1032,7 +1089,9 @@ writes at the destination the Copper wrote.
    - `BLTCON1 = 0`;
    - `BLTAFWM = BLTALWM = $FFFF`;
    - `BLTDMOD = 0`;
-   - `MOVE.L #Q,$DFF054`, the CPU's own destination.
+   - `MOVE.L #Q3,$DFF054`, the CPU's own destination. Its high word
+     (`$0006`) differs from the high word of Q2 (`$0007`), so a blit reaches
+     Q2 only if the Copper's MOVE to `$054` took effect.
 3. List at L:
    - `$0054, hi(Q2)`
    - `$0056, lo(Q2)`
@@ -1047,15 +1106,18 @@ again each time, so every frame's blit lands at Q2. A 16-word blit ends long
 before the next frame, as p.187 asks ("When a blit is in progress, none of
 the blitter registers should be written").
 
-**Observation.** Port writes in [Q2, Q2 + `$20`) and in [Q, Q + `$20`) inside
+**Observation.** Port writes in [Q2, Q2 + `$20`) and in [Q3, Q3 + `$20`) inside
 [t(`O`), t(`C`)].
 
-**Expected.** At least one write in the Q2 range and none in the Q range.
+**Expected.** At least one write in the Q2 range and none in the Q3 range. A
+write in the Q2 range shows the value P11 grades: the Copper's own write to
+`$054` reached the blit's destination, since the CPU had put another high word
+there.
 
 **Preconditions.** Every one is graded on every run: OCS and ECS, each with
 the real list and with both lists of the contrasting cases.
 - G1, G2 (bits 9, 7 and 6 set), G4 with V ≥ 3, and G3: no CPU write falls
-  into L inside the window, and none falls into Q or Q2 inside it. The port
+  into L inside the window, and none falls into Q3 or Q2 inside it. The port
   record does not name the requester of a write, and the write data does not
   identify it: a CPU `MOVE.W #$FFFF` and a blitter write with BLTCON0 `$01FF`
   (USED with LF `$FF`, p.177) carry the same word. The second half is
@@ -1075,8 +1137,13 @@ the real list and with both lists of the contrasting cases.
 - Replace the BLTSIZE MOVE by `$0180,$0000`. Expected: no write in either
   range. This is graded in the normal run as P11-NOBLTSIZE.
 - Replace the two pointer MOVEs by MOVEs to `$0180`. Expected: writes in the
-  Q range and none in the Q2 range. This is graded in the normal run as
+  Q3 range and none in the Q2 range. This is graded in the normal run as
   P11-NOPTR.
+- Replace the `$054` MOVE by a MOVE to `$0180` with the same data. BLTDPTH
+  then keeps the high word the CPU wrote (`$0006`) and takes the low word the
+  Copper wrote (`$5000`): the pointer is `$65000`, in neither range. Expected:
+  no write in the Q2 range and none in the Q3 range. This is graded in the
+  normal run as P11-NOHI.
 - For G1: a branch-to-self before `END`.
 - For G2: leave DMAEN out of the enabling write.
 - For G3: one extra CPU write into L, past its own content, inside the window;
@@ -1184,10 +1251,10 @@ section 2.3, and the mechanism items below.
   by peeking memory and the second from the RAM-port record, which is how
   every proposition reads its results.
 - **DMA-block content.** A_x, A_x^L and A_x^H, the sprite structures, the
-  Copper lists and the all-ones block F are poked into chip RAM directly
+  Copper lists, the all-ones block F and P9's mixed blocks M_1 to M_4 are poked into chip RAM directly
   before `boot()`, the same mechanism `load_program()` itself uses; no
   program instruction writes them. A_x^L and A_x^H hold patterns of their
-  own, not copies of A_x. Zb, P, B_x and the blitter source blocks SA, SB
+  own, not copies of A_x. Zb, Q3, P, B_x and the blitter source blocks SA, SB
   and SC are not poked: they are zero from reset (section 2.3 requires that
   of Zb, P and SA-SC). Content is immaterial where section 2.3
   says so ("any values"; the sprite and Copper-list content follow the
@@ -1214,7 +1281,7 @@ section 2.3, and the mechanism items below.
   mutated for every proposition that grades it (one extra CPU write into
   that proposition's own block under test, inside its window): A_0 for P1
   (an absolute `MOVE.W`), P for P3, L for P4, Q for P5 (outside the blit's
-  destination footprint and, separately, onto its first word), S0 for P6,
+  destination footprint and, separately, onto its first word), S0 and, separately, N_1 for P6,
   B_0 and, separately, L for P10, L and, separately, Q2 for P11 (a write of
   `$1234`, and a write of `$FFFF`, the word a blitter write carries). P1 and
   P10 are also mutated across windows: a write into A_0 inside W_1 (P1) and a
