@@ -24,7 +24,8 @@ package against a private copy of the chip set with that patch applied; the
 submodule is never modified. The packages that ship a patch, with their copies, are
 `appF-cia-system` (`conf`, `sp`), `ch2-copper-beam` (`op`, `rn`, `lc`, `cs`),
 `ch4-sprite-registers` (`sh`, `bc`), `ch5-audio-attach-modulation` (`pm`),
-`ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`); each
+`ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`, `k9`, `refresh3`,
+`p13fix`); each
 `Makefile` lists its copies. `aa-integ-s2` is the exception: its patches are in
 `private/`, its targets are `private-uhres`, `private-longline`,
 `private-novbrelease` and `private-laterelease`, and it has no per-core variants
