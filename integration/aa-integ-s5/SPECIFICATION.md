@@ -1222,7 +1222,7 @@ tests bit 0, counts its timeout and branches makes at least eight accesses,
 16 colour clocks, between two log stores. No expectation above needs R
 small: R enters only as the time between a read and its store. The loop of P16 and P17 also reads the line
 number of VHPOSR on every pass (BTO), which costs a second access to a custom register, so that R is 25 to 28
-colour clocks on the three builds; the precondition G-R below bounds it.
+colour clocks on both builds; the precondition G-R below bounds it.
 INTENAR reads 0. The first read after each clear marker reads 0.
 *Contrast:* leave out the clear. That read is 1, and the precondition goes
 red.
@@ -1722,7 +1722,7 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   CIA-A (the filter control of 2.5) is made.
 - **Audio waits** (P2, P3, P4, P6 to P14) are a third longer than the nominal number of colour clocks and are
   counted in line starts of the beam counter, so that a window holds the same number of blocks on a CPU of any
-  speed; the waits of P5 and P15 and the settling delays before DONE are `DBRA` loops and hold at half the iteration count on all three builds.
+  speed; the waits of P5 and P15 and the settling delays before DONE are `DBRA` loops and hold at half the iteration count on both builds.
 - **Waits** that a check depends on are counted by the beam counter (BZERO, BTO): a change
   of the line number in VHPOSR bits 15 to 8 is a line start, a line lasts 227 or 228 colour
   clocks (2.2), and a wait of n line starts lasts the same time on a CPU of any speed. The
@@ -1761,8 +1761,8 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   the stimulus names: blocks 2 to 6 are graded and what happens after block 7 is not.
   The poll is a count of reads, so its length follows the speed of the CPU. With every
   DBRA and poll count halved, standing for a CPU twice as fast, P8's twelve lines pass
-  on all three builds, as at the full count; with every count quartered the block play ends before
-  block 7, and P8-G-F and P8-PRE-L9 fail on all three (a hook that scales the counts,
+  on both builds, as at the full count; with every count quartered the block play ends before
+  block 7, and P8-G-F and P8-PRE-L9 fail on both (a hook that scales the counts,
   in a copy outside the repository).
   The contrasts that set the request by software take the instants from a play of
   the same stimulus; the delay that each set adds to the reads after it is about
@@ -1799,8 +1799,8 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
   the interval is from the end of its stop cell plus T plus R to the start of the 12T
   low. P20 drives its 12T low from a marker that follows triple 4 and polls 401 reads;
   the reads before and during the low that P20-G-RXD counts are 29 and 67 on fx68k, 33 and 75 on
-  the TG68K board kernel and 27 and 62 on the shipped kernel, and the verdict holds with a poll of
-  an eighth of the reads on all three builds (50 reads: 28 and 18, 32 and 14, 26 and 20).
+  the default TG68K, and the verdict holds with a poll of
+  an eighth of the reads on both builds (50 reads: 28 and 18, 32 and 14).
   Its triples are located by the markers of the INTREQ writes (run A) and of the
   INTREQ and SERDAT writes (run B).
 
