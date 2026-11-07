@@ -14,8 +14,9 @@ serial port. The system runs with the AA chip set selected (`chipset_config =
 0x10`), PAL, 2 MB of Chip memory. Nothing depends on PAL or NTSC because
 every time is counted in colour clocks. Every proposition runs on both builds
 that `nanomig.mk` makes, each with its core set to behave as a 68000
-(`cpu_config = 0`). Both builds are graded: every run selects the AA chip set through `chipset_config = 0x10`, no file that `nanomig.mk` compiles depends on
-`ENABLE_AGA`, so the two builds differ only in the CPU core and in the CPU and cache defines, and what is graded does not depend on the CPU core.
+(`cpu_config = 0`). Both builds are graded: every run selects the AA chip set through `chipset_config = 0x10`, `nanomig.mk` passes `-DENABLE_AGA` on the TG68K build line only (line 108),
+and none of the 62 files that the two builds compile (the fx68k and the TG68K file lists, with the generated TG68K kernel and its wrapper) contains the
+string `ENABLE_AGA`, so the define is read by nothing; the two builds differ only in the CPU core and in the CPU and cache defines, and what is graded does not depend on the CPU core.
 No proposition depends on a build having an AA feature. No claim in this package
 needs a disk.
 
@@ -314,7 +315,16 @@ pass 2 on:
 - *Precondition G-W*, wherever RF-W is used: no run starts in the system clock
   of an anchor fetch, so that the order of the fetch and of every run start is
   decided at the port and the anchor is unambiguous. It compares times only, never
-  levels, so it does not rest on what the runs carry.
+  levels, so it does not rest on what the runs carry. It also identifies word 1's run
+  independently of any value under test: the runs that begin after a fetch of the
+  stimulus's own data set (the first fetch for P2 and P4, the fetch of word 2 for P3,
+  whose first word, the byte 0x00, is at the level of the silence before it) and before the anchor
+  fetch are counted, and the count has to equal the number of runs that the data set
+  gives to the fetches in between (a byte that differs from the byte before it starts a
+  run; two bytes per word). Equal counts show that every run of the fetches before the anchor
+  began before the anchor fetch and that no run of the anchor's word did, so the first run after
+  the anchor is word 1's. The count looks at no level, and the data sets are built so that no two
+  neighbouring bytes are equal across a word boundary. Both counts are printed.
 
 ---
 
@@ -365,8 +375,11 @@ grade `sol:AA-audxlen.c4`: the length is the number of words of the channel's DM
 data, from the first block on. The line P1-ADDR grades `sol:AA-audxlen.c1`: that
 the register at 0A4 (0B4, 0C4, 0D4) is the channel's length register, shown by the
 fetches from the channel's first return to BUFx on, which for every channel and
-every L take exactly the L addresses BUFx, BUFx+2, .., BUFx+2(L−1), none outside,
-each followed by its successor and the last by BUFx.
+each of the tested lengths L = 1, 2, 3, 5, 7, 11, 16 take exactly the L addresses BUFx, BUFx+2, .., BUFx+2(L−1), none outside,
+each followed by its successor and the last by BUFx. The tested lengths are those
+of the stimulus: each channel alone with L = 1, 2, 3, 7, 16 and the four channels
+together with L = 3, 5, 7, 11 (the union is L = 1, 2, 3, 5, 7, 11, 16); the printed
+texts of P1-ADDR and P1 name them and claim nothing for other L.
 The first block is not part of P1-ADDR, so a first block that fetches more words
 than L is a failure of the length clause and does not turn the address line red.
 
@@ -471,9 +484,13 @@ tested, because the page gives no outcome for that.
 **Proposition.** The output level of a byte increases strictly with the
 byte's two's-complement value, in both byte positions of the word.
 
-**Stimulus.** Run S0 and use channel 0. `BUF0` holds 9 words, each made of two
-equal bytes, with the bytes in this order: 0x00, 0x7F, 0x80, 0x01, 0xFF,
-0x60, 0xA0, 0xE0, 0x20. Set AUD0LEN ← 9, AUD0PER ← 300 and AUD0VOL ← 64.
+**Stimulus.** Run S0 and use channel 0. `BUF0` holds 256 words, each made of two
+equal bytes, so that every byte value 0x00 to 0xFF is played once in both byte
+positions. The first nine bytes are 0x00, 0x7F, 0x80, 0x01, 0xFF, 0x60, 0xA0,
+0xE0, 0x20; the other 247 values follow in ascending order of their unsigned value.
+Set AUD0LEN ← 256, AUD0PER ← 300 and AUD0VOL ← 64. (Measured cost of the sweep:
+P3 alone takes 30 s on fx68k and 51 s on the TG68K board build, against 6 s and 14 s with the
+nine words.)
 Play four blocks, so that passes 2 and 3 are output whole whether or not
 pass 1 is one word short.
 
@@ -490,9 +507,9 @@ second sample for the second.
 - Both byte positions of every word produce the same level
   (P3-BYTES): the word's two bytes are equal, and each byte is a
   two's-complement integer, whichever position it takes.
-- In each byte position the levels are strictly ordered as
-  L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) <
-  L(0x60) < L(0x7F).
+- In each byte position the levels of all 256 byte values are strictly ordered
+  by the byte's two's-complement value, L(0x80) < L(0x81) < .. < L(0xFF) < L(0x00)
+  < L(0x01) < .. < L(0x7F) (the signed-value oracle).
 - The same byte gives the same level in both passes, in each byte position.
 
 An unsigned reading would put 0x80 above 0x7F. A sign-magnitude reading would
@@ -500,7 +517,7 @@ put 0xE0 below 0xA0. A ones'-complement reading would make 0xFF equal to 0x00.
 
 **Preconditions.** G-S0, G-C, G-D, G-F, G-W and G-P. G-P is a time check of
 the sample period and rests on no level: the anchor run of pass 3 starts
-exactly 9·600·c after the anchor run of pass 2 (nine words of two samples of the
+exactly 256·600·c after the anchor run of pass 2 (256 words of two samples of the
 period 300), so doubling AUDxPER turns it red (2.6). A byte position that reads
 differently from the other therefore turns P3-BYTES red, not P3 NOT GRADED.
 G-FLAT is not a precondition of P3: whether a word with two equal bytes gives
@@ -1016,17 +1033,22 @@ S0 (2.1), so ADKCON bit 3 is clear at the start of run B.
   lines.
 - Run B: the same without the ADKCON write.
 
-**Observation.** Channel k's runs in each run, from its first fetch to the stop,
-without the run that holds the first fetch and the run that the stop cuts. The
+**Observation.** Channel k's complete runs in each run, from its first fetch to the stop,
+without the run that holds the first fetch and the run that the end of the interval cuts. The
 interval is anchored on the channel's own first fetch, which is independent of the
 clause, and it is the whole of the channel's play in both runs, from the first pass
-on. The data of channel k is one word, so a first pass that is a word short or
+on, up to the stop. The two plays start on the channel's own first fetch but their stops
+lie at different phases of the run grid (the stop is timed from the CPU, the first fetch
+from the beam), so the interval that both cover is the shorter of the two times from the first
+fetch to the stop; a run that is complete in one play and cut by the stop of the other lies
+outside it. The two times, the common interval and the distance by which the run that holds
+the stop began before it are printed for each k. The data of channel k is one word, so a first pass that is a word short or
 long plays the same runs.
 
 **Expected.** p.11: "03 USE3VN Use audio channel 3 to modulate nothing". Run A
-plays channel k exactly as run B does: the runs of the two plays, taken one by one
-from the first run after the first fetch, have the same level and the same length,
-for as many runs as both have. ADKCONR bit 3 reads 1 in run A and 0 in run B.
+plays channel k exactly as run B does: over the common interval the two plays have the same number of
+complete runs, and the runs, taken one by one from the first run after the first fetch, have the same level and the
+same length. ADKCONR bit 3 reads 1 in run A and 0 in run B.
 
 **Preconditions.** G-S0, G-C, G-D, G-F for channels 3 and k in run A. G-P in run B:
 every run of channel k, from its first fetch on, lasts exactly 300·c, with two levels
@@ -1102,11 +1124,15 @@ transmission, whenever it is empty." Over the whole interval:
   No frame is missing, repeated or extra.
 - (c) Frame 1's start cell begins after the first write marker. The page
   names no latency for the move, so only this order is graded.
-- (d) For k = 2..8, frame k's start cell begins less than 11T after frame k−1's start
-  cell, so that no complete idle cell lies between the frames (a frame ends 10T after its
-  start): the word waiting in the buffer moves when the shift register is empty. No page
-  fixes the reload latency below one bit cell, so the exact gap (start of frame k minus
-  start of frame k−1 minus 10T, in system clocks) is printed as a MEASURED line and not graded.
+- (d) For k = 2..8, frame k's start cell begins before one more complete idle cell (T)
+  has followed the end of frame k−1, so that no complete idle cell lies between the frames:
+  the word waiting in the buffer moves when the shift register is empty. The end of a frame
+  is derived from the stop-bit position of its word ("The length of the data word is set by
+  the position of the stop bit"): a frame is a start cell, the data cells below the stop bit
+  and the stop cell, stop-bit position + 2 cells of T from its start (10T for the stop bit at
+  bit 8, 11T for the stop bit at bit 9). No page fixes the reload latency below one bit cell,
+  so the exact gap (start of frame k minus the end of frame k−1, in system clocks) is printed
+  as a MEASURED line and not graded.
 - (e) After frame 8's stop cell, which ends 10T after its start, TxD stays idle until the end.
 
 **Preconditions.** G-S0, G-C, G-BRK, G-T. Each of the words 2 to 8 is written after the
@@ -1126,14 +1152,21 @@ clause under test).
 
 **Contrasting cases.**
 - Change d3 to 0x24. The decoded frame 3 differs, and check (b) goes red.
-- Check (d), selector P16-LONG: every word is written as `SERDAT ← 0x0300 | dk`, the stop
+- Selector P16-LONG (a green control of check (d)): every word is written as `SERDAT ← 0x0300 | dk`, the stop
   bit at bit 9 and bit 8 a data bit 1. p.27: "The length of the data word is set by the position
   of the stop bit." The frame is a start cell, nine data cells and a stop cell, eleven cells, so
   with the waiting word moving as soon as the shift register is empty a frame starts 11T plus
-  the reload latency after the one before it. The writes are at 1, 4, 7, 10, 14, 17 and 20 line
+  the reload latency after the one before it, with no complete idle cell. The writes are at 1, 4, 7, 10, 14, 17 and 20 line
   starts after the first write, which keeps each in the middle of the frame before it. Every
-  precondition holds, the frames decode to dk, and P16-D, whose bound of 11T is the length of the
-  frame of the stimulus above, goes red; P16 follows.
+  precondition holds and the frames decode to dk. The page conforms, so P16-D and P16 stay green: the end of
+  each frame is derived from its stop-bit position, not from a length of the stimulus above.
+- Check (d), stimulus alone: none impossible. A complete idle cell between two frames with the
+  waiting word and every gate live is the behaviour of a transmitter that does not move a waiting
+  word when its shift register is empty, and no program makes a conforming transmitter do that. A program that
+  leaves no word waiting (write of word k after frame k−1 has ended, selector P16-DELAY) does make an idle
+  cell, but then P16-PRE-WAITING is red and P16-D is NOT GRADED. The contrast is an implementation
+  record: `p16gap.patch` (Makefile target `p16gap-test-<core>`) makes the transmitter wait one complete
+  bit cell after each frame before it moves a waiting word, and P16-D and P16 go red with every gate green.
 
 ---
 
@@ -1194,7 +1227,14 @@ INTENAR reads 0. The first read after each clear marker reads 0.
 *Contrast:* leave out the clear. That read is 1, and the precondition goes
 red.
 
-**Contrasting case.** At the start of the 20T wait, write
+**Contrasting cases.**
+- Selector P17-CLR: after the write of every word k = 1..8 the program polls INTREQR until a read
+  of bit 0 is 1 (the request that the move of word k sets) and writes `INTREQ ← 0x0001` at once, so
+  that the request is cleared after the move and before the second poll store that follows the start of
+  frame k. Fixture, G-T, G-R, P17-PRE-CLEAR and P17-PRE-EMPTY stay live and the pre-move reads of P17-ZERO are the
+  same as without it; P17-ONE is graded on the read of 1 that the poll catches. The outcome on each core is recorded
+  (header of the test). With `p17end.patch` (the request set at the end of the frame) the same stimulus is red.
+- At the start of the 20T wait, write
 `SERDAT ← 0x0181` (a frame X, with markers) and go on polling without a
 clear. The page predicts that X moves into the empty shift register and sets
 TBE, so reads stored before write 1's marker read 1, and the check for k = 1
@@ -1230,8 +1270,9 @@ data cells, all low.
 **Expected.**
 - w(p) − w(8) = (p − 8)·T exactly, for p = 9, 7, 4.
 - Both repeats of p = 8 and p = 9 agree exactly.
-- After each low interval, TxD is at the stop level and stays there until the
-  next write.
+- After each low interval, TxD is at the stop level for one complete cell (T): the
+  stop cell, "A stop bit must be provided as part of the data word" (p.27). What TxD
+  does after the stop cell, until the next write, is not graded: the page does not say.
 
 (With the HRM's single start bit, w(p) = (p+1)·T. That absolute value comes
 from the HRM and is recorded but not graded.)
@@ -1247,9 +1288,18 @@ shortest-interval clause of G-T is not part of P18's G-T.
 *Contrast for the idle precondition:* wait about 13T (4 line starts) in place of 32T, so that the next word is
 written within 12T of the previous frame's stop cell. The idle precondition goes red.
 
-**Contrasting case.** Write p = 9 where the grader expects p = 8. The page
-predicts a word one bit longer. w exceeds w(8) by T, and the check for p = 8
-goes red.
+**Contrasting cases.**
+- Write p = 9 where the grader expects p = 8. The page
+  predicts a word one bit longer. w exceeds w(8) by T, and the check for p = 8
+  goes red.
+- P18-STOP, stimulus alone: none impossible. A stop-cell defect (a stop cell that is not at the stop
+  level or is shorter than a cell) is a property of the transmitter in the interval after the data
+  cells, and a conforming transmitter sends a full stop cell for every word whose stop bit is
+  provided. The programs that touch that interval are a word without a stop bit (SERDAT ← 0), for which
+  the page, which obliges the program to provide the stop bit, states no outcome, and a word written
+  inside the stop cell, which the script cannot place on both cores (the cell is 512 system clocks, the
+  poll loop stores every 200 to 224 system clocks and the CPU speeds differ). The P18 id is graded from
+  the stop-position and repeat comparisons only (P18-W and P18-REPEAT).
 
 ---
 
@@ -1612,6 +1662,8 @@ depends on how the first pass runs. P15 does not pair output with particular fet
   read-modify-write instruction; no write-only register is read. The program is
   assembled for the 68000 (vasm's default CPU, no `-m68010` or higher).
   `prog_run_nofix.s` is the same program without the fixture store.
+- `p6vol.patch`, `p16gap.patch`, `p17end.patch` and the Makefile targets
+  `<patch>-test-<core>`: the implementation records of 7.4, run against a private copy of the design.
 - `test_aa_integ_s5.cpp` and the headers `s5_core.h`, `s5_common.h`, `s5_p1.h`,
   `s5_audio.h`, `s5_p34.h`, `s5_p58.h`, `s5_p915.h`, `s5_serial.h`: the script
   builder, the capture of a run, the shared anchors and one function per
@@ -1689,7 +1741,7 @@ interval). The writes of P16 and P17 are made between POLL ops, each with its ma
 - **P2** grades the pairing of fetches and runs without a claim id. **P3** measures
   the two byte positions of a word in the middle of its two samples, from the anchor
   run of the pass. P3-G-P is the time from the anchor run of pass 2 to that of pass 3,
-  exactly nine words of 600 colour clocks.
+  exactly 256 words of 600 colour clocks (the sweep of all byte values).
 - **P4** grades each of passes 2 and 3 on its own preconditions
   (`P4-G-W-2`, `P4-G-P-2`, `P4-PRE-CAL-2` and the three with suffix 3); the
   aggregate line is graded on the passes whose preconditions hold, and needs at
@@ -1754,7 +1806,7 @@ selects a live input, and leaves every comparator alone; the records are in the
 header of `test_aa_integ_s5.cpp`. Shared selectors: `FIXTURE` (the run loads
 `prog_run_nofix.bin`), `G0`, `GC`, `GD`, `GF`, `GT`, `GBRK`, `GRXD` (the
 contrasts of 2.2 to 2.9). `NMH_ONLY=P2,P5` restricts a run to the named
-propositions.
+propositions. `P17-CLR` (P17) clears the TBE request at the first read of 1 after each move.
 
 A record names every other line that prints FAIL under its selector and the
 lines that become NOT GRADED, for each core. The shared selectors move more than
@@ -1782,15 +1834,19 @@ gate holds, so the run-by-run comparator prints FAIL on P15-RUNS and P15.
 program writes, and a program that moved a run start to or before its fetch would also
 move the run lengths that G-P grades or the pairing, so that P2-B would be NOT GRADED
 and not FAIL; as for `P2-G-W` the boundary cannot be placed by the stimulus. The implementation records `P6-IMPL`,
-`P16-IMPL` and `P17-NONE` build the test against a private copy of the
-design outside the repository (`make test-<core> NANOMIG=<copy>`, then
-`NMH_ONLY=<proposition> NMH_MUTATE=<selector>`; the selector changes no stimulus): in
-`P6-IMPL` the volume path gives bit 6 the level of 64 (`paula_audio_mixer.v` passes 64 for a set bit 6, `paula_audio_volume.v` takes a 7-bit volume); in `P16-IMPL` a word waiting in
-the buffer starts its frame at the end of the previous one; in `P17-NONE` the TBE
-request is set at the end of the frame.
+`P16-IMPL` and `P17-NONE` build the test against a private copy of the design,
+made from the pinned submodule by a tracked patch of this package (the submodule is never
+modified; the Makefile target `<patch>-test-<core> ONLY=<proposition> SEL=<selector>` applies the patch to a copy
+under `obj_dir_<patch>_<core>/`, builds the core on it and runs it with `NMH_ONLY` and `NMH_MUTATE`; the selector changes no stimulus):
+`p6vol.patch` (`P6-IMPL`) gives AUDxVOL bit 6 the volume 64 in place of 63, with a seventh volume bit
+(`paula_audio_mixer.v`, `paula_audio_volume.v`), and P6-DISTINCT, P6-LIN and P6-LEVELS print PASS;
+`p16gap.patch` (`P16-IMPL`) makes the transmitter wait one complete bit cell, the line idle, after the third
+frame before it moves the waiting word into the shift register (`paula_uart.v`), and P16-D and P16 print FAIL with every gate green;
+`p17end.patch` (`P17-NONE`) sets the TBE request at the end of the frame in place of the move of the
+buffer into the shift register (`paula_uart.v`), and P17-ONE and P17 print FAIL.
 `P16-DELAY` writes word 5 and the later words 9 line starts (about 30 bit times) later, so that word 5 is not waiting when
 frame 4 ends: it is the contrast of the condition P16-PRE-WAITING (that line prints FAIL and
-P16-D and P16 are NOT GRADED), not evidence for P16-D. The contrast of P16-D is `P16-LONG` (section 4, P16). The selectors `P20-SETB`, `P20-NOCLRC`, `P20-NOSETD` and `P20-NOCLRE`
+P16-D and P16 are NOT GRADED), not evidence for P16-D. P16-D has no stimulus-alone contrast (section 4, P16); `P16-LONG` is a green control of it and `P16-IMPL` its red contrast. The selectors `P20-SETB`, `P20-NOCLRC`, `P20-NOSETD` and `P20-NOCLRE`
 change one software write of run B and are measurement records of the two conflicting
 readings of SERDATR bit 13 (section 5.2); they are not mutations of a graded line.
 The selectors `P6-PAT`, `P9-PAT` to `P11-PAT` write a word of two different bytes
