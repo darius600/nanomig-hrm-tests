@@ -11,6 +11,7 @@
 ;   prog_p7_donly_g1.s    (G1_BREAK)     -- branch-to-self before END
 ;   prog_p7_donly_g2.s    (G2_BREAK)     -- DMAEN (bit 9) left out
 ;   prog_p7_donly_g3.s    (G3_NOBLIT)    -- no blit starts
+;   prog_p7_donly_g2spren.s (G2SPREN_BREAK) -- SPREN also set in the enabling write; the blit still runs
 
         include "ch5.i"
 
@@ -42,7 +43,11 @@ start:
         ifd     G2_BREAK
         move.w  #$8440,DMACON(a0)       ; BLTPRI and BLTEN set, DMAEN (bit 9) left out
         else
+        ifd     G2SPREN_BREAK
+        move.w  #$8660,DMACON(a0)       ; SPREN also set: the blit still runs
+        else
         move.w  #$8640,DMACON(a0)       ; SET,BLTPRI,DMAEN,BLTEN
+        endif
         endif
         endif
         move.w  DMACONR(a0),(a3)+

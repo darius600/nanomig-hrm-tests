@@ -54,6 +54,9 @@ start:
         ifd     G3_BREAK
         move.w  #$DEAD,S0+$40   ; G3's mutation: a CPU write into the block under test, inside the window
         endif
+        ifd     G3N1_BREAK
+        move.w  #$DEAD,N1+$40   ; G3's second mutation: a CPU write into N_1, inside the window
+        endif
 
         move.l  #DELAY_N,d0
         beq.s   .sk

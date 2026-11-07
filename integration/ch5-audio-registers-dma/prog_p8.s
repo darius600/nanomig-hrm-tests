@@ -10,10 +10,15 @@
 ; COLOR00, so no blit starts; it is also the mutation of P8-G3 ("the blit
 ; ran").
 ; prog_p8_g1.s (G1_BREAK), prog_p8_gbltpri.s (G_BLTPRI, sets BLTPRI in
-; step 2) and prog_p8_g4.s (G4_LATE, a delay between BLTSIZE and the first
-; poll read) are the precondition mutations.
+; step 2), prog_p8_g2spren.s (G2SPREN_BREAK, SPREN also set in step 2) and prog_p8_g4.s (G4_LATE, a delay between BLTSIZE and the first
+; poll read) are the precondition mutations. prog_p8_idlebusy.s (IDLE_BUSY), prog_p8_shortblit.s
+; (BSIZE = $1020) and prog_p8_secondblit.s (SECOND_BLIT) are the stimuli of clauses (a), (b) and (c).
 
         include "ch5.i"
+
+        ifnd    BSIZE
+BSIZE   equ     $2020
+        endif
 
         org     PROGRAM_ORG
 
@@ -39,10 +44,18 @@ start:
         ifd     G_BLTPRI
         move.w  #$8640,DMACON(a0)       ; BLTPRI set (precondition mutation)
         else
+        ifd     G2SPREN_BREAK
+        move.w  #$8260,DMACON(a0)       ; SPREN also set (precondition mutation)
+        else
         move.w  #$8240,DMACON(a0)       ; BLTPRI clear (share mode, p.198)
+        endif
         endif
         move.w  DMACONR(a0),(a3)+
 
+        ifd     IDLE_BUSY
+        move.l  #$76000,BLTDPTH(a0)     ; clause (a): a blit of 128 words outside Q runs across the idle reads
+        move.w  #$0080,BLTSIZE(a0)
+        endif
         move.w  DMACONR(a0),d0
         move.w  d0,(a4)+
         move.w  DMACONR(a0),d0
@@ -52,11 +65,17 @@ start:
         move.w  DMACONR(a0),d0
         move.w  d0,(a4)+
 
+        ifd     IDLE_BUSY
+        move.l  #400,d0                 ; that blit has ended before the main one starts
+.idle:  subq.l  #1,d0
+        bne.s   .idle
+        move.l  #QQ,BLTDPTH(a0)
+        endif
         move.w  #OM,(a5)
         ifd     C1
         move.w  #$2020,COLOR00(a0)      ; contrast: no blit starts
         else
-        move.w  #$2020,BLTSIZE(a0)      ; height=128,width=32 -- starts the blit
+        move.w  #BSIZE,BLTSIZE(a0)      ; height=128,width=32 -- starts the blit
         endif
         ifd     G4_LATE
         move.l  #6000,d0                ; precondition mutation: the first poll read is made after the blit
@@ -65,7 +84,7 @@ start:
         endif
 
         moveq   #0,d2                    ; running read index
-        move.l  #8192,d3
+        move.l  #8180,d3                 ; poll cap: 4 idle + 8180 + 8 extra reads fill G's 8192 words
 .poll:
         move.w  DMACONR(a0),d0
         move.w  d0,(a4)+
@@ -77,6 +96,9 @@ start:
 .cont:  cmp.l   d3,d2
         blt.s   .poll
 .stopped:
+        ifd     SECOND_BLIT
+        move.w  #$0820,BLTSIZE(a0)      ; clause (c): a second blit before the extra reads
+        endif
         moveq   #7,d1
 .extra: move.w  DMACONR(a0),d0
         move.w  d0,(a4)+

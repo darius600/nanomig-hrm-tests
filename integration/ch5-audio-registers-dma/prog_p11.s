@@ -43,7 +43,7 @@ start:
         move.w  #$FFFF,BLTAFWM(a0)
         move.w  #$FFFF,BLTALWM(a0)
         move.w  #0,BLTDMOD(a0)
-        move.l  #QQ,BLTDPTH(a0)          ; the CPU's own destination
+        move.l  #QQ3,BLTDPTH(a0)         ; the CPU's own destination (high word $0006; the list's is $0007)
 
         ifd     G_NOLIST
         move.l  #LST2,COP1LCH(a0)        ; precondition mutation: the Copper is pointed away from L

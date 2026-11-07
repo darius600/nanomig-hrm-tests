@@ -19,6 +19,7 @@
 // MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_0, via NMH_MUTATE=G3 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_1, via NMH_MUTATE=G3X -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G4 stimulus red the gap between C_x and O_(x+1) collapses to nothing, the per-channel delay unchanged, via NMH_MUTATE=G4GAP -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1a stimulus red channels 0-3's locations changed to A_x^H (the high-word contrast), via NMH_MUTATE=C1
 // MUTATION P1a stimulus red channels 0-3's locations changed to A_x^L (the low-word contrast), via NMH_MUTATE=C2
@@ -27,12 +28,15 @@
 // MUTATION P1 stimulus red channels 0-3's locations changed to A_x^H through the unchanged comparators of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P1 stimulus red channels 0-3's locations changed to A_x^L through the unchanged comparators of the aggregate line, via NMH_MUTATE=C2
 // MUTATION P1 stimulus red channel 0 and channel 1's locations swapped, through the unchanged comparators of the aggregate line, via NMH_MUTATE=C3
+// MUTATION P1a stimulus red channel 0's enabling write leaves DMAEN out (its instance is NOT GRADED) and channel 1's location is A_1^H (its instance fails), via NMH_MUTATE=JOINP1 -- P1b is NOT GRADED
+// MUTATION P1 stimulus red channel 0's enabling write leaves DMAEN out (its instance is NOT GRADED) and channel 1's location is A_1^H (its instance fails), via NMH_MUTATE=JOINP1
 // MUTATION P1-C1 stimulus red the main program (locations A_x) through the unchanged high-word comparator, via NMH_MUTATE=INVC1
 // MUTATION P1-C2 stimulus red the main program (locations A_x) through the unchanged low-word comparator, via NMH_MUTATE=INVC2
 // MUTATION P1-C3 stimulus red the main program (locations A_x) through the unchanged register-to-channel comparator, via NMH_MUTATE=INVC3
 // MUTATION P2-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P2 is NOT GRADED
 // MUTATION P2 stimulus red the SET write for DMACON bit 0 in the sweep is left out, via NMH_MUTATE=OMIT
 // MUTATION P2-OMIT stimulus red the main program (the SET write for DMACON bit 0 present) through the unchanged comparator of the omit line, via NMH_MUTATE=INVOMIT
+// MUTATION P2 stimulus red the OCS run is the program that never finishes (NOT GRADED) and the ECS run the program without one SET write (fails), via NMH_MUTATE=JOINP2
 // MUTATION P3-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P3-ON and P3 are NOT GRADED
 // MUTATION P3-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BPLEN still set, via NMH_MUTATE=G2 -- P3-ON and P3 are NOT GRADED
 // MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test), via NMH_MUTATE=G3 -- P3-ON and P3 are NOT GRADED
@@ -42,6 +46,7 @@
 // MUTATION P3-OFF stimulus red BPLEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
 // MUTATION P3 stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P3 stimulus red BPLEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P3 stimulus red the run with BPLEN set is the program that never finishes (P3-ON is NOT GRADED) and the main program goes through the off-comparator, via NMH_MUTATE=JOIN
 // MUTATION P4-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P4-ON and P4 are NOT GRADED
 // MUTATION P4-G2 stimulus red DMAEN (bit 9) left out of the enabling write, COPEN still set, via NMH_MUTATE=G2 -- P4-ON and P4 are NOT GRADED
 // MUTATION P4-G3 stimulus red one extra CPU write into L (the block under test), past its own content, via NMH_MUTATE=G3 -- P4-ON and P4 are NOT GRADED
@@ -51,75 +56,97 @@
 // MUTATION P4-OFF stimulus red COPEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
 // MUTATION P4 stimulus red COPEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P4 stimulus red COPEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P4 stimulus red the run with COPEN set is the program that never finishes (P4-ON is NOT GRADED) and the main program goes through the off-comparator, via NMH_MUTATE=JOIN
 // MUTATION P5-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P5-ON and P5 are NOT GRADED
-// MUTATION P5-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTEN still set, via NMH_MUTATE=G2 -- P5-G3 moves with it (no footprint word is written once in the window), P5-ON and P5 are NOT GRADED
+// MUTATION P5-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTEN still set, via NMH_MUTATE=G2 -- P5-G3 is NOT GRADED (names P5-G2), P5-ON and P5 are NOT GRADED
 // MUTATION P5-G3 stimulus red one extra CPU write into Q (the block under test), outside the blit's destination footprint, via NMH_MUTATE=G3 -- P5-ON and P5 are NOT GRADED
 // MUTATION P5-G3 stimulus red one extra CPU write onto the first word of the blit's own destination footprint, via NMH_MUTATE=G3IN -- P5-ON and P5 are NOT GRADED
-// MUTATION P5-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P5-G3 moves with it (no footprint word is written once in the window), P5-ON and P5 are NOT GRADED
+// MUTATION P5-G4 stimulus red the delay is 300 spin iterations, short of a frame and long enough for the blit's 256 writes, via NMH_MUTATE=G4 -- only P5-G4 goes red; P5-ON and P5 are NOT GRADED
 // MUTATION P5-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P5-ON and P5 are NOT GRADED
 // MUTATION P5-ON stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
 // MUTATION P5-OFF stimulus red BLTEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
 // MUTATION P5 stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P5 stimulus red BLTEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P5 stimulus red the run with BLTEN set is the program that never finishes (P5-ON is NOT GRADED) and the main program goes through the off-comparator, via NMH_MUTATE=JOIN
 // MUTATION P6-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P6-ON and P6 are NOT GRADED
 // MUTATION P6-G2 stimulus red DMAEN (bit 9) left out of the enabling write, SPREN still set, via NMH_MUTATE=G2 -- P6-ON and P6 are NOT GRADED
 // MUTATION P6-G3 stimulus red one extra CPU write into S0 (the block under test), past its own content, via NMH_MUTATE=G3 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G3 stimulus red one extra CPU write into N_1 (one of the other seven blocks), inside the window, via NMH_MUTATE=G3N1 -- P6-ON and P6 are NOT GRADED
 // MUTATION P6-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P6-ON and P6 are NOT GRADED
-// MUTATION P6-G5 stimulus red BPLEN also set before the window, via NMH_MUTATE=G5 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G5 stimulus red BPLEN also set in the enabling write, via NMH_MUTATE=G5 -- P6-ON and P6 are NOT GRADED
 // MUTATION P6-ON stimulus red SPREN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
 // MUTATION P6-OFF stimulus red SPREN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
 // MUTATION P6 stimulus red SPREN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P6 stimulus red SPREN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P6 stimulus red the run with SPREN set is the program that never finishes (P6-ON is NOT GRADED) and the main program goes through the off-comparator, via NMH_MUTATE=JOIN
 // MUTATION P7-G1 stimulus red branch-to-self inserted before END (both blits), via NMH_MUTATE=G1 -- P7-ON, P7-ON-E and P7 are NOT GRADED
-// MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set (both blits), via NMH_MUTATE=G2 -- P7-G3 and P7-G(CPU-still-wanted-the-bus) move with it (no blit runs without DMAEN); P7-ON, P7-ON-E and P7 are NOT GRADED
-// MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts (both blits), via NMH_MUTATE=G3 -- P7-G(CPU-still-wanted-the-bus) moves with it (no blit runs, so there is no T_last); P7-ON, P7-ON-E and P7 are NOT GRADED
+// MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set (both blits), via NMH_MUTATE=G2 -- P7-G3 and P7-G(CPU-still-wanted-the-bus) are NOT GRADED (name P7-G2); P7-ON, P7-ON-E and P7 are NOT GRADED
+// MUTATION P7-G2 stimulus red SPREN also set in the enabling write, the blit still runs (both blits), via NMH_MUTATE=G2SPREN -- P7-ON, P7-ON-E and P7 are NOT GRADED
+// MUTATION P7-G2 stimulus red the BLTPRI-clear programs of both blits in place of the main programs, whose run intends BLTPRI set, via NMH_MUTATE=G2PRI -- P7-ON, P7-ON-E and P7 are NOT GRADED
+// MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts (both blits), via NMH_MUTATE=G3 -- P7-G(CPU-still-wanted-the-bus) is NOT GRADED (names P7-G3); P7-ON, P7-ON-E and P7 are NOT GRADED
 // MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU's logging loop runs before the BLTSIZE write (both blits), and the CPU then waits for the blit to end without writing G, so no CPU write into G follows T_last, via NMH_MUTATE=GEARLY -- P7-ON, P7-ON-E and P7 are NOT GRADED
 // MUTATION P7-ON stimulus green the live program of the blit of USE code E (BLTPRI set: zero CPU accesses in its interval) through the unchanged zero-access comparator; P7-ON reads red on both cores unmutated and green with this input, via NMH_MUTATE=GREEN -- P7 turns green as well
 // MUTATION P7-OFF stimulus red BLTPRI set: the main program of the blit of USE code E (zero CPU accesses in its interval) through the unchanged at-least-one comparator of the D-only line, via NMH_MUTATE=DOFFINV
 // MUTATION P7 stimulus green the live programs of the blit of USE code E (BLTPRI set, BLTPRI clear) through the unchanged comparators of the aggregate line; P7 reads red on both cores unmutated and green with this input, via NMH_MUTATE=GREEN
 // MUTATION P7-ON-E stimulus red BLTPRI cleared: the share-mode program of the blit of USE code E through the unchanged zero-access comparator, via NMH_MUTATE=C1
 // MUTATION P7-OFF-E stimulus red BLTPRI set: the main program of the blit of USE code E through the unchanged at-least-one comparator, via NMH_MUTATE=INV
+// MUTATION P7 stimulus red the D-only main run is the program that never finishes (P7-ON is NOT GRADED) and the BLTPRI-set program of the blit of USE code E goes through the at-least-one comparator, via NMH_MUTATE=JOINP7
 // MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P8 is NOT GRADED
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI -- P8 is NOT GRADED
-// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P8-G4 moves with it (no blit runs, so no read precedes T_last); P8 is NOT GRADED
+// MUTATION P8-G2 stimulus red SPREN also set in step 2, via NMH_MUTATE=G2SPREN -- P8 is NOT GRADED
+// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P8-G4 is NOT GRADED (names P8-G3); P8 is NOT GRADED
 // MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4 -- P8 is NOT GRADED
-// MUTATION P8 none impossible unfalsifiable at this boundary: the main assertion grades bit 14 of DMACONR reads taken while the blit runs, and no stimulus at the ports makes the blitter busy flag read wrong while the blit runs (p.186 sets it whenever a blit is in progress), so no input of this package turns it red through the clause under test; P8-NOBLIT runs the same comparator on a program in which no blit runs and is its same-comparator control
+// MUTATION P8 stimulus red a blit of 128 words to $76000 runs across the four idle reads and ends before the main blit (clause (a): the idle reads show bit 14 = 1), via NMH_MUTATE=IDLEBUSY
+// MUTATION P8 stimulus red BLTSIZE $1020 in place of $2020 (clause (b): the reads the main run grades past this shorter blit show bit 14 = 0), via NMH_MUTATE=SHORTBLIT
+// MUTATION P8 stimulus red a second blit (BLTSIZE $0820) between the poll and the 8 extra reads (clause (c): the extra reads show bit 14 = 1), via NMH_MUTATE=SECONDBLIT
 // MUTATION P8-NOBLIT stimulus red the main program (a blit runs) through the unchanged no-blit comparator, via NMH_MUTATE=INVNOBLIT
 // MUTATION P9-G(writes) stimulus red blit 1 has BLTSIZE $0103 (12 words) instead of $0104, its logic output still zero, via NMH_MUTATE=GWRITES -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G(writes) stimulus red blit 9 has BLTSIZE $0103 (12 words) instead of $0104, via NMH_MUTATE=GWRITES9 -- P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G(reads) stimulus red blit 7 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE7 -- P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2 -- P9-MAIN and P9 are NOT GRADED
-// MUTATION P9-G(after-completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT -- P9-G(writes) moves with it (the next blit's registers are written while the first blit runs); P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G(after-completion) stimulus red the wait moves behind Z_1, so Z_1 is read straight after the dummy read, via NMH_MUTATE=NOWAIT -- only this precondition goes red; P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-MAIN stimulus red BLTCON0 exchanged between blits 1 and 2 and the source exchanged between blits 4 and 5: the exchanged program through the unchanged main table, via NMH_MUTATE=C1
+// MUTATION P9-MAIN stimulus red the main program with the source blocks M_1 to M_4 all $0000 (blits 6 to 9 have a zero output), through the unchanged main table, via NMH_MUTATE=ZMIX
 // MUTATION P9-SWAP stimulus red the main program through the unchanged exchanged table, via NMH_MUTATE=INV
 // MUTATION P9 stimulus red the exchanged program through the unchanged main table of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P9 stimulus red the main program through the unchanged exchanged table of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P9 stimulus red the main run is the program that never finishes (P9-MAIN is NOT GRADED) and the main program goes through the exchanged table, via NMH_MUTATE=JOINP9
 // MUTATION DMACONR stimulus red the program without one SET write through the unchanged table of P2 (the DMA-control half), via NMH_MUTATE=OMIT
 // MUTATION DMACONR stimulus red the exchanged program through the unchanged main table of P9 (the blitter-zero half), via NMH_MUTATE=C1
-// MUTATION DMACONR none impossible the busy-bit half (P8) has no stimulus red: unfalsifiable at this boundary, for the reason recorded at the P8 mutation line; the DMA-control half and the blitter-zero half keep their stimulus mutations above (NMH_MUTATE=OMIT through P2, NMH_MUTATE=C1 through P9)
+// MUTATION DMACONR stimulus red P2 reads the program without one SET write and P8 the program that never finishes (P8 is NOT GRADED), via NMH_MUTATE=JOINDMA
+// MUTATION DMACONR stimulus red the program with BLTSIZE $1020 through the unchanged P8 comparator (the busy-bit half), via NMH_MUTATE=SHORTBLITDMA
 // MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P10 is NOT GRADED
-// MUTATION P10-G2 stimulus red DMAEN (bit 9) left out of the Copper enable, via NMH_MUTATE=G2K -- P10-G(list-ran) moves with it (without DMAEN the Copper does not run); P10 is NOT GRADED
+// MUTATION P10-G2 stimulus red DMAEN (bit 9) left out of the Copper enable, via NMH_MUTATE=G2K -- P10-G(list-ran) is NOT GRADED (names P10-G2) (without DMAEN the Copper does not run); P10 is NOT GRADED
 // MUTATION P10-G2 stimulus red DMAEN cleared after the Copper window and left out of channel 0's enable, via NMH_MUTATE=G2W -- P10 is NOT GRADED
 // MUTATION P10-G3 stimulus red one extra CPU write into B_0 inside W_0, via NMH_MUTATE=G3 -- P10 is NOT GRADED
 // MUTATION P10-G3 stimulus red one extra CPU write into B_0 inside W_1, via NMH_MUTATE=G3X -- P10 is NOT GRADED
 // MUTATION P10-G3 stimulus red one extra CPU write into the last word of L inside [K_O,K_C], via NMH_MUTATE=G3L -- P10 is NOT GRADED
 // MUTATION P10-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4 -- P10 is NOT GRADED
+// MUTATION P10-G4 stimulus red the gap between C_x and O_(x+1) collapses to nothing, the delays unchanged, via NMH_MUTATE=G4GAP -- P10 is NOT GRADED
+// MUTATION P10-G4 stimulus red the Copper window's delay is 2000, so [K_O,K_C] holds fewer than 2 vertical-sync pulses and the list is still read, via NMH_MUTATE=G4K -- P10 is NOT GRADED
 // MUTATION P10-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5 -- P10 is NOT GRADED
 // MUTATION P10-G(list-ran) stimulus red COP1LC points at an end-of-list pair away from L, COPEN still set, via NMH_MUTATE=G_NOLIST -- P10 is NOT GRADED
 // MUTATION P10 stimulus red the list that writes COLOR00 instead of the audio registers, through the unchanged audio comparator, via NMH_MUTATE=C1
 // MUTATION P10-COLOR stimulus red the audio list through the unchanged COLOR00 comparator, via NMH_MUTATE=INV
+// MUTATION P10 stimulus red the CDANG-clear combinations run the program that never finishes (NOT GRADED) and the CDANG-set combinations run the COLOR00 list through the audio comparator (fail), via NMH_MUTATE=JOINP10
 // MUTATION P11-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P11 is NOT GRADED
-// MUTATION P11-G2 stimulus red DMAEN (bit 9) left out of the enabling write, via NMH_MUTATE=G2 -- P11-G(list-ran) moves with it (without DMAEN the Copper does not run); P11 is NOT GRADED
+// MUTATION P11-G2 stimulus red DMAEN (bit 9) left out of the enabling write, via NMH_MUTATE=G2 -- P11-G(list-ran) is NOT GRADED (names P11-G2) (without DMAEN the Copper does not run); P11 is NOT GRADED
 // MUTATION P11-G3 stimulus red one extra CPU write into L, past its own content, inside the window, via NMH_MUTATE=G3 -- P11 is NOT GRADED
 // MUTATION P11-G3 stimulus red one extra CPU write of $1234 into Q2 inside the window, via NMH_MUTATE=G3Q -- P11 is NOT GRADED
 // MUTATION P11-G3 stimulus red one extra CPU write of $FFFF into Q2 inside the window, via NMH_MUTATE=G3F -- P11 is NOT GRADED
+// MUTATION P11-G3 stimulus red the list's blit lands in L past its content ([L+$30,L+$50)), no extra instruction, via NMH_MUTATE=G3LW -- P11 is NOT GRADED
 // MUTATION P11-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P11 is NOT GRADED
 // MUTATION P11-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P11 is NOT GRADED
 // MUTATION P11-G(list-ran) stimulus red COP1LC points at an end-of-list pair away from L, COPEN still set, via NMH_MUTATE=G_NOLIST -- P11 is NOT GRADED
 // MUTATION P11 stimulus red the list without the BLTSIZE MOVE, through the unchanged main comparator, via NMH_MUTATE=NOBLTSIZE
 // MUTATION P11 stimulus red the list without the pointer MOVEs, through the unchanged main comparator, via NMH_MUTATE=NOPTR
+// MUTATION P11 stimulus red the list without the $054 MOVE (replaced by a MOVE to COLOR00), through the unchanged main comparator, via NMH_MUTATE=NOHI
 // MUTATION P11-NOBLTSIZE stimulus red the real list through the unchanged no-BLTSIZE comparator, via NMH_MUTATE=INVNOBLTSIZE
 // MUTATION P11-NOPTR stimulus red the real list through the unchanged no-pointer comparator, via NMH_MUTATE=INVNOPTR
+// MUTATION P11-NOHI stimulus red the real list through the unchanged no-$054-MOVE comparator, via NMH_MUTATE=INVNOHI
+// MUTATION P11 stimulus red the OCS run is the program that never finishes (NOT GRADED) and the ECS run takes the list without the pointer MOVEs through the main comparator (fails), via NMH_MUTATE=JOINP11
 
 
 
@@ -127,6 +154,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -174,6 +202,8 @@ constexpr uint32_t kS0    = 0x65000;
 constexpr uint32_t kN[7]  = {0x65100, 0x65200, 0x65300, 0x65400, 0x65500, 0x65600, 0x65700};
 constexpr uint32_t kF     = 0x66000;
 constexpr uint32_t kZb    = 0x66100;
+constexpr uint32_t kM[4]  = {0x66200, 0x66220, 0x66240, 0x66260};   // P9's mixed source blocks M_1..M_4
+constexpr uint32_t kQ3    = 0x67000;   // P11's CPU destination
 constexpr uint32_t kP     = 0x68000;
 constexpr uint32_t kQ     = 0x74000;
 constexpr uint32_t kQ2    = 0x75000;
@@ -216,16 +246,70 @@ struct Deps {
     bool met() const { return unmet.empty(); }
 };
 
-// What P2, P8 and P9 each say about the register: whether the proposition
-// ran, the preconditions of its graded line, and the verdict of that line.
-// The aggregate line DMACONR reads the three.
-struct Part { bool ran = false; Deps deps; bool pass = false; };
-Part g_dmaconr[3];
-
 void not_graded(Checks& checks, const std::string& id, const Deps& d) {
     std::string s;
     for (const auto& u : d.unmet) s += (s.empty() ? "" : ", ") + u;
     checks.record("NOT GRADED " + id + ": precondition(s) not met: " + s);
+}
+
+// One instance of a graded line (SPECIFICATION.md 2.6): a run, or a channel of
+// a run, with its own preconditions and its own comparator. The comparator is
+// evaluated only when the instance's preconditions are met.
+enum class Vd { Pass, Fail, NotGraded };
+struct Inst { std::string name; Vd v = Vd::NotGraded; std::vector<std::string> unmet; };
+
+Inst make_inst(const std::string& name, const Deps& d, const std::function<bool()>& comparator) {
+    Inst i;
+    i.name = name;
+    i.unmet = d.unmet;
+    i.v = !d.met() ? Vd::NotGraded : (comparator() ? Vd::Pass : Vd::Fail);
+    return i;
+}
+
+// The verdict of a joined line and the preconditions its NOT GRADED
+// instances lacked. P2, P8 and P9 each keep theirs for the aggregate line
+// DMACONR.
+struct Part { bool ran = false; Vd v = Vd::NotGraded; Deps deps; };
+Part g_dmaconr[3];
+
+// Joins the instances of one line: FAIL if any instance fails, PASS only if
+// every instance passes, otherwise NOT GRADED naming the unmet preconditions.
+// measure 1 prints the verdict of every instance on a MEASURED line first;
+// 2 prints it only when some instance does not pass; 0 not at all.
+Part emit_joined(Checks& checks, const std::string& id, const std::string& text, const std::vector<Inst>& in,
+                 int measure = 1) {
+    Part p;
+    p.ran = true;
+    bool any_fail = false, all_pass = !in.empty();
+    for (const auto& i : in) {
+        if (i.v == Vd::Fail) any_fail = true;
+        if (i.v != Vd::Pass) all_pass = false;
+        if (i.v == Vd::NotGraded) for (const auto& u : i.unmet) p.deps.need(false, u);
+    }
+    if (measure == 1 || (measure == 2 && !all_pass)) {
+        std::string m = id + " instances:";
+        for (const auto& i : in) {
+            m += " " + i.name + "=";
+            if (i.v == Vd::Pass) m += "PASS";
+            else if (i.v == Vd::Fail) m += "FAIL";
+            else {
+                m += "NOT GRADED(";
+                for (size_t k = 0; k < i.unmet.size(); ++k) m += (k ? "," : "") + i.unmet[k];
+                m += ")";
+            }
+        }
+        checks.note(m);
+    }
+    if (any_fail) { p.v = Vd::Fail; checks.expect(false, text); }
+    else if (all_pass) { p.v = Vd::Pass; checks.expect(true, text); }
+    else { p.v = Vd::NotGraded; not_graded(checks, id, p.deps); }
+    return p;
+}
+
+// A line of one instance.
+Part emit_single(Checks& checks, const std::string& id, const std::string& text, const Deps& d,
+                 const std::function<bool()>& comparator) {
+    return emit_joined(checks, id, text, {make_inst(id, d, comparator)}, 0);
 }
 
 uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
@@ -291,7 +375,15 @@ void preload_all_blocks(nmh::NanomigHarness& h) {
     for (int k = 0; k < 7; ++k) preload(h, kN[k], {0x0000, 0x0000});
     preload(h, kF, std::vector<uint16_t>(16, 0xFFFF));
     preload(h, kList2, {0xFFFF, 0xFFFE});
-    // Zb, P, B_x, SA, SB and SC are already all-zero (mem_ default-initialised); no preload needed.
+    // P9's mixed blocks: all zero but one word each (SPECIFICATION.md 2.3).
+    for (int k = 0; k < 4; ++k) {
+        std::vector<uint16_t> m(16, 0x0000);
+        if (k == 0) m[0] = 0x0001;
+        if (k == 1) m[7] = 0x8000;
+        if (k >= 2) m[15] = 0x0100;
+        preload(h, kM[k], m);
+    }
+    // Zb, Q3, P, B_x, SA, SB and SC are already all-zero (mem_ default-initialised); no preload needed.
 }
 
 struct ExtraPreload { uint32_t addr; std::vector<uint16_t> words; };
@@ -467,34 +559,6 @@ Windows find_windows(const Capture& cap) {
     return w;
 }
 
-// (a): at least `min_reads` reads at kA[x] in W_x, for every x.
-bool check_a(const Capture& cap, const Windows& w, size_t min_reads = 2) {
-    if (!w.ok) return false;
-    for (int x = 0; x < 4; ++x)
-        if (reads_at(cap.log, kA[x], w.o[x], w.c[x]) < min_reads) return false;
-    return true;
-}
-
-// (b): no read at kA[y] (y != x) in W_x, for every x.
-bool check_b(const Capture& cap, const Windows& w) {
-    if (!w.ok) return false;
-    for (int x = 0; x < 4; ++x)
-        for (int y = 0; y < 4; ++y)
-            if (y != x && reads_at(cap.log, kA[y], w.o[x], w.c[x]) > 0) return false;
-    return true;
-}
-
-// C1 and C2: in W_x at least 2 reads at loc[x] (A_x^H, respectively A_x^L)
-// and none at A_x.
-bool check_loc(const Capture& cap, const Windows& w, const uint32_t* loc) {
-    if (!w.ok) return false;
-    for (int x = 0; x < 4; ++x) {
-        if (reads_at(cap.log, loc[x], w.o[x], w.c[x]) < 2) return false;
-        if (reads_at(cap.log, kA[x], w.o[x], w.c[x]) != 0) return false;
-    }
-    return true;
-}
-
 // C3: in W_0 at least 2 reads at A_1 and none at A_0; in W_1 the reverse.
 bool check_c3(const Capture& cap, const Windows& w) {
     if (!w.ok) return false;
@@ -511,9 +575,13 @@ const char kClaims[] =
     "p.298 5-appC-p298.c4, C-map.lch.acc; p.309 5-appC-p309.c4";
 
 // What one run of one program shows: the preconditions, and what every
-// comparator of the proposition says about it.
+// comparator of the proposition says about it. Both are kept per channel x
+// (an instance of a joined line, SPECIFICATION.md 2.6); `pre` and a, b, c1,
+// c2 are their conjunctions over the four channels.
 struct Eval {
     Pre pre;
+    bool g2x[4] = {}, g3x[4] = {}, g4x[4] = {}, g5x[4] = {};
+    bool ax[4] = {}, bx[4] = {}, c1x[4] = {}, c2x[4] = {};
     bool a = false, b = false, c1 = false, c2 = false, c3 = false;
     std::string calib;
 };
@@ -526,34 +594,44 @@ Eval evaluate(const Capture& cap, const char* cfg_name) {
 
     e.pre.g1 = cap.loaded && cap.done.has_value() && w.ok && w.end.has_value() && r.size() == 4;
 
-    e.pre.g2 = cap.loaded && r.size() == 4;
-    e.pre.g5 = e.pre.g2;
-    if (e.pre.g2) for (int x = 0; x < 4; ++x) {
-        uint16_t v = r[x];
-        if (!(v & 0x0200) || !(v & (1 << x))) e.pre.g2 = false;     // DMAEN + channel x bit
-        if ((v & 0x01FF) != (1u << x)) e.pre.g5 = false;            // only channel x's own bit among 8-0
+    const bool stored = cap.loaded && r.size() == 4;
+    for (int x = 0; x < 4; ++x) {
+        e.g2x[x] = stored && (r[x] & 0x0200) && (r[x] & (1 << x));       // DMAEN + channel x bit
+        e.g5x[x] = stored && (r[x] & 0x01FF) == (1u << x);               // only channel x's own bit among 8-0
+        // G4: V(W_x) >= 2, and at least one vertical-sync pulse separates C_x from O_(x+1).
+        e.g4x[x] = cap.loaded && w.ok && count_window(vs, w.o[x], w.c[x]) >= 2 &&
+                   (x == 3 || count_window(vs, w.c[x], w.o[x + 1]) >= 1);
+        // G3: no CPU write falls into any of the twelve ranges A_y, A_y^L and
+        // A_y^H (y = 0..3) during window W_x.
+        e.g3x[x] = cap.loaded && w.ok;
+        if (e.g3x[x]) for (int y = 0; y < 4; ++y) {
+            if (writes_in_range(cap.log, kA[y], kA[y] + 16, w.o[x], w.c[x]) != 0) e.g3x[x] = false;
+            if (writes_in_range(cap.log, kAL[y], kAL[y] + 16, w.o[x], w.c[x]) != 0) e.g3x[x] = false;
+            if (writes_in_range(cap.log, kAH[y], kAH[y] + 16, w.o[x], w.c[x]) != 0) e.g3x[x] = false;
+        }
+        // (a): at least 2 reads at A_x in W_x. (b): no read at A_y (y != x) in W_x.
+        e.ax[x] = cap.loaded && w.ok && reads_at(cap.log, kA[x], w.o[x], w.c[x]) >= 2;
+        e.bx[x] = cap.loaded && w.ok;
+        if (e.bx[x]) for (int y = 0; y < 4; ++y)
+            if (y != x && reads_at(cap.log, kA[y], w.o[x], w.c[x]) > 0) e.bx[x] = false;
+        // C1 and C2: at least 2 reads at A_x^H (respectively A_x^L) and none at A_x in W_x.
+        e.c1x[x] = cap.loaded && w.ok && reads_at(cap.log, kAH[x], w.o[x], w.c[x]) >= 2 &&
+                   reads_at(cap.log, kA[x], w.o[x], w.c[x]) == 0;
+        e.c2x[x] = cap.loaded && w.ok && reads_at(cap.log, kAL[x], w.o[x], w.c[x]) >= 2 &&
+                   reads_at(cap.log, kA[x], w.o[x], w.c[x]) == 0;
     }
-
-    e.pre.g4 = cap.loaded && w.ok;
-    if (e.pre.g4) for (int x = 0; x < 4; ++x)
-        if (count_window(vs, w.o[x], w.c[x]) < 2) e.pre.g4 = false;
-    if (e.pre.g4) for (int x = 0; x < 3; ++x)
-        if (count_window(vs, w.c[x], w.o[x + 1]) < 1) e.pre.g4 = false;
-
-    // G3: no CPU write falls into any DMA block during any window -- each
-    // of the twelve ranges (A_y, A_y^L, A_y^H for y = 0..3) against each of
-    // the four windows W_x.
-    e.pre.g3 = cap.loaded && w.ok;
-    if (e.pre.g3) for (int x = 0; x < 4 && e.pre.g3; ++x) for (int y = 0; y < 4; ++y) {
-        if (writes_in_range(cap.log, kA[y], kA[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
-        if (writes_in_range(cap.log, kAL[y], kAL[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
-        if (writes_in_range(cap.log, kAH[y], kAH[y] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+    e.pre.g2 = e.pre.g3 = e.pre.g4 = e.pre.g5 = true;
+    e.a = e.b = e.c1 = e.c2 = true;
+    for (int x = 0; x < 4; ++x) {
+        e.pre.g2 = e.pre.g2 && e.g2x[x];
+        e.pre.g3 = e.pre.g3 && e.g3x[x];
+        e.pre.g4 = e.pre.g4 && e.g4x[x];
+        e.pre.g5 = e.pre.g5 && e.g5x[x];
+        e.a = e.a && e.ax[x];
+        e.b = e.b && e.bx[x];
+        e.c1 = e.c1 && e.c1x[x];
+        e.c2 = e.c2 && e.c2x[x];
     }
-
-    e.a = cap.loaded && check_a(cap, w, 2);
-    e.b = cap.loaded && check_b(cap, w);
-    e.c1 = cap.loaded && check_loc(cap, w, kAH);
-    e.c2 = cap.loaded && check_loc(cap, w, kAL);
     e.c3 = cap.loaded && check_c3(cap, w);
 
     e.calib = std::string("P1 calibration ") + cfg_name + ": done=" +
@@ -581,6 +659,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     if (mv == "G1" || mv == "G2" || mv == "G3" || mv == "G4" || mv == "G5")
         mutant = "/prog_p1_" + std::string(1, char(mv[0] + ('a' - 'A'))) + mv.substr(1) + ".bin";
     else if (mv == "G3X") mutant = "/prog_p1_g3x.bin";
+    else if (mv == "G4GAP") mutant = "/prog_p1_g4gap.bin";
+    else if (mv == "JOINP1") mutant = "/prog_p1_join.bin";
 
     Eval ev_main[2], ev_mut[2], ev_c1[2], ev_c2[2], ev_c3[2];
     for (int i = 0; i < 2; ++i) {
@@ -630,61 +710,74 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P1-G3: zero writes observed in any of the twelve A_y/A_y^L/A_y^H ranges in any of the four windows W_x (OCS and ECS)");
 
     // ---- the graded lines ---------------------------------------------------
-    auto deps_of = [&](const Eval* const (&in)[2], const Eval* const (&in2)[2]) {
+    // Instance (configuration i, channel x) of a line: the preconditions of
+    // that channel on the input, and its comparator.
+    auto deps_x = [&](const Eval* e, int x) {
         Deps d;
-        for (int i = 0; i < 2; ++i) { d.need_pre(in[i]->pre, "P1"); d.need_pre(in2[i]->pre, "P1"); }
+        d.need(e->pre.g1, "P1-G1");
+        d.need(e->g2x[x], "P1-G2");
+        d.need(e->g3x[x], "P1-G3");
+        d.need(e->g4x[x], "P1-G4");
+        d.need(e->g5x[x], "P1-G5");
         return d;
     };
-    auto all_of = [&](const Eval* const (&in)[2], bool Eval::*member) { return in[0]->*member && in[1]->*member; };
+    auto merged = [](Deps a, const Deps& b) { for (const auto& u : b.unmet) a.need(false, u); return a; };
+    auto line = [&](const std::string& id, const std::string& text, const Eval* const (&in1)[2],
+                    const Eval* const (&in2)[2], const std::function<bool(const Eval*, const Eval*, int)>& cmp) {
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i)
+            for (int x = 0; x < 4; ++x)
+                insts.push_back(make_inst(std::string(runs[i].name) + "/ch" + num(x),
+                                          merged(deps_x(in1[i], x), deps_x(in2[i], x)),
+                                          [&, i, x] { return cmp(in1[i], in2[i], x); }));
+        emit_joined(checks, id, text, insts);
+    };
+    line("P1a",
+         "P1a [p.139, p.144, p.266]: for every channel x=0..3, at least 2 reads at A_x in W_x once the "
+         "location is written and the channel started, under OCS and ECS",
+         a_in, a_in, [](const Eval* e, const Eval*, int x) { return e->ax[x]; });
+    line("P1b",
+         "P1b [p.144, p.145]: for every channel x=0..3, no read at A_y (y != x) in W_x -- no other channel "
+         "takes the value, under OCS and ECS",
+         b_in, b_in, [](const Eval* e, const Eval*, int x) { return e->bx[x]; });
+    line("P1",
+         std::string("P1 [") + kClaims +
+         "]: P1a and P1b both hold: each channel x fetches from the location written to AUDxLCH and "
+         "AUDxLCL and no other channel takes the value, under OCS and ECS",
+         a_in, b_in, [](const Eval* ea, const Eval* eb, int x) { return ea->ax[x] && eb->bx[x]; });
+    line("P1-C1",
+         "P1-C1 [p.139, p.266]: with only the word written to AUDxLCH changed, to A_x^H, at least 2 reads "
+         "at A_x^H and none at A_x in W_x, for every channel x, under OCS and ECS",
+         c1_in, c1_in, [](const Eval* e, const Eval*, int x) { return e->c1x[x]; });
+    line("P1-C2",
+         "P1-C2 [p.139, p.266]: with only the word written to AUDxLCL changed, to A_x^L, at least 2 reads "
+         "at A_x^L and none at A_x in W_x, for every channel x, under OCS and ECS",
+         c2_in, c2_in, [](const Eval* e, const Eval*, int x) { return e->c2x[x]; });
+    {
+        // C3 reads the windows of channels 0 and 1 of each configuration.
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i)
+            insts.push_back(make_inst(runs[i].name, merged(deps_x(c3_in[i], 0), deps_x(c3_in[i], 1)),
+                                      [&, i] { return c3_in[i]->c3; }));
+        emit_joined(checks, "P1-C3",
+            "P1-C3 [p.263, p.266]: with the values written to channels 0 and 1 swapped, at least 2 reads at A_1 "
+            "and none at A_0 in W_0, and at least 2 reads at A_0 and none at A_1 in W_1, under OCS and ECS",
+            insts);
+    }
 
+    // Whether the chipset setting reaches the chip: bits 14-8 of VPOSR are the
+    // Agnus identification (p.299). Measured, not graded.
     {
-        Deps d = deps_of(a_in, a_in);
-        if (d.met())
-            checks.expect(all_of(a_in, &Eval::a),
-                "P1a [p.139, p.144, p.266]: for every channel x=0..3, at least 2 reads at A_x in W_x once the "
-                "location is written and the channel started, under OCS and ECS");
-        else not_graded(checks, "P1a", d);
-    }
-    {
-        Deps d = deps_of(b_in, b_in);
-        if (d.met())
-            checks.expect(all_of(b_in, &Eval::b),
-                "P1b [p.144, p.145]: for every channel x=0..3, no read at A_y (y != x) in W_x -- no other channel "
-                "takes the value, under OCS and ECS");
-        else not_graded(checks, "P1b", d);
-    }
-    {
-        Deps d = deps_of(a_in, b_in);
-        if (d.met())
-            checks.expect(all_of(a_in, &Eval::a) && all_of(b_in, &Eval::b),
-                std::string("P1 [") + kClaims +
-                "]: P1a and P1b both hold: each channel x fetches from the location written to AUDxLCH and "
-                "AUDxLCL and no other channel takes the value, under OCS and ECS");
-        else not_graded(checks, "P1", d);
-    }
-    {
-        Deps d = deps_of(c1_in, c1_in);
-        if (d.met())
-            checks.expect(all_of(c1_in, &Eval::c1),
-                "P1-C1 [p.139, p.266]: with only the word written to AUDxLCH changed, to A_x^H, at least 2 reads "
-                "at A_x^H and none at A_x in W_x, for every channel x, under OCS and ECS");
-        else not_graded(checks, "P1-C1", d);
-    }
-    {
-        Deps d = deps_of(c2_in, c2_in);
-        if (d.met())
-            checks.expect(all_of(c2_in, &Eval::c2),
-                "P1-C2 [p.139, p.266]: with only the word written to AUDxLCL changed, to A_x^L, at least 2 reads "
-                "at A_x^L and none at A_x in W_x, for every channel x, under OCS and ECS");
-        else not_graded(checks, "P1-C2", d);
-    }
-    {
-        Deps d = deps_of(c3_in, c3_in);
-        if (d.met())
-            checks.expect(all_of(c3_in, &Eval::c3),
-                "P1-C3 [p.263, p.266]: with the values written to channels 0 and 1 swapped, at least 2 reads at A_1 "
-                "and none at A_0 in W_0, and at least 2 reads at A_0 and none at A_1 in W_1, under OCS and ECS");
-        else not_graded(checks, "P1-C3", d);
+        long id[2] = {-1, -1};
+        for (int i = 0; i < 2; ++i) {
+            Capture c = run_capture(dir + "/prog_chipid.bin", run_budget, runs[i].cfg);
+            auto r = stored_at(c.log, kR, 1);
+            if (c.loaded && c.done.has_value() && r.size() == 1) id[i] = (r[0] >> 8) & 0x7F;
+        }
+        auto show = [](long v) { return v < 0 ? std::string("(not read)") : "$" + hex16(uint16_t(v)); };
+        checks.note("P1 chipset: VPOSR bits 14-8 read " + show(id[0]) + " under ECS and " + show(id[1]) +
+                    " under OCS; the setting " + (id[0] >= 0 && id[1] >= 0 && id[0] != id[1] ? "changes" : "does not change") +
+                    " what the chip reports (p.299: 20 or 30 is the enhanced Agnus)");
     }
 
     // The "only" of "write-only" is not graded; the write half is.
@@ -755,7 +848,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     for (int i = 0; i < 2; ++i) {
         ev_main[i] = evaluate(run_capture(dir + "/prog_p2.bin", run_budget, runs[i].cfg, extra));
         ev_omit[i] = evaluate(run_capture(dir + "/prog_p2_omit.bin", run_budget, runs[i].cfg, extra));
-        if (mv == "G1") ev_g1[i] = evaluate(run_capture(dir + "/prog_p2_g1.bin", run_budget, runs[i].cfg, extra));
+        if (mv == "G1" || mv == "JOINP2") ev_g1[i] = evaluate(run_capture(dir + "/prog_p2_g1.bin", run_budget, runs[i].cfg, extra));
     }
 
     // OMIT puts the program without one SET write through the comparator of
@@ -764,7 +857,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // comparator changes.
     const Eval* p2_in[2]; const Eval* omit_in[2];
     for (int i = 0; i < 2; ++i) {
-        p2_in[i] = (mv == "OMIT") ? &ev_omit[i] : (mv == "G1") ? &ev_g1[i] : &ev_main[i];
+        p2_in[i] = (mv == "OMIT" || mv == "JOINDMA") ? &ev_omit[i] : (mv == "G1") ? &ev_g1[i] :
+                   (mv == "JOINP2") ? (i == 0 ? &ev_g1[i] : &ev_omit[i]) : &ev_main[i];
         omit_in[i] = (mv == "INVOMIT") ? &ev_main[i] : &ev_omit[i];
         if (!p2_in[i]->table && p2_in[i]->first_bad >= 0)
             checks.note(std::string("P2 ") + runs[i].name + ": row " + num(p2_in[i]->first_bad) + " stored " +
@@ -776,24 +870,27 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
                   "P2-G1: the program finished and all 26 values were stored (OCS and ECS)");
 
     {
-        Deps d;
-        for (int i = 0; i < 2; ++i) d.need(p2_in[i]->g1, "P2-G1");
-        g_dmaconr[0] = {true, d, d.met() && p2_in[0]->table && p2_in[1]->table};
-        if (d.met())
-            checks.expect(p2_in[0]->table && p2_in[1]->table, std::string("P2 [") + kClaims +
-                "]: each of the 26 stored DMACONR readbacks, masked with $07FF, equals the proposition's table "
-                "(row 3 grades every DMA control bit on its own; row 5 grades bits written as zero staying "
-                "unchanged), under OCS and ECS");
-        else not_graded(checks, "P2", d);
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i) {
+            Deps dd;
+            dd.need(p2_in[i]->g1, "P2-G1");
+            insts.push_back(make_inst(runs[i].name, dd, [&, i] { return p2_in[i]->table; }));
+        }
+        g_dmaconr[0] = emit_joined(checks, "P2", std::string("P2 [") + kClaims +
+            "]: each of the 26 stored DMACONR readbacks, masked with $07FF, equals the proposition's table "
+            "(row 3 grades every DMA control bit on its own; row 5 grades bits written as zero staying "
+            "unchanged), under OCS and ECS", insts);
     }
     {
-        Deps d;
-        for (int i = 0; i < 2; ++i) d.need(omit_in[i]->g1, "P2-G1");
-        if (d.met())
-            checks.expect(omit_in[0]->bit0_clear && omit_in[1]->bit0_clear,
-                "P2-OMIT [p.278]: with the SET write for DMACON bit 0 left out of step 3, the DMACONR value stored "
-                "next shows bit 0 = 0 (bits written with a zero are unchanged), under OCS and ECS");
-        else not_graded(checks, "P2-OMIT", d);
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i) {
+            Deps dd;
+            dd.need(omit_in[i]->g1, "P2-G1");
+            insts.push_back(make_inst(runs[i].name, dd, [&, i] { return omit_in[i]->bit0_clear; }));
+        }
+        emit_joined(checks, "P2-OMIT",
+            "P2-OMIT [p.278]: with the SET write for DMACON bit 0 left out of step 3, the DMACONR value stored "
+            "next shows bit 0 = 0 (bits written with a zero are unchanged), under OCS and ECS", insts);
     }
 
     // The "only" of "read-only" is not graded; the read half is.
@@ -842,6 +939,8 @@ struct Def {
     // G3 for one run: no CPU write falls into the block under test; `on` says
     // whether the run is the one with the bit set.
     bool (*g3_ok)(const Capture&, const Window&, bool on);
+    // G3 reads what the enabled DMA wrote, so it needs G2 on the run with the bit set (P5).
+    bool g3_needs_g2 = false;
 };
 
 // One run of one program, kept with the preconditions it shows. `on` says
@@ -886,16 +985,20 @@ void run(const Def& d, Checks& checks, const std::string& dir, const std::string
     else if (mv == "G2") mutant = "_g2";
     else if (mv == "G3") mutant = "_g3";
     else if (d.has_g3in && mv == "G3IN") mutant = "_g3in";
+    else if (mv == "G3N1" && nm == "P6") mutant = "_g3n1";
     else if (mv == "G4") mutant = "_g4";
     else if (mv == "G5") mutant = "_g5";
 
+    if (mv == "JOIN") mutant = "_g1";
     Run main_run = make_run(d, go(bin(mutant ? mutant : "")), true);
     Run c1_run = make_run(d, go(bin("_c1")), false);
+    Run plain_run;   // JOIN: the main program, put through the comparator of the clear run
+    if (mv == "JOIN") plain_run = make_run(d, go(bin("")), true);
 
     // C1 puts the contrast program through the on-comparator and INV puts the
     // main program through the off-comparator; neither comparator changes.
     const Run& in_on = (mv == "C1") ? c1_run : main_run;
-    const Run& in_off = (mv == "INV") ? main_run : c1_run;
+    const Run& in_off = (mv == "INV") ? main_run : (mv == "JOIN") ? plain_run : c1_run;
 
     // ---- the preconditions, over the run with the bit set and the run with it clear ----
     checks.expect(main_run.pre.g1 && c1_run.pre.g1, nm + "-G1: the program finished");
@@ -906,25 +1009,23 @@ void run(const Def& d, Checks& checks, const std::string& dir, const std::string
     checks.expect(main_run.pre.g5 && c1_run.pre.g5,
         nm + "-G5: " + std::string(d.bit_name) + " is the only DMACON bit 8-0 set in the stored readback when "
         "enabled, and none is set when the bit is left clear");
-    checks.expect(main_run.pre.g3 && c1_run.pre.g3, nm + "-G3: " + d.g3_text);
+    {
+        // G3 of the run with the bit set needs G2 where the enabled DMA is what it reads (P5).
+        Deps dm;
+        if (d.g3_needs_g2) dm.need(main_run.pre.g2, nm + "-G2");
+        emit_joined(checks, nm + "-G3", nm + "-G3: " + d.g3_text,
+                    {make_inst("bit set", dm, [&] { return main_run.pre.g3; }),
+                     make_inst("bit clear", Deps(), [&] { return c1_run.pre.g3; })}, 2);
+    }
 
     // ---- the graded lines ----------------------------------------------------
-    Deps d_on, d_off, d_both;
-    d_on.need_pre(in_on.pre, nm);
-    d_off.need_pre(in_off.pre, nm);
-    d_both.need_pre(in_on.pre, nm);
-    d_both.need_pre(in_off.pre, nm);
-
-    if (d_on.met())
-        checks.expect(d.seen_on(in_on.cap, *in_on.w), nm + "-ON [" + d.pages + "]: " + d.on_text);
-    else not_graded(checks, nm + "-ON", d_on);
-    if (d_off.met())
-        checks.expect(d.seen_off(in_off.cap, *in_off.w), nm + "-OFF [" + d.pages + "]: " + d.off_text);
-    else not_graded(checks, nm + "-OFF", d_off);
-    if (d_both.met())
-        checks.expect(d.seen_on(in_on.cap, *in_on.w) && d.seen_off(in_off.cap, *in_off.w),
-                      nm + " [" + d.claims + "]: " + d.on_text + "; " + d.off_text);
-    else not_graded(checks, nm, d_both);
+    auto deps_run = [&](const Run& r) { Deps dd; dd.need_pre(r.pre, nm); return dd; };
+    auto on_cmp = [&] { return d.seen_on(in_on.cap, *in_on.w); };
+    auto off_cmp = [&] { return d.seen_off(in_off.cap, *in_off.w); };
+    emit_single(checks, nm + "-ON", nm + "-ON [" + d.pages + "]: " + d.on_text, deps_run(in_on), on_cmp);
+    emit_single(checks, nm + "-OFF", nm + "-OFF [" + d.pages + "]: " + d.off_text, deps_run(in_off), off_cmp);
+    emit_joined(checks, nm, nm + " [" + d.claims + "]: " + d.on_text + "; " + d.off_text,
+                {make_inst("bit set", deps_run(in_on), on_cmp), make_inst("bit clear", deps_run(in_off), off_cmp)});
 }
 
 }  // namespace enableprop
@@ -1048,7 +1149,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "written exactly once (BLTSIZE $0410 is 16 x 16 words, p.269), so no CPU write lies among the "
         "blitter's own; with BLTEN clear, zero writes in [Q,Q+$2000)",
         "V(W) >= 1",
-        {}, false, true, seen_on, seen_off, g3_ok};
+        {}, false, true, seen_on, seen_off, g3_ok, /*g3_needs_g2=*/true};
     enableprop::run(d, checks, dir, mv, run_budget);
 }
 
@@ -1080,9 +1181,13 @@ bool none_of_8_blocks(const Capture& cap, const Window& w) {
     return true;
 }
 
-// G3: no CPU write falls into S0 (the block under test) during the window.
+// G3: no CPU write falls into any of the eight blocks (S_0 and N_1..N_7)
+// during the window.
 bool g3_ok(const Capture& cap, const Window& w, bool) {
-    return writes_in_range(cap.log, kS0, kS0 + 0x100, w.lo, w.hi) == 0;
+    if (writes_in_range(cap.log, kS0, kS0 + 0x100, w.lo, w.hi) != 0) return false;
+    for (int k = 0; k < 7; ++k)
+        if (writes_in_range(cap.log, kN[k], kN[k] + 0x100, w.lo, w.hi) != 0) return false;
+    return true;
 }
 
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
@@ -1091,7 +1196,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "with SPREN set, each of the 16 addresses (2 words x 8 sprite structures) is read at least once in "
         "the window",
         "with SPREN clear, none of the eight blocks is read at all",
-        "zero writes observed in [S0,S0+$100) in the window",
+        "zero writes observed in any of the eight blocks, [S0,S0+$100) and [N_k,N_k+$100) for k = 1..7, in the window",
         "V(W) >= 3",
         {}, /*sprite0_real=*/true, false, all16_read, none_of_8_blocks, g3_ok};
     enableprop::run(d, checks, dir, mv, run_budget);
@@ -1228,6 +1333,9 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     else if (mv == "G2") suffix = "g2";
     else if (mv == "G3") suffix = "g3";
     else if (mv == "GEARLY") suffix = "gearly";
+    else if (mv == "JOINP7") suffix = "g1";
+    else if (mv == "G2SPREN") suffix = "g2spren";
+    else if (mv == "G2PRI") suffix = "c1";   // the BLTPRI-clear programs, evaluated as programs that intend BLTPRI set
     if (suffix) {
         d_mut = evaluate(run_capture(dir + "/prog_p7_donly_" + suffix + ".bin", run_budget), true, true);
         e_mut = evaluate(run_capture(dir + "/prog_p7_" + suffix + ".bin", run_budget), true, false);
@@ -1243,7 +1351,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // GREEN puts the live programs of the blit of USE code E (BLTPRI set,
     // BLTPRI clear) through the comparators of P7-ON, P7-OFF and P7.
     const Eval& in_on = (mv == "GREEN") ? e_main : d_main_in;
-    const Eval& in_off = (mv == "GREEN") ? e_c1 : (mv == "DOFFINV") ? e_main : d_c1;
+    const Eval& in_off = (mv == "GREEN") ? e_c1 : (mv == "DOFFINV" || mv == "JOINP7") ? e_main : d_c1;
     const Eval& in_on_e = (mv == "C1") ? e_c1 : e_main_in;
     const Eval& in_off_e = (mv == "INV") ? e_main : e_c1;
 
@@ -1252,13 +1360,28 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     checks.expect(d_main_in.g2 && d_c1.g2 && e_main_in.g2 && e_c1.g2,
         "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the run's own enabling "
         "write (set in the main run, clear in the contrast run), and no other bit among 8-0");
-    checks.expect(d_main_in.g3 && d_c1.g3 && e_main_in.g3 && e_c1.g3,
-        "P7-G3: the blit ran -- every word of its own blocks accessed (each of the 4096 words of [Q,Q+$2000) "
-        "written by the D-only blit, each of the 12288 words of [SA,SC+$2000) read by the blit of USE code E), so "
-        "(T_first,T_last) spans the whole blit");
-    checks.expect(d_main_in.g6 && d_c1.g6 && e_main_in.g6 && e_c1.g6,
-        "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with fewer than 2048 "
-        "recorded before it");
+    {
+        // G3 needs G2 (without DMAEN no blit runs); G(CPU-still-wanted-the-bus) needs G2 and G3.
+        const struct { const char* name; const Eval* e; } runs4[4] = {
+            {"D-only/BLTPRI-set", &d_main_in}, {"D-only/BLTPRI-clear", &d_c1},
+            {"E/BLTPRI-set", &e_main_in}, {"E/BLTPRI-clear", &e_c1}};
+        std::vector<Inst> i3, i6;
+        for (const auto& r : runs4) {
+            Deps dd3, dd6;
+            dd3.need(r.e->g2, "P7-G2");
+            dd6.need(r.e->g2, "P7-G2");
+            dd6.need(r.e->g3, "P7-G3");
+            i3.push_back(make_inst(r.name, dd3, [&] { return r.e->g3; }));
+            i6.push_back(make_inst(r.name, dd6, [&] { return r.e->g6; }));
+        }
+        emit_joined(checks, "P7-G3",
+            "P7-G3: the blit ran -- every word of its own blocks accessed (each of the 4096 words of [Q,Q+$2000) "
+            "written by the D-only blit, each of the 12288 words of [SA,SC+$2000) read by the blit of USE code E), so "
+            "(T_first,T_last) spans the whole blit", i3, 2);
+        emit_joined(checks, "P7-G(CPU-still-wanted-the-bus)",
+            "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with fewer than 2048 "
+            "recorded before it", i6, 2);
+    }
 
     // ---- the graded lines ----------------------------------------------------
     auto deps_of = [&](std::initializer_list<const Eval*> ins) {
@@ -1271,36 +1394,27 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         }
         return d;
     };
-    Deps d_on = deps_of({&in_on});
-    Deps d_off = deps_of({&in_off});
-    Deps d_both = deps_of({&in_on, &in_off});
-    Deps d_on_e = deps_of({&in_on_e});
-    Deps d_off_e = deps_of({&in_off_e});
-    if (d_on.met())
-        checks.expect(in_on.b.cpu_n == 0,
-            "P7-ON [p.278, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and last "
-            "destination write of a blit that uses D only (USE code 1, p.188: D0 - D1 - D2)");
-    else not_graded(checks, "P7-ON", d_on);
-    if (d_off.met())
-        checks.expect(in_off.b.cpu_n >= 1,
-            "P7-OFF [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit");
-    else not_graded(checks, "P7-OFF", d_off);
-    if (d_both.met())
-        checks.expect(in_on.b.cpu_n == 0 && in_off.b.cpu_n >= 1,
-            std::string("P7 [") + kClaims +
-            "]: with BLTPRI set, zero CPU accesses in (T_first,T_last) of the D-only blit; with BLTPRI clear, at "
-            "least one (p.198)");
-    else not_graded(checks, "P7", d_both);
-    if (d_on_e.met())
-        checks.expect(in_on_e.b.cpu_n == 0,
-            "P7-ON-E [p.278, p.222, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and "
-            "last blitter source read of a blit that uses A, B and C and not D (USE code E, p.188: A0 B0 C0 A1 B1 C1 "
-            "A2 B2 C2)");
-    else not_graded(checks, "P7-ON-E", d_on_e);
-    if (d_off_e.met())
-        checks.expect(in_off_e.b.cpu_n >= 1,
-            "P7-OFF-E [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit");
-    else not_graded(checks, "P7-OFF-E", d_off_e);
+    auto on_cmp = [&] { return in_on.b.cpu_n == 0; };
+    auto off_cmp = [&] { return in_off.b.cpu_n >= 1; };
+    emit_single(checks, "P7-ON",
+        "P7-ON [p.278, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and last "
+        "destination write of a blit that uses D only (USE code 1, p.188: D0 - D1 - D2)",
+        deps_of({&in_on}), on_cmp);
+    emit_single(checks, "P7-OFF",
+        "P7-OFF [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit",
+        deps_of({&in_off}), off_cmp);
+    emit_joined(checks, "P7", std::string("P7 [") + kClaims +
+        "]: with BLTPRI set, zero CPU accesses in (T_first,T_last) of the D-only blit; with BLTPRI clear, at "
+        "least one (p.198)",
+        {make_inst("BLTPRI-set", deps_of({&in_on}), on_cmp), make_inst("BLTPRI-clear", deps_of({&in_off}), off_cmp)});
+    emit_single(checks, "P7-ON-E",
+        "P7-ON-E [p.278, p.222, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and "
+        "last blitter source read of a blit that uses A, B and C and not D (USE code E, p.188: A0 B0 C0 A1 B1 C1 "
+        "A2 B2 C2)",
+        deps_of({&in_on_e}), [&] { return in_on_e.b.cpu_n == 0; });
+    emit_single(checks, "P7-OFF-E",
+        "P7-OFF-E [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit",
+        deps_of({&in_off_e}), [&] { return in_off_e.b.cpu_n >= 1; });
 }
 
 }  // namespace p7
@@ -1382,14 +1496,15 @@ bool graded_reads_show(const Poll& p, const std::vector<size_t>& graded, bool wa
     return ok && present >= 1;
 }
 
-// (c): the poll ends on a 0 before the 8192-read cap, and every read from
-// that first 0 on is also 0.
+// (c): the poll ends on a 0 before the 8180-read cap (prog_p8.s), and every
+// read from that first 0 on is also 0.
+constexpr size_t kPollCap = 8180;
 bool c_ok(const Poll& p) {
     if (p.c.size() < 4) return false;
     size_t n = p.n_poll();
     long first_zero = -1;
     for (size_t k = 1; k < n; ++k) if (!(p.v[4 + k] & 0x4000)) { first_zero = (long)k; break; }
-    if (!(n < 8192 && first_zero >= 0)) return false;
+    if (!(n < kPollCap && first_zero >= 0)) return false;
     for (size_t k = (size_t)first_zero; k < p.c.size() - 4; ++k)
         if (p.v[4 + k] & 0x4000) return false;
     return true;
@@ -1435,10 +1550,14 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // program for P8; G3's program is the one without a blit.
     Eval mut;
     const char* mutant = nullptr;
-    if (mv == "G1") mutant = "prog_p8_g1.bin";
+    if (mv == "G1" || mv == "JOINDMA") mutant = "prog_p8_g1.bin";
     else if (mv == "GBLTPRI") mutant = "prog_p8_gbltpri.bin";
     else if (mv == "G3") mutant = "prog_p8_c1.bin";
     else if (mv == "G4") mutant = "prog_p8_g4.bin";
+    else if (mv == "G2SPREN") mutant = "prog_p8_g2spren.bin";
+    else if (mv == "IDLEBUSY") mutant = "prog_p8_idlebusy.bin";
+    else if (mv == "SHORTBLIT" || mv == "SHORTBLITDMA") mutant = "prog_p8_shortblit.bin";
+    else if (mv == "SECONDBLIT") mutant = "prog_p8_secondblit.bin";
     if (mutant) mut = evaluate(run_capture(dir + "/" + mutant, run_budget));
     const Eval& in_p8 = mutant ? mut : ref;
     // INVNOBLIT puts the main program through the comparator of P8-NOBLIT.
@@ -1461,8 +1580,15 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P8-G2: the stored DMACONR readback and the four stored idle reads show DMAEN and BLTEN set, BLTPRI clear, "
         "and no other bit among 8-0");
     checks.expect(in_p8.g3, "P8-G3: the blit ran -- T_last is defined (at least 2 writes in the Q range)");
-    // G4: at least 2 poll reads with i >= 2 fall before T_last, so (b) is not vacuous.
-    checks.expect(in_p8.g4, "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous");
+    // G4: at least 2 poll reads with i >= 2 fall before T_last, so (b) is not vacuous. It needs G3: with no
+    // blit there is no T_last.
+    {
+        Deps dd;
+        dd.need(in_p8.g3, "P8-G3");
+        emit_single(checks, "P8-G4",
+            "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous", dd,
+            [&] { return in_p8.g4; });
+    }
 
     // ---- the graded lines ----------------------------------------------------
     {
@@ -1471,12 +1597,10 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         d.need(in_p8.g2, "P8-G2");
         d.need(in_p8.g3, "P8-G3");
         d.need(in_p8.g4, "P8-G4");
-        g_dmaconr[1] = {true, d, d.met() && idle_ok(in_p8.p) && b_this && c_ok(in_p8.p)};
-        if (d.met())
-            checks.expect(idle_ok(in_p8.p) && b_this && c_ok(in_p8.p), std::string("P8 [") + kClaims +
-                "]: the 4 idle reads show bit14=0; every poll read i>=2 with T_w(i) < T_last shows bit14=1; the poll "
-                "ends on a 0 before the 8192-read cap, and every read after that (including the 8 extra) is also 0");
-        else not_graded(checks, "P8", d);
+        g_dmaconr[1] = emit_single(checks, "P8", std::string("P8 [") + kClaims +
+            "]: the 4 idle reads show bit14=0; every poll read i>=2 with T_w(i) < T_last shows bit14=1; the poll "
+            "ends on a 0 before the 8180-read cap, and every read after that (including the 8 extra) is also 0",
+            d, [&] { return idle_ok(in_p8.p) && b_this && c_ok(in_p8.p); });
     }
     {
         // The reads graded 1 in the main run, made by the program without a
@@ -1487,11 +1611,10 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         d.need(in_nb.g2, "P8-G2");
         d.need(ref.g3, "P8-G3");
         d.need(ref.g4, "P8-G4");
-        if (d.met())
-            checks.expect(graded_reads_show(in_nb.p, graded, false),
-                "P8-NOBLIT [p.186]: with the BLTSIZE write replaced by a write to COLOR00, so that no blit starts, "
-                "every read of the poll at an index the main run grades shows bit14=0, and at least one is held");
-        else not_graded(checks, "P8-NOBLIT", d);
+        emit_single(checks, "P8-NOBLIT",
+            "P8-NOBLIT [p.186]: with the BLTSIZE write replaced by a write to COLOR00, so that no blit starts, "
+            "every read of the poll at an index the main run grades shows bit14=0, and at least one is held",
+            d, [&] { return graded_reads_show(in_nb.p, graded, false); });
     }
 
     checks.record(
@@ -1513,11 +1636,13 @@ namespace p9 {
 const char kClaims[] =
     "p.278 5-appA-p278.c14, A-dmacon.b13";
 
-// The five blits' destination blocks (blits 1-3) and source blocks (blits 4
-// and 5), each 16 words; the exchanged program reads Zb in blit 4 and F in
-// blit 5.
-constexpr uint32_t kBlock[5] = {kQ, kQ + 0x100, kQ + 0x200, kF, kZb};
-constexpr uint32_t kBlockSwapped[5] = {kQ, kQ + 0x100, kQ + 0x200, kZb, kF};
+// The nine blits' blocks, each 16 words: the destination blocks of blits 1-3,
+// the source blocks of blits 4-8 and 9, and blit 9's destination Q + $400. The
+// exchanged program reads Zb in blit 4 and F in blit 5.
+constexpr int kRows = 9;
+constexpr uint32_t kQ9 = kQ + 0x400;   // blit 9's destination
+constexpr uint32_t kBlock[kRows] = {kQ, kQ + 0x100, kQ + 0x200, kF, kZb, kM[0], kM[1], kM[2], kM[3]};
+constexpr uint32_t kBlockSwapped[kRows] = {kQ, kQ + 0x100, kQ + 0x200, kZb, kF, kM[0], kM[1], kM[2], kM[3]};
 
 // What one run of the program shows: Z_1..Z_5 with the times of their stores
 // into R, and, logged into G, the read of each wait that showed bit 14 = 0.
@@ -1531,16 +1656,16 @@ struct Run {
 
 Run parse(const Capture& cap) {
     Run r;
-    for (const auto& w : writes_seq(cap.log, kR, kR + 10)) { r.z.push_back(w.data); r.z_cycle.push_back(w.cycle); }
-    for (const auto& w : writes_seq(cap.log, kLog, kLog + 10)) { r.term.push_back(w.data); r.term_cycle.push_back(w.cycle); }
-    r.ok = cap.loaded && r.z.size() == 5 && r.term.size() == 5;
+    for (const auto& w : writes_seq(cap.log, kR, kR + 2 * kRows)) { r.z.push_back(w.data); r.z_cycle.push_back(w.cycle); }
+    for (const auto& w : writes_seq(cap.log, kLog, kLog + 2 * kRows)) { r.term.push_back(w.data); r.term_cycle.push_back(w.cycle); }
+    r.ok = cap.loaded && r.z.size() == kRows && r.term.size() == kRows;
     return r;
 }
 
 // Bit 13 of each Z_k against a table of 1 = set.
-bool table_ok(const Run& r, const int expect[5]) {
+bool table_ok(const Run& r, const int expect[kRows]) {
     if (!r.ok) return false;
-    for (int k = 0; k < 5; ++k)
+    for (int k = 0; k < kRows; ++k)
         if (((r.z[k] & 0x2000) != 0) != (expect[k] != 0)) return false;
     return true;
 }
@@ -1565,21 +1690,26 @@ bool reads_only(const Capture& cap, uint32_t addr, size_t count) {
     return reads == count;
 }
 
-// The time of the last port access in block k's 16 words, if any.
+// The time of the last port access in blit k's blocks (blit 9 also writes
+// Q + $400), if any.
 std::optional<uint64_t> last_access(const Capture& cap, int k, bool swapped) {
-    uint32_t wlo = word_addr((swapped ? kBlockSwapped : kBlock)[k]), whi = wlo + 16;
+    std::vector<uint32_t> bases = {(swapped ? kBlockSwapped : kBlock)[k]};
+    if (k == kRows - 1) bases.push_back(kQ9);
     std::optional<uint64_t> t;
-    for (const auto& a : cap.log)
-        if (a.word_addr >= wlo && a.word_addr < whi) t = t ? std::max(*t, a.cycle) : a.cycle;
+    for (uint32_t base : bases) {
+        uint32_t wlo = word_addr(base), whi = wlo + 16;
+        for (const auto& a : cap.log)
+            if (a.word_addr >= wlo && a.word_addr < whi) t = t ? std::max(*t, a.cycle) : a.cycle;
+    }
     return t;
 }
 
-// Blits 4 and 5 leave D unwritten: no write falls outside the CPU's own
-// areas (G, R, MK) from the first access to F or Zb to the last.
+// Blits 4 to 8 leave D unwritten: no write falls outside the CPU's own
+// areas (G, R, MK) from the first access to F, Zb, M_1, M_2 or M_3 to the last.
 bool no_write_outside_cpu_areas(const Capture& cap) {
     uint64_t first = UINT64_MAX, last = 0;
     bool any = false;
-    for (uint32_t base : {kF, kZb}) {
+    for (uint32_t base : {kF, kZb, kM[0], kM[1], kM[2]}) {
         uint32_t wlo = word_addr(base), whi = wlo + 16;
         for (const auto& a : cap.log)
             if (a.word_addr >= wlo && a.word_addr < whi) {
@@ -1598,7 +1728,7 @@ bool no_write_outside_cpu_areas(const Capture& cap) {
 // read with bit 14 = 0.
 bool after_completion(const Capture& cap, const Run& r, bool swapped) {
     if (!r.ok) return false;
-    for (int k = 0; k < 5; ++k) {
+    for (int k = 0; k < kRows; ++k) {
         auto t = last_access(cap, k, swapped);
         if (!t) return false;
         if (r.term[k] & 0x4000) return false;
@@ -1624,8 +1754,8 @@ struct Eval {
 };
 
 Eval evaluate(const Capture& cap, bool swapped) {
-    static const int expect_main[5] = {1, 0, 1, 0, 1};
-    static const int expect_swap[5] = {0, 1, 1, 1, 0};
+    static const int expect_main[kRows] = {1, 0, 1, 0, 1, 0, 0, 0, 0};
+    static const int expect_swap[kRows] = {0, 1, 1, 1, 0, 0, 0, 0, 0};
     Eval e;
     e.r = parse(cap);
     e.main_table = table_ok(e.r, expect_main);
@@ -1635,10 +1765,13 @@ Eval evaluate(const Capture& cap, bool swapped) {
     // in the other.
     const uint16_t d1 = swapped ? 0xFFFF : 0x0000, d2 = swapped ? 0x0000 : 0xFFFF;
     e.gw = cap.loaded && writes_all(cap, kQ, 16, d1) && writes_all(cap, kQ + 0x100, 16, d2) &&
-           writes_all(cap, kQ + 0x200, 16, 0x0000);
-    e.gr = cap.loaded && reads_only(cap, kF, 16) && reads_only(cap, kZb, 16) && no_write_outside_cpu_areas(cap);
+           writes_all(cap, kQ + 0x200, 16, 0x0000) &&
+           writes_seq(cap.log, kQ9, kQ9 + 32).size() == 16;   // blit 9 writes its 16 words
+    e.gr = cap.loaded && reads_only(cap, kF, 16) && reads_only(cap, kZb, 16) && reads_only(cap, kM[0], 16) &&
+           reads_only(cap, kM[1], 16) && reads_only(cap, kM[2], 16) && reads_only(cap, kM[3], 16) &&
+           no_write_outside_cpu_areas(cap);
     e.g2 = e.r.ok;
-    if (e.g2) for (int k = 0; k < 5; ++k)
+    if (e.g2) for (int k = 0; k < kRows; ++k)
         if ((e.r.z[k] & 0x07FF) != 0x0240) { e.g2 = false; break; }
     e.gac = after_completion(cap, e.r, swapped);
     return e;
@@ -1651,39 +1784,49 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // A precondition mutation replaces the main program.
     Eval ev_mut;
     const char* mutant = nullptr;
-    if (mv == "G1") mutant = "prog_p9_g1.bin";
+    if (mv == "G1" || mv == "JOINP9") mutant = "prog_p9_g1.bin";
     else if (mv == "G2") mutant = "prog_p9_g2.bin";
     else if (mv == "GWRITES") mutant = "prog_p9_gwrites.bin";
     else if (mv == "GDWRITE") mutant = "prog_p9_gdwrite.bin";
     else if (mv == "NOWAIT") mutant = "prog_p9_gnowait.bin";
-    if (mutant) ev_mut = evaluate(run_capture(dir + "/" + mutant, run_budget), false);
-    const Eval& m = mutant ? ev_mut : ev_main;
+    else if (mv == "GDWRITE7") mutant = "prog_p9_gdwrite7.bin";
+    else if (mv == "GWRITES9") mutant = "prog_p9_gwrites9.bin";
+    bool have_mut = false;
+    if (mutant) { ev_mut = evaluate(run_capture(dir + "/" + mutant, run_budget), false); have_mut = true; }
+    else if (mv == "ZMIX") {
+        // The main program with M_1 to M_4 all zero: a change of the source blocks' content alone.
+        std::vector<ExtraPreload> zero_m;
+        for (int k = 0; k < 4; ++k) zero_m.push_back({kM[k], std::vector<uint16_t>(16, 0x0000)});
+        ev_mut = evaluate(run_capture(dir + "/prog_p9.bin", run_budget, nmh::Config{}, zero_m), false);
+        have_mut = true;
+    }
+    const Eval& m = have_mut ? ev_mut : ev_main;
 
     // C1 puts the exchanged program through the main table; INV puts the
     // main program through the exchanged table. Neither table changes.
     const Eval& in_main = (mv == "C1") ? ev_swap : m;
-    const Eval& in_swap = (mv == "INV") ? ev_main : ev_swap;
+    const Eval& in_swap = (mv == "INV" || mv == "JOINP9") ? ev_main : ev_swap;
 
     if (ev_main.r.ok) {
-        std::string zs = "P9: Z1..Z5 = ";
-        for (int k = 0; k < 5; ++k) zs += hex16(ev_main.r.z[k]) + " ";
+        std::string zs = "P9: Z1..Z9 = ";
+        for (int k = 0; k < kRows; ++k) zs += hex16(ev_main.r.z[k]) + " ";
         checks.note(zs);
     }
 
     // ---- the preconditions, over the run read as the main program and the run read as the exchanged one ----
     checks.expect(in_main.gw && in_swap.gw,
         "P9-G(writes): blits 1 and 3 made 16 writes of $0000 in their ranges; blit 2 made 16 writes of $FFFF "
-        "(blits 1 and 2 exchanged in the exchanged run)");
+        "(blits 1 and 2 exchanged in the exchanged run); blit 9 made 16 writes in [Q+$400,Q+$420)");
     checks.expect(in_main.gr && in_swap.gr,
-        "P9-G(reads): blits 4 and 5 made 16 reads in F and Zb respectively, no write there, and no write outside "
-        "the CPU's own areas while they ran");
+        "P9-G(reads): blits 4 to 8 made 16 reads in F, Zb, M_1, M_2 and M_3 respectively, no write there, and no "
+        "write outside the CPU's own areas while they ran; blit 9 made 16 reads in M_4");
     checks.expect(in_main.g1 && in_swap.g1,
         "P9-G1: the program finished -- END was written and every Z_k and every wait read was stored");
     checks.expect(in_main.g2 && in_swap.g2,
         "P9-G2: G2 for $8240 -- every stored Z_k shows DMAEN (bit 9) and BLTEN (bit 6) set and no other bit "
         "among 10 and 8-0");
     checks.expect(in_main.gac && in_swap.gac,
-        "P9-G(after-completion): each Z_k (k = 1..5) was stored after the last port access of its blit and after "
+        "P9-G(after-completion): each Z_k (k = 1..9) was stored after the last port access of its blit and after "
         "a read with bit 14 = 0");
 
     // ---- the graded lines ----------------------------------------------------
@@ -1698,25 +1841,20 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         }
         return d;
     };
-    Deps d_main = deps_of({&in_main});
-    Deps d_swap = deps_of({&in_swap});
-    Deps d_both = deps_of({&in_main, &in_swap});
-    g_dmaconr[2] = {true, d_both, d_both.met() && in_main.main_table && in_swap.swap_table};
-    if (d_main.met())
-        checks.expect(in_main.main_table,
+    auto main_cmp = [&] { return in_main.main_table; };
+    auto swap_cmp = [&] { return in_swap.swap_table; };
+    emit_single(checks, "P9-MAIN",
             "P9-MAIN [p.222, p.187]: bit 13 of each Z_k matches the proposition's table (blits 1-3 show the flag "
-            "describes the latest blit; blits 4-5 grade 'even if D is not written')");
-    else not_graded(checks, "P9-MAIN", d_main);
-    if (d_swap.met())
-        checks.expect(in_swap.swap_table,
+            "describes the latest blit; blits 4-5 grade 'even if D is not written'; blits 6-9 leave one nonzero "
+            "word first, in the middle and last, the last also written)", deps_of({&in_main}), main_cmp);
+    emit_single(checks, "P9-SWAP",
             "P9-SWAP [p.222, p.187]: with BLTCON0 exchanged between blits 1 and 2 and the source exchanged between "
-            "blits 4 and 5, bit 13 of each Z_k follows the exchanged table");
-    else not_graded(checks, "P9-SWAP", d_swap);
-    if (d_both.met())
-        checks.expect(in_main.main_table && in_swap.swap_table, std::string("P9 [") + kClaims +
+            "blits 4 and 5, bit 13 of each Z_k follows the exchanged table (blits 6-9 unchanged)",
+            deps_of({&in_swap}), swap_cmp);
+    g_dmaconr[2] = emit_joined(checks, "P9", std::string("P9 [") + kClaims +
             "]: bit 13 of each Z_k matches the proposition's table, and the exchanged table when the logic outputs "
-            "are exchanged");
-    else not_graded(checks, "P9", d_both);
+            "are exchanged",
+            {make_inst("main", deps_of({&in_main}), main_cmp), make_inst("exchanged", deps_of({&in_swap}), swap_cmp)});
 
     checks.record(
         "P9: the 'only' of 'read only' is not graded. p.278 gives bit 15, 'bits written with a 1 get set or "
@@ -1802,6 +1940,7 @@ struct Eval {
     bool have = false;                  // every marker was found
     bool audio = false, color = false;  // the comparison with the audio-list and with the COLOR00-list expectation
     bool g1 = false, g2 = false, g3 = false, g4 = false, g5 = false, lst = false;
+    bool g2k = false;                   // the Copper enable part of G2 (bits 9 and 7 in R[0])
 };
 
 Eval evaluate(const Capture& cap) {
@@ -1817,6 +1956,7 @@ Eval evaluate(const Capture& cap) {
     auto r = stored_at(cap.log, kR, 5);
     bool stored = e.have && r.size() == 5;
     e.g2 = stored && (r[0] & 0x0200) && (r[0] & 0x0080);
+    e.g2k = e.g2;
     e.g5 = stored && (r[0] & 0x01FF) == 0x0080;
     if (stored) for (int x = 0; x < 4; ++x) {
         if (!((r[1 + x] & 0x0200) && (r[1 + x] & (1 << x)))) e.g2 = false;
@@ -1826,6 +1966,9 @@ Eval evaluate(const Capture& cap) {
     e.g4 = e.have && count_window(vsync_starts(cap.video), *ko, *kc) >= 2;
     if (e.have) for (int x = 0; x < 4; ++x)
         if (count_window(vsync_starts(cap.video), w.o[x], w.c[x]) < 2) e.g4 = false;
+    // The gap of P1 step 4: at least one vertical-sync pulse start between C_x and O_(x+1).
+    if (e.have) for (int x = 0; x < 3; ++x)
+        if (count_window(vsync_starts(cap.video), w.c[x], w.o[x + 1]) < 1) e.g4 = false;
 
     // G3: no CPU write falls into a DMA block during a window -- each of
     // the eight ranges (A_y, B_y for y = 0..3) against each of the four
@@ -1861,13 +2004,15 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // The mutated programs of the preconditions replace the main program in
     // the runs with CDANG clear.
     std::string mutant;
-    if (mv == "G1") mutant = "/prog_p10_g1.bin";
+    if (mv == "G1" || mv == "JOINP10") mutant = "/prog_p10_g1.bin";
     else if (mv == "G2K") mutant = "/prog_p10_g2k.bin";
     else if (mv == "G2W") mutant = "/prog_p10_g2w.bin";
     else if (mv == "G3") mutant = "/prog_p10_g3.bin";
     else if (mv == "G3L") mutant = "/prog_p10_g3l.bin";
     else if (mv == "G3X") mutant = "/prog_p10_g3x.bin";
     else if (mv == "G4") mutant = "/prog_p10_g4.bin";
+    else if (mv == "G4GAP") mutant = "/prog_p10_g4gap.bin";
+    else if (mv == "G4K") mutant = "/prog_p10_g4k.bin";
     else if (mv == "G5") mutant = "/prog_p10_g5.bin";
     else if (mv == "G_NOLIST") mutant = "/prog_p10_g_nolist.bin";
 
@@ -1890,7 +2035,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // list through the COLOR00 comparator. Neither comparator changes.
     const Eval* in_main[4]; const Eval* in_color[4];
     for (int i = 0; i < 4; ++i) {
-        in_main[i] = (mv == "C1") ? &color_ev[i] : &main_ev[i];
+        in_main[i] = (mv == "C1" || (mv == "JOINP10" && combos[i].cdang)) ? &color_ev[i] : &main_ev[i];
         in_color[i] = (mv == "INV") ? &main_ev[i] : &color_ev[i];
     }
 
@@ -1903,15 +2048,27 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     checks.expect(all(&Eval::g2),
         "P10-G2 [p.144]: the stored DMACONR readbacks (after the Copper enable and after each channel's enable) "
         "show DMAEN (bit 9) set and the enabled COPEN (bit 7), respectively channel x's bit, set (every run)");
-    checks.expect(all(&Eval::g4), "P10-G4: V >= 2 in [K_O,K_C] and in each W_x (every run)");
+    checks.expect(all(&Eval::g4), "P10-G4: V >= 2 in [K_O,K_C] and in each W_x, and at least one vertical-sync pulse separates C_x from O_(x+1) (every run)");
     checks.expect(all(&Eval::g3),
         "P10-G3: zero writes observed in any A_y/B_y range (eight ranges) in any of the four windows W_x, and in "
         "[L,L+$24) in [K_O,K_C] (every run)");
     checks.expect(all(&Eval::g5),
         "P10-G5: of DMACON bits 8-0 in each stored readback, only COPEN (Copper window) respectively the channel "
         "x being enabled is set (every run)");
-    checks.expect(all(&Eval::lst),
-        "P10-G(list-ran): every word of [L,L+$24) was read at least once inside [K_O,K_C] (every run)");
+    {
+        // The Copper runs the list only with DMAEN and COPEN set: G(list-ran) needs the Copper enable part of G2.
+        std::vector<Inst> insts;
+        for (int i = 0; i < 4; ++i) {
+            Deps da, dc;
+            da.need(main_ev[i].g2k, "P10-G2");
+            dc.need(color_ev[i].g2k, "P10-G2");
+            insts.push_back(make_inst(std::string(combos[i].name) + "/audio", da, [&, i] { return main_ev[i].lst; }));
+            insts.push_back(make_inst(std::string(combos[i].name) + "/color", dc, [&, i] { return color_ev[i].lst; }));
+        }
+        emit_joined(checks, "P10-G(list-ran)",
+            "P10-G(list-ran): every word of [L,L+$24) was read at least once inside [K_O,K_C] (every run)",
+            insts, 2);
+    }
 
     // ---- the graded lines ----------------------------------------------------
     auto deps_of = [&](const Eval* const (&ins)[4]) {
@@ -1926,22 +2083,28 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         }
         return d;
     };
-    Deps d_main = deps_of(in_main);
-    Deps d_color = deps_of(in_color);
-    if (d_main.met()) {
-        bool ok = true;
-        for (int i = 0; i < 4; ++i) ok = ok && in_main[i]->audio;
-        checks.expect(ok,
+    {
+        std::vector<Inst> im, ic;
+        for (int i = 0; i < 4; ++i) {
+            Deps dm, dc;
+            for (const Eval* e : {in_main[i]}) {
+                dm.need(e->g1, "P10-G1"); dm.need(e->g2, "P10-G2"); dm.need(e->g4, "P10-G4");
+                dm.need(e->g3, "P10-G3"); dm.need(e->g5, "P10-G5"); dm.need(e->lst, "P10-G(list-ran)");
+            }
+            for (const Eval* e : {in_color[i]}) {
+                dc.need(e->g1, "P10-G1"); dc.need(e->g2, "P10-G2"); dc.need(e->g4, "P10-G4");
+                dc.need(e->g3, "P10-G3"); dc.need(e->g5, "P10-G5"); dc.need(e->lst, "P10-G(list-ran)");
+            }
+            im.push_back(make_inst(combos[i].name, dm, [&, i] { return in_main[i]->audio; }));
+            ic.push_back(make_inst(combos[i].name, dc, [&, i] { return in_color[i]->color; }));
+        }
+        emit_joined(checks, "P10",
             "P10 [p.139, p.147, p.21, p.26, p.287]: under OCS and ECS, with CDANG clear or set, in W_x: at least 2 reads "
-            "at B_x and none at A_x, and none at A_y or B_y for y != x");
-    } else not_graded(checks, "P10", d_main);
-    if (d_color.met()) {
-        bool ok = true;
-        for (int i = 0; i < 4; ++i) ok = ok && in_color[i]->color;
-        checks.expect(ok,
+            "at B_x and none at A_x, and none at A_y or B_y for y != x", im);
+        emit_joined(checks, "P10-COLOR",
             "P10-COLOR [p.21, p.139]: with the same eight MOVEs addressed to COLOR00, under OCS and ECS, with CDANG "
-            "clear or set, in W_x: at least 2 reads at A_x and none at B_x, and none at A_y or B_y for y != x");
-    } else not_graded(checks, "P10-COLOR", d_color);
+            "clear or set, in W_x: at least 2 reads at A_x and none at B_x, and none at A_y or B_y for y != x", ic);
+    }
 
     checks.record(
         "C-interp.copcon C-interp.copcon.ecs: not graded. The claims name the whole range $DFF03E-$DFF07E "
@@ -1965,6 +2128,14 @@ constexpr uint16_t kO = 0x0080, kC = 0x0081, kEnd = 0x00FF;
 std::vector<uint16_t> list_main() {
     return {0x0054, uint16_t(kQ2 >> 16), 0x0056, uint16_t(kQ2 & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
 }
+// The $054 MOVE replaced by a MOVE to COLOR00 with the same data.
+std::vector<uint16_t> list_no_hi() {
+    return {0x0180, uint16_t(kQ2 >> 16), 0x0056, uint16_t(kQ2 & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
+}
+// A list whose blit lands in L, past its content: [L+$30, L+$50).
+std::vector<uint16_t> list_blit_l() {
+    return {0x0054, uint16_t((kList + 0x30) >> 16), 0x0056, uint16_t((kList + 0x30) & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
+}
 std::vector<uint16_t> list_no_bltsize() {
     return {0x0054, uint16_t(kQ2 >> 16), 0x0056, uint16_t(kQ2 & 0xFFFF), 0x0180, 0x0000, 0xFFFF, 0xFFFE};
 }
@@ -1972,12 +2143,15 @@ std::vector<uint16_t> list_no_pointer() {
     return {0x0180, uint16_t(kQ2 >> 16), 0x0180, uint16_t(kQ2 & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
 }
 
-// The three lists' writes in the window: with the real list a blit lands at
-// Q2 and none at Q; without BLTSIZE neither; without the pointer MOVEs the
-// blit lands at the CPU's own destination Q.
+// The four lists' writes in the window: with the real list a blit lands at
+// Q2 and none at Q3; without BLTSIZE neither; without the $054 MOVE the
+// pointer is the CPU's high word with the Copper's low word, in neither
+// range; without the pointer MOVEs the blit lands at the CPU's own
+// destination Q3. (The field q counts the writes in the Q3 range.)
 struct Seen { size_t q2 = 0, q = 0; };
 bool main_cmp(const Seen& s) { return s.q2 >= 1 && s.q == 0; }
 bool nobltsize_cmp(const Seen& s) { return s.q2 == 0 && s.q == 0; }
+bool nohi_cmp(const Seen& s) { return s.q2 == 0 && s.q == 0; }
 bool noptr_cmp(const Seen& s) { return s.q >= 1 && s.q2 == 0; }
 // The program image's byte range that holds the code from the opening
 // marker's store to the closing marker's store (prog_p11.s).
@@ -1995,7 +2169,7 @@ Eval evaluate(const Capture& cap) {
     e.have = cap.loaded && w.has_value();
     if (!e.have) return e;
     e.seen.q2 = writes_in_range(cap.log, kQ2, kQ2 + 0x20, w->lo, w->hi);
-    e.seen.q = writes_in_range(cap.log, kQ, kQ + 0x20, w->lo, w->hi);
+    e.seen.q = writes_in_range(cap.log, kQ3, kQ3 + 0x20, w->lo, w->hi);
     e.g1 = cap.done.has_value() && marker(cap.log, kEnd).has_value();
     auto r = stored_at(cap.log, kR, 1);
     bool stored = r.size() == 1;
@@ -2036,7 +2210,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     const struct { const char* name; nmh::Config cfg; } cfgs[2] = {{"OCS", cfg_ocs}, {"ECS", cfg_ecs}};
 
     std::string mutant;
-    if (mv == "G1") mutant = "/prog_p11_g1.bin";
+    if (mv == "G1" || mv == "JOINP11") mutant = "/prog_p11_g1.bin";
     else if (mv == "G2") mutant = "/prog_p11_g2.bin";
     else if (mv == "G3") mutant = "/prog_p11_g3.bin";
     else if (mv == "G3Q") mutant = "/prog_p11_g3q.bin";
@@ -2045,18 +2219,20 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     else if (mv == "G5") mutant = "/prog_p11_g5.bin";
     else if (mv == "G_NOLIST") mutant = "/prog_p11_g_nolist.bin";
 
-    Eval ev_main[2], ev_nobltsize[2], ev_noptr[2];
+    Eval ev_main[2], ev_nobltsize[2], ev_noptr[2], ev_nohi[2];
     for (int i = 0; i < 2; ++i) {
         std::string bin = dir + "/prog_p11.bin";
         std::string bin_main = mutant.empty() ? bin : dir + mutant;
-        ev_main[i] = evaluate(run_capture(bin_main, run_budget, cfgs[i].cfg, {{kList, list_main()}}));
+        ev_main[i] = evaluate(run_capture(bin_main, run_budget, cfgs[i].cfg, {{kList, mv == "G3LW" ? list_blit_l() : list_main()}}));
+        ev_nohi[i] = evaluate(run_capture(bin, run_budget, cfgs[i].cfg, {{kList, list_no_hi()}}));
         ev_nobltsize[i] = evaluate(run_capture(bin, run_budget, cfgs[i].cfg, {{kList, list_no_bltsize()}}));
         ev_noptr[i] = evaluate(run_capture(bin, run_budget, cfgs[i].cfg, {{kList, list_no_pointer()}}));
         checks.note(std::string("P11 ") + cfgs[i].name + ": q2 writes " + num((long long)ev_main[i].seen.q2) +
                     " q writes " + num((long long)ev_main[i].seen.q) + " (real list); " +
                     num((long long)ev_nobltsize[i].seen.q2) + "/" + num((long long)ev_nobltsize[i].seen.q) +
                     " (no BLTSIZE); " + num((long long)ev_noptr[i].seen.q2) + "/" +
-                    num((long long)ev_noptr[i].seen.q) + " (no pointer)");
+                    num((long long)ev_noptr[i].seen.q) + " (no pointer); " + num((long long)ev_nohi[i].seen.q2) + "/" +
+                    num((long long)ev_nohi[i].seen.q) + " (no $054 MOVE)");
         checks.note(std::string("P11 ") + cfgs[i].name + ": program-image reads in the window " +
                     num((long long)ev_main[i].fetches) + ", lowest address $" + hex24(ev_main[i].fetch_lo) +
                     ", highest $" + hex24(ev_main[i].fetch_hi));
@@ -2065,9 +2241,11 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // NOBLTSIZE and NOPTR put the contrasting lists through the main
     // comparator; INVNOBLTSIZE and INVNOPTR put the real list through the
     // contrasting comparators. No comparator changes.
-    const Eval* m_in[2]; const Eval* nb_in[2]; const Eval* np_in[2];
+    const Eval* m_in[2]; const Eval* nb_in[2]; const Eval* np_in[2]; const Eval* nh_in[2];
     for (int i = 0; i < 2; ++i) {
-        m_in[i] = (mv == "NOBLTSIZE") ? &ev_nobltsize[i] : (mv == "NOPTR") ? &ev_noptr[i] : &ev_main[i];
+        m_in[i] = (mv == "NOBLTSIZE") ? &ev_nobltsize[i] : (mv == "NOPTR" || (mv == "JOINP11" && i == 1)) ? &ev_noptr[i] :
+                  (mv == "NOHI") ? &ev_nohi[i] : &ev_main[i];
+        nh_in[i] = (mv == "INVNOHI") ? &ev_main[i] : &ev_nohi[i];
         nb_in[i] = (mv == "INVNOBLTSIZE") ? &ev_main[i] : &ev_nobltsize[i];
         np_in[i] = (mv == "INVNOPTR") ? &ev_main[i] : &ev_noptr[i];
     }
@@ -2075,7 +2253,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     // ---- the preconditions, over all six runs --------------------------------
     auto all = [&](bool Eval::*member) {
         for (int i = 0; i < 2; ++i)
-            if (!(ev_main[i].*member) || !(ev_nobltsize[i].*member) || !(ev_noptr[i].*member)) return false;
+            if (!(ev_main[i].*member) || !(ev_nobltsize[i].*member) || !(ev_noptr[i].*member) || !(ev_nohi[i].*member))
+                return false;
         return true;
     };
     checks.expect(all(&Eval::g1), "P11-G1: the program finished -- END was written (every run)");
@@ -2085,11 +2264,25 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     checks.expect(all(&Eval::g3),
         "P11-G3: zero writes observed in [L,L+64) in the window, and every read from the program image in it lies "
         "in the code between the two markers, which stores only to DMACON, R and MK, so no CPU write falls into "
-        "[Q2,Q2+$20) or [Q,Q+$20) (every run)");
+        "[Q2,Q2+$20) or [Q3,Q3+$20) (every run)");
     checks.expect(all(&Eval::g5),
         "P11-G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set (every run)");
-    checks.expect(all(&Eval::lst),
-        "P11-G(list-ran): the list's first 12 bytes were read at least once inside the window (every run)");
+    {
+        // The Copper runs the list only with DMAEN and COPEN set: G(list-ran) needs G2.
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i) {
+            const struct { const char* name; const Eval* e; } rs[4] = {
+                {"real", &ev_main[i]}, {"no-BLTSIZE", &ev_nobltsize[i]}, {"no-pointer", &ev_noptr[i]}, {"no-$054", &ev_nohi[i]}};
+            for (const auto& r : rs) {
+                Deps dd;
+                dd.need(r.e->g2, "P11-G2");
+                insts.push_back(make_inst(std::string(cfgs[i].name) + "/" + r.name, dd, [&] { return r.e->lst; }));
+            }
+        }
+        emit_joined(checks, "P11-G(list-ran)",
+            "P11-G(list-ran): the list's first 12 bytes were read at least once inside the window (every run)",
+            insts, 2);
+    }
 
     // ---- the graded lines ----------------------------------------------------
     auto deps_of = [&](const Eval* const (&ins)[2]) {
@@ -2104,22 +2297,37 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         }
         return d;
     };
-    Deps d_m = deps_of(m_in), d_nb = deps_of(nb_in), d_np = deps_of(np_in);
-    if (d_m.met())
-        checks.expect(main_cmp(m_in[0]->seen) && main_cmp(m_in[1]->seen),
-            "P11 [p.310, p.26, p.287, p.21]: under OCS and ECS, at least one write in [Q2,Q2+$20) and none in "
-            "[Q,Q+$20) in the window");
-    else not_graded(checks, "P11", d_m);
-    if (d_nb.met())
-        checks.expect(nobltsize_cmp(nb_in[0]->seen) && nobltsize_cmp(nb_in[1]->seen),
-            "P11-NOBLTSIZE [p.186, p.269]: with the BLTSIZE MOVE replaced by a MOVE to COLOR00, under OCS and ECS, "
-            "no write in [Q2,Q2+$20) and none in [Q,Q+$20) in the window");
-    else not_graded(checks, "P11-NOBLTSIZE", d_nb);
-    if (d_np.met())
-        checks.expect(noptr_cmp(np_in[0]->seen) && noptr_cmp(np_in[1]->seen),
-            "P11-NOPTR [p.186, p.269]: with the two pointer MOVEs replaced by MOVEs to COLOR00, under OCS and ECS, "
-            "at least one write in [Q,Q+$20), the CPU's own destination, and none in [Q2,Q2+$20) in the window");
-    else not_graded(checks, "P11-NOPTR", d_np);
+    auto line = [&](const std::string& id, const std::string& text, const Eval* const (&in)[2],
+                    const std::function<bool(const Seen&)>& cmp) {
+        std::vector<Inst> insts;
+        for (int i = 0; i < 2; ++i) {
+            Deps dd;
+            dd.need(in[i]->g1, "P11-G1");
+            dd.need(in[i]->g2, "P11-G2");
+            dd.need(in[i]->g4, "P11-G4");
+            dd.need(in[i]->g3, "P11-G3");
+            dd.need(in[i]->g5, "P11-G5");
+            dd.need(in[i]->lst, "P11-G(list-ran)");
+            insts.push_back(make_inst(cfgs[i].name, dd, [&, i] { return cmp(in[i]->seen); }));
+        }
+        emit_joined(checks, id, text, insts);
+    };
+    line("P11",
+         "P11 [p.310, p.26, p.287, p.21]: under OCS and ECS, at least one write in [Q2,Q2+$20), which only the "
+         "Copper's own write to $054 can reach, and none in [Q3,Q3+$20) in the window",
+         m_in, main_cmp);
+    line("P11-NOBLTSIZE",
+         "P11-NOBLTSIZE [p.186, p.269]: with the BLTSIZE MOVE replaced by a MOVE to COLOR00, under OCS and ECS, "
+         "no write in [Q2,Q2+$20) and none in [Q3,Q3+$20) in the window",
+         nb_in, nobltsize_cmp);
+    line("P11-NOPTR",
+         "P11-NOPTR [p.186, p.269]: with the two pointer MOVEs replaced by MOVEs to COLOR00, under OCS and ECS, "
+         "at least one write in [Q3,Q3+$20), the CPU's own destination, and none in [Q2,Q2+$20) in the window",
+         np_in, noptr_cmp);
+    line("P11-NOHI",
+         "P11-NOHI [p.186, p.269]: with the $054 MOVE replaced by a MOVE to COLOR00, under OCS and ECS, no write "
+         "in [Q2,Q2+$20) and none in [Q3,Q3+$20) in the window (BLTDPTH keeps the CPU's high word)",
+         nh_in, nohi_cmp);
 }
 
 }  // namespace p11
@@ -2157,15 +2365,20 @@ static void record_declined(Checks& checks) {
 // the three lines holds.
 static void dmaconr_aggregate(Checks& checks) {
     if (!(g_dmaconr[0].ran && g_dmaconr[1].ran && g_dmaconr[2].ran)) return;
-    Deps d;
-    for (const auto& part : g_dmaconr)
-        for (const auto& u : part.deps.unmet) d.need(false, u);
-    if (d.met())
-        checks.expect(g_dmaconr[0].pass && g_dmaconr[1].pass && g_dmaconr[2].pass,
-            "DMACONR [p.278 5-appA-p278.c8, 5-appA-p278.c10; p.289 5-appB-p289.c4]: a read at $DFF002 returns the "
-            "DMA-control bits held by DMACON (the P2 table), bit 14 as the blitter-busy status (P8) and bit 13 as the "
-            "blitter-zero status (P9)");
-    else not_graded(checks, "DMACONR", d);
+    // The line joins the verdicts of P2, P8 and P9: FAIL if any fails, PASS only if all pass.
+    std::vector<Inst> insts;
+    const char* names[3] = {"P2", "P8", "P9"};
+    for (int k = 0; k < 3; ++k) {
+        Inst i;
+        i.name = names[k];
+        i.v = g_dmaconr[k].v;
+        i.unmet = g_dmaconr[k].deps.unmet;
+        insts.push_back(i);
+    }
+    emit_joined(checks, "DMACONR",
+        "DMACONR [p.278 5-appA-p278.c8, 5-appA-p278.c10; p.289 5-appB-p289.c4]: a read at $DFF002 returns the "
+        "DMA-control bits held by DMACON (the P2 table), bit 14 as the blitter-busy status (P8) and bit 13 as the "
+        "blitter-zero status (P9)", insts);
 }
 
 int main(int argc, char** argv) {

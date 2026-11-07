@@ -10,12 +10,17 @@
 ; enabling write), prog_p9_gnowait.s (G_NOWAIT, drops the wait before Z_1),
 ; prog_p9_gdwrite.s (D4_ON, blit 4 also writes D) and prog_p9_gwrites.s
 ; (BSIZE1 = $0103, blit 1 is 12 words, its logic output still zero) are the
-; precondition mutations.
+; precondition mutations, with prog_p9_gdwrite7.s (D7_ON, blit 7 also uses D)
+; and prog_p9_gwrites9.s (BSIZE9 = $0103, blit 9 writes 12 words).
 
         include "ch5.i"
 
         ifnd    BSIZE1
 BSIZE1  equ     $0104
+        endif
+
+        ifnd    BSIZE9
+BSIZE9  equ     $0104
         endif
 
         ifnd    BC0_1
@@ -70,6 +75,11 @@ start:
         endif
         move.w  d0,(a4)+               ; the last read of the wait
         move.w  DMACONR(a0),(a3)+      ; Z1
+        ifd     X_NOWAIT
+.xw1:   move.w  DMACONR(a0),d0          ; the wait comes after Z_1 (precondition mutation)
+        btst    #14,d0
+        bne.s   .xw1
+        endif
 
         ; ---- blit 2 ----
         move.w  #BC0_2,BLTCON0(a0)
@@ -119,6 +129,56 @@ start:
         bne.s   .w5
         move.w  d0,(a4)+
         move.w  DMACONR(a0),(a3)+      ; Z5
+
+        ; ---- blit 6 (USEA only, D=A, source M_1: one nonzero word, first) ----
+        move.w  #$08F0,BLTCON0(a0)
+        move.l  #M1,BLTAPTH(a0)
+        move.w  #$0104,BLTSIZE(a0)
+        move.w  DMACONR(a0),d0
+.w6:    move.w  DMACONR(a0),d0
+        btst    #14,d0
+        bne.s   .w6
+        move.w  d0,(a4)+
+        move.w  DMACONR(a0),(a3)+      ; Z6
+
+        ; ---- blit 7 (source M_2: one nonzero word, in the middle) ----
+        ifd     D7_ON
+        move.w  #$09F0,BLTCON0(a0)      ; precondition mutation: USEA and USED
+        move.l  #QQ+$500,BLTDPTH(a0)
+        else
+        move.w  #$08F0,BLTCON0(a0)
+        endif
+        move.l  #M2,BLTAPTH(a0)
+        move.w  #$0104,BLTSIZE(a0)
+        move.w  DMACONR(a0),d0
+.w7:    move.w  DMACONR(a0),d0
+        btst    #14,d0
+        bne.s   .w7
+        move.w  d0,(a4)+
+        move.w  DMACONR(a0),(a3)+      ; Z7
+
+        ; ---- blit 8 (source M_3: one nonzero word, last) ----
+        move.w  #$08F0,BLTCON0(a0)
+        move.l  #M3,BLTAPTH(a0)
+        move.w  #$0104,BLTSIZE(a0)
+        move.w  DMACONR(a0),d0
+.w8:    move.w  DMACONR(a0),d0
+        btst    #14,d0
+        bne.s   .w8
+        move.w  d0,(a4)+
+        move.w  DMACONR(a0),(a3)+      ; Z8
+
+        ; ---- blit 9 (USEA and USED, D=A, source M_4: one nonzero word, last, D written) ----
+        move.w  #$09F0,BLTCON0(a0)
+        move.l  #M4,BLTAPTH(a0)
+        move.l  #QQ+$400,BLTDPTH(a0)
+        move.w  #BSIZE9,BLTSIZE(a0)
+        move.w  DMACONR(a0),d0
+.w9:    move.w  DMACONR(a0),d0
+        btst    #14,d0
+        bne.s   .w9
+        move.w  d0,(a4)+
+        move.w  DMACONR(a0),(a3)+      ; Z9
 
         ifd     G1_BREAK
 .hang:  bra.s   .hang

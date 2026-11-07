@@ -88,6 +88,11 @@ N6              equ     $65600
 N7              equ     $65700
 FW              equ     $66000          ; F
 ZB              equ     $66100
+M1              equ     $66200          ; M_1..M_4: P9's mixed source blocks
+M2              equ     $66220
+M3              equ     $66240
+M4              equ     $66260
+QQ3             equ     $67000          ; Q3: P11's CPU destination
 PBM             equ     $68000          ; P (bitplane area)
 A0H             equ     $70000
 A1H             equ     $71000
