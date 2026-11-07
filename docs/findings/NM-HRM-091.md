@@ -12,7 +12,7 @@
 | **Chapter** | 6 — Blitter, printed pp. 186, 188 (Table 6-2), 189, 198; 7 — System Control, printed p. 222 (Table 7-6); Appendix A, printed p. 278 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P7`: `5-appA-p278.c15`, `A-dmacon.b10`, p. 278. `P7-ON`, `P7-OFF`, `P7-ON-E` and `P7-OFF-E` carry no claim id; `A4` of `integration/ch6-blitter-cpu-sharing` (p. 198) carries none either |
 | **Module** | `agnus.v`, `agnus_blitter.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/agnus.v#L429-L433) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L402-L406); inherited (MiSTer has the same code; TC64 the same, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch5-audio-registers-dma`](../../integration/ch5-audio-registers-dma): `make -k -C integration/ch5-audio-registers-dma test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding. [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries `A4` |
-| **Assertions** | In `integration/ch5-audio-registers-dma`, `P7-ON` and `P7` are red on both cores, the package's only reds (87 passed, 2 failed each): expected zero CPU accesses between the first and last destination write of the D-only blit with BLTPRI set; observed 3429 on fx68k and 4095 on TG68K. With BLTPRI clear the same blit measures 3434 and 4095 (`P7-OFF`, green); a blit of USE code E, which leaves no cycle unused, measures 0 on both cores with BLTPRI set (`P7-ON-E`, green) and 2975 and 3106 with it clear (`P7-OFF-E`, green). In `integration/ch6-blitter-cpu-sharing`, `A4` is red on both cores (37 passed, 3 failed each; `A8` and `PARITY`, the other reds, are filed on [NM-HRM-069](NM-HRM-069.md)): expected no CPU Chip-memory access from the first source read to the last destination write of an A-to-D blit with BLTPRI set; observed 2 on each core in a window of 8136 `clk_sys`, a fetch of `$8044A` at +12 (before the first destination write, which is at +24) and a fetch of `$8044C` at +8132, no counter write; `A4PRE` and `A4-CTRL` are green |
+| **Assertions** | In `integration/ch5-audio-registers-dma`, `P7-ON` and `P7` are red on both cores, the package's only reds (88 passed, 2 failed each): expected zero CPU accesses between the first and last destination write of the D-only blit with BLTPRI set; observed 3429 on fx68k and 4095 on TG68K. With BLTPRI clear the same blit measures 3434 and 4095 (`P7-OFF`, green); a blit of USE code E, which leaves no cycle unused, measures 0 on both cores with BLTPRI set (`P7-ON-E`, green) and 2975 and 3106 with it clear (`P7-OFF-E`, green). In `integration/ch6-blitter-cpu-sharing`, `A4` is red on both cores (37 passed, 3 failed each; `A8` and `PARITY`, the other reds, are filed on [NM-HRM-069](NM-HRM-069.md)): expected no CPU Chip-memory access from the first source read to the last destination write of an A-to-D blit with BLTPRI set; observed 2 on each core in a window of 8136 `clk_sys`, a fetch of `$8044A` at +12 (before the first destination write, which is at +24) and a fetch of `$8044C` at +8132, no counter write; `A4PRE` and `A4-CTRL` are green |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 278's *any***: WinUAE in its cycle-exact mode, vAmiga, Denise and Copperline give a waiting 68000 the cycle a blit does not use, the `-` of `D0 - D1 - D2`, whatever BLTPRI holds; WinUAE and Copperline say so in their comments. Copperline alone keeps the 68000 out of a BLTPRI blit's start-up, before its first destination write. Hardware: not run here; photographs named A500 ECS show the CPU running through a D-only blit with BLTPRI set, held out by a blit of USE code E, and give no contrast with BLTPRI clear (*What photographs of real machines show*) |
 | **Effort** | S — one Agnus output, high while BLTPRI is set and the blitter has not yet written its last word (`blit_busy` is already low in the empty cycle before that write; see *Decision*), wired through `minimig.v` into the 68000 bridge's acknowledge (`minimig_m68k_bridge.v` line 131) beside `dbr`; not run here |
 | **See also** | [NM-HRM-069](NM-HRM-069.md) |
@@ -87,7 +87,7 @@ writes DMACON = `$8640` (SET, BLTPRI, DMAEN, BLTEN), starts a D-only blit of
 4096 words, and runs `MOVE.W D1,(A4)+`, `ADDQ.W #1,D1`, `DBRA D2,L` from Chip
 memory. At the RAM port it counts the CPU's accesses, program fetches and
 writes to its counter block, strictly between the blit's first and last
-destination write (`test_ch5_audio_registers_dma.cpp:1120-1124`, `:1140-1166`).
+destination write (`test_ch5_audio_registers_dma.cpp:1226-1230`, `:1246-1271`).
 The contrasts clear BLTPRI (`$8240`) or run a blit of USE code E (BLTCON0
 `$0EFF`), read between its first and last source read. On both cores the
 program finished, DMACONR read back as written, every word of the blit's
@@ -111,8 +111,8 @@ FAIL: P7-ON [p.278, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_las
 
 On TG68K both D-only runs print `T_first=2274721 T_last=2341425` and 4095
 accesses: BLTPRI changes neither the count nor the blit's end there. `P7-ON`
-grades the zero count (`test_ch5_audio_registers_dma.cpp:1278-1282`);
-`P7` joins it to `P7-OFF` (`:1287-1292`).
+grades the zero count (`test_ch5_audio_registers_dma.cpp:1400-1405`);
+`P7` joins it to `P7-OFF` (`:1409-1412`).
 
 ### The unused cycles of an A-to-D blit
 
