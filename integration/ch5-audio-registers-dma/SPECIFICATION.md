@@ -173,8 +173,10 @@ instance that reads the main program is `NOT GRADED` on it.
 
 A precondition that needs another one to be met prints `NOT GRADED`, naming the
 unmet one, when that one is not met, and is red only for a reason of its own:
-P5-G3 needs P5-G2; P7-G3 needs P7-G2; P7-G(CPU-still-wanted-the-bus) needs
-P7-G2 and P7-G3; P8-G4 needs P8-G3; P10-G(list-ran) needs the Copper enable
+P5-G3 needs P5-G2; P7-G3 needs the enabling part of P7-G2 (DMAEN and BLTEN
+set), which the other parts of P7-G2 (BLTPRI as intended, no other bit) do not
+touch; P7-G(CPU-still-wanted-the-bus) needs that part and P7-G3; P8-G4 needs
+P8-G3; P10-G(list-ran) needs the Copper enable
 part of P10-G2; P11-G(list-ran) needs P11-G2. In each case a blit or a Copper
 run that the unmet precondition prevents is what the dependent one reads.
 
