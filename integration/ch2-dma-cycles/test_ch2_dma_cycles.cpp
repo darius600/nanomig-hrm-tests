@@ -1615,20 +1615,13 @@ std::optional<uint16_t> fetched_word(const SRun& s, const PortFrame& pf, uint32_
 // line of a MOVE is the line of its fetched IR2 word, placed on the run's refresh-derived line grid
 // (SPECIFICATION.md 2.3; the grid's in-line cycle s is the horizontal position p.23 counts, $0-$E2).
 //
-// The line is a beam line (VP). The list starts in the vertical blanking interval, at line 0 (p.219,
-// p.276); an instruction fetched after the previous one lies as many grid lines after it as its IR2
-// word does. After a WAIT the Copper is idle until the beam reaches the WAIT's position (p.22: "equal
-// to (or greater than)"), compared under the WAIT's mask (IR2 bits 14-8 for VP, bits 7-1 for HP; the
-// V7 comparison cannot be masked, p.275): the first line L at or after the line the Copper was on
-// with (L & VE) >= (VP & VE), and in it the position HP & HE, or position 0 when L & VE exceeds
-// VP & VE. The first instruction after the WAIT is fetched at or after that position, so its IR2
-// word lies on L when its in-line cycle is not below that position and on the next line when it is
-// (the instruction was fetched across the end of line L).
+// The line is the beam line (VP) counted from the restart fetch's: the list starts in the vertical
+// blanking interval, at line 0 (p.219, p.276), and the line of a MOVE is the grid line of its fetched
+// IR2 word minus the restart fetch's. It is a timestamp; no model of the WAIT enters it, so a MOVE
+// fetched across the end of the WAIT's line lies on the next line.
 struct CWrite {
     uint16_t reg, data;
-    int wait_vp;      // the VP field of the last WAIT before the MOVE, -1 when none (the earlier proxy; printed)
     int64_t line;     // the line on which the MOVE's IR2 word is fetched and its data written
-    int64_t grid;     // that line's grid index minus the restart fetch's
     int64_t s2;       // the IR2 word's in-line cycle
 };
 std::vector<CWrite> colour_write_waits(const SRun& s, const PortFrame& pf, const LineRef& lref) {
@@ -1644,32 +1637,16 @@ std::vector<CWrite> colour_write_waits(const SRun& s, const PortFrame& pf, const
     }
     std::vector<CWrite> out;
     const int64_t g0 = line_of(lref, pf.lo);
-    int64_t line = 0, prev_g = g0;
-    int vp = -1;
-    bool waiting = false;
-    int64_t wake_line = 0, wake_pos = 0;
     for (size_t i = 0; i + 1 < d.size(); i += 2) {
         if (d[i] < 0 || d[i + 1] < 0) continue;
         const uint16_t ir1 = (uint16_t)d[i], ir2 = (uint16_t)d[i + 1];
-        const int64_t g = line_of(lref, t[i + 1]);
         if ((ir1 & 1) && !(ir2 & 1)) { // a WAIT; $FFFF,$FFFE is END (p.23)
             if (ir1 == 0xFFFF) break;
-            vp = ir1 >> 8;
-            const int ve = ((ir2 >> 8) & 0x7F) | 0x80, vpm = vp & ve;
-            const int hpos = ir1 & 0xFE, he = ir2 & 0xFE;
-            int64_t l = line;
-            while ((l & ve) < vpm) ++l;
-            wake_line = l;
-            wake_pos = (l & ve) == vpm ? (hpos & he) : 0;
-            waiting = true;
             continue;
         }
+        const int64_t g = line_of(lref, t[i + 1]);
         if (g < 0 || g0 < 0) continue;
-        const int64_t s2 = in_line_cycle(lref, g, t[i + 1]);
-        if (waiting) { line = wake_line + (s2 < wake_pos ? 1 : 0); waiting = false; }
-        else line += g - prev_g;
-        prev_g = g;
-        if (ir1 == COLOR17 || ir1 == COLOR18 || ir1 == COLOR19) out.push_back({ir1, ir2, vp, line, g - g0, s2});
+        if (ir1 == COLOR17 || ir1 == COLOR18 || ir1 == COLOR19) out.push_back({ir1, ir2, g - g0, in_line_cycle(lref, g, t[i + 1])});
     }
     return out;
 }
@@ -1693,13 +1670,13 @@ UseSpan use_span(const SRun& s, const PortFrame& pf) {
     return u;
 }
 
-// The MOVEs of a frame as MEASURED text: each one's line (VP), its IR2 word's grid line counted from
-// the restart fetch's and its in-line cycle.
+// The MOVEs of a frame as MEASURED text: each one's line (VP, its IR2 word's grid line counted from
+// the restart fetch's) and its in-line cycle.
 std::string cwrite_text(const std::vector<CWrite>& cw) {
     std::ostringstream m;
     m << "[";
     for (size_t i = 0; i < cw.size(); ++i)
-        m << (i ? " " : "") << "(VP $" << hex((uint32_t)cw[i].line).substr(2) << ",grid +" << cw[i].grid << ",s=" << cw[i].s2 << ")";
+        m << (i ? " " : "") << "(VP $" << hex((uint32_t)cw[i].line).substr(2) << ",s=" << cw[i].s2 << ")";
     m << "]";
     return m.str();
 }
