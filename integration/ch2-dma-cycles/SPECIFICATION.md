@@ -1119,20 +1119,12 @@ graded, the measurement that stands in its place and the reason are in one place
    time directly from RAM to the address given by the DA field"*), so the line of a MOVE is the
    line of its fetched IR2 word: the first fetch of that word in the Copper frame, a held
    continuation excluded, placed on the refresh-derived line grid (§2.3), whose in-line cycle
-   numbers are the horizontal positions p.23 counts (`$0`-`$E2`). The grid line becomes a beam line
-   (VP) like this. The list starts in the vertical blanking interval, which begins at line 0
-   (p.219; D11), and an instruction fetched after another lies as many grid lines after it as its
-   IR2 word does. After a WAIT the Copper takes no cycle until the beam reaches the WAIT's
-   position (p.22: *"until the video beam counters are equal to (or greater than) the coordinates
-   specified in the instruction"*), compared under the WAIT's mask (second word, bits 14-8 for VP
-   and 7-1 for HP; the V7 comparison cannot be masked, p.275): the wake line L is the first line,
-   from the one the Copper is on, with (L & VE) >= (VP & VE), and the wake position is HP & HE in
-   it, or 0 when (L & VE) exceeds (VP & VE). The first instruction after the WAIT is fetched at or
-   after that position (p.20: the WAIT *"takes one extra memory cycle to wake up"*), so its IR2
-   word lies on L when its in-line cycle is not below the wake position and on the next line when
-   it is: a MOVE after a WAIT at HP `$E0` is fetched across the end of the WAIT's line and takes
-   effect on the next line. The VP of the WAIT alone is not the line of the MOVE. The grid line of
-   each MOVE counted from the restart fetch's is printed beside its VP as MEASURED. The list is
+   numbers are the horizontal positions p.23 counts (`$0`-`$E2`). The line of a MOVE is that grid line counted from the restart fetch's, the restart fetch being
+   line 0: the list starts in the vertical blanking interval, which begins at line 0 (p.219; D11).
+   It is a timestamp and no model of the WAIT enters it: the fetch after a WAIT carries the line
+   the Copper made it on, so a MOVE after a WAIT at HP `$E0`, fetched across the end of the WAIT's
+   line, lies on the next line. The line (VP) and the in-line cycle of each MOVE are printed as
+   MEASURED. The list is
    read from the words the Copper fetched in the Copper frame, as Q4 reads
    them (IR1 at an even offset from the list start, IR2 after it; `$FFFF,$FFFE` is END, p.23),
    and VSTART and VSTOP of the uses from the control words of structure Z as the sprite channel
@@ -1182,8 +1174,8 @@ graded, the measurement that stands in its place and the reason are in one place
    use 1 (the line after its last line, p.107) up to, not including, VSTART of use 2 (its first
    line), and no other MOVE to these registers takes effect from the first line of use 1 to the
    last line of use 4. The line of a MOVE is read as Q6 reads it (P12.5): the line of its fetched
-   IR2 word, at which its data is written (Appendix A p.275), placed on the refresh-derived grid
-   with the WAIT's position and mask honoured. Q7 reads the list and the control words of Z as Q6
+   IR2 word, at which its data is written (Appendix A p.275), counted from the restart fetch's grid line.
+   Q7 reads the list and the control words of Z as Q6
    does (P12.5), and not the values written.
 6. **Contrasting case.** **S1-cx:** list L_S1cx writes `$0FFF`, `$0F0F`, `$0FF0` after the
    WAIT instead. Q7 holds (the writes are in the same place), the pages predict U2–U4 in the
@@ -1351,8 +1343,8 @@ sprite block 0). Measured, both cores: in S1 the list holds 3 MOVEs to COLOR17�
 vertical-blanking part (grid line +0 from the restart fetch's, in-line cycles 77, 81 and 85), none
 on a line of the uses (VP `$40`–`$83`); in S1c it holds 6, those 3 and 3 more on VP `$48` (grid
 line +72, in-line cycles 5, 9 and 13; the range `$48`–`$4F` is between use 1 and use 2), 3 in all
-within the uses. The grid line counted from the restart fetch's equals the VP the WAIT and its
-position give, in every MOVE of S1, S1c and the two late-position lists.
+within the uses. The VP printed for a MOVE is its IR2 word's grid line counted from the restart fetch's
+(grid line +0 and +72 above), in every MOVE of S1, S1c and the two late-position lists.
 
 **Preconditions beyond the propositions.** FRAMES (above) and IMG4 (every frame used of S1 and
 S1c shows exactly four images) are graded lines of their own, printed before the lines they gate.
