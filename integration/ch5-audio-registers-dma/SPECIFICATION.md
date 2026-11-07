@@ -186,7 +186,7 @@ prints FAIL.
 - P1 (OCS and ECS, channels 0-3): channel 0's enabling write leaves DMAEN out
   (its instance is `NOT GRADED`) and channel 1's location is A_1^H (its
   instance fails): P1a and P1 FAIL, P1b `NOT GRADED`.
-- P2 (OCS, ECS): the OCS instance is the program that never finishes, the ECS
+- P2 (ECS, OCS): the ECS instance is the program that never finishes, the OCS
   instance the program without one SET write: P2 FAIL.
 - P3 to P6 (the run with the bit set, the run with it clear): the run with the
   bit set is the program that never finishes (the -ON instance is `NOT
@@ -1362,7 +1362,7 @@ section 2.3, and the mechanism items below.
 
 ## RECORDED
 
-The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim, or a half that is not graded). Counts: fx68k 87 passed, 2 failed; tg68k 87 passed, 2 failed. The two failed lines are `P7-ON` and `P7` (the D-only blit with BLTPRI set), on both cores.
+The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim, or a half that is not graded). Counts: fx68k 88 passed, 2 failed; tg68k 88 passed, 2 failed. The failed lines are `P7-ON` and `P7` (the D-only blit with BLTPRI set), on both cores.
 
 | line | fx68k | tg68k |
 |---|---|---|
@@ -1451,6 +1451,7 @@ The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` 
 | `P10-G(list-ran)` | PASS | PASS |
 | `P10` | PASS | PASS |
 | `P10-COLOR` | PASS | PASS |
+| `C-interp.copcon` | RECORDED | RECORDED |
 | `P11-G1` | PASS | PASS |
 | `P11-G2` | PASS | PASS |
 | `P11-G4` | PASS | PASS |
@@ -1460,7 +1461,10 @@ The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` 
 | `P11` | PASS | PASS |
 | `P11-NOBLTSIZE` | PASS | PASS |
 | `P11-NOPTR` | PASS | PASS |
+| `P11-NOHI` | PASS | PASS |
 | `5-appA-p264.c2` | RECORDED | RECORDED |
+| `5-appA-p263.c7` | RECORDED | RECORDED |
+| `5-appA-p263.c9` | RECORDED | RECORDED |
 | `5-appA-p263.c1` | RECORDED | RECORDED |
 | `5-appB-p287.c5` | RECORDED | RECORDED |
 | `5-appB-p290.c3` | RECORDED | RECORDED |
@@ -1472,19 +1476,43 @@ P1 calibration ECS: done=22616005 V(W0)=5 o=2275317 c=4817901 V(W1)=5 o=7360445 
 P1 ECS: a=ok b=ok
 P1 calibration OCS: done=22616005 V(W0)=5 o=2275317 c=4817901 V(W1)=5 o=7360445 c=9903069 V(W2)=5 o=12445605 c=14988229 V(W3)=5 o=17530765 c=20073389
 P1 OCS: a=ok b=ok
+P1a instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1b instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C1 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C2 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C3 instances: ECS=PASS OCS=PASS
+P1 chipset: VPOSR bits 14-8 read $0020 under ECS and $0000 under OCS; the setting changes what the chip reports (p.299: 20 or 30 is the enhanced Agnus)
+P2 instances: ECS=PASS OCS=PASS
+P2-OMIT instances: ECS=PASS OCS=PASS
+P3 instances: bit set=PASS bit clear=PASS
+P4 instances: bit set=PASS bit clear=PASS
+P5 instances: bit set=PASS bit clear=PASS
+P6 instances: bit set=PASS bit clear=PASS
 P7 BLTPRI set: T_first=2275161 T_last=2375249 CPU accesses in between=0
 P7 BLTPRI clear: T_first=2275161 T_last=2399465 CPU accesses in between=2975
 P7 D-only blit, BLTPRI set: T_first=2274801 T_last=2341505 CPU accesses in between=3429
 P7 D-only blit, BLTPRI clear: T_first=2274801 T_last=2341601 CPU accesses in between=3434
+P7 instances: BLTPRI-set=FAIL BLTPRI-clear=PASS
 P8: N(poll)=189 total_rest=197 t_last=2341849 b_nonvacuous=187
 P8 clauses of the graded run: idle=ok (b)=ok over 187 graded reads held (c)=ok
-P9: Z1..Z5 = 2240 0240 2240 0240 2240 
+P9: Z1..Z9 = 2240 0240 2240 0240 2240 0240 0240 0240 0240 
+P9 instances: main=PASS exchanged=PASS
+DMACONR instances: P2=PASS P8=PASS P9=PASS
 P10 OCS/CDANG0: audio list ok, COLOR00 list ok
 P10 OCS/CDANG1: audio list ok, COLOR00 list ok
 P10 ECS/CDANG0: audio list ok, COLOR00 list ok
 P10 ECS/CDANG1: audio list ok, COLOR00 list ok
-P11 OCS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
-P11 ECS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+P10 instances: OCS/CDANG0=PASS OCS/CDANG1=PASS ECS/CDANG0=PASS ECS/CDANG1=PASS
+P10-COLOR instances: OCS/CDANG0=PASS OCS/CDANG1=PASS ECS/CDANG0=PASS ECS/CDANG1=PASS
+P11 OCS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer); 0/0 (no $054 MOVE)
+P11 OCS: program-image reads in the window 150010, lowest address $080468, highest $080480
+P11 ECS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer); 0/0 (no $054 MOVE)
+P11 ECS: program-image reads in the window 150010, lowest address $080468, highest $080480
+P11 instances: OCS=PASS ECS=PASS
+P11-NOBLTSIZE instances: OCS=PASS ECS=PASS
+P11-NOPTR instances: OCS=PASS ECS=PASS
+P11-NOHI instances: OCS=PASS ECS=PASS
 ```
 
 Measurements printed by the run (tg68k):
@@ -1494,17 +1522,41 @@ P1 calibration ECS: done=15776325 V(W0)=3 o=2275229 c=3962893 V(W1)=3 o=5650485 
 P1 ECS: a=ok b=ok
 P1 calibration OCS: done=15776325 V(W0)=3 o=2275229 c=3962893 V(W1)=3 o=5650485 c=7338141 V(W2)=3 o=9025741 c=10713397 V(W3)=3 o=12400989 c=14088653
 P1 OCS: a=ok b=ok
+P1a instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1b instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C1 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C2 instances: ECS/ch0=PASS ECS/ch1=PASS ECS/ch2=PASS ECS/ch3=PASS OCS/ch0=PASS OCS/ch1=PASS OCS/ch2=PASS OCS/ch3=PASS
+P1-C3 instances: ECS=PASS OCS=PASS
+P1 chipset: VPOSR bits 14-8 read $0020 under ECS and $0000 under OCS; the setting changes what the chip reports (p.299: 20 or 30 is the enhanced Agnus)
+P2 instances: ECS=PASS OCS=PASS
+P2-OMIT instances: ECS=PASS OCS=PASS
+P3 instances: bit set=PASS bit clear=PASS
+P4 instances: bit set=PASS bit clear=PASS
+P5 instances: bit set=PASS bit clear=PASS
+P6 instances: bit set=PASS bit clear=PASS
 P7 BLTPRI set: T_first=2275081 T_last=2375145 CPU accesses in between=0
 P7 BLTPRI clear: T_first=2275081 T_last=2400433 CPU accesses in between=3106
 P7 D-only blit, BLTPRI set: T_first=2274721 T_last=2341425 CPU accesses in between=4095
 P7 D-only blit, BLTPRI clear: T_first=2274721 T_last=2341425 CPU accesses in between=4095
+P7 instances: BLTPRI-set=FAIL BLTPRI-clear=PASS
 P8: N(poll)=257 total_rest=265 t_last=2341745 b_nonvacuous=255
 P8 clauses of the graded run: idle=ok (b)=ok over 255 graded reads held (c)=ok
-P9: Z1..Z5 = 2240 0240 2240 0240 2240 
+P9: Z1..Z9 = 2240 0240 2240 0240 2240 0240 0240 0240 0240 
+P9 instances: main=PASS exchanged=PASS
+DMACONR instances: P2=PASS P8=PASS P9=PASS
 P10 OCS/CDANG0: audio list ok, COLOR00 list ok
 P10 OCS/CDANG1: audio list ok, COLOR00 list ok
 P10 ECS/CDANG0: audio list ok, COLOR00 list ok
 P10 ECS/CDANG1: audio list ok, COLOR00 list ok
-P11 OCS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
-P11 ECS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+P10 instances: OCS/CDANG0=PASS OCS/CDANG1=PASS ECS/CDANG0=PASS ECS/CDANG1=PASS
+P10-COLOR instances: OCS/CDANG0=PASS OCS/CDANG1=PASS ECS/CDANG0=PASS ECS/CDANG1=PASS
+P11 OCS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer); 0/0 (no $054 MOVE)
+P11 OCS: program-image reads in the window 150010, lowest address $080468, highest $080480
+P11 ECS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer); 0/0 (no $054 MOVE)
+P11 ECS: program-image reads in the window 150010, lowest address $080468, highest $080480
+P11 instances: OCS=PASS ECS=PASS
+P11-NOBLTSIZE instances: OCS=PASS ECS=PASS
+P11-NOPTR instances: OCS=PASS ECS=PASS
+P11-NOHI instances: OCS=PASS ECS=PASS
 ```
