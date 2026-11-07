@@ -14,7 +14,7 @@
 ;                       (LPENDIS) is set together with bit 5
 ;   MUT_WRONGSTD       (with ECS_MODE) P3-c/P4-c contrast: BEAMCON0 bit 5 is
 ;                       the opposite of the configured standard
-;   MUT_REDUCE_BURST   P3-a/P4-a contrast: 20 reads per window instead of 600
+;   MUT_REDUCE_BURST   P3-a/P4-a contrasts: the number of reads per window (20 or 150) instead of 600
 ;   MUT_COPPER_BPLCON0 (with OMIT_BPLCON0) P4-b contrast, Copper part: before
 ;                       the main loop, point COP1LC at COP_LIST_ADDR (already
 ;                       holding a MOVE BPLCON0,$0008 / WAIT $FFFF,$FFFE list,
@@ -27,6 +27,19 @@
 ;                       iterations of 10 processor cycles) between the VERTB
 ;                       detection and the marker store, so the read window lies
 ;                       beyond vertical position 19
+;   MUT_SELFMOD        (with ECS_MODE) P3-c contrast: the program rewrites the
+;                       immediate word of its BEAMCON0 write before executing
+;                       it, so the word the CPU fetches is not the word of the
+;                       loaded image
+;   MUT_SECONDBEAM     (with ECS_MODE) P3-c contrast: a second BEAMCON0 write,
+;                       with LPENDIS=1, after the first
+;   MUT_VHPOSW         P3-LIVE contrast: the last burst does 100 plain reads,
+;                       then 500 reads each preceded by a write to VHPOSW
+;                       (p.216, "Used for counter synchronization")
+;   MUT_NOP_FIRST      P4-b start contrast: one NOP in front of the program; the test
+;                       sets the initial PC to the word after it
+;   MUT_FOURBLOCKS     P3-M contrast: four blocks instead of five
+;   MUT_SIXBLOCKS      P3-M contrast: six blocks instead of five
 ;
 ; Five times: poll INTREQR bit 5 (VERTB), clear it, store the iteration
 ; index as a marker, then read VPOSR/VHPOSR (as one long word, p.216) a
@@ -37,12 +50,15 @@
         include "playfield.i"
 
         ifd     MUT_REDUCE_BURST
-BURSTLEN        equ     20
+BURSTLEN        equ     MUT_REDUCE_BURST
         else
 BURSTLEN        equ     600
         endc
 
         org     PROGRAM_ORG
+        ifd     MUT_NOP_FIRST
+        nop
+        endc
 start:
         lea     CUSTOM,a0
         move.w  #$7FFF,DMACON(a0)
@@ -78,10 +94,21 @@ start:
         ifd     NTSC_MODE
         move.w  #$0000,BEAMCON0(a0)
         else
+        ifd     MUT_SELFMOD
+        move.w  #$0021,.imm+2          ; the immediate word of the next-but-one instruction
+        nop
+        nop
+.imm:   move.w  #$0020,BEAMCON0(a0)
+        else
         move.w  #$0020,BEAMCON0(a0)
         endc
         endc
         endc
+        endc
+        endc
+
+        ifd     MUT_SECONDBEAM
+        move.w  #$2020,BEAMCON0(a0)    ; a second BEAMCON0 write, LPENDIS=1
         endc
 
         ifnd    OMIT_BPLCON0
@@ -125,11 +152,34 @@ start:
         move.w  d6,(a1)+               ; marker: the iteration index
         endc
         move.w  #BURSTLEN-1,d5
+        ifd     MUT_VHPOSW
+        cmp.w   #4,d6
+        beq.s   .burst2
+        endc
 .burst: move.l  VPOSR(a0),(a1)+        ; long read of VPOSR,VHPOSR (p.216)
         dbra    d5,.burst
+        ifd     MUT_VHPOSW
+        bra.s   .next
+.burst2:move.w  #99,d4                 ; the last burst: 100 plain reads
+.b2a:   move.l  VPOSR(a0),(a1)+
+        dbra    d4,.b2a
+        move.w  #499,d4                ; then 500 reads, VHPOSW (p.216) before each
+.b2b:   move.w  #$0A40,$2C(a0)
+        move.l  VPOSR(a0),(a1)+
+        dbra    d4,.b2b
+.next:
+        endc
 
         addq.w  #1,d6
+        ifd     MUT_SIXBLOCKS
+        cmp.w   #6,d6
+        else
+        ifd     MUT_FOURBLOCKS
+        cmp.w   #4,d6
+        else
         cmp.w   #5,d6
+        endc
+        endc
         bne.s   .iter
 
         DONE

@@ -1,0 +1,112 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -104,12 +104,20 @@
+ reg long_frame; // 1 : long frame (313 lines); 0 : normal frame (312 lines)
+ reg long_line;	 // long line signal for NTSC compatibility (actually long lines are not supported yet)
+ 
++// private copy (1): field-end latch, pp.239, 305
++reg        lp_latched;
++reg [15:0] lp_vposr;
++reg [15:0] lp_vhposr;
++wire       lp_show;
++wire [15:0] live_vposr  = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++wire [15:0] live_vhposr = {vpos[7:0],hpos[8:1]};
++
+ //beamcounter read registers VPOSR and VHPOSR
+ always @(*) begin
+ 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
+-		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++		data_out[15:0] = lp_show ? lp_vposr : live_vposr;
+ 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
+-		data_out[15:0] = {vpos[7:0],hpos[8:1]};
++		data_out[15:0] = lp_show ? lp_vhposr : live_vhposr;
+ 	else
+ 		data_out[15:0] = 0;
+ end
+@@ -126,6 +134,7 @@
+ end
+ 
+ wire harddis      = beamcon0_reg[14];
++assign lp_show = lp_latched & ~beamcon0_reg[13];
+ //wire lpendis      = beamcon0_reg[13];
+ wire varvben      = beamcon0_reg[12];
+ wire loldis       = beamcon0_reg[11];
+@@ -184,7 +193,7 @@
+ reg [10:0] vtotal_reg;
+ reg [10:0] vsstrt_reg;
+ reg [10:0] vsstop_reg;
+-//reg [10:0] vbstrt_reg;
++reg [10:0] vbstrt_reg;
+ reg [10:0] vbstop_reg;
+ 
+ always @ (posedge clk) begin
+@@ -199,7 +208,7 @@
+ 			vtotal_reg  <= pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
+ 			vsstrt_reg  <= VSSTRT_VAL[10:0];
+ 			vsstop_reg  <= VSSTOP_VAL[10:0];
+-			//vbstrt_reg  <= VBSTRT_VAL[10:0];
++			vbstrt_reg  <= VBSTRT_VAL[10:0];
+ 			vbstop_reg  <= pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL;
+ 		end else begin
+ 			case (reg_address_in[8:1])
+@@ -212,7 +221,7 @@
+ 				VTOTAL [8:1] : vtotal_reg  <= {data_in[10:0]};
+ 				VSSTRT [8:1] : vsstrt_reg  <= {data_in[10:0]};
+ 				VSSTOP [8:1] : vsstop_reg  <= {data_in[10:0]};
+-				//VBSTRT [8:1] : vbstrt_reg  <= {data_in[10:0]};
++				VBSTRT [8:1] : vbstrt_reg  <= {data_in[10:0]};
+ 				VBSTOP [8:1] : vbstop_reg  <= {data_in[10:0]};
+ 			endcase
+ 		end
+@@ -309,7 +318,7 @@
+ reg vpos_inc; // increase vertical position counter
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+-		if (hpos==2) //actual chipset works in this way
++		if (hpos[8:0]=={htotal[8:1],1'b0}) // private copy (2): V steps with the wrap of H
+ 			vpos_inc <= 1'b1;
+ 		else
+ 			vpos_inc <= 1'b0;
+@@ -376,6 +385,32 @@
+ //external signal assigment
+ assign eof = end_of_frame;
+ 
++// private copy (1): BPLCON0 bit 3 enables the latch; a field end latches the counters; the counter entering
++// line 20 releases it.
++reg lpen_en;
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reset)
++			lpen_en <= 1'b0;
++		else if (reg_address_in[8:1]==BPLCON0[8:1])
++			lpen_en <= data_in[3];
++	end
++end
++wire lp_release = vpos_inc && (vpos == 11'd19);
++always @(posedge clk) begin
++	if (clk7_en) begin
++		if (reset || !lpen_en)
++			lp_latched <= 1'b0;
++		else if (lp_release)
++			lp_latched <= 1'b0;
++		else if (!lp_latched && end_of_frame) begin
++			lp_latched <= 1'b1;
++			lp_vposr   <= live_vposr;
++			lp_vhposr  <= live_vhposr;
++		end
++	end
++end
++
+ always @(posedge clk) if (clk7_en) vbl_int <= hpos==8 && vpos==(a1k ? 1 : 0); // OCS AGNUS CHIPS 8361/8367 assert vbl int in line #1
+ 
+ //--------------------------------------------------------------------------------------//
+@@ -441,7 +476,8 @@
+ assign vbl = vbl_reg; // TODO
+ */
+ 
+-assign vbl = (vpos <= vbstop);
++// private copy (3): with VARVBEN, VBSTRT starts and VBSTOP ends vertical blanking
++assign vbl = (vpos <= vbstop) || (varvben && (vpos >= vbstrt_reg) && (vpos < vbstop_reg));
+ 
+ //vertical blanking end (last line)
+ assign vblend = vpos==vbstop;

@@ -17,9 +17,13 @@
 ;   MUT_NARROW_DDF P1-c contrast: DDFSTOP 8 colour clocks lower, bitplane DMA on
 ;   MUT_BAD_START P1/P2 fixture contrast: the start word is $5AFF, not $5A01
 ;   MUT_WRONGSTD P1-e contrast: BEAMCON0 bit 5 opposite the configured standard
-;   MUT_VSTOPLOW P2 item-1 contrast: DIWSTOP's VSTOP one line lower
 ;   MUT_RIGHTEDGE P2 item-3 contrast: window 32 pixels wider, 21 words per
 ;                line fetched, BPL1MOD = -2
+;   MUT_OVER     P1-c contrast: DDFSTOP 8 colour clocks higher with BPL1MOD = 0,
+;                21 words per line, so the pointer runs past the buffer
+;   MUT_SHIFT    CAL-VIDEO / P1-a contrast: two VERTB detections after the Copper
+;                start, then one write to VHPOSW that moves H sixteen counts on
+;                with V unchanged
 ;
 ; This program never varies BPLCON0, the bitplane pointers or run "0"/"1":
 ; those live entirely in the preloaded Copper list, which is what P1/P2
@@ -63,24 +67,16 @@ start:
         move.w  #$0000,BPLCON2(a0)
         move.w  #$2C81,DIWSTRT(a0)
         ifd     NTSC_MODE
-        ifd     MUT_VSTOPLOW
-        move.w  #$F3C1,DIWSTOP(a0)
-        else
         ifd     MUT_RIGHTEDGE
         move.w  #$F4E1,DIWSTOP(a0)
         else
         move.w  #$F4C1,DIWSTOP(a0)
         endc
-        endc
-        else
-        ifd     MUT_VSTOPLOW
-        move.w  #$2BC1,DIWSTOP(a0)
         else
         ifd     MUT_RIGHTEDGE
         move.w  #$2CE1,DIWSTOP(a0)
         else
         move.w  #$2CC1,DIWSTOP(a0)
-        endc
         endc
         endc
 
@@ -93,6 +89,9 @@ start:
         endc
         else
         move.w  #$0038,DDFSTRT(a0)
+        ifd     MUT_OVER
+        move.w  #$00D8,DDFSTOP(a0)
+        else
         ifd     MUT_RIGHTEDGE
         move.w  #$00D8,DDFSTOP(a0)
         else
@@ -100,6 +99,7 @@ start:
         move.w  #$00C8,DDFSTOP(a0)     ; P1-c contrast: 8 colour clocks lower
         else
         move.w  #$00D0,DDFSTOP(a0)
+        endc
         endc
         endc
         endc
@@ -127,4 +127,19 @@ start:
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
         move.w  #$8380,DMACON(a0)      ; SET/CLR, DMAEN, BPLEN, COPEN (p.278)
 
+        ifd     MUT_SHIFT
+        moveq   #1,d6                  ; two VERTB detections: inside the compared span
+.w:     move.w  INTREQR(a0),d0
+        btst    #5,d0
+        beq.s   .w
+        move.w  #$0020,INTREQ(a0)
+        dbra    d6,.w
+.v:     move.w  VHPOSR(a0),d1          ; line 10 of that field, in vertical blanking
+        move.w  d1,d2
+        lsr.w   #8,d2
+        cmp.w   #10,d2
+        blt.s   .v
+        add.w   #$0010,d1              ; one write to VHPOSW (p.216): H sixteen counts on, V unchanged
+        move.w  d1,$2C(a0)
+        endc
 .idle:  bra.s   .idle

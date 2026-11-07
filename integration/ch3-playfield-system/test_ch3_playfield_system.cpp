@@ -44,25 +44,37 @@
 //   P3A           prog_lpen_ecs_pal_l1_burst20.bin (20 reads, not 600)
 //   P3L           prog_lpen_ecs_pal_l0_nopoll.bin (no INTREQR polling loop)
 //   P3BLATE      prog_lpen_ecs_pal_l0_late.bin (the marker store about 26 lines after the VERTB detection)
+//   P3FOUR        prog_lpen_ecs_pal_l1_fourblocks.bin (four blocks, not five)
+//   P3SIX         prog_lpen_ecs_pal_l1_sixblocks.bin (six blocks, not five)
+//   P3A_SPREAD    prog_lpen_ecs_pal_l1_burst150.bin (150 reads, not 600)
+//   P3C_SELFMOD   prog_lpen_ecs_pal_l0_selfmod.bin (the immediate word of the BEAMCON0 write is rewritten before it executes)
+//   P3C_SECONDBEAM prog_lpen_ecs_pal_l1_secondbeam.bin (a second BEAMCON0 write, LPENDIS=1)
+//   P3LIVE_VHPOSW prog_lpen_ecs_pal_l0_vhposw.bin (the last burst: 500 reads each preceded by a VHPOSW write)
 //   P3C_LPENDIS   prog_lpen_ecs_pal_l1_lpendis.bin (LPENDIS=1)
 //   P3C_WRONGSTD  prog_lpen_ecs_pal_l0_wrongstd.bin (BEAMCON0 bit 5 wrong)
 //   P3D           prog_lpen_ecs_pal_l1_mutd.bin (extra BPLCON0 write)
+//   P3D_COPIDLE   prog_lpen_ecs_pal_l1_copper.bin (the L1 program starts the Copper on a preloaded list that holds only the WAIT)
 //   P3MAIN        the L0 program stands in for the L1 program
 //   P3LIVE        the L1 program stands in for the L0 program
 //   P4FIX         prog_lpen_p4_ecs_pal_badstart.bin (the program of S1 stores another start word)
 //   P4MARK        prog_lpen_p4_ecs_pal_badmark.bin (every marker stored with bit 8 set)
 //   P4A          prog_lpen_p4_ecs_pal_burst20.bin
+//   P4A_SPREAD    prog_lpen_p4_ecs_pal_burst150.bin (150 reads, not 600)
+//   P4B_START     prog_lpen_p4_ecs_pal_nopfirst.bin (a NOP in front of the program; the initial PC names the word after it)
 //   P4L           prog_lpen_p4_ecs_pal_nopoll.bin
 //   P4C           prog_lpen_p4_ecs_pal_wrongstd.bin
 //   P4B_PROG      prog_lpen_ecs_pal_l1.bin (a program that writes BPLCON0)
 //   P4B_COP       prog_lpen_p4_copper.bin (+Copper preload)
+//   P4B_COPIDLE   prog_lpen_p4_copper.bin with a preloaded list that holds only the WAIT $FFFF,$FFFE
 //   P1FIX         run "1" of every configuration at S1 stores another start word (prog_p1_2c_pal_badstart.bin,
 //                 prog_p1_16c_pal_badstart.bin)
-//   P1A           a genuine PAL run's sync samples compared with a genuine NTSC run's
+//   P1A           run "1" of A, B, C and E at S1 moves H sixteen counts on with one write to VHPOSW (prog_p1_2c_pal_vshift.bin,
+//                 prog_p1_16c_pal_vshift.bin)
 //   P1B           run "1" loads run "0"'s Copper list
 //   P1C           DDFSTOP 8 colour clocks lower with bitplane DMA on (B, C, E: prog_p1_2c_pal_narrow.bin,
 //                 prog_p1_16c_pal_narrow.bin), or A given a list that also points sprite 0 at the bitplane
 //                 buffer and turns sprite DMA on (a transparent sprite stored there)
+//   P1C_OVER      DDFSTOP 8 colour clocks higher with modulo 0 (B, E: prog_p1_2c_pal_over.bin), so the pointer runs past the buffer
 //   P1D           bitplane buffers zeroed (B, C, E), or COLOR00 set to another value by the Copper (A)
 //   P1ESTD       prog_p1_2c_ntsc_wrongstd.bin in configuration B at S2 (BEAMCON0 bit 5 opposite the standard)
 //   P1MAIN        run "1" also changes a colour register half way down the picture
@@ -70,77 +82,102 @@
 //   P2A           run "1" loads run "0"'s Copper list
 //   P2B           prog_p1_2c_pal_mod2.bin (BPL1MOD=$0002), with 20 more lines of valid data words after the buffer
 //   P2FLIP        bit 14 of w(100,5) flipped in memory, the expectation unchanged
-//   P2ITEM1       prog_p1_2c_pal_vstoplow.bin (VSTOP one line lower)
+//   P2ITEM1       the last line of the bitplane buffer is all zero
+//   P2CAL         run "1" of configuration B at S1 moves H sixteen counts on with one write to VHPOSW (prog_p1_2c_pal_vshift.bin)
 //   P2EDGE        prog_p1_2c_pal_rightedge.bin (window 32 pixels wider, 21 words per line)
 //   P5FIX         prog_p5_pal_v1_badstart.bin (the V1 program of S1 stores another start word)
 //   P5MARK        prog_p5_pal_v1_badmark.bin (every marker stored with bit 8 set)
-//   P5A          prog_p5_pal_v1_nobplen.bin
+//   P5A          prog_p5_pal_v1_latediw.bin (DIWSTRT opens the window at line N-2)
 //   P5B           Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30)
 //   P5C           prog_p5_pal_v1_wrongstd.bin
+//   P5C_SKIP      prog_p5_pal_v1_oneskip.bin (the second marker follows a skipped field)
+//   P5CAL         prog_p5_pal_v1_vshift.bin (one VHPOSW write after the last burst)
+//   P5VALUE       prog_p5_pal_v1_value.bin (VBSTRT names line N+16, the Copper markers stay at N)
 //   P5MAIN        prog_p5_pal_v1_novarvben.bin
 //
 // P4-MAIN waits for P3-MAIN of the same system configuration, so it is graded only in a run that executes group P3
 // (a plain run, or NMH_ONLY with P3 and P4); a mutation run of a P4 selector prints it NOT GRADED.
 //
-// The private chipset of the implementation records is a copy of the chipset sources outside the repository
-// with three changes, each a reading of the printed pages: (1) BPLCON0 bit 3 enables a latch of the beam
-// position at the end of the field, held until vertical position 20, and BEAMCON0 bit 13 makes a read ignore
-// it (pp.239, 305), (2) the vertical position counts at the clock edge at which the horizontal position wraps,
-// (3) with BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical blanking (pp.293, 304, 305). A second
-// private copy differs in one thing: the latch is enabled after reset.
+// The private chipsets of the implementation records are copies of the chipset sources made from the patch files
+// latch.patch and latchrst.patch of this package (Makefile targets latch-test-fx68k, latch-test-tg68k and
+// latchrst-test-fx68k, latchrst-test-tg68k; the selectors and groups of a run are environment variables of the make
+// command, for example NMH_ONLY=P3P4P5 make latch-test-fx68k). latch.patch makes three changes, each a reading of the
+// printed pages: (1) BPLCON0 bit 3 enables a latch of the beam position at the end of the field, held until vertical
+// position 20, and BEAMCON0 bit 13 makes a read ignore it (pp.239, 305), (2) the vertical position counts at the clock
+// edge at which the horizontal position wraps, (3) with BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical
+// blanking (pp.293, 304, 305). latchrst.patch differs from latch.patch in one line: the latch is enabled after reset.
+// The patches are reconstructions from the words of the records below, not the copies those records were first
+// measured on; the counts printed below are the runs of these patches. The blanking of (3) is the signal that also
+// stops bitplane DMA, which the first records do not say.
 //
 // MUTATION CAL-CC none impossible the 7 MHz clock enable at the port comes from the clock generator and no register write or program changes its period; the line measures that period before any program runs
 // MUTATION CAL-VIDEO stimulus red NMH_MUTATE=P5C: the P5 V1 S1 program writes BEAMCON0 with bit 5 opposite the configured standard, the field has the other standard's line count and CAL-VIDEO V1 S1 prints FAIL; P5-c V1 S1 prints FAIL and P5-MAIN V1 S1 prints NOT GRADED
+// MUTATION CAL-VIDEO stimulus red NMH_MUTATE=P5CAL: after its last burst the P5 V1 S1 program writes VHPOSW once (H sixteen counts on, V unchanged), so one doubler line is not 227 or 228 cc long; only CAL-VIDEO V1 S1 prints FAIL, P5-c holds and P5-MAIN V1 S1 prints NOT GRADED
+// MUTATION CAL-VIDEO stimulus red NMH_MUTATE=P2CAL: run "1" of configuration B at S1 executes one write to VHPOSW (H sixteen counts on, V unchanged) in vertical blanking after two VERTB detections; only CAL-VIDEO B S1 prints FAIL, P2-a and P2-b hold and P2-I1, P2-I2, P2-I3 and the P2 aggregate print NOT GRADED
 // MUTATION P3 stimulus red NMH_MUTATE=P3FIX: the L1 program of S1 stores a start word other than $5A03 and otherwise runs unchanged; both runs complete, the fixture line prints FAIL and every other P3 line of S1 prints NOT GRADED
 // MUTATION P3-M stimulus red NMH_MUTATE=P3MARK: the L1 program of S1 stores every marker with bit 8 set; the fixture holds, P3-M S1 prints FAIL and P3-a, P3-b, P3-c, P3-LIVE and P3-MAIN of S1 print NOT GRADED
+// MUTATION P3-M stimulus red NMH_MUTATE=P3FOUR: the L1 program of S1 stores four blocks instead of five; the fixture holds, P3-M S1 prints FAIL and P3-a, P3-b, P3-c, P3-LIVE and P3-MAIN of S1 print NOT GRADED
+// MUTATION P3-M stimulus red NMH_MUTATE=P3SIX: the L1 program of S1 stores six blocks instead of five, the sixth block at the consecutive word addresses after the fifth; the fixture holds, P3-M S1 prints FAIL and P3-a, P3-b, P3-c, P3-LIVE and P3-MAIN of S1 print NOT GRADED
 // MUTATION P3-a stimulus red NMH_MUTATE=P3A: 20 reads per burst instead of 600, fewer than 100 fall in the window; P3-LIVE S1 and P3-MAIN S1 print NOT GRADED
+// MUTATION P3-a stimulus red NMH_MUTATE=P3A_SPREAD: 150 reads per burst instead of 600, more than 100 fall in the window and the last one lies before its end by more than 30 cc, so only the spread clause fails; P3-LIVE S1 and P3-MAIN S1 print NOT GRADED
 // MUTATION P3-L stimulus red NMH_MUTATE=P3L: the L0 program waits with a fixed delay, no INTREQR polling loop is seen in its fetches; P3-b S1, P3-c S1 and P3-MAIN S1 print NOT GRADED
-// MUTATION P3-b stimulus red NMH_MUTATE=P3BLATE: the L0 program stores its marker about 26 lines after the VERTB detection, the reads have V above 19 and the line prints FAIL; P3-MAIN S1 prints NOT GRADED
-// MUTATION P3-LIVE implementation green private chipset (vertical position counts at the horizontal wrap, no pair with V unchanged and H lower): P3-LIVE passes in S1-S4 on both cores; on the repository chipset, where V steps after the wrap, it passes as well
-// MUTATION P3-LIVE stimulus red NMH_MUTATE=P3LIVE on the private chipset: the L1 program stands in for the L0 program, the L0 windows hold one frozen value and the line prints FAIL; P3-b S1 prints FAIL too (the frozen value has V above 19) and P3-MAIN S1 prints NOT GRADED
+// MUTATION P3-b stimulus red NMH_MUTATE=P3BLATE (also on latch.patch: 8 passed, 1 failed on each core): the L0 program stores its marker about 26 lines after the VERTB detection, the reads have V above 19 and the line prints FAIL; P3-MAIN S1 prints NOT GRADED
+// MUTATION P3-LIVE implementation green private chipset latch.patch (vertical position counts at the horizontal wrap, no pair with V unchanged and H lower; NMH_ONLY=P3P4P5 make latch-test-<core>): P3-LIVE passes in S1-S4 on both cores and the run prints 100 passed, 0 failed on each core; on the repository chipset, where V steps after the wrap, it passes as well
+// MUTATION P3-LIVE stimulus red NMH_MUTATE=P3LIVE_VHPOSW: the last burst of the L0 program does 100 plain reads and then 500 reads each preceded by a write to VHPOSW, on the repository chipset; P3-LIVE S1 prints FAIL and P3-M, P3-a, P3-L, P3-b, P3-c and P3-d hold (P3-MAIN S1 stays red as in the plain run)
+// MUTATION P3-LIVE stimulus red NMH_MUTATE=P3LIVE on the private chipset latch.patch (make latch-test-<core>): the L1 program stands in for the L0 program, the L0 windows hold one frozen value and the line prints FAIL; P3-b S1 prints FAIL too (the frozen value has V above 19) and P3-MAIN S1 prints NOT GRADED; 7 passed, 3 failed on each core
 // MUTATION P3-c stimulus red NMH_MUTATE=P3C_LPENDIS: BEAMCON0 written with LPENDIS=1; P3-MAIN S1 prints NOT GRADED
 // MUTATION P3-c stimulus red NMH_MUTATE=P3C_WRONGSTD: BEAMCON0 bit 5 opposite the configured standard; P3-b S1 prints FAIL through its field-length part and P3-MAIN S1 prints NOT GRADED
+// MUTATION P3-c stimulus red NMH_MUTATE=P3C_SELFMOD: the L0 program rewrites the immediate word of its BEAMCON0 write before it executes (bit 0 set), so the word the CPU fetches differs from the word of the image and only the fetched-word clause fails; P3-MAIN S1 prints NOT GRADED
+// MUTATION P3-c stimulus red NMH_MUTATE=P3C_SECONDBEAM: the L1 program writes BEAMCON0 a second time with LPENDIS=1, its first write is the unchanged one and only the write-count clause fails; P3-MAIN S1 prints NOT GRADED
 // MUTATION P3-d stimulus red NMH_MUTATE=P3D: an extra BPLCON0 write after the first VERTB detection; P3-MAIN S1 prints NOT GRADED
-// MUTATION P3-MAIN implementation green private chipset (light pen latch): P3-MAIN passes in S1-S4 on both cores
-// MUTATION P3-MAIN stimulus red NMH_MUTATE=P3MAIN on the private chipset: the L0 program stands in for L1, the reads count and the line prints FAIL
-// MUTATION opus:A-bpc.b03.c0 implementation green private chipset (light pen latch): the aggregate passes on both cores
-// MUTATION opus:A-bpc.b03.c0 stimulus red NMH_MUTATE=P3MAIN on the private chipset: the L0 program stands in for L1 in S1 and the aggregate prints FAIL
-// MUTATION opus:A-bpc.b03.c0 stimulus red NMH_MUTATE=P3LIVE on the private chipset: the L1 program stands in for L0 in S1 and the aggregate prints FAIL through P3-LIVE
+// MUTATION P3-d stimulus red NMH_MUTATE=P3D_COPIDLE: the L1 program starts the Copper on a preloaded list that holds only WAIT $FFFF,$FFFE, so the Copper fetches at the port and no MOVE to $100 is fetched; only the clause on reads outside the program image, the reset vector words and word address 0 fails; P3-MAIN S1 prints NOT GRADED
+// MUTATION P3-MAIN implementation green private chipset latch.patch (light pen latch; NMH_ONLY=P3P4P5 make latch-test-<core>): P3-MAIN passes in S1-S4 on both cores; the frozen value is $138E2 in PAL and $106E2 in NTSC, an L1 window holds 226 reads on fx68k and 239 on TG68K
+// MUTATION P3-MAIN stimulus red NMH_MUTATE=P3MAIN on the private chipset latch.patch (make latch-test-<core>): the L0 program stands in for L1, the reads count and the line prints FAIL; 9 passed, 2 failed on each core
+// MUTATION opus:A-bpc.b03.c0 implementation green private chipset latch.patch (light pen latch): the aggregate passes on both cores
+// MUTATION opus:A-bpc.b03.c0 stimulus red NMH_MUTATE=P3MAIN on the private chipset latch.patch: the L0 program stands in for L1 in S1 and the aggregate prints FAIL
+// MUTATION opus:A-bpc.b03.c0 stimulus red NMH_MUTATE=P3LIVE on the private chipset latch.patch: the L1 program stands in for L0 in S1 and the aggregate prints FAIL through P3-LIVE
 // MUTATION P4 stimulus red NMH_MUTATE=P4FIX: the program of S1 stores a start word other than $5A03 and otherwise runs unchanged; the run completes, the fixture line prints FAIL and every other P4 line of S1 prints NOT GRADED
 // MUTATION P4-M stimulus red NMH_MUTATE=P4MARK: the program of S1 stores every marker with bit 8 set; the fixture holds, P4-M S1 prints FAIL and P4-a, P4-c and P4-MAIN of S1 print NOT GRADED
 // MUTATION P4-a stimulus red NMH_MUTATE=P4A: 20 reads per burst instead of 600
+// MUTATION P4-a stimulus red NMH_MUTATE=P4A_SPREAD: 150 reads per burst instead of 600, more than 100 fall in the window and the last one lies before its end by more than 30 cc, so only the spread clause fails
 // MUTATION P4-L stimulus red NMH_MUTATE=P4L: the program waits with a fixed delay, no INTREQR polling loop is seen in its fetches; P4-c S1 prints NOT GRADED
 // MUTATION P4-c stimulus red NMH_MUTATE=P4C: BEAMCON0 bit 5 opposite the configured standard
 // MUTATION P4-B-PROGRAM stimulus red NMH_MUTATE=P4B_PROG: the program is P3's L1 program, which writes BPLCON0
 // MUTATION P4-B-COPPER stimulus red NMH_MUTATE=P4B_COP: a preloaded Copper list with a MOVE to BPLCON0 is started
-// MUTATION P4-MAIN implementation green private chipset (light pen latch, vertical position counts at the horizontal wrap): P3-MAIN passes there and P4-MAIN passes in S1-S4 on both cores (NMH_ONLY=P3P4P5)
-// MUTATION P4-MAIN implementation red second private chipset in which LPEN is 1 after reset: P3-MAIN passes, every other precondition holds and the line prints FAIL in S1-S4 on both cores (NMH_ONLY=P3P4)
-// MUTATION opus:A-leg.lpen2 implementation green private chipset (light pen latch, vertical position counts at the horizontal wrap): the aggregate passes on both cores
-// MUTATION opus:A-leg.lpen2 implementation red second private chipset in which LPEN is 1 after reset: the aggregate prints FAIL on both cores
+// MUTATION P4-B-COPPER stimulus red NMH_MUTATE=P4B_COPIDLE: a preloaded Copper list that holds only WAIT $FFFF,$FFFE is started, so the Copper fetches at the port and no MOVE to $100 is fetched; only the clause on reads outside the program image, the reset vector words and word address 0 fails
+// MUTATION P4-B-START stimulus red NMH_MUTATE=P4B_START: the program has one NOP in front of it and the initial PC names the word after it, so the first read after the reset vector words is the image's second word and not its first; the program runs and reaches DONE, every read stays inside the image, the fixture holds, P4-B-START S1 prints FAIL and P4-MAIN S1 prints NOT GRADED
+// MUTATION P4-MAIN implementation green private chipset latch.patch (light pen latch, vertical position counts at the horizontal wrap): P3-MAIN passes there and P4-MAIN passes in S1-S4 on both cores (NMH_ONLY=P3P4P5 make latch-test-<core>: 100 passed, 0 failed)
+// MUTATION P4-MAIN implementation red second private chipset latchrst.patch in which LPEN is 1 after reset: P3-MAIN passes, every other precondition holds and the line prints FAIL in S1-S4 on both cores (NMH_ONLY=P3P4 make latchrst-test-<core>: 66 passed, 5 failed)
+// MUTATION opus:A-leg.lpen2 implementation green private chipset latch.patch (light pen latch, vertical position counts at the horizontal wrap): the aggregate passes on both cores
+// MUTATION opus:A-leg.lpen2 implementation red second private chipset latchrst.patch in which LPEN is 1 after reset: the aggregate prints FAIL on both cores
 // MUTATION P1 stimulus red NMH_MUTATE=P1FIX: run "1" of every configuration at S1 stores a start word other than $5A01 and otherwise runs unchanged; both runs complete, the fixture line prints FAIL and P1-MAIN prints NOT GRADED
-// MUTATION P1-a stimulus red NMH_MUTATE=P1A: a genuine PAL run's sync samples are compared with a genuine NTSC run's; the contrast's own fixture line prints PASS
+// MUTATION P1-a stimulus red NMH_MUTATE=P1A: run "1" of A, B, C and E at S1 executes one write to VHPOSW (H sixteen counts on, V unchanged) in vertical blanking after two VERTB detections following the Copper start; both runs complete, the P1 fixture holds, P1-a prints FAIL in A, B, C and E, every other P1 line holds and P1-MAIN prints NOT GRADED in the four configurations
 // MUTATION P1-b stimulus red NMH_MUTATE=P1B: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s; P1-MAIN prints NOT GRADED
+// MUTATION P1-c stimulus red NMH_MUTATE=P1C_OVER: DDFSTOP 8 colour clocks higher with modulo 0 in B and E, 21 words per line, so the pointer runs past the buffer; the count inside the buffer is unchanged, the guard range after it is read, P1-c prints FAIL in B and E, every other P1 line holds and P1-MAIN prints NOT GRADED there
 // MUTATION P1-c stimulus red NMH_MUTATE=P1C: DDFSTOP is 8 colour clocks lower with bitplane DMA on in B, C and E (each DMA field still reads a nonempty part of the buffers), and in A the Copper list also points sprite 0 at the buffer and turns sprite DMA on, so reads of the buffer's address range occur with the BPLCON0 words unchanged; P1-c prints FAIL in A, B, C and E, every other P1 line holds, and P1-MAIN prints NOT GRADED
 // MUTATION P1-d stimulus red NMH_MUTATE=P1D: bitplane buffers zeroed in B, C and E, and COLOR00 set to another value by the Copper in A; P1-MAIN prints NOT GRADED
 // MUTATION P1-e stimulus red NMH_MUTATE=P1ESTD (S2 only): the program of configuration B writes BEAMCON0 with bit 5 opposite the configured standard and the field length is the other standard's; the 200-line window fits the longer field, P1-c B holds, P1-e B S2 prints FAIL and P1-MAIN B S2 prints NOT GRADED
 // MUTATION P1-MAIN stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, in A, B, C and E, every precondition holding
 // MUTATION opus:3-a1000.c04 stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, the aggregate prints FAIL
-// MUTATION P2 stimulus red NMH_MUTATE=P2FIX: run "1" of configuration B at S1 stores a start word other than $5A01 and otherwise runs unchanged; the fixture line prints FAIL and P2-MAIN prints NOT GRADED
+// MUTATION P2 stimulus red NMH_MUTATE=P2FIX: run "1" of configuration B at S1 stores a start word other than $5A01 and otherwise runs unchanged; the fixture line prints FAIL and CAL-VIDEO, P2-a, P2-b, P2-I1, P2-I2, P2-I3 and the P2 aggregate print NOT GRADED
 // MUTATION P2-a stimulus red NMH_MUTATE=P2A: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s; P2-I1, P2-I2 and P2-I3 print NOT GRADED
 // MUTATION P2-b stimulus red NMH_MUTATE=P2B: BPL1MOD=$0002, later lines start two bytes further out, and 20 more lines of valid data words follow the buffer so every line still shows data; P2-I1 holds, P2-I2 and the P2 aggregate print NOT GRADED
-// MUTATION P2-I1 stimulus red NMH_MUTATE=P2ITEM1: VSTOP one line lower, a data block has H-1 lines; P2-b prints FAIL too (the buffer is read for H-1 lines) and P2-I2 prints NOT GRADED
+// MUTATION P2-I1 stimulus red NMH_MUTATE=P2ITEM1: the last line of the bitplane buffer is all zero in memory, so a data block has H-1 lines; only P2-I1 prints FAIL (P2-b, P2-I2 and P2-I3 hold) and the P2 aggregate prints FAIL
 // MUTATION P2-I2 stimulus red NMH_MUTATE=P2FLIP: bit 14 of w(100,5) flipped in memory while the expectation is unchanged
 // MUTATION P2-I3 stimulus red NMH_MUTATE=P2EDGE: the window is 32 pixels wider and 21 words per line are fetched, so the sample after the 320th pixel shows data; P2-b prints FAIL too and P2-I2 prints NOT GRADED
 // MUTATION opus:3-a1000.c05 stimulus red NMH_MUTATE=P2FLIP: bit 14 of w(100,5) flipped in memory, the aggregate prints FAIL
 // MUTATION P5 stimulus red NMH_MUTATE=P5FIX: the V1 program of S1 stores a start word other than $5A05 and otherwise runs unchanged; the run completes, the fixture line prints FAIL and P5-MAIN V1 S1 prints NOT GRADED
 // MUTATION P5-M stimulus red NMH_MUTATE=P5MARK: the V1 program of S1 stores every marker with bit 8 set; the fixture holds, P5-M V1 S1 prints FAIL and P5-b, P5-c and P5-MAIN print NOT GRADED
-// MUTATION P5-a stimulus red NMH_MUTATE=P5A: DMACON without BPLEN, no line shows C1; P5-MAIN prints NOT GRADED
+// MUTATION P5-a stimulus red NMH_MUTATE=P5A: DIWSTRT opens the window at line N-2, so the lines N-10..N-3 show no C1; the first C2 line is still found, so the population of P5-a is not empty (the MEASURED line shows N-2=C1 N-1=C2 N=C2); P5-M, CAL-VIDEO, P5-b and P5-c hold and P5-MAIN prints NOT GRADED
 // MUTATION P5-b stimulus red NMH_MUTATE=P5B: Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30), the C2-side anchor finds V=N-2; P5-MAIN prints NOT GRADED
 // MUTATION P5-c stimulus red NMH_MUTATE=P5C: BEAMCON0 bit 5 opposite the configured standard; CAL-VIDEO V1 S1 prints FAIL too and P5-MAIN prints NOT GRADED
-// MUTATION P5-MAIN implementation green private chipset (VBSTRT blanking): P5-MAIN passes in V1 and V2, S1 and S2 on both cores
-// MUTATION P5-MAIN stimulus red NMH_MUTATE=P5MAIN on the private chipset: BEAMCON0 without VARVBEN, line N also shows C2 and the line prints FAIL
-// MUTATION opus:B-vbstrt.addr implementation green private chipset (VBSTRT blanking): the aggregate passes on both cores
-// MUTATION opus:B-vbstrt.addr stimulus red NMH_MUTATE=P5MAIN on the private chipset: BEAMCON0 without VARVBEN, the aggregate prints FAIL
+// MUTATION P5-c stimulus red NMH_MUTATE=P5C_SKIP: the second marker follows a VERTB detection that skips one field, so two consecutive markers are two fields apart while the vsync assertions recur at the configured field length; only P5-c V1 S1 prints FAIL, through its marker clause, and P5-MAIN prints NOT GRADED
+// MUTATION P5-MAIN implementation green private chipset latch.patch (VBSTRT blanking; NMH_ONLY=P3P4P5 make latch-test-<core>): P5-MAIN passes in V1 and V2, S1 and S2 on both cores; the MEASURED line shows N-2=C1 N-1=C2, none for N to N+7 and N+8=C3
+// MUTATION P5-MAIN stimulus red NMH_MUTATE=P5MAIN on the private chipset latch.patch (make latch-test-<core>): BEAMCON0 without VARVBEN, line N also shows C2 and the line prints FAIL; 7 passed, 2 failed on each core
+// MUTATION P5-MAIN stimulus red NMH_MUTATE=P5VALUE on the private chipset latch.patch (make latch-test-<core>): VBSTRT and VBSTOP name the lines $B0 and $B8 while the Copper markers stay at N = $A0, line N also shows C2 and the line prints FAIL; P5-a, P5-b and P5-c hold; 7 passed, 2 failed on each core
+// MUTATION opus:B-vbstrt.addr implementation green private chipset latch.patch (VBSTRT blanking): the aggregate passes on both cores
+// MUTATION opus:B-vbstrt.addr stimulus red NMH_MUTATE=P5MAIN on the private chipset latch.patch: BEAMCON0 without VARVBEN, the aggregate prints FAIL
+// MUTATION opus:B-vbstrt.addr stimulus red NMH_MUTATE=P5VALUE on the private chipset latch.patch: VBSTRT names line N + 16, the aggregate prints FAIL
 
 #include <algorithm>
 #include <cstdio>
@@ -279,12 +316,25 @@ bool saw_store(const std::vector<nmh::RamAccess>& log, uint32_t addr, uint16_t v
     return false;
 }
 
+// The run's Chip-memory port log without the held continuations of its bus cycles: an entry that repeats the
+// address, direction, data and byte enables of the entry before it exactly one bus period later continues that
+// cycle and is dropped (nmh::coalesce_adjacent). The bus period is the smallest spacing of the log's samples. Two
+// reads of one address with an idle bus period between them are two reads.
+std::vector<nmh::RamAccess> bus_log(const std::vector<nmh::RamAccess>& log) {
+    uint64_t period = 0;
+    for (size_t i = 1; i < log.size(); ++i) {
+        const uint64_t d = log[i].cycle - log[i - 1].cycle;
+        if (d > 0 && (period == 0 || d < period)) period = d;
+    }
+    return period ? nmh::coalesce_adjacent(log, period) : log;
+}
+
 struct Run {
     size_t loaded = 0;
     bool released = false;
     bool started = false;              // the program's start word was stored
     std::optional<uint64_t> done;
-    std::vector<nmh::RamAccess> log;   // coalesced full log (reads and writes)
+    std::vector<nmh::RamAccess> log;   // full log (reads and writes) without held continuations
     std::vector<uint16_t> prog_words;  // the loaded program's own image
     LoopStat loop;
 };
@@ -317,24 +367,56 @@ LoopStat poll_loop(const std::vector<uint16_t>& prog, const std::vector<nmh::Ram
     return ls;
 }
 
+// The reads at the Chip-memory port that lie outside the loaded program's own image, the four words of the reset
+// vectors in the overlay shadow (initial SSP, initial PC) and word address 0 (the reads a run makes there are
+// measured, not named; see SPECIFICATION.md, P3-d).
+size_t reads_outside_allowed(const Run& r) {
+    const uint32_t lo = nmh::kProgramOrg / 2, hi = lo + (uint32_t)r.loaded / 2;
+    size_t n = 0;
+    for (auto& a : r.log) {
+        if (a.is_write) continue;
+        if (a.word_addr >= lo && a.word_addr < hi) continue;
+        if (a.word_addr >= nmh::kKickShadowWordBase && a.word_addr < nmh::kKickShadowWordBase + 4) continue;
+        if (a.word_addr == 0) continue;
+        ++n;
+    }
+    return n;
+}
+
+// P4-B-START: the first read at the port after the reset vector words (and the reads at word address 0) is the
+// loaded program's first word.
+bool first_fetch_is_program(const Run& r) {
+    if (r.prog_words.empty()) return false;
+    for (auto& a : r.log) {
+        if (a.is_write) continue;
+        if (a.word_addr >= nmh::kKickShadowWordBase && a.word_addr < nmh::kKickShadowWordBase + 4) continue;
+        if (a.word_addr == 0) continue;
+        return a.word_addr == nmh::kProgramOrg / 2 && a.data == r.prog_words[0];
+    }
+    return false;
+}
+
 // preload: physical byte address (even, <$80000 is fine -- see playfield.i)
 // -> words to poke there before boot(), for a program that only points a
 // register at the address (a CPU write there would be lost to the overlay).
 Run run_program(const std::string& bin, const nmh::Config& cfg, uint16_t want_start,
-                 const std::vector<std::pair<uint32_t, std::vector<uint16_t>>>& preloads = {}) {
+                 const std::vector<std::pair<uint32_t, std::vector<uint16_t>>>& preloads = {},
+                 uint32_t entry_offset = 0) {
     Run r;
     nmh::NanomigHarness h(cfg);
     for (auto& pl : preloads)
         for (size_t i = 0; i < pl.second.size(); ++i) h.poke_word(pl.first / 2 + i, pl.second[i]);
     r.loaded = h.load_program(bin);
     if (!r.loaded) return r;
+    // a nonzero entry_offset moves the initial PC in the overlay shadow that many bytes into the program image
+    if (entry_offset) h.poke_long(nmh::kKickShadowWordBase + 2, nmh::kProgramOrg + entry_offset);
     for (size_t i = 0; i < r.loaded; i += 2) {
         auto w = h.peek_logical(nmh::kProgramOrg + i);
         r.prog_words.push_back(w.value_or(0xDEAD));
     }
     r.released = h.boot(kBootBudget).cpu_released;
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
-    r.log = nmh::coalesce(h.ram_log());
+    r.log = bus_log(h.ram_log());
     r.started = saw_store(r.log, kStartAddr, want_start);
     r.loop = poll_loop(r.prog_words, r.log);
     return r;
@@ -422,16 +504,16 @@ int program_burst_len(const std::vector<uint16_t>& prog) {
     return 0;
 }
 
-// P3-M, P4-M, P5-M: the stores to the measurement buffer are exactly `nblocks` blocks, block k being the
-// marker word k followed by `burstlen` long words, each stored high half then low half, all at consecutive word
-// addresses from the buffer's first.
+// P3-M, P4-M, P5-M: the stores to the measurement buffer, which are every store at or above its first address, are
+// exactly `nblocks` blocks, block k being the marker word k followed by `burstlen` long words, each stored high
+// half then low half, all at consecutive word addresses from the buffer's first.
 bool blocks_shape_ok(const std::vector<nmh::RamAccess>& log, int burstlen, int nblocks) {
     const uint32_t base_word = kMeasureBase / 2;
     const size_t block_words = 1u + 2u * (size_t)burstlen;
     const size_t total = block_words * (size_t)nblocks;
     std::vector<nmh::RamAccess> buf;
     for (auto& a : log)
-        if (a.is_write && a.word_addr >= base_word && a.word_addr < base_word + 5u * block_words) buf.push_back(a);
+        if (a.is_write && a.word_addr >= base_word) buf.push_back(a);
     if (buf.size() != total) return false;
     for (size_t i = 0; i < buf.size(); ++i) {
         if (buf[i].word_addr != base_word + i) return false;
@@ -457,6 +539,7 @@ struct WindowResult {
     int h_extra_dec = 0;      // (iii) pairs with V unchanged and H lower beyond the first one of each V value
     int lag_pairs = 0;        // MEASURED: pairs with V8..V0 unchanged and H8..H1 lower (H wrapped, V not yet stepped)
     int v_over_19 = 0;        // counted reads with V above 19
+    uint32_t first_value = 0, last_value = 0;   // the first and the last counted read, 17 bits
     std::vector<std::pair<uint32_t, uint32_t>> lags;   // those pairs' (H of the first read, H of the second)
 };
 
@@ -473,6 +556,8 @@ WindowResult analyze_window(const Detection& d, uint64_t win_s, uint64_t win_e) 
     wr.count = (int)in.size();
     wr.has_min_100 = wr.count >= 100;
     if (!in.empty()) {
+        wr.first_value = in.front().second & 0x1FFFFu;
+        wr.last_value = in.back().second & 0x1FFFFu;
         uint64_t rel_first = in.front().first - d.marker_cycle;
         uint64_t rel_last = in.back().first - d.marker_cycle;
         wr.first_near_start = (rel_first - win_s) <= spread_slack();
@@ -747,7 +832,7 @@ VideoRun run_video(const std::string& bin, const nmh::Config& cfg, uint64_t boot
     }
     r.released = h.boot(boot_budget).cpu_released;
     h.run_cycles(run_cycles);
-    r.log = nmh::coalesce(h.ram_log());
+    r.log = bus_log(h.ram_log());
     r.started = saw_store(r.log, kStartAddr, want_start);
     r.done = saw_store(r.log, kDoneAddr, kDoneValue);
     r.video = h.video();
@@ -774,6 +859,7 @@ struct DispOpts {
     bool a_colour_top = false;       // config A: COLOR00 set to another value by the Copper
     bool a_sprite_dma = false;       // config A: sprite 0 reads a transparent sprite stored at kBplPlane1
     int pad_lines = 0;               // configs B, E: this many more lines of valid data words after the buffer
+    bool zero_last_line = false;     // configs B, E: the last line of the buffer is all zero
 };
 
 struct DisplayData {
@@ -796,6 +882,8 @@ DisplayData build_and_run_display(const std::string& dir, char cfgname, int s, c
         std::vector<uint16_t> data = o.zero_bitplane ? std::vector<uint16_t>((size_t)20 * d.H, 0)
                                                      : bitplane_be(d.H + o.pad_lines);
         if (o.flip_word_index >= 0 && (size_t)o.flip_word_index < data.size()) data[o.flip_word_index] ^= 0x4000;
+        if (o.zero_last_line)
+            for (size_t k = 0; k < 20; ++k) data[(size_t)(d.H - 1) * 20 + k] = 0;
         bpl.push_back({kBplPlane1, data});
     } else if (cfgname == 'C') {
         const uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
@@ -1114,9 +1202,20 @@ int main(int argc, char** argv) {
             if (ecs && s == 1 && mut("P3C_WRONGSTD")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_wrongstd.bin";
             if (ecs && s == 1 && mut("P3L")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_nopoll.bin";
             if (ecs && s == 1 && mut("P3BLATE")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_late.bin";
+            if (ecs && s == 1 && mut("P3FOUR")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_fourblocks.bin";
+            if (ecs && s == 1 && mut("P3SIX")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_sixblocks.bin";
+            if (ecs && s == 1 && mut("P3A_SPREAD")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_burst150.bin";
+            if (ecs && s == 1 && mut("P3C_SELFMOD")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_selfmod.bin";
+            if (ecs && s == 1 && mut("P3C_SECONDBEAM")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_secondbeam.bin";
+            if (ecs && s == 1 && mut("P3LIVE_VHPOSW")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_vhposw.bin";
 
+            std::vector<std::pair<uint32_t, std::vector<uint16_t>>> pre1;
+            if (ecs && s == 1 && mut("P3D_COPIDLE")) {
+                bin_l1 = dir + "/prog_lpen_ecs_pal_l1_copper.bin";
+                pre1.push_back({kCopListAddr, {0xFFFF, 0xFFFE}});
+            }
             Run r0 = run_program(bin_l0, cfg, kStartLpen);
-            Run r1 = run_program(bin_l1, cfg, kStartLpen);
+            Run r1 = run_program(bin_l1, cfg, kStartLpen, pre1);
             const bool ok0 = r0.loaded && r0.released && r0.started && r0.done.has_value();
             const bool ok1 = r1.loaded && r1.released && r1.started && r1.done.has_value();
             const bool fix3 = ok0 && ok1;
@@ -1230,13 +1329,15 @@ int main(int argc, char** argv) {
                     return v && f && *f == *v && ((*v & 0x2000) == 0) && (((*v >> 5) & 1) == (ntsc ? 0 : 1));
                 };
                 const bool bit_ok = value_ok(val0, fet0) && value_ok(val1, fet1);
+                const bool beam_once = count_writes_to(r0.prog_words, 0, 0x1DC) == 1 &&
+                                       count_writes_to(r1.prog_words, 0, 0x1DC) == 1;
                 bool std_ok = det0.size() > 1;
                 for (int i = 0; i + 1 < (int)det0.size(); ++i)
                     std_ok = std_ok && field_length_ok(det0[i + 1].marker_cycle - det0[i].marker_cycle, ntsc, loopmax);
                 p3c_ok = gated(fix3 && m3_ok && p3l_ok, "P3-c " + sn, "the fixture, P3-M or P3-L failed",
-                    "P3-c " + sn + ": BEAMCON0 carries LPENDIS=0 and bit 5 for the configured standard "
-                    "in both programs' own code and in the CPU's fetch of the immediate word, and the "
-                    "field-length check reports that standard", bit_ok && std_ok);
+                    "P3-c " + sn + ": BEAMCON0 is written once in each program and carries LPENDIS=0 and bit 5 for "
+                    "the configured standard in both programs' own code and in the CPU's fetch of the immediate word, "
+                    "and the field-length check reports that standard", bit_ok && beam_once && std_ok);
             }
 
             // P3-d: BPLCON0 written exactly once by the CPU program (its own step-3 write); no Copper
@@ -1245,9 +1346,12 @@ int main(int argc, char** argv) {
             const int n1 = count_writes_to(r1.prog_words, 0, 0x100);
             const bool cop_clean = !copper_fetched_move_to(r0.log, kCopListAddr, 0x0100) &&
                                    !copper_fetched_move_to(r1.log, kCopListAddr, 0x0100);
+            const bool out_clean = reads_outside_allowed(r0) == 0 && reads_outside_allowed(r1) == 0;
             const bool p3d_ok = gated(fix3, "P3-d " + sn, "the fixture failed",
                 "P3-d " + sn + ": BPLCON0 written exactly once by the program (no other CPU write to "
-                "$DFF100, no Copper fetch of a MOVE to $100 from the list at $020000)", n0 == 1 && n1 == 1 && cop_clean);
+                "$DFF100, no Copper fetch of a MOVE to $100 from the list at $020000), and no read at the "
+                "port outside the program image, the reset vector words and word address 0",
+                n0 == 1 && n1 == 1 && cop_clean && out_clean);
 
             // P3 main. Its preconditions: the fixture, P3-M, P3-a, P3-L, P3-b, P3-c and P3-d. The L0 line
             // P3-LIVE is a component of the aggregate and is not a precondition of this line.
@@ -1258,16 +1362,21 @@ int main(int argc, char** argv) {
             } else {
                 bool main_ok = det1.size() >= 5;
                 int min_count_l1 = INT32_MAX;
+                std::string l1_text;
                 for (int i = 1; i <= 4 && i < (int)det1.size(); ++i) {
                     WindowResult wr = analyze_window(det1[i], win_start(), win_end());
                     main_ok = main_ok && wr.all_equal && wr.count > 0;
                     min_count_l1 = std::min(min_count_l1, wr.count);
+                    char fl[48];
+                    std::snprintf(fl, sizeof fl, " first=$%05X last=$%05X", (unsigned)wr.first_value, (unsigned)wr.last_value);
+                    l1_text += "[w" + std::to_string(i) + " " + pf_text(wr) + fl + "] ";
                 }
                 c.expect(main_ok, "P3-MAIN " + sn + " (" + s_name(s) + "): with LPEN=1, every counted VPOSR/VHPOSR "
                           "read in the windows after VERTB detections 2-5 shows the same 17-bit value (frozen)");
                 agg3.add(true, main_ok);
                 p3main_pass[s] = main_ok;
                 c.note("P3-MAIN " + sn + ": L1 min window count " + std::to_string(min_count_l1) + " reads");
+                c.note("P3-MAIN " + sn + " L1 windows (17-bit values of the first and the last counted read): " + l1_text);
             }
         }
         if (do_p3) {
@@ -1302,14 +1411,20 @@ int main(int argc, char** argv) {
             if (s == 1 && mut("P4MARK")) bin = dir + "/prog_lpen_p4_ecs_pal_badmark.bin";
             if (ecs && s == 1 && mut("P4B_PROG")) bin = dir + "/prog_lpen_ecs_pal_l1.bin";
             if (ecs && s == 1 && mut("P4A")) bin = dir + "/prog_lpen_p4_ecs_pal_burst20.bin";
+            if (ecs && s == 1 && mut("P4A_SPREAD")) bin = dir + "/prog_lpen_p4_ecs_pal_burst150.bin";
+            if (ecs && s == 1 && mut("P4B_START")) bin = dir + "/prog_lpen_p4_ecs_pal_nopfirst.bin";
             if (ecs && s == 1 && mut("P4C")) bin = dir + "/prog_lpen_p4_ecs_pal_wrongstd.bin";
             if (ecs && s == 1 && mut("P4L")) bin = dir + "/prog_lpen_p4_ecs_pal_nopoll.bin";
             if (s == 1 && mut("P4B_COP")) { bin = dir + "/prog_lpen_p4_copper.bin"; use_copper_preload = true; }
+            const bool copper_idle = s == 1 && mut("P4B_COPIDLE");
+            if (copper_idle) { bin = dir + "/prog_lpen_p4_copper.bin"; use_copper_preload = true; }
 
             std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads;
-            if (use_copper_preload) preloads.push_back({kCopListAddr, {0x0100, 0x0008, 0xFFFF, 0xFFFE}});
+            if (use_copper_preload)
+                preloads.push_back({kCopListAddr, copper_idle ? std::vector<uint16_t>{0xFFFF, 0xFFFE}
+                                                              : std::vector<uint16_t>{0x0100, 0x0008, 0xFFFF, 0xFFFE}});
 
-            Run r = run_program(bin, cfg, kStartLpen, preloads);
+            Run r = run_program(bin, cfg, kStartLpen, preloads, (s == 1 && mut("P4B_START")) ? 2u : 0u);
             const bool ok = r.loaded && r.released && r.started && r.done.has_value();
             const int burstlen = program_burst_len(r.prog_words);
             c.expect(ok, "P4 fixture " + sn + " (" + s_name(s) +
@@ -1355,15 +1470,23 @@ int main(int argc, char** argv) {
                 "P4-B-PROGRAM " + sn + (mut("P4B_PROG") ? " [P3's L1 program]" : "") +
                 ": the program contains no write to $DFF100", count_writes_to(r.prog_words, 0, 0x100) == 0);
 
-            // P4-b, Copper part: no Copper instruction fetched from the list at $020000 is a MOVE to $100.
+            // P4-b, Copper part: no Copper instruction fetched from the list at $020000 is a MOVE to $100, and no
+            // read at the port lies outside the program image, the reset vector words and word address 0.
             const bool p4bc_ok = gated(ok, "P4-B-COPPER " + sn, "the fixture failed",
-                "P4-B-COPPER " + sn + (use_copper_preload ? " [Copper list writes BPLCON0]" : "") +
-                ": no Copper instruction fetched from the list at $020000 is a MOVE to $100",
-                !copper_fetched_move_to(r.log, kCopListAddr, 0x0100));
+                "P4-B-COPPER " + sn + (use_copper_preload ? (copper_idle ? " [Copper runs a list that writes nothing]" : " [Copper list writes BPLCON0]") : "") +
+                ": no Copper instruction fetched from the list at $020000 is a MOVE to $100, and no read at the port "
+                "outside the program image, the reset vector words and word address 0",
+                !copper_fetched_move_to(r.log, kCopListAddr, 0x0100) && reads_outside_allowed(r) == 0);
+
+            // P4-b, start part: the first read at the port after the reset vector words is the program's first word.
+            const bool p4bs_ok = gated(ok, "P4-B-START " + sn, "the fixture failed",
+                "P4-B-START " + sn + (s == 1 && mut("P4B_START") ? " [the initial PC skips the first word of the program]" : "") +
+                ": the first read at the port after the reset vector words (and the reads at word address 0) is the "
+                "first word of the test program", first_fetch_is_program(r));
 
             // P4 main: gated on every precondition above and on the latch being shown live in the same
             // system configuration (P3-MAIN passed there); without a latch an LPEN of 1 would look like 0.
-            const bool pre4 = ok && m4_ok && p4a_ok && p4l_ok && p4c_ok && p4bp_ok && p4bc_ok;
+            const bool pre4 = ok && m4_ok && p4a_ok && p4l_ok && p4c_ok && p4bp_ok && p4bc_ok && p4bs_ok;
             std::vector<WindowResult> w4;
             bool main_ok = det.size() >= 5;
             for (int i = 1; i <= 4 && i < (int)det.size(); ++i) {
@@ -1417,9 +1540,7 @@ int main(int argc, char** argv) {
         Agg agg1; agg1.expected = 16;
         Agg agg2; agg2.expected = 4;
         const char cfgs[4] = {'A', 'B', 'C', 'E'};
-        // P1A is a dedicated contrast, run below; it does not run the main loop.
-        const bool dedicated = mut("P1A");
-        for (int s = smin; (do_p1 || do_p2) && !dedicated && s <= smax; ++s) {
+        for (int s = smin; (do_p1 || do_p2) && s <= smax; ++s) {
             const bool ntsc = s_is_ntsc(s);
             const int H = ntsc ? 200 : 256;
             for (char cfg : cfgs) {
@@ -1430,7 +1551,9 @@ int main(int argc, char** argv) {
                 DispOpts o;
                 if (do_p1 && m1) {
                     if (mut("P1MAIN")) o.contrast1 = true;
+                    if (mut("P1A")) o.ov1 = dir + (cfg == 'C' ? "/prog_p1_16c_pal_vshift.bin" : "/prog_p1_2c_pal_vshift.bin");
                     if (mut("P1B")) o.list1_is_list0 = true;
+                    if (mut("P1C_OVER") && (cfg == 'B' || cfg == 'E')) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_over.bin";
                     if (mut("P1C")) {
                         if (cfg == 'A') o.a_sprite_dma = true;
                         else if (cfg == 'C') o.ov0 = o.ov1 = dir + "/prog_p1_16c_pal_narrow.bin";
@@ -1448,7 +1571,8 @@ int main(int argc, char** argv) {
                     if (mut("P2A")) o.list1_is_list0 = true;
                     if (mut("P2B")) { o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_mod2.bin"; o.pad_lines = 20; }
                     if (mut("P2FLIP")) o.flip_word_index = 100 * 20 + 5;
-                    if (mut("P2ITEM1")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_vstoplow.bin";
+                    if (mut("P2ITEM1")) o.zero_last_line = true;
+                    if (mut("P2CAL")) o.ov1 = dir + "/prog_p1_2c_pal_vshift.bin";
                     if (mut("P2EDGE")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_rightedge.bin";
                     if (mut("P2FIX")) o.ov1 = dir + "/prog_p1_2c_pal_badstart.bin";
                 }
@@ -1466,11 +1590,11 @@ int main(int argc, char** argv) {
                 }
                 const bool p1_here = do_p1;
                 const bool p2_here = (cfg == 'B' && do_p2);
-                const bool fixture_ok = dd.ok && w0.size() >= 4 && w1.size() >= 4 && starts0.size() >= 3 && starts1.size() >= 3;
+                const bool fixture_ok = dd.ok && w0.size() >= 4 && w1.size() >= 4 && starts0.size() >= 4 && starts1.size() >= 4;
                 const bool p2fix_ok = dd.ok && w0.size() >= 6 && w1.size() >= 6 && starts0.size() >= 6 && starts1.size() >= 6;
                 if (p1_here)
                     c.expect(fixture_ok, "P1 fixture " + tag + ": both runs loaded, released reset and stored their start word, "
-                              "the Copper fetched the list, and at least 4 vsync assertions and 3 DMA-field starts follow the first Copper fetch in both runs");
+                              "the Copper fetched the list, and at least 4 vsync assertions and 4 DMA-field starts follow the first Copper fetch in both runs");
                 if (p2_here)
                     c.expect(p2fix_ok, "P2 fixture " + tag + ": both runs loaded, released reset and stored their start word, "
                               "the Copper fetched the list, and at least 6 vsync assertions and 6 DMA-field starts follow the first Copper fetch in both runs");
@@ -1513,26 +1637,33 @@ int main(int argc, char** argv) {
                     } else {
                         ranges.push_back({kBplPlane1 / 2, kBplPlane1 / 2 + (size_t)20 * H});
                     }
+                    // the guard: the 20*H words after the last buffer, which no read may touch
+                    std::vector<std::pair<size_t, size_t>> guard = {{ranges.back().second, ranges.back().second + (size_t)20 * H}};
                     const size_t expect_reads = (cfg == 'A') ? 0 : (cfg == 'C' ? (size_t)4 * 40 * H : (size_t)20 * H);
-                    auto count_bpl_reads = [&](const VideoRun& r, uint64_t from, uint64_t to) {
+                    auto count_in = [&](const std::vector<std::pair<size_t, size_t>>& rgs, const VideoRun& r, uint64_t from, uint64_t to) {
                         size_t n = 0;
                         for (auto& a : r.log) {
                             if (a.is_write || a.cycle < from || a.cycle >= to) continue;
-                            for (auto& rg : ranges) if (a.word_addr >= rg.first && a.word_addr < rg.second) { ++n; break; }
+                            for (auto& rg : rgs) if (a.word_addr >= rg.first && a.word_addr < rg.second) { ++n; break; }
                         }
                         return n;
                     };
+                    auto count_bpl_reads = [&](const VideoRun& r, uint64_t from, uint64_t to) { return count_in(ranges, r, from, to); };
                     const size_t n0f2 = count_bpl_reads(dd.run0, starts0[1], starts0[2]);
                     const size_t n0f3 = count_bpl_reads(dd.run0, starts0[2], starts0[3]);
                     const size_t n1f2 = count_bpl_reads(dd.run1, starts1[1], starts1[2]);
                     const size_t n1f3 = count_bpl_reads(dd.run1, starts1[2], starts1[3]);
+                    const size_t guard_reads = count_in(guard, dd.run0, starts0[1], starts0[2]) + count_in(guard, dd.run0, starts0[2], starts0[3]) +
+                                               count_in(guard, dd.run1, starts1[1], starts1[2]) + count_in(guard, dd.run1, starts1[2], starts1[3]);
                     const bool p1c_ok = (n0f2 == expect_reads && n0f3 == expect_reads &&
-                                         n1f2 == expect_reads && n1f3 == expect_reads);
+                                         n1f2 == expect_reads && n1f3 == expect_reads && guard_reads == 0);
                     std::string p1c_counts = std::to_string(expect_reads) + " " + std::to_string(n0f2) + " " +
                         std::to_string(n0f3) + " " + std::to_string(n1f2) + " " + std::to_string(n1f3);
                     c.expect(p1c_ok,
-                        "P1-c " + tag + ": DMA fields 2 and 3 each show exactly N bitplane-buffer reads "
-                        "(expected/run0-field2/run0-field3/run1-field2/run1-field3 = " + p1c_counts + ")");
+                        "P1-c " + tag + ": DMA fields 2 and 3 each show exactly N bitplane-buffer reads and no read of "
+                        "the guard range after the buffers "
+                        "(expected/run0-field2/run0-field3/run1-field2/run1-field3 = " + p1c_counts + ", guard reads " +
+                        std::to_string(guard_reads) + ")");
 
                     // P1-d: the picture is not trivially uniform.
                     auto colours_seen = [&](const VideoRun& r, size_t b, size_t len, bool want[16]) {
@@ -1627,7 +1758,7 @@ int main(int argc, char** argv) {
                         graded_all = false;
                     } else {
                         const bool i1 = ev0.i1 && ev1.i1;
-                        c.expect(i1, "P2-I1 " + tag + (m1 && mut("P2ITEM1") ? " [contrast: VSTOP one line lower]" : "") +
+                        c.expect(i1, "P2-I1 " + tag + (m1 && mut("P2ITEM1") ? " [contrast: the last line of the buffer is zero]" : "") +
                                   ": each run shows at least three complete blocks of data lines and every complete block has "
                                   "exactly H beam lines (blocks " + std::to_string(ev0.complete) + "/" + std::to_string(ev1.complete) + ")");
                         any_fail = any_fail || !i1;
@@ -1657,7 +1788,7 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        if (do_p1 && !dedicated) {
+        if (do_p1) {
             const std::string ids1 = "opus:3-a1000.c04 sol:3-composite.c6 opus:3-sum.c21 ";
             if (agg1.gradable())
                 c.expect(agg1.failed == 0,
@@ -1680,38 +1811,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    // P1-a's own contrast: PAL for one run, NTSC for the other (config B, S1's
-    // and S2's stimulus, both "run 0"), through the same comparator the main
-    // loop's P1-a uses (hsync/vsync samples identical over the
-    // 2nd-to-4th-vsync span) -- expected to fail by itself, since a genuine PAL
-    // run and a genuine NTSC run have different field lengths.
-    if (mut("P1A")) {
-        DispOpts o; o.list1_is_list0 = true;
-        DisplayData dpal = build_and_run_display(dir, 'B', 1, o);
-        DisplayData dntsc = build_and_run_display(dir, 'B', 2, o);
-        bool fixture_c = dpal.ok && dntsc.ok;
-        bool p1a_ok = false;
-        if (fixture_c) {
-            auto starts0 = dma_field_starts(dpal.run0.log);
-            auto starts1 = dma_field_starts(dntsc.run0.log);
-            auto vsa0 = find_vsync_assertions(dpal.run0.video);
-            auto vsa1 = find_vsync_assertions(dntsc.run0.video);
-            std::vector<size_t> w0, w1;
-            if (!starts0.empty() && !starts1.empty()) {
-                for (auto v : vsa0) if ((uint64_t)v > starts0.front()) w0.push_back(v);
-                for (auto v : vsa1) if ((uint64_t)v > starts1.front()) w1.push_back(v);
-            }
-            fixture_c = w0.size() >= 4 && w1.size() >= 4;
-            if (fixture_c) p1a_ok = sync_samples_identical(dpal.run0.video, w0[1], w0[3], dntsc.run0.video, w1[1], w1[3]);
-        }
-        c.expect(fixture_c, "P1 fixture B S1/S2 [contrast: P1-a, a PAL run and an NTSC run]: both runs loaded, released reset "
-                  "and stored their start word, the Copper fetched the list, and at least 4 vsync assertions follow the first Copper fetch in each");
-        gated(fixture_c, "P1-a [contrast]", "the fixture failed",
-              "P1-a [contrast: a genuine PAL run (S1) compared with a genuine NTSC run (S2), "
-              "config B run \"0\" of each] : hsync and vsync samples of the two runs are identical over the "
-              "compared span", p1a_ok);
-    }
-
     // ---------------------------------------------------------------
     // P5 -- VBSTRT ($1CC, ECS) and the line at which vertical blanking
     // starts. Claim: opus:B-vbstrt.addr (p.293); opus:C-vbstrt.c01 and sol:C-scan.c20
@@ -1727,7 +1826,10 @@ int main(int argc, char** argv) {
                 const bool here1 = (s == 1 && vidx == 0);
                 std::string bin = p5_bin(dir, ntsc, vidx == 1);
                 if (here1 && mut("P5MAIN")) bin = dir + "/prog_p5_pal_v1_novarvben.bin";
-                if (here1 && mut("P5A")) bin = dir + "/prog_p5_pal_v1_nobplen.bin";
+                if (here1 && mut("P5A")) bin = dir + "/prog_p5_pal_v1_latediw.bin";
+                if (here1 && mut("P5C_SKIP")) bin = dir + "/prog_p5_pal_v1_oneskip.bin";
+                if (here1 && mut("P5VALUE")) bin = dir + "/prog_p5_pal_v1_value.bin";
+                if (here1 && mut("P5CAL")) bin = dir + "/prog_p5_pal_v1_vshift.bin";
                 if (here1 && mut("P5C")) bin = dir + "/prog_p5_pal_v1_wrongstd.bin";
                 if (here1 && mut("P5FIX")) bin = dir + "/prog_p5_pal_v1_badstart.bin";
                 if (here1 && mut("P5MARK")) bin = dir + "/prog_p5_pal_v1_badmark.bin";
@@ -1820,7 +1922,7 @@ int main(int argc, char** argv) {
                 int idx_c2 = c2_pos.empty() ? -1 : (int)c2_pos.front();
                 bool p5a_ok = idx_c2 >= 9;
                 if (p5a_ok) for (int i = idx_c2 - 9; i < idx_c2; ++i) if (!lines[i].c1) p5a_ok = false;
-                c.expect(p5a_ok, "P5-a " + tag + (here1 && mut("P5A") ? " [contrast: DMACON without BPLEN]" : "") +
+                c.expect(p5a_ok, "P5-a " + tag + (here1 && mut("P5A") ? " [contrast: DIWSTRT opens the window at line N-2]" : "") +
                           ": beam lines N-10..N-2 each show C1");
 
                 // P5-b (anchor): the VPOSR/VHPOSR reads around each of VERTB detections 2-4 bracketing the
@@ -1860,6 +1962,7 @@ int main(int argc, char** argv) {
                     const bool main_ok = item1_ok && item2_ok;
                     c.expect(main_ok,
                         "P5-MAIN " + tag + (here1 && mut("P5MAIN") ? " [contrast: BEAMCON0 without VARVBEN]" : "") +
+                        (here1 && mut("P5VALUE") ? " [contrast: VBSTRT names line N+16]" : "") +
                         ": every beam line showing C2 is immediately preceded by a line showing C1 (not C2) and "
                         "immediately followed by a line showing none of C1/C2/C3; at least 3 such lines, one field apart");
                     agg5.add(true, main_ok);

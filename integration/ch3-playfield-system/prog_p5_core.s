@@ -6,7 +6,14 @@
 ;
 ; Flags: MUT_BAD_START (fixture contrast: another start word), MUT_BAD_MARKER (every marker
 ; stored with bit 8 set); NTSC_MODE (BEAMCON0 carries the NTSC value); N_V2 (VBSTRT/VBSTOP
-; use N=$B0 instead of $A0, and the poll threshold below follows). No page gives
+; use N=$B0 instead of $A0, and the poll threshold below follows).
+; MUT_NO_VARVBEN: BEAMCON0 without VARVBEN (P5-MAIN contrast). MUT_WRONGSTD: BEAMCON0 bit 5
+; opposite the configured standard (P5-c contrast). MUT_VALUE: VBSTRT/VBSTOP name the lines
+; $B0/$B8 while the Copper markers stay at N=$A0 (P5-MAIN value contrast). MUT_LATEDIW:
+; DIWSTRT opens the window at line N-2 (P5-a contrast). MUT_ONESKIP: the second marker
+; follows a VERTB detection that skips one field (P5-c marker-clause contrast). MUT_SHIFT:
+; after the last burst, one write to VHPOSW moves H sixteen counts on with V unchanged
+; (CAL-VIDEO contrast). No page gives
 ; the bit layout of VBSTRT and VBSTOP, so the line is written in the low bits and
 ; in the high byte alike: VBSTRT = N*$101, VBSTOP = (N+8)*$101.
 ;
@@ -24,8 +31,13 @@ VB_START        equ     $B0B0
 VB_STOP         equ     $B8B8
         else
 N_VAL           equ     $A0
+        ifd     MUT_VALUE
+VB_START        equ     $B0B0
+VB_STOP         equ     $B8B8
+        else
 VB_START        equ     $A0A0
 VB_STOP         equ     $A8A8
+        endc
         endc
 
         org     PROGRAM_ORG
@@ -45,7 +57,11 @@ start:
         move.w  #$0000,BPLCON1(a0)
         move.w  #$0000,BPLCON2(a0)
         move.w  #$1000,BPLCON0(a0)
+        ifd     MUT_LATEDIW
+        move.w  #$9E81,DIWSTRT(a0)     ; window opens at line N-2 (N=$A0)
+        else
         move.w  #$2C81,DIWSTRT(a0)
+        endc
         move.w  #$F0C1,DIWSTOP(a0)
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
@@ -78,11 +94,7 @@ start:
 
         move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
-        ifd     MUT_NOBPLEN
-        move.w  #$8280,DMACON(a0)      ; P5-a contrast: BPLEN not set
-        else
         move.w  #$8380,DMACON(a0)      ; SET/CLR, DMAEN, BPLEN, COPEN
-        endc
 
         lea     MEASURE_BASE,a1
         moveq   #0,d6                  ; iteration index 0..3
@@ -91,6 +103,15 @@ start:
         btst    #5,d0
         beq.s   .poll
         move.w  #$0020,INTREQ(a0)      ; clear VERTB
+        ifd     MUT_ONESKIP
+        cmp.w   #1,d6
+        bne.s   .noskip
+.poll2: move.w  INTREQR(a0),d0
+        btst    #5,d0
+        beq.s   .poll2
+        move.w  #$0020,INTREQ(a0)      ; the second marker skips one field
+.noskip:
+        endc
 
 .pollh: move.w  VHPOSR(a0),d1
         lsr.w   #8,d1                  ; d1 = V7-V0 (VHPOSR bits 15-8)
@@ -111,5 +132,16 @@ start:
         addq.w  #1,d6
         cmp.w   #4,d6
         bne.s   .iter
+        ifd     MUT_SHIFT
+.h:     move.w  VHPOSR(a0),d1          ; after the last burst, early in a line
+        move.w  d1,d2
+        and.w   #$00FF,d2
+        cmp.w   #$40,d2
+        bcs.s   .h
+        cmp.w   #$60,d2
+        bcc.s   .h
+        add.w   #$0010,d1              ; one write to VHPOSW (p.216): H sixteen counts on, V unchanged
+        move.w  d1,$2C(a0)
+        endc
 
         DONE
