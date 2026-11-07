@@ -1191,7 +1191,11 @@ the lists as assembled (T-k has none, so PT-9 is not graded there).
       clk_sys on both cores in every recorded field), so the interval between two restarts differs
       from that sum by nothing. It is an identity, not a measurement, and the run does not print it.
     Nothing is derived from the quantity under test and graded; the graded
-    value y_k is a difference of two Copper marks.
+    value y_k is a difference of two Copper marks. Measured in a probe build of the
+    test with the window at line 1 (DIWSTRT = $0181, a bitplane group on line 1 of every field), the first
+    basis, the span between the bitplane marks of line N_k - 1 and of line 1 of the next field less the
+    distance of the Copper marks of lines 0 and 1, equals y_k in 12 of 12 fields on T-0, on T-n and on the
+    private long-line RTL of section 7, on both cores.
 
 ---
 
@@ -1443,3 +1447,8 @@ not used). The submodule is not modified; each core builds in its own object dir
 (`obj_dir_longline_<core>/`) and writes its own output file (`out_longline_<core>.txt`), so the unmodified
 build and its output stay those `make test` uses. The patch is a test construction that gives NTSC lines of
 228 and 227 colour clocks, so that P3 and P3(pattern) have a design to pass on; it is not a proposed fix of the RTL.
+Measured (`make -k -B longline-test-fx68k` and `make -k -B longline-test-tg68k`, exit 0): the unchanged normal run
+prints 36 passed, 0 failed on both cores. P3 and P3(pattern) pass (the pattern fits at phase 3); of the 3,400 directly
+observed lengths 1,700 are 227 and 1,700 are 228 colour clocks, and the measured last lines y_k of the fields 0 to
+11 are 227, 227, 228, 228, 227, 227, 228, 228, 227, 227, 228, 228, none of the 12 transitions from a last line to
+line 0 keeps the length. The PAL run (T-b) is not part of the demonstration: p23 gives every PAL line as 227.
