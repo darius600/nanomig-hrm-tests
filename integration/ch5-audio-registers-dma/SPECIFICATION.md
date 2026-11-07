@@ -155,15 +155,56 @@ through the contrasting assertion's unchanged comparator. The preconditions are
 graded over every run of the proposition, the contrasting runs included.
 
 Each precondition is evaluated on one run by itself, and the precondition
-lines print before the lines they guard. A graded line depends on every
-precondition of the proposition on the run or runs it reads; when one of them
-is not met on that input, the line prints as `NOT GRADED` and names the unmet
-precondition, never as PASS or FAIL. A run's own intent is part of its
-precondition (the run with the bit clear is expected to show the bit clear),
-so a contrasting program put through the other half's comparator keeps its
-preconditions and goes red through that comparator. A precondition's own
-mutation replaces the main program, so every line that reads the main
-program prints NOT GRADED on it.
+lines print before the lines they guard. A graded line is made of instances:
+the runs it reads (OCS and ECS, the main and the contrasting run, the four
+combinations of P10, the two lists of P11) and, within a run of P1, the four
+channels. Each instance has the verdict of its own preconditions and
+comparator: when a precondition is not met on that instance it is `NOT
+GRADED` and names the unmet precondition; otherwise it is PASS or FAIL by the
+comparator. The line joins its instances: FAIL if any instance fails, PASS
+only if every instance passes, otherwise `NOT GRADED` naming the unmet
+preconditions. Before a joined line the run prints the verdict of every
+instance on a MEASURED line, so that a FAIL beside a `NOT GRADED` instance is
+shown. A run's own intent is part of its precondition (the run with the bit
+clear is expected to show the bit clear), so a contrasting program put through
+the other half's comparator keeps its preconditions and goes red through that
+comparator. A precondition's own mutation replaces the main program, so every
+instance that reads the main program is `NOT GRADED` on it.
+
+A precondition that needs another one to be met prints `NOT GRADED`, naming the
+unmet one, when that one is not met, and is red only for a reason of its own:
+P5-G3 needs P5-G2; P7-G3 needs P7-G2; P7-G(CPU-still-wanted-the-bus) needs
+P7-G2 and P7-G3; P8-G4 needs P8-G3; P10-G(list-ran) needs the Copper enable
+part of P10-G2; P11-G(list-ran) needs P11-G2. In each case a blit or a Copper
+run that the unmet precondition prevents is what the dependent one reads.
+
+**Contrasts for the join.** In each, one instance has an unmet precondition and
+another fails its comparator with every precondition met, and the joined line
+prints FAIL.
+- P1 (OCS and ECS, channels 0-3): channel 0's enabling write leaves DMAEN out
+  (its instance is `NOT GRADED`) and channel 1's location is A_1^H (its
+  instance fails): P1a and P1 FAIL, P1b `NOT GRADED`.
+- P2 (OCS, ECS): the OCS instance is the program that never finishes, the ECS
+  instance the program without one SET write: P2 FAIL.
+- P3 to P6 (the run with the bit set, the run with it clear): the run with the
+  bit set is the program that never finishes (the -ON instance is `NOT
+  GRADED`) and the main program is put through the comparator of the clear run
+  (the -OFF instance fails): the aggregate line FAIL, the -ON line `NOT GRADED`.
+- P7 (the D-only blit with BLTPRI set, with BLTPRI clear): the D-only main
+  run is the program that never finishes, and the BLTPRI-set program of the
+  blit of USE code E goes through the at-least-one comparator of the clear run:
+  P7 FAIL, P7-ON `NOT GRADED`.
+- P9 (the main program, the exchanged program): the main run is the program
+  that never finishes and the main program is put through the exchanged table:
+  P9 FAIL, P9-MAIN `NOT GRADED`.
+- P10 (the four combinations): the CDANG-clear combinations run the program
+  that never finishes, the CDANG-set combinations run the COLOR00 list through
+  the audio comparator: P10 FAIL.
+- P11 (OCS, ECS): the OCS instance is the program that never finishes, the ECS
+  instance the list without the pointer MOVEs through the main comparator:
+  P11 FAIL.
+- DMACONR (P2, P8, P9): P2 reads the program without one SET write and P8 the
+  program that never finishes: P2 FAIL, P8 `NOT GRADED`, DMACONR FAIL.
 
 ## 3. Propositions
 
@@ -520,6 +561,12 @@ access.
 - For G3 inside the footprint: one extra CPU write onto the first word of
   [Q, Q + `$200`) inside the window. That word is then written twice and G3
   goes red.
+- For G4: a delay count of 300, which keeps the blit's 256 writes inside the
+  window and leaves V(W) short of 1. Only G4 goes red; the delay count of 0 of
+  section 2.6 would end the window before the blit has written and turn G3 red
+  as well.
+- For G2: leave DMAEN out of the enabling write. No blit runs, so G3 (each
+  footprint word written exactly once) prints `NOT GRADED` naming P5-G2.
 - `DMACON = $8200` in step 3. Expected: no write in [Q, Q + `$200`), and no
   write anywhere outside the CPU areas. This run is graded in the normal run
   as P5-OFF.
@@ -711,8 +758,12 @@ as P7-ON-E for the blit of USE code E.
 - For the "BLTPRI matches" part of G2: put the BLTPRI-clear programs in place
   of the main programs. The stored value shows bit 10 clear where the run
   intends it set, the blit still runs and only G2 goes red.
+- For G2's DMAEN part (section 2.6): no blit runs, so P7-G3 and
+  P7-G(CPU-still-wanted-the-bus) print `NOT GRADED` naming P7-G2.
 - For the "blit ran" precondition: replace the BLTSIZE write by a write to
-  COLOR00 (`$180`). No blit starts and the precondition goes red.
+  COLOR00 (`$180`). No blit starts and the precondition goes red;
+  P7-G(CPU-still-wanted-the-bus), which needs a T_last, prints `NOT GRADED`
+  naming P7-G3.
 - For the "CPU still wanted the bus" precondition: the CPU's logging loop runs
   before the BLTSIZE write, and the CPU then waits for the blit to end
   without writing G. The blit completes, no log write follows T_last, the
@@ -809,13 +860,24 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
   finishes, because the poll stops at read 2, and G1 and the DMACONR
   precondition still hold. The main run's own G3 and G4 are preconditions of
   P8-NOBLIT, since the indices come from it.
-- For (b): unfalsifiable at this boundary. No stimulus at the ports makes
-  the blitter busy flag read wrong while the blit runs: a program that still
-  makes the DMACONR read of the graded index with the blit running and every
-  precondition live reads bit 14 = 1, because p.186 sets the flag whenever a
-  blit is in progress, and no input changes that. P8-NOBLIT runs the same
-  comparator on reads where no blit runs and is the same-comparator control.
+- For (a): a blit of 128 words to `$76000` (outside Q, BLTSIZE `$0080`)
+  is started before the idle reads and has ended before the main blit starts.
+  The four idle reads are then made while a blit is in progress and show
+  bit 14 = 1 (p.186), where (a) expects 0. Every precondition holds and (b)
+  and (c) hold. This is the stimulus of the "no blit is in progress" half of
+  the proposition.
+- For (b): BLTSIZE `$1020` (64 rows of 32 words) in place of `$2020`. The blit
+  ends earlier, and the reads at the indices the main run grades that this run
+  holds past its end show bit 14 = 0, where (b) expects 1. Every precondition
+  holds, (a) and (c) hold. The indices are the main run's, as in P8-NOBLIT.
+- For (c): a second blit (BLTSIZE `$0820`, 32 rows of 32 words) is started
+  after the poll has stopped and before the 8 extra reads. They show
+  bit 14 = 1 where (c) expects 0. Every precondition holds, (a) and (b) hold.
+- P8-NOBLIT puts the reads of a program without a blit through the inverse of
+  the comparator of (b): bit 14 = 0 at the indices the main run grades.
 - For the "the blit ran" precondition: the program without a blit, as above.
+  P8-G4 needs it: with no blit there is no T_last, so P8-G4 prints `NOT
+  GRADED` naming P8-G3.
 - For the "at least 2 reads inside the blit" precondition: delay the first poll
   read until the blit has ended, with a delay loop between the BLTSIZE write
   and the poll. No read i ≥ 2 falls before T_last, and the precondition goes
@@ -914,9 +976,10 @@ looked at the first or the last word alone would read 1 in some of them.
   change of the source blocks' content alone. Blits 6 to 9 then have a zero
   output, the flag reads 1 where the table expects 0, every precondition
   holds, and P9-MAIN goes red.
-- For the "after completion" precondition: drop the wait before Z_1. Z_1's
-  store may then fall before the blit's last write, and the precondition goes
-  red.
+- For the "after completion" precondition: move the wait behind Z_1, so that
+  Z_1 is read straight after the dummy read and the wait follows it. Z_1's
+  store may then fall before the blit's last write, and only this precondition
+  goes red; the next blit still starts after the first has ended.
 - For the "16 writes" preconditions: blit 1 has BLTSIZE `$0103` (height 4,
   width 3: 12 words). It makes 12 writes of `$0000` and the precondition goes
   red; its logic output is still zero, so the expected bit 13 of Z_1 does not
@@ -949,15 +1012,15 @@ DMACON (P2), the blitter-busy bit (P8) and the blitter-zero bit (P9). p.278:
 controls all of the DMA channels and contains blitter DMA status bits."
 p.289: "DMACONR *002 R A P DMA control (and blitter status) read".
 
-**Expected.** The graded lines P2, P8 and P9 all hold. The aggregate line
-prints a verdict only when every precondition of those three lines holds on
-its inputs; otherwise it is `NOT GRADED` and names the unmet precondition.
+**Expected.** The graded lines P2, P8 and P9 all hold. The aggregate line is
+FAIL if any of the three fails, PASS only if all three pass, and otherwise
+`NOT GRADED`, naming the preconditions that are unmet.
 
 **Contrasting cases.** Each component has its own: the program without one
 SET write through the table of P2, and the exchanged program through the
 table of P9, turn the aggregate red through their component. The busy-bit
-half (P8) has no stimulus red, for the reason given at P8: it is unfalsifiable
-at this boundary.
+half (P8) has the three stimuli given at P8; the program with BLTSIZE `$1020`
+turns the aggregate red through it.
 
 ### P10: The Copper writes AUDxLCH and AUDxLCL whatever the danger bit, under OCS and ECS
 
@@ -1023,7 +1086,8 @@ of the contrasting case.
   and x), from the five stored readbacks.
 - G4: V ≥ 2 in [`K_O`, `K_C`] and in each W_x, and at least one
   vertical-sync pulse start between `C_x` and `O_(x+1)` for x = 0..2 (the gap
-  of P1 step 4).
+  of P1 step 4; p.145: "If the channel is disabled for a very short time (less
+  than two sampling periods) it may stay on").
 - The Copper ran the list: every word of [L, L + `$24`) was read at least
   once inside [`K_O`, `K_C`], the final WAIT at L + `$20` included. It comes
   after all eight MOVEs.
@@ -1035,7 +1099,8 @@ of the contrasting case.
 - For G1: a branch-to-self before `END`.
 - For G2: leave DMAEN out of the Copper enable; and, separately, clear DMAEN
   with the Copper-off write and leave it out of channel 0's enabling write. The
-  stored readbacks lack bit 9.
+  stored readbacks lack bit 9. Without DMAEN the Copper does not run, so
+  P10-G(list-ran) prints `NOT GRADED` naming P10-G2 for the first of the two.
 - For G3: one extra CPU write into B_0 inside W_0; separately, one extra CPU
   write into B_0 inside W_1; and, separately, one extra CPU write into the last
   word of L inside [`K_O`, `K_C`].
@@ -1145,7 +1210,8 @@ the real list and with both lists of the contrasting cases.
   no write in the Q2 range and none in the Q3 range. This is graded in the
   normal run as P11-NOHI.
 - For G1: a branch-to-self before `END`.
-- For G2: leave DMAEN out of the enabling write.
+- For G2: leave DMAEN out of the enabling write. The Copper does not run, so
+  P11-G(list-ran) prints `NOT GRADED` naming P11-G2.
 - For G3: one extra CPU write into L, past its own content, inside the window;
   separately, one extra CPU write of `$1234` into Q2 inside the window; and,
   separately, one extra CPU write of `$FFFF` into Q2 inside the window, the
