@@ -55,12 +55,22 @@ mode. The level-3 autovector is used at $6C, which assumes the vector base is
 at its reset value of 0.
 `DIWHIGH` is never written, in any run, and `BEAMCON0` is never written in the
 normal runs (Program I, I-0, and Program T, T-0) or in any variant except T-l,
-T-m and T-n (section 4.4), which write `BEAMCON0 = $0080` (VARBEAMEN) and
-`HTOTAL` to change a line length, and are the only runs of the package that
-leave this regime. p305 says of `BEAMCON0` "Do not write to this register"
-(the warning is addressed to programs that change the scan rate of a monitor,
+T-m and the T-n family (T-n, T-q, T-r, T-s, T-t; section 4.4), which write
+`BEAMCON0 = $0080` (VARBEAMEN) and `HTOTAL` to change a line length, and are the only
+runs of the package that leave this regime. p305 says of `BEAMCON0` "Do not write to this
+register" (the warning is addressed to programs that change the scan rate of a monitor,
 section 4.5, PT-5), and p306 says that if `DIWHIGH` "is not written, the old
 scheme for DIWSTRT and DIWSTOP described above holds".
+
+`VTOTAL` is never written, in any run. p304 (read on the scan) says of it: "VTOTAL contains the line
+number at which to reset the vertical position counter. This value represents the number of lines in a
+field(+1). The exception is if the INTERLACE bit is set (BPLCON0). In this case this value represents
+the number of lines in the long field (+2) and the number of lines in the short field (+1)." The page
+does not say whether these offsets are added to the number of lines or taken from it, so it gives no
+value for the 262 and 263 lines of an interlaced NTSC field, and p298 lists the register without one. The
+records T-l, T-m and the T-n family therefore rest on the value `VTOTAL` has after reset, which the
+design chooses; the number of lines it produces is printed by the gate PT-6 on every run
+(N_0 ... N_12 = 263, 262, ...), and it is not a page value.
 
 ### 2.2 Registers
 
@@ -183,13 +193,28 @@ order:
   record writes that open and close it, holds exactly one restart;
 - the restart intervals the M1 fields are matched to (the rule above) follow
   each other by exactly one, field after field;
-- before each of those K restarts, the Copper's last read of a list word up
-  to the lists' terminal `$FFFF,$FFFE` waits is a read of a terminal wait (the
-  stretch the definition above requires; in Program I a restart of one list
-  follows the other list's wait). The terminal waits are found in the lists as
-  the program assembled them. A read of the word after a terminal wait is not
+- before each of those K restarts, the Copper has run through the list as far
+  as the field lets it, which is the stretch the definition above requires. In
+  Program I the lists end in a terminal `$FFFF,$FFFE` wait that the Copper
+  reaches long before the field ends: the Copper's last read of a list word up
+  to the lists' terminal waits is a read of a terminal wait (a restart of one
+  list follows the other list's wait). The terminal waits are found in the lists
+  as the program assembled them. A read of the word after a terminal wait is not
   a list fetch for this clause; measured on both cores, the Copper makes one
-  such read 2 colour clocks before every restart (section 7).
+  such read 2 colour clocks before every restart (section 7). In Program T the
+  Copper has marks up to the last line of the field (section 2.7) and is busy
+  up to the restart, which comes right behind the mark of the last line, so
+  that neither the terminal wait nor the WAIT for the line after the last one is
+  read in any field (section 7). The clause there is: the Copper's last read of a word of the list
+  it ran, before each of those restarts, is a read at or beyond the last word of
+  the instruction in front of the first WAIT of that list that waits for a line
+  the field does not have (line >= N_k, from the lines the list's WAITs name, in
+  the order of the list), or in front of the terminal wait if there is none; the
+  field's lines are known from M1 (PT-1). The lists of T-0 hold a mark for every line
+  up to 312, so the first WAIT for a line the field does not have is the WAIT for line
+  N_k, and the word the clause asks for is the second word of the mark of line N_k - 1. The list of Program T
+  leaves the Copper no idle stretch in front of its terminal wait, which is why the clause
+  differs there; its contrast is the same (T-k).
 
 The third clause has a page-predicted contrast. p25 says that "no matter what
 the Copper is doing" it is forced to restart when vertical blanking ends, and
@@ -198,9 +223,9 @@ and then holds more MOVEs than fit between line 255 and the end of the next
 field's vertical blanking at its latest (line 29 PAL, line 21 NTSC, p79) is
 therefore restarted in the middle of the list under either reading of p25
 (section 6, item 3), and the last list word the Copper read
-before the restart is a MOVE word, not a terminal wait (I-v for Program I,
-T-k for Program T; sections 3.5 and 4.4). The first two clauses hold there and
-the third fails.
+before the restart is a MOVE word in the middle of the run, not the word the
+clause asks for (I-v for Program I, T-k for Program T; sections 3.5 and 4.4). The
+first two clauses hold there and the third fails.
 
 Pages disagree on whether the restart is at the start or the end of vertical
 blanking (section 6); one restart per M1 field holds under either reading.
@@ -212,54 +237,67 @@ kinds of mark:
 
 - **Copper mark** m_c(k, v): the port time of the fetch of the first word of
   the `MOVE COLOR00` that directly follows `WAIT (v, $E0)` in field k, for
-  v = 0 ... 254.
+  v = 0 ... 262. p24: "WAIT for position (0,255)" and then "WAIT for any horizontal
+  position with vertical position 0 through 5, covering the last 6 lines of the scan
+  before vertical blanking occurs", "Thus the total of 256 + 6 = 262 lines of video
+  beam travel during which Copper instructions can be executed". The list of Program
+  T follows that recipe behind line 254: `WAIT (255,$E0)` and its mark, then three more
+  MOVEs that carry the Copper past the end of line 255 (the second WAIT would
+  otherwise end at once, section 6, item 9), then `WAIT (v - 256,$E0)` and a mark for
+  each of the lines 256 ... 262. A field of 262 lines has no line 262.
 - **Bitplane mark** m_b(k, v): the port time of the first bitplane fetch on
   line v of field k. The bitplane fetches of a field come in groups of 20
   words, one group per line. The i-th group (counting from 0) belongs to line
-  1 + i: the display window of Program T opens at line 1 (VSTART = 1, section
+  44 + i: the display window of Program T opens at line 44 (VSTART = $2C, section
   4.3) and stays open to the last line, so the last line N_k - 1 of every
-  field has a group, and line 1 of the next field has one as well.
+  field has a group.
 
-Δ = m_c(k, v) - m_b(k, v) on the lines 44 ... 254 (PT-3) and on the lines 1 ... 43
-(PT-9), where both kinds of mark exist. The length of line v of field k, observed directly, is:
+Δ = m_c(k, v) - m_b(k, v) on the lines 44 ... 254 (PT-3) and on the lines 255 ...
+N_k - 1 (PT-9), where both kinds of mark exist. The length of line v of field k,
+observed directly, is:
 
 - v = 0 ... 253: the time from the Copper mark of line v to the next Copper
   mark the list produces. With the full list, that is m_c(k, v+1) - m_c(k, v);
-- v = 254 ... N_k - 2: m_b(k, v+1) - m_b(k, v).
+- v = 254 ... N_k - 2: m_b(k, v+1) - m_b(k, v). The Copper marks of those lines give
+  the same lengths, m_c(k, v+1) - m_c(k, v); the run prints how many of them are equal
+  to the bitplane lengths (MEASURED, not graded: a second source of the same
+  lengths).
 
 - v = N_k - 1 (the last line, fields 0 ... K-2, the field after it being recorded):
-  x_k = (m_b(k+1, 1) - m_b(k, N_k - 1)) - (m_c(k+1, 1) - m_c(k+1, 0)).
+  y_k = m_c(k+1, 0) - m_c(k, N_k - 1).
 
-Why x_k is the length of the last line. The two bitplane marks stand at the
-same offset in their lines (both are the start of a data fetch group,
-DDFSTRT, p60). The span between them therefore holds the last line of field
-k from its mark to its end, line 0 of field k+1 whole, and line 1 of field
-k+1 up to its mark, the same part of a line that the last line's own mark
-leaves before it: the span is x_k plus the length of line 0 of field k+1. Line 0
-of field k+1 is measured between the Copper marks of lines 0 and 1, the formula
-that measures lines 0 ... 253. x_k is the difference of the two. Only marks
-of one kind are subtracted from each other: Δ, the offset between the two kinds,
-is not used, so nothing carries a value measured on lines 44 ... 254 to a line
-where it is not shown to hold. What the measurement does assume is what every
-other length here assumes: a mark of one kind stands at the same offset in
-every line. For the bitplane mark of line 1 and for the Copper marks of lines 0
-and 1 this is not read from lines 44 ... 254 either: PT-9 shows that the Copper mark and
-the bitplane mark of every line 1 ... 43 are Δ apart, and PT-4 that the marks of
-lines 0 and 1 lie 227 or 228 colour clocks apart.
+Why y_k is the length of the last line. Both marks are Copper marks of the same
+kind, taken at H = $E0 of their lines: the mark of line N_k - 1 of field k, and the
+mark of line 0 of field k+1. Everything between them is the last line from H = $E0 to
+its end and line 0 of field k+1 up to H = $E0, which is the length of the last line, whatever the
+length of line 0 is. Only marks of one kind are subtracted from each other: Δ, the offset
+between the two kinds, is not used. What the measurement assumes is what every other length
+here assumes: a mark of one kind stands at the same offset in every line. For the Copper mark of
+the last line this is shown by PT-9 (its offset to the bitplane mark of the same line is Δ, the value
+PT-3 finds on the lines 44 ... 254), for the marks of lines 0 and 1 by PT-4 (they lie 227 or 228
+colour clocks apart).
+
+Section 6, item 12 gives the other bases that were weighed for the last line and why they are not used.
 
 The last recorded field (k = K-1) has no field after it: its lines 0 ... N_k - 2
 are in the sequence, its last line is not.
 
 The **sequence** of field k is the list of its line lengths in order, lines 0 ...
-N_k - 2 and, for k < K-1, x_k (the last line). P3 reads the sequences of all
-fields and the transition from x_k to the first length of the sequence of field
+N_k - 2 and, for k < K-1, y_k (the last line). P3 reads the sequences of all
+fields and the transition from y_k to the first length of the sequence of field
 k+1.
 
 The Copper marks are anchored on the WAIT comparison (p22: "The WAIT
 instruction causes the Copper to wait until the video beam counters are equal
 to (or greater than) the coordinates specified in the instruction"). The
 bitplane marks are anchored on the data-fetch start (p60). The anchor checks
-are PT-3 and PT-4 in section 4.
+are PT-3, PT-4 and PT-9 in section 4.
+
+The test reads the Copper list as the program assembled it (stimulus data in chip memory, not a
+fetch), instruction by instruction up to the terminal wait, and takes for the mark of line v the
+instruction behind the last WAIT of line v in the list; a WAIT whose vertical position is lower than
+the one before it is 256 lines further on (p23: "line 256 will appear as a zero in the comparison").
+No address is computed from the position of a pair in the list.
 
 ---
 
@@ -461,7 +499,7 @@ This program serves P2 and P3.
 
 ### 4.1 Data
 
-- **PLANE**: 13,000 bytes of $0000 (a window from line 1 to the last line of a 313-line PAL field is 312 groups of 40 bytes, 12,480 bytes).
+- **PLANE**: 13,000 bytes of $0000 (a window from line 44 to the last line of a 313-line PAL field is 269 groups of 40 bytes, 10,760 bytes).
 - **LISTT**: the Copper list of section 4.2.
 - The M1 record area.
 - **FIXMARK**: a word the program writes once, `$BEEF`, before M1 starts: the
@@ -477,14 +515,29 @@ MOVE BPL1PTL, lo(PLANE)
 WAIT (1, $E0)          ; $01E1,$FFFE
 MOVE COLOR00, bg       ; mark, line 1
 ... one WAIT (v, $E0) + MOVE COLOR00, bg for every v up to 254 ...
+WAIT (255, $E0)        ; $FFE1,$FFFE
+MOVE COLOR00, bg       ; mark, line 255
+MOVE COLOR00, bg       ; three MOVEs that carry the Copper past the end of line 255
+MOVE COLOR00, bg
+MOVE COLOR00, bg
+WAIT (0, $E0)          ; $00E1,$FFFE: line 256, the vertical comparison sees 0
+MOVE COLOR00, bg       ; mark, line 256
+... one WAIT (v - 256, $E0) + MOVE COLOR00, bg for each of the lines 257 ... 312 ...
 WAIT $FFFF,$FFFE
 ```
 
 `bg` is the value already in COLOR00, so the marks leave the picture
 unchanged. The horizontal position $E0 lies after the line's bitplane fetches
-(DDFSTOP $D0) and before the end of the shortest line ($E2, p23). The marks
-stop at line 254, because a Copper WAIT compares only V7-V0 (p24: "the
-comparison works on the least significant bits of the vertical count").
+(DDFSTOP $D0) and before the end of the shortest line ($E2, p23). A Copper WAIT compares
+only V7-V0 (p24: "the comparison works on the least significant bits of the vertical
+count"), and the list follows the recipe of p24 behind line 254: "WAIT for position
+(0,255)", then a WAIT for vertical position 0 through 5, "Thus the total of 256 + 6 = 262
+lines of video beam travel during which Copper instructions can be executed". The three
+MOVEs behind the mark of line 255 are what keeps the next WAIT from ending at once (section 6,
+item 9). The marks run to line 312 so that the PAL run (T-b), whose fields have 312 or 313 lines, has a mark on
+every line as well; an NTSC field of 262 lines has no line 262. The restart comes right behind the mark of the
+last line of the field (the mark of line 261 in a 262-line field, of line 262 in a 263-line field), so the WAIT
+for the next line is not read (section 7).
 
 ### 4.3 CPU sequence
 
@@ -494,20 +547,22 @@ comparison works on the least significant bits of the vertical count").
    - `BPLCON0 = $1204`, `BPLCON1 = 0`, `BPLCON2 = 0`;
    - `BPL1MOD = BPL2MOD = 0`;
    - `DDFSTRT = $0038`, `DDFSTOP = $00D0`;
-   - `DIWSTRT = $0181`: VSTART = 1, so the window opens at line 1 and a data
-     fetch group lies on every line from line 1 to the last line of the field,
-     including line 1 of the field after it. p59 (Table 3-9) gives $00 to $FF as the
-     possible values of VSTART. p219 says of the end of vertical blanking only
-     that after the minimum blanking range "you can control where the display
-     begins": the page does not say whether a display window that opens inside
-     the minimum blanking is fetched. Program T reads only the fetches. A design
-     that does not fetch there leaves PT-2 red (the groups are not N_k - 1), and
-     PT-9 and P3 are not graded;
+   - `DIWSTRT = $2C81`: VSTART = $2C = 44, so the window opens at line 44 and a data
+     fetch group lies on every line from line 44 to the last line of the field.
+     p79: "No data can be displayed in the vertical blanking area", with Vertical Blank
+     Stop $15 (21) for NTSC and $1D (29) for PAL (Table 3-13); p219 gives the minimum
+     vertical blanking as 20 lines for NTSC and 25 for PAL, and says that after that
+     minimum range "you can control where the display actually starts by using the
+     DIWSTRT (display window start) register to extend the effective vertical blanking
+     time". p59 (Table 3-9) gives $00 to $FF as the possible values of VSTART. Line 44
+     lies after the vertical blank stop of both standards, so the window does not ask
+     for a fetch inside the vertical blanking;
    - `DIWSTOP = $39C1`. VSTOP is `$39` with its most significant bit forced
      to the complement of the next one, which gives `$139` = line 313. p59:
      "forcing the MSB of the stop position to be the complement of the next
      MSB". Line 313 lies beyond the last line of every NTSC and PAL field, so
-     the window stays open to the last line of each field.
+     the window stays open to the last line of each field, and a data fetch group lies
+     on each of them.
 4. Write COP1LC = LISTT, then write COPJMP1 (p30).
 5. Write `DMACON = $8380`: SET, DMAEN, BPLEN, COPEN.
 6. Leave interrupts disabled.
@@ -527,10 +582,16 @@ comparison works on the least significant bits of the vertical count").
 | T-h | `DMACON = $8300` (COPEN not set) |
 | T-i | FIXMARK stores `$DEAD`, not `$BEEF` |
 | T-j | LISTT ends in `$0000,$0000` (as in I-s) in front of the `$FFFF,$FFFE` that stays in the list |
-| T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 1,800 `MOVE COLOR00, bg` (four memory cycle times each, p20: 7,200 colour clocks, more than the 30 lines (at most 6,840 colour clocks) from line 255 of a 263-line field through line 21 of the next; LISTT is relocated to `$0A0000`, clear of PLANE, with the code of M1 behind it) |
-| T-m | As T-l (`BEAMCON0 = $0080`, `HTOTAL = $E2` from the CPU), but `listt_alt_body.i` replaces the list: every line v from 0 to 254 holds `WAIT (v,$40)`, `MOVE HTOTAL` (`$E3` for even v, `$E2` for odd v), then `WAIT (v,$E0)` and `MOVE COLOR00, bg` (the mark), so every write is early in its line and every mark is live. The Copper cannot reach the lines above 254 (section 6, item 9), so the last write stays in force there, and the list restarts at the same phase in every field. Contrast of P3 (section 5, P3): the lines 0 ... 254 alternate between 228 and 227 colour clocks, the lines above 254 and the field boundaries do not |
-| T-n | As T-l (`BEAMCON0 = $0080`, `HTOTAL = $E2` from the CPU) with the normal list and no HTOTAL write in it, but the CPU's sampling loop (`m1.i`, `M1_HTCPU`) writes `HTOTAL = $E3` or `$E2` in every new line it sees (the loop sees a new line when the V of an accepted sample differs from the one before), alternating from one line to the next. The loop runs through every line of every field, so the alternation continues in the lines above 254 and across the field boundaries, whatever the length of the field. Contrast of P3 and P3(pattern) (section 5): the measured sequences alternate between 228 and 227 colour clocks without a repeat |
+| T-k | LISTT, in front of its terminal `$FFFF,$FFFE`, waits for line 255 (`WAIT $FF01,$FFFE`) and then holds 1,800 `MOVE COLOR00, bg` (four memory cycle times each, p20: 7,200 colour clocks, more than the 30 lines (at most 6,840 colour clocks) from line 255 of a 263-line field through line 21 of the next; LISTT is relocated to `$0A0000`, clear of PLANE, with the code of M1 behind it). It has no Copper marks of the lines 255 and above (`listt_high.i` is left out), so PT-9 is not graded there |
+| T-m | As T-l's setup (`BEAMCON0 = $0080`, `HTOTAL = $E2` from the CPU), but `listt_alt_body.i` replaces the list: every line v from 0 to 254 holds `WAIT (v,$40)`, `MOVE HTOTAL` (`$E3` for even v, `$E2` for odd v), then `WAIT (v,$E0)` and `MOVE COLOR00, bg` (the mark), so every write is early in its line and every mark is live; the marks of the lines 255 ... 262 follow as in T-0 and carry no HTOTAL write. This list writes HTOTAL on the lines 0 ... 254 only, by construction, so the last write stays in force above line 254, and the list restarts at the same phase in every field. Contrast of P3 (section 5, P3): the lines 0 ... 254 alternate between 228 and 227 colour clocks, the lines above 254 and the field boundaries do not |
+| T-n | As T-l's setup (`BEAMCON0 = $0080`, `HTOTAL = $E2` from the CPU), then two Copper lists, one at LISTT and one at `$0A0000` (`listt_chain.i`), that alone write `HTOTAL` in every line 0 ... 262: `WAIT (v,$40)` and `MOVE HTOTAL`, `$E3` or `$E2` alternating from line to line, then `WAIT (v,$E0)` and the mark, as in `listt_alt_body.i` and with the lines 255 ... 262 as in `listt_high.i`. The lists carry the phase from one field into the next through COP1LC, which the Copper writes itself: at the start of a list it sets COP1LC to the list it restarts with when the field has no line 262 (the same list: a 262-line field ends on the other length than it began with, so the next field begins with the same phase), and in line 262, after `WAIT (6,$40)`, to the other list (a 263-line field ends on the length it began with, so the next field begins with the other phase). The CPU writes nothing after its setup; there is no HTOTAL write in any list at the lines 100 and 101. The alternation continues in the lines above 254 and across the field boundaries, whatever the length of the field. Contrast of P3 and P3(pattern) (section 5): the measured sequences alternate between 228 and 227 colour clocks without a repeat |
 | T-l | The CPU writes `BEAMCON0 = $0080` (VARBEAMEN; bit 5 clear, as in NTSC) and `HTOTAL = $E2` (the count the default line has) before the Copper starts; the `MOVE COLOR00, bg` of line 100 is `MOVE HTOTAL, $E8` and that of line 101 is `MOVE HTOTAL, $E2`, at the same list addresses, so every WAIT stays at `(v, $E0)` and every mark is still read. It changes an actual line length (a contrast of PT-5, section 4.5) |
+| T-o | The WAIT of line 256 uses `(0,$40)`, not `(0,$E0)`; every mark stays in the list. Contrast of PT-9: the Copper mark of line 256 stands early in its line, and Δ on line 256 differs from the Δ of lines 44 ... 254 |
+| T-p | `DIWSTRT = $2D81`: the display window starts one line late (line 45). Contrast of the start clause of PT-2: the groups of every field are N_k - 45 |
+| T-q | As T-n, but no list writes COP1LC: the Copper restarts the same list in every field, so the phase restarts at line 0 in every field while the lines still alternate inside every field, the lines above 254 and the last lines included. Stimulus record for the boundary clause of P3 (selector `P3(boundary)`) |
+| T-r | As T-n, but line 262 writes `HTOTAL = $E8` (233 colour clocks): the last line of a 263-line field is neither 227 nor 228 colour clocks long. Stimulus record for the range clause of P3 on the last lines (selector `P3(range)`) |
+| T-s | As T-n, but the lines 51 ... 60 write the value of the line before them: line 51 repeats the length of line 50 and, with the parity of the lines shifted, line 61 repeats the length of line 60 and the parity is back. Stimulus record that separates P3 from P3(pattern) (selector `P3(interior)`) |
+| T-t | As T-n, but a chain of ten states of lists (`listt_chain_slip.i`: ten states of two lists, one list per phase) instead of two, one state of which restarts with the phase of the length it ended on (it chooses the list the other way round). The nine other transitions of the chain are those of T-n and the chain ends in T-n's two lists, so one boundary of the run does not alternate. Stimulus record for the single-phase clause of P3(pattern) (selector `P3(slip)`) |
 
 ### 4.5 Preconditions of Program T
 
@@ -538,20 +599,21 @@ As in section 3.6, a precondition is graded only where the run has what it
 reads, and prints NOT GRADED otherwise. PT-2, PT-3, PT-5 and PT-7 and the gate
 PT-6 and PT-8 read the field lengths N_k and need PT-1; PT-2 also needs every M1 field to
 be matched to a restart; PT-3 needs PT-2 (the bitplane marks it reads are
-there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
+there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3 and a WAIT (255,$E0) in
+the lists as assembled (T-k has none, so PT-9 is not graded there).
 
 | Id | Precondition | Fails in |
 |---|---|---|
 | FIX-T | The program writes `$BEEF` to FIXMARK before M1 starts, and the harness reads `$BEEF` back after the run: the fixture can deliver a known value. | T-i (`$DEAD`) |
 | PT-1 | The completion word was written, and all K M1 records are valid. | T-f |
-| PT-2 | In every field, the bitplane fetches are exactly N_k - 1 groups, each of 20 consecutive ascending word addresses, with no fetch left over (the number of fetches is 20 x (N_k - 1)). This shows that the bitplane marks run from line 1 to the last line, and it confirms N_k independently of the CPU. | T-e |
+| PT-2 | In every field, the bitplane fetches are exactly N_k - 44 groups, each of 20 consecutive ascending word addresses, with no fetch left over (the number of fetches is 20 x (N_k - 44)). This shows that the bitplane marks run from line 44 to the last line, and it confirms N_k independently of the CPU. The count of N_k - 44 groups is the one value that the start of the window (line 44) and its stop (the last line N_k - 1) give together, and each of them has a contrast: T-p, whose window starts one line late (N_k - 45 groups), and T-e, whose window ends early (the groups stop at line 243). The comparator counts; it does not say which end of the window moved, and the run prints the group counts per field. The clauses "20 consecutive ascending words" and "no fetch left over" have no contrast: the DMA fetches the 20 words of a line as one group, so a partial or a non-consecutive group needs a fetch cut inside a line or an address step inside the group, which Program T's one plane at BPL1MOD = 0 does not show, and a cut made by the Copper inside a line changes the count as well, so it would not isolate the clause. | T-e (window ends early), T-p (window starts one line late) |
 | PT-3 | Δ has one single value on every line 44 ... 254 of every field. | T-d |
-| PT-9 | Δ has the same value (the one PT-3 found) on every line 1 ... 43 of every field, where a Copper mark and a bitplane mark lie on the same line. The last-line length of section 2.7 reads the bitplane mark of line 1, a line PT-3 does not read; this shows that the two kinds of mark stand at the same offset there as on lines 44 ... 254. Graded only where PT-3 holds. | T-g (line 10's Copper mark moves to H=$40, Δ on line 10 differs) |
+| PT-9 | In every field, the Copper mark of every line 255 ... N_k - 1 is there, and Δ has the same value (the one PT-3 found) on each of those lines, where a Copper mark and a bitplane mark lie on the same line. The last-line length of section 2.7 reads the Copper mark of line N_k - 1, a line PT-3 does not read; this shows that the mark stands on its line, at the same offset from the bitplane mark as on lines 44 ... 254, and that the marks the sequence uses above line 254 are present in every field. Graded only where PT-3 holds and the lists hold a WAIT (255,$E0). | T-o (line 256's Copper mark moves to H=$40, Δ on line 256 differs) |
 | PT-4 (gate of PT-5 and P3) | In every field, m_c(k, 1) - m_c(k, 0) is 227 or 228 colour clocks: the marks of line 0 and line 1 lie on consecutive lines, so the Copper mark of line 0 is anchored on line 0. p25 leaves open whether the restart lies at the start or at the end of vertical blanking, and a restart at the end of blanking satisfies the WAIT (0, $E0) at once, so PT-4 is printed as a gate state and is not graded. When it is closed, PT-5 and P3 are not graded. | T-c |
 | PT-5 | Every directly observed line length of section 2.7 (lines 0 ... N_k - 2 of every field) is 227 or 228 colour clocks, the two values p23 gives. Graded only when PT-3 and PT-4 hold: PT-3 shows that the Copper marks lie at one fixed horizontal offset from the bitplane marks on lines 44 ... 254, so that the differences of the two kinds of mark are lengths of the same lines, and PT-4 anchors the Copper mark of line 0. A program can change a physical line length: p305 lists BEAMCON0 bit 7 as "VARBEAMEN Variable beam counter comparator enable", and p298 lists HTOTAL as "Highest number count, horiz line (VARBEAMEN=1)" (p304: "The value in this register represents the number of 280ns increments on the horizontal line."). The warning on p305 "Other modes, such as VGA (31 KHz programmable mode) disable the hard stops on display sync and blank. Do not write to this register." is addressed to programs that change the scan rate of a monitor; the register is in the table and its write changes the count. T-l writes VARBEAMEN and HTOTAL and changes the length of a line with every mark live. T-g, which moves a measuring mark, is a gating observation of the marks, not a contrast of PT-5. | T-l |
 | PT-6 (gate of P3) | The selected standard is NTSC or PAL as the harness was configured, and consecutive field lengths alternate between the two values p24 gives for that standard: 262 and 263 in NTSC, 312 and 313 in PAL (every N_k is one of the two, and no two consecutive N_k are equal). p34 reads the NTSC fields as all 262 lines, so an implementation that follows p34 closes the gate; PT-6 is printed as a gate state with the standard it checked and is not graded, and P3 is reported as not graded, gate closed. | T-a |
 | PT-8 (for P2) | Interlace is active: no two consecutive recorded field lengths are equal. p24: "there are also long and short fields (interlace only)"; with interlace off there are no long and short fields, so consecutive fields have one length. Graded; where it fails, P2 is not graded. | T-a (LACE clear: all 13 fields have one length) |
-| PT-7 | Anchor check of section 2.6, with LISTT: one restart per M1 field, in order, each the first-word fetch of LISTT, preceded, among the list's words up to the terminal wait, by the fetch of the terminal `$FFFF,$FFFE` wait. | T-h (no restart); T-k (the third clause, page-predicted: the Copper is restarted in the middle of the list); T-j is a self-test of the third clause on this design only, not page-predicted (section 7) |
+| PT-7 | Anchor check of section 2.6, with LISTT (the lists of T-n and its records: one of two or more lists): one restart per M1 field, in order, each the first-word fetch of a list, preceded, among the words of the list the Copper ran, by a read at or beyond the last word of the instruction in front of the first WAIT of that list that waits for a line the field does not have (line >= N_k), or in front of the terminal wait if there is none: the Copper ran through the list as far as the field's lines let it. | T-h (no restart); T-k (the third clause, page-predicted: the Copper is restarted in the middle of the list); T-j is a self-test of the third clause on this design only, not page-predicted (section 7) |
 
 ---
 
@@ -672,8 +734,9 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
 
    Claims: none. Pages 23 and 24.
 
-   The gate (PT-6) rests on `COP2-vertical-beam-position.c13` and `.c14`.
-   It exists because p34 denies NTSC fields of 263 lines (see P2). Every page
+   The gate (PT-6) rests on `COP2-vertical-beam-position.c14` ("the next field length
+   ... is 263"; `.c13` is declined, section 1, because no recorded field is tied to the
+   first of the alternation). It exists because p34 denies NTSC fields of 263 lines (see P2). Every page
    is consistent with "if the fields alternate between 262 and 263 lines,
    their lines alternate between 228 and 227 colour clocks": p34 denies the
    premise and says nothing against the consequence. The alternation is
@@ -685,18 +748,19 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
    - The sequence of field k, S_k(0) ... S_k(N_k - 1): the lengths of the lines
      0 ... N_k - 2 of section 2.7 (between the Copper marks for lines 0 ... 253,
      between the bitplane marks for lines 254 ... N_k - 2) and, for the fields 0
-     ... 11, the length x_k of the last line N_k - 1 (section 2.7). The last
+     ... 11, the length y_k of the last line N_k - 1 (section 2.7). The last
      recorded field, field 12, has no field after it and holds lines 0 ...
      N_k - 2 only. 3,400 observed lengths and 12 last lines in the 13 recorded
      fields.
    - Recorded, not graded: the number of lengths that are 227 and 228 colour
      clocks; the type f_k of field k ("short" if N_k = 262, "long" if N_k = 263)
-     with x_k; the number of the 12 transitions that keep the length.
+     with y_k; the number of the 12 transitions that keep the length; how many of the
+     lengths of lines 254 ... N_k - 2 that the Copper marks give equal the bitplane lengths.
 4. **Expected.**
    - p23: "Every other line is a long line (228 color clocks, 0-$E3), with the
      others being 227 color clocks long. In PAL, they are all 227 long. The
      display sees all these lines as 227 1/2 color clocks long, while the
-     Copper sees alternating long and short lines."
+     copper sees alternating long and short lines."
    - p24: "There are alternating long and short lines, there are also long and
      short fields (interlace only)."
 
@@ -704,33 +768,51 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
    field k is 227 or 228 colour clocks, no two consecutive lines of the
    sequence have the same length (S_k(v) and S_k(v+1) are 227 and 228 in either
    order), and the first length of the sequence of field k+1 differs from the
-   last length of the sequence of field k, x_k. Which line of a field is the
+   last length of the sequence of field k, y_k. Which line of a field is the
    long one is not tied to anything on the page, so either phase is accepted.
 5. **Preconditions.** PT-1 to PT-5, PT-7 and PT-9. PT-6 and PT-4 are gates:
    when either is closed, P3 is reported as not graded.
 6. **Contrasting case.** T-n (selector `P3(alternating)`) makes the comparator
-   green. The CPU writes `BEAMCON0 = $0080` and `HTOTAL = $E2`, and its
-   sampling loop writes `HTOTAL` in every new line it sees, `$E3` and `$E2` in
-   turn; the count `$E3` is the 228 colour clocks (0-$E3) of p23 and `$E2` the
-   227. The loop runs in every line of every field, so the alternation does
-   not restart at a field boundary and reaches the lines above 254, which the
-   Copper cannot (section 6, item 9). The comparator and its expected value
+   green. The CPU writes `BEAMCON0 = $0080` and `HTOTAL = $E2`, and the Copper lists
+   write `HTOTAL` in every line 0 ... 262, `$E3` and `$E2` in turn; the count `$E3` is
+   the 228 colour clocks (0-$E3) of p23 and `$E2` the 227. The Copper reaches every line
+   (p24: "262 lines of video beam travel during which Copper instructions can be
+   executed"), and the lists carry the alternation from one field into the next through
+   COP1LC, whether the field has 262 or 263 lines, so the alternation does not restart at a
+   field boundary and reaches the lines above 254. The comparator and its expected value
    are those of the normal run. T-m (selector `P3(restart)`) is the contrast
    of the parts of the comparator that the Copper-driven list of T-m leaves
    out: its lines 0 ... 254 alternate between 228 and 227, the write of line 254 stays in force above
    it, and the list restarts at the same phase in every field; the sequences
    of T-m hold repeats above line 254 and keep the length from each field's
-   last line to line 0 of the next, so the comparator is red there. T-l, whose single write
-   lands after the count has passed `$E2`, changes one line per field to a
+   last line to line 0 of the next, so the comparator is red there. Four stimulus records
+   change one thing of T-n each and show the clause of the comparators that reads it
+   (each with PT-1 to PT-9, P2 and the gates holding):
+   - T-q (selector `P3(boundary)`): no list writes COP1LC, so the phase restarts in every field
+     and the lines alternate inside every field and above line 254; the clause "line 0 of each
+     field differs in length from the last line of the field before it" is the only clause the
+     sequences fail, and P3(pattern) does not fit. It isolates the boundary clause.
+   - T-r (selector `P3(range)`): the last line of a 263-line field is 233 colour clocks;
+     every length that is neither 227 nor 228 is a last line (the clause "every length is 227
+     or 228" on the last lines), PT-5, which reads lines 0 ... N_k - 2, holds.
+   - T-s (selector `P3(interior)`): two lines in every field repeat the length of the line
+     before; P3 is red through the clause "no two consecutive lines have the same length",
+     and P3(pattern), which reads only the last line of each field and the field type, is
+     green. It separates the two comparators.
+   - T-t (selector `P3(slip)`): one boundary of the run does not alternate (the Copper restarts
+     with the phase of the length it ended on, once); P3 is red through the boundary clause at that one
+     boundary, and P3(pattern) does not fit at one phase.
+   T-l, whose two writes (`HTOTAL = $E8` at line 100 and `$E2` at line 101)
+   land after the count has passed `$E2`, changes one line per field to a
    length that is neither 227 nor 228 (PT-5, section 4.5). T-b (PAL) runs the
    same comparator on the standard for which p23 says "In PAL, they are all
    227 long": every length is 227 and the check goes red, as it does on the
    NTSC run. PT-1 to PT-7 and PT-9 still hold on it, because PAL fields
    alternate between 312 and 313 (P1) and 227 is a valid length; that is a
-   live control of the preconditions while the comparator is red. The
-   contrasts for the preconditions are T-f (PT-1), T-e (PT-2), T-d (PT-3), T-c
-   (PT-4), T-a (PT-6; p24: long and short fields occur "interlace only"), T-h
-   (PT-7), T-l (PT-5) and T-g (PT-9).
+   live control of the preconditions while the comparator is red. P3(pattern) is not graded on that
+   run and says so. The contrasts for the preconditions are T-f (PT-1), T-e and T-p (PT-2), T-d (PT-3), T-c
+   (PT-4), T-a (PT-6; p24: long and short fields occur "interlace only"), T-h and T-k
+   (PT-7), T-l (PT-5) and T-o (PT-9).
 7. **Reference frame.**
    - Line marks at fixed horizontal positions (section 2.7).
    - The WAIT position anchors the Copper marks (p22) and DDFSTRT anchors the
@@ -747,33 +829,37 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
    line; and back to the beginning." A short field has 262 lines, a long
    field 263; a short line is 227 colour clocks and a long line 228 (p23).
    The pattern is defined by the length of the last line of each field, which
-   section 2.7 measures (x_k).
+   section 2.7 measures (y_k).
 
    Claims: `ch2-vertical-beam-position.c15`, `.c16`, `.c17`, `.c18`, `.c19`;
    `COP2-vertical-beam-position.c17`, `.c18`, `.c19`, `.c20`, `.c21`, `.c22`
    (the pattern, its four fields and its repetition). Page 24. The gate PT-6 is
    that of P3.
 2. **Stimulus.** Program T (T-0).
-3. **Observation.** The type f_k and the measured last-line length x_k of the
+3. **Observation.** The type f_k and the measured last-line length y_k of the
    fields 0 ... 11 (the fields that have a field after them).
 4. **Expected.** The four slots in order: (short, 227), (long, 228), (short,
    228), (long, 227). The check: there is one phase q in 0 ... 3 such that
-   (f_k, x_k) is slot (k + q) mod 4 for every k = 0 ... 11. Which of the four
+   (f_k, y_k) is slot (k + q) mod 4 for every k = 0 ... 11. Which of the four
    slots field 0 is, is not tied to anything on the page, so any phase is
    accepted; the three repetitions of the pattern in twelve fields grade "and
    back to the beginning".
 5. **Preconditions.** Those of P3 (PT-1 to PT-5, PT-7, PT-9 and the gates PT-4
    and PT-6). The pattern is the NTSC pattern: the line is not graded on a PAL
-   run, where it reports that it does not apply.
+   run (selector `P3`), where it prints "not graded, the pattern is the standard NTSC pattern
+   (p24) and this run is PAL".
 6. **Contrasting case.** T-n (selector `P3(pattern)`): the alternation of lines
    is continuous over the field boundaries, so the field types and the last
    lines of the twelve fields follow the pattern at one phase, and the
-   comparator is green. T-m (selector `P3(restart)`) restarts the phase in
+   comparator is green. T-t (selector `P3(slip)`) breaks the phase once, so the pattern fits
+   at no single phase (the single-phase clause); T-s (selector `P3(interior)`) leaves the last lines
+   alone and keeps this comparator green while P3 is red; T-q (selector `P3(boundary)`) restarts the phase in
+   every field, which the pattern does not fit either. T-m (selector `P3(restart)`) restarts the phase in
    every field and leaves the lines above 254 at one length: every field ends on
    a long line (228 colour clocks), the fit is `no`, and the comparator is red.
 7. **Reference frame.** That of P3 (section 2.7: the last-line length is
-   measured from bitplane marks of lines N_k - 1 and 1 and the Copper marks of
-   lines 0 and 1).
+   the time from the Copper mark of line N_k - 1 to the Copper mark of line 0 of the next
+   field).
 
 ### P4: interlaced bitplane retrieval with a separate Copper list per field
 
@@ -1019,8 +1105,8 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
    - p79: "=525-(21\*2)"; p304: "NTSC (525 lines ...)".
 
    Only the agreed part is graded (P2). The alternation of long and short
-   lines (P3) is graded behind a gate; the clauses of the four-field pattern
-   about the last line of a field are declined (section 1).
+   lines (P3) and the four-field pattern of p24 (P3(pattern)) are graded behind
+   a gate, the lengths of the last line of every field included (section 2.7).
 2. **"Twice".** p34 calls the interlaced display "twice the normal number of
    vertical lines" and in the same paragraph gives PAL as 312 and 625.
 3. **When the Copper restarts.** p25 says, in one note, "At the start of each
@@ -1063,9 +1149,15 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
    vertical 0 through 5) does not say how the second WAIT avoids ending at
    once. By p23 and p27 a WAIT ends as soon as the beam is "equal to or
    greater than" the position, and at line 255 the counter's low bits are
-   already above 0 through 5. Program T therefore marks lines at or above 255
-   with bitplane fetches, not with Copper WAITs, and its last line is measured
-   through them (item 12).
+   already above 0 through 5: a WAIT (0,$E0) read while the beam is still in line
+   255 ends at once. Program T keeps the Copper in line 255 until its end with
+   three MOVEs behind the mark of line 255 (four memory cycle times each, p20),
+   so that it reads the WAIT (0,$E0) in line 256, where the vertical comparison
+   sees 0 (p23: "line 256 will appear as a zero in the comparison"), and every WAIT up to
+   (6,$E0) in its own line. p24 says that these are lines "during which Copper
+   instructions can be executed": the Copper reaches every line 0 ... 262, and Program T
+   marks the lines at or above 255 with Copper marks like the others (section 2.7).
+   PT-9 shows that the marks stand on their lines.
 10. **Figure 2-1's "16.6ms".** It corresponds to 261.2 NTSC lines, which is
     not a whole-line field (section 1).
 11. **Table 3-8 (p53, checked on the scan).** It gives 8,192 bytes for a
@@ -1073,13 +1165,11 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
     these are 10,240 and 20,480. The table is not used; PIC is 512 x 40 =
     20,480 bytes.
 
-12. **Measuring the last line of a field.** The last line has a bitplane
-    group (the window of Program T opens at line 1 and runs to the last line),
-    so its mark exists; a length needs a second mark of the same kind at the
-    same place in the next line, and that is the group of line 1 of the next
-    field (section 2.7: the span from the last line's mark to it holds the last
-    line and line 0, and line 0 is measured between the Copper marks). Two
-    other bases were weighed and not used:
+12. **Measuring the last line of a field.** The last line has a Copper mark,
+    like every line from 0 to 262 (the WAITs behind line 254, section 2.7), and so does line 0 of the
+    next field: the length of the last line is the time between those two marks, the same
+    kind of difference of two marks at the same horizontal position of consecutive lines as every
+    other length. Two other bases were weighed and not used:
     - The interval between two `vs` events. p23: "The display sees all these
       lines as 227 1/2 color clocks long, while the copper sees alternating
       long and short lines", and p49: "the scanning circuitry vertically offsets
@@ -1092,16 +1182,16 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
       so an interval between `vs` events is not by itself a field length in
       the Copper's lines, and it cannot show the last line's length.
     - A residual: the field's length from the marks of line 0 of two
-      consecutive fields, less the directly observed lines 0 ... N_k - 2.
-      Written out, this is m_c(k+1, 0) - m_b(k, N_k - 1) - Δ with Δ taken
-      from line 254: it uses Δ on the last line, where nothing shows that it
-      holds, and the quantity under test enters through the field length. The run
-      prints the interval between two Copper restarts less the lines 0 ...
-      N_k - 2 next to x_k as a MEASURED cross-check, never graded, and not the
-      measurement.
+      consecutive fields (or from two Copper restarts), less the directly observed lines
+      0 ... N_k - 2. It is not a second source: with Δ the same on the last line as on the
+      lines 44 ... 254 (PT-9) it is the same number as y_k, because
+      m_c(k+1, 0) - m_b(k, N_k - 1) - Δ = m_c(k+1, 0) - m_c(k, N_k - 1), and
+      the interval between the Copper marks of line 0 of two fields is the sum of all N_k lines
+      of the field; the Copper restart stands at one fixed offset from the mark of line 0 (1,776
+      clk_sys on both cores in every recorded field), so the interval between two restarts differs
+      from that sum by nothing. It is an identity, not a measurement, and the run does not print it.
     Nothing is derived from the quantity under test and graded; the graded
-    value x_k is a difference of two bitplane marks less a difference of two
-    Copper marks of line 0 and line 1.
+    value y_k is a difference of two Copper marks.
 
 ---
 
@@ -1109,16 +1199,18 @@ there); PT-5 needs PT-3 and the gate PT-4; PT-9 needs PT-3.
 
 Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_x.s`
 (I-a to I-x, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
-`prog_t_c.s` to `prog_t_n.s` (T-a, T-c to T-n, section 4.4; T-b is the same
+`prog_t_c.s` to `prog_t_t.s` (T-a, T-c to T-t, section 4.4; T-b is the same
 binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
 that `nanomig.i` does not, and the CIA-A address used only to release the
 reset-time overlay so Program I can install its own interrupt vector at
 $6C, independently of Appendix B); `listt_body.i` (LISTT's 255 WAIT/MOVE
-pairs, generated once, not by hand); `listt_alt_body.i` (T-m's list, generated); `test_ch2_interlace_fields.cpp`.
-`m1.i` holds, under `M1_HTCPU` (T-n), the CPU's writes of `HTOTAL` and a shorter
-closing code for a field (the same five record words); a build without
-`M1_HTCPU` assembles to the same bytes as before.
+pairs, generated once, not by hand); `listt_high.i` (the marks of the lines
+255 ... 312); `listt_alt_body.i` (T-m's list, generated); `listt_chain.i` (one list of
+T-n and of its stimulus records, written with assembler macros) and
+`listt_chain_slip.i` (the twenty lists of T-t, ten states of two lists each, generated);
+`longline.patch` (section 7, "The private long-line beam counter");
+`test_ch2_interlace_fields.cpp`.
 
 **Clock ratio.** Every check that compares a cycle count against colour
 clocks (p194, section 2.3) converts by a fixed 8 clk_sys cycles per colour
@@ -1147,13 +1239,12 @@ PI-1 (section 3.6) and print NOT GRADED, and PI-8 holds.
   cores. Of the 3,400 directly observed lengths (lines 0 to N_k - 2), all
   3,400 are 227, and PT-5 (every length is 227 or 228) stays green, since 227
   is one of the two page values.
-- The measured last-line length x_k (section 2.7, both cores): 227 on every
+- The measured last-line length y_k (section 2.7, both cores): 227 on every
   one of the fields 0 to 11, never 228, so every one of the 12 transitions from
   a last line to line 0 of the next field keeps the length; the four-field
-  pattern of p24 fits it at no phase, and P3 and P3(pattern) are red. The
-  interval between the Copper restarts of field k and field k+1, less the lines
-  0 to N_k - 2, equals x_k in 12 of 12 fields (a cross-check, section 6, item
-  12; never graded).
+  pattern of p24 fits it at no phase, and P3 and P3(pattern) are red. Of the 98 lengths of
+  the lines 254 to N_k - 2 that both kinds of mark give, 98 are equal (section 2.7). The Copper
+  restart precedes the mark of line 0 by 1,776 clk_sys in all 13 recorded fields.
 - T-a (LACE clear, both cores): all 13 recorded NTSC fields measure 263 lines
   (the PT-6 gate line of the PT-6 run; PT-8 red in its own run, P2 NOT
   GRADED).
@@ -1163,9 +1254,10 @@ PI-1 (section 3.6) and print NOT GRADED, and PI-8 holds.
 - The normal run prints, as MEASURED lines before the P3 line, the number of
   directly observed line lengths that are 227 colour clocks, 228 colour clocks
   and neither (over lines 0 to N_k - 2 and over the Copper-mark lines), the
-  type f_k and the measured last-line length x_k of fields 0 to 11 with the
+  type f_k and the measured last-line length y_k of fields 0 to 11 with the
   number of last lines of each length and of transitions that keep the length,
-  the restart cross-check, and the fit of the four-field pattern.
+  the count of lengths that the Copper marks and the bitplane marks give equally,
+  the offset of the restart from the mark of line 0, and the fit of the four-field pattern.
 
 **PI-7(bpl)'s own contrast (I-l).** Measured on both cores: with the
 BPL1PT MOVEs read at their real list offset (after the SPR0-7PT MOVEs and
@@ -1201,13 +1293,19 @@ fetch (573440).
 **PI-2 and PT-7 (I-s, T-j).** The anchor of section 2.6 reads the terminal
 wait from the list as assembled. Measured, both cores: in the normal runs 8 of
 8 (Program I) and 13 of 13 (Program T) M1 fields hold exactly one restart, each
-preceded, among the list words up to the terminal wait, by the Copper's fetch
-of the terminal wait, and the matched restarts are consecutive. In every
+preceded, in Program I, among the list words up to the terminal wait, by the Copper's fetch
+of the terminal wait, and the matched restarts are consecutive. In Program I, in every
 field, 2 colour clocks before the restart, the Copper also reads the word after
-the terminal wait ($080854 after LISTA's, $080954 after LISTB's, $081004 after
-LISTT's); the anchor does not count it. Under I-s and T-j every field still
+the terminal wait ($080854 after LISTA's, $080954 after LISTB's); the anchor does not
+count it. In Program T the Copper has marks up to the last line of the field and is busy up
+to the restart: the list word it reads last before the restart is the second word of the mark MOVE
+of the field's last line, $081042 in the 6 fields of 262 lines (the mark of line 261) and $08104A in
+the 7 fields of 263 lines (the mark of line 262), on both cores; the WAIT for the next line and the
+terminal wait are not read in any field, and the restart comes right behind the mark. That is the read
+the clause of section 2.6 asks for in Program T (13 of 13 fields). Under I-s every field still
 holds exactly one restart and the matched restarts are still consecutive, but
-no restart is preceded by a fetch of the terminal wait (0 of 8, 0 of 13). No
+no restart is preceded by a fetch of the terminal wait (0 of 8), and under T-j no restart is
+preceded by the read the clause asks for (0 of 13). No
 page says that the Copper stops after a MOVE it cannot write; read literally,
 p25 ("Instruction fetch continues sequentially until the Copper is interrupted
 by another jump address strobe") and p30 ("No stop instruction is provided for
@@ -1216,16 +1314,21 @@ green. I-s and T-j are therefore not page-predicted contrasts and not
 mutations of PI-2 and PT-7: they are diagnostics of the anchor's third clause
 (`SELFTEST-PI-2-ANCHOR`, `SELFTEST-PT-7-ANCHOR`), printed as MEASURED lines
 that state whether the comparator holds; they are not assertions. Measured on
-both cores, the Copper fetches the MOVE's first word, fetches nothing more of
+both cores, under I-s the Copper fetches the MOVE's first word, fetches nothing more of
 the list, and reads the MOVE's second word 2 colour clocks before the restart;
 on this design the comparator therefore does not hold, through the third
-clause alone, with everything else holding. PI-2 and PT-7 keep their page-based contrasts, I-f
+clause alone, with everything else holding. Under T-j (the MOVE stands behind the mark of line
+254) the Copper reads the two words of the MOVE and nothing after them: the last list word read
+before the restart is the MOVE's second word, $081002, in 13 of 13 fields, so PT-7's comparator
+does not hold through the third clause, with PT-1, PT-2, PT-3, PT-5 and PT-8 holding (PT-9 does
+not: the marks of the lines 255 and above are never fetched). PI-2 and PT-7 keep their page-based contrasts, I-f
 and T-h, and the third clause has its own, page-predicted contrast, I-v and
 T-k (section 2.6). Measured on both cores, under I-v 8 of 8 and under T-k 13
 of 13 M1 fields hold exactly one restart, the matched restarts are
-consecutive, and no restart is preceded by a read of a terminal wait: the
-Copper is in the middle of the list when the restart comes. Only the third
-clause goes red; every other precondition holds.
+consecutive, and no restart is preceded by the read the clause asks for (a read of a terminal
+wait in Program I): the Copper is in the middle of the list when the restart comes. Only
+the third clause goes red; every other precondition holds (PT-9 is not graded under T-k, which has no Copper marks
+of the lines 255 and above).
 
 **PI-12 (I-t, I-u).** Measured on both cores: the Copper fetches the two BPL1PT
 MOVEs 0 and 4 and the two SPR0PT MOVEs 8 and 12 colour clocks after the
@@ -1243,12 +1346,12 @@ the first bitplane fetch 10,049 (line 44), the same on both cores.
 **T-g.** Line 10's WAIT uses `(10, $40)`. Measured on both cores, field 0's
 line 9 then measures 536 clk_sys (67 colour clocks); 26 of the 3,400 directly
 observed line lengths of the 13 fields fall outside 227 and 228 colour clocks;
-PT-1, PT-3 and every Copper mark the line lengths need stay live, P2 is
+PT-1, PT-3, PT-9 and every Copper mark the line lengths need stay live, P2 is
 graded and P3 and P3(pattern) are not graded. The run prints PT-5's comparator
 as a gating observation (`PT-5(mark)`), not as an assertion: it moves a measuring
-mark and no physical line. PT-9 does not hold on it, because line 10 is one of the
-lines 1 to 43 that PT-9 reads (the same offset moves); the selector `PT-9` runs
-T-g as the contrast of PT-9, and PT-3, which reads lines 44 to 254, still holds.
+mark and no physical line. Line 10 lies in front of the display window (line 44),
+so it has no bitplane mark, PT-3 (lines 44 to 254) and PT-9 (lines 255 and above) still hold,
+and the selector `PT-9` runs T-o as the contrast of PT-9.
 
 **T-l.** `BEAMCON0 = $0080`, `HTOTAL = $E2`, then the Copper's `HTOTAL = $E8` in line 100's
 MOVE slot and `HTOTAL = $E2` in line 101's. Measured on both cores (the fx68k build and the default
@@ -1261,7 +1364,9 @@ the gate PT-6 is open, P2 is graded and passes, PT-5's comparator prints FAIL an
 
 **T-m.** `BEAMCON0 = $0080`, `HTOTAL = $E2`, then in every line v from 0 to 254 the
 Copper's `WAIT (v,$40)` and `MOVE HTOTAL` (`$E3` for even v, `$E2` for odd v) in
-front of the mark. Measured on the fx68k build and the default TG68K build: of the
+front of the mark; the marks of the lines 255 ... 262 follow as in T-0 and carry no
+HTOTAL write, so the list writes HTOTAL on the lines 0 ... 254 only, by construction.
+Measured on the fx68k build and the default TG68K build: of the
 3,302 Copper-mark line lengths of the 13 fields 1,651 are 228 colour clocks and
 1,651 are 227 (lines 0 to 5 of field 0: 1,824 1,816 1,824 1,816 1,824 1,816
 clk_sys), and PT-1, PT-2, PT-3, PT-5, PT-7, PT-8 and PT-9 hold, the gates PT-4 and
@@ -1274,22 +1379,67 @@ last line to line 0 of the next field keep the length. P3 and P3(pattern) print
 FAIL (the pattern fits at no phase). The selector `P3(restart)` runs it; the
 normal run does not.
 
-**T-n.** `BEAMCON0 = $0080`, `HTOTAL = $E2`, the normal list with a `WAIT
-(1,$40)` and a `MOVE HTOTAL` in front of the mark of line 1, and the CPU's
-sampling loop (`m1.i`, `M1_HTCPU`) writing `HTOTAL` in every new line it sees:
-`$E3` and `$E2` in turn, line 1 excepted. The Copper writes line 1, from a data
-word the loop patches, in the lines above 255, with the value it has just
-written for the last line of the field (the lines alternate, so line 0 of the
-next field has the other value and line 1 has this one); the loop is busy
-closing the field when line 1 begins. Measured on the fx68k build and the
+**T-n.** `BEAMCON0 = $0080` and `HTOTAL = $E2` from the CPU, then two Copper lists (at LISTT
+and at `$0A0000`, `listt_chain.i`) that alone write `HTOTAL` in every line 0 to 262, at
+`(v,$40)`: `$E3` and `$E2` in turn. The CPU writes nothing after its setup, and neither list has an
+HTOTAL write at the lines 100 and 101. Each list marks every line as the normal list does (the
+lines 255 to 262 as in `listt_high.i`) and chooses the list of the next field through COP1LC, which
+the Copper writes itself: at its start it sets COP1LC to its own address, and in line 262 (behind
+`WAIT (6,$40)`, which a 262-line field never reaches) to the other list. A 262-line field ends on the
+other length than it began with, so the next field begins with the same phase; a 263-line field
+ends on the length it began with, so the next field begins with the other phase. Measured on the fx68k build and the
 default TG68K build: of the 3,412 lengths of the complete sequences 1,706 are
 228 colour clocks and 1,706 are 227, none is neither, none equals the line before
 in its field, and none of the 12 transitions from a last line to line 0 of the
-next field keeps the length (lines 0 to 5 of field 0: 1,824 1,816 1,824 1,816 1,824
-1,816 clk_sys; its last six lines 1,816 1,824 1,816 1,824 1,816 1,824); PT-1 to
+next field keeps the length (lines 0 to 5 of field 0: 1,816 1,824 1,816 1,824 1,816
+1,824 clk_sys; its last six lines 1,824 1,816 1,824 1,816 1,824 1,816); the lists the
+Copper restarted with in fields 0 to 12 are B A A B B A A B B A A B B (the second list
+after each 263-line field, the same list after each 262-line field); PT-1 to
 PT-5, PT-7, PT-8 and PT-9 hold, no M1 record sets its gap flag, the gates PT-4
-and PT-6 are open, and P3 and P3(pattern) print PASS (the pattern fits). The
-write rests on the CPU: a pass of the sampling loop takes less than a line, so
-the write of a line lands before the count reaches `$E2`. A pass longer than a
-line would set an M1 gap flag and close PT-1, a precondition of every run that
-uses T-n. The selectors `P3(alternating)` and `P3(pattern)` run it; the normal run does not.
+and PT-6 are open, and P3 and P3(pattern) print PASS (the pattern fits at phase 3). The
+last lines are 227, 227, 228, 228, 227, 227, 228, 228, ... for the fields 0 to 11. The Copper
+alone writes the lines, so the verdict does not depend on the CPU's sampling loop: an
+M1 loop that is slower than the unmodified one leaves the control green wherever PT-1
+holds. Measured on both cores with NOPs added to every pass of the sampling loop and, in
+other runs, to the code that closes a field (a probe build of `m1.i`, not part of the
+package; every other line of the run unchanged): on fx68k P3, P3(pattern) and P2 print PASS
+with 0, 1, 2, 4, 8, 12 and 16 NOPs in every pass and with 1, 2, 4, 16 and 40 in the close
+path; with 20, 30, 40, 60 and 80 in every pass and with 60 and 80 in the close path an M1 record
+is not valid, PT-1 does not hold and the lines print NOT GRADED. On TG68K they print PASS
+with 1 to 60 NOPs in every pass and in the close path, and with 80 PT-1 does not hold. In none of
+the runs does P3 or P3(pattern) print FAIL: what limits the control is the fixture PT-1 (the
+M1 loop sampling every line), which limits every run of Program T alike. The selectors `P3(alternating)` and `P3(pattern)` run it; the normal run does not.
+
+**T-o.** Line 256's WAIT uses `(0,$40)`, so its mark lies early in line 256. Measured on both cores: PT-9's
+comparator prints FAIL, PT-1, PT-2, PT-3, PT-5, PT-7 and PT-8 hold, the gates are open, P2 is
+graded and passes, and P3 and P3(pattern) are not graded. The selector `PT-9` runs it.
+
+**T-p.** `DIWSTRT = $2D81`. Measured on both cores: every field has one group fewer than the
+N_k - 44 PT-2 expects (218 for N = 263, 217 for N = 262), no read is left over after the last group, PT-2
+prints FAIL, PT-3, PT-5, PT-9 and P2 and P3 and P3(pattern) are not graded, PT-1, PT-7 and PT-8 hold. The same
+run for T-e (`DIWSTOP = $F4C1`): 200 groups in every field, the last of them on line 243. The selectors
+`PT-2(start)` and `PT-2` run them.
+
+**T-q to T-t.** T-q (selector `P3(boundary)`) writes no COP1LC in any list: of the 3,412 lengths of the
+complete sequences 1,709 are 228 colour clocks and 1,703 are 227, none is neither, none equals the
+line before in its field, and 6 of the 12 transitions from a last line to line 0 keep the length (the
+last lines are 228 for the fields of 263 lines and 227 for those of 262 lines); P3 and P3(pattern) print FAIL. T-r
+(selector `P3(range)`) writes `HTOTAL = $E8` in line 262: the lines 262 of the 263-line fields (6 of the 12
+measured last lines) are 233 colour clocks long, none of the other lengths is outside 227 and 228, P3
+and P3(pattern) print FAIL. T-s (selector `P3(interior)`): 26 of the 3,412 lengths equal the line before
+(lines 51 and 61 of every field), none of the 12 transitions keeps the length, the last lines are those of T-n; P3
+prints FAIL and P3(pattern) PASS. T-t (selector `P3(slip)`): 1 of the 12 transitions keeps the length, none
+of the 3,412 lengths equals the line before in its field, the Copper restarted with the lists 5, 6, 8, 11, 13,
+14, 16, 18, 18, 19, 19, 18, 18 of the twenty in the fields 0 to 12 (the chain stands in its states 2 to 8 in the
+fields 0 to 6 and in its last state from field 7 on), P3 and P3(pattern) print FAIL. All four runs: PT-1 to PT-5,
+PT-7, PT-8 and PT-9 hold, the gates open, P2 passes; both cores print the same.
+
+**The private long-line beam counter (`longline.patch`).** `make longline-test-fx68k` and
+`make longline-test-tg68k` build the package against a private copy of the NanoMig chip-set RTL: a copy of
+the pinned submodule's `minimig-aga` directory to which `longline.patch` is applied. The patch changes one line
+of `agnus_beamcounter.v`: without VARBEAMEN, an NTSC line that `long_line` marks ends at `$E3` (228 colour
+clocks, p23) instead of at `$E2` (the signal `long_line` toggles at every line end in the pinned RTL and is
+not used). The submodule is not modified; each core builds in its own object directory
+(`obj_dir_longline_<core>/`) and writes its own output file (`out_longline_<core>.txt`), so the unmodified
+build and its output stay those `make test` uses. The patch is a test construction that gives NTSC lines of
+228 and 227 colour clocks, so that P3 and P3(pattern) have a design to pass on; it is not a proposed fix of the RTL.
