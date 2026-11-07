@@ -998,7 +998,7 @@ For the preconditions: clear SPREN (no reads, no image).
 | Event | Writer | Line, H | Write |
 |---|---|---|---|
 | e1 | CPU | 0x50, 0x08 | SPR0POS for X = 0xA0 |
-| e2 | CPU | 0x70, 0xB0 | SPR0POS for X = 0xB0 (after the column on that line) |
+| e2 | CPU | 0x70, 0xA0 | SPR0POS for X = 0xB0 (after the column on that line) |
 | e3 | Copper | 0x90, 0x20 | SPR0POS for X = 0xC0 |
 | e4 | CPU | 0xB0, 0x08 | SPR0CTL = `0x0001` (SH2 = 1, 140 ns), then SPR0DATA = `0xE001` (the CTL write disables, S3) |
 | e5 | CPU | 0xC0, 0x08 | SPR0DATB = SPR0DATA = `0x8007` |

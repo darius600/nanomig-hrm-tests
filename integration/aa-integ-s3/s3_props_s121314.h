@@ -239,7 +239,7 @@ inline void prop_S14() {
         const int hb = mutating("S14-PC-BEAM") ? 0xE0 : 0x08;
         EventSpec flush; flush.nvb = 1; s.ev.push_back(flush);
         EventSpec e1; e1.nvb = 2; e1.line = 0x50; e1.h = hb; e1.wr.push_back({R_SPRxPOS(0), pos_for(0xA0)}); s.ev.push_back(e1);
-        EventSpec e2; e2.line = 0x70; e2.h = 0xB0; e2.wr.push_back({R_SPRxPOS(0), pos_for(0xB0)}); s.ev.push_back(e2);
+        EventSpec e2; e2.line = 0x70; e2.h = 0xA0; e2.wr.push_back({R_SPRxPOS(0), pos_for(0xB0)}); s.ev.push_back(e2);
         EventSpec e4; e4.line = 0xB0; e4.h = hb;
         e4.wr.push_back({R_SPRxCTL(0), mutating("S14-e4") ? uint16_t(0x0000) : uint16_t(0x0001)});
         e4.wr.push_back({R_SPRxDATA(0), 0xE001});
