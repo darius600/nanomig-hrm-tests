@@ -1412,7 +1412,7 @@ path; with 20, 30, 40, 60 and 80 in every pass and with 60 and 80 in the close p
 is not valid, PT-1 does not hold and the lines print NOT GRADED. On TG68K they print PASS
 with 1 to 60 NOPs in every pass and in the close path, and with 80 PT-1 does not hold. In none of
 the runs does P3 or P3(pattern) print FAIL: what limits the control is the fixture PT-1 (the
-M1 loop sampling every line), which limits every run of Program T alike. The selectors `P3(alternating)` and `P3(pattern)` run it; the normal run does not.
+M1 loop sampling every line), which every other run of Program T needs as well. The selectors `P3(alternating)` and `P3(pattern)` run it; the normal run does not.
 
 **T-o.** Line 256's WAIT uses `(0,$40)`, so its mark lies early in line 256. Measured on both cores: PT-9's
 comparator prints FAIL, PT-1, PT-2, PT-3, PT-5, PT-7 and PT-8 hold, the gates are open, P2 is
