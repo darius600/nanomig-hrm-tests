@@ -312,19 +312,32 @@ pass 2 on:
   give two runs (P4), word n of the pass occupies the interval of length
   2P·c that starts (n − 1)·2P·c after the anchor run's start (RF-P), and a
   run belongs to the word whose interval holds its midpoint.
-- *Precondition G-W*, wherever RF-W is used: no run starts in the system clock
-  of an anchor fetch, so that the order of the fetch and of every run start is
-  decided at the port and the anchor is unambiguous. It compares times only, never
-  levels, so it does not rest on what the runs carry. It also identifies word 1's run
-  independently of any value under test: the runs that begin after a fetch of the
-  stimulus's own data set (the first fetch for P2 and P4, the fetch of word 2 for P3,
-  whose first word, the byte 0x00, is at the level of the silence before it) and before the anchor
-  fetch are counted, and the count has to equal the number of runs that the data set
-  gives to the fetches in between (a byte that differs from the byte before it starts a
-  run; two bytes per word). Equal counts show that every run of the fetches before the anchor
-  began before the anchor fetch and that no run of the anchor's word did, so the first run after
-  the anchor is word 1's. The count looks at no level, and the data sets are built so that no two
-  neighbouring bytes are equal across a word boundary. Both counts are printed.
+- *Precondition G-W*, wherever RF-W is used, has two clauses. (1) No run starts in the system
+  clock of an anchor fetch, so that the order of the fetch and of every run start is decided at the
+  port and the anchor is unambiguous; it compares times only. (2) The run that ends where the anchor
+  run begins started at least one word (2P·c, 600 colour clocks) before the anchor run's start; the
+  run lengths are printed per pass and channel. Clause 2 grades the one presumption that the anchor
+  rule above names: the data set ends in a word of two equal bytes, which is a single run. If the run
+  before the anchor were the last word's first sample alone, it would last one sample and the frame
+  would be one sample off; the clause then fails and the line is red.
+
+  *Why the frame cannot identify word 1's run without a level.* The page fixes the lag from a
+  fetch to the first sample of its word only within (0, 2P·c): the word is fetched after the word
+  before it has begun its output and before its own output begins. The previous word's second
+  sample therefore may begin before or after the anchor fetch, and the sample parity at the anchor
+  is not in the fetch times. Take an implementation with lag 2891 to 4699 system clocks, the
+  measured range, and the same implementation with every fetch P·c later (lag 491 to 2299): both
+  agree with the page, and the pairs (fetch time, run start time) of the two are the same set, only
+  the label of each run start differs (the second sample of word k−1 in one is the first sample of
+  word k in the other). Every rule on times alone is therefore wrong on one of them; a count of runs
+  or a reading of the runs by their length rests on the levels of the words under test. The frame
+  takes the presumption above instead and states its cost: a program whose two byte positions of
+  one byte give different levels breaks clause 2 at the last word, G-W is red and the graded lines
+  of the proposition print NOT GRADED. The byte whose single run the frame presumes is 0xA0 in P2
+  (word D = 0xA0A0), 0xFE in P3 (the last word of the 256-word sweep, 0xFEFE) and 0x60 in P4 (the last word, (b, b) = 0x6060).
+  *Contrast of clause 2*: the data set's last word gets two different bytes and the rest is
+  unchanged (selectors P2-LAST, P3-LAST, P4-LAST, recorded in 7.4). The run before the anchor is
+  then the last word's second sample, one sample long, and G-W goes red.
 
 ---
 
