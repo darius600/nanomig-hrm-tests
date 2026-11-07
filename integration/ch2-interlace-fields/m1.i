@@ -9,20 +9,7 @@
 ;   M1_STARTW   -- address of the one-word start marker
 ;   M1_DONEW    -- address of the one-word completion marker
 ; and calls `bsr m1_run`. m1_run returns (rts) once M1_DONEW has been
-; written; d0-d7 and a2-a6 are clobbered, a0 and a1 are left alone (except under M1_HTCPU).
-;
-; M1_HTCPU, if the includer defines it (T-n), makes the loop write HTOTAL in
-; every new line it sees but line 1: right after a sample is accepted, if the V
-; of the sample (bits 16-8 of d1) differs from the V in a0, the loop writes
-; HTOTAL = a1 ($E3 or $E2) and swaps a1; a0 holds that V. Line 1 is written by
-; the Copper from a data word the loop patches in the lines above 255.
-; The includer sets a1 = $E3 and a0 = 0 before calling m1_run. The sampling loop is the only code that runs in
-; the lines, so the writes keep the same phase across the field boundaries and
-; in the last lines of a field, which the Copper cannot reach. A pass of the
-; loop takes less than a line (measured), so the write lands before the count
-; reaches $E2 of the line. The wrap handler m1_onwrap, which closes a field,
-; is the shorter form below under M1_HTCPU (the same five record words, built
-; in registers and stored by one MOVEM): a line must not pass inside it.
+; written; d0-d7 and a2-a6 are clobbered, a0 and a1 are left alone.
 ;
 ; M1_DELAY, if the includer defines it, adds a busy-wait inside the
 ; sampling loop -- section 3.6's precondition contrast (I-j / T-f): M1
@@ -87,38 +74,6 @@ m1_run:
                 eor.l   d1,d2
                 and.l   #$0001FF00,d2
                 bne.s   .sample         ; the two reads disagree on V: discard both
-
-                ifd     M1_HTCPU
-                ; T-n: the accepted sample d1 carries V (bits 16-8). If it differs from the
-                ; V in a0 (raw bit position as well), the loop sees a new line: it writes
-                ; HTOTAL = a1 ($E3 or $E2) at once, in front of everything else, and swaps a1.
-                ; Line 1 is the exception: the Copper writes it (WAIT (1,$40), MOVE HTOTAL),
-                ; because the loop is busy closing the field when line 1 begins. The value of
-                ; line 1 is the value of the last line of the field before (the lines alternate,
-                ; line 0 has the other one): in the lines above 255 the loop patches the data
-                ; word of that MOVE (HTL1DATA) with the value it has just written, so that the
-                ; last of these writes, that of the last line, is the one the Copper reads at
-                ; the next line 1. In the pass that sees line 0 the loop does not swap a1:
-                ; line 1 is the Copper's, and line 2 has the value of line 0.
-                move.l  d1,d2
-                and.l   #$0001FF00,d2
-                cmp.l   a0,d2
-                beq.s   .htsame
-                movea.l d2,a0
-                cmp.l   #$00000100,d2
-                beq.s   .htsame                 ; line 1: the Copper writes it
-                move.w  a1,$1C0(a6)             ; HTOTAL
-                tst.l   d2
-                beq.s   .htsame                 ; line 0
-                cmp.l   #$00010000,d2
-                blo.s   .htnopatch
-                move.w  a1,HTL1DATA.l           ; a line above 255: the value of line 1 of the next field
-.htnopatch:
-                move.w  #$01C5,d3
-                sub.w   a1,d3                   ; $E3 <-> $E2
-                movea.w d3,a1
-.htsame:
-                endif
 
                 ifd     M1_DELAY
                 movem.l d0-d1,-(a7)
@@ -192,24 +147,6 @@ m1_onwrap:
                 beq     .startcap
                 blt     .ignore
                 ; more than 2 wraps: close the field.
-                ifd     M1_HTCPU
-                ; d4-d7 (the field's last V, first V and the LOF bits, all in raw bit
-                ; position) are dead after this: the record words are built in d2-d6
-                ; in the order of the record and stored by one MOVEM.
-                move.l  d5,d2
-                lsr.l   #8,d2                   ; firstV
-                move.l  d4,d3
-                lsr.l   #8,d3                   ; lastV
-                move.w  a5,d4                   ; gap flag
-                move.l  d6,d5
-                rol.l   #1,d5
-                and.w   #1,d5                   ; lofOR
-                move.l  d7,d6
-                rol.l   #1,d6
-                and.w   #1,d6                   ; lofAND
-                movem.w d2-d6,(a2)
-                lea     10(a2),a2
-                else
                 move.l  d5,d3
                 lsr.l   #8,d3
                 and.w   #$1FF,d3
@@ -227,7 +164,6 @@ m1_onwrap:
                 smi     d3
                 and.w   #1,d3
                 move.w  d3,(a2)+                ; lofAND
-                endif
                 suba.l  a5,a5
                 lea     1(a4),a4
                 cmpa.w  #M1_K,a4

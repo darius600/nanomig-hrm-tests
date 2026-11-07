@@ -4,8 +4,8 @@
 ; T_LINE10_40 (T-g): the v=10 WAIT uses H=$40 instead of $E0.
 ; T_HTOTAL (T-l): the MOVE of v=100 writes HTOTAL = $E8 and the MOVE of v=101
 ; writes HTOTAL = $E2, in place of the two COLOR00 MOVEs (same addresses).
-; T_HTCPU (T-n): a WAIT (1,$40) and a MOVE HTOTAL (8 bytes) follow the BPL1PT MOVEs, in
-; front of the WAIT (1,$E0); the CPU patches the data word of that MOVE (HTL1DATA).
+; The Copper marks of the lines 255 ... 262 follow in listt_high.i, which prog_t.s includes behind
+; this body (T-k, whose list waits for line 255 and then holds 1,800 MOVEs, leaves them out).
         ifd     T_WAIT0_ZERO
         dc.w    $0001,$FFFE
         else
@@ -14,12 +14,6 @@
         dc.w    COLOR00,$0000
         dc.w    BPL1PTH,(PLANE>>16)&$FFFF      ; pointer rewrite during vertical blanking (p27)
         dc.w    BPL1PTL,PLANE&$FFFF
-        ifd     T_HTCPU
-        dc.w    $0141,$FFFE                    ; T-n: WAIT (1,$40), then MOVE HTOTAL; the CPU patches
-        dc.w    $01C0                          ; the data word in the pass in which it sees line 0
-HTL1DATA:
-        dc.w    $00E2
-        endif
         dc.w    $01E1,$FFFE
         dc.w    COLOR00,$0000
         dc.w    $02E1,$FFFE

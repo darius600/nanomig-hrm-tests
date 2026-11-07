@@ -1,0 +1,14 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -220,7 +220,10 @@
+ end
+ 
+ // programmable display mode values
+-wire [ 8:0] htotal  =             varbeamen ? htotal_reg  : HTOTAL_VAL << 1; // line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
++// ch2-interlace-fields, longline.patch: a test construction, not a proposed fix. Without VARBEAMEN, an NTSC
++// line that long_line marks ends at $E3 (228 colour clocks, HRM p23: "Every other line is a long line (228
++// color clocks, 0-$E3)") and the other lines at $E2 (227), so that the lines alternate 228 and 227.
++wire [ 8:0] htotal  =             varbeamen ? htotal_reg  : (long_line && !pal) ? 9'h1C6 : HTOTAL_VAL << 1; // line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
+ wire [ 8:0] hsstrt  = varhsyen && varbeamen ? hsstrt_reg  : HSSTRT_VAL[8:0];
+ wire [ 8:0] hsstop  = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL[8:0];
+ wire [ 8:0] hcenter = varhsyen && varbeamen ? hcenter_reg : HCENTER_VAL[8:0];
