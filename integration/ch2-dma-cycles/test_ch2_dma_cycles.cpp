@@ -486,6 +486,14 @@ std::vector<Block> blocks_full(int n_bpl) { // C6/C5/S1/S2-style: everything at 
     for (int y = 0; y < n_bpl; ++y) b.push_back(bitplane_block(y));
     return b;
 }
+// C6-lateservice (P7's restart-line contrast): the CPU serves a level-6 interrupt, so it also reads the
+// level-6 autovector at byte $78, two words of the vector table that no DMA block reaches. They are declared
+// as CPU accesses in this run's table, as the level-3 vector (kLevel3VectorLoWord) is in every run's.
+std::vector<Block> blocks_full_lvl6() {
+    std::vector<Block> b = blocks_full(4);
+    b.push_back({"CPU", 0x78 / 2, 0x78 / 2 + 2});
+    return b;
+}
 std::vector<Block> blocks_S1() { return {copper_block(), sprite_block(0), sprite_null_block(), bitplane_block(0)}; }
 std::vector<Block> blocks_S2() {
     return {copper_block(), sprite_block(0), sprite_block(2), sprite_null_block(), bitplane_block(0)};
@@ -540,6 +548,7 @@ RunResult run_C6(const std::string& dir, const char* bin = "/prog_c6.bin", nmh::
 }
 RunResult run_C6prime(const std::string& dir) { return run_config(dir + "/prog_c6_prime.bin", nmh::Config{}, nopoke); }
 RunResult run_C6shift(const std::string& dir) { return run_config(dir + "/prog_c6_shift.bin", nmh::Config{}, nopoke); }
+RunResult run_C6late(const std::string& dir) { return run_config(dir + "/prog_c6_lateservice.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
 RunResult run_C6_skip50(const std::string& dir) { return run_config(dir + "/prog_c6_skip50.bin", nmh::Config{}, nopoke); }
 RunResult run_C6_endtrailer(const std::string& dir) { return run_config(dir + "/prog_c6_endtrailer.bin", nmh::Config{}, nopoke); }
 RunResult run_C6_nofinish(const std::string& dir) { return run_config(dir + "/prog_c6_nofinish.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
@@ -2406,8 +2415,8 @@ void video_selftests(Checks& checks) {
 // MUTATION T1 stimulus red C6-skip50 (C6 in which the Copper repeats WAIT 50's line with the SKIP loop of p.33: segment 49's third MOVE loads COP2LCL with the address of WAIT 50, segment 50's MOVEs are SKIP VP=$73 HP=0, COPJMP2 and MOVE COLOR00, segment 51's first MOVE loads COP2LCL with the address of L5b), NMH_MUTATE=T1; both cores: C5 and C6-skip50 DONE=1, F1=1 F2=1 F2-COUNT=1 F3=1, 6 of 345 part/frame pairs (the 115 parts of L5 x 3 frames) differ in access count (segments 49 and 50 in each of 3 frames: 8/18 and 8/38), K6 972/972 and 12/12, T2 342 segment lines and 0 CPU accesses in them, T3 339 lines with nothing missing
 // MUTATION T2 stimulus red C6-stopself (STOP replaced by a self-branch loop, disk sequence unchanged), NMH_MUTATE=T2; DONE=1, K6, T1 and T3 hold; fx68k: 342 segment lines, 32014 CPU accesses in them; tg68k: 342 segment lines, 36265
 // MUTATION T3 stimulus red C6-nospren (C6 without SPREN), NMH_MUTATE=T3; DONE=1, K6, T1 and T2 hold; both cores: 339 segment lines, bpl_missing=0, spr_missing=120, disk lines per frame 113/113/113; audio lines per frame fx68k 107/105/107, tg68k 107/105/107
-// MUTATION P7 none impossible the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction moves one of those channels (audio, disk, refresh, sprite, low-resolution planes 1-4: p.20, Fig. 6-9, Fig. 6-11) to an odd cycle, so no program makes an even-cycle channel delay the Copper; the channels that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie outside P7's premise (at most four low-resolution planes), and changing the Copper's own list changes the comparison's inputs and not the clause; nothing moves the restart fetch relative to the VERTB service either, so the restart-line clause is shown by SELFTEST-P7-RESTART
-// MUTATION SELFTEST-P7-RESTART none impossible the capture of C6 is displaced in the test (every Copper-block access, the restart fetch of each frame included, one line later at the same in-line cycle) and no module stimulus moves the restart fetch relative to the interrupt that serves VERTB; a self-test of p7_check under the gates of the real C5 and C6, NMH_MUTATE=SELFTEST-P7-RESTART; both cores: C5 and C6 DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, p7_check on C5 and the real C6 holds (0 of 348 part/frame pairs differ, the VERTB autovector read on the restart fetch's line in all 3 frames of both runs, restart at s=3 and vector read at s=18 in C5, 26/32/32 in C6 on fx68k and s=14 in C5, 22/28/28 in C6 on tg68k), on the displaced C6 0 of 348 pairs still differ and the vector read lies -1 lines from the restart fetch in all 3 frames, p7_check FAIL through the restart line
+// MUTATION P7 stimulus red C6-lateservice (C6 whose VERTB handler starts CIA-B timer A as a one-shot that underflows after the last Copper line of the frame and before the frame ends, a level-6 interrupt, EXTER, INTENA bit 13: p.280, p.340, p.342; its handler waits for the next frame's VERTB request and for a beam line from 2 to $3F before it returns, and the CPU's mask is 6 meanwhile, so the pending VERTB is served on line 2 or later; the Copper list is untouched; the level-6 autovector at byte $78 is declared as a CPU access in this run's table, without which F1, F2 and F3 fail), NMH_MUTATE=P7; both cores: C5 and C6-lateservice DONE=1, F1F2F3=111 for both, K6 (972/972 and 12/12 in every frame), T1 (0 segments differ in access count), T2 (342 segment lines, 0 CPU accesses in them) and T3 (339 lines, nothing missing) hold, 0 of 348 part/frame pairs differ, the VERTB autovector read lies 2 lines after the restart fetch in all 3 frames (restart at s=3; vector read at s=74/83/89 on fx68k and s=57/61/49 on tg68k; in C5 0 lines, s=18 on fx68k and s=14 on tg68k), p7_check FAIL through the restart line only; the pair clause has no stimulus, impossible: the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction moves one of those channels (audio, disk, refresh, sprite, low-resolution planes 1-4: p.20, Fig. 6-9, Fig. 6-11) to an odd cycle, so no program makes an even-cycle channel delay the Copper; the channels that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie outside P7's premise (at most four low-resolution planes), and changing the Copper's own list changes the comparison's inputs and not the clause; SELFTEST-P7 and SELFTEST-P7-SHIFT show that the comparator reads the pair lists
+// MUTATION SELFTEST-P7-RESTART none impossible the capture of C6 is displaced in the test (every Copper-block access, the restart fetch of each frame included, one line later at the same in-line cycle) and no module stimulus enters it; a self-test of p7_check under the gates of the real C5 and C6, NMH_MUTATE=SELFTEST-P7-RESTART; both cores: C5 and C6 DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, p7_check on C5 and the real C6 holds (0 of 348 part/frame pairs differ, the VERTB autovector read on the restart fetch's line in all 3 frames of both runs, restart at s=3 and vector read at s=18 in C5, 26/32/32 in C6 on fx68k and s=14 in C5, 22/28/28 in C6 on tg68k), on the displaced C6 0 of 348 pairs still differ and the vector read lies -1 lines from the restart fetch in all 3 frames, p7_check FAIL through the restart line
 // MUTATION SELFTEST-P7 stimulus red C6' (list L5 with WAIT 32 at HP=$42 instead of $40; a self-test of p7_check, whose three mismatches come from the Copper's own list), NMH_MUTATE=SELFTEST-P7; both cores: C5 and C6' DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 3 mismatches of 348 part/frame pairs (116 parts x 3 frames, one part in each frame), the same 3 when each part's lines are counted from its own first access, the VERTB autovector read on the restart fetch's line in all 3 frames of both runs
 // MUTATION SELFTEST-P7-SHIFT stimulus red C6s (list L5s: every WAIT of the loop one line lower, WAIT i at VP=$41+i; a self-test of p7_check, whose mismatches come from the Copper's own list), NMH_MUTATE=SELFTEST-P7-SHIFT; both cores: C5 and C6s DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 339 mismatches of 348 part/frame pairs (the 113 segments of each frame; the head, the tail and the second list match), and 0 mismatches when each part's lines are counted from its own first access, the VERTB autovector read on the restart fetch's line in all 3 frames of both runs
 // MUTATION SELFTEST-F1 none impossible the check runs on a synthetic trace built in the test and no module stimulus enters it; it is a self-test of check_f1, printed in every plain run
@@ -2655,6 +2664,35 @@ int main(int argc, char** argv) {
                               "and disk accesses each occur in the segment lines of every observed frame.");
             else
                 not_graded(checks, "T3", unmet);
+        } else if (mv == "P7") {
+            // C6-lateservice: C6 whose VERTB handler starts a CIA-B timer that interrupts at level 6 late in
+            // the frame; that handler returns only on line 2 or later of the next frame, so the pending VERTB
+            // is served there. The Copper list is untouched. p7_check, unchanged, runs on C5 and this run.
+            RunResult c5 = run_C5(dir);
+            RunResult c6l = run_C6late(dir);
+            set_gS(c5.log, blocks_full(4), checks);
+            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-lateservice: done=" + std::to_string(c6l.done.has_value()));
+            Pop pc5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}}, pc6l{"C6-lateservice", c6l, blocks_full_lvl6(), {wordof(COP_MAIN)}};
+            std::string unmet;
+            for (const Pop* q : {&pc5, &pc6l}) {
+                auto pr = analyze_population(q->run.log, q->blocks, q->starts, "R", false);
+                checks.note(mv + " " + q->name + ": F1F2F3=" + std::to_string(pr.f1_ok) +
+                            std::to_string(pr.f2_ok) + std::to_string(pr.f3_ok));
+                unmet += observation_unmet(q->name, q->run, pr);
+            }
+            bool k6a = k6_check(pc5, checks), k6b = k6_check(pc6l, checks);
+            bool t1 = t1_check(c5, pc5.blocks, c6l, pc6l.blocks, pc6l.name, checks);
+            bool t2a = t2_check(c5, pc5.blocks, checks, "C5"), t2b = t2_check(c6l, pc6l.blocks, checks, pc6l.name);
+            bool t3 = t3_check(c6l, pc6l.blocks, checks);
+            unmet += unmet_if(k6a && k6b, "K6") + unmet_if(t1, "T1") + unmet_if(t2a && t2b, "T2") + unmet_if(t3, "T3");
+            bool p7 = p7_check(c5, pc5.blocks, c6l, pc6l.blocks, checks);
+            if (unmet.empty())
+                checks.expect(p7, "P7: for every segment i (i=0..112) and every observed frame, the list of (line "
+                              "offset, s) pairs is identical in C5 and C6, and the restart fetch of every observed frame of C5 and of C6 lies on the "
+                              "line of the VERTB service, the start of vertical blanking from which the line offsets are counted -- the channels on the "
+                              "even cycles never delay the Copper. p.20 p.219 p.276");
+            else
+                not_graded(checks, "P7", unmet);
         } else if (mv == "SELFTEST-P7-RESTART") {
             // C6 with the capture displaced one line: every Copper-block access, the restart fetch of
             // each frame included, one line later at the same in-line cycle. The run's preconditions are
