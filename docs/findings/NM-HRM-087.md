@@ -302,14 +302,20 @@ identical but for BPLCON0, `$0008` (L1) and `$0000` (L0), run with no DMA; after
 VPOSR:VHPOSR 600 times as long words. The windows after detections 2 to 5 run from one line after the VERTB marker to about 18 lines
 after it, before the vertical position 20 at which p. 239 releases the freeze, and p. 239's field-end latch, which needs no pen, predicts one frozen value in
 every L1 window. In ECS the program first writes BEAMCON0 with bit 13 clear. `P3-MAIN` is red in ECS/PAL, ECS/NTSC, OCS/PAL and
-OCS/NTSC on both cores (`P3-MAIN`, `test_ch3_playfield_system.cpp:1266-1267`), and so is the `P3 aggregate`, which joins it to `P3-LIVE`: 5 red in a run of `223 passed, 10 failed`, the other five being [NM-HRM-090](NM-HRM-090.md)'s
-(`P3 aggregate`, `test_ch3_playfield_system.cpp:1277-1281`):
+OCS/NTSC on both cores (`P3-MAIN`, `test_ch3_playfield_system.cpp:1374-1375`), and so is the `P3 aggregate`, which joins it to `P3-LIVE`: 5 red in a run of `227 passed, 10 failed`, the other five being [NM-HRM-090](NM-HRM-090.md)'s
+(`P3 aggregate`, `test_ch3_playfield_system.cpp:1386-1390`):
 
 ```text
 FAIL: P3-MAIN S1 (ECS/PAL): with LPEN=1, every counted VPOSR/VHPOSR read in the windows after VERTB detections 2-5 shows the same 17-bit value (frozen)
 ```
 
-`P3-LIVE`, the L0 windows, is green in all four: no two consecutive reads are equal (`P3-LIVE`, `test_ch3_playfield_system.cpp:1207-1210`). `P4-MAIN`, p. 271's reset value, waits for
+The package prints the first and the last counted read of every L1 window (`MEASURED: P3-MAIN`, `test_ch3_playfield_system.cpp:1379`). In all four configurations on both cores the first read of every window shows line 1 and the last line 18, and no two consecutive reads of a window are equal, 226 reads per window on fx68k and 239 on TG68K; S1 on fx68k:
+
+```text
+MEASURED: P3-MAIN S1 L1 windows (17-bit values of the first and the last counted read): [w1 reads=226 pairs=225 equal=0 V-bad=0 H-extra-decreases=0 V-unchanged-H-lower=6 V>19=0 first=$00139 last=$0121D] [w2 reads=226 pairs=225 equal=0 V-bad=0 H-extra-decreases=0 V-unchanged-H-lower=0 V>19=0 first=$0013D last=$01221] [w3 reads=226 pairs=225 equal=0 V-bad=0 H-extra-decreases=0 V-unchanged-H-lower=0 V>19=0 first=$00141 last=$01225] [w4 reads=226 pairs=225 equal=0 V-bad=0 H-extra-decreases=0 V-unchanged-H-lower=0 V>19=0 first=$00136 last=$01219]
+```
+
+`P3-LIVE`, the L0 windows, is green in all four: no two consecutive reads are equal (`P3-LIVE`, `test_ch3_playfield_system.cpp:1306-1309`). `P4-MAIN`, p. 271's reset value, waits for
 `P3-MAIN` and prints `RECORDED: P4-MAIN S1: NOT GRADED, P3-MAIN did not pass in this configuration, so a set LPEN is not shown to latch
 here and an LPEN of 1 would look like 0` in all four; the `P4 aggregate` is recorded, not graded.
 
