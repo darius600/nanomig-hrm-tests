@@ -152,14 +152,15 @@ inline TxRun tx_run(const std::string& variant) {
     for (int k = 1; k < 8; ++k) {
         unsigned n = nk[k - 1] - ((variant == "EARLYW" && k == 2) ? 2 : 0) + (k >= 4 ? late : 0);   // EARLYW: word 3 follows word 2 by one line (about 3.5 bit times)
         last = idle_lines + n;
-        s.bto(INTREQR, last, slow);
+        if (!clr) s.bto(INTREQR, last, slow);   // CLR: no line wait; the word is written at once after the clear that follows the move of the word before it, in the first half of that frame
         r.m_c.push_back(s.w16(INTREQ, cval));
         r.m_w.push_back(s.w16(SERDAT, uint16_t(stop | wd[size_t(k)])));
         r.sp.push_back(hib(stop | wd[size_t(k)]));
         if (clr) { s.waitb(INTREQR, 0x0001, 60000); r.m_cc.push_back(s.w16(INTREQ, 0x0001)); }   // the first read of 1 after the move, and the clear of the request at once
     }
     if (variant == "EXTRA") { last += 7; s.bto(INTREQR, last, slow); s.w16(SERDAT, 0x01FF); }   // contrast: a ninth word 25 bit times (7 lines) after word 8
-    s.bto(INTREQR, last + 12, slow);   // 12 lines (about 42 bit times), more than the two frames that follow the last write
+    if (clr) { s.bzero(); s.bto(INTREQR, 12, slow); }
+    else s.bto(INTREQR, last + 12, slow);   // 12 lines (about 42 bit times), more than the two frames that follow the last write
     s.end();
     rs.cycles = 4'000'000 + 8ull * 30000;
     r.cap = run(rs);
