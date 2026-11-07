@@ -882,7 +882,9 @@ graded, the measurement that stands in its place and the reason are in one place
    a reading: no page gives the CPU's exception latency, and the pages leave open whether the
    interrupt or the restart comes first inside the line, so the two in-line cycles are MEASURED
    and not graded; the restart's own in-line cycle s stays compared between C5 and C6 by the pair
-   lists. What the boundary cannot show: the position of the restart inside line 0 (no page gives
+   lists. The service happens when the program lets it: the CPU reads the vector once its mask is
+   below 3, and a program that holds the mask at 6 over line 0 serves VERTB later (P7.6). C5 and C6
+   wait in STOP with the mask at 0. What the boundary cannot show: the position of the restart inside line 0 (no page gives
    it), and any difference between the start-of-blank and the end-of-blank reading of p.25's second
    sentence other than the line (D11). P7 is red when either run has a frame without a restart
    fetch or without a VERTB autovector read in the grid, or when any offset is not 0.
@@ -898,12 +900,29 @@ graded, the measurement that stands in its place and the reason are in one place
      fetches occur in every line of segments i = 16..35 and 64..83 (VP `$50`–`$63` and
      `$80`–`$93`); and audio and disk accesses each occur in the segment lines of every observed
      frame, which shows both channels active while the segments run.
-6. **Contrasting case.** None for P7 itself, impossible. The Copper takes only the odd cycles
+6. **Contrasting case.** For the pair clause none, impossible. The Copper takes only the odd cycles
    and audio, disk, refresh, sprite and low-resolution plane 1–4 DMA take only the even ones
    (p.20, Fig. 6-9, Fig. 6-11); no register and no instruction moves one of those channels to
    an odd cycle, so no program makes an even-cycle channel delay the Copper. The channels
    that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie
-   outside P7's premise (P7.1: at most four low-resolution planes). Run **C6'** is kept as a
+   outside P7's premise (P7.1: at most four low-resolution planes).
+   For the restart-line clause there is a stimulus, run **C6-lateservice** (selector `P7`): C6
+   whose VERTB handler starts CIA-B timer A as a one-shot (p.342: *"In one-shot mode, a write to
+   timer-high ... will transfer the timer latch to the counter and initiate counting"*; the count
+   rate is the E clock, p.340) that underflows after the last Copper line of the frame and before
+   the frame ends. CIAB generates INT6 (p.340), which is EXTER, INTENA bit 13, level 6 (p.280).
+   The timer's handler reads the CIA's interrupt control register, which clears it (p.346), waits for
+   the VERTB request of the next frame (INTREQR bit 5) and then for a beam line from 2 to `$3F`, and
+   returns. While it runs the CPU's mask is 6, so the VERTB request waits and the CPU reads the
+   level-3 autovector on line 2 or later. The Copper list is untouched. The CPU also reads the
+   level-6 autovector at byte `$78`, two words of the vector table that no DMA block reaches: the
+   run's table declares them as CPU accesses, as every run's table does the level-3 vector, and
+   without that declaration F1, F2 and F3 fail on the run (measured, F1F2F3=000). Measured, both
+   cores: F1–F3, C1, K6 and T1–T3 hold, 0 of 348 part/frame pairs differ, and the VERTB
+   autovector read lies 2 lines after the restart fetch in all 3 frames (0 lines in C5), so P7
+   goes red through the restart-line clause only. The program decides when the read happens, so
+   the restart fetch and the service are separate events.
+   Run **C6'** is kept as a
    self-test of the comparator, SELFTEST-P7: C6 with list L5' (WAIT i = 32 at HP `$42` instead
    of `$40`), compared with C5 on L5. p.22: *"The WAIT instruction causes the Copper to wait
    until the video beam counters are equal to (or greater than) the coordinates specified in
@@ -926,9 +945,9 @@ graded, the measurement that stands in its place and the reason are in one place
      restart line against the VERTB service. The pair lists counted from the restart line do not
      change (0 of 348 part/frame pairs differ), so the comparison alone would pass; the VERTB
      autovector read now lies 1 line before the restart fetch in every frame, and P7's comparator
-     goes red through it. The displacement is made in the test, to the capture, and no stimulus
-     produces it (nothing moves the restart relative to the interrupt), so the run is not a mutation
-     of P7. K6 and T1–T3 are evaluated on the real runs and hold.
+     goes red through it. The displacement is made in the test, to the capture, and no module
+     stimulus enters it, so the run is not a mutation of P7 (C6-lateservice is). K6 and T1–T3 are
+     evaluated on the real runs and hold.
    - **Contrast for T2:** C6 with `STOP #$2000` replaced by a loop that branches to itself.
      The CPU then fetches in every line, and T2 fails.
    - **Contrast for T3:** C6 without SPREN. Sprite fetches are then absent, and T3 fails.
@@ -1254,8 +1273,8 @@ T3 for T1 (P7's comparator, which T1 gates, finds the 6 changed part/frame pairs
 `<line>-NOFINISH`, `-HTOTAL` and `-NORESTART` runs for K2b, K3, K4, K5, K6, T1, T2 and T3 (§2.11)
 are gating observations, not mutations: they print NOT GRADED with the failed precondition, and
 each of those lines has its own stimulus mutation. A mutation changes the stimulus only, never an
-expected value, window, population, gate or comparator. P1–P5, F1, F2, F2-COUNT, P7 and FIXTURE
-have no stimulus mutation, and the records say which hardware fact no program changes; P1's red
+expected value, window, population, gate or comparator. P1–P5, F1, F2, F2-COUNT and FIXTURE
+have no stimulus mutation, P7's pair clause has none either, and the records say which hardware fact no program changes; P1's red
 path and the comparators of F1, F2 and FIXTURE are shown by the synthetic self-tests SELFTEST-P1,
 SELFTEST-F1, SELFTEST-F2 and SELFTEST-FIXTURE. F3's mutation is C0-htotal (§2.3). SELFTEST-P7
 keeps run C6' and SELFTEST-P7-SHIFT run C6s as self-tests of the P7 comparator: the first moves
@@ -1264,7 +1283,10 @@ loop one line (339 of 348 differ, where a comparison that counts lines from each
 access finds 0). SELFTEST-P7-RESTART displaces the capture of C6 by one line, the restart fetch
 of each frame included: the pair lists still compare equal (0 of 348 differ) and the VERTB
 autovector read lies 1 line before the restart fetch in every frame, so the restart-line clause
-of P7 goes red (on both cores). Q6 and Q7 each have a contrast whose MOVEs are fetched across
+of P7 goes red (on both cores). The restart-line clause has a mutation, C6-lateservice (`P7`): a CIA-B
+timer interrupt at level 6 keeps the CPU's mask at 6 over line 0, the VERTB autovector read lies 2
+lines after the restart fetch in every frame while the pair lists stay equal, and P7 goes red on both
+cores. Q6 and Q7 each have a contrast whose MOVEs are fetched across
 the end of the WAIT's line: Q6-SPILL (the WAIT names VP `$3F`, HP `$E0`; the MOVEs lie on VP
 `$40`, a line of the uses) and Q7-SPILL (the WAIT names VP `$4F`, HP `$E0`; the MOVEs lie on VP
 `$50`, not between use 1 and use 2); both go red on both cores.
@@ -1362,7 +1384,7 @@ sets one symbol and includes the main program: `prog_s1_q2` (Q2), `prog_s1_q2p` 
 `prog_s1_c` (S1-c: Q6, and the S1c run of P12-EXC, list L_S1c), `prog_s1_q6spill` (S1-q6spill: Q6, the
 WAIT at VP `$3F`, HP `$E0`), `prog_s1_q7spill` (S1-q7spill: Q7, the S1c run with the WAIT at VP `$4F`,
 HP `$E0`), `prog_s1_colv` (S1-colv: P12, list
-L_S1v), `prog_s1_cx` (S1-cx: P12-EXC, list L_S1cx), `prog_c6_shift` (SELFTEST-P7-SHIFT, list L5s),
+L_S1v), `prog_s1_cx` (S1-cx: P12-EXC, list L_S1cx), `prog_c6_shift` (SELFTEST-P7-SHIFT, list L5s), `prog_c6_lateservice` (P7: C6-lateservice),
 `prog_s1_nospren` (K9, liveness), `prog_s1_zcopy` (S1-zcopy: K9, start word), `prog_s2_still` (S2-still: P8),
 `prog_s2_swap` (S2-swap: P8), `prog_s2_refmove` (S2-refmove: Q-REF), `prog_s2_col0` (Q4),
 `prog_s2_endcol` (S2-endcol: Q5), `prog_s2_exit6` (FRAMES).
