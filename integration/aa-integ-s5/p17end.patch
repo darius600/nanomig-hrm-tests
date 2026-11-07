@@ -1,0 +1,24 @@
+--- a/paula_uart.v
++++ b/paula_uart.v
+@@ -95,12 +95,11 @@
+     end else begin
+       case (tx_state)
+         TX_IDLE : begin
++          tx_irq <= #1 1'b0;
+           // txd pin inactive in idle state
+           tx_txd <= #1 1'b1;
+           // check if new data loaded to serdat register
+           if (!tx_tbe && !tx_hold) begin
+-            // set interrupt request
+-            tx_irq <= #1 1'b1;
+             // data buffer empty again
+             //tx_tbe <= #1 1'b1;
+             // generate start bit
+@@ -121,6 +120,7 @@
+           if (tx_cnt == 16'd0) begin
+             // check if any bit left to send out
+             if (tx_shift == 16'd0) begin
++              tx_irq <= #1 1'b1;
+               // set TSRE flag when serdat register is empty
+               if (tx_tbe) tx_tsre <= #1 1'b1;
+               // data sent, go to idle state

@@ -73,6 +73,31 @@ inline Pass pass_of(const ARun& r, uint32_t base, int p) {
     return ps;
 }
 
+// The identification of word 1 of a pass (an independent precondition of G-W). The runs that begin after the fetch of word s of the stimulus
+// and before the pass anchor are counted and compared with the number of runs that the data set gives to the fetches s .. anchor-1 (a byte
+// that differs from the byte before it starts a run; two bytes per word, high byte first). The count looks at no level and at no value
+// under test: equal counts mean that every run of the earlier fetches began before the anchor fetch and that no run of the anchor's word
+// did, so that the first run after the anchor is word 1's. have/want are returned for the record.
+struct W1Id { bool ok = false; size_t have = 0, want = 0; };
+inline W1Id word1_ident(const ARun& r, const Pass& ps, const std::vector<uint16_t>& words, uint32_t base, size_t s) {
+    W1Id w;
+    if (ps.fi < 0 || size_t(ps.fi) <= s || s >= r.f.size() || words.empty()) return w;
+    const uint64_t t0 = r.f[s].t;
+    for (auto& u : r.runs) if (u.t0 > t0 && u.t0 < ps.ta) ++w.have;
+    int prev = -1;
+    for (size_t k = s; k < size_t(ps.fi); ++k) {
+        const size_t i = (r.f[k].addr - base) / 2;
+        if (i >= words.size()) return w;
+        for (int b = 1; b >= 0; --b) {
+            const int by = (words[i] >> (8 * b)) & 0xFF;
+            if (by != prev) ++w.want;
+            prev = by;
+        }
+    }
+    w.ok = w.have == w.want;
+    return w;
+}
+
 // ---- P2 ---------------------------------------------------------------------
 
 constexpr uint16_t kA = 0x6060, kB = 0xE0E0, kC = 0x2020, kD = 0xA0A0;
@@ -120,6 +145,12 @@ inline void run_p2(Checks& ck) {
         Pass ps = pass_of(r, kBuf[x], 2);
         if (ps.fi < 0 || ps.r0 < 0) { gf = false; gw = false; continue; }
         gw &= ps.g_w;
+        {
+            std::vector<uint16_t> pw(pat, pat + 8);
+            W1Id w1 = word1_ident(r, ps, pw, kBuf[x], 0);
+            gw &= w1.ok;
+            ck.note("P2 ch" + dec(x) + ": runs that begin between the first fetch and the pass-2 anchor fetch " + dec((long long)w1.have) + ", runs the data set gives to those fetches " + dec((long long)w1.want));
+        }
         // the write: the CPU's write to word 6 after the start
         uint64_t tws = 0, twe = 0;
         {
@@ -189,7 +220,7 @@ inline void run_p2(Checks& ck) {
     ck.expect(gd, "P2-G-D: after each start DMACONR bit 9 and the channel's bit read 1 on all four channels (AA p.22)");
     ck.expect(gf, "P2-G-F: each channel makes at least six fetches at the location, so passes 1 to 6 start (AA p.22 '00 AUD0EN')");
     ck.expect(blocks8, "P2-PRE-BLOCKS8: from pass 2 on the fetches of each channel form eight-word blocks BUFx .. BUFx+14 (the P1 check, AA p.11 AUDxLEN)");
-    ck.expect(gw, "P2-G-W: on every channel no run starts in the system clock of the pass-2 anchor fetch (SPECIFICATION.md 2.10)");
+    ck.expect(gw, "P2-G-W: on every channel no run starts in the system clock of the pass-2 anchor fetch (SPECIFICATION.md 2.10), and the runs that begin between the first fetch and that anchor are as many as the data set gives to the fetches before it, so that the first run after the anchor is word 1's");
     ck.expect(gp, "P2-G-P: from pass 2 on every word gives one run of exactly 600 colour clocks (AA p.11 AUDxPER 'The minimum period is 124 color clocks')");
     ck.expect(wr_both, "P2-PRE-WRITE: the CPU's write to word 6 is seen at the port and a fetch of word 6 from pass 2 on falls on each side of it, on every channel");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && blocks8 && gw && gp && wr_both;

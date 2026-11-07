@@ -185,9 +185,9 @@ inline void run_p1(Checks& ck) {
     graded(ck, pre, a_ok, "P1-A: in every case exactly L distinct addresses are fetched (AA p.11 AUDxLEN 'length (number of words)')", un);
     graded(ck, pre, b_ok, "P1-B: in every case a fetch at the last word of the block (location + 2(L-1)) is followed by a fetch at the location (AA p.6 'Used to automaticall[y] restart pointers ... the Audio sample counter (whenever the audio length count is finished)')", un);
     graded(ck, pre, c_ok, "P1-C: in every case no fetch lies outside [location, location + 2L) (AA p.11 AUDxLEN)", un);
-    graded(ck, pre && sample_ok, addr_ok, "P1-ADDR sol:AA-audxlen.c1: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the channel's length register: from the channel's first return to BUFx on, the fetches take exactly the L addresses BUFx, BUFx+2, .. BUFx+2(L-1) of the length L written there, in turn and over again, for every channel and every L (AA p.11 'AUDxLEN 0A4 W P Audio Channel x length')", un + " or the sample after the first return");
+    graded(ck, pre && sample_ok, addr_ok, "P1-ADDR sol:AA-audxlen.c1: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the channel's length register: from the channel's first return to BUFx on, the fetches take exactly the L addresses BUFx, BUFx+2, .. BUFx+2(L-1) of the length L written there, in turn and over again, for every channel and each of the tested lengths L = 1, 2, 3, 5, 7, 11, 16 (AA p.11 'AUDxLEN 0A4 W P Audio Channel x length')", un + " or the sample after the first return");
     graded(ck, pre, a_ok && b_ok && c_ok,
-           "P1 sol:AA-audxlen.c4: AUDxLEN contains the length, the number of words, of the channel's DMA data: for every channel and every L the fetches of every block, the first included, lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1) (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
+           "P1 sol:AA-audxlen.c4: AUDxLEN contains the length, the number of words, of the channel's DMA data: for every channel and each of the tested lengths L = 1, 2, 3, 5, 7, 11, 16 the fetches of every block, the first included, lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1) (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
 }
 
 } // namespace s5

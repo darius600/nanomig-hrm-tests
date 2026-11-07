@@ -1,0 +1,53 @@
+--- a/paula_uart.v
++++ b/paula_uart.v
+@@ -75,7 +75,7 @@
+ 
+ 
+ //// TX ////
+-localparam [  2-1:0] TX_IDLE=2'd0, TX_SHIFT=2'd2;
++localparam [  2-1:0] TX_IDLE=2'd0, TX_GAP=2'd1, TX_SHIFT=2'd2;
+ reg  [  2-1:0] tx_state;
+ reg  [ 16-1:0] tx_cnt;
+ reg  [ 16-1:0] tx_shift;
+@@ -83,6 +83,7 @@
+ reg            tx_irq;
+ reg            tx_tbe;
+ reg            tx_tsre;
++reg  [  3-1:0] tx_nfr;
+ 
+ always @ (posedge clk) begin
+   if (clk7_en) begin
+@@ -92,6 +93,7 @@
+       tx_irq    <= #1 1'b0;
+       tx_tbe    <= #1 1'b1;
+       tx_tsre   <= #1 1'b1;
++      tx_nfr    <= #1 3'd0;
+     end else begin
+       case (tx_state)
+         TX_IDLE : begin
+@@ -123,8 +125,12 @@
+             if (tx_shift == 16'd0) begin
+               // set TSRE flag when serdat register is empty
+               if (tx_tbe) tx_tsre <= #1 1'b1;
+-              // data sent, go to idle state
+-              tx_state <= #1 TX_IDLE;
++              // data sent; after the third frame one idle cell, then the idle state
++              tx_nfr <= #1 tx_nfr + 3'd1;
++              if (tx_nfr == 3'd2) begin
++                tx_cnt <= #1 {serper[14:0], 1'b1};
++                tx_state <= #1 TX_GAP;
++              end else tx_state <= #1 TX_IDLE;
+             end else begin
+               // reload period counter
+               tx_cnt <= #1 {serper[14:0], 1'b1};
+@@ -136,6 +142,10 @@
+             // decrement period counter
+             tx_cnt <= #1 tx_cnt - 16'd1;
+           end
++        end
++        TX_GAP: begin
++          if (tx_cnt == 16'd0) tx_state <= #1 TX_IDLE;
++          else tx_cnt <= #1 tx_cnt - 16'd1;
+         end
+         default: begin
+           // force idle state

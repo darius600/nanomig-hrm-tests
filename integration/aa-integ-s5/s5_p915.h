@@ -364,12 +364,20 @@ inline Bit3 bit3_run(int k, bool with_bit3, const std::string& variant) {
     return b;
 }
 
-// The runs of channel k from its first fetch to the stop, without the run that holds the first fetch and the run that the stop
-// cuts: the interval is anchored on the channel's own first fetch, so run A and run B are compared over the same play.
-inline std::vector<LRun> bit3_core(const Bit3& q) {
+// The time from channel k's first fetch to the stop (the marker before the stop write). Run A and run B start their play on the
+// channel's own first fetch but stop at a different phase of the run grid, so the interval that both plays cover is the shorter of the two.
+inline uint64_t bit3_span(const Bit3& q) {
+    if (q.fk.empty()) return 0;
+    uint64_t t0 = q.fk.front().t, ts = marker(q.r.cap, q.m_stop);
+    return ts > t0 ? ts - t0 : 0;
+}
+
+// The complete runs of channel k in [first fetch, first fetch + span): without the run that holds the first fetch and without the run that
+// the end of the interval cuts (a run whose end is the end of the interval), so run A and run B are compared over the same play.
+inline std::vector<LRun> bit3_core(const Bit3& q, uint64_t span) {
     std::vector<LRun> out;
-    if (q.fk.empty()) return out;
-    uint64_t t0 = q.fk.front().t, t1 = marker(q.r.cap, q.m_stop);
+    if (q.fk.empty() || !span) return out;
+    uint64_t t0 = q.fk.front().t, t1 = t0 + span;
     auto all = runs_of(q.r.cap, t0, t1);
     if (all.size() > 2) out.assign(all.begin() + 1, all.end() - 1);
     return out;
@@ -389,17 +397,27 @@ inline void run_p15(Checks& ck) {
         gf &= a.f3.size() >= 6 && a.fk.size() >= 6;
         uint16_t ra = logv(a.r.cap, a.i_adk), rb = logv(b.r.cap, b.i_adk);
         adk &= (ra & 0x8) != 0 && (rb & 0x8) == 0;
-        auto ca = bit3_core(a), cb = bit3_core(b);
+        const uint64_t spa = bit3_span(a), spb = bit3_span(b), span = std::min(spa, spb);
+        auto ca = bit3_core(a, span), cb = bit3_core(b, span);
         // run B: the unmodulated play of channel k is a string of runs of exactly 300 colour clocks, two levels in turn
         std::set<int32_t> lb;
         for (auto& u : cb) lb.insert(u.v);
         bool bp = cb.size() > 10 && lb.size() == 2;
         for (auto& u : cb) bp &= u.len() == 300 * b.r.K;
         gp &= bp;
-        // run A against run B, run by run over what both have: level and length
+        // run A against run B, run by run over the complete runs of the common interval: the counts are equal, and level and length are equal
         size_t n = std::min(ca.size(), cb.size()), bad = 0, first_bad = n;
         for (size_t i = 0; i < n; ++i) if (ca[i].v != cb[i].v || ca[i].len() != cb[i].len()) { if (!bad) first_bad = i; ++bad; }
-        same_ok &= n > 10 && bad == 0;
+        same_ok &= n > 10 && ca.size() == cb.size() && bad == 0;
+        {   // where the stop lies against the run grid of each play: the run that holds the stop starts this many cycles before it
+            auto last_start = [](const Bit3& q) {
+                uint64_t t0 = q.fk.empty() ? 0 : q.fk.front().t, ts = marker(q.r.cap, q.m_stop);
+                auto all = runs_of(q.r.cap, t0, ts);
+                return all.empty() ? 0ll : (long long)ts - (long long)all.back().t0;
+            };
+            ck.note("P15 k=" + dec(k) + ": first fetch to stop A/B " + dec((long long)spa) + "/" + dec((long long)spb) + " cycles, compared interval " + dec((long long)span) +
+                    " cycles; the run that holds the stop began before it by A/B " + dec(last_start(a)) + "/" + dec(last_start(b)) + " cycles");
+        }
         ck.note("P15 k=" + dec(k) + ": run A runs=" + dec((long long)ca.size()) + ", run B runs=" + dec((long long)cb.size()) + ", compared " + dec((long long)n) + ", differing " + dec((long long)bad) +
                 " (first at " + dec((long long)first_bad) + "), run B levels=" + dec((long long)lb.size()) +
                 " ADKCONR A/B=" + hex4(ra) + "/" + hex4(rb) + " fetches ch3/chk=" + dec((long long)a.f3.size()) + "/" + dec((long long)a.fk.size()));
@@ -411,7 +429,7 @@ inline void run_p15(Checks& ck) {
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && gp;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F or G-P";
     graded(ck, pre, adk, "P15-ADK: ADKCONR bit 3 reads 1 in run A and 0 in run B for k = 0, 1, 2 (AA p.10 'SET/CLR')", un);
-    graded(ck, pre, same_ok, "P15-RUNS: from channel k's first fetch to the stop, run A and run B play the same runs one by one, level and length, for k = 0, 1, 2 (AA p.11 '03 USE3VN Use audio channel 3 to modulate nothing')", un);
+    graded(ck, pre, same_ok, "P15-RUNS: from channel k's first fetch to the stop, over the interval that both plays cover (the shorter of the two), run A and run B have the same number of complete runs and play them one by one with the same level and length, for k = 0, 1, 2 (AA p.11 '03 USE3VN Use audio channel 3 to modulate nothing')", un);
     graded(ck, pre, adk && same_ok, "P15 sol:AA-adkcon.c27: with ADKCON bit 3 set and channel 3's DMA running no channel's volume or period changes: channels 0, 1 and 2 play, from their first fetch to the stop, exactly as with bit 3 clear (AA p.11 '03 USE3VN Use audio channel 3 to modulate nothing')", un);
 }
 

@@ -107,6 +107,8 @@ struct TxRun {
     int m_ser = 0, m_w1 = 0, i_poll0 = 0, i_poll1 = 0;
     std::vector<int> m_x;
     std::vector<int> m_c, m_w;          // markers of the INTREQ clear and of the SERDAT write before words 2..8
+    std::vector<int> m_cc;              // CLR: markers of the INTREQ clear that follows the first read of 1 after the move of word 1, 2, .. 8
+    std::vector<unsigned> sp;           // the stop-bit position (the highest set bit) of the word written as word 1, 2, .. (a frame has sp + 2 cells)
     std::vector<uint8_t> d;
     uint64_t t_w1 = 0, t_w1a = 0, t_cap0 = 0, t_cap1 = 0;
     uint64_t T_expect = 0;
@@ -123,6 +125,8 @@ inline TxRun tx_run(const std::string& variant) {
     r.m_ser = s.w16(SERPER, mut("GT") ? uint16_t(0x007F) : uint16_t(0x003F));
     r.T_expect = 64;
     const bool lng = variant == "LONG";
+    const bool clr = variant == "CLR";                          // CLR: after the move of every word the CPU clears INTREQ bit 0 at the first read of 1
+    auto hib = [](unsigned v) { unsigned p = 0; while (v >>= 1) ++p; return p; };
     const uint16_t stop = lng ? 0x300 : 0x100;                  // LONG: the stop bit at bit 9, so that bit 8 is a data bit and a frame has eleven cells (AA p.27)
     const unsigned idle_lines = mut("P16-IDLE") ? 3 : 8;
     const uint16_t slow = mut("P17-R") ? 9 : 0;                 // contrast: every pass of the poll loop is followed by a DBRA loop, so that R exceeds the bound
@@ -133,6 +137,8 @@ inline TxRun tx_run(const std::string& variant) {
     if (variant == "X16") { s.bto(INTREQR, 4, slow); s.w16(SERDAT, 0x0181); }   // four lines in, so that the frame lies inside the 20T before the first write
     s.bto(INTREQR, idle_lines, slow);
     r.m_w1 = s.w16(SERDAT, uint16_t(stop | wd[0]));
+    r.sp.push_back(hib(stop | wd[0]));
+    if (clr) { s.waitb(INTREQR, 0x0001, 60000); r.m_cc.push_back(s.w16(INTREQ, 0x0001)); }
     uint16_t cval = mut("P17-NOCLEAR") ? uint16_t(0) : uint16_t(1);
     // Words 2..8 are written at fixed line starts after the first write, whatever TBE reads: before each, INTREQ <- 1 clears the TBE request
     // (a marker pair around each of the two writes logs when they happened). A line lasts 227 or 228 colour clocks and a frame 10 bit
@@ -149,6 +155,8 @@ inline TxRun tx_run(const std::string& variant) {
         s.bto(INTREQR, last, slow);
         r.m_c.push_back(s.w16(INTREQ, cval));
         r.m_w.push_back(s.w16(SERDAT, uint16_t(stop | wd[size_t(k)])));
+        r.sp.push_back(hib(stop | wd[size_t(k)]));
+        if (clr) { s.waitb(INTREQR, 0x0001, 60000); r.m_cc.push_back(s.w16(INTREQ, 0x0001)); }   // the first read of 1 after the move, and the clear of the request at once
     }
     if (variant == "EXTRA") { last += 7; s.bto(INTREQR, last, slow); s.w16(SERDAT, 0x01FF); }   // contrast: a ninth word 25 bit times (7 lines) after word 8
     s.bto(INTREQR, last + 12, slow);   // 12 lines (about 42 bit times), more than the two frames that follow the last write
@@ -164,7 +172,7 @@ inline TxRun tx_run(const std::string& variant) {
 }
 
 inline void run_p16_17(Checks& ck) {
-    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : (mut("P17-X") ? "X" : (mut("P16-X") ? "X16" : (mut("P16-EXTRA") ? "EXTRA" : (mut("P16-EARLYW") ? "EARLYW" : (mut("P16-LONG") ? "LONG" : ""))))));
+    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : (mut("P17-X") ? "X" : (mut("P16-X") ? "X16" : (mut("P16-EXTRA") ? "EXTRA" : (mut("P16-EARLYW") ? "EARLYW" : (mut("P16-LONG") ? "LONG" : (mut("P17-CLR") ? "CLR" : "")))))));
     TxRun r = tx_run(var);
     Std st = std_pre(r.cap, r.pre, {});
     PreAgg agg; agg.add(st);
@@ -240,8 +248,24 @@ inline void run_p16_17(Checks& ck) {
     bool b_ok = frames.size() == 8;
     for (size_t k = 0; k < frames.size() && k < 8; ++k) b_ok &= frames[k].framed && frames[k].lsb == d[k] && frames[k].msb == d[k];
     bool c_ok = !frames.empty() && frames[0].s > r.t_w1;
+    // the end of each frame from its stop-bit position: a frame has start cell, data cells and the stop cell, stop-bit position + 2 cells of T
+    // (the written word's highest set bit); a frame before the first write (the X variants) is the word 0x0181
+    auto frame_cells = [&](size_t i) -> uint64_t {
+        if (frames[i].s < r.t_w1) return 10;
+        size_t j = 0;
+        for (size_t q = 0; q < i; ++q) if (frames[q].s > r.t_w1) ++j;
+        return (j < r.sp.size() ? r.sp[j] : 8) + 2;
+    };
     bool d_ok = frames.size() >= 2;
-    for (size_t k = 1; k < frames.size() && k < 8; ++k) d_ok &= frames[k].s < frames[k - 1].s + 11 * T;
+    {
+        std::string gs;
+        for (size_t k = 1; k < frames.size() && k < 8; ++k) {
+            const uint64_t fend = frames[k - 1].s + frame_cells(k - 1) * T;   // the end of frame k-1: the end of its stop cell
+            d_ok &= frames[k].s < fend + T;                                 // the next start comes before one more complete idle cell has passed
+            gs += dec((long long)frames[k].s - (long long)fend) + " ";
+        }
+        ck.note("P16 start of frame k minus the end of frame k-1 from its stop-bit position (cycles; one complete idle cell is " + dec((long long)T) + "), k = 2..: " + gs + "(measured)");
+    }
     bool e_ok = !frames.empty();
     if (e_ok) {
         auto ed = tx_edges(c, frames.back().s + 10 * T, t_end);
@@ -260,7 +284,7 @@ inline void run_p16_17(Checks& ck) {
     graded(ck, pre, a_ok, "P16-A: before the first write TxD is constant (AA p.27 'Data from this buffer is moved into a serial shift register for output transmission, whenever it is empty')", un);
     graded(ck, pre, b_ok, "P16-B: exactly eight frames appear and frame k carries d_k, each with a start cell and a stop cell at the stop level: none missing, repeated or extra (AA p.27 'This address writes data to a Transmit data buffer')", un);
     graded(ck, pre, c_ok, "P16-C: frame 1's start cell begins after the first write marker (AA p.27)", un);
-    graded(ck, pre_wait, d_ok, "P16-D: for k = 2..8 frame k's start cell begins less than 11T after frame k-1's start cell, so that no complete idle cell lies between the frames: the word waiting in the buffer moves when the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty')", un_wait);
+    graded(ck, pre_wait, d_ok, "P16-D: for k = 2..8 frame k's start cell begins before one more complete idle cell (T) has followed the end of frame k-1, which is its start plus the stop-bit position of its word plus two cells of T (start cell, data cells and stop cell), so that no complete idle cell lies between the frames: the word waiting in the buffer moves when the shift register is empty (AA p.27 'moved into a serial shift register for output transmission, whenever it is empty', 'The length of the data word is set by the position of the stop bit')", un_wait);
     graded(ck, pre, e_ok, "P16-E: after frame 8's stop cell TxD stays idle until the end of the capture (AA p.27)", un);
     graded(ck, pre_wait, a_ok && b_ok && c_ok && d_ok && e_ok, "P16 sol:AA-serdat.c6 sol:AA-serdat.c7: every word written to SERDAT goes to the transmit buffer and is transmitted on TxD once, in the order written, and a word waiting in the buffer moves into the shift register as soon as it is empty, so its frame follows the previous frame with no idle cell (AA p.27)", un_wait);
 
@@ -330,7 +354,6 @@ inline void run_p18(Checks& ck) {
         if (mut("P18") && i == 0) p = 9;       // contrast: p = 9 where the grader expects p = 8
         if (mut("P18-REP") && i == 4) p = 7;   // contrast: the second p = 8 is written as p = 7
         mk.push_back(s.w16(SERDAT, uint16_t(1u << p)));
-        if (mut("P18-EXTRA") && i == 2) { s.bwait(11 * 64); s.w16(SERDAT, 0x0100); }   // contrast: a word written after the frame's stop cell
     }
     s.bwait(32 * 64);
     s.end();
@@ -346,7 +369,7 @@ inline void run_p18(Checks& ck) {
     int idle = tx_at(c, tfirst > 12 * T ? tfirst - 12 * T : c.base + 1);
     // the low interval of each write
     std::vector<uint64_t> w(6, 0), tw(6, 0);
-    bool idle12 = true, back_idle = true, found = true;
+    bool idle12 = true, stop_ok = true, found = true;
     uint64_t idle_min = ~0ull;   // the shortest stretch of constant TxD before a write
     for (int i = 0; i < 6; ++i) {
         tw[size_t(i)] = marker(c, mk[size_t(i)]);
@@ -364,9 +387,8 @@ inline void run_p18(Checks& ck) {
             while (u > c.base + 1 && tx_at(c, u - 1) == idle) --u;
             idle_min = std::min<uint64_t>(idle_min, tw[size_t(i)] - u);
         }
-        // and at the stop level until the next write
-        uint64_t nxt = i + 1 < 6 ? marker(c, mk[size_t(i + 1)]) : t_end;
-        for (uint64_t u = e1; u < nxt; ++u) if (tx_at(c, u) != idle) back_idle = false;
+        // the stop cell: TxD is at the stop level for one complete cell (T) from the end of the low interval (AA p.27 'A stop bit must be provided as part of the data word')
+        for (uint64_t u = e1; u < e1 + T; ++u) if (u > t_end || tx_at(c, u) != idle) stop_ok = false;
     }
     bool gbrk = (logv(c, pre0.i_adkconr) & 0x0800) == 0;
     std::vector<TxFrame> frames;   // every start edge of the capture
@@ -393,8 +415,8 @@ inline void run_p18(Checks& ck) {
     const std::string un = "fixture, G-S0, G-C, G-BRK, G-T or the idle precondition";
     graded(ck, pre, d9 && d7 && d4, "P18-W: w(p) - w(8) = (p - 8)*T exactly for p = 9, 7 and 4 (AA p.27 'The length of the data word is set by the position of the stop bit')", un);
     graded(ck, pre, r8 && r9, "P18-REPEAT: both repeats of p = 8 and of p = 9 agree exactly (AA p.27)", un);
-    graded(ck, pre, back_idle, "P18-STOP: after each low interval TxD is at the stop level and stays there until the next write (AA p.27 'A stop bit must be provided as part of the data word')", un);
-    graded(ck, pre, d9 && d7 && d4 && r8 && r9 && back_idle, "P18 sol:AA-serdat.c10: moving the stop bit up by one position lengthens the transmitted data word by one bit time (AA p.27 'The length of the data word is set by the position of the stop bit')", un);
+    graded(ck, pre, stop_ok, "P18-STOP: after each low interval TxD is at the stop level for one complete cell (T), the stop cell of the word (AA p.27 'A stop bit must be provided as part of the data word')", un);
+    graded(ck, pre, d9 && d7 && d4 && r8 && r9, "P18 sol:AA-serdat.c10: moving the stop bit up by one position lengthens the transmitted data word by one bit time (AA p.27 'The length of the data word is set by the position of the stop bit')", un);
 }
 
 // ---- P19: SERDATR reads the receive buffer -----------------------------------------------
