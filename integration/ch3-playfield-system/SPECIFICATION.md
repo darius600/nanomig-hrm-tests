@@ -22,7 +22,7 @@ The package has five propositions:
 
 ## Claims not turned into a proposition
 
-Two claims are declined whole and printed as RECORDED lines; no assertion carries
+Three claims are declined whole and printed as RECORDED lines; no assertion carries
 their ids. The following parts of claims give nothing a test can grade, and no test
 may assert anything about them:
 
@@ -141,7 +141,7 @@ writes BPLCON0 at $DFF100.
 A CPU read of a custom register does not appear at the Chip-memory port; the
 value read does, when the program stores it. Every read in this package is made by
 an instruction that stores the value into a buffer in Chip memory at once (for
-VPOSR: `MOVE.L $DFF004,(A0)+`, a long-word read of VPOSR and VHPOSR together, which
+VPOSR: `MOVE.L VPOSR(A0),(A1)+` with A0 at $DFF000 and A1 at the buffer, a long-word read of VPOSR and VHPOSR together, which
 p.216 permits: "the address pairs VPOSR,VHPOSR and VPOSW,VHPOSW can be read from
 and written to as long words"). The read of iteration *i* happened after the store
 of iteration *i*-1 and before the store of iteration *i*; the test gives read *i*
@@ -332,7 +332,9 @@ failure, never a pass.
   fields 2 and 3, B and E show exactly 20 * H reads of the bitplane buffer's
   addresses and C exactly 4 * 40 * H, all within the range the data was written to
   (p.61: "the pointers are continuously incremented to point to the next word to
-  be fetched"). In A, no read of any bitplane address.
+  be fetched"), and no read of the 20 * H words that follow the last buffer (the guard range;
+  the planes of C lie one after the other, so its guard is the range after plane 4). In A,
+  no read of any bitplane address.
 - **P1-d (the picture is not trivially uniform):** over the compared span, in A
   samples showing C0 occur; in B and E, samples showing C0 and samples showing C1
   both occur; in C, each of the 16 palette colours occurs.
@@ -349,13 +351,20 @@ failure, never a pass.
   "Shows only a background color; no playfield is visible", so the rest of every
   odd line shows C0 where run "0" shows C1. Each must yield differing samples; the
   program finishes and P1-a, P1-c (for C/B, and E's fetches) and P1-e still hold.
-- **P1-a:** select PAL for one run and NTSC for the other; the sync samples differ.
+- **P1-a:** run "1" of every configuration (A, B, C, E) writes VHPOSW once (p.216: "Used for
+  counter synchronization"), after two VERTB detections following the Copper start, in vertical
+  blanking: H sixteen counts on, V unchanged. The beam counters, and with them the sync
+  samples, are shifted in run "1", the sync samples of the two runs differ over the compared
+  span, and every other P1 line holds; P1-MAIN prints NOT GRADED.
 - **P1-b:** apply the run-"1" check to the run-"0" fetch trace; it fails.
 - **P1-c:** in B, C and E, DDFSTOP is 8 colour clocks lower than the value of step 6
   with bitplane DMA still on (p.60: DDFSTOP names the last fetch); the bitplane reads
   of a DMA field are fewer than N, and still a nonempty set. In A the Copper list
   also points sprite 0 at the bitplane buffer's address and turns sprite DMA on, so a
-  channel other than bitplane DMA reads that address range where no read is expected.
+  channel other than bitplane DMA reads that address range where no read is expected. In B
+  and E a second contrast makes DDFSTOP 8 colour clocks higher with modulo 0, so 21 words
+  per line are fetched and the pointer runs past the buffer into the guard range; the count
+  inside the buffer is as many reads as before and only the guard clause fails.
 - **P1-d:** in B, fill the bitplane with $0000; no sample shows C1.
 - **P1-e:** in configuration B at S2 the program writes BEAMCON0 with bit 5 opposite
   to the configured standard (p.304: "NTSC (525 lines ...) PAL (625 lines ...)"), and
@@ -432,9 +441,8 @@ two border samples in item 3.
 - **P2-b (the data displayed is the data prepared):** in DMA fields 2 to 5 (as
   defined in P1-c), the bitplane buffer is read exactly once per word, at START,
   START+2, ..., START + 40*H - 2, in increasing address order (pp.61-62, Figures
-  3-10 and 3-11: line 1 at START ... START+38, line 2 at START+40 ...). The buffer
-  is followed by 2*H spare bytes of $00 so that the contrast below reads no
-  undefined memory.
+  3-10 and 3-11: line 1 at START ... START+38, line 2 at START+40 ...). Nothing
+  follows the buffer in the plain run; the contrast below supplies the lines it needs after the buffer.
 
 ### 6. Contrasting cases
 
@@ -447,10 +455,14 @@ two border samples in item 3.
   predicts every line after the first starts 2 bytes later, and the address check
   fails. Item 1 holds (valid data words follow the buffer, so every line still shows
   data) and item 2 is not graded.
-- **Item 1 as a count:** DIWSTOP with VSTOP one line lower ($2BC1 in PAL, $F3C1 in
-  NTSC); p.59 predicts H-1 data lines per field, and item 1 fails. The buffer is then
-  read for H-1 lines only, so P2-b fails too and item 2 is not graded; item 3 holds
-  for the lines shown.
+- **Item 1 as a count:** the last line of the buffer (line H-1) is all zero in memory, so it
+  shows no C1 and a data block has H-1 lines per field (p.59: H lines of data are displayed);
+  item 1 fails. The buffer is still read in full, so P2-b, item 2 and item 3 hold.
+- **CAL-VIDEO:** run "1" of configuration B writes VHPOSW once (p.216: "Used for counter
+  synchronization"), in vertical blanking after two VERTB detections following the Copper start:
+  H sixteen counts on, V unchanged. One doubler line of run "1" is not 227 or 228 cc
+  long; CAL-VIDEO prints FAIL, P2-a and P2-b hold, and P2-I1, P2-I2, P2-I3 and the P2
+  aggregate print NOT GRADED.
 - **Fixture:** in run "1" of configuration B at S1 the program stores a start word other
   than $5A01; the run completes and the fixture line reports it.
 
@@ -488,10 +500,13 @@ This is described fully in Chapter 8"):
   VPOSR register is latched. This freeze is released at the end of internal
   vertical blanking (vertical position 20)."
 
-A test cannot drive the light pen trigger input. The observation is chosen so that
-the expected result is the same whether or not a trigger occurs: with or without a
-trigger, the value is frozen by the end of the field and stays frozen until
-vertical position 20.
+This package applies no trigger: no program or harness input touches pin 6 of a controller
+port, the "Beam Trigger" line (p.238, step 3), so none occurs in any run. The trigger and the
+release are graded by ch8-light-pen-beam, which pulses pin 6 and grades the capture and the
+release at vertical position 20, in OCS only (in ECS that package records them, because
+LPENDIS's reset value is not stated, p.305). The observation here is chosen so that the
+expected result is the same whether or not a trigger occurs: with or without a trigger, the
+value is frozen by the end of the field and stays frozen until vertical position 20.
 
 ### 2. Stimulus
 
@@ -516,7 +531,7 @@ Run "L1" (LPEN = 1) and run "L0" (LPEN = 0), identical except for one data word:
    - write INTREQ = $0020 (clear VERTB);
    - store a marker word (the iteration number 0..4) into Chip memory; the time of
      this store is t_f;
-   - execute 600 times `MOVE.L $DFF004,(A0)+`.
+   - execute 600 times `MOVE.L VPOSR(A0),(A1)+`.
 6. Idle loop without custom-register access.
 
 Run in S1, S2, S3, S4.
@@ -553,6 +568,9 @@ blanking (vertical position 20)."
 Quantifier: "latched ... released at position 20" is a statement about every read
 before position 20; it is graded over every read in the window (at least 100, see
 preconditions), in four consecutive fields, four system configurations, two cores.
+When `P3-MAIN` is graded it also prints a MEASURED line with the counts of each window
+(reads, equal pairs, V-bad pairs, H decreases, V above 19) and the 17-bit values of its
+first and last counted read, so a red shows what the L1 windows held.
 
 The aggregate (the line that carries the ids) requires, in every system
 configuration, this check on L1 (`P3-MAIN`) together with the L0 line `P3-LIVE`
@@ -565,12 +583,13 @@ Not graded, because the pages leave it open:
 
 - **the frozen value itself.** "the end of the display field" is not defined as a
   position; p.239's comparison value "$10500 (V=261)" belongs to an NTSC field and
-  no PAL value is given; and whether a trigger occurs is not under the test's
-  control.
+  no PAL value is given; and this package applies no trigger (scope: ch8-light-pen-beam
+  grades the trigger, in OCS only).
 - **the release after position 20.** p.239: "when the light pen latch is enabled,
   the VPOSR register may be latched at any time, and cannot be relied on as a
-  counter." A trigger may freeze the value again at any point after the release,
-  and the test cannot know whether one occurred.
+  counter." A trigger may freeze the value again at any point after the release.
+  This package applies none and its window ends before position 20; ch8-light-pen-beam
+  grades the release itself, in OCS only.
 - **the colour clock at which V steps after H wraps.** No page fixes it (see
   "P3-LIVE and P4-MAIN: the counting lines" in the build notes).
 
@@ -582,7 +601,7 @@ Not graded, because the pages leave it open:
 - **P3-b (the anchor):** in L0, every counted read has V (V8..V0) between 1 and 19
   inclusive. In both L0 and L1, consecutive t_f satisfy the field-length check.
 - **P3-M (the blocks are the program's own):** in both runs the stores to the
-  measurement buffer from $0C1000 up are exactly five blocks; block k (k = 0..4) is the
+  measurement buffer, which are all stores at or above $0C1000, are exactly five blocks; block k (k = 0..4) is the
   marker word k followed by the number of long words the program's own `MOVE.W #n-1,D5`
   names (600; 20 in the P3-a contrast), each stored high
   half then low half at consecutive word addresses. Every word the grading takes for a
@@ -592,15 +611,16 @@ Not graded, because the pages leave it open:
   spinning in the instruction fetches of both runs, at least 100 iterations each;
   its period is what the field-length check adds to its tolerance. P3-b and P3-c
   wait for it.
-- **P3-c (ECS only):** the program's BEAMCON0 write carries bit 13 = 0 and bit 5 =
-  the configured standard, checked on the program's code and on the immediate data
-  word the CPU fetched at the Chip-memory port, and the field-length check after it
-  gives the configured standard.
-- **P3-d:** the program contains no other write to $DFF100, and no Copper
+- **P3-c (ECS only):** the program contains exactly one BEAMCON0 write, which carries bit
+  13 = 0 and bit 5 = the configured standard, checked on the program's code and on the
+  immediate data word the CPU fetched at the Chip-memory port, and the field-length check
+  after it gives the configured standard.
+- **P3-d:** the program contains no other write to $DFF100, no Copper
   instruction fetched from the Copper list's address ($020000) at the Chip-memory
-  port during the run is a MOVE to $100 (first word $0100), so nothing else can have
-  written BPLCON0 from a list the test started. A Copper running from a COP1LC value
-  the test did not write is not observed.
+  port during the run is a MOVE to $100 (first word $0100), and no read at the
+  Chip-memory port lies outside the loaded program's own image, the four words of the reset
+  vectors in the overlay shadow (initial SSP and PC) and word address 0, so a Copper
+  running from any address, started by the test or not, would be seen.
 
 Every precondition is printed before the line that waits for it. When the fixture
 (both programs loaded, reset released, DONE reached) or a precondition it depends
@@ -630,23 +650,36 @@ and fail on a counter that is frozen (criterion 1).
   predict counting values (p.216); the reads in each window are no longer equal and
   the "all equal" check fails.
 - **P3-LIVE:** run the L1 program in place of the L0 program on a chipset in which
-  bit 3 latches; the L0 windows then hold one frozen value and criterion 1 fails.
+  bit 3 latches; the L0 windows then hold one frozen value and criterion 1 fails. On the
+  repository's chipset a stimulus contrast exists too: the last burst of the L0 program does
+  100 plain reads, then 500 reads each preceded by a write to VHPOSW (p.216: "Used for counter
+  synchronization"); the counters are rewritten between reads, so reads repeat and V steps
+  back, and P3-LIVE prints FAIL, while P3-M, P3-a, P3-L, P3-b,
+  P3-c and P3-d hold.
 - **P3-a:** reduce the burst to 20 reads; fewer than 100 reads fall into the window.
+  Spread clause: reduce the burst to 150 reads; more than 100 reads fall into the window and
+  the last read lies far before its end.
 - **P3-b:** delay the marker store by about 26 lines after the VERTB detection in
   L0; the reads then have V above 19.
 - **P3-M:** the L1 program stores every marker with bit 8 set ($0100 + k); the block
   shape is not the program's own marker sequence, the line reports it and the lines
-  that wait for it are not graded.
+  that wait for it are not graded. Count clauses: the L1 program stores four blocks, or
+  six blocks; the line reports it.
 - **P3 fixture:** the L1 program stores a start word other than $5A03; both runs
   complete and the fixture line reports it.
 - **P3-L:** replace the polling loop by a fixed delay; no loop is seen in the
   instruction fetches.
 - **P3-c (ECS):** BEAMCON0 = $2020 (PAL) / $2000 (NTSC), LPENDIS = 1. p.305 predicts
-  that the latched value is ignored on a read; the L1 windows then show counting
-  values and the main check fails, while the program finishes and P3-a and P3-b still
-  hold. Separately, BEAMCON0 with bit 5 set opposite to the configured standard
+  that on a chipset that follows the pages the latched value is then ignored on a read, so
+  the precondition requires LPENDIS = 0. The contrast makes the precondition P3-c print
+  FAIL through its program-image clause (the program's own code writes LPENDIS = 1) and
+  P3-MAIN print NOT GRADED, while the program finishes and P3-a and P3-b still hold.
+  Separately, BEAMCON0 with bit 5 set opposite to the configured standard
   makes the field-length check report the other standard (p.304: "NTSC (525 lines
-  ...) PAL (625 lines ...)").
+  ...) PAL (625 lines ...)"). Fetched-word clause: the L0 program rewrites the immediate
+  word of its BEAMCON0 write (bit 0 set) before it executes, so the word the CPU fetches is
+  not the word of the image. Write-count clause: the L1 program writes BEAMCON0 a second
+  time with LPENDIS = 1.
 - **P3-d:** add a write BPLCON0 = $0000 after the first detection in L1; the program
   check reports it.
 
@@ -708,10 +741,13 @@ in four system configurations and with both cores.
 - **P4-L:** as P3-L, for the one program. P4-c waits for it.
 - **P4-b:** the program contains no write to $DFF100; no Copper instruction
   fetched from the Copper list's address ($020000) at the Chip-memory port is a MOVE
-  to $100; the first instructions the CPU fetches after power-up are the test
-  program's. A Copper running from a COP1LC value the test did not write (no page
-  states DMACON's power-up value, so a Copper could run before the program's first
-  DMACON write) is not observed.
+  to $100, and no read at the port lies outside the program image, the four words of the
+  reset vectors and word address 0 (no page states DMACON's power-up value, so a Copper could
+  run before the program's first DMACON write; such a Copper would read outside the image);
+  the first read at the port after the reset vector words (and the reads at word address 0)
+  is the first word of the test program, so the first instructions the CPU fetches after
+  power-up are the test program's. The three parts print as `P4-B-PROGRAM`, `P4-B-COPPER`
+  and `P4-B-START`.
 - **P4-c (ECS):** consecutive t_f satisfy the field-length check.
 - **P3-MAIN** passed in the same system configuration (above).
 
@@ -724,7 +760,7 @@ Every precondition waits for the fixture and prints `NOT GRADED` when it fails.
   precondition true, so it is an implementation record: a second private chipset in
   which LPEN is 1 after reset (build notes). On it `P3-MAIN` passes, the windows hold
   one frozen value and criterion 1 fails.
-- **P4-a, P4-L, P4-c:** as in P3.
+- **P4-a, P4-L, P4-c:** as in P3; the spread clause of P4-a has the 150-read burst of P3-a.
 - **P4-M:** as in P3: the program stores every marker with bit 8 set.
 - **P4 fixture:** the program stores a start word other than $5A03; the run completes
   and the fixture line reports it.
@@ -732,7 +768,9 @@ Every precondition waits for the fixture and prints `NOT GRADED` when it fails.
   program check reports it. (Copper part) before step 5, start a Copper list
   `MOVE BPLCON0,$0008 / WAIT $FFFF,$FFFE` as in Common definitions (DMACON =
   $8280); the fetch-trace check finds the MOVE to $100, and the program still
-  finishes.
+  finishes. (Start part) the initial PC names a stub in Chip memory that holds `JMP $080400`
+  instead of the program's first word; the first read after the reset vector words is the
+  stub's, and `P4-B-START` prints FAIL.
 
 ### 7. Reference frame
 
@@ -802,7 +840,7 @@ Copper's VP carry a line in the high byte). Only lines below $100 are used.
 9. Copper start; DMACON = $8380.
 10. Four times: poll INTREQR for VERTB (as in P3), clear it (INTREQ = $0020),
     then poll VHPOSR until its V7-V0 field is at least N-3, then store a marker word (the
-    iteration number 0..3) into Chip memory, then execute 200 times `MOVE.L $DFF004,(A0)+`.
+    iteration number 0..3) into Chip memory, then execute 200 times `MOVE.L VPOSR(A0),(A1)+`.
 11. Idle loop.
 
 Run in S1 and S2.
@@ -868,13 +906,22 @@ above $100 are not tested, because the bit layout is not stated.
   VBSTRT depend on VARVBEN, so line N shows data in C2: line N-1 is followed by a
   line containing C2, and line N is preceded by a line containing C2; item 1 fails.
   P5-a, P5-b, P5-c still hold.
-- **Main check, value:** VBSTRT = N + 16 with the Copper markers unchanged. Blanking
-  then starts at line N + 16, line N shows C2, and item 1 fails.
-- **P5-a:** DMACON = $8280 (no BPLEN); no line contains C1.
+- **Main check, value:** VBSTRT = N + 16 with the Copper markers unchanged ($B0B0 and VBSTOP
+  $B8B8 for N = $A0). Blanking then starts at line N + 16, line N shows C2, and item 1 fails;
+  P5-a, P5-b and P5-c hold. This contrast is a record on the private chipset (below): on the
+  repository's chipset P5-MAIN is red already.
+- **CAL-VIDEO:** after the last burst the program writes VHPOSW once (p.216): H sixteen counts
+  on, V unchanged. One doubler line after it is not 227 or 228 cc long;
+  CAL-VIDEO prints FAIL, P5-c holds and P5-MAIN prints NOT GRADED.
+- **P5-a:** DIWSTRT = $9E81, so the display window opens at line N-2 (N = $A0); the lines N-10
+  to N-3 show no C1 and P5-a prints FAIL, while P5-M, CAL-VIDEO, P5-b and P5-c hold and P5-MAIN
+  prints NOT GRADED.
 - **P5-b:** replace WAIT(N-1,$30) by WAIT(N-2,$30); the reads around t_c2 show
   V = N-2.
 - **P5-c:** BEAMCON0 with bit 5 opposite to the configured standard; the field
-  length is the other standard's.
+  length is the other standard's. Marker clause: the second marker follows a VERTB
+  detection that skips one field, so two consecutive detection markers are two fields
+  apart, while the vsync assertions recur at the configured standard's field length.
 - **P5-M:** the program stores every marker with bit 8 set ($0100 + k); the line
   reports it and the lines that wait for it are not graded.
 - **P5 fixture:** the program stores a start word other than $5A05; the run completes
@@ -974,10 +1021,10 @@ The preconditions each line waits for:
 | `P3-b`, `P3-c` | the fixture, `P3-M`, `P3-L` |
 | `P3-LIVE` | the fixture, `P3-M`, `P3-a` |
 | `P3-MAIN` | the fixture, `P3-M`, `P3-a`, `P3-L`, `P3-b`, `P3-c`, `P3-d` |
-| `P4-M`, `P4-L`, `P4-B-PROGRAM`, `P4-B-COPPER` | the fixture |
+| `P4-M`, `P4-L`, `P4-B-PROGRAM`, `P4-B-COPPER`, `P4-B-START` | the fixture |
 | `P4-a` | the fixture, `P4-M` |
 | `P4-c` | the fixture, `P4-M`, `P4-L` |
-| `P4-MAIN` | the fixture, `P4-M`, `P4-a`, `P4-L`, `P4-c`, `P4-B-PROGRAM`, `P4-B-COPPER`, and `P3-MAIN` passed in the same system configuration |
+| `P4-MAIN` | the fixture, `P4-M`, `P4-a`, `P4-L`, `P4-c`, `P4-B-PROGRAM`, `P4-B-COPPER`, `P4-B-START`, and `P3-MAIN` passed in the same system configuration |
 | `P5-b`, `P5-c` | the fixture, `P5-M` |
 | `P5-MAIN` | `P5-M`, `CAL-VIDEO`, `P5-a`, `P5-b`, `P5-c` |
 
@@ -991,7 +1038,7 @@ lines and the border, not which memory words were displayed.
 that does not execute group P3. `P5-d` is a RECORDED line (the harness configuration
 the run was started with) and is not a precondition of anything.
 
-Two claims are declined and printed as RECORDED lines that name their ids:
+Three claims are declined and printed as RECORDED lines that name their ids:
 `sol:3-composite.c7` (P2) and `opus:C-vbstrt.c01`, `sol:C-scan.c20` (P5).
 
 ### Units and tolerances
@@ -1021,9 +1068,15 @@ Two claims are declined and printed as RECORDED lines that name their ids:
   measured from their instruction fetches (the longer is the `VHPOSR` loop on fx68k, 224
   clk_sys cycles, and the `INTREQR` loop on TG68K, 176; its `VHPOSR` loop takes 144).
   The package holds no tuned margin.
-- Each P5 run prints one MEASURED line `P5 <tag>: lines N-2..N+8 show` that names, for
-  each beam line from N-2 to N+8 (N the line VBSTRT names), which of C1, C2, C3 or none
-  its first graded field shows; it is a measurement only and grades nothing.
+- Each P5 run prints one MEASURED line `P5 <tag>: first graded field, lines N-2..N+8 (N = the
+  line VBSTRT names):` followed by one entry `N-2=...` to `N+8=...` that names, for each beam
+  line from N-2 to N+8, which of C1, C2, C3 or none its first graded field shows; it is a
+  measurement only and grades nothing.
+- The Chip-memory port log every line reads is the log without the held continuations of
+  its bus cycles: an entry that repeats the address, direction, data and byte enables of the
+  entry before it exactly one bus period later (the smallest spacing of the log's samples) is
+  dropped, and two reads of one address with an idle bus period between them stay two reads.
+  Collapsing every identical neighbour would hide a double read of one word from `P2-b`.
 - A read lies inside a window when the two stores that bound it, the one before it and
   the one after it, both lie inside it (Common definitions). A read is placed by the
   system-clock time of the low-half store of its own iteration and by that of the
@@ -1045,13 +1098,29 @@ beside the verdict.
 Measured on the repository's chipset, in every window of every system configuration: no
 equal pair, no V step other than 0 or 1, at most one H decrease per V value. The pairs
 with V unchanged and H lower are all H 210 -> 0 on fx68k (the read at H = 0 still shows the
-previous line's V) and all H 212 -> 1 on TG68K (the read at H = 1 still shows it). V8..V0 and
-H8..H1 are the two bytes of one 16-bit register (VHPOSR, p.238), so these pairs are not a
-long-word read torn between two bus cycles. A private chipset whose vertical position
+previous line's V) and all H 212 -> 1 on TG68K (the read at H = 1 still shows it). V7..V0 and
+H8..H1 are the two bytes of one 16-bit register (VHPOSR; V8 is bit 0 of VPOSR, p.238), so these
+pairs are not a long-word read torn between two bus cycles: both fields of each read come from
+one read of VHPOSR. A private chipset whose vertical position
 counts at the clock edge at which the horizontal position wraps shows no such pair and
 meets the criteria as well; a frozen counter (the L1 program on the private chipset with
 the latch) fails criterion (i). The criteria hold on both counter phases and fail on a
 frozen latch.
+
+### The reads at word address 0
+
+The Chip-memory port log of every run holds reads at word address 0 that no instruction of
+the program makes. Measured on both cores in each P4 run (S1 to S4): exactly four in every
+line of the run, from the first cycles of the run (before the CPU is released), at the same
+four points of a 227 cc period, 2 cc apart, each returning $0000 (S1: 11448 reads in 2862
+lines on fx68k and 11436 in 2859 on TG68K; S2: 9648 in 2412 and 9636 in 2409; S3 as S1, S4
+as S2). p.285 says "There are four refresh time slots" per line, and p.20 puts refresh among
+the DMA channels that use only the even memory cycles. No page says which address the refresh
+puts on the memory bus, so that these reads are the refresh is inferred from their count and
+period and is not established. The clauses of `P3-d` and `P4-B-COPPER` on reads outside the
+program image allow, besides the image, exactly the four vector words in the overlay shadow
+(the harness's initial SSP and PC, read once each) and word address 0, and nothing else; the
+allowance for word address 0 rests on this measurement alone.
 
 ### Contrasts that differ from the text of section 6
 
@@ -1069,19 +1138,26 @@ NOT GRADED.
   half still shows the original colours, so `P1-d` holds, the BPLCON0 words are
   unchanged, so `P1-b` holds, and `P1-MAIN` is graded and prints FAIL. Replacing the
   change of bit 9 would have made `P1-b` fail and left `P1-MAIN` not graded.
-- **P1-a, P1-e.** The dedicated contrast `P1A` (a genuine PAL run's sync samples
-  against a genuine NTSC run's) prints its own fixture line first and grades only
-  when it passes. The contrast for P1-e is `P1ESTD`: the program of configuration
-  B at S2 writes BEAMCON0 with bit 5 opposite the configured standard, so the field length
-  is the other standard's; the 200-line window fits the longer field and P1-c B holds.
+- **P1-a, P1-e.** `P1A` runs through the normal pair path: run "1" of A, B, C and E at S1
+  executes one write to VHPOSW (H sixteen counts on, V unchanged) in vertical blanking after two
+  VERTB detections following the Copper start (`prog_p1_2c_pal_vshift.bin` in A, B and E,
+  `prog_p1_16c_pal_vshift.bin` in C). `P1-a` prints FAIL in the four configurations, the other
+  P1 lines hold and `P1-MAIN` prints NOT GRADED in them. The contrast for P1-e is `P1ESTD`: the
+  program of configuration B at S2 writes BEAMCON0 with bit 5 opposite the configured standard,
+  so the field length is the other standard's; the 200-line window fits the longer field and
+  P1-c B holds.
 - **P1-c.** `P1C` lowers DDFSTOP by 8 colour clocks in B, C and E with bitplane DMA on,
   so each DMA field still reads part of the buffers (4864 of 5120 words in B and E,
   38912 of 40960 in C), and gives A a Copper list that also points sprite 0 at the
   bitplane buffer's address and turns sprite DMA on, so reads of that address range occur
-  with the BPLCON0 words unchanged. P1-b and P1-d hold in A, B, C and E.
+  with the BPLCON0 words unchanged. P1-b and P1-d hold in A, B, C and E. `P1C_OVER` (B and E)
+  runs a program with DDFSTOP 8 colour clocks higher and modulo 0: 21 words per line are
+  fetched, the count inside the buffer is unchanged and the guard range after it is read, so
+  only the guard clause of P1-c fails (P1-c prints FAIL in B and E, P1-MAIN prints NOT GRADED
+  there, every other line holds).
 - **P2 contrasts.** `P2B` (BPL1MOD = $0002, with 20 more lines of valid data words after
-  the buffer) turns P2-b red and leaves P2-I2 and the P2 aggregate not graded; `P2ITEM1` (VSTOP one line lower) turns P2-I1 and P2-b red (the buffer is read
-  for H-1 lines) and leaves P2-I2 not graded, P2-I3 holds; `P2EDGE` (window 32 pixels
+  the buffer) turns P2-b red and leaves P2-I2 and the P2 aggregate not graded; `P2ITEM1` (the last line of the buffer zero) turns only P2-I1 red (P2-b, P2-I2 and
+  P2-I3 hold); `P2EDGE` (window 32 pixels
   wider) turns P2-I3 and P2-b red and leaves P2-I2 not graded; `P2A` turns P2-a red and
   leaves P2-I1, P2-I2 and P2-I3 not graded.
 - **P3-b.** `P3BLATE`, the L0 program storing its marker about 26 lines after the VERTB
@@ -1095,6 +1171,8 @@ NOT GRADED.
 - **P3-LIVE.** The contrast `P3LIVE` runs on the private chipset: the L1 program stands in
   for the L0 program, the L0 windows hold one frozen value and criterion (i) fails; the
   frozen value has V above 19, so P3-b prints FAIL too and P3-MAIN is not graded.
+  `P3LIVE_VHPOSW` runs on the repository's chipset: the last burst of the L0 program rewrites
+  the counters between its reads and only P3-LIVE prints FAIL (P3-MAIN stays as it is).
 - **P3-L, P3-c, P4-L.** `P3L` leaves P3-b, P3-c and P3-MAIN not graded; `P3C_WRONGSTD`
   also fails P3-b through its field-length part; `P4L` leaves P4-c not graded.
 - **P4 main.** The contrast that inserts a BPLCON0 write is the contrast of
@@ -1103,8 +1181,27 @@ NOT GRADED.
 - **P2 item 3.** Section 6 has no contrast for the border samples; the contrast widens
   the display window by 32 pixels and fetches one more word per line, so the sample
   after the 320th pixel shows data.
-- **CAL-VIDEO.** Its contrast is `P5C`, the P5 program that writes BEAMCON0 with bit 5
-  opposite the configured standard (CAL-VIDEO V1 S1 and P5-c V1 S1 print FAIL).
+- **CAL-VIDEO.** Its own contrasts are `P5CAL` (the P5 program writes VHPOSW once after the last
+  burst: CAL-VIDEO V1 S1 prints FAIL, P5-c holds, P5-MAIN prints NOT GRADED) and `P2CAL` (run
+  "1" of configuration B at S1 writes VHPOSW once: CAL-VIDEO B S1 prints FAIL, P2-a and P2-b hold,
+  P2-I1, P2-I2, P2-I3 and the P2 aggregate print NOT GRADED). `P5C`, the P5 program that
+  writes BEAMCON0 with bit 5 opposite the configured standard, turns CAL-VIDEO V1 S1 and P5-c
+  V1 S1 red together; it is the contrast of P5-c.
+- **P5-a, P5-c.** `P5A` opens the display window at line N-2 (DIWSTRT = $9E81): only P5-a prints
+  FAIL, with its population (the lines before the first C2 line) non-empty. `P5C_SKIP` makes
+  the second marker follow a skipped field: only P5-c prints FAIL, through its marker clause.
+- **P3-M, P3-a, P4-a.** `P3FOUR` and `P3SIX` store four and six blocks: only P3-M prints FAIL.
+  `P3A_SPREAD` and `P4A_SPREAD` run a 150-read burst: the window holds more than 100 reads and
+  only the spread clause of P3-a (P4-a) fails.
+- **P3-d, P4-B-COPPER.** `P3D_COPIDLE` (the L1 program starts the Copper on a preloaded list
+  that holds only `WAIT $FFFF,$FFFE`) and `P4B_COPIDLE` (the same list for the P4 Copper
+  program) make the Copper fetch at the port without any MOVE to $100: only the clause on
+  reads outside the program image fails, `P3-d` and `P4-B-COPPER` print FAIL. `P3D` and
+  `P4B_COP` are the contrasts of the clauses on BPLCON0 writes.
+- **P3-c.** `P3C_SELFMOD` (the CPU fetches a BEAMCON0 immediate other than the image's) and
+  `P3C_SECONDBEAM` (a second BEAMCON0 write) each turn only P3-c red; P3-MAIN prints NOT GRADED.
+- **P4-b.** `P4B_START` makes the initial PC name a stub: `P4-B-START` prints FAIL and the
+  lines that wait for it (`P4-MAIN`) print NOT GRADED.
 - **CAL-CC.** The 7 MHz clock enable at the port comes from the clock generator, and no
   register write or program changes its period; the line measures that period before any
   program runs, so it has no mutation (a `none` record).
