@@ -11,6 +11,12 @@
 ;          VHPOSW ($02C) = $6400, before the phase-C BPLCON0 write.
 ; NMH_K5: the phase-B loop gets a delay of at least 300 colour clocks per
 ;         sample (CP2's own mutation), and BUFB is shortened to match.
+; NMH_K21: once in phase B (after sample 20000) the loop spends about two
+;         lines in a delay, so that a (field,line) cell has no sample at all.
+; NMH_ECS: the ECS programs write BEAMCON0 ($1DC, p.305) once, before BPLCON0
+;         bit 3 is ever set: bit 13 LPENDIS clear, bit 5 PAL set for the PAL
+;         configuration (NMH_NTSC undefined) and clear for NTSC, every other
+;         bit clear. prog_ecs_pal.s and prog_ecs_ntsc.s define it.
 ; NMH_KFIX: the M0 marker write stores a different value (the FIXTURE
 ;           mutation), while M1-M4 and DONE are unaffected.
 ; NMH_KNODONE: the program hangs after M4 without storing DONE_VALUE (the
@@ -45,6 +51,13 @@ start:
         move.w  #$7fff,$09c(a6)         ; INTREQ: clear every request
         move.w  #$7fff,$096(a6)         ; DMACON: clear every DMA enable (p.278): no Copper, bitplane,
                                         ;   sprite, audio, disk or blitter DMA; only refresh remains
+        ifd     NMH_ECS
+        ifd     NMH_NTSC
+        move.w  #$0000,$1dc(a6)         ; BEAMCON0 (p.305): LPENDIS (bit 13) = 0, PAL (bit 5) = 0 for NTSC, all other bits 0
+        else
+        move.w  #$0020,$1dc(a6)         ; BEAMCON0 (p.305): LPENDIS (bit 13) = 0, PAL (bit 5) = 1 for PAL, all other bits 0
+        endif
+        endif
         ifd     NMH_K4
         move.w  #$0008,$100(a6)         ; BPLCON0: LPEN=1 (K4)
         else
@@ -77,6 +90,13 @@ start:
         ifd     NMH_K5
         move.w  #250,d1                 ; K5: delay well over 300 colour clocks between samples
 .b5dly  dbra    d1,.b5dly
+        endif
+        ifd     NMH_K21
+        cmpa.l  #BUFB+4*20000,a0
+        bne.s   .b21
+        move.w  #100,d1                 ; K21: about 500 colour clocks, two lines, once
+.b21dly dbra    d1,.b21dly
+.b21
         endif
         cmpa.l  a1,a0
         bne.s   .b

@@ -1,0 +1,11 @@
+--- a/minimig.v
++++ b/minimig.v
+@@ -488,7 +488,7 @@
+ 	.ecs(|chipset_config[4:3]),
+ 	.aga(chipset_config[4]),
+ 	.floppy_speed(floppy_config[0]),
+-	._lpen(_fire0 & _fire1)
++	._lpen(_fire0 & _fire1 & _joy1[3] & _joy2[3])
+ );
+ 
+ //instantiate paula

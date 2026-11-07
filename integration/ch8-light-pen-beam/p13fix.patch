@@ -1,0 +1,11 @@
+--- a/userio.v
++++ b/userio.v
+@@ -166,7 +166,7 @@
+ 		end else begin
+ 			potcap[3] <= _djoy2[5] & ~(potreg[15] & ~potreg[14]);
+ 		end
+-		potcap[2] <= joy2_pin5;
++		potcap[2] <= joy2_pin5 & _djoy2[6];
+ 
+ 		if(joy1enable & cd32pad & ~joy1_pin5) begin
+ 			potcap[1] <= cd32pad1_reg[7];
