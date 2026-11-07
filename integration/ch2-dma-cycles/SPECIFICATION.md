@@ -153,8 +153,18 @@ and 110 show being written by the Copper: pointers `$080`–`$08A`, `$0E0`–`$0
 **D11. When the Copper restarts.** Both sentences are in one box on p.25: *"At the start of
 each vertical blanking interval, COP1LC is automatically used"* and *"when the end of
 vertical blanking occurs, the Copper is automatically forced to restart"*. **Handling:** a
-frame boundary is the Copper's fetch at the COP1LC address, wherever in vertical blanking it
-happens (§2.4). No check depends on which line that is.
+frame boundary is the Copper's fetch at the COP1LC address (§2.4). Three other places put the
+restart at the start of vertical blanking: p.30 (*"When the screen display ends and vertical
+blanking starts, the Copper will automatically be pointed to the top of its instruction list"*),
+Appendix A p.276 (*"COP1LC is automatically used at the beginning of each vertical blank time"*)
+and the first sentence of the box, and p.219 puts the VERTB interrupt at the same start (*"causes
+an interrupt at line 0 (start of vertical blank) of the video display frame"*; Appendix A p.280:
+*"Start of vertical blank"*). P7 reads the box as those places do and grades that the restart
+fetch lies on the line of the VERTB service (P7.4); the other reading of the second sentence,
+a restart at the end of blanking, would put the restart some 25 lines after the service
+(p.219: blanking runs from line 0 to line 25 in PAL) and turns that part of P7 red. Q6 and Q7
+count the lines of a Copper list from the restart (P12.5), so they rest on the same reading.
+No other check depends on which line the restart is on.
 
 **D12. The gap between sprite uses.** p.117: *"at least one horizontal scan line"* must
 separate uses. p.108: *"If the VSTART value contained in these words is lower than the
@@ -847,7 +857,12 @@ graded, the measurement that stands in its place and the reason are in one place
    s): the restart fetch of that frame is the Copper's read of the first word of L5 (§2.4), and
    the line offset counts lines of the run's own frame F (§2.3) from the line that holds it. The
    anchor is the same in both runs: the restart fetch of the same observed frame. This is done
-   for each observed frame of both runs.
+   for each observed frame of both runs. The restart fetch is also placed against the VERTB
+   service: for each observed frame of each run, the CPU's read of the level-3 autovector (the two
+   words at byte `$00006C`, which the CPU reads to serve the VERTB interrupt; the first read of
+   an exception) that lies nearest in time to the frame's restart fetch is found, and its line is
+   taken in the same grid. The line offset of that read from the restart fetch's line and the
+   two in-line cycles are printed as MEASURED.
 4. **Expected value.** For every part and every observed frame, the list of (line offset, s)
    pairs is identical in C5 and C6: every Copper access lies on the same line, counted from the
    frame's restart line, and on the same in-line cycle in both runs, WAIT 0 and the head
@@ -856,10 +871,21 @@ graded, the measurement that stands in its place and the reason are in one place
    *"It therefore needs (and has) priority over only the blitter and microprocessor."* No
    collision means the Copper never waits for these channels, so its cycles cannot move. All
    116 parts are graded, in every observed frame, in PAL/ECS: C5 has no run in the other
-   modes of §2.10. What the anchor cannot show: the restart fetch is the line from which the
-   frame is counted (§2.4), so its own position in the line grid is compared by its in-line
-   cycle s only; p.25 ties the restart to the start of vertical blanking and not to the other
-   channels, and the comparison of every later access against it is what P7 grades.
+   modes of §2.10.
+   **The restart line.** The pair lists are counted from the restart fetch's line, so a displacement
+   of the restart together with every later Copper access compares equal. P7 therefore also grades
+   the restart fetch's line against an event no Copper fetch makes, the VERTB interrupt. p.219:
+   *"Bit 5, VERTB, causes an interrupt at line 0 (start of vertical blank) of the video display
+   frame"*; the Copper restarts at the same start (D11; p.30; Appendix A p.276). In every observed
+   frame of C5 and of C6 the VERTB service's autovector read nearest to the restart fetch lies on
+   the restart fetch's line: offset 0. That the service follows the interrupt within the line is
+   a reading: no page gives the CPU's exception latency, and the pages leave open whether the
+   interrupt or the restart comes first inside the line, so the two in-line cycles are MEASURED
+   and not graded; the restart's own in-line cycle s stays compared between C5 and C6 by the pair
+   lists. What the boundary cannot show: the position of the restart inside line 0 (no page gives
+   it), and any difference between the start-of-blank and the end-of-blank reading of p.25's second
+   sentence other than the line (D11). P7 is red when either run has a frame without a restart
+   fetch or without a VERTB autovector read in the grid, or when any offset is not 0.
 5. **Preconditions.**
    - F1–F3, F2-COUNT, C1, K6 (both runs).
    - **T1:** every part of L5 (the 113 segments, the head and the tail) has the same number of
@@ -894,6 +920,15 @@ graded, the measurement that stands in its place and the reason are in one place
      Copper's own list, not an even-cycle channel, so the run is not a mutation of P7. T1–T3
      still hold. The run also prints, as MEASURED, the mismatches the segment-relative
      comparison would have found.
+   - **SELFTEST-P7-RESTART** (the uniform one-line displacement of the restart): the capture of C6
+     with every Copper-block access, the restart fetch of each frame included, displaced to the same
+     in-line cycle of the next line, compared with C5 by the same comparator, which also grades the
+     restart line against the VERTB service. The pair lists counted from the restart line do not
+     change (0 of 348 part/frame pairs differ), so the comparison alone would pass; the VERTB
+     autovector read now lies 1 line before the restart fetch in every frame, and P7's comparator
+     goes red through it. The displacement is made in the test, to the capture, and no stimulus
+     produces it (nothing moves the restart relative to the interrupt), so the run is not a mutation
+     of P7. K6 and T1–T3 are evaluated on the real runs and hold.
    - **Contrast for T2:** C6 with `STOP #$2000` replaced by a loop that branches to itself.
      The CPU then fetches in every line, and T2 fails.
    - **Contrast for T3:** C6 without SPREN. Sprite fetches are then absent, and T3 fails.
@@ -1078,11 +1113,27 @@ graded, the measurement that stands in its place and the reason are in one place
    and P12-EXC grades the exception.
 5. **Preconditions.** C1, Q2, Q3, Q4, Q5, K9, the four images as in P9(a), and **Q6:** in the
    Copper frame of each output frame used, the list writes each of COLOR17, COLOR18 and COLOR19
-   and no MOVE to them takes effect from the first line of use 1 to the last line of use 4: no
-   WAIT fetched before such a MOVE names a line from VSTART of use 1 up to, not including,
-   VSTOP of use 4. A MOVE takes effect at the beam position of the last WAIT before it (p.22),
-   or in the vertical blanking interval in which the list starts when no WAIT precedes it
-   (p.25). The list is read from the words the Copper fetched in the Copper frame, as Q4 reads
+   and no MOVE to them takes effect from the first line of use 1 to the last line of use 4: the
+   line of no such MOVE lies from VSTART of use 1 up to, not including, VSTOP of use 4. A MOVE
+   takes effect at IR2 time (Appendix A p.275: *"RD ... RAM data moved by MOVE instruction at IR2
+   time directly from RAM to the address given by the DA field"*), so the line of a MOVE is the
+   line of its fetched IR2 word: the first fetch of that word in the Copper frame, a held
+   continuation excluded, placed on the refresh-derived line grid (§2.3), whose in-line cycle
+   numbers are the horizontal positions p.23 counts (`$0`-`$E2`). The grid line becomes a beam line
+   (VP) like this. The list starts in the vertical blanking interval, which begins at line 0
+   (p.219; D11), and an instruction fetched after another lies as many grid lines after it as its
+   IR2 word does. After a WAIT the Copper takes no cycle until the beam reaches the WAIT's
+   position (p.22: *"until the video beam counters are equal to (or greater than) the coordinates
+   specified in the instruction"*), compared under the WAIT's mask (second word, bits 14-8 for VP
+   and 7-1 for HP; the V7 comparison cannot be masked, p.275): the wake line L is the first line,
+   from the one the Copper is on, with (L & VE) >= (VP & VE), and the wake position is HP & HE in
+   it, or 0 when (L & VE) exceeds (VP & VE). The first instruction after the WAIT is fetched at or
+   after that position (p.20: the WAIT *"takes one extra memory cycle to wake up"*), so its IR2
+   word lies on L when its in-line cycle is not below the wake position and on the next line when
+   it is: a MOVE after a WAIT at HP `$E0` is fetched across the end of the WAIT's line and takes
+   effect on the next line. The VP of the WAIT alone is not the line of the MOVE. The grid line of
+   each MOVE counted from the restart fetch's is printed beside its VP as MEASURED. The list is
+   read from the words the Copper fetched in the Copper frame, as Q4 reads
    them (IR1 at an even offset from the list start, IR2 after it; `$FFFF,$FFFE` is END, p.23),
    and VSTART and VSTOP of the uses from the control words of structure Z as the sprite channel
    fetched them (word offsets 0, 1, 18 and 63 from the first word the channel fetched in sprite
@@ -1102,6 +1153,11 @@ graded, the measurement that stands in its place and the reason are in one place
    - **Contrast for Q6 (S1-c):** list L_S1c, the page's recipe above: WAIT VP=`$48` (the line
      after the last line of use 1) and COLOR17–19 ← `$0FF0`, `$00FF`, `$0F0F` between use 1
      and use 2. Q6 fails, P12 is NOT GRADED, and Q5 holds for L_S1c.
+   - **Contrast for Q6, late horizontal position (S1-q6spill):** list L_S1c with the WAIT at
+     VP `$3F`, HP `$E0` (IR1 `$3FE1`, mask `$FFFE`), the last position of the line before use 1.
+     The WAIT names a line before the uses; the three MOVEs after it are fetched across the end of
+     that line, their IR2 words lie on VP `$40`, the first line of use 1 (measured: grid line +64
+     from the restart fetch's, in-line cycles 1, 5 and 9), and Q6 fails. P12 is NOT GRADED (Q6).
 7. **Reference frame.** The colour nibbles of Table 3-3 (p.46), compared with the output's
    4-bit red, green and blue.
 
@@ -1122,16 +1178,24 @@ graded, the measurement that stands in its place and the reason are in one place
    the four uses in every output frame used.
 5. **Preconditions.** For S1c: C1, FRAMES, Q2, Q3, Q4, Q5, K9, IMG4 (the same graded lines as
    for S1, which grade S1c as well), and **Q7:** in the Copper frame of each output frame used,
-   a MOVE to each of COLOR17, COLOR18 and COLOR19 follows a WAIT for a line from VSTOP of use 1
-   (the line after its last line, p.107) up to, not including, VSTART of use 2 (its first line),
-   and no other MOVE to these registers takes effect from the first line of use 1 to the last
-   line of use 4. Q7 reads the list and the control words of Z as Q6 does (P12.5), and not the
-   values written.
+   the IR2 word of a MOVE to each of COLOR17, COLOR18 and COLOR19 lies on a line from VSTOP of
+   use 1 (the line after its last line, p.107) up to, not including, VSTART of use 2 (its first
+   line), and no other MOVE to these registers takes effect from the first line of use 1 to the
+   last line of use 4. The line of a MOVE is read as Q6 reads it (P12.5): the line of its fetched
+   IR2 word, at which its data is written (Appendix A p.275), placed on the refresh-derived grid
+   with the WAIT's position and mask honoured. Q7 reads the list and the control words of Z as Q6
+   does (P12.5), and not the values written.
 6. **Contrasting case.** **S1-cx:** list L_S1cx writes `$0FFF`, `$0F0F`, `$0FF0` after the
    WAIT instead. Q7 holds (the writes are in the same place), the pages predict U2–U4 in the
    written colours, and the line, whose expected values are those of L_S1c, goes red.
    - **Contrast for Q7:** S1 (list L_S1, no write between the uses) in place of S1c. Q7 fails
      and P12-EXC is NOT GRADED.
+   - **Contrast for Q7, late horizontal position (S1-q7spill):** S1c with the WAIT at VP `$4F`,
+     HP `$E0` (IR1 `$4FE1`, mask `$FFFE`), the last position of the line before use 2. The WAIT
+     names a line between the uses; the three MOVEs after it are fetched across the end of that
+     line, their IR2 words lie on VP `$50`, the first line of use 2 (measured: grid line +80 from
+     the restart fetch's, in-line cycles 1, 5 and 9), and Q7 fails: none of the three MOVEs lies
+     between use 1 and use 2. P12-EXC is NOT GRADED (Q7).
 7. **Reference frame.** As P12.
 
 ---
@@ -1142,7 +1206,7 @@ graded, the measurement that stands in its place and the reason are in one place
 
 P1–P5 and P7 (the memory-cycle-parity half of this specification) and P8–P12 (the sprite-channel
 reuse half, read from the video output; see "Video apparatus and P8–P12" below) are built:
-`Makefile`, `test_ch2_dma_cycles.cpp`, 51 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
+`Makefile`, `test_ch2_dma_cycles.cpp`, 53 `.s` programs. P6 is withdrawn (P6). Every named precondition (A1, K2a,
 K2b, K3, K4, K5, K6, T1, T2, T3, and for the video lines FRAMES, Q2–Q7, Q-REF, K9, IMG4) is its own graded line, printed before the lines that depend on it
 and never part of their graded expression (§2.11). K2b, K3, K4, K5, K6, T1, T2 and T3 are gated by the
 observation preconditions of the runs they grade, as P2–P5 and P7 are; P1's gate leaves out F2 and
@@ -1176,10 +1240,10 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | A1 | PASS (0 violations) | PASS |
 | P5, K5 | PASS; K5: 256 lines with fetches for every enabled plane in every observed frame | PASS |
 | K6, T1, T2, T3 | PASS (K6 gated by the observation preconditions of C5, C6, C7a and C7b, T1 and T2 by those of C5 and C6, T3 by those of C6); T1: 0 parts differ, 0 parts empty in C5 (the 115 parts of L5); T2: 342 segment lines, 0 CPU accesses in them; T3: audio lines per frame 107/105/107, disk lines per frame 113/113/113 | PASS (audio 107/105/107) |
-| P7 | PASS (0 of 348 part/frame pairs mismatch: 116 parts x 3 frames, every access placed by its line counted from the frame's restart line and its in-line cycle; the comparison with lines counted from each part's own first access finds 0 as well) | PASS (0 mismatches, same) |
+| P7 | PASS (0 of 348 part/frame pairs mismatch: 116 parts x 3 frames, every access placed by its line counted from the frame's restart line and its in-line cycle; the comparison with lines counted from each part's own first access finds 0 as well; in all 3 observed frames of C5 and of C6 the VERTB autovector read lies on the restart fetch's line, offset 0: restart at s = 3, vector read at s = 18 in C5 and 26, 32, 32 in C6) | PASS (0 mismatches, same; offset 0 in all 3 frames of both runs: restart at s = 3, vector read at s = 14 in C5 and 22, 28, 28 in C6) |
 | Copper first fetch after S4 (MEASURED, not graded) | in a regular line of 227 memory cycles, at s = 165 (C0), 135 (C7a), 111 (S2) and 189 (C2a): odd in all four | s = 155 (C0), 211 (S2) and 179 (C2a), odd in all three; C7a dropped (the regular lines around the fetch are 454 memory cycles apart) |
 | SELFTEST-VIDEO, SELFTEST-Q3 | PASS | PASS |
-| FRAMES, Q2, Q3, Q4, Q5, Q6, Q7, Q-REF, K9, IMG4 | PASS; 3 output frames used in S2, S1 and S1c; W = 32 sample periods on the first line of the reference image (p = 2), whose fetched data words are `$FFFF` and `$0000` in every frame; Q6: 3 MOVEs to COLOR17-19 in S1, none after a WAIT for a line of the uses; Q7: 3 of the 6 MOVEs of S1c after the WAIT for VP `$48`-`$4F`, 3 in all within the uses; k_v = 2; Q3: the first image's top is 118 output lines, 0 modulo k_v, in every frame (not graded); Q4: 6 colour writes per frame in S2, 3 in S1, 6 in S1c; Q5: 54 of 54 words (S2, L_B and L_A alternating) and 44 of 44 (S1), 52 of 52 (S1c); K9: 90 reads per frame; IMG4: 4 images per frame; every image of every frame lies inside its Copper frame (2 of 2 in S2, 4 of 4 in S1; measured, not graded) | PASS, same values |
+| FRAMES, Q2, Q3, Q4, Q5, Q6, Q7, Q-REF, K9, IMG4 | PASS; 3 output frames used in S2, S1 and S1c; W = 32 sample periods on the first line of the reference image (p = 2), whose fetched data words are `$FFFF` and `$0000` in every frame; Q6: 3 MOVEs to COLOR17-19 in S1, none with the IR2 word on a line of the uses; Q7: 3 of the 6 MOVEs of S1c with the IR2 word on VP `$48` (between use 1 and use 2), 3 in all within the uses; k_v = 2; Q3: the first image's top is 118 output lines, 0 modulo k_v, in every frame (not graded); Q4: 6 colour writes per frame in S2, 3 in S1, 6 in S1c; Q5: 54 of 54 words (S2, L_B and L_A alternating) and 44 of 44 (S1), 52 of 52 (S1c); K9: 90 reads per frame; IMG4: 4 images per frame; every image of every frame lies inside its Copper frame (2 of 2 in S2, 4 of 4 in S1; measured, not graded) | PASS, same values |
 | P8 | PASS; in the 3 frames used (B from L_B, A from L_A, B from L_B): (40 sprite pixels, 42 beam lines), (16, 32), (40, 42) | PASS, same |
 | P9 | PASS; tops 118, 150, 198, 230 output lines (+0, +16, +40, +56 beam lines), left edges 205, 285, 173, 365 samples (+0, +40, −16, +80 sprite pixels), 90 reads per frame | PASS, same |
 | P10, P11, P10-P11, P12 | PASS; heights 16, 32, 8, 24 output lines (8, 16, 4, 12 beam lines); 3840 pixel cells compared, 0 off; 2976 non-transparent pixels compared, 0 off | PASS, same |
@@ -1205,7 +1269,13 @@ SELFTEST-F1, SELFTEST-F2 and SELFTEST-FIXTURE. F3's mutation is C0-htotal (§2.3
 keeps run C6' and SELFTEST-P7-SHIFT run C6s as self-tests of the P7 comparator: the first moves
 one WAIT within its line (3 of 348 part/frame pairs differ), the second moves every WAIT of the
 loop one line (339 of 348 differ, where a comparison that counts lines from each part's own first
-access finds 0).
+access finds 0). SELFTEST-P7-RESTART displaces the capture of C6 by one line, the restart fetch
+of each frame included: the pair lists still compare equal (0 of 348 differ) and the VERTB
+autovector read lies 1 line before the restart fetch in every frame, so the restart-line clause
+of P7 goes red (on both cores). Q6 and Q7 each have a contrast whose MOVEs are fetched across
+the end of the WAIT's line: Q6-SPILL (the WAIT names VP `$3F`, HP `$E0`; the MOVEs lie on VP
+`$40`, a line of the uses) and Q7-SPILL (the WAIT names VP `$4F`, HP `$E0`; the MOVEs lie on VP
+`$50`, not between use 1 and use 2); both go red on both cores.
 
 The NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1 (§2.10) are graded for P1,
 through the same `Config` the harness already exposes; no new program was needed. S1, S1c and S2 are
@@ -1274,12 +1344,15 @@ in the Copper frame, set aside the samples that continue a held bus cycle (§P6 
 the word offsets 0, 1, ..., 89 in that order. P8 requires, in each frame, the offset of the
 structure that frame's list pointed sprite 0 at (A for L_A, B for L_B). Q-REF requires sprite 2's
 image to exist once in every frame used of S2 and to have the same top and left edge in all of them.
-Q6 and Q7 (P12, P12-EXC) read the colour MOVEs of the list the Copper fetched in the Copper frame
-together with the last WAIT fetched before each, and VSTART and VSTOP of the uses from the control
-words of Z (word offsets 0, 1, 18 and 63 from the first word the channel fetched in sprite block
-0). Measured, both cores: in S1 the list holds 3 MOVEs to COLOR17–19, none after a WAIT for a line
-of the uses (VP `$40`–`$83`); in S1c it holds 6, 3 of them after the WAIT for VP `$48` (the
-range `$48`–`$4F` is between use 1 and use 2), 3 in all within the uses.
+Q6 and Q7 (P12, P12-EXC) read the colour MOVEs of the list the Copper fetched in the Copper frame,
+each placed by the grid line of its fetched IR2 word (P12.5), and VSTART and VSTOP of the uses from
+the control words of Z (word offsets 0, 1, 18 and 63 from the first word the channel fetched in
+sprite block 0). Measured, both cores: in S1 the list holds 3 MOVEs to COLOR17–19, all in the
+vertical-blanking part (grid line +0 from the restart fetch's, in-line cycles 77, 81 and 85), none
+on a line of the uses (VP `$40`–`$83`); in S1c it holds 6, those 3 and 3 more on VP `$48` (grid
+line +72, in-line cycles 5, 9 and 13; the range `$48`–`$4F` is between use 1 and use 2), 3 in all
+within the uses. The grid line counted from the restart fetch's equals the VP the WAIT and its
+position give, in every MOVE of S1, S1c and the two late-position lists.
 
 **Preconditions beyond the propositions.** FRAMES (above) and IMG4 (every frame used of S1 and
 S1c shows exactly four images) are graded lines of their own, printed before the lines they gate.
@@ -1294,7 +1367,9 @@ the other lines of such a run grade S2 and S1 as before.
 carry assembly conditionals the contrast programs select. Contrast programs, each a source that
 sets one symbol and includes the main program: `prog_s1_q2` (Q2), `prog_s1_q2p` (S1-q2p: Q2),
 `prog_s1_end` (S1-end: P9, IMG4), `prog_s1_h` (S1-h: P10, P10-P11), `prog_s1_s` (S1-s: P11),
-`prog_s1_c` (S1-c: Q6, and the S1c run of P12-EXC, list L_S1c), `prog_s1_colv` (S1-colv: P12, list
+`prog_s1_c` (S1-c: Q6, and the S1c run of P12-EXC, list L_S1c), `prog_s1_q6spill` (S1-q6spill: Q6, the
+WAIT at VP `$3F`, HP `$E0`), `prog_s1_q7spill` (S1-q7spill: Q7, the S1c run with the WAIT at VP `$4F`,
+HP `$E0`), `prog_s1_colv` (S1-colv: P12, list
 L_S1v), `prog_s1_cx` (S1-cx: P12-EXC, list L_S1cx), `prog_c6_shift` (SELFTEST-P7-SHIFT, list L5s),
 `prog_s1_nospren` (K9, liveness), `prog_s1_zcopy` (S1-zcopy: K9, start word), `prog_s2_still` (S2-still: P8),
 `prog_s2_swap` (S2-swap: P8), `prog_s2_refmove` (S2-refmove: Q-REF), `prog_s2_col0` (Q4),
@@ -1335,8 +1410,10 @@ carries):
 | S1-h | P10 (heights 8, 12, 4, 12 beam lines), P10-P11 | P9 FAIL through (b): 82 of the 90 words are read |
 | S1-s | P11 (96 of 3840 cells off) | P10-P11 FAIL (aggregate), P12 FAIL (72 pixels off: value-to-colour is graded against the data words of §2.9) |
 | S1-colv (`P12`) | P12 (2976 of 2976 pixels off; Q6 holds) | none |
-| S1-c (`Q6`) | Q6 (3 of 6 MOVEs to COLOR17–19 after a WAIT for a line of the uses) | P12 NOT GRADED (Q6) |
-| S1 in the place of S1c (`Q7`) | Q7 (no MOVE after a WAIT for a line between use 1 and use 2) | P12-EXC NOT GRADED (Q7) |
+| S1-c (`Q6`) | Q6 (3 of 6 MOVEs to COLOR17–19 with the IR2 word on a line of the uses, VP `$48`) | P12 NOT GRADED (Q6) |
+| S1-q6spill (`Q6-SPILL`) | Q6 (3 of 6 MOVEs with the IR2 word on VP `$40`, the WAIT naming VP `$3F`, HP `$E0`) | P12 NOT GRADED (Q6) |
+| S1 in the place of S1c (`Q7`) | Q7 (no MOVE with the IR2 word on a line between use 1 and use 2) | P12-EXC NOT GRADED (Q7) |
+| S1c with the WAIT at VP `$4F`, HP `$E0` (`Q7-SPILL`) | Q7 (the 3 MOVEs have the IR2 word on VP `$50`, none between use 1 and use 2) | P12-EXC NOT GRADED (Q7) |
 | S1-cx (`P12-EXC`) | P12-EXC (2376 of 2976 pixels off; Q7 holds) | none |
 
 SELFTEST-VIDEO and SELFTEST-Q3 have no module stimulus; their perturbations are synthetic.
