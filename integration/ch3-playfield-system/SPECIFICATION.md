@@ -352,7 +352,7 @@ failure, never a pass.
   odd line shows C0 where run "0" shows C1. Each must yield differing samples; the
   program finishes and P1-a, P1-c (for C/B, and E's fetches) and P1-e still hold.
 - **P1-a:** run "1" of every configuration (A, B, C, E) writes VHPOSW once (p.216: "Used for
-  counter synchronization"), after two VERTB detections following the Copper start, in vertical
+  counter synchronization with chip test patterns"), after two VERTB detections following the Copper start, in vertical
   blanking: H sixteen counts on, V unchanged. The beam counters, and with them the sync
   samples, are shifted in run "1", the sync samples of the two runs differ over the compared
   span, and every other P1 line holds; P1-MAIN prints NOT GRADED.
@@ -455,11 +455,13 @@ two border samples in item 3.
   predicts every line after the first starts 2 bytes later, and the address check
   fails. Item 1 holds (valid data words follow the buffer, so every line still shows
   data) and item 2 is not graded.
-- **Item 1 as a count:** the last line of the buffer (line H-1) is all zero in memory, so it
-  shows no C1 and a data block has H-1 lines per field (p.59: H lines of data are displayed);
-  item 1 fails. The buffer is still read in full, so P2-b, item 2 and item 3 hold.
+- **Item 1 as a count:** the last line of the buffer (line H-1) is all zero in memory; p.55
+  ("you define a bitplane that has "0"s where you want the background color") predicts that
+  line shows the background colour only, so it has no C1 sample and a block of consecutive lines
+  with C1 has H-1 lines per field, and item 1 fails. The buffer is still read in full, so P2-b,
+  item 2 and item 3 hold.
 - **CAL-VIDEO:** run "1" of configuration B writes VHPOSW once (p.216: "Used for counter
-  synchronization"), in vertical blanking after two VERTB detections following the Copper start:
+  synchronization with chip test patterns"), in vertical blanking after two VERTB detections following the Copper start:
   H sixteen counts on, V unchanged. One doubler line of run "1" is not 227 or 228 cc
   long; CAL-VIDEO prints FAIL, P2-a and P2-b hold, and P2-I1, P2-I2, P2-I3 and the P2
   aggregate print NOT GRADED.
@@ -653,7 +655,7 @@ and fail on a counter that is frozen (criterion 1).
   bit 3 latches; the L0 windows then hold one frozen value and criterion 1 fails. On the
   repository's chipset a stimulus contrast exists too: the last burst of the L0 program does
   100 plain reads, then 500 reads each preceded by a write to VHPOSW (p.216: "Used for counter
-  synchronization"); the counters are rewritten between reads, so reads repeat and V steps
+  synchronization with chip test patterns"); the counters are rewritten between reads, so reads repeat and V steps
   back, and P3-LIVE prints FAIL, while P3-M, P3-a, P3-L, P3-b,
   P3-c and P3-d hold.
 - **P3-a:** reduce the burst to 20 reads; fewer than 100 reads fall into the window.
@@ -768,9 +770,10 @@ Every precondition waits for the fixture and prints `NOT GRADED` when it fails.
   program check reports it. (Copper part) before step 5, start a Copper list
   `MOVE BPLCON0,$0008 / WAIT $FFFF,$FFFE` as in Common definitions (DMACON =
   $8280); the fetch-trace check finds the MOVE to $100, and the program still
-  finishes. (Start part) the initial PC names a stub in Chip memory that holds `JMP $080400`
-  instead of the program's first word; the first read after the reset vector words is the
-  stub's, and `P4-B-START` prints FAIL.
+  finishes. (Start part) the program has one NOP in front of it and the initial PC names the word
+  after it, so the CPU never fetches the first word of the loaded image; the first read after the
+  reset vector words is the image's second word and `P4-B-START` prints FAIL, while the program
+  finishes and every read stays inside the image (`P4-B-COPPER` holds).
 
 ### 7. Reference frame
 
@@ -1200,8 +1203,9 @@ NOT GRADED.
   `P4B_COP` are the contrasts of the clauses on BPLCON0 writes.
 - **P3-c.** `P3C_SELFMOD` (the CPU fetches a BEAMCON0 immediate other than the image's) and
   `P3C_SECONDBEAM` (a second BEAMCON0 write) each turn only P3-c red; P3-MAIN prints NOT GRADED.
-- **P4-b.** `P4B_START` makes the initial PC name a stub: `P4-B-START` prints FAIL and the
-  lines that wait for it (`P4-MAIN`) print NOT GRADED.
+- **P4-b.** `P4B_START` runs a program with a NOP in front and sets the initial PC to the word
+  after it: only `P4-B-START` prints FAIL, and the lines that wait for it (`P4-MAIN`) print
+  NOT GRADED.
 - **CAL-CC.** The 7 MHz clock enable at the port comes from the clock generator, and no
   register write or program changes its period; the line measures that period before any
   program runs, so it has no mutation (a `none` record).
@@ -1211,19 +1215,51 @@ NOT GRADED.
 On the repository's chipset the lines `P3-MAIN` and `P5-MAIN` are red, and `P4-MAIN` is
 not graded because `P3-MAIN` does not pass there, so a stimulus change cannot make them
 redder. Each has a control that runs its comparator on a live input from a different
-mechanism: a private copy of the chipset sources, outside the repository, with three
-changes. (1) BPLCON0 bit 3 enables a latch of the beam position at the end of the field,
-the latch holds until the start of line 20, and BEAMCON0 bit 13 makes a read ignore it
-(pp.239, 305). (2) The vertical position counts at the clock edge at which the horizontal
-position wraps. (3) With BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical
+mechanism: a copy of the chipset sources made from a patch file of this package,
+`latch.patch` (`make latch-test-fx68k`, `make latch-test-tg68k`; see the Makefile), with
+three changes. (1) BPLCON0 bit 3 enables a latch of the beam position at the end of the field
+(reset value 0), the latch holds until the counter enters line 20, and BEAMCON0 bit 13 makes a
+read ignore it (pp.239, 305). (2) The vertical position counts at the clock edge at which the
+horizontal position wraps. (3) With BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical
 blanking (pp.293, 304, 305); the register holds the low 11 bits of the value written, so
-$A0A0 and $B0B0 name the lines $A0 and $B0 there. A run of P3, P4 and P5 on that copy
-(`NMH_ONLY=P3P4P5`) prints 96 passed, 0 failed on both cores: every line of the three propositions
-passes, and the stimulus contrasts `P3MAIN` (the L0 program stands in for L1), `P3LIVE`,
-`P3BLATE` and `P5MAIN` (no VARVBEN) print FAIL through the unchanged comparators.
-A second private copy, in which the latch is enabled after reset, runs P3 and P4
-(`NMH_ONLY=P3P4`) and prints 62 passed, 5 failed on both cores: every fixture and precondition
-passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print FAIL.
+$A0A0 and $B0B0 name the lines $A0 and $B0 there. The blanking signal of (3) is the one that
+also stops bitplane DMA. A second copy, `latchrst.patch` (`make latchrst-test-fx68k`,
+`make latchrst-test-tg68k`), differs from the first in one line: the enable of the latch is set
+after reset.
+
+The two patches are reconstructions from the words of the records that name them, not the
+copies those records were first measured on: they show that the verdicts of the records hold
+on a copy built to that description, and nothing about the first copies. The records do not
+say whether the first copies also stopped bitplane DMA at the blanking of (3).
+
+Commands and what they print, each on both cores (`NMH_ONLY` and `NMH_MUTATE` are environment
+variables of the make command, for example `NMH_ONLY=P3P4P5 make latch-test-fx68k`):
+
+| run | fx68k | TG68K |
+|---|---|---|
+| `latch`, `NMH_ONLY=P3P4P5` | 100 passed, 0 failed | 100 passed, 0 failed |
+| `latch`, `NMH_MUTATE=P3MAIN` (the L0 program stands in for L1) | 9 passed, 2 failed | 9 passed, 2 failed |
+| `latch`, `NMH_MUTATE=P3LIVE` (the L1 program stands in for L0) | 7 passed, 3 failed | 7 passed, 3 failed |
+| `latch`, `NMH_MUTATE=P3BLATE` | 8 passed, 1 failed | 8 passed, 1 failed |
+| `latch`, `NMH_MUTATE=P5MAIN` (no VARVBEN) | 7 passed, 2 failed | 7 passed, 2 failed |
+| `latch`, `NMH_MUTATE=P5VALUE` (VBSTRT names N + 16) | 7 passed, 2 failed | 7 passed, 2 failed |
+| `latchrst`, `NMH_ONLY=P3P4` | 66 passed, 5 failed | 66 passed, 5 failed |
+
+The first run passes every line of P3, P4 and P5; `P3MAIN` fails `P3-MAIN` S1 and the P3
+aggregate; `P3LIVE` fails `P3-b` S1, `P3-LIVE` S1 and the P3 aggregate and leaves `P3-MAIN` S1
+not graded; `P3BLATE` fails `P3-b` S1; `P5MAIN` and `P5VALUE` fail `P5-MAIN` V1 S1 and the P5
+aggregate. The second run passes every fixture and precondition and `P3-MAIN`, and fails
+`P4-MAIN` in S1 to S4 and the P4 aggregate.
+
+Values the first run prints:
+
+| value | fx68k | TG68K |
+|---|---|---|
+| frozen value, PAL / NTSC (`P3-MAIN` S1 / S2) | $138E2 / $106E2 | $138E2 / $106E2 |
+| pairs with V unchanged and H lower | none | none |
+| reads in an L1 window (`P3-MAIN` S1) | 226 | 239 |
+| lines N-2 ... N+8 (`P5` V1 S1) | N-2=C1 N-1=C2 N=none N+1=none N+2=none N+3=none N+4=none N+5=none N+6=none N+7=none N+8=C3 | N-2=C1 N-1=C2 N=none N+1=none N+2=none N+3=none N+4=none N+5=none N+6=none N+7=none N+8=C3 |
+| polling periods in clk_sys cycles, INTREQR loop / VHPOSR loop (`P5-c` V1 S1) | 208 / 224 | 192 / 144 |
 
 ### Measured, per core
 
@@ -1237,8 +1273,8 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | P3-L (polling loop measured) | (spec) | PASS (4/4) | PASS (4/4) |
 | P3-b (L0: V in 1-19; field length) | p23, p24, p239 | PASS (4/4) | PASS (4/4) |
 | P3-LIVE (L0: a running counter, three criteria) | p23, p216, p239 | PASS (4/4) | PASS (4/4) |
-| P3-c (LPENDIS=0, bit 5 in code and fetch, field length), S1, S2 | p304, p305 | PASS (2/2) | PASS (2/2) |
-| P3-d (BPLCON0 written once, no Copper write) | (spec) | PASS (4/4) | PASS (4/4) |
+| P3-c (one BEAMCON0 write, LPENDIS=0, bit 5 in code and fetch, field length), S1, S2 | p304, p305 | PASS (2/2) | PASS (2/2) |
+| P3-d (BPLCON0 written once, no Copper write, no read outside the image) | (spec) | PASS (4/4) | PASS (4/4) |
 | P3-MAIN (LPEN=1: every counted read in a window is the same 17-bit value) | p271, p89, p229, p239 | FAIL (4/4) | FAIL (4/4) |
 | P3 aggregate (8 components) | p271, p89, p229, p239 | FAIL (1/1) | FAIL (1/1) |
 | P4 fixture | (spec) | PASS (4/4) | PASS (4/4) |
@@ -1247,13 +1283,14 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | P4-L (polling loop measured) | (spec) | PASS (4/4) | PASS (4/4) |
 | P4-c (field length), S1, S2 | (spec) | PASS (2/2) | PASS (2/2) |
 | P4-B-PROGRAM (no write to $DFF100) | (spec) | PASS (4/4) | PASS (4/4) |
-| P4-B-COPPER (no Copper MOVE to $100 in the list at $020000) | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-B-COPPER (no Copper MOVE to $100 in the list at $020000, no read outside the image) | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-B-START (the first read after the reset vector words is the program's first word) | (spec) | PASS (4/4) | PASS (4/4) |
 | P4-MAIN (power-up: a running counter, V in 1-19; waits for P3-MAIN) | p271, p216, p239 | NOT GRADED (4/4) | NOT GRADED (4/4) |
 | P4 aggregate | p271 | NOT GRADED (1/1) | NOT GRADED (1/1) |
 | P1 fixture, configs A, B, C, E x S1-S4 | p59-p62 | PASS (16/16) | PASS (16/16) |
 | P1-a (sync samples identical) | p63 | PASS (16/16) | PASS (16/16) |
 | P1-b (BPLCON0 words fetched as tabled) | p63, p64 | PASS (16/16) | PASS (16/16) |
-| P1-c (bitplane reads per DMA field) | p61, p62 | PASS (16/16) | PASS (16/16) |
+| P1-c (bitplane reads per DMA field, none in the guard range) | p61, p62 | PASS (16/16) | PASS (16/16) |
 | P1-d (picture not uniform) | p46, p55 | PASS (16/16) | PASS (16/16) |
 | P1-e (field length, both runs) | p24 | PASS (16/16) | PASS (16/16) |
 | P1-MAIN (bit 9 has no effect on RGB) | p63, p64 | PASS (16/16) | PASS (16/16) |
@@ -1274,7 +1311,7 @@ passes, `P3-MAIN` passes, and `P4-MAIN` in S1 to S4 and the P4 aggregate print F
 | P5-MAIN (VBSTRT sets the blanking line) | p293, p304, p305, p79 | FAIL (4/4) | FAIL (4/4) |
 | P5 aggregate | p293, p304, p305, p79 | FAIL (1/1) | FAIL (1/1) |
 
-fx68k: 223 passed, 10 failed. TG68K: 223 passed, 10 failed.
+fx68k: 227 passed, 10 failed. TG68K: 227 passed, 10 failed.
 
 `P4-MAIN` and the P4 aggregate are NOT GRADED on the repository's chipset because `P3-MAIN`
 does not pass there; they are graded on the private chipsets (below). The RECORDED lines
@@ -1284,7 +1321,8 @@ that decline claims are `sol:3-composite.c7` (P2), `opus:C-vbstrt.c01` and
 ### Mutations, per core
 
 Every mutation is run from `obj_dir_fx68k`/`obj_dir_tg68k` directly (fx68k needs its own
-microcode there), with `NMH_MUTATE` set; none runs during a plain `make test`. Each is
+microcode there), with `NMH_MUTATE` set; none runs during a plain `make test`. The private
+runs use `obj_dir_latch_<core>/` and `obj_dir_latchrst_<core>/` the same way. Each is
 verified to print FAIL through the clause it targets, on both cores; where a record in the
 test header names further lines that move with it (a line that waits for the targeted one
 prints NOT GRADED, a line the stimulus also changes prints FAIL), the run showed them on
@@ -1297,6 +1335,7 @@ section, where the lines they target are live; `P3BLATE` is run on both chipsets
 | `P1A` | repository | P1-a | FAIL | FAIL |
 | `P1B` | repository | P1-b | FAIL | FAIL |
 | `P1C` | repository | P1-c | FAIL | FAIL |
+| `P1C_OVER` | repository | P1-c (guard range) | FAIL | FAIL |
 | `P1D` | repository | P1-d | FAIL | FAIL |
 | `P1ESTD` | repository | P1-e | FAIL | FAIL |
 | `P1MAIN` | repository | P1-MAIN, opus:3-a1000.c04 | FAIL | FAIL |
@@ -1304,31 +1343,45 @@ section, where the lines they target are live; `P3BLATE` is run on both chipsets
 | `P2A` | repository | P2-a | FAIL | FAIL |
 | `P2B` | repository | P2-b | FAIL | FAIL |
 | `P2ITEM1` | repository | P2-I1 | FAIL | FAIL |
+| `P2CAL` | repository | CAL-VIDEO | FAIL | FAIL |
 | `P2FLIP` | repository | P2-I2, opus:3-a1000.c05 | FAIL | FAIL |
 | `P2EDGE` | repository | P2-I3 | FAIL | FAIL |
 | `P3FIX` | repository | P3 | FAIL | FAIL |
 | `P3MARK` | repository | P3-M | FAIL | FAIL |
+| `P3FOUR` | repository | P3-M | FAIL | FAIL |
+| `P3SIX` | repository | P3-M | FAIL | FAIL |
 | `P3A` | repository | P3-a | FAIL | FAIL |
+| `P3A_SPREAD` | repository | P3-a (spread clause) | FAIL | FAIL |
 | `P3L` | repository | P3-L | FAIL | FAIL |
 | `P3BLATE` | repository | P3-b | FAIL | FAIL |
 | `P3C_LPENDIS` | repository | P3-c | FAIL | FAIL |
 | `P3C_WRONGSTD` | repository | P3-c | FAIL | FAIL |
+| `P3C_SELFMOD` | repository | P3-c (fetched-word clause) | FAIL | FAIL |
+| `P3C_SECONDBEAM` | repository | P3-c (write-count clause) | FAIL | FAIL |
 | `P3D` | repository | P3-d | FAIL | FAIL |
+| `P3D_COPIDLE` | repository | P3-d (clause on reads outside the image) | FAIL | FAIL |
 | `P3MAIN` | private | P3-MAIN, opus:A-bpc.b03.c0 | FAIL | FAIL |
 | `P3LIVE` | private | P3-LIVE, opus:A-bpc.b03.c0 | FAIL | FAIL |
+| `P3LIVE_VHPOSW` | repository | P3-LIVE | FAIL | FAIL |
 | `P3BLATE` | private | P3-b | FAIL | FAIL |
 | `P4FIX` | repository | P4 | FAIL | FAIL |
 | `P4MARK` | repository | P4-M | FAIL | FAIL |
 | `P4A` | repository | P4-a | FAIL | FAIL |
+| `P4A_SPREAD` | repository | P4-a (spread clause) | FAIL | FAIL |
 | `P4L` | repository | P4-L | FAIL | FAIL |
 | `P4C` | repository | P4-c | FAIL | FAIL |
 | `P4B_PROG` | repository | P4-B-PROGRAM | FAIL | FAIL |
 | `P4B_COP` | repository | P4-B-COPPER | FAIL | FAIL |
+| `P4B_COPIDLE` | repository | P4-B-COPPER (clause on reads outside the image) | FAIL | FAIL |
+| `P4B_START` | repository | P4-B-START | FAIL | FAIL |
 | `P5FIX` | repository | P5 | FAIL | FAIL |
 | `P5MARK` | repository | P5-M | FAIL | FAIL |
 | `P5A` | repository | P5-a | FAIL | FAIL |
 | `P5B` | repository | P5-b | FAIL | FAIL |
 | `P5C` | repository | P5-c | FAIL | FAIL |
+| `P5C_SKIP` | repository | P5-c (marker clause) | FAIL | FAIL |
+| `P5CAL` | repository | CAL-VIDEO | FAIL | FAIL |
 | `P5MAIN` | private | P5-MAIN, opus:B-vbstrt.addr | FAIL | FAIL |
-| private chipset, plain run (`NMH_ONLY=P3P4P5`) | private | every line of P3, P4, P5 | 96 passed, 0 failed | 96 passed, 0 failed |
-| second private chipset, LPEN 1 after reset (plain run, `NMH_ONLY=P3P4`) | private | P4-MAIN, opus:A-leg.lpen2 | FAIL, every precondition holds (62 passed, 5 failed) | FAIL, every precondition holds (62 passed, 5 failed) |
+| `P5VALUE` | private | P5-MAIN, opus:B-vbstrt.addr | FAIL | FAIL |
+| private chipset, plain run (`NMH_ONLY=P3P4P5`) | private | every line of P3, P4, P5 | 100 passed, 0 failed | 100 passed, 0 failed |
+| second private chipset, LPEN 1 after reset (plain run, `NMH_ONLY=P3P4`) | private | P4-MAIN, opus:A-leg.lpen2 | FAIL, every precondition holds (66 passed, 5 failed) | FAIL, every precondition holds (66 passed, 5 failed) |
