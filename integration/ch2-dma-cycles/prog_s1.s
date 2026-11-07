@@ -38,7 +38,13 @@ start:
         ifd     S1_C
         ; L_S1c (2.8): WAIT VP=$48 (the line after the last line of use 1),
         ; then COLOR17-19 <- $0FF0,$00FF,$0F0F; L_S1cx writes $0FFF,$0F0F,$0FF0.
+        ; With S1_WAIT set the WAIT is that word (IR1) with the full mask: the spill lists
+        ; of Q6 and Q7 (SPECIFICATION.md P12.6, P12-EXC.6).
+        ifd     S1_WAIT
+        move.w  #S1_WAIT,(a1)+
+        else
         move.w  #$4801,(a1)+
+        endc
         move.w  #$FFFE,(a1)+
         move.w  #COLOR17,(a1)+
         ifd     S1_CX
