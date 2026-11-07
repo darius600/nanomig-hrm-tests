@@ -21,7 +21,7 @@ inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
     s.end();
-    rs.cycles = 4'000'000 + 8ull * (2 * per * words.size() * (blocks + 3));
+    rs.cycles = 4'000'000 + 8ull * (2 * per * words.size() * (blocks + 3 + (mid ? blocks + 1 : 0)));   // a mid-run script (P3-CHG) waits for the blocks before the standard wait
     r.cap = run(rs);
     finish(r, kBuf[x], x);
     return r;
