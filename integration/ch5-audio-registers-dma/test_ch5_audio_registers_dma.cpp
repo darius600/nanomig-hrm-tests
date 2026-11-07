@@ -1295,6 +1295,7 @@ struct Eval {
     Blit b;
     bool g1 = false;   // the program finished -- END was written
     bool g2 = false;   // the stored DMACONR readback shows what the run intends
+    bool g2e = false;  // the part of G2 that lets a blit run: DMAEN and BLTEN set
     bool g3 = false;   // the blit ran
     bool g6 = false;   // the CPU still wanted the bus when the blit ended
 };
@@ -1308,6 +1309,7 @@ Eval evaluate(const Capture& cap, bool bltpri, bool donly) {
     auto r = stored_at(cap.log, kR, 1);
     if (cap.loaded && r.size() == 1) {
         uint16_t v = r[0];
+        e.g2e = (v & 0x0200) && (v & 0x0040);
         e.g2 = (v & 0x0200) && (v & 0x0040) && (bltpri ? (v & 0x0400) != 0 : (v & 0x0400) == 0) &&
                ((v & 0x01FF & ~0x0040) == 0);
     }
@@ -1361,15 +1363,16 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the run's own enabling "
         "write (set in the main run, clear in the contrast run), and no other bit among 8-0");
     {
-        // G3 needs G2 (without DMAEN no blit runs); G(CPU-still-wanted-the-bus) needs G2 and G3.
+        // G3 needs the enabling part of G2 (without DMAEN and BLTEN no blit runs); G(CPU-still-wanted-the-bus)
+        // needs that part and G3. The other parts of G2 (BLTPRI as intended, no other bit) do not stop the blit.
         const struct { const char* name; const Eval* e; } runs4[4] = {
             {"D-only/BLTPRI-set", &d_main_in}, {"D-only/BLTPRI-clear", &d_c1},
             {"E/BLTPRI-set", &e_main_in}, {"E/BLTPRI-clear", &e_c1}};
         std::vector<Inst> i3, i6;
         for (const auto& r : runs4) {
             Deps dd3, dd6;
-            dd3.need(r.e->g2, "P7-G2");
-            dd6.need(r.e->g2, "P7-G2");
+            dd3.need(r.e->g2e, "P7-G2");
+            dd6.need(r.e->g2e, "P7-G2");
             dd6.need(r.e->g3, "P7-G3");
             i3.push_back(make_inst(r.name, dd3, [&] { return r.e->g3; }));
             i6.push_back(make_inst(r.name, dd6, [&] { return r.e->g6; }));
