@@ -14,6 +14,7 @@
 ;   T_LINE10_40    T-g  the WAIT of line 10 uses H=$40, not $E0
 ;   T_HTOTAL       T-l  BEAMCON0 = $0080, HTOTAL = $E2; the Copper writes HTOTAL = $E8 at line 100, $E2 at line 101 (line 101 measures 256 colour clocks)
 ;   T_HTALT        T-m  as T-l (T_HTOTAL set too), but the Copper writes HTOTAL = $E3 in even lines and $E2 in odd lines, at (v,$40) of each line (listt_alt_body.i)
+;   T_HTCPU        T-n  as T-l (T_HTOTAL set too), with the normal list, but the CPU's sampling loop (m1.i, M1_HTCPU) writes HTOTAL = $E3 or $E2 in every new line it sees, alternating, across the field boundaries
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 ;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
@@ -52,9 +53,9 @@ start:
         move.w  #$BEEF,FIXMARK.l
         endif
 
-        ; PLANE: 11,000 bytes of $0000 (section 4.1).
+        ; PLANE: 13,000 bytes of $0000 (section 4.1).
         lea     PLANE,a1
-        move.w  #(11000/2)-1,d0
+        move.w  #(13000/2)-1,d0
 .clrplane:
         move.w  #0,(a1)+
         dbra    d0,.clrplane
@@ -71,7 +72,7 @@ start:
         move.w  #0,BPL2MOD(a0)
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
-        move.w  #$2C81,DIWSTRT(a0)
+        move.w  #$0181,DIWSTRT(a0)
         ifd     T_DIWSTOP_NORM
         move.w  #$F4C1,DIWSTOP(a0)
         else
@@ -99,6 +100,14 @@ start:
         ; step 6: interrupts stay disabled (reset SR already masks them).
 
         ; step 7: run M1, then stop.
+        ; T-n: a1 is the HTOTAL value the sampling loop writes in the next new
+        ; line it sees ($E3 = 228 colour clocks, then $E2 = 227, alternating) and
+        ; a0 the V7-V0 it saw last (m1.i, M1_HTCPU); a0 no longer addresses the
+        ; custom chips after this point.
+        ifd     T_HTCPU
+        movea.w #$00E3,a1
+        suba.l  a0,a0
+        endif
         bsr     m1_run
         DONE
 
@@ -120,4 +129,7 @@ start:
         endif
         dc.w    $FFFF,$FFFE
 
+        ifd     T_HTCPU
+M1_HTCPU        equ     1
+        endif
         include "m1.i"

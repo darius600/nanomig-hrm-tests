@@ -30,11 +30,14 @@
 // precondition that fails in a mutation run turns the labelled line into NOT
 // GRADED, never PASS or FAIL.
 //
-// P3 is red in the normal run (every line the Copper marks measure in the
-// NTSC fields is 227 colour clocks, none is 228, while p23 gives every other
-// line as 228); it stays graded. Its comparator is not vacuous: T-m
-// (NMH_MUTATE=P3(alternating)) feeds the same comparator a list whose lines
-// alternate 228 and 227 colour clocks through BEAMCON0 VARBEAMEN and HTOTAL, and it prints PASS.
+// P3 and P3(pattern) are red in the normal run (every line the marks measure in the
+// NTSC fields is 227 colour clocks, the 12 last lines included, none is 228, while p23 gives
+// every other line as 228 and p24 gives the four-field pattern of last lines); they stay graded.
+// Their comparators are not vacuous: T-n (NMH_MUTATE=P3(alternating) and P3(pattern)) feeds the
+// same comparators a run in which the CPU's sampling loop writes HTOTAL in every new line, so
+// that the lines alternate 228 and 227 colour clocks through BEAMCON0 VARBEAMEN and HTOTAL across the field
+// boundaries and in the last lines, and they print PASS; T-m (NMH_MUTATE=P3(restart)), whose Copper
+// list alternates the lines 0 to 254 only and restarts at the same phase in every field, prints FAIL.
 //
 // MUTATION FIX-I stimulus red: NMH_MUTATE=FIX-I runs prog_i_n (FIXMARK stores $DEAD, not $BEEF, I-n); the known-value comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // MUTATION PI-1 stimulus red: NMH_MUTATE=PI-1 runs prog_i_j (M1 waits between samples, I-j); PI-1's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL (M1 record 0's first V is 12); TG68K: FAIL (first V is 29)
@@ -65,18 +68,20 @@
 // MUTATION P6-NOREWRITE stimulus red: NMH_MUTATE=P6-NOREWRITE runs prog_i_e as the rewrite run (both lists omit the SPR0PT MOVEs, I-e) and NMH_MUTATE=P6-NOREWRITE(ctrl) runs prog_i as the no-rewrite run (the lists rewrite, I-0); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-8, PI-11 ; outcome per core, replayed: fx68k: FAIL on I-e as the rewrite run and FAIL on I-0 as the no-rewrite run; TG68K: FAIL on both
 // MUTATION PI-11 stimulus red: NMH_MUTATE=PI-11 runs prog_i_r as the no-rewrite run (I-e and M1 waits between samples, I-r); PI-11's comparator prints FAIL; P6-NOREWRITE prints NOT GRADED ; outcome per core, replayed: fx68k: FAIL, P6-NOREWRITE NOT GRADED; TG68K: FAIL, P6-NOREWRITE NOT GRADED
 // MUTATION FIX-T stimulus red: NMH_MUTATE=FIX-T runs prog_t_i (FIXMARK stores $DEAD, not $BEEF, T-i); the known-value comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
-// MUTATION PT-1 stimulus red: NMH_MUTATE=PT-1 runs prog_t_f (M1 waits between samples, T-f); PT-1's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL (M1 record 0's first V is 122); TG68K: FAIL (first V is 51)
+// MUTATION PT-1 stimulus red: NMH_MUTATE=PT-1 runs prog_t_f (M1 waits between samples, T-f); PT-1's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL (M1 record 0's first V is 38); TG68K: FAIL (first V is 82)
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_l (T-l: the CPU writes BEAMCON0 = $0080, VARBEAMEN, bit 5 clear as in NTSC, and HTOTAL = $E2, the count the default line has; the Copper list writes HTOTAL = $E8 in the MOVE slot of line 100 and HTOTAL = $E2 in the MOVE slot of line 101; every WAIT stays at (v,$E0) and every mark is read, p305 "VARBEAMEN Variable beam counter comparator enable", p298 "Highest number count, horiz line (VARBEAMEN=1)", p304 "The value in this register represents the number of 280ns increments on the horizontal line."; the oracle for the comparator stays p23 "Every other line is a long line (228 color clocks, 0-$E3), with the others being 227 color clocks long."); PT-5's comparator prints FAIL through line 101 of every recorded field, which measures 2,048 clk_sys (256 colour clocks) and not 227 or 228 (the E8 write comes after line 100's count E2 has passed, so line 101 would end at E8, and the E2 write in line 101 again comes after E2 has passed, so the count runs on to 256); controls PT-1, PT-2, PT-3, PT-7 and PT-8 hold, the gates PT-4 and PT-6 print open (line 0-to-1 is 1,816 clk_sys, N_0..N_12 = 263,262,...), P2 is graded and prints PASS, P3 prints NOT GRADED ; outcome per core, replayed: fx68k: FAIL (13 of 3,400 directly observed lengths outside 227 and 228 colour clocks, all of them line 101, 2,048 clk_sys); TG68K (default board kernel): FAIL (the same 13 of 3,400, 2,048 clk_sys); the line lengths other than line 101 are 227 or 228 colour clocks on both; TG68K_KERNEL=shipped: FAIL (the same 13 of 3,400, 2,048 clk_sys, line 101 in every field; controls PT-1, PT-2, PT-3, PT-7 and PT-8 hold, the gates PT-4 and PT-6 print open, P2 PASS, P3 NOT GRADED)
-// GATE PT-5(mark) (a gating observation of PT-5's marks, printed as a MEASURED line, not graded; not a mutation of PT-5, no physical line changes): NMH_MUTATE=PT-5(mark) runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g), which moves a measuring mark; PT-5's comparator does not hold, through measured lengths of lines 9 and 10 outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present; P2 is graded and P3 prints NOT GRADED ; outcome per core, replayed: fx68k: PT-5's comparator does not hold (26 of 3,400 directly observed lengths outside {227,228}, the first field 0 line 9 = 536 clk_sys); TG68K: the same (26 of 3,400, 536 clk_sys); P2 PASS and P3 NOT GRADED on both; TG68K_KERNEL=shipped: PT-5's comparator does not hold (26 of 3,400, the first field 0 line 9 = 536 clk_sys), controls PT-1, PT-2, PT-3, PT-7, PT-8 and every mark present hold, P2 PASS and P3 NOT GRADED
+// GATE PT-5(mark) (a gating observation of PT-5's marks, printed as a MEASURED line, not graded; not a mutation of PT-5, no physical line changes): NMH_MUTATE=PT-5(mark) runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g), which moves a measuring mark; PT-5's comparator does not hold, through measured lengths of lines 9 and 10 outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present; PT-9 does not hold (line 10 lies in the lines 1 to 43 it reads, its own run is NMH_MUTATE=PT-9); P2 is graded and P3 and P3(pattern) print NOT GRADED ; outcome per core, replayed: fx68k: PT-5's comparator does not hold (26 of 3,400 directly observed lengths outside {227,228}, the first field 0 line 9 = 536 clk_sys); TG68K: the same (26 of 3,400, 536 clk_sys); PT-9 does not hold, P2 PASS and P3 and P3(pattern) NOT GRADED on both; TG68K_KERNEL=shipped: PT-5's comparator does not hold (26 of 3,400, the first field 0 line 9 = 536 clk_sys), controls PT-1, PT-2, PT-3, PT-7, PT-8 and every mark present hold, P2 PASS and P3 NOT GRADED
+// MUTATION PT-9 stimulus red: NMH_MUTATE=PT-9 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g), so that the Copper-mark-to-bitplane-mark offset on line 10, one of the lines 1 to 43, differs from the one PT-3 reads on lines 44 to 254; PT-9's comparator prints FAIL; controls PT-1, PT-2, PT-3 (which reads lines 44 to 254 only and holds), PT-7 and PT-8, the gates PT-4 and PT-6 print open, P2 is graded and prints PASS, P3 and P3(pattern) print NOT GRADED ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(long) runs prog_t_k (LISTT waits for line 255 after its last mark and then holds 1,800 MOVEs in front of the terminal wait, T-k: p20 gives four memory cycle times per MOVE, so the Copper is still in the list when p25's forced restart comes); PT-7's comparator prints FAIL, in the second run through its third clause alone, one restart per M1 field and consecutive matched restarts being intact ; outcome per core, replayed: fx68k: FAIL on T-h and FAIL on T-k; TG68K: FAIL on T-h and FAIL on T-k
 // DIAGNOSTIC SELFTEST-PT-7-ANCHOR (printed as a MEASURED line, not graded; not a mutation of PT-7, no page predicts it): NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; the line prints that PT-7's comparator does not hold; controls: one restart per M1 field, consecutive matched restarts ; outcome per core, replayed: fx68k: PT-7's comparator does not hold (13 of 13 fields hold one restart, 0 of 13 preceded by a terminal wait); TG68K: the same (13 of 13, 0 of 13)
 // MUTATION PT-8 stimulus red: NMH_MUTATE=PT-8 runs prog_t_a (LACE clear, T-a); PT-8's comparator prints FAIL (the 13 recorded fields have one length), P2 prints NOT GRADED, the gate PT-6 prints closed and P3 prints "not graded, gate closed"; controls PT-1, PT-2, PT-3, PT-7 ; outcome per core, replayed: fx68k: FAIL (N_0..N_12 are all 263), P2 NOT GRADED, PT-6 closed, P3 not graded; TG68K: FAIL (all 263), P2 NOT GRADED, PT-6 closed, P3 not graded
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-3, PT-5, PT-7, PT-8 ; outcome per core, replayed: fx68k: FAIL; TG68K: FAIL
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-2, PT-3, PT-7 ; outcome per core, replayed: fx68k: closed (the line 0-to-1 distance is 3,528 clk_sys in all 13 fields), PT-5 and P3 NOT GRADED; TG68K: closed (3,528 clk_sys), PT-5 and P3 NOT GRADED
 // GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed (the fields have one length, not the two of the NTSC standard) and P3 prints "not graded, gate closed"; PT-8 fails on the same stimulus and is graded in its own run, here it is recorded and P2 prints NOT GRADED; controls PT-1, PT-2, PT-3, PT-7 ; outcome per core, replayed: fx68k: closed (N_0..N_12 are all 263), P3 not graded, P2 NOT GRADED; TG68K: closed (all 263), P3 not graded, P2 NOT GRADED
-// MUTATION P3 stimulus green: NMH_MUTATE=P3(alternating) runs prog_t_m (T-m: the CPU writes BEAMCON0 = $0080, VARBEAMEN, bit 5 clear as in NTSC, and HTOTAL = $E2; the Copper list writes, in every line v, WAIT (v,$40) and MOVE HTOTAL = $E3 for even v and $E2 for odd v, early in its line and well before the count reaches $E2, and keeps WAIT (v,$E0) and its COLOR00 MOVE, the mark, in every line; p305 "VARBEAMEN Variable beam counter comparator enable", p298 "Highest number count, horiz line (VARBEAMEN=1)", p304 "The value in this register represents the number of 280ns increments on the horizontal line."); P3 keeps its comparator and its expected value (p23 "Every other line is a long line (228 color clocks, 0-$E3), with the others being 227 color clocks long.") and prints PASS through the same g_P3; controls PT-1, PT-2, PT-3, PT-5, PT-7 and PT-8 hold, the gates PT-4 and PT-6 print open (N_0..N_12 = 263,262,...), P2 is graded and prints PASS ; outcome per core, replayed: fx68k: PASS (of 3,302 Copper-mark line lengths 1,651 are 228 colour clocks, 1,651 are 227, none neither and none equals the line before; lines 0..5 of field 0 are 1,824 1,816 1,824 1,816 1,824 1,816 clk_sys); TG68K (default board kernel): PASS (the same 1,651 and 1,651); TG68K_KERNEL=shipped: PASS (the same 1,651 and 1,651). The normal run and NMH_MUTATE=P3 (PAL) keep P3 red; no verdict of the normal run changes
+// MUTATION P3 stimulus green: NMH_MUTATE=P3(alternating) runs prog_t_n (T-n: the CPU writes BEAMCON0 = $0080, VARBEAMEN, bit 5 clear as in NTSC, and HTOTAL = $E2; the list is the normal list with a WAIT (1,$40) and a MOVE HTOTAL in front of the mark of line 1, whose data word the CPU patches in the lines above 255; the CPU's sampling loop writes HTOTAL = $E3 or $E2 in every new line it sees but line 1, swapping from line to line, so that the alternation runs across the field boundaries and through the lines above 254, which the Copper cannot reach; p305 "VARBEAMEN Variable beam counter comparator enable", p298 "Highest number count, horiz line (VARBEAMEN=1)", p304 "The value in this register represents the number of 280ns increments on the horizontal line."); P3 keeps its comparator and its expected value (p23 "Every other line is a long line (228 color clocks, 0-$E3), with the others being 227 color clocks long.") and prints PASS through the same g_P3; controls PT-1, PT-2, PT-3, PT-5, PT-7, PT-8 and PT-9 hold, the gates PT-4 and PT-6 print open (N_0..N_12 = 263,262,...), P2 is graded and prints PASS, P3(pattern) prints PASS; NMH_MUTATE=P3(restart) runs prog_t_m (T-m: the Copper list writes HTOTAL = $E3 in even lines and $E2 in odd lines at (v,$40) for the lines 0 to 254 only, so the write of line 254 stays in force above it and the phase restarts in every field) and P3 prints FAIL there through the lines above 254 and through the transition from every last line to the next line 0 ; outcome per core, replayed: fx68k: P3(alternating) PASS (of 3,412 lengths of the 13 complete sequences 1,706 are 228 colour clocks, 1,706 are 227, none neither and none equals the line before in its field; none of the 12 transitions from a last line to line 0 keeps the length; lines 0..5 of field 0 are 1,824 1,816 1,824 1,816 1,824 1,816 clk_sys and its last six lines 1,816 1,824 1,816 1,824 1,816 1,824; the M1 records are valid, no gap flag set); TG68K (default board kernel): PASS (the same); P3(restart) FAIL on both (of 3,412 lengths 1,761 are 228, 1,651 are 227, 97 equal the line before, all of them above line 254, and all 12 transitions keep the length: every last line measures 228). The normal run and NMH_MUTATE=P3 (PAL) keep P3 red; no verdict of the normal run that was green changes
+// MUTATION P3(pattern) stimulus green: NMH_MUTATE=P3(pattern) runs prog_t_n (T-n, as the record of P3); P3(pattern) keeps its comparator and its expected value (p24's four slots, short field ending on short line, long field ending on long line, short field ending on long line, long field ending on short line, and back to the beginning, at one phase over the fields 0 to 11) and prints PASS through the same g_P3_pattern; controls those of P3 ; outcome per core, replayed: fx68k: PASS (the pattern fits at one phase over fields 0..11); TG68K: PASS (the same); NMH_MUTATE=P3(restart) (T-m) prints FAIL on both: every field ends on a 228-colour-clock line, the pattern fits at no phase. The normal run and NMH_MUTATE=P3 (PAL, not graded: the pattern is the NTSC pattern) keep P3(pattern) red in the normal run
 
 #include <cstdio>
 #include <cstdint>
@@ -131,7 +136,8 @@ constexpr uint32_t kI_FIXMARK    = 0x087400;
 
 // ---- Program T memory layout, mirrors prog_t.s -----------------------
 constexpr uint32_t kT_PLANE      = 0x082000;
-constexpr uint32_t kT_PLANE_END  = kT_PLANE + 11000;
+constexpr uint32_t kT_PLANE_END  = kT_PLANE + 13000;
+constexpr int       kT_VSTART    = 1;              // DIWSTRT VSTART of prog_t.s: the first line with a bitplane group
 constexpr uint32_t kT_LISTT      = 0x080800;
 constexpr uint32_t kT_LISTT_LONG = 0x0A0000;   // T-k: LISTT relocated, its list is longer than the room in front of PLANE
 constexpr uint32_t kT_LISTT_LONG_SPAN = 0x6000;
@@ -1621,9 +1627,11 @@ nmh::Config t_config(bool ntsc) {
 // T-m (alt) puts a WAIT (v,$40) and a MOVE HTOTAL (4 words, 8 bytes) in front of
 // each pair's WAIT (v,$E0), so a pair is 16 bytes and its MOVE opcode sits 12
 // bytes into it (listt_alt_body.i).
-uint32_t listt_move_addr(uint32_t listt, int p, bool alt = false) {
+// T-n (hn) has a WAIT (1,$40) and a MOVE HTOTAL (8 bytes) in front of the WAIT (1,$E0), so every
+// pair from 1 on lies 8 bytes further on.
+uint32_t listt_move_addr(uint32_t listt, int p, bool alt = false, bool hn = false) {
     if (alt) return listt + 16u * (uint32_t)p + (p == 0 ? 0u : 8u) + 12u;
-    uint32_t off = (p == 0) ? 0u : (8u * (uint32_t)p + 8u);
+    uint32_t off = (p == 0) ? 0u : (8u * (uint32_t)p + 8u + (hn ? 8u : 0u));
     return listt + off + 4;
 }
 
@@ -1640,6 +1648,7 @@ struct TAnalysis {
     uint32_t listt = kT_LISTT; // LISTT's address in this program (T-k relocates it)
     bool ntsc = true;          // the standard the harness was configured with
     bool alt = false;          // T-m: the list of listt_alt_body.i
+    bool hn = false;           // T-n: the list has the extra WAIT/MOVE pair at line 1
     std::vector<M1Record> m1;
     uint64_t startCycle = 0;
     bool completed = false;
@@ -1656,6 +1665,7 @@ TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) 
     const uint32_t listt = prog == "prog_t_k" ? kT_LISTT_LONG : kT_LISTT;
     a.listt = listt;
     a.alt = prog == "prog_t_m";
+    a.hn = prog == "prog_t_n";
     const uint32_t span = prog == "prog_t_k" ? kT_LISTT_LONG_SPAN : kT_PLANE - kT_LISTT;
     a.r = run_program(dir + "/" + prog + ".bin", t_config(ntsc), kRunBudgetT, {listt});
     a.m1 = read_m1(a.r, kT_M1_RECBASE, kT_K);
@@ -1698,7 +1708,7 @@ bool fix_t(const TAnalysis& a) {
 // (a.fields[k].begin/.end, from M2).
 std::optional<uint64_t> copper_mark(const TAnalysis& a, int k, int v) {
     if (k < 0 || k >= (int)a.fields.size()) return std::nullopt;
-    uint32_t addr = listt_move_addr(a.listt, v, a.alt) / 2;
+    uint32_t addr = listt_move_addr(a.listt, v, a.alt, a.hn) / 2;
     auto it = a.readsByAddr.find(addr);
     if (it == a.readsByAddr.end()) return std::nullopt;
     uint64_t begin = a.fields[(size_t)k].begin, end = a.fields[(size_t)k].end;
@@ -1711,9 +1721,9 @@ bool pt1_valid(const TAnalysis& a) { return ok(a.r) && a.completed && m1_all_val
 bool pt2_groups(const TAnalysis& a) {
     if (!a.matched) return false;
     for (const auto& f : a.fields) {
-        if (f.N < 44) return false;
-        if ((int)f.bpl.size() != f.N - 44) return false;
-        if (f.planeReads != (size_t)20 * (size_t)(f.N - 44)) return false; // no read is left over after the last group
+        if (f.N < kT_VSTART + 1) return false;
+        if ((int)f.bpl.size() != f.N - kT_VSTART) return false;
+        if (f.planeReads != (size_t)20 * (size_t)(f.N - kT_VSTART)) return false; // no read is left over after the last group
         for (const auto& g : f.bpl) if (g.len != 20) return false;
     }
     return true;
@@ -1731,7 +1741,7 @@ bool pt3_delta(const TAnalysis& a, int64_t* delta_out = nullptr) {
         if (f.N < 0) return false;
         for (int v = 44; v <= 254 && v <= f.N - 1; ++v) {
             auto mc = copper_mark(a, k, v);
-            int i = v - 44;
+            int i = v - kT_VSTART;
             if (!mc || i >= (int)f.bpl.size()) return false;
             int64_t d = (int64_t)*mc - (int64_t)f.bpl[(size_t)i].cycle;
             if (!have) { delta = d; have = true; } else if (d != delta) return false;
@@ -1739,6 +1749,26 @@ bool pt3_delta(const TAnalysis& a, int64_t* delta_out = nullptr) {
     }
     if (have && delta_out) *delta_out = delta;
     return have;
+}
+
+// PT-9: Delta has the same value on lines kT_VSTART ... 43 of every field as on
+// lines 44 ... 254 (the value PT-3 found). The last-line length of section 2.7
+// reads the bitplane mark of line 1; this shows that, where a Copper mark lies on
+// the same line, the two marks stand at the same offset on lines 1 ... 43 as on the
+// lines PT-3 checks.
+bool pt9_early_delta(const TAnalysis& a, int64_t delta) {
+    if (!a.matched) return false;
+    for (int k = 0; k < kT_K; ++k) {
+        const auto& f = a.fields[(size_t)k];
+        if (f.N < 0) return false;
+        for (int v = kT_VSTART; v <= 43 && v <= f.N - 1; ++v) {
+            auto mc = copper_mark(a, k, v);
+            int i = v - kT_VSTART;
+            if (!mc || i >= (int)f.bpl.size()) return false;
+            if ((int64_t)*mc - (int64_t)f.bpl[(size_t)i].cycle != delta) return false;
+        }
+    }
+    return true;
 }
 
 // Gate of PT-5 and P3: in every field the Copper mark of line 1 follows the
@@ -1781,24 +1811,44 @@ bool observed_lengths(const TAnalysis& a, int k, std::vector<int64_t>& out) {
     if (!copper_lengths(a, k, out)) return false;
     const auto& f = a.fields[(size_t)k];
     for (int v = 254; v + 1 <= f.N - 1; ++v) {
-        int i0 = v - 44, i1 = v + 1 - 44;
+        int i0 = v - kT_VSTART, i1 = v + 1 - kT_VSTART;
         if (i1 >= (int)f.bpl.size()) return false;
         out.push_back((int64_t)f.bpl[(size_t)i1].cycle - (int64_t)f.bpl[(size_t)i0].cycle);
     }
     return true;
 }
 
-// The derived length of the last line of field k, v = N_k - 1:
-// m_c(k+1, 0) - m_b(k, N_k - 1) - Delta. It carries Delta, measured on lines
-// 44 ... 254, to the last line; nothing shows that it holds there, so the value
-// is MEASURED and never graded. Needs the next field's line-0 mark.
-bool derived_last_line(const TAnalysis& a, int k, int64_t delta, int64_t& out) {
+// The length of the last line of field k, v = N_k - 1, measured (section 2.7): the
+// span from the bitplane mark of line N_k - 1 of field k to the bitplane mark of
+// line 1 of field k+1 holds the last line and line 0 of field k+1; line 0 of field
+// k+1 is measured between that field's Copper marks of lines 0 and 1, and the
+// last line is the span less that length. Every term is a difference of two marks
+// of one kind; no offset between the kinds is used. Needs field k+1.
+bool last_line_length(const TAnalysis& a, int k, int64_t& out) {
+    if (k < 0 || k + 1 >= kT_K) return false;
     const auto& f = a.fields[(size_t)k];
-    if (f.N < 0 || k + 1 >= kT_K) return false;
-    auto c_next0 = copper_mark(a, k + 1, 0);
-    int iLast = (f.N - 1) - 44;
-    if (!c_next0 || iLast < 0 || iLast >= (int)f.bpl.size()) return false;
-    out = (int64_t)*c_next0 - (int64_t)f.bpl[(size_t)iLast].cycle - delta;
+    const auto& g = a.fields[(size_t)k + 1];
+    if (f.N < 0 || g.N < 0) return false;
+    int iLast = (f.N - 1) - kT_VSTART, iFirst = 1 - kT_VSTART;
+    if (iLast < 0 || iLast >= (int)f.bpl.size() || iFirst < 0 || iFirst >= (int)g.bpl.size()) return false;
+    auto c0 = copper_mark(a, k + 1, 0), c1 = copper_mark(a, k + 1, 1);
+    if (!c0 || !c1) return false;
+    int64_t span = (int64_t)g.bpl[(size_t)iFirst].cycle - (int64_t)f.bpl[(size_t)iLast].cycle;
+    out = span - ((int64_t)*c1 - (int64_t)*c0);
+    return true;
+}
+
+// The complete sequence of field k, in order: lines 0 ... N_k - 2 observed
+// directly (observed_lengths) and, for fields 0 ... K-2, the last line N_k - 1
+// (last_line_length). The last recorded field has no field after it, so its last
+// line is not in the sequence. False if a term is missing.
+bool field_sequence(const TAnalysis& a, int k, std::vector<int64_t>& out) {
+    if (!observed_lengths(a, k, out)) return false;
+    if (k + 1 < kT_K) {
+        int64_t x;
+        if (!last_line_length(a, k, x)) return false;
+        out.push_back(x);
+    }
     return true;
 }
 
@@ -1853,25 +1903,36 @@ bool pt6_gate(const TAnalysis& a) {
     return true;
 }
 
-// P3 (p23, p24): in every recorded field the lengths of lines 0 ... 253,
-// observed directly between the Copper marks, are 227 or 228 colour clocks and
-// no two consecutive lines have the same length. The caller grades this only
-// when PT-1 to PT-5 and PT-7 hold and the gate PT-6 is open.
+// P3 (p23, p24): in every recorded field the complete sequence of line lengths
+// (field_sequence: lines 0 ... N_k - 2 observed directly, between the Copper marks
+// for lines 0 ... 253 and between the bitplane marks for lines 254 ... N_k - 2, and
+// the measured last line N_k - 1 of fields 0 ... 11) has every length 227 or 228
+// colour clocks and no two consecutive lines of the same length, and the first
+// line of each field differs in length from the last line of the field before it.
+// The caller grades this only when PT-1 to PT-5, PT-7 and PT-9 hold and the gate
+// PT-6 is open.
 bool p3(const TAnalysis& a) {
+    std::vector<int64_t> prev;
     for (int k = 0; k < kT_K; ++k) {
-        std::vector<int64_t> lens;
-        if (!copper_lengths(a, k, lens) || lens.size() < 2) return false;
-        for (size_t v = 0; v < lens.size(); ++v) {
-            if (!length_in_range(lens[v])) return false;
-            if (v > 0 && lens[v] == lens[v - 1]) return false;
+        std::vector<int64_t> seq;
+        if (!field_sequence(a, k, seq) || seq.size() < 2) return false;
+        for (size_t v = 0; v < seq.size(); ++v) {
+            if (!length_in_range(seq[v])) return false;
+            if (v > 0 && seq[v] == seq[v - 1]) return false;
         }
+        if (k > 0 && seq.front() == prev.back()) return false; // prev.back() is the last line of field k-1
+        prev = seq;
     }
     return true;
 }
 
-// MEASURED only: whether the four-field pattern of p24 fits, at one phase,
-// over fields 0 ... 11 with the derived last-line lengths.
-bool p3_pattern_fit(const TAnalysis& a, int64_t delta, int* phase_out = nullptr) {
+// P3(pattern) (p24): whether the standard NTSC four-field pattern fits the fields
+// 0 ... 11, the field type f_k (short = 262 lines, long = 263) and the measured
+// last-line length x_k, at one phase. The pattern is, in order: short field ending
+// on short line, long field ending on long line, short field ending on long line,
+// long field ending on short line, and back to the beginning. A short line is 227
+// colour clocks and a long line 228 (p23).
+bool p3_pattern_fit(const TAnalysis& a, int* phase_out = nullptr) {
     // Q[phase] = (isLong, lastLineLen)
     static const bool Qlong[4]  = {false, true, false, true};
     static const int  Qlen[4]   = {227, 228, 228, 227};
@@ -1880,7 +1941,7 @@ bool p3_pattern_fit(const TAnalysis& a, int64_t delta, int* phase_out = nullptr)
         for (int k = 0; k <= 11 && allMatch; ++k) {
             bool isLong = a.fields[(size_t)k].N == 263;
             int64_t xk;
-            if (!derived_last_line(a, k, delta, xk)) { allMatch = false; break; }
+            if (!last_line_length(a, k, xk)) { allMatch = false; break; }
             int slot = (k + phase) % 4;
             if (isLong != Qlong[slot] || xk != (int64_t)Qlen[slot] * (int64_t)kClkSysPerColourClock) allMatch = false;
         }
@@ -1896,7 +1957,7 @@ bool p3_pattern_fit(const TAnalysis& a, int64_t delta, int* phase_out = nullptr)
 // PT-5 only where PT-3 and the gate PT-4 hold. PT-4 and PT-6 are gates and
 // print as measured states.
 struct TPre {
-    Pv pt1, pt2, pt3, pt5, pt7, pt8;
+    Pv pt1, pt2, pt3, pt5, pt7, pt8, pt9;
     bool pt4 = false, pt6 = false;
     int64_t delta = 0;
 };
@@ -1911,6 +1972,7 @@ TPre t_pre(const TAnalysis& a) {
     p.pt4 = pt4_restart_wait(a);
     p.pt5 = (p.pt3.holds() && p.pt4) ? graded(pt5_line_lengths(a))
                                      : not_graded("PT-3 (the Copper marks lie at one offset from the bitplane marks) or the gate PT-4 (which anchors the line-0 marks) did not hold");
+    p.pt9 = p.pt3.holds() ? graded(pt9_early_delta(a, p.delta)) : not_graded("PT-3 does not hold: the offset between the Copper marks and the bitplane marks is not known");
     p.pt6 = p.pt1.holds() && pt6_gate(a);
     p.pt7 = p.pt1.holds() ? graded(pt7_anchor(a)) : not_graded(noM1);
     p.pt8 = p.pt1.holds() ? graded(pt8_interlace(a)) : not_graded(noM1);
@@ -1932,7 +1994,7 @@ void g_PT1(const Pv& v) {
 }
 void g_PT2(const Pv& v) {
     pre_line(v,
-        "PT-2: in every field, the bitplane fetches are exactly N_k - 44 groups of 20 consecutive ascending "
+        "PT-2: in every field, the bitplane fetches are exactly N_k - 1 groups of 20 consecutive ascending "
         "words each, with no fetch left over, independently confirming N_k from the bitplane fetches");
 }
 void g_PT3(const Pv& v) {
@@ -1969,6 +2031,11 @@ void g_PT5(const TPre& t) {
         "PT-5 p23: every directly measured line length (section 2.7; lines 0 to N_k - 2 of every recorded field) "
         "is 227 or 228 colour clocks");
 }
+void g_PT9(const Pv& v) {
+    pre_line(v,
+        "PT-9: the Copper-mark-to-bitplane-mark offset Delta has the same value on every line 1..43 of every "
+        "field as on lines 44..254, where the last line's length reads the bitplane mark of line 1");
+}
 void g_PT7(const TAnalysis& a, const Pv& v) {
     pre_line(v,
         "PT-7: each of the 13 recorded M1 fields holds exactly one read of LISTT's first word between the "
@@ -1999,15 +2066,16 @@ void g_PT6(const TAnalysis& a, bool open) {
                 ", and no two consecutive field lengths are equal): " +
                 (open ? "open" : "closed") + "; N_0..N_" + std::to_string(kT_K - 1) + " = " + lens);
 }
-// What the P3 verdict rests on, computed from this run: how many of the
-// directly observed line lengths are 227 and 228 colour clocks, and, derived
-// and never graded, Delta, the type f_k and the last-line length x_k of fields
-// 0 ... 11 with whether the four-field pattern of p24 fits them.
+// What the P3 verdicts rest on, computed from this run: how many of the directly
+// observed line lengths are 227 and 228 colour clocks, the measured last-line length
+// x_k of fields 0 ... 11 with the type f_k, how many of the 12 transitions from a
+// field's last line to the next field's line 0 keep the length, and whether the
+// four-field pattern of p24 fits at one phase.
 std::string cc_text(int64_t clk) {
     return clk % (int64_t)kClkSysPerColourClock == 0 ? std::to_string(clk / (int64_t)kClkSysPerColourClock)
                                                      : std::to_string(clk) + "clk_sys";
 }
-void p3_measured(const TAnalysis& a, int64_t delta) {
+void p3_measured(const TAnalysis& a) {
     size_t n227 = 0, n228 = 0, other = 0, total = 0, c227 = 0, c228 = 0, cother = 0, ctotal = 0;
     for (int k = 0; k < kT_K; ++k) {
         std::vector<int64_t> cop, all;
@@ -2033,34 +2101,82 @@ void p3_measured(const TAnalysis& a, int64_t delta) {
                 std::to_string(n228) + " are 228 and " + std::to_string(other) + " are neither; of the " +
                 std::to_string(ctotal) + " between the Copper marks (lines 0..253), " + std::to_string(c227) +
                 " are 227, " + std::to_string(c228) + " are 228 and " + std::to_string(cother) + " are neither");
-    checks.note("P3 measured (derived, not graded): Delta = " + std::to_string(delta) + " clk_sys (" + cc_text(delta) +
-                " colour clocks), measured on lines 44..254");
     std::string fx;
+    size_t x227 = 0, x228 = 0, xother = 0, same = 0, trans = 0;
     for (int k = 0; k <= 11; ++k) {
         std::string f = a.fields[(size_t)k].N == 262 ? "short" : a.fields[(size_t)k].N == 263 ? "long"
                         : "N=" + std::to_string(a.fields[(size_t)k].N);
         int64_t xk;
-        fx += (k ? " " : "") + std::string("(") + f + "," + (derived_last_line(a, k, delta, xk) ? cc_text(xk) : std::string("?")) + ")";
+        bool have = last_line_length(a, k, xk);
+        fx += (k ? " " : "") + std::string("(") + f + "," + (have ? cc_text(xk) : std::string("?")) + ")";
+        if (!have) continue;
+        if (xk == 227 * (int64_t)kClkSysPerColourClock) ++x227;
+        else if (xk == 228 * (int64_t)kClkSysPerColourClock) ++x228;
+        else ++xother;
+        std::vector<int64_t> nxt;
+        if (observed_lengths(a, k + 1, nxt) && !nxt.empty()) { ++trans; if (nxt.front() == xk) ++same; }
     }
-    checks.note("P3 measured (derived, not graded; Delta carried from lines 44..254 to the last line, which nothing "
-                "observes): (f_k, x_k in colour clocks) for k = 0..11 = " + fx);
+    checks.note("P3 measured (section 2.7, last line = span between the bitplane marks of line N_k-1 and of line 1 of the next "
+                "field less line 0 of the next field): (f_k, x_k in colour clocks) for k = 0..11 = " + fx + "; of these 12 last lines " +
+                std::to_string(x227) + " are 227 colour clocks, " + std::to_string(x228) + " are 228 and " + std::to_string(xother) +
+                " are neither; of the " + std::to_string(trans) + " transitions from a last line to line 0 of the next field, " +
+                std::to_string(same) + " keep the length");
+    // A cross-check of x_k from the other side, never graded and not the measurement: the interval from
+    // the Copper restart of field k to that of field k+1 holds all N_k lines, so it less the lines 0..N_k-2
+    // is the last line, if the restart lies at the same place in line 0 in both fields (nothing on the pages
+    // says it does).
+    size_t rAgree = 0, rHave = 0;
+    for (int k = 0; k <= 11; ++k) {
+        std::vector<int64_t> obs;
+        int64_t xk;
+        if (!observed_lengths(a, k, obs) || !last_line_length(a, k, xk)) continue;
+        int64_t sum = 0;
+        for (int64_t L : obs) sum += L;
+        int64_t r = (int64_t)a.fields[(size_t)k + 1].begin - (int64_t)a.fields[(size_t)k].begin - sum;
+        ++rHave;
+        if (r == xk) ++rAgree;
+    }
+    checks.note("P3 measured (cross-check, not graded, not the measurement): the interval between the Copper restarts of field k and "
+                "field k+1 less the lines 0..N_k-2 equals x_k in " + std::to_string(rAgree) + " of " + std::to_string(rHave) + " fields");
     int phase = -1;
-    bool fit = p3_pattern_fit(a, delta, &phase);
-    checks.note(std::string("P3 measured (derived, not graded): the four-field pattern of p24 fits the derived (f_k, x_k) "
-                            "at one phase over fields 0..11 = ") + (fit ? "yes, phase " + std::to_string(phase) : "no"));
+    bool fit = p3_pattern_fit(a, &phase);
+    checks.note(std::string("P3 measured: the four-field pattern of p24 fits the (f_k, x_k) at one phase over fields 0..11 = ") +
+                (fit ? "yes, phase " + std::to_string(phase) : "no"));
+}
+bool p3_open(const TPre& t) {
+    return t.pt6 && t.pt1.holds() && t.pt2.holds() && t.pt3.holds() && t.pt4 && t.pt5.holds() && t.pt7.holds() && t.pt9.holds();
 }
 void g_P3(const TAnalysis& a, const TPre& t) {
     if (!t.pt6) { checks.record("P3: not graded, gate closed (PT-6 did not hold on this run)"); return; }
-    if (!(t.pt1.holds() && t.pt2.holds() && t.pt3.holds() && t.pt4 && t.pt5.holds() && t.pt7.holds())) {
-        checks.record("P3: NOT GRADED, a precondition (PT-1 to PT-5 or PT-7) did not hold on this run");
+    if (!p3_open(t)) {
+        checks.record("P3: NOT GRADED, a precondition (PT-1 to PT-5, PT-7 or PT-9) did not hold on this run");
         return;
     }
-    p3_measured(a, t.delta);
+    p3_measured(a);
     checks.expect(p3(a),
         "P3 p23,p24: with the fields alternating between the two lengths of the selected standard (the gate PT-6), "
-        "the Copper sees alternating long and short lines -- in every one of the 13 recorded fields the lengths "
-        "of lines 0 to 253, measured between the Copper marks, are 227 or 228 colour clocks and no two "
-        "consecutive lines have the same length");
+        "the Copper sees alternating long and short lines -- in every one of the 13 recorded fields the lengths of all "
+        "lines (0 to N_k - 2 as measured directly, between the Copper marks for lines 0 to 253 and between the bitplane "
+        "marks for lines 254 to N_k - 2; and, in fields 0 to 11, the last line N_k - 1, measured against the next "
+        "field's bitplane mark of line 1 and its line 0) are 227 or 228 colour clocks, no two consecutive lines have the "
+        "same length, and line 0 of each field differs in length from the last line of the field before it");
+}
+void g_P3_pattern(const TAnalysis& a, const TPre& t) {
+    if (!a.ntsc) { checks.record("P3(pattern): not graded, the pattern is the standard NTSC pattern (p24) and this run is PAL"); return; }
+    if (!t.pt6) { checks.record("P3(pattern): not graded, gate closed (PT-6 did not hold on this run)"); return; }
+    if (!p3_open(t)) {
+        checks.record("P3(pattern): NOT GRADED, a precondition (PT-1 to PT-5, PT-7 or PT-9) did not hold on this run");
+        return;
+    }
+    checks.expect(p3_pattern_fit(a),
+        "P3(pattern) p24 ch2-vertical-beam-position.c15 ch2-vertical-beam-position.c16 ch2-vertical-beam-position.c17 "
+        "ch2-vertical-beam-position.c18 ch2-vertical-beam-position.c19 COP2-vertical-beam-position.c17 "
+        "COP2-vertical-beam-position.c18 COP2-vertical-beam-position.c19 COP2-vertical-beam-position.c20 "
+        "COP2-vertical-beam-position.c21 COP2-vertical-beam-position.c22: with the fields alternating between 262 and "
+        "263 lines (the gate PT-6), the fields 0 to 11 follow the standard NTSC four-field pattern at one phase: short "
+        "field ending on short line, long field ending on long line, short field ending on long line, long field "
+        "ending on short line, and back to the beginning (a short field has 262 lines, a long field 263; a short line "
+        "is 227 colour clocks and a long line 228; the last line of a field is measured as for P3)");
 }
 
 void run_program_t_assertions(const std::string& dir) {
@@ -2073,6 +2189,7 @@ void run_program_t_assertions(const std::string& dir) {
     g_PT3(t.pt3);
     g_PT4(a);
     g_PT5(t);
+    g_PT9(t.pt9);
     g_PT7(a, t.pt7);
     g_PT8(t.pt8);
     g_P2(a, p2_gate(t));
@@ -2088,17 +2205,7 @@ void run_program_t_assertions(const std::string& dir) {
         "readings agree on is graded, in P2: every field has 262 or 263 lines and no two consecutive fields are both 263");
     g_PT6(a, t.pt6);
     g_P3(a, t);
-    checks.record("P3: ch2-vertical-beam-position.c15, ch2-vertical-beam-position.c16, ch2-vertical-beam-position.c17, "
-        "ch2-vertical-beam-position.c18, ch2-vertical-beam-position.c19, COP2-vertical-beam-position.c17, "
-        "COP2-vertical-beam-position.c18, COP2-vertical-beam-position.c19, COP2-vertical-beam-position.c20, "
-        "COP2-vertical-beam-position.c21 and COP2-vertical-beam-position.c22 (the NTSC four-field pattern: short field "
-        "ending on short line, long field ending on long line, short field ending on long line, long field ending on "
-        "short line, repeating) are not graded -- the pattern is defined by the length of the last line of each field, "
-        "which no mark observes: a Copper WAIT cannot reach beyond line 255 and the bitplane fetches end with the "
-        "display window; the only value available is derived from the Copper mark of the next field's line 0 with "
-        "the offset Delta measured on lines 44 to 254, which nothing shows to hold on the last line, and is printed as a "
-        "MEASURED line; the graded member P3 grades the alternation of long and short lines that p23 and p24 give, "
-        "observed directly, stays red on both cores and carries none of these ids");
+    g_P3_pattern(a, t);
 }
 
 struct TMutSpec { std::string prog; bool ntsc; };
@@ -2115,6 +2222,7 @@ void t_dump(const std::string& label, const TAnalysis& a, const TPre& t, const s
     if (!skip.count("PT-6")) g_PT6(a, t.pt6);
     if (!skip.count("PT-7")) pre_ctl(label, "PT-7", t.pt7);
     if (!skip.count("PT-8")) pre_ctl(label, "PT-8", t.pt8);
+    if (!skip.count("PT-9")) pre_ctl(label, "PT-9", t.pt9);
 }
 
 // The graded lines that read the preconditions of the mutated run, each
@@ -2122,6 +2230,7 @@ void t_dump(const std::string& label, const TAnalysis& a, const TPre& t, const s
 void t_downstream(const TAnalysis& a, const TPre& t, const std::set<std::string>& skip) {
     if (!skip.count("P2")) g_P2(a, p2_gate(t));
     if (!skip.count("P3")) g_P3(a, t);
+    if (!skip.count("P3(pattern)")) g_P3_pattern(a, t);
 }
 
 // Returns false if `label` names no Program-T mutation.
@@ -2129,13 +2238,16 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
     static const std::map<std::string, TMutSpec> kProg = {
         {"P2", {"prog_t", false}},
         {"P3", {"prog_t", false}},
-        {"P3(alternating)", {"prog_t_m", true}},
+        {"P3(alternating)", {"prog_t_n", true}},
+        {"P3(pattern)", {"prog_t_n", true}},
+        {"P3(restart)", {"prog_t_m", true}},
         {"PT-1", {"prog_t_f", true}},
         {"PT-2", {"prog_t_e", true}},
         {"PT-3", {"prog_t_d", true}},
         {"PT-4", {"prog_t_c", true}},
         {"PT-5", {"prog_t_l", true}},
         {"PT-5(mark)", {"prog_t_g", true}},
+        {"PT-9", {"prog_t_g", true}},
         {"PT-6", {"prog_t_a", true}},
         {"PT-8", {"prog_t_a", true}},
         {"PT-7", {"prog_t_h", true}},
@@ -2160,39 +2272,69 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         bool anyLongField = false;
         for (const auto& f : a.fields) if (f.N == 263) anyLongField = true;
         checks.note(label + " mutation measured: any field with N=263? " + (anyLongField ? "yes" : "no"));
-        checks.record(label + " mutation: P3's comparator is shown to pass in the run NMH_MUTATE=P3(alternating) (T-m); "
+        checks.record(label + " mutation: P3's comparator is shown to pass in the run NMH_MUTATE=P3(alternating) (T-n); "
             "this PAL run keeps the controls live while P3 is red, with every line 227 colour clocks as p23 says for PAL");
-    } else if (label == "P3(alternating)") {
-        // T-m: VARBEAMEN, and the Copper writes HTOTAL = $E3 in even lines and $E2 in
-        // odd lines, each write at (v,$40), well before the count reaches $E2. Every
-        // WAIT (v,$E0) and its mark stays live. P3's comparator is the unchanged
-        // g_P3; the lines of this run are the evidence that it can pass.
+    } else if (label == "P3(alternating)" || label == "P3(restart)" || label == "P3(pattern)") {
+        // T-n (P3(alternating), P3(pattern)): VARBEAMEN, and the CPU's sampling loop
+        // writes HTOTAL = $E3 or $E2 in every new line it sees, alternating, across
+        // the field boundaries. T-m (P3(restart)): the Copper writes HTOTAL = $E3 in
+        // even lines and $E2 in odd lines, each write at (v,$40), up to line 254 and
+        // none beyond, so the phase restarts in every field. Every WAIT (v,$E0) and its
+        // mark stays live. P3 and P3(pattern) keep their comparators and their expected
+        // values; the lines of these runs are the evidence that they can pass (T-n) or
+        // fail through the tail and the boundary (T-m).
         t_dump(label, a, t, {});
         g_P3(a, t);
-        size_t n228 = 0, n227 = 0, nother = 0, nrepeat = 0, nlines = 0;
-        std::string first;
+        g_P3_pattern(a, t);
+        size_t n228 = 0, n227 = 0, nother = 0, nrepeat = 0, nlines = 0, nbound = 0, nboundSame = 0;
+        std::string first, tail, repeats;
+        std::vector<int64_t> prevSeq;
         for (int k = 0; k < kT_K; ++k) {
-            std::vector<int64_t> lens;
-            if (!copper_lengths(a, k, lens)) continue;
-            for (size_t v = 0; v < lens.size(); ++v) {
+            std::vector<int64_t> seq;
+            if (!field_sequence(a, k, seq)) { prevSeq.clear(); continue; }
+            for (size_t v = 0; v < seq.size(); ++v) {
                 ++nlines;
-                if (lens[v] == 228 * (int64_t)kClkSysPerColourClock) ++n228;
-                else if (lens[v] == 227 * (int64_t)kClkSysPerColourClock) ++n227;
+                if (seq[v] == 228 * (int64_t)kClkSysPerColourClock) ++n228;
+                else if (seq[v] == 227 * (int64_t)kClkSysPerColourClock) ++n227;
                 else ++nother;
-                if (v > 0 && lens[v] == lens[v - 1]) ++nrepeat;
+                if (v > 0 && seq[v] == seq[v - 1]) {
+                    ++nrepeat;
+                    if (nrepeat <= 6) {
+                        repeats += " " + std::to_string(k) + "/" + std::to_string(v) + "=" + std::to_string(seq[v]);
+                        repeats += "[prev field tail:";
+                        for (size_t q = prevSeq.size() >= 3 ? prevSeq.size() - 3 : 0; q < prevSeq.size(); ++q) repeats += " " + std::to_string(prevSeq[q]);
+                        repeats += " | here:";
+                        for (size_t q = v >= 3 ? v - 3 : 0; q < v + 4 && q < seq.size(); ++q) repeats += " " + std::to_string(seq[q]);
+                        repeats += "]";
+                    }
+                }
             }
-            if (k == 0 && lens.size() >= 6) {
-                for (size_t v = 0; v < 6; ++v) first += (v ? " " : "") + std::to_string(lens[v]);
+            if (!prevSeq.empty()) { ++nbound; if (seq.front() == prevSeq.back()) ++nboundSame; }
+            if (k == 0 && seq.size() >= 6) {
+                for (size_t v = 0; v < 6; ++v) first += (v ? " " : "") + std::to_string(seq[v]);
+                for (size_t v = seq.size() - 6; v < seq.size(); ++v) tail += (v == seq.size() - 6 ? "" : " ") + std::to_string(seq[v]);
             }
+            prevSeq = seq;
         }
         std::string ns;
         for (int k = 0; k < kT_K; ++k) ns += (k ? "," : "") + std::to_string(a.fields[(size_t)k].N);
-        checks.note(label + " mutation measured: of " + std::to_string(nlines) + " Copper-mark line lengths, " +
+        checks.note(label + " mutation measured: of " + std::to_string(nlines) + " line lengths of the complete sequences, " +
                     std::to_string(n228) + " are 228 colour clocks, " + std::to_string(n227) + " are 227, " +
                     std::to_string(nother) + " are neither, " + std::to_string(nrepeat) +
-                    " equal the length of the line before; field 0 lines 0..5 in clk_sys = " + first +
+                    " equal the length of the line before in their field (field/line=clk_sys, first six:" + (repeats.empty() ? std::string(" none") : repeats) +
+                    "); of " + std::to_string(nbound) +
+                    " transitions from a field's last line to the next field's line 0, " + std::to_string(nboundSame) +
+                    " keep the length; field 0 lines 0..5 in clk_sys = " + first + "; field 0 last six lines in clk_sys = " + tail +
                     "; field lengths N_0.. = " + ns);
-        t_downstream(a, t, {"P3"});
+        {
+            std::string rec;
+            for (int k = 0; k < kT_K; ++k) {
+                const auto& m = a.m1[(size_t)k];
+                rec += " " + std::to_string(k) + ":" + (m.present ? std::to_string(m.firstV) + "/" + std::to_string(m.lastV) + "/g" + std::to_string(m.gap) : std::string("absent"));
+            }
+            checks.note(label + " mutation measured: M1 records (field:firstV/lastV/gap):" + rec);
+        }
+        t_downstream(a, t, {"P3", "P3(pattern)"});
     } else if (label == "PT-8") {
         // T-a: LACE clear. Every recorded field has one length, so PT-8 is red
         // and P2 is not graded; the gate PT-6 closes with it.
@@ -2223,7 +2365,9 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         t_downstream(a, t, {});
     } else if (label == "PT-5") {
         // T-l: the program turns the programmable beam counters on and writes HTOTAL
-        // = $E8 at line 100 and $E2 at line 101: line 100 is 233 colour clocks long.
+        // = $E8 at line 100 and $E2 at line 101: the E8 write comes after line 100's
+        // count E2 has passed, so line 101 ends at E8 and the E2 write in line 101 again
+        // comes after E2 has passed, so line 101 measures 256 colour clocks (2,048 clk_sys).
         // Every mark stays live, so PT-3 and the gate PT-4 hold and PT-5's own
         // comparator is graded and prints FAIL.
         size_t outside = 0, measured = 0;
@@ -2238,7 +2382,7 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
                     if (first.empty())
                         first = "field " + std::to_string(k) + " line " + std::to_string(v) + " = " +
                                 std::to_string(lens[v]) + " clk_sys (" + cc_text(lens[v]) + " colour clocks)";
-                    if (v != 100) odd += " " + std::to_string(k) + "/" + std::to_string(v);
+                    if (v != 101) odd += " " + std::to_string(k) + "/" + std::to_string(v);
                 }
             }
         }
@@ -2246,7 +2390,13 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         g_PT5(t);
         checks.note(label + " mutation measured: " + std::to_string(outside) + " of " + std::to_string(measured) +
                     " directly observed line lengths lie outside 227 and 228 colour clocks; first: " +
-                    (first.empty() ? "none" : first) + "; outside lines other than line 100:" + (odd.empty() ? " none" : odd));
+                    (first.empty() ? "none" : first) + "; outside lines other than line 101:" + (odd.empty() ? " none" : odd));
+        t_downstream(a, t, {});
+    } else if (label == "PT-9") {
+        // T-g: line 10's Copper mark moves to H=$40, so Delta on line 10 (one of the lines
+        // 1..43) differs from the Delta of lines 44..254, which PT-3 still reads. PT-9 is red.
+        g_PT9(t.pt9);
+        t_dump(label, a, t, {"PT-5", "PT-9"});
         t_downstream(a, t, {});
     } else if (label == "PT-5(mark)") {
         // T-g: a gating observation of PT-5's marks, not a mutation of PT-5. Line
@@ -2270,7 +2420,9 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
                 }
             }
         }
-        t_dump(label, a, t, {"PT-5"});
+        t_dump(label, a, t, {"PT-5", "PT-9"});
+        checks.note(label + " gating observation: PT-9 " + std::string(t.pt9.ng() ? "is not graded" : t.pt9.holds() ? "holds" : "does not hold") +
+                    " on this run (line 10 lies in the lines 1..43 that PT-9 reads, and its Copper mark moved)");
         ctl(label, "every mark the line lengths need is present", allMarks);
         checks.note(label + " gating observation (not an assertion, not a mutation of PT-5): PT-5's comparator on T-g " +
                     std::string(t.pt5.ng() ? "is not graded" : t.pt5.holds() ? "holds" : "does not hold") + "; " +
