@@ -333,11 +333,21 @@ pass 2 on:
   or a reading of the runs by their length rests on the levels of the words under test. The frame
   takes the presumption above instead and states its cost: a program whose two byte positions of
   one byte give different levels breaks clause 2 at the last word, G-W is red and the graded lines
-  of the proposition print NOT GRADED. The byte whose single run the frame presumes is 0xA0 in P2
-  (word D = 0xA0A0), 0xFE in P3 (the last word of the 256-word sweep, 0xFEFE) and 0x60 in P4 (the last word, (b, b) = 0x6060).
-  *Contrast of clause 2*: the data set's last word gets two different bytes and the rest is
-  unchanged (selectors P2-LAST, P3-LAST, P4-LAST, recorded in 7.4). The run before the anchor is
-  then the last word's second sample, one sample long, and G-W goes red.
+  of the proposition print NOT GRADED. The bytes whose single run the frame presumes: in pass 3
+  (and in P2 and P4 also in pass 2) the run before the anchor is the last word's; in pass 2 of this
+  implementation it is the run of the word before the last (measured in P4 with the run listing of
+  `NMH_DEBUG`: the last word of the data set is not output between the last word but one and the
+  pass-2 anchor, which pass 1 leaves open), so the frame presumes the last two words of each data
+  set to be single runs: P2 the words C and D (0x2020 and 0xA0A0), P3 the words 0xFDFD and
+  0xFEFE, P4 the words 9 and 10, (c, c) = 0xA0A0 and (b, b) = 0x6060.
+  *Contrast of clause 2*: the last two words get two different bytes and the rest is unchanged
+  (selectors P2-LAST: words 7 and 8 become 0x20E0 and 0xA0E0; P3-LAST: the last word becomes 0xFE7F;
+  P4-LAST: words 9 and 10 become (c, d) and (b, d); recorded in 7.4). The run before the anchor is
+  then the second sample of a word, one sample (P·c) long, and G-W goes red; P3-G-W and P4-G-W-3 in
+  pass 3 and P2-G-W and P4-G-W-2 in pass 2. Every other gate that is measured from the anchor goes
+  red with it, because the anchor then lies one sample off (P2-G-P, P3-G-P, P4-G-P-n, P4-PRE-CAL-n,
+  the latter also because the calibration word (b, b) is gone); a pass-2 contrast of P3 is not made
+  (P3-G-W grades pass 3 as well).
 
 ---
 
@@ -1851,7 +1861,11 @@ gate holds, so the run-by-run comparator prints FAIL on P15-RUNS and P15.
 `P2-B` has no stimulus mutation: a run starts after the fetch of its word whatever the
 program writes, and a program that moved a run start to or before its fetch would also
 move the run lengths that G-P grades or the pairing, so that P2-B would be NOT GRADED
-and not FAIL; as for `P2-G-W` the boundary cannot be placed by the stimulus. The implementation records `P6-IMPL`,
+and not FAIL. Clause 1 of G-W (no run start in the clock of the anchor fetch) has no
+stimulus contrast: the stimulus cannot place a run start in the clock of a fetch. Clause 2 has `P2-LAST`, `P3-LAST` and
+`P4-LAST` (2.10), and the implementation record `p3lsb` (`make p3lsb-test-<core> ONLY=P3`: `p3lsb.patch` clears
+the low bit of the 8-bit sample before the volume path in `paula_audio_mixer.v`, so that 0x02 and 0x03 give one level): on both
+cores every P3 precondition and G line prints PASS and P3-ORDER and P3 print FAIL (9 passed, 2 failed). The implementation records `P6-IMPL`,
 `P16-IMPL` and `P17-NONE` build the test against a private copy of the design,
 made from the pinned submodule by a tracked patch of this package (the submodule is never
 modified; the Makefile target `<patch>-test-<core> ONLY=<proposition> SEL=<selector>` applies the patch to a copy
