@@ -47,6 +47,15 @@
         include "nanomig.i"
         org     PROGRAM_ORG
 
+; p.182: the immediate data registers are loaded only after the shift counts
+; are set (BLTCON0 carries ASH, BLTCON1 BSH), so every branch calls this
+; after its last BLTCON0/BLTCON1 write and before BLTSIZE starts the blit.
+LOADDATA macro
+        move.w  #$8000,BLTADAT(a0)     ; single pixel bit, shifted into place by ASH
+        move.w  #$FFFF,BLTBDAT(a0)     ; solid texture (always draw)
+        move.w  #0,BLTCDAT(a0)         ; background starts clear (defensive)
+        endm
+
 LINE_ROW0     equ     $082400         ; same 36-word buffer as prog_line.s
 LINE_GUARD_LO equ     LINE_ROW0-2     ; y=4, must stay zero
 LINE_GUARD_HI equ     LINE_ROW0+72    ; y=41, must stay zero
@@ -65,12 +74,9 @@ start:
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
         move.w  #$FFFF,BLTAFWM(a0)
         move.w  #$FFFF,BLTALWM(a0)
-        move.w  #$FFFF,BLTBDAT(a0)     ; solid texture (always draw)
-        move.w  #0,BLTCDAT(a0)         ; background starts clear (defensive)
         move.w  #$0002,BLTCMOD(a0)     ; width of the bitplane in bytes (p.192); octant's AUL bit steps it down
         move.w  #$0002,BLTDMOD(a0)
         move.w  #$3BCA,BLTCON0(a0)     ; ASH=$3=3=x1 mod 15, bits11-8=1011, LF=$CA (AB+AC)
-        move.w  #$8000,BLTADAT(a0)     ; p.182: data registers only after the shift count is set; single pixel bit, shifted into place by ASH
 
         ifd     MUTATE_NOABS
         move.w  #$0045,BLTCON1(a0)     ; LINE, octant code 001, SIGN=1 (still negative with the bad values)
@@ -90,6 +96,7 @@ start:
         move.w  d0,BLTDPTL(a0)
         swap    d0
         move.w  d0,BLTDPTH(a0)
+        LOADDATA
         move.w  #$0202,BLTSIZE(a0)     ; height=dx_bad+1=8 (wrong), width=2
         else
         move.w  #$0045,BLTCON1(a0)     ; LINE, octant code 001, SIGN=1 (BLTAPT<0)
@@ -109,6 +116,7 @@ start:
         move.w  d0,BLTDPTL(a0)
         swap    d0
         move.w  d0,BLTDPTH(a0)
+        LOADDATA
         move.w  #$0902,BLTSIZE(a0)     ; height=dx+1=36, width=2 -- starts the blit
         endif
 

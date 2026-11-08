@@ -51,9 +51,12 @@ alone, not read off the RTL:
   in BLTCON0/BLTCON1, as loading the data registers first will lead to
   unpredictable results ... The act of loading one of the data registers
   'draws' the data through the machine and shifts it." Both line programs
-  therefore write BLTADAT ($8000, shifted by ASH) after BLTCON0, which
-  carries ASH. (BLTBDAT = $FFFF is a solid texture, unchanged by any B
-  shift, and stays where it was.)
+  therefore write BLTADAT ($8000, shifted by ASH), BLTBDAT ($FFFF) and
+  BLTCDAT (0) only after their last BLTCON0 and BLTCON1 writes, in every
+  branch including the mutated ones, and immediately before BLTSIZE, which
+  starts the blit. The values are unchanged. (BLTBDAT = $FFFF is a solid
+  texture and no B shift changes it; it is moved for conformance with the
+  page, not because a shift would alter it.)
 
 ### Assertion (drawn line)
 
