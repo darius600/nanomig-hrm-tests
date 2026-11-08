@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should the `keymap` entry for HID `$64` (`amiga_keymap.v:130`, the key cut out of the left Shift) emit `$30`, as p.252 prints, instead of `$2B`? Closes when NanoMig makes that change and `CUTOUT-30` turns green, or when an Amiga specialist rejects it. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | `keymap` entries for HID `$64` and `$32`, the two international cutout keys; a combinational translation table, so no chip revision applies; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.252 (text) and p.254 (Figures 8-9 and 8-10) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `CUTOUT-30`: p. 254: `opus:8-fig.c59`, `sol:8-layout.c58`, `opus:8-fig.c148`, `sol:8-layout.c152`; p. 252: `opus:8-keycode.c14`, `sol:8-keycode.c13`; `KEY-$2B`: p. 254: `opus:8-fig.c146`, `sol:8-layout.c150`; p. 252: `opus:8-keycode.c15`, `sol:8-keycode.c14`. Both assertions this page names carry claim ids |

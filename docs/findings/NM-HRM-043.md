@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should DSKPTH hold only its high three bits on OCS (`ecs` = 0), as p.289 prints, where NanoMig loads five (`P5` red), by one Agnus-revision mask shared with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and [NM-HRM-088](NM-HRM-088.md)? Closes when that mask makes DSKPTH load three high bits at `ecs` = 0 (`P4` and `P5` turn green), or when an Amiga specialist rejects it, also by declaring the core ECS-and-later and recording that on those five pages; if the rejection means p.289 is wrong, the page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | DSKPTH written at the `agnus` boundary with the `ecs` port at 0 and at 1, read back as the pointer the disk DMA slot drives; the page names no chip revision, so `unknown` |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix B, printed p.289 (DSKPTH and DSKPTL rows) and p.288 (the `(E)` mark); p.270 and p.266 are named for comparison · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `P4` `sol:8-appb-dskpth.c8` (p.289 composed with p.288), `P5` `sol:8-appb-dskpth.c9` (p.289), `P2` `opus:8-appB-dskpth.c6` (p.289), `P3` `opus:8-appB-dskpth.c7` / `sol:8-appb-dskpth.c10` (p.289), `P1` `sol:8-appa-dskptr.c3` (p.279, graded on [NM-HRM-044](NM-HRM-044.md)); `LIVENESS` and `COPLIVE` carry no claim id |

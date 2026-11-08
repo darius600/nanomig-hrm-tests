@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change is proposed now. Question: with `flag` held at 1 across two clocked ICR reads at `ciab`'s port, should the read clear bit 4 and IR (p.346, with p.341 giving no transition to set them again), where the RTL reads `0x90` both times, so that `cia_int.v:57` sets the bit only on a negative transition of FLAG? In NanoMig `flag` is a one-cycle pulse, so the difference shows only for a driver that holds FLAG. Closes when `cia_int.v` sets bit 4 only on a negative transition of FLAG and `PROP-FLAG-EDGE-POLARITY` turns green, or when an Amiga specialist rejects that change; if the rejection means p.341 is wrong, this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer and minimig-dev/MinimigAGA-MiST-TC64 |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | the 8520's FLAG input and ICR bit 4 (FLG) as built into `ciab`, measured with `flag` held at 1 across a clocked ICR read (red) and with `flag` returned to 0 before the first read (control, passes); chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed p.341 (FLAG) and p.346 (ICR read clears), with p.245 (Chapter 8), p.334 and p.379 for the pin's polarity · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `PROP-FLAG-EDGE-POLARITY`: `opus:F-handshake.c6` / `sol:F-handshake.c7` (p.341); the assertion's message cites p.346, p.245, p.334 and p.379 without a claim id, and the control carries none |

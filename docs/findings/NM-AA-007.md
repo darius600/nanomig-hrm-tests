@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
 | **What is asked of a reader** | Should `denise.v`, with the AA chip set selected and BPLCON0 bit 5 (BYPASS) set, put each pixel's colour address on the red output instead of the colour table's red, as AA PDF p. 17 prints? Closes when the red output follows the colour address under BYPASS and `P6-II` and `P6-AGG` are green on both cores, or when an Amiga specialist rejects the change; if the rejection means p. 17 is wrong, the page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | AA chip set (`chipset_config` = $10), BPLCON0 = $0030 against $0010 (eight low-resolution bit-planes scrolled by BPLCON1 = $0033, sprite 0 in front of them on lines $60-$6F); red's top four bits only, green and blue not graded; fx68k and TG68K; chip revision unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 17, BYPASS; PDF p. 4, *Video*; PDF p. 16, the BPLCON0 column of the bit table. The document prints no page numbers: p. N is the PDF page · `P6-I`, recorded not graded: `sol:AA-bplcon0.c19`, p. 17; `P6-II`, `P6-AGG` and the preconditions carry no claim id |

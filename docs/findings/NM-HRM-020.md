@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `BLTSIZV` (`$05C`) load the blitter height only when `ecs` is set, as `BLTSIZH` and `BLTCON0L` do, where the RTL loads height 7 with `ecs = 0` and with `ecs = 1`? Closes when `&& ecs` is added to the `BLTSIZV` decode at `agnus_blitter.v:548` and `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS` is green, or when an Amiga specialist records that an OCS Agnus loads the height from `BLTSIZV` too, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | Agnus `BLTSIZV` write with the `ecs` input 0 and 1; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix C — Enhanced Chip Set, ECS register map, printed p. 298 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (14)</summary> `BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS`: `6-appc-modifications.c12`, `ch6-appc-map.bltsizv`, p. 298 (the map row); `6-appa-registers.c70`, `6-appa-registers.c71`, Appendix A p. 269; `ch6-appc-bltsizv.c1`, `6-appc-big-blits.c65`, `ch6-appc-bigblits.c8`, Appendix C p. 308; the control `BLTCON0L-GATED-BY-ECS`: `6-appa-registers.c25`, `6-appa-registers.c26`, `6-appa-registers.c27`, `ch6-appa-bltcon0l.c3`, p. 269; `ch6-appc-map.bltcon0l`, `6-appc-modifications.c11`, p. 298 (the map row); `ch6-appc-ecs.c9`, p. 309; both assertions carry claim ids </details> |

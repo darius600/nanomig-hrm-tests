@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
 | **What is asked of a reader** | Should `gary.v` line 190, `sel_cia = cpu_address_in[23:16]==8'hBF`, compare only A23–A21 against `101`, as p. 353 prints, so that $A00000–$BEFFFF reaches the CIAs as on the A1000, A500 and A2000? The difference shows only at addresses p. 314 marks "Reserved. Do not use." Closes when `gary.v` compares the three bits and `CIA-DECODE-DONTCARE` is green, or when an Amiga specialist rejects p. 353's three-bit decode, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | `gary`'s CIA select and the chip selects below it: A23–A16 for the pair, A13 and A12 for the chips. The decode has no mode term, so it is the same in NanoMig's four modes, the OCS-A500 and OCS-A1000 modes among them; measured with `gary` compiled alone at $A00000 and $BE0000 against $BFE001. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 350, 351 and 353; Appendix E, printed p. 337; Appendix D, printed pp. 314–316; Appendix K, printed pp. 385 and 388 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `CIA-DECODE-DONTCARE`: `sol:F-signals.c56`, `sol:F-signals.c63`, `opus:F-conn.c1`, `opus:F-conn.c6` (p. 353); `CIA-AB-TWOBIT-RULE`: `sol:F-signals.c57`, `sol:F-signals.c58`, `opus:F-conn.c2` (p. 353); both assertions carry claim ids |

@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change is proposed now. Should `paula_uart.v` start no transmission when SERDAT is written with `0x0000`, as p.259 prints, where it now drives one low cell (a start bit) on `txd`? It closes when `ALLZERO-NO-TX` and `E6` turn green, or when an Amiga specialist rejects the guard; if the rejection means p.259 does not describe the silicon, the page is refiled against the printed page |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | Paula's SERDAT (`$030`) written with the all-zero word `0x0000`; the transmit path only. Chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.259 (SERDAT, lines 26-27), and Appendix A, printed p.283 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `ALLZERO-NO-TX`: `sol:8-serdat.c37`, p.259; `opus:8-serdat.c9`, `sol:8-serdat.c46`, p.283; `E6`: `opus:8-serial.c140`, p.259; control `WRITE-STARTS-TX`: `sol:8-serdat.c36`, p.259; control `STARTBIT-AUTO`: `sol:8-serdat.c34`, `sol:8-serdat.c35`, `sol:8-serdat.c33`, p.259 |

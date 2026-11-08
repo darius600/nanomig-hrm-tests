@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `ciab.v` set ICR bit 3 when a byte written to SDR in output mode has been shifted out on timer A's underflows? The question stops at that interrupt: shifted data on the pins and input mode are outside it. It closes when `ciab.v` generates the request and `P7.6-CIAB` is green on fx68k and TG68K, or when an Amiga specialist rejects the change and the reason is recorded here |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | 8520 CIA-B, output mode: CRA bit 6 set, timer A continuous, a write to SDR; the transmit-completion interrupt (ICR bit 3) only. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 340, 345–349, 351; Appendix E — I/O Connectors and Interfaces, printed pp. 324, 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. No assertion the page names carries a claim id in its message: `P7.6-CIAB` [p345,p348], `P7.6-CIAB-PRE` and `P7.6-CIAB-GREENCTL` [SPECIFICATION.md P7.6], `P7.6-CIAA` [p345,p351,p357]; `P7.6-CIAB` grades the SPMODE = 1 field of `opus:F-cra.c13`, p. 349 |

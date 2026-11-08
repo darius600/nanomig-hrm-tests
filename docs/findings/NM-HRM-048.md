@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails because NanoMig lacks a documented bug |
 | **What is asked of a reader** | No RTL change is proposed now. Should NanoMig reproduce the loss of the last three bits of a disk write that p.247 documents, when its write path delivers all eight bits of the last sector byte (A11 observed `0x00FF`)? *Decision* says no and asks for no RTL change. Closes when an Amiga specialist rejects the change, recording that no software depends on those bits being discarded, or when the write path drops them and `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` turns green. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | NanoMig's `paula_floppy.v` write path at the pinned revision: one full write transfer, uniform payload `0xFF`, read at `sdc_byte_out_data` offset 511; Paula chip revision unknown; real-hardware behaviour not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.247, the last paragraph of the DSKLEN section · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` carries `opus:8-dma.c32` / `sol:8-dskbug.c1`; `A12-DSKBUG-ONE-WORD-SHORT-ON-READ` (declined) carries `opus:8-dma.c33` / `sol:8-dskbug.c2`; `A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE` carries no claim id |

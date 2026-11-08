@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `paula_uart.v` load a waiting word in the `clk7_en` edge that ends the stop bit, so that stop bit lasts N+1 colour clocks as p. 255 prints, instead of N+1½? Closes when the change is made and `P1`, `P2` and `P3` are green on both cores, or when an Amiga specialist records that a stop bit with a word waiting lasts N+1½ colour clocks on Paula, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | Paula's serial transmitter: words of $0155 (start bit, eight data bits, one stop bit) written back to back, so each next word waits in SERDAT while the previous one is shifted; N=371, four words, NTSC and PAL, in the package; N=31 and two-word N=32396 (NTSC) only in runs outside `make test`. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed pp. 255, 257, 258, 259, with Figure 8-11 on p. 258; Appendix A, printed pp. 283, 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `P1`, `P2`, `P3` and the controls `P1-CTRL-N0`, `P1-CTRL-N32396`, `P1-CTRL-WITHIN`, `P2-CTRL-N0`, `P2-CTRL-N32396`, `P2-CTRL-PAIR`, `1d`, `2d` carry no claim id. Recorded, not graded: beside `P1` `sol:8-serper.c8`, p. 255; beside `P2` `sol:8-serper.c9`, p. 255; beside `P3` `sol:8-serper.c10`, p. 255; `opus:8-serper.c10`, p. 284 |

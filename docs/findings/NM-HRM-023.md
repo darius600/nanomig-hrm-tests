@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `denise_sprites.v` stop letting bit 7 of the even sprite's SPR0CTL attach a pair when `aga = 0`, as p. 128 prints "valid only for odd-numbered" sprites, where setting it alone changes NanoMig's sprite output? Closes when the `(!aga && attach0)` term at `denise_sprites.v:595` is dropped and `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` is green, or when an Amiga specialist records that the original Denise attaches a pair from the even sprite's bit 7, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | NanoMig's `denise_sprites.v` with `aga = 0` (the OCS/ECS mode the package drives), SPR0CTL bit 7 set alone with SPR1CTL bit 7 clear, one position (`0x40`) and one pair of sprite images; `aga = 1` is not graded (there the `!aga` term is zero). Chip revision of the original Denise: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 4 — Sprite Hardware, printed pp. 122 and 128; Appendix A, printed p. 284 (register table, "(odd sprites)") · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` carries `CH4-p128.c8`, `CH4-sctl.c4`, p. 128, and `CH4-attach.c27`, p. 122; `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT` carries `CH4-attach.c25`, `CH4-attach.c26`, `CH4-attach.c27`, p. 122; `CODE-0000-YIELDS-TRANSPARENT-PIXEL` carries `CH4-tab45.c17` (Table 4-5, p. 122); `FIXTURE-LIVE-DATA-PATH` carries no claim id; the assertion messages cite no id for p. 284 |

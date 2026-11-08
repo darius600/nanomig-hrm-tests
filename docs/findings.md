@@ -90,7 +90,7 @@ not always a custom chip, and NanoMig answers for it in one of two layers.
 
 | layer | what it is | how a finding there travels |
 |---|---|---|
-| `src/minimig-aga` | the custom-chip reimplementation, shared with `MiSTer-devel/Minimig-AGA_MiSTer` — byte-identical in places | **transfers to the Minimig family.** Several findings below are marked `inherited` and belong upstream |
+| `src/minimig-aga` | the custom-chip reimplementation, shared with `MiSTer-devel/Minimig-AGA_MiSTer` — byte-identical in places | **transfers to the Minimig family.** Several findings below are marked `inherited`: MiSTer has the same code |
 | `src/misc` | the board's substitutes for Amiga peripherals — `hid.v` and `amiga_keymap.v` stand in for the keyboard and its microprocessor | **does not transfer.** Every Minimig-derived core solves this differently |
 
 That difference is measured, not assumed. In the upstream tree at `da7632e`
@@ -104,7 +104,7 @@ statements, and is incomplete without them:**
 
 - its **Module** row ends *NanoMig's own* and says there is no counterpart in
   MiSTer, naming where upstream does the same work instead;
-- when it is filed against the RTL, its **Report to** row says `NanoMig direct`,
+- when it is filed against the RTL, its **Report to** row says `NanoMig`,
   because a reader who takes it as a statement about Minimig will be wrong (a page
   that routes `no RTL action`, such as NM-HRM-052 and NM-HRM-061, has no RTL to
   report to).

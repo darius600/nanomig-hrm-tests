@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `agnus_bitplanedma.v` keep three high bits of BPLxPTH when `ecs` = 0, so that BPL1PTH = $001F with BPL1PTL = $0000 fetches from 0x070000 as pp. 272 and 291 print, not from 0x1f0000? Closes, once for [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md), [NM-HRM-043](NM-HRM-043.md) and this page, when the mask is added and `BPLXPTH-OCS-HIGH-THREE-BITS` is green, or when the core is declared ECS-and-later, which puts the manual's OCS pointer width out of scope. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | OCS Agnus (`ecs` = 0); the first fetch of plane 1 after BPL1PTH = $001F, BPL1PTL = $0000, one bitplane, standard low-resolution fetch window, pointer written before line $50; planes 2 to 6 not measured; the `ecs` = 1 reading is not graded ([NM-HRM-014](NM-HRM-014.md)); chip revision as p. 5 gives it (the original Agnus and the Fat Agnus), hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed p. 54; Appendix A, printed pp. 264, 272; Appendix B, printed pp. 288, 291; Appendix C, printed p. 309; 1 — Introduction, printed p. 5; 4 — Sprite Hardware, printed p. 127 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids carried by `BPLXPTH-OCS-HIGH-THREE-BITS`: `sol:A-bplptr.c3` and `opus:A-bplxpth.fn` (p. 272), `sol:B-subject.c29` (p. 291); `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL` and `BPLXPTH-ECS-HIGH-BITS-TWIN` carry no claim id, and no assertion carries one for pp. 5, 54, 127, 264, 288 or 309 |

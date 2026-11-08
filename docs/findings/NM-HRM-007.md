@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change is proposed now. Does real Agnus, with DDFSTOP at its $D8 limit in hires, fetch 49 words per plane (the last fetch one word), as p. 80 prints, where NanoMig fetches 50? Closes when the hires sequencer in `agnus_bitplanedma.v` delivers one word in the last fetch at the $D8 limit and `MAX-WORDS-49-HIRES-AT-HW-LIMITS` and `MAX-WORDS-49-HIRES` turn green, or when an Amiga specialist records that the sequence runs whole and gives 50, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | Agnus bitplane fetch in hires, FMODE 0, at DDFSTRT $18 / DDFSTOP $D8, and driven from $00/$FE beyond both limits; lores 25 is reachable. Chip revision: unknown; hardware not measured at $18/$D8; photographs named A500 OCS and A500 ECS reach stop $D8 at start $38 only |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed p. 80 (limits and the 25/49 table, Table 3-14) and p. 60 (word-count relation) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `MAX-WORDS-49-HIRES-AT-HW-LIMITS` carries `sol:3-max-window.c13`, `opus:3-max.c06`, `opus:3-max.c07`, `opus:3-t14.c10` (p. 80); `MAX-WORDS-49-HIRES` carries `sol:3-max-window.c28` (p. 80); p. 60 carries no claim id in either red assertion |

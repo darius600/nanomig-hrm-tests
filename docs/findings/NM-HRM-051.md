@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should NanoMig's `hid.v` report no event when Caps Lock (HID `$39`, Amiga `$62`) is released, and give the second press bit 7 set (`$E2`), as p.359 prints? Closes when `hid.v` does both and `CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE` turn green, or when an Amiga specialist rejects the change. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | NanoMig's `hid.v` keyboard-event path for HID `$39`: the release after the first press, and the second press, after reset; real keyboard hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · Appendix G, printed p. 359 (Caps Lock rule) and p. 360 (LED off after start-up). Claim ids, each with the assertion that carries it: `CAPS-LOCK-DOWN-ACCEPTED` `opus:8-appG.c51`, `sol:8-appG.c63`; `CAPS-LOCK-RELEASE-NOT-ACCEPTED` `opus:8-appG.c52`, `sol:8-appG.c64`; `CAPS-LOCK-BIT7-CARRIES-LED-STATE` `opus:8-appG.c53`, `sol:8-appG.c65`; `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` `opus:8-appG.c54`, `sol:8-appG.c66`; `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE` `opus:8-appG.c55`, `sol:8-appG.c67`. `CONTROL-FIXTURE-DELIVERS-KNOWN-VALUE` and `CONTROL-NO-EVENT-ON-UNMAPPED-CODE` carry no claim id |

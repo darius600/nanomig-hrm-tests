@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Does p.250's table (`1 -> 01`; `0 -> 00` if following a 1) require NanoMig's payload encoder to set each clock cell from the preceding data bit, where it now emits `11` for a data 1 and `10` for a 0 after a 1? Closes when the payload encoder sets each clock cell from the preceding data bit and `A2-MFM-ONE-ENCODES-01` and `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` turn green, or when a specialist rejects that change and records the constant clock as acceptable. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | The payload path (`data_odd` / `data_even`) of NanoMig's `paula_floppy.v` at the pinned revision, read at DSKDATR pop #33, the first payload word, for uniform fed bytes `0xFF`, `0x00` and `0x80`; chip revision unknown. The header path is read from the RTL, not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.250 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `A1-MFM-DOUBLES-SIZE`: `opus:8-mfm.c1` / `sol:8-mfm.c1`; `A2-MFM-ONE-ENCODES-01`: `opus:8-mfm.c2` / `sol:8-mfm.c2`; `A3-MFM-ZERO-AFTER-ZERO-ENCODES-10`: `opus:8-mfm.c3` / `sol:8-mfm.c3`; `A4-MFM-ZERO-AFTER-ONE-ENCODES-00`: `opus:8-mfm.c4` / `sol:8-mfm.c4`; the `A0` liveness note carries no claim id |

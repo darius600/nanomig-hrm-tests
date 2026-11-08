@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `potcap[2]` in `userio.v`, the right port's X pot counter (POT1X, connector pin 5), take an external input in its update as the other three counters do, as pp.228, 234, 240 and 282 print four sensed pot inputs? Closes when `potcap[2]` takes the input that carries RX and the reds under *Assertions* turn green, or when an Amiga specialist records why the right X counter is drive-only, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | unknown chip revision; NanoMig's `userio.v` at the pinned revision, the right port's pin 5 (`potcap[2]`), measured with every port-2 joystick input asserted. Port 1's X and Y and port 2's Y respond to their pins in the same runs |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, pp.228 (Table 8-1), 234, 237 (Figure 8-6), 240 and Appendix A p.282 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (19)</summary> p.234: `opus:8-pot.c1`, `sol:8-pot.c1`; p.228: `opus:8-tbl8-1.c15` / `sol:8-pin.c17`, `opus:8-tbl8-1.c16` / `sol:8-pin.c18`; p.240: `opus:8-dio.c32`, `sol:8-dio.c30`, `opus:8-dio.c33`, `sol:8-dio.c31`; p.282: `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`, `sol:8-appa-pot.c15`; `PROP-4`: `opus:8-dio.c13`, `sol:8-dio.c11` (p.240), `opus:8-appa-potgo.c15`, `sol:8-appa-pot.c43` (p.282), `sol:8-fig8-6r.c15`, `sol:8-fig8-6r.c25` (p.237) </details> |

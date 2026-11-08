@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `paula_floppy.v` hold RDY* deasserted for a selected drive whose motor latch is on and which has no disk, where pp. 334 and 368 print "disk installed and up to speed"? Closes when `_ready` reads the motor latch and the disk and `RDY-DISK-PRESENCE`, `RDY-DISK-PRESENCE-DRIVE1`, `sol:E-disk.c26`, `opus:E-extdisk-iface.c4` and `P-READY-MOTOR-INVARIANT-DRIVE1` are green, or when an Amiga specialist rejects the reading; if that means pp. 334 and 368 are wrong, the page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | Paula's floppy interface: RDY* (CIAA PRA bit 5) of a selected drive with its motor latched on and no disk. Graded on drives 0 and 1, replayed on drives 1, 2 and 3 (a measurement for this page, not an assertion); the motor-off identification stream is left as it is. Chip revision: unknown; real hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix E, printed pp. 334–335; Appendix H, printed pp. 368–371; 8 — Interface Hardware, printed p. 244 (Table 8-5) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `RDY-DISK-PRESENCE`: `opus:AHJ-060`, `sol:H-036` (p. 368); `sol:E-disk.c26`, `opus:E-extdisk-iface.c4` (p. 334, pin 1 RDY*); `RDY-DISK-PRESENCE-DRIVE1` and `P-READY-MOTOR-INVARIANT-DRIVE1` carry no claim id of their own |

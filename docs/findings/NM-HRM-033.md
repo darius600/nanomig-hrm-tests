@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should VPOSR's long-line bit (bit 7) stop toggling under NTSC when BEAMCON0 bit 11 (LOLDIS) alone is set, as pp. 305 and 309 print, rather than only when VARBEAMEN (BEAMCON0 bit 7) is set as well? Closes when the RTL drops `&& varbeamen` and `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` turns green, or when an Amiga specialist names a configuration of a real ECS Agnus in which LOLDIS alone is meant to be inert, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | `agnus_beamcounter` at the pinned NanoMig revision; NTSC (`pal=0`), `ecs=1`, VPOSR bit 7 sampled over four consecutive lines, one fresh model per leg. Chip revision: unknown. PAL and other modes: not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 7 — System Control, Appendix C, printed p. 305 (BEAMCON0 bit table, bit 11) and p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` and the note `P6-COMBINATION-MEASURED` carry `sol:7-appC-beamcon0.c6` / `opus:7-appC-beamcon0.c6` (p. 305); `sol:7-appC-loldis.c1` / `opus:7-appC-beamcon0.c21` (p. 309) are carried by a recorded line of the package, not by an assertion |

@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should a byte write to CIA-A timer A low (`$BFE401`) leave `ovl` set in the OCS-A500 mode, as p. 223's "The OVL bit in one of the 8520 Chips disables the overlay" reads, where the RTL clears it on any CIA-A write? Closes when the RTL (`minimig.v:871-872`) takes `ovl` from the OVL bit and `OTHER-CIA-A-REGISTER-ALSO-CLEARS` turns green, or when an Amiga specialist rejects the change, in which case, if the rejection means p. 223 is wrong, this page is refiled against the printed page. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | the release of `ovl` by a CIA-A write; measured in the OCS-A500 mode (`chipset_config` 0) with a byte write to timer A low. The same two lines serve the OCS-A1000, ECS and AGA modes, which were not measured; chip revision unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 7 — System Control Hardware, printed p. 223; Appendix E, printed p. 337; Appendix F, printed pp. 339, 341, 354; Chapter 1, the model list on printed p. 1 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `OVL-BIT-WRITE-CLEARS-OVERLAY` and `OTHER-CIA-A-REGISTER-ALSO-CLEARS` carry `sol:7-reset.c8` / `opus:7-reset.c4` (p. 223); `RESET-LINE-RESTORES-OVERLAY` carries `sol:7-reset.c12` / `opus:7-reset.c9` (p. 223); `OVL-AT-COLD-START` (`sol:7-reset.c3`, p. 223) is measured, not graded; `CONTROL-RESET-RELEASES`, `CIAB-WRITE-DOES-NOT-CLEAR` and `CHIPRAM-WRITE-DOES-NOT-CLEAR` carry no claim id |
