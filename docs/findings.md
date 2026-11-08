@@ -99,15 +99,12 @@ takes `kbd_mouse_data` as a **top-level input** and the HID translation happens
 above the chipset, on the MiSTer framework's ARM side. MiST and other Minimig
 boards solve it differently again.
 
-**A finding graded against the second layer therefore carries two extra
-statements, and is incomplete without them:**
-
-- its **Module** row ends *NanoMig's own* and says there is no counterpart in
-  MiSTer, naming where upstream does the same work instead;
-- when it is filed against the RTL, its **Report to** row says `NanoMig`,
-  because a reader who takes it as a statement about Minimig will be wrong (a page
-  that routes `no RTL action`, such as NM-HRM-052 and NM-HRM-061, has no RTL to
-  report to).
+**A finding graded against the second layer therefore carries one extra
+statement, and is incomplete without it:** its **Module** row ends *NanoMig's own*
+and says there is no counterpart in MiSTer, naming where upstream does the same
+work instead, because a reader who takes it as a statement about Minimig will be
+wrong. Its **Report to** row is every page's: `NanoMig` when filed against the
+RTL, `no RTL action` otherwise (NM-HRM-052, NM-HRM-061).
 
 Which layer answers for a page is decided by what the page specifies, not by a
 directory. Appendix G specifies the keyboard as a device with its own
@@ -240,8 +237,7 @@ core.
 
 **NM-HRM-037 and NM-HRM-040 are inherited from Minimig-AGA byte for byte**,
 which is unusual in this register: NM-HRM-037's two lines and NM-HRM-040's
-pair are identical upstream but for a trailing comment. Whoever they are
-reported to, it is not only NanoMig.
+pair are identical upstream but for a trailing comment. They are filed against NanoMig like every other finding; MiSTer's copy carries the same lines.
 
 ## The AA register
 

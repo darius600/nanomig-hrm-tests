@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Should `userio.v` keep the reset interval after a POTGO write with bit 0 set (p.235: seven or eight lines; Figure 8-5: eight) out of the four pot counters' final count, and read POTGOR's input bits as 0 through it, where it now counts from the very next `pot_cnt_en` tick (final count 18 after 8 + 10 lines) and reads 1 on a released input line? Closes when `userio.v` models the interval and the 28 final-count and POTGOR reds turn green (four in `hrm/ch8-pot-counter-start-and-charge`, 24 on each core in `integration/ch8-controller-ports`), the four first-increment reds, whose expectation a photograph named A500 ECS contradicts (*What photographs of real machines show*), being decided apart, or when an Amiga specialist rejects the change, in which case, if the rejection means p.235 is wrong, this page is refiled against the printed page. |
 | **Report to** | `NanoMig` — MiSTle-Dev/NanoMig |
 | **Scope** | The pot counters and POTGOR's input bits after a POTGO write with bit 0 (START) set. Counters measured at `userio.v`; POTGOR measured at the system boundary in PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on both CPU cores. Chip revision: unknown; whether NTSC takes seven lines or eight is open |
-| **Software impact** | unknown; no named affected software; on NanoMig, after the suggested change: the POTGOR input bits come from the emulated mouse and joystick (`userio.v:174-176`), so reading them as 0 for the eight lines after a START would show a released right or middle button as pressed |
+| **Software impact** | unknown; no named affected software; on NanoMig, after the suggested change: the POTGOR input bits come from the emulated mouse and joystick (`userio.v:174-176` for port 1, `:164-169` for port 2), so reading them as 0 for the eight lines after a START would show a released right or middle button as pressed |
 | **Chapter** | 8 — Interface Hardware, printed pp. 234, 235 (body text and Figure 8-5), 236, 237 (Figure 8-6), 240 (Table 8-4); Appendix A — Register Summary, printed p. 282, as cited in `P1-START`'s message · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `opus:8-potchg.c1` and `sol:8-pot.c16` (p.235 body text) are carried by the assertions of those names and by `FINALCOUNT-BODY-OPUS` and `FINALCOUNT-BODY-SOL`; `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5) by the assertions of those names and by `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`; `opus:8-dio.c21` and `sol:8-dio.c19` (p. 240) by `P1-START` in each configuration. `C0-Fc` to `C4-Fc` and `C1-Fc-OUT` to `C4-Fc-OUT` carry no claim id |
 | **Module** | `userio.v` — [NanoMig `4315acb`](https://github.com/harbaum/NanoMig/blob/4315acba5e9f1e15103037627aa78b3460cae8af/src/minimig-aga/userio.v#L136-L150) · [Minimig-AGA `da7632e`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L157-L171); inherited (from Minimig-AGA) |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge): `make -C hrm/ch8-pot-counter-start-and-charge test`; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports): `make -k -C integration/ch8-controller-ports test`; an expected red exits nonzero |
@@ -113,7 +113,7 @@ reaches only the counters.
   joystick, its mouse at the default setting, and Denise's joypad and mouse pull a
   released button's line high in every read, so with one attached those two read 1
   as well. On NanoMig the POTGOR input bits always come from the emulated mouse and
-  joystick (`userio.v:174-176`), the case in which vAmiga and Denise read 1.
+  joystick (`userio.v:174-176` for port 1, `:164-169` for port 2), the case in which vAmiga and Denise read 1.
 
 ## Independent evidence
 
@@ -152,7 +152,7 @@ the interval; and read POTGOR's bit as 0 for every pot line that is
 an input, whose capacitor START dumps (p.240 Table 8-4) while the read circuitry
 stays in its reset state (p.235), as WinUAE does, and vAmiga and Denise do with
 nothing attached to the port; on NanoMig the bits always come from the emulated mouse
-and joystick (`userio.v:174-176`), the case in which vAmiga and Denise read 1. By a reading of the code, the hold satisfies the
+and joystick (`userio.v:174-176` for port 1, `:164-169` for port 2), the case in which vAmiga and Denise read 1. By a reading of the code, the hold satisfies the
 counter package's eight reds, the restart the four final-count reds only; and on the
 POTGOR side `C0-Fc` to `C4-Fc` in the controller-ports package, bit 12 included,
 since the dump does not depend on a port; holding the counters alone leaves the

@@ -3,8 +3,8 @@
 **Why this exists.** Minimig is a mature core, and NanoMig is built on it.
 This repository tries to enable a further step: it reads the chips' original
 documentation statement by statement, tests the RTL against the statements a
-test can observe, and offers what it finds to the maintainers of NanoMig and
-of the Minimig lines it descends from. The reading, the tests and the finding
+test can observe, and offers what it finds to the maintainers of NanoMig, comparing
+each finding with the Minimig lines it descends from. The reading, the tests and the finding
 pages were produced by AI models (Anthropic's Claude and OpenAI's Codex) under
 human direction. As in any review, whoever does it, a finding can be mistaken.
 Every finding page names its sources for the reader to check.
@@ -59,8 +59,8 @@ On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020;
 with it a package may report `BUILD`, and rerunning that package alone with
 `make -B -C hrm/<package> test` prints its count. Verilator 5.052 builds from the upstream
 source: `git clone https://github.com/verilator/verilator`, `git checkout v5.052`, then
-`autoconf`, `./configure`, `make` and `make install` as its `docs/install` describes (it
-needs `flex`, `bison` and `autoconf` beside the compiler), with the new `bin/` ahead of the
+`autoconf`, `./configure`, `make` and `sudo make install` as its `docs/guide/install.rst` describes (it
+needs `help2man`, `perl`, `python3`, `flex`, `bison` and `autoconf` beside the compiler, and on Ubuntu `libfl-dev`), with the new `bin/` ahead of the
 apt one on the PATH. The tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
@@ -105,7 +105,7 @@ commit.
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **35**, each run on both CPU cores: 10 green, 25 carrying a red; 27 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **6525** on fx68k — 6096 pass, **429 fail**; **6639** on TG68K — 6209 pass, **430 fail** |
-| registered findings | **89**, all open — 76 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA); most of them name a suggested change and a few propose none |
+| registered findings | **89**, all open — 76 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA); most of them name a suggested change; the others, whose Effort row begins `none`, propose none now |
 | what the registered findings rest on | 80 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **13** — ten are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
@@ -131,7 +131,7 @@ it reaches.
 The *Amiga specialist* a page asks is any reader who can say from the manual, a real
 machine or the chips themselves how the hardware behaves; if that is you, record your
 decision as an issue here, as [the page rule](docs/findings/README.md#rules-for-every-page)
-describes. A maintainer's rejection in their own tracker counts as the rejection a page names.
+describes. A maintainer's rejection in their own tracker, linked from an issue here, counts as the rejection a page names.
 
 **All 250 packages report both a verdict and an assertion count** in `hrm/` and
 `aa/`, and each graded `integration/` package does on both cores.

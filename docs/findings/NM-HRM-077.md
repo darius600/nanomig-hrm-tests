@@ -251,6 +251,5 @@ to drive a printer or another parallel device, the change is in `ciaa.v`:
   the negative edge p. 341 asks for.
 
 It depends on [NM-HRM-054](NM-HRM-054.md) as well: without a port-B data
-register, a strobe would announce a byte that the port never drives. The change
-goes to MiSTer-devel/Minimig-AGA_MiSTer first, because the tie-off is theirs
-too.
+register, a strobe would announce a byte that the port never drives. MiSTer-devel/Minimig-AGA_MiSTer has the same
+tie-off.

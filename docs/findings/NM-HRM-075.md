@@ -14,7 +14,7 @@
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; an expected red exits nonzero |
 | **Assertions** | 1 red of 5 graded: `CIA-DECODE-DONTCARE` — expected `sel_cia`=1 at $A00000 and $BE0000, observed 0 at both; the package reads 4 passed, 1 failed. `CIA-AB-TWOBIT-RULE`, green in the same run, grades p. 353's two chip selects at $BFE001 and $BFD000 and, at $BFC100, where p. 353 is silent, p. 351's one select line per chip: both chips are selected there. It is not part of this finding |
 | **Verdict of the four** | **3–1 for p. 353 on the machines it describes, and no named model decodes NanoMig's window**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF, as p. 353's three bits do; Copperline answers only in $BFD000–$BFDFFF and $BFE000–$BFEFFF, narrower than NanoMig, and so do WinUAE's Gayle and Fat Gary models. Only a WinUAE configuration with the AGA chipset and neither gate array has NanoMig's $BF0000–$BFFFFF. At $BFC100 WinUAE's models without Gayle or Fat Gary, vAmiga and Denise select both CIAs, as NanoMig does and p. 351 predicts. Hardware: not run here; photographs named A500 ECS show writes at $A8xxxx reaching both CIAs and writes at $A0xxxx reaching CIA-B, and do not reach $BE0000 (*What photographs of real machines show*) |
-| **Effort** | S — `gary.v` line 190 only, comparing `cpu_address_in[23:21]` in place of `[23:16]`; upstream the ROM mirrors at $A80000–$B7FFFF in MiSTer's `gary.v` must be left to them |
+| **Effort** | S — `gary.v` line 190 only, comparing `cpu_address_in[23:21]` in place of `[23:16]` |
 | **See also** | [NM-HRM-062](NM-HRM-062.md) — the same paragraph of p. 353 prints its two binary patterns interchanged |
 
 ---
@@ -172,6 +172,6 @@ assign sel_cia   = cpu_address_in[23:21]==3'b101; // $A00000-$BFFFFF, p.353
 ```
 
 - An access anywhere in $A00000–$BEFFFF would reach the CIAs as a peripheral cycle, since the bridge's `vpa` is `sel_cia`. Software that keeps to p. 353's addresses sees no difference.
-- In NanoMig nothing else answers in that range. Upstream, `gary.v` uses $A80000–$B7FFFF as ROM mirrors (MiSTer row), so a fix there has to leave those ranges to them.
+- In NanoMig nothing else answers in that range. MiSTer's `gary.v` uses $A80000–$B7FFFF as ROM mirrors (MiSTer row), so the change does not carry over to MiSTer as it stands.
 - NanoMig would join WinUAE's models without Gayle or Fat Gary, vAmiga and Denise, and move further from Copperline.
 - `CIA-DECODE-DONTCARE` is the test of the change: it expects `sel_cia`=1 at $A00000 and $BE0000. Re-run with `make -C hrm/appF-cia-address-decode test`.

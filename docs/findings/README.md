@@ -25,7 +25,7 @@ After the thirteen rows only the optional ones follow.
 | 2 | **Filed against** | `the RTL`, `the printed page` or `the classification` |
 | 3 | **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
 | 4 | **What is asked of a reader** | the exact decision and its boundary first, as one bounded yes/no question, then the event that closes it. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
-| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `NanoMig` — `MiSTle-Dev/NanoMig` (the code is NanoMig's, much of it taken over from MiSTer's Minimig-AGA; pull requests go to MiSTle-Dev/NanoMig, and a page names a matching MiSTer or TC64 line as evidence where it reads one) or `no RTL action` (the printed page or the classification is wrong, not the RTL; the role is then `HRM documentation` or `AA documentation`, followed by `: an issue on this repository whose title begins with ` and the page's own key, because that is where the decision is recorded). Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
+| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `` `NanoMig` — MiSTle-Dev/NanoMig `` (the code is NanoMig's, much of it taken over from MiSTer's Minimig-AGA; pull requests go to MiSTle-Dev/NanoMig, and a page names a matching MiSTer or TC64 line as evidence where it reads one) or `no RTL action` (the printed page or the classification is wrong, not the RTL; the role is then `HRM documentation` or `AA documentation`, followed by `: an issue on this repository whose title begins with ` and the page's own key, because that is where the decision is recorded). Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
 | 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown`; and, where it decides whether NanoMig can show the difference, the core's own limit (chipset mode, video output, connector, disk image format, build option) |
 | 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software`; either may end `; on NanoMig: <effect>` where the page knows the effect on this core, and then, where it also knows what the suggested change would do on the core, `; on NanoMig, after the suggested change: <effect>` |
 | 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell with more than 12 claim ids holds them in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line; at 12 or fewer they stand in the cell |
@@ -64,7 +64,7 @@ Optional rows after the twelve: **See also**, **Origin**, **Provenance**, as abo
 A withdrawn page has no `Report to`, `Scope`, `Software impact` or `Effort`.
 Its rows 8 to 10 are Module, Test, Chapter; on an open page rows 8 to 10 are
 Chapter, Module, Test. The two orders are deliberate: a withdrawn page asks nothing, so
-its header names first where the claim pointed (Module) and which test now stands in for it
+its header names first where the claim pointed (Module) and the packages that graded it
 (Test), and the page the claim was read from (Chapter) last; an open page puts that page
 first, because the question it asks is about what the page prints.
 Neither header carries a date or the name of whoever changed it.
@@ -142,7 +142,7 @@ headings are free.
 - **One witness matrix**, in the order WinUAE, vAmiga, Denise, Copperline, MiSTer, TC64.
   MiSTer and TC64 are marked *descendant* and never counted among the four. A source
   nobody read is written *not read*.
-- **`[n/3]`, *corpus* and *Developer CD reading*.** The *corpus* is this project's verbatim text of the manual and of the AA specification, one page per file; the AA part is merged from three readings of the page: Tesseract OCR, the 1993 `AGA.guide` typing and a model reading of the rendered page. `[3/3]` marks a line all three produced, `[1/3]` a line only one produced, with nothing to corroborate it. The *Developer CD reading* is the text of a printed-manual page as the Amiga Developer CD's edition of the manual gives it, as against the scan's text layer.
+- **`[n/3]`, *corpus* and *Developer CD reading*.** The *corpus* is this project's verbatim text of the manual and of the AA specification, one page per file; the AA part is merged from three readings of the page: Tesseract OCR, the 1993 `AGA.guide` typing and a model reading of the rendered page. `[3/3]` marks a line all three produced, `[1/3]` a line the merge matched in only one reading: the others lack it, or it carries no identifier to match it by and another reading may still hold it. The *Developer CD reading* is the text of a printed-manual page as the Amiga Developer CD's edition of the manual gives it, as against the scan's text layer.
 - **"Identical" means the cited lines.** A claim about a whole file says *file*.
 - **No method prose on a page.** The oracle statement, the mutation and gate
   explanation, the revision ledger and the second-documents paragraph are stated once,
@@ -201,7 +201,7 @@ differently from the other four:
   descend from the same code. When MiSTer and NanoMig agree, that is one
   implementation counted twice, and the four independent ones are the only
   reading of the HRM the table contains.
-- **As evidence about where a fix belongs they are worth more than the other
+- **As evidence about whether a fix already exists they are worth more than the other
   four**, precisely because nothing flows downhill on its own. A finding whose
   code TC64 has already corrected is a finding with a patch to point at; a
   finding all three share is one nobody has fixed anywhere.
@@ -226,7 +226,7 @@ page, in two wordings that would have to be kept in step by hand.
 MiSTer-devel's `Minimig-AGA_MiSTer` and minimig-dev's
 `MinimigAGA-MiST-TC64`. Neither is a witness to what the manual requires — both
 are descendants of the same code NanoMig descends from, so agreement between them
-says nothing about the HRM. What it does say is **where a fix belongs**, and the
+says nothing about the HRM. What it does say is **whether a fix already exists to port**, and the
 two lines have drifted apart far enough for that to matter.
 
 Measured across the 28 modules the findings cite, against NanoMig at `4495f86`,
@@ -285,7 +285,7 @@ the repository the fix belongs in. A page should be usable as the body of an
 issue: its header table and its *Decision* are the issue body, and the other sections are
 the context behind them, which the issue links rather than copies.
 
-Nothing is posted to NanoMig's maintainer without the maintainer of this repository saying so; a decision on a finding is recorded as an issue here.
+This project posts nothing to NanoMig's maintainer without the maintainer of this repository saying so; a decision on a finding is recorded as an issue here.
 
 ## Second documents
 
@@ -326,6 +326,5 @@ A check enforces the header, the routing value and what follows it, the five hea
 the link limit, and reports each page by the row or heading it lacks. It also
 checks that the Module row ends with one of the values above, that the Verdict of the four
 ends with its `Hardware:` clause, that no retired phrase appears, and that a withdrawn
-page's Evidence is a withdrawal evidence. It checks the route against the
-Module value, the form of the Effort row, the claim-id count of the Chapter row and
+page's Evidence is a withdrawal evidence. It checks the form of the Effort row, the claim-id count of the Chapter row and
 the title of a withdrawn page.

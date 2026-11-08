@@ -130,6 +130,6 @@ assign _csync = csynctrue ^ (_hsync & _vsync | vser);
 
 The polarity convention needs care: these outputs are active low by name (`_csync`), while the manual's "TRUE" bits are written from the active-high perspective. WinUAE's XOR against its own sync flags is the model to follow.
 
-Where it goes: MiSTer first, since it has the same code. TC64 already decodes HSYTRUE and VSYTRUE into outputs, so a fix decoding those two diverges from MiSTer but meets TC64; a fix to CSYTRUE diverges from all three.
+MiSTer has the same code. TC64 already decodes HSYTRUE and VSYTRUE into outputs, so a fix decoding those two diverges from MiSTer but meets TC64; a fix to CSYTRUE diverges from all three.
 
 Re-run `make -C hrm/ch7-beamcon0-ecs-control-bits test` and `make -C aa/aa-beamcon0-control-bits test`. Today `P11`, `P12`, `P13` and `SYNC-POLARITY-BITS-CHANGE-THE-PINS` are red; they are the assertions a change must turn green. `F5-SV-INV` of `integration/aa-integ-s2` reads `vs`, which is `_vsync` passed through the scan doubler, so the same inversion of `_vsync` by bit 1 should turn it green as well (a reading of the code, not run by `make test`). Closes as stated in *What is asked of a reader*.

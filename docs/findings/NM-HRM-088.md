@@ -166,6 +166,6 @@ actions, and [NM-HRM-043](NM-HRM-043.md) counts the six pointer sites they cover
 
 Five separate patches in five engines is the option to avoid. Either action leaves
 what NanoMig does at `ecs` = 1 as it is, so [NM-HRM-014](NM-HRM-014.md)'s question is
-neither settled nor changed by it. Report upstream only together with
+neither settled nor changed by it. File it only together with
 [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md),
-[NM-HRM-024](NM-HRM-024.md) and [NM-HRM-043](NM-HRM-043.md).
+[NM-HRM-024](NM-HRM-024.md) and [NM-HRM-043](NM-HRM-043.md), as one pull request.

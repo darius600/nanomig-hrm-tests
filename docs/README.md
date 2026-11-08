@@ -33,7 +33,7 @@ finding.
 | [`fourth-witness-denise-copperline.md`](evidence/fourth-witness-denise-copperline.md) | Denise (C++) and Copperline (Rust) read against the findings, file and line each. |
 | [`fifth-witness-ch8-controller.md`](evidence/fifth-witness-ch8-controller.md) | The four implementations read against chapter 8's controller and interface findings. |
 | [`rtl-decisions.md`](evidence/rtl-decisions.md) | Six Copper and blitter findings: the manual's words, NanoMig's measured behaviour, the assertion that measures it, and what WinUAE and vAmiga do. |
-| [`upstream-minimig-aga.md`](evidence/upstream-minimig-aga.md) | What NanoMig inherited from Minimig-AGA, which decides whether a finding is NanoMig's own and where a fix should be reported. |
+| [`upstream-minimig-aga.md`](evidence/upstream-minimig-aga.md) | What NanoMig inherited from Minimig-AGA, which decides whether a finding is NanoMig's own and whether a maintained line already holds a fix to port. |
 | [`finding-analyses.md`](evidence/finding-analyses.md) | Work that produced or tested a group of findings and belongs to none of them alone. |
 | [`blitter-prior-art.md`](evidence/blitter-prior-art.md) | A record: the eight blitter tests that existed before chapter 6 went through the pipeline, and why the five that were deleted could be. Chapter 6's test sources cite it. |
 | [`photographs-of-real-machines.md`](evidence/photographs-of-real-machines.md) | What the screen photographs of real machines published with vAmigaTS are, how they were read, what they cannot say, what they show for each page they bear on, and the pages no program reaches. Witnesses like the emulators, never an oracle. |

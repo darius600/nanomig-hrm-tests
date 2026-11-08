@@ -6,7 +6,7 @@ the four emulators structurally cannot answer and this comparison can:
 > **Is this NanoMig's own, or did it come down from upstream — and has upstream
 > fixed it since?**
 
-That decides where a fix belongs, and whether fixing it in NanoMig means
+That decides whether a fix to port already exists, and whether fixing it in NanoMig means
 diverging from Minimig-AGA.
 
 | | revision |
@@ -17,8 +17,8 @@ diverging from Minimig-AGA.
 
 **Two groups maintain this ancestry independently.** Neither is a witness to what the manual requires
 — all three trees descend from the same code, so agreement between them says
-nothing about the HRM. What a second line adds is a second answer to *where a
-fix belongs*, and on two findings it turns out to hold the fix already.
+nothing about the HRM. What a second line adds is a second answer to *whether a
+fix exists*, and on two findings it turns out to hold the fix already.
 
 Compared with `diff --strip-trailing-cr -b`: NanoMig's files are **LF** and both maintained lines are **CRLF**, so a naive
 byte comparison reports every line of every file as changed and says nothing.

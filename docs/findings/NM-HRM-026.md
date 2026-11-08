@@ -109,7 +109,7 @@ parameter AUDIO_STATE_2 = 3'b101;   // was 3'b011 -- Figure 5-8's second DMA sta
 parameter AUDIO_STATE_4 = 3'b011;   // was 3'b110 -- Figure 5-8's lower-byte output
 ```
 
-**But there is no reason to, and filing it upstream would be noise.** The
+**But there is no reason to, and a pull request for it would be noise.** The
 encoding is unobservable, the renumbering changes no behaviour, and a change to
 working RTL that no pin can detect carries risk without benefit. It would matter
 for a rewrite that uses Figure 5-8 as its specification, which is what this entry
