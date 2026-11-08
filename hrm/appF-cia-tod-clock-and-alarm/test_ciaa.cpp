@@ -511,6 +511,17 @@ void pulse_tod_pin(Harness& h) {
     h.tick();
 }
 
+// Clocks the rig waits after a TOD pulse before a graded read. The page
+// (p.344) prints no timing for the carry between TOD stages, so a graded
+// read must not fall inside any carry settling time an implementation may
+// have (the 8520 lets the upper 12 bits follow one clock later); 4 clocks is
+// the smallest fixed wait clearly longer than that one clock. Not used where
+// the assertion is about the timing itself (TOD-COUNTER-POSEDGE).
+constexpr int TOD_CARRY_SETTLE_CLOCKS = 4;
+void settle_after_tod_pulse(Harness& h) {
+    for (int i = 0; i < TOD_CARRY_SETTLE_CLOCKS; ++i) h.tick();
+}
+
 // Formats a value as fixed-width uppercase hex, e.g. hex6(0xAB) == "0000AB",
 // hex2(0xAB) == "AB" -- used only in note() diagnostics so a printed "0x.."
 // is genuinely hex, never std::to_string()'s decimal digits mislabeled with
@@ -539,14 +550,17 @@ void write_tod24_ordered(Harness& h, uint32_t v) {
     h.write_reg(RS_TDLO, (uint8_t)(v & 0xFF));
 }
 
-// Peek-reads all three TOD bytes. Order does not matter -- read_reg()
-// never ticks, so it never engages the MSB-read latch/freeze mechanism;
-// this is the "what does TOD currently hold" reader used by every
-// assertion outside the read-latch group.
+// Peek-reads all three TOD bytes in the order p.344 prints for reading TOD:
+// "All TOD registers latch on a read of MSB event and remain latched until
+// after a read of LSB event." -- so MSB (thi) first, then MID (tme), then
+// LSB (tlo) last. read_reg() never ticks, so it does not itself engage the
+// latch (cia_timerd's latch_ena machine only moves on a clocked read); the
+// order is the page's, and this is the "what does TOD currently hold"
+// reader used by every assertion outside the read-latch group.
 uint32_t peek_tod24(Harness& h) {
-    const uint8_t lo = h.read_reg(RS_TDLO);
-    const uint8_t me = h.read_reg(RS_TDME);
     const uint8_t hi = h.read_reg(RS_TDHI);
+    const uint8_t me = h.read_reg(RS_TDME);
+    const uint8_t lo = h.read_reg(RS_TDLO);
     return (uint32_t(hi) << 16) | (uint32_t(me) << 8) | lo;
 }
 
@@ -585,6 +599,7 @@ int main(int argc, char** argv) {
         Harness h;
         write_tod24_ordered(h, MUT_24BIT ? 0x00FFFF : 0xFFFFFF);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t r = peek_tod24(h);
         checks.note("TOD-COUNTER-24BIT measured: after loading the maximum "
                     "24-bit value and one tick, TOD read back 0x" + hex6(r) +
@@ -804,10 +819,12 @@ int main(int argc, char** argv) {
         Harness h;
         write_tod24_ordered(h, 0x000000);  // HI, MID, LOW all zero; LOW last starts it
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t running = peek_tod24(h);
         h.write_reg(RS_TDHI, 0x00);        // the write under test
         const uint32_t pre_tick = peek_tod24(h);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t post_tick = peek_tod24(h);
         checks.note("TOD-WRITE-STOPS-CLOCK ($A sub-check) measured: after "
                     "a write to $8 and one tick, TOD read 0x" +
@@ -826,10 +843,12 @@ int main(int argc, char** argv) {
         Harness h;
         write_tod24_ordered(h, 0x000000);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t running = peek_tod24(h);
         h.write_reg(MUT_STOPCLOCK ? RS_TDHI : RS_TDLO, 0x00);  // write under test
         const uint32_t pre_tick = peek_tod24(h);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t post_tick = peek_tod24(h);
         checks.note("TOD-WRITE-STOPS-CLOCK ($8 sub-check) measured: after "
                     "a write to $8 and one tick, TOD read 0x" +
@@ -847,10 +866,12 @@ int main(int argc, char** argv) {
         Harness h;
         write_tod24_ordered(h, 0x000000);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t running = peek_tod24(h);
         h.write_reg(RS_TDME, 0x00);
         const uint32_t pre_tick = peek_tod24(h);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t post_tick = peek_tod24(h);
         checks.note("TOD-WRITE-STOPS-CLOCK ($9, not graded against p.344, "
                     "which names no register for a middle-byte stop or "
@@ -880,9 +901,11 @@ int main(int argc, char** argv) {
         h.write_reg(RS_TDHI, 0x00);           // stop
         h.write_reg(MUT_STARTLSB ? RS_TDLO : RS_TDME, 0x00);  // must NOT restart
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const bool still_stopped_after_mid = (peek_tod24(h) == 0x000000);
         h.write_reg(RS_TDLO, 0x00);           // restart
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const bool running_after_lo = (peek_tod24(h) == 0x000001);
         checks.note("TOD-WRITE-STARTS-LSB-ONLY measured: still stopped "
                     "after a MID-byte write = " +
@@ -909,6 +932,7 @@ int main(int argc, char** argv) {
         h.write_reg(RS_TDLO, MUT_STARTATOMIC ? 0x05 : 0x01);  // restarts here
         const uint32_t landed = peek_tod24(h);
         pulse_tod_pin(h);
+        settle_after_tod_pulse(h);
         const uint32_t after_one_tick = peek_tod24(h);
         checks.note("TOD-WRITE-STARTS-ATOMIC-VALUE measured: value on "
                     "landing (after ticks interleaved between the three "
@@ -936,6 +960,7 @@ int main(int argc, char** argv) {
         write_tod24_ordered(h, 0x0000FE);
         if (!MUT_RLCARRY) h.clocked_read(RS_TDHI);   // freeze
         for (int i = 0; i < 2; ++i) pulse_tod_pin(h);  // 0xFE -> 0xFF -> 0x100
+        settle_after_tod_pulse(h);
         const uint8_t mid_frozen = h.read_reg(RS_TDME);
         const uint8_t lo_frozen = h.read_reg(RS_TDLO);
         checks.note("TOD-READ-LATCH-CARRY-CONSISTENCY measured: after "
@@ -964,6 +989,7 @@ int main(int argc, char** argv) {
         write_tod24_ordered(h, 0x010203);
         if (!MUT_RLFREEZE) h.clocked_read(RS_TDHI);  // freeze
         pulse_tod_pin(h);                     // would-be 0x010204 if live
+        settle_after_tod_pulse(h);
         const uint8_t mid = h.read_reg(RS_TDME);
         const uint8_t lo = h.read_reg(RS_TDLO);
         checks.note("TOD-READ-LATCH-MSB-FREEZES-ALL measured: after an MSB "
@@ -991,8 +1017,10 @@ int main(int argc, char** argv) {
         write_tod24_ordered(h, 0x000010);
         if (!MUT_RLCOUNTS) h.clocked_read(RS_TDHI);   // freeze
         for (int i = 0; i < 5; ++i) pulse_tod_pin(h);  // live tod: 0x10->0x15
+        settle_after_tod_pulse(h);
         const uint8_t release_read = h.clocked_read(RS_TDLO);  // release
         pulse_tod_pin(h);                     // first tick after release
+        settle_after_tod_pulse(h);
         const uint8_t after_release = h.read_reg(RS_TDLO);
         checks.note("TOD-READ-LATCH-COUNTS-UNDERNEATH measured: the "
                     "releasing LSB read itself returned 0x" +
@@ -1021,10 +1049,13 @@ int main(int argc, char** argv) {
         write_tod24_ordered(h, 0x00FFFE);     // near a HIGH-byte carry
         const uint8_t hi_1 = h.clocked_read(RS_TDHI);          // freeze
         for (int i = 0; i < 2; ++i) pulse_tod_pin(h);  // live: ..FFFE->010000
+        settle_after_tod_pulse(h);
         const uint8_t hi_2 = h.clocked_read(RS_TDHI);          // still frozen
         pulse_tod_pin(h);                     // live: 010000 -> 010001
+        settle_after_tod_pulse(h);
         if (!MUT_RLRELEASE) h.clocked_read(RS_TDLO);  // release (stale LOW)
         pulse_tod_pin(h);                     // first tick after release
+        settle_after_tod_pulse(h);
         const uint8_t hi_after_release = h.read_reg(RS_TDHI);
         checks.note("TOD-READ-ONTHEFLY-RELEASE measured: MSB reads while "
                     "frozen: 0x" + hex2(hi_1) + " then 0x" +
