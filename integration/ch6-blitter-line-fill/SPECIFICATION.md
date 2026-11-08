@@ -46,6 +46,15 @@ alone, not read off the RTL:
   significant bits of a word are its leftmost pixels. So pixel x sits at
   bit 15-x within a word, not at bit x.
 
+- **Order of the register writes.** Page 182's warning: "Be sure to load
+  the blitter immediate data registers only after setting the shift count
+  in BLTCON0/BLTCON1, as loading the data registers first will lead to
+  unpredictable results ... The act of loading one of the data registers
+  'draws' the data through the machine and shifts it." Both line programs
+  therefore write BLTADAT ($8000, shifted by ASH) after BLTCON0, which
+  carries ASH. (BLTBDAT = $FFFF is a solid texture, unchanged by any B
+  shift, and stays where it was.)
+
 ### Assertion (drawn line)
 
 - Claims: `6-line-mode.c39`, `ch6-line.c12` (page 190, raw dx/dy);
@@ -131,21 +140,42 @@ line is trusted.
 
 ### Mutation
 
-`prog_line_mut.s` = `prog_line.s` with `MUTATE_UNNORM` defined: it feeds
-the raw, unswapped deltas (dx0=7 as if it were the major axis, dy0=35 as
-if it were the minor) into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE instead of the
+`prog_line_mut.s` = `prog_line.s` with `MUTATE_UNNORM` defined: it keeps
+dx0 = abs(x2-x1) = 7 and dy0 = abs(y2-y1) = 35 -- page 190's absolute
+differences are intact -- and skips only the swap of page 191, feeding
+the unswapped pair (dx0=7 as if it were the major axis, dy0=35 as if it
+were the minor) into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE instead of the
 normalized dx=35/dy=7. BLTSIZE's height field becomes dx0+1=8 instead
 of 36, so the drawn line stops 28 rows short: rows 8-35 are never written
 (fail "exactly one set bit") and the last-pixel check fails outright.
-Recorded as:
+This record is for what it reaches, the rearrangement of page 191
+(`6-line-mode.c41`, `6-line-mode.c42`, `ch6-line.c14` to `ch6-line.c16`);
+it does not reach page 190's "before normalization, dx is the absolute
+difference between the endpoint x coordinates" (`6-line-mode.c39`,
+`ch6-line.c12`), because the absolute value is still taken. That clause
+has its own record below. Recorded as:
 
-    MUTATION 6-line-mode.c39 stimulus red unnormalized deltas fed into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE, height becomes 8 instead of 36
+    MUTATION 6-line-mode.c41 stimulus red abs() kept but the swap of page 191 skipped, so the unswapped deltas (major 7, minor 35) feed BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE and the height becomes 8 instead of 36, via NMH_MUTATE=LINE
+
+`prog_line_rawx.s` = `prog_line.s` with `MUTATE_RAWX` defined: the
+absolute value of the x difference is skipped. The raw x2-x1 = 3-10 = -7
+goes into page 192's dx = max(...) / dy = min(...) together with
+abs(y2-y1) = 35, giving dx = max(-7,35) = 35 (unchanged) and dy =
+min(-7,35) = -7 (should be 7). The registers that follow page 192's
+formulas move: BLTAPT = 4\*dy-2\*dx = -28-70 = -98 ($FFFFFF9E), BLTAMOD =
+4\*(dy-dx) = 4\*(-42) = -168 ($FFFFFF58), BLTBMOD = 4\*dy = -28
+($FFFFFFE4). SIGN stays 1 (BLTAPT < 0), BLTSIZE stays $0902, BLTCON0 stays
+$ABCA and the octant code stays 010. The mutation changes only the
+stimulus: the comparator and every expected value are untouched. Recorded
+as:
+
+    MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28, via NMH_MUTATE=LINE_RAWX
 
 `prog_line_fixture_mut.s` = `prog_line.s` with `MUTATE_FIXTURE` defined:
 stores $DEAD instead of $BEEF, turning FIXTURE-LINE red on its own,
 unchanged expected value. Recorded as:
 
-    MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF
+    MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=LINE_FIXTURE
 
 `prog_line2_mut.s` = `prog_line2.s` with `MUTATE_NOABS` defined: it feeds
 the raw signed y2-y1=-35 (not abs'd) into the min/max normalization
@@ -155,7 +185,7 @@ becomes dx_bad+1=8 instead of 36, the same observable failure as
 `MUTATE_UNNORM`, reached by skipping abs() instead of skipping the
 major/minor swap. Recorded as:
 
-    MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36
+    MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36, via NMH_MUTATE=LINE2
 
 ## Topic 2: area fill requires descending mode (pages 182, 184, 200)
 
@@ -287,21 +317,24 @@ word 2 to word 1 (same descending setup otherwise). Word 1 is no longer a
 marker-free interior word, so it cannot read back as the clean $0000 the
 unchanged expected value calls for -- the check must go red. Recorded as:
 
-    MUTATION CONTROL-FILL-DESC stimulus red middle marker moved from word 2 to word 1
+    MUTATION CONTROL-FILL-DESC stimulus red middle marker moved from word 2 to word 1, via NMH_MUTATE=FILL_DESC
 
-Ascending assertion: `prog_fill_asc_mut.s` runs the ascending
-configuration with word0's marker removed (only word2 and word4 remain).
-Dropping that crossing shifts the parity so the ascending scan's
-word1/word3 happen to land on the same $0000/$FFFF pair the descending
-run produces -- the mismatch check must then go red, even though the mode
-is still ascending. Recorded as:
+Ascending assertion: the clause is "descending mode is also necessary for
+area filling" (page 182), "descending mode must be used" (page 184), "area
+fill only works correctly in descending mode" (page 200). Its opposite
+case is the identical blit run in descending mode. `prog_fill_asc_mut.s`
+is `prog_fill_desc.s` unchanged (the same three markers, DESC = 1,
+pointers at word4) placed in the ascending slot. The fill is then the
+correct one (word1 = $0000, word3 = $FFFF), so the ascending assertion --
+whose expected value is untouched -- goes red, while PRECONDITION-FILL-ASC
+(the destination was written) stays green. Recorded as:
 
-    MUTATION 6-descending-mode.c10 stimulus red word0's marker dropped, ascending scan coincides with the descending pattern
+    MUTATION 6-descending-mode.c10 stimulus red the identical 3-marker blit run in descending mode (DESC = 1, pointers at word4) in the ascending slot reads back the correct fill 0000/FFFF, via NMH_MUTATE=FILL_ASC
 
 FIXTURE-FILL: `prog_fill_plain_mut.s` drops the word4 marker, so the exact
 five-word reproduction check must go red. Recorded as:
 
-    MUTATION FIXTURE-FILL stimulus red word4's marker dropped
+    MUTATION FIXTURE-FILL stimulus red word4's marker dropped, via NMH_MUTATE=FILL_FIXTURE
 
 PRECONDITION-FILL-DESC: `prog_fill_desc_nowrite.s` (`prog_fill_desc.s` with
 `NOWRITE` defined) clears BLTCON0's USED bit, so channel D never writes.
@@ -309,7 +342,7 @@ The blit still runs and BBUSY still clears, but the destination keeps the
 $A5A5 sentinel -- the precondition, and CONTROL-FILL-DESC which shares the
 same run, must both go red. Recorded as:
 
-    MUTATION PRECONDITION-FILL-DESC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives
+    MUTATION PRECONDITION-FILL-DESC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_DESC_NOWRITE
 
 PRECONDITION-FILL-ASC: `prog_fill_asc_nowrite.s` (`prog_fill_desc.s` with
 `ASCENDING` and `NOWRITE` both defined) does the same for the ascending
@@ -318,7 +351,7 @@ claim ids does not (it reads back A5A5/A5A5, which still satisfies "not
 (word1=0000 and word3=FFFF)") -- exactly the silent-pass case the
 precondition exists to catch. Recorded as:
 
-    MUTATION PRECONDITION-FILL-ASC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives
+    MUTATION PRECONDITION-FILL-ASC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_ASC_NOWRITE
 
 ## Withdrawn: Table 6-2's pipeline assumptions (page 189)
 
@@ -348,6 +381,7 @@ precondition exists to catch. Recorded as:
   this package's claims).
 - 2 fixtures (FIXTURE-LINE, FIXTURE-FILL), 1 control (CONTROL-FILL-DESC,
   no ids), 2 preconditions (sentinel overwritten, descending and
-  ascending), 8 stimulus mutations recorded, one per assertion.
+  ascending), 9 stimulus mutations recorded (two on the drawn line: the swap skipped,
+  and abs() skipped for x).
 - Both CPU cores (fx68k, TG68K) run every program; a verdict is reported
   for each, separately, per assertion.
