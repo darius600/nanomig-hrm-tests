@@ -1143,9 +1143,9 @@ both cores printed the same.
   decides whether an output change caused by it lies off the grid of MC6. At `H` =
   8, 24, 40, 56, 72 and 88 MC6 is green on fx68k and on the default TG68K
   build, and at `H` = 104, 120, 136, 152, 168, 184 and 192 it is red on both;
-  the record uses `H` = 8. A stop timed by a delay loop of the CPU leaves MC6
-  green on one core and red on the other, so the CPU's speed enters the
-  grid and the stop is placed by the beam.
+  the record uses `H` = 8. Where a stop timed by a delay loop of the CPU
+  falls follows the CPU's speed, and no delay that was tried left MC6 green
+  on both cores, so the stop is placed by the beam.
 - One test binary runs `SPECIFICATION.md`'s test, then NTSC and PAL of this
   addendum at the same time in two processes, and prints one summary line.
 - The standard is selected by the harness's `chipset_config` (ECS, bit 1
@@ -1259,8 +1259,7 @@ played again, and is green there.
 
 Each selector runs only the periods its contrast needs and runs the package's
 own comparator. Every selector was run on both cores (fx68k and the default
-TG68K build); the PASS and FAIL lines are identical on both, except those of MC6
-under `MC5STOP` (see its row).
+TG68K build); the PASS and FAIL lines are identical on both.
 
 | `NMH_MUTATE` | Assertion or precondition | Stimulus | Result (both cores unless stated) |
 |---|---|---|---|

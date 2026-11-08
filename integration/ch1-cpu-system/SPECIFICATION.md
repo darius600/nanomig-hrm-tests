@@ -798,7 +798,9 @@ green.
   (the table marker names MOVE) under 11. `MOVE.x #0,<ea>` makes a single
   write and no read (the page's own offer of the single-access form, p.13
   and p.263), so the byte and word line, through the same comparator,
-  is green.
+  is green. On the default TG68K build the normal run with the CLR program
+  prints P4 and P4.L PASS as well (section 11), so this run does not
+  separate MOVE from CLR there; it shows only that the comparator can pass.
 
 **Reference frame.** W_c as in P1, with the same anchors.
 
