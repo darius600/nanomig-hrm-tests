@@ -1,0 +1,38 @@
+--- a/paula_audio_mixer.v
++++ b/paula_audio_mixer.v
+@@ -23,7 +23,7 @@
+ // when volume MSB is set, volume is always maximum
+ paula_audio_volume sv0
+ (
+-  .sample(sample0),
++  .sample({sample0[7:1], 1'b0}),
+   .volume({  (vol0[6] | vol0[5]),
+             (vol0[6] | vol0[4]),
+             (vol0[6] | vol0[3]),
+@@ -35,7 +35,7 @@
+ 
+ paula_audio_volume sv1
+ (
+-  .sample(sample1),
++  .sample({sample1[7:1], 1'b0}),
+   .volume({  (vol1[6] | vol1[5]),
+             (vol1[6] | vol1[4]),
+             (vol1[6] | vol1[3]),
+@@ -47,7 +47,7 @@
+ 
+ paula_audio_volume sv2
+ (
+-  .sample(sample2),
++  .sample({sample2[7:1], 1'b0}),
+   .volume({  (vol2[6] | vol2[5]),
+             (vol2[6] | vol2[4]),
+             (vol2[6] | vol2[3]),
+@@ -59,7 +59,7 @@
+ 
+ paula_audio_volume sv3
+ (
+-  .sample(sample3),
++  .sample({sample3[7:1], 1'b0}),
+   .volume({  (vol3[6] | vol3[5]),
+             (vol3[6] | vol3[4]),
+             (vol3[6] | vol3[3]),

@@ -39,6 +39,7 @@ inline void run_p3(Checks& ck) {
     std::vector<uint16_t> words;
     for (int i = 0; i < NW; ++i) words.push_back(uint16_t(B[size_t(i)] * 0x0101));
     if (mut("P3-SWAP")) std::swap(words[1], words[2]);
+    if (mut("P3-LAST")) words[size_t(NW - 1)] = 0xFE7F;    // contrast of G-W clause 2: the last word has two different bytes
     if (mut("P3-BYTE")) words[1] = 0x7F20;    // contrast: the second byte of word 2 is 0x20 in place of 0x7F
     ARun r = data_run(words, 4, 0x0040, mut("P3-PER") ? 600 : 300, 0,
                     mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) {   // contrast: after every block-finished request of the channel the CPU
@@ -63,9 +64,9 @@ inline void run_p3(Checks& ck) {
         if (ps.fi < 0 || ps.r0 < 0 || int(ret.size()) <= p) { ok_pass = false; continue; }
         gw &= ps.g_w;
         {
-            W1Id w1 = word1_ident(r, ps, words, kBuf[0], 1);   // from word 2 on: the output of word 1, the byte 0x00, is at the level of the silence before it
+            W1Id w1 = word1_ident(r, ps, 600 * r.K);
             gw &= w1.ok;
-            ck.note("P3 pass " + dec(p) + ": runs that begin between the fetch of word 2 and the anchor fetch " + dec((long long)w1.have) + ", runs the data set gives to those fetches " + dec((long long)w1.want));
+            ck.note("P3 pass " + dec(p) + ": the run that ends where the anchor run begins is " + dec((long long)w1.len) + " system clocks long (adjacent " + dec(w1.adj) + "; one word is " + dec((long long)(600 * r.K)) + ")");
         }
         T0[p - 2] = r.runs[size_t(ps.r0)].t0;
         if (T0[p - 2] + uint64_t(NW) * WL > r.cap.base + r.cap.audio.size()) { ok_pass = false; continue; }
@@ -84,7 +85,7 @@ inline void run_p3(Checks& ck) {
     print_std(ck, "P3", agg, 1);
     ck.expect(gd, "P3-G-D: after the start DMACONR bit 9 and bit 0 read 1 (AA p.22)");
     ck.expect(gf, "P3-G-F: the channel fetches at least four times at the location, so passes 2 and 3 are followed by a next anchor (AA p.22 '00 AUD0EN')");
-    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts in the system clock of either anchor fetch (SPECIFICATION.md 2.10), and the runs that begin between the fetch of word 2 and each anchor fetch are as many as the data set gives to the fetches between them, so that the first run after the anchor is word 1's");
+    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts in the system clock of either anchor fetch (SPECIFICATION.md 2.10), and the run that ends where each anchor run begins is at least one word (600 colour clocks) long, so that the last word of the data set, two equal bytes, is the single run before the anchor and the first run after it is word 1's");
     ck.expect(ok_pass && gp, "P3-G-P: the anchor run of pass 3 starts exactly one pass of 256 words of 600 colour clocks after the anchor run of pass 2, so each word spans two samples of the period 300 (AA p.11 AUDxPER, AUDxLEN)");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && ok_pass && gw && gp;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W or G-P";
@@ -115,6 +116,7 @@ inline void run_p4(Checks& ck) {
     if (mut("P4-SAME")) words[1] = uint16_t((b << 8) | b);
     if (mut("P4-LV")) words[1] = uint16_t((b << 8) | 0x40);   // contrast: the second byte of word 2 is 0x40, a level that is not calibrated
     if (mut("P4-CAL")) words[6] = words[8] = uint16_t((b << 8) | b);   // contrast: words 7 and 9 are (b,b) in place of (c,c), so L(c) is not calibrated apart from L(b)
+    if (mut("P4-LAST")) { words[8] = uint16_t((c << 8) | d); words[9] = uint16_t((b << 8) | d); }   // contrast of G-W clause 2: the last two words have two different bytes (the run before the pass-2 anchor is word 9's)
     uint8_t Wl[10][2]; std::memcpy(Wl, W, sizeof Wl);
     ARun r = data_run(words, 4, 0x0040, mut("P4-PER") ? 600 : 300);
     PreAgg agg; agg.add(r.st);
@@ -132,9 +134,9 @@ inline void run_p4(Checks& ck) {
         q.located = true;
         q.gw = ps.g_w;
         {
-            W1Id w1 = word1_ident(r, ps, words, kBuf[0], 0);
+            W1Id w1 = word1_ident(r, ps, 600 * r.K);
             q.gw &= w1.ok;
-            ck.note("P4 pass " + dec(p) + ": runs that begin between the first fetch and the anchor fetch " + dec((long long)w1.have) + ", runs the data set gives to those fetches " + dec((long long)w1.want));
+            ck.note("P4 pass " + dec(p) + ": the run that ends where the anchor run begins is " + dec((long long)w1.len) + " system clocks long (adjacent " + dec(w1.adj) + "; one word is " + dec((long long)(600 * r.K)) + ")");
         }
         uint64_t T0 = r.runs[size_t(ps.r0)].t0, WL = 600 * r.K;
         if (std::getenv("NMH_DEBUG")) {
@@ -194,7 +196,7 @@ inline void run_p4(Checks& ck) {
     for (int k = 0; k < 2; ++k) {
         const std::string pn = dec(k + 2);
         PassRes& q = pr[k];
-        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts in the system clock of its anchor fetch (SPECIFICATION.md 2.10), and the runs that begin between the first fetch and that anchor are as many as the data set gives to the fetches before it, so that the first run after the anchor is word 1's");
+        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts in the system clock of its anchor fetch (SPECIFICATION.md 2.10), and the run that ends where its anchor run begins is at least one word (600 colour clocks) long, so that the last word of the data set, two equal bytes, is the single run before the anchor and the first run after it is word 1's");
         ck.expect(q.located && q.gp, "P4-G-P-" + pn + ": each equal-byte word of pass " + pn + " gives one run of exactly 600 colour clocks (AA p.11 AUDxPER)");
         ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct");
         use[k] = pre0 && q.located && q.gw && q.gp && q.cal;

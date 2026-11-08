@@ -16,6 +16,8 @@ include ../harness/nanomig.mk
 # builds the core on the copy and runs it with NMH_ONLY and NMH_MUTATE set from ONLY
 # and SEL (either may be left out); the output is out_<patch>_<core>.txt.
 #
+#   p3lsb:   p3lsb.patch -- the low bit of the 8-bit sample is cleared before the volume path,
+#       so that bytes 0x02 and 0x03 give one level (paula_audio_mixer.v).
 #   p6vol:   p6vol.patch -- the volume path takes a seventh bit: AUDxVOL bit 6 gives
 #       the volume 64 in place of 63 (paula_audio_mixer.v, paula_audio_volume.v).
 #   p16gap:  p16gap.patch -- after the third frame the transmitter waits one
@@ -55,4 +57,4 @@ define tg68k_build
 		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
 endef
 
-$(foreach p,p6vol p16gap p17end,$(foreach c,fx68k tg68k,$(eval $(call IMPL_RULES,$(p),$(c)))))
+$(foreach p,p3lsb p6vol p16gap p17end,$(foreach c,fx68k tg68k,$(eval $(call IMPL_RULES,$(p),$(c)))))
