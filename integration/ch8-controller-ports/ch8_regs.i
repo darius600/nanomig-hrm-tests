@@ -27,9 +27,10 @@ CIAADDRA        equ     $BFE201 ; R/W -- direction mask for CIAAPRA (p.241)
 ; shift) on a real 68000. With two V reads per R-step iteration
 ; (SPECIFICATION.md's R step), this fits inside one scan line's ~1820
 ; clk_sys cycles between Vr0 and Vr1 for most of the 18 R steps.
-; PC1 guards this margin at every run: measured, fx68k yields 20 of a
-; possible 72 records (4 per R step x 18 R steps) with Vr0=Vr1=10;
-; TG68K yields 42.
+; PC1 guards this margin at every run. Measured in the clean run, of a
+; possible 72 records (4 per R step x 18 R steps) with Vr0=Vr1=10, for
+; PAL+ECS / NTSC+ECS / PAL+OCS / NTSC+OCS: fx68k 20 / 18 / 20 / 18; the
+; default TG68K build (TG68K_KERNEL=board) 45 / 40 / 45 / 40.
 READV           macro
                 move.l  VPOSR(a0),d0    ; d0 = {VPOSR:16, VHPOSR:16}
                 move.w  d0,d1

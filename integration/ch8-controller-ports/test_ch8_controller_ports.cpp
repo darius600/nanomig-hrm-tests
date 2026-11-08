@@ -29,7 +29,7 @@
 // MUTATION PC2 stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (PAL+ECS run)
 // MUTATION PC3 stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (PAL+ECS run)
 // MUTATION PC3 stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (PAL+ECS run)
-// MUTATION PC4 stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (PAL+ECS run)
+// MUTATION PC4 stimulus red every W step repeats its POTGO write, with the same value, after waiting for line 9 and stores its M1 marker after the second write; the first write at line 4, its V reads and the R steps are unchanged, so PC1 to PC3 hold and the write-to-read interval and t(M2)-t(M1) fall below 300us, via NMH_MUTATE=K7 (PAL+ECS run)
 // MUTATION C0-Fc implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+ECS run)
 // MUTATION C0-Fc stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (PAL+ECS run)
 // MUTATION C1-Fc implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+ECS run)
@@ -55,7 +55,7 @@
 // MUTATION PC2-NTSC+ECS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (NTSC+ECS run)
 // MUTATION PC3-NTSC+ECS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (NTSC+ECS run)
 // MUTATION PC3-NTSC+ECS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (NTSC+ECS run)
-// MUTATION PC4-NTSC+ECS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (NTSC+ECS run)
+// MUTATION PC4-NTSC+ECS stimulus red every W step repeats its POTGO write, with the same value, after waiting for line 9 and stores its M1 marker after the second write; the first write at line 4, its V reads and the R steps are unchanged, so PC1 to PC3 hold and the write-to-read interval and t(M2)-t(M1) fall below 300us, via NMH_MUTATE=K7 (NTSC+ECS run)
 // MUTATION C0-Fc-NTSC+ECS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+ECS run)
 // MUTATION C0-Fc-NTSC+ECS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (NTSC+ECS run)
 // MUTATION C1-Fc-NTSC+ECS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+ECS run)
@@ -81,7 +81,7 @@
 // MUTATION PC2-PAL+OCS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (PAL+OCS run)
 // MUTATION PC3-PAL+OCS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (PAL+OCS run)
 // MUTATION PC3-PAL+OCS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (PAL+OCS run)
-// MUTATION PC4-PAL+OCS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (PAL+OCS run)
+// MUTATION PC4-PAL+OCS stimulus red every W step repeats its POTGO write, with the same value, after waiting for line 9 and stores its M1 marker after the second write; the first write at line 4, its V reads and the R steps are unchanged, so PC1 to PC3 hold and the write-to-read interval and t(M2)-t(M1) fall below 300us, via NMH_MUTATE=K7 (PAL+OCS run)
 // MUTATION C0-Fc-PAL+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+OCS run)
 // MUTATION C0-Fc-PAL+OCS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (PAL+OCS run)
 // MUTATION C1-Fc-PAL+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (PAL+OCS run)
@@ -107,7 +107,7 @@
 // MUTATION PC2-NTSC+OCS stimulus red Phase P's F1 writes $AA00 instead of $FF00, via NMH_MUTATE=K4 (NTSC+OCS run)
 // MUTATION PC3-NTSC+OCS stimulus red the harness grounds LX (mouse_buttons bit 2), LY (mouse_buttons bit 1 and joystick1 bit 5) and RY (joystick0 bit 5) from each configuration's Fb W step through the end of its Fc R step, so Rb and Rpre read $1000 (reads clause) and the drive log shows those ports at level 0 (drive-log clause), via NMH_MUTATE=K5 (NTSC+OCS run)
 // MUTATION PC3-NTSC+OCS stimulus red the harness grounds LX (mouse_buttons bit 2) only between the end of C0-Fb's R step and the first write of C0-Fc's W step, a window that no R step and no Rpre read covers, so Rb and Rpre read $5500 (reads clause holds) and the drive log shows LX at level 0 (drive-log clause fails), via NMH_MUTATE=K8 (NTSC+OCS run)
-// MUTATION PC4-NTSC+OCS stimulus red every W step stores its M1 marker after waiting for line 9 instead of right after the POTGO write at line 4; the POTGO write, the V reads and the R steps are unchanged, so PC1 to PC3 hold and t(M2)-t(M1) falls below 300us, via NMH_MUTATE=K7 (NTSC+OCS run)
+// MUTATION PC4-NTSC+OCS stimulus red every W step repeats its POTGO write, with the same value, after waiting for line 9 and stores its M1 marker after the second write; the first write at line 4, its V reads and the R steps are unchanged, so PC1 to PC3 hold and the write-to-read interval and t(M2)-t(M1) fall below 300us, via NMH_MUTATE=K7 (NTSC+OCS run)
 // MUTATION C0-Fc-NTSC+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+OCS run)
 // MUTATION C0-Fc-NTSC+OCS stimulus red (private copy) every Fc write withholds bit 0 (START), so the lines are not dumped and POTGOR&$5500 = $5500 in every counted record, via NMH_MUTATE=K1 (NTSC+OCS run)
 // MUTATION C1-Fc-NTSC+OCS implementation green the ordinary run against the private copy of the chip-set RTL described in SPECIFICATION.md ("The private copy of the RTL"), built with make sm-test-fx68k and make sm-test-tg68k, in which the pot lines that are inputs read 0 in POTGOR for eight lines after a POTGO write with START: the line prints PASS on both cores with PC1 to PC4 green; against the repository's RTL it prints FAIL on both cores with POTGOR&$5500 = $5500 in every counted record (NTSC+OCS run)
@@ -993,14 +993,22 @@ int main(int argc, char** argv) {
                 "[not graded -- apparatus check, no claim uid]" +
                 (cross_agree ? std::string() : (" -- disagreed: " + disagree)));
 
-            // opus:8-appa-joy.c51, sol:8-appa-joy.c25: which chip samples a
-            // pin, through which of its pins, and at which clock phase
-            // (CCK/CCK*) never appears on any output this test can read,
-            // and p.281 says "This table is for reference only and should
-            // not be needed by the programmer" -- not asserted here.
-            checks.record("opus:8-appa-joy.c51 sol:8-appa-joy.c25 declined: which chip samples "
-                "a pin and at which clock phase is not visible at nanomig.v's ports (p.281 \"This "
-                "table is for reference only and should not be needed by the programmer\")");
+            // opus:8-appa-joy.c51, sol:8-appa-joy.c25: two reasons, not one.
+            // Which chip samples a pin (Denise), through which of its pins and
+            // as which signal never appears on a port of nanomig.v or in a
+            // register, so no assertion on JOYxDAT establishes the whole claim.
+            // The sampling phase is a possible stimulus (clk7_en and clk7n_en
+            // are top-level outputs and the harness steps single cycles), but
+            // p.281 has no sentence that gives JOYxDAT for a level held for
+            // part of a sampling period -- not asserted here.
+            checks.record("opus:8-appa-joy.c51 sol:8-appa-joy.c25 declined: (1) which chip samples a "
+                "pin, through which of its pins and as which signal (Denise; pins 38, 9, 39, 8) is "
+                "not visible at nanomig.v's ports or in any register; (2) the sampling phase is a "
+                "possible stimulus (clk7_en and clk7n_en are exported, the harness steps single "
+                "cycles), but p.281 gives no expected JOYxDAT for a level held for part of a "
+                "sampling period: it names a clock (CCK or CCK*) for each pin, not the instant "
+                "within it that takes the sample, and \"This table is for reference only and "
+                "should not be needed by the programmer\"");
             // Table 8-1 (p.228) says which physical controller button is wired to
             // which connector pin; that is a property of the controller, and no
             // port of nanomig.v shows it. P4-PIN1..4 grade only the chip set's

@@ -45,7 +45,8 @@ WSTEP           macro
                 READV
                 move.w  d1,(a1)+        ; Vw1
                 ifd     K7
-                WAITV   9               ; K7: the M1 marker is stored five lines late
+                WAITV   9
+                move.w  #\1,POTGO(a0)   ; K7: the POTGO write is repeated in line 9, M1 follows it
                 endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
@@ -68,7 +69,8 @@ WSTEP_RPRE      macro
                 READV
                 move.w  d1,(a1)+        ; Vw1
                 ifd     K7
-                WAITV   9               ; K7: the M1 marker is stored five lines late
+                WAITV   9
+                move.w  #\1,POTGO(a0)   ; K7: the POTGO write is repeated in line 9, M1 follows it
                 endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
