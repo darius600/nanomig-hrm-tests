@@ -45,8 +45,9 @@ WSTEP           macro
                 READV
                 move.w  d1,(a1)+        ; Vw1
                 ifd     K7
-                WAITV   9
-                move.w  #\1,POTGO(a0)   ; K7: the POTGO write is repeated in line 9, M1 follows it
+                WAITV   9               ; K7: in line 9 every pot line is driven to the other level,
+                move.w  #$AA00|((((\1)&$AA00)>>1)&(~(\1))&$5500),POTGO(a0)
+                move.w  #\1,POTGO(a0)   ; then the step's own value again; M1 follows
                 endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
@@ -69,8 +70,9 @@ WSTEP_RPRE      macro
                 READV
                 move.w  d1,(a1)+        ; Vw1
                 ifd     K7
-                WAITV   9
-                move.w  #\1,POTGO(a0)   ; K7: the POTGO write is repeated in line 9, M1 follows it
+                WAITV   9               ; K7: in line 9 every pot line is driven to the other level,
+                move.w  #$AA00|((((\1)&$AA00)>>1)&(~(\1))&$5500),POTGO(a0)
+                move.w  #\1,POTGO(a0)   ; then the step's own value again; M1 follows
                 endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
