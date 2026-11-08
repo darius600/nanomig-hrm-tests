@@ -1613,7 +1613,7 @@ int main(int argc, char** argv) {
             Harness h;
             for (int i = 0; i < height + 4; ++i) h.c_words.push_back(0xFFFF);
             int start = h.tick_count;
-            write_bltcon0(h, 0, USEC | USED, 0xCA);
+            write_bltcon0(h, 0, USEA | USEC | USED, 0xCA);
             h.write_reg(BLTCON1, 0x0001);  // line=1 (bit0), octant SUD=SUL=AUL=0
             h.write_reg(BLTSIZE, bltsize_word(2, static_cast<uint16_t>(height)));
             int done = h.run_until_done(20000);
