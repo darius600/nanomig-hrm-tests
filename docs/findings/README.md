@@ -25,9 +25,9 @@ After the thirteen rows only the optional ones follow.
 | 2 | **Filed against** | `the RTL`, `the printed page` or `the classification` |
 | 3 | **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
 | 4 | **What is asked of a reader** | the exact decision and its boundary first, as one bounded yes/no question, then the event that closes it. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
-| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code, or code that a Minimig line has fixed and NanoMig has not: the action is to port that fix, and the Module row then ends `fixed in ...`) or `no RTL action` (the printed page or the classification is wrong, not the RTL; the role is then `HRM documentation` or `AA documentation`, followed by `: an issue on this repository whose title begins with ` and the page's own key, because that is where the decision is recorded). A page whose Module row ends `fixed in TC64` routes `NanoMig direct` to harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer (port TC64's fix; MiSTer carries the same code); `fixed in MiSTer`, to harbaum/NanoMig and minimig-dev/MinimigAGA-MiST-TC64; `fixed in MiSTer and TC64`, to harbaum/NanoMig. Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
-| 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown`; and, where it decides whether NanoMig can show the difference, the core's own limit (chipset mode, video output, connector, disk image format) |
-| 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software`; either may end `; on NanoMig: <effect>` where the page knows the effect on this core |
+| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited; report to the project it comes from first, MiSTer's Minimig-AGA or, for the CPU kernel, TobiFlex/TG68K.C, and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code, or code that a Minimig line has fixed and NanoMig has not: the action is to port that fix, and the Module row then ends `fixed in ...`) or `no RTL action` (the printed page or the classification is wrong, not the RTL; the role is then `HRM documentation` or `AA documentation`, followed by `: an issue on this repository whose title begins with ` and the page's own key, because that is where the decision is recorded). A page whose Module row ends `fixed in TC64` routes `NanoMig direct` to harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer (port TC64's fix; MiSTer carries the same code); `fixed in MiSTer`, to harbaum/NanoMig and minimig-dev/MinimigAGA-MiST-TC64; `fixed in MiSTer and TC64`, to harbaum/NanoMig. Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
+| 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown`; and, where it decides whether NanoMig can show the difference, the core's own limit (chipset mode, video output, connector, disk image format, build option) |
+| 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software`; either may end `; on NanoMig: <effect>` where the page knows the effect on this core, and then, where it also knows what the suggested change would do on the core, `; on NanoMig, after the suggested change: <effect>` |
 | 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell with more than 12 claim ids holds them in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line; at 12 or fewer they stand in the cell |
 | 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, each link text naming its commit (``[NanoMig `4315acb`](…)``), and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not; row 5 then routes `NanoMig direct`), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow, and may say that the cited code declares the behaviour not implemented, with the file:line of that declaration. When the change the page asks for touches code that is NanoMig's own, the parenthetical names it with its file:line. A bare `fixed` is not a value |
 | 10 | **Test** | every package the page names, each with its exact command, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero. The first command is the package whose red row 11 quotes first |
@@ -63,7 +63,10 @@ this order:
 Optional rows after the twelve: **See also**, **Origin**, **Provenance**, as above.
 A withdrawn page has no `Report to`, `Scope`, `Software impact` or `Effort`.
 Its rows 8 to 10 are Module, Test, Chapter; on an open page rows 8 to 10 are
-Chapter, Module, Test. The two orders are deliberate.
+Chapter, Module, Test. The two orders are deliberate: a withdrawn page asks nothing, so
+its header names first where the claim pointed (Module) and which test now stands in for it
+(Test), and the page the claim was read from (Chapter) last; an open page puts that page
+first, because the question it asks is about what the page prints.
 Neither header carries a date or the name of whoever changed it.
 
 **A title that ends in [RTL review]** marks a page whose header says three
@@ -71,7 +74,9 @@ things: `open`, filed against `the RTL`, and a test that fails against the page.
 Amiga specialist to decide whether the RTL should change;
 [`../rtl-review.md`](../rtl-review.md) lists every such page by the module it
 is about. The mark is derived from the header, never set by hand, so it cannot
-say something the header does not.
+say something the header does not. On such a page whose Effort row begins `none`, row 4
+begins `No RTL change is proposed now`, so that the title's mark does not promise a
+change that the page itself does not propose.
 
 **A title that ends in [withdrawn]** marks a withdrawn page: its title ends with
 ` [withdrawn]`, as an open page's may end with ` [RTL review]`, so that a search by
@@ -111,7 +116,11 @@ headings are free.
 - **A decision is recorded as an issue.** A decision an Amiga specialist records is
   an issue on this repository whose title begins with the finding key, and the page
   then links it in row 4; a maintainer closes a page filed against the RTL by the
-  RTL change its row 4 names.
+  RTL change its row 4 names. An *Amiga specialist* is any reader who can say from the
+  manual, from a real machine or from the chips themselves how the hardware behaves; no
+  credential is asked, and a reader who can answer the question is the specialist the page
+  means. A maintainer's rejection, recorded in their own tracker and linked from an issue
+  here, is the rejection row 4 names.
 - **A red for a finding filed against the printed page** does not stay a `FAIL`
   line once the page closes because the misprint is recorded. Its assertions are
   not changed to pass; their claims are recorded as resting on a recorded misprint
@@ -133,11 +142,12 @@ headings are free.
 - **One witness matrix**, in the order WinUAE, vAmiga, Denise, Copperline, MiSTer, TC64.
   MiSTer and TC64 are marked *descendant* and never counted among the four. A source
   nobody read is written *not read*.
-- **`[n/3]`, *corpus* and *Developer CD reading*.** The *corpus* is this project's verbatim text of the AA specification, one page per file, merged from three readings of the page: Tesseract OCR, the 1993 `AGA.guide` typing and a model reading of the rendered page. `[3/3]` marks a line all three produced, `[1/3]` a line only one produced, with nothing to corroborate it. The *Developer CD reading* is the text of a printed-manual page as the Amiga Developer CD's edition of the manual gives it, as against the scan's text layer.
+- **`[n/3]`, *corpus* and *Developer CD reading*.** The *corpus* is this project's verbatim text of the manual and of the AA specification, one page per file; the AA part is merged from three readings of the page: Tesseract OCR, the 1993 `AGA.guide` typing and a model reading of the rendered page. `[3/3]` marks a line all three produced, `[1/3]` a line only one produced, with nothing to corroborate it. The *Developer CD reading* is the text of a printed-manual page as the Amiga Developer CD's edition of the manual gives it, as against the scan's text layer.
 - **"Identical" means the cited lines.** A claim about a whole file says *file*.
 - **No method prose on a page.** The oracle statement, the mutation and gate
-  explanation, the private-copy narrative, the revision ledger and the second-documents
-  paragraph are stated once, here and in *Second documents* below.
+  explanation, the revision ledger and the second-documents paragraph are stated once,
+  here and in *Second documents* below; the private-copy narrative is stated once, in
+  [`integration/README.md`](../../integration/README.md).
 - **No list of silent sources**, and no package that does not observe the claim.
 - **External observables before internal signals.** An internal confirmation keeps one
   sentence and its link.
@@ -175,7 +185,9 @@ a reader can follow the thread without going back to the register.
 | Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) · 2026-09-11 |
 | Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) · 2026-09-11 |
 
-NanoMig has moved on since `4315acb`; open the permalinks, not a current checkout.
+NanoMig has moved on since `4315acb`; open the permalinks, not a current checkout. To run
+a package against your own checkout, see [*Run it*](../../README.md#run-it) in the root README
+(`NANOMIG=`).
 
 ### The two Minimig lines are ancestors, not witnesses — and nothing merges them down
 
@@ -272,7 +284,8 @@ So each page is written to stand on its own for a reader who has never seen this
 project: the manual quoted rather than referenced, the code quoted rather than
 cited, the reasoning stated rather than assumed, and the `Report to` row naming
 the repository the fix belongs in. A page should be usable as the body of an
-issue with no editing beyond deleting this paragraph's worth of context.
+issue: its header table and its *Decision* are the issue body, and the other sections are
+the context behind them, which the issue links rather than copies.
 
 Nothing is reported upstream without the maintainer of this repository saying so; a decision on a finding is recorded as an issue here.
 
@@ -301,7 +314,7 @@ application behind 4,874,164, which is why the two share a specification.
 Quotations are taken from each PDF's text layer or, for the three scans that
 have none -- the TRM and the 8371 and 6526 specifications -- from Tesseract
 OCR, errors and line-end hyphens included, and every one is checked against the
-page it names by `hrm-testpipeline/tools/verify_second_documents.py --pages`.
+page it names.
 A schematic or a patent figure cannot be quoted: where a drawing speaks, the page says what it
 shows, marked *read from the drawing, not quoted*, with its PDF page, and the
 check requires the net labels it names on that page. The documents themselves
@@ -311,7 +324,7 @@ are in neither repository.
 
 [`../findings.md`](../findings.md) lists every open finding, once. This page does not repeat it.
 
-`tools/check_findings_shape.py` in `hrm-testpipeline`, a separate repository, enforces the header, the routing value and what follows it, the five headings and
+A check enforces the header, the routing value and what follows it, the five headings and
 the link limit, and reports each page by the row or heading it lacks. It also
 checks that the Module row ends with one of the values above, that the Verdict of the four
 ends with its `Hardware:` clause, that no retired phrase appears, and that a withdrawn

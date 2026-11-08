@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Does "Direct read of RXD pin on Paula chip." (p.257, SERDATR bit 11) require bit 11 to follow the RXD pin with no `clk7_en` edge in between, where NanoMig takes three? It closes when `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, `C4` and `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT` turn green, or when an Amiga specialist records that "direct" permits a synchroniser in front of bit 11. |
+| **What is asked of a reader** | No RTL change is proposed now. Does "Direct read of RXD pin on Paula chip." (p.257, SERDATR bit 11) require bit 11 to follow the RXD pin with no `clk7_en` edge in between, where NanoMig takes three? It closes when `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, `C4` and `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT` turn green, or when an Amiga specialist records that "direct" permits a synchroniser in front of bit 11. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | SERDATR bit 11 read at `paula_uart` and at the `paula` boundary, after the RXD pin steps from 1 to 0; chip revision unknown; real Paula not measured |
 | **Software impact** | unknown; no named affected software |

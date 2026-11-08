@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: does an OCS Agnus (`ecs = 0`) latch only three high bits of BLTxPTH, so that writing `$001F` to BLTAPTH should drive `0x38000` where NanoMig drives `0xF8000`, the same as at `ecs = 1`? Closes when the change is made and `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` and `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` turn green, or when an Amiga specialist declares the core ECS-and-later, which puts the manual's OCS sentences out of scope. Decide it together with [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-024](NM-HRM-024.md), which rest on the same decision. |
+| **What is asked of a reader** | Question: does an OCS Agnus (`ecs = 0`) latch only three high bits of BLTxPTH, so that writing `$001F` to BLTAPTH should drive `0x38000` where NanoMig drives `0xF8000`, the same as at `ecs = 1`? Closes when the change is made and `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` and `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` turn green, or when an Amiga specialist declares the core ECS-and-later, which puts the manual's OCS sentences out of scope. Decide it together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-024](NM-HRM-024.md), [NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md), which rest on the same decision. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | `agnus_blitter`, BLTAPTH written with `$001F`, `address_out` compared at `ecs = 0` and `ecs = 1`; BLTBPTH, BLTCPTH and BLTDPTH not measured; real Agnus not measured; chip revision unknown |
 | **Software impact** | unknown; no named affected software |
@@ -93,9 +93,9 @@ MiSTer and TC64 carry the same unconditional five-bit latch, inherited rather th
 
 ## Decision
 
-**Take this together with [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-024](NM-HRM-024.md), not on its own.** The Copper, the blitter and the audio DMA all build their pointers identically with no chipset condition. Read separately they are three omissions; read together they are one decision not to model OCS pointer narrowing anywhere in Agnus. There are two coherent actions and no good third one:
+**Take this together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-024](NM-HRM-024.md), [NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md), not on its own.** The Copper, the blitter and the audio DMA all build their pointers identically with no chipset condition. Read separately they are five omissions; read together they are one decision not to model OCS pointer narrowing anywhere in Agnus. There are two coherent actions and no good third one:
 
-1. **Model it once, centrally**, the way Copperline does — a mask derived from the Agnus revision, applied to every assembled DMA pointer. That closes all three findings with one change.
-2. **Decide the core is ECS-and-later**, in which case the manual's OCS sentences are out of scope and all three findings are one scope note rather than three defects.
+1. **Model it once, centrally**, the way Copperline does — a mask derived from the Agnus revision, applied to every assembled DMA pointer. That closes all five findings with one change.
+2. **Decide the core is ECS-and-later**, in which case the manual's OCS sentences are out of scope and all five findings are one scope note rather than five defects.
 
-Three separate patches in three engines is the option to avoid. Under option 1 the two red assertions turn green when `ecs = 0` lands `0x38000` and `ecs = 1` lands `0xF8000`.
+Five separate patches in five engines is the option to avoid. Under option 1 the two red assertions turn green when `ecs = 0` lands `0x38000` and `ecs = 1` lands `0xF8000`.

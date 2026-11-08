@@ -160,7 +160,7 @@ actions, and [NM-HRM-043](NM-HRM-043.md) counts the six pointer sites they cover
 1. **Model it once, centrally**, the way Copperline does: a mask derived from the
    Agnus revision and applied to every assembled DMA pointer. At this site `ecs` is
    already in scope, so the mask is one line, `assign bplpth_in = (dma ? newpt[20:16] : data_in[4:0]) & {ecs, ecs, 3'b111};`;
-   on a copy of the RTL with that line, built outside the repository and not `make test` on the repository's RTL, so at most a reading, the package read `20 passed, 0 failed`: the red read 0x070000, the control and the other eighteen assertions stayed green, and the `ecs` = 1 twin still read 0x1f0000.
+   measured on a copy of the RTL with that line, outside this repository ([*Run it*](../../README.md#run-it) in the root README runs a package against another checkout), the package read `20 passed, 0 failed`: the red read 0x070000, the control and the other eighteen assertions stayed green, and the `ecs` = 1 twin still read 0x1f0000.
 2. **Declare the core ECS-and-later**, making the manual's OCS pointer sentences out of
    scope, and record all five findings as one scope decision.
 

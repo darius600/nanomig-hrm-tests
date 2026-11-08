@@ -7,8 +7,8 @@ AA specification that only show across module boundaries: a Copper list the
 CPU starts, an audio channel another channel modulates, a CIA timer the system
 clocks.
 
-Run one package from the repository root, with Verilator and vasm
-(`vasmm68k_mot`) on the PATH:
+Run one package from the repository root, with Verilator, vasm
+(`vasmm68k_mot`) and GHDL on the PATH:
 
 ```sh
 make -k -C integration/ch8-light-pen-beam test   # both cores; -k runs the second after a red
@@ -17,6 +17,10 @@ make -k -C integration/ch8-light-pen-beam test   # both cores; -k runs the secon
 One package builds `nanomig.v` once per CPU core and can take a quarter of an hour
 or more (measured: 18 minutes for `appK-autoconfig`, 12 minutes for
 `aa-integ-s7-rest`).
+
+A package's log holds several hundred Verilator warnings from the submodule's RTL
+(`%Warning-MULTIDRIVEN`, `%Warning-WIDTHEXPAND` and others). They are expected and
+do not mean a broken build; the result is the `N passed, M failed` line at the end.
 
 A package that carries `*.patch` files also has a `<copy>-test` target
 (`<copy>-test-fx68k` and `<copy>-test-tg68k` for one core). It builds and runs the
@@ -46,7 +50,7 @@ package and core.
 
 A package whose test source records mutations (`NMH_MUTATE=<selector>` in its comments) runs one with `NMH_MUTATE=<selector> make -C integration/<package> test-fx68k` (or `test-tg68k`): a mutation build, not run by `make test`. For example, `NMH_MUTATE=C11 make -C integration/ch4-shres-bitplane test-fx68k` prints `86 passed, 49 failed` and exits nonzero, as the package's record for `C11` says.
 
-A record gives what the TG68K build it was measured on printed. Where that could depend on which TG68K build runs (the record names a check or line that a normal run prints differently with `TG68K_KERNEL=shipped` than on the default build, or it argues from a TG68K cycle, slot, line count or window), the record was measured on the default build. The other records name only lines that a normal run prints the same on both TG68K builds, and their TG68K result may come from a `TG68K_KERNEL=shipped` build. To check one, run its selector on both: `NMH_MUTATE=<selector> make -B -C integration/<package> test-tg68k`, then the same with `TG68K_KERNEL=shipped`. A record about a private copy whose patch is not in this repository cannot be rerun from here.
+A record gives what the TG68K build it was measured on printed. Where that could depend on which TG68K build runs (the record names a check or line that a normal run prints differently with `TG68K_KERNEL=shipped` than on the default build, or it argues from a TG68K cycle, slot, line count or window), the record was measured on the default build. The other records name only lines that a normal run prints the same on both TG68K builds, and their TG68K result may come from a `TG68K_KERNEL=shipped` build. To check one, run its selector on both: `NMH_MUTATE=<selector> make -B -C integration/<package> test-tg68k`, then the same with `TG68K_KERNEL=shipped`. A record about a copy whose patch is not in this repository cannot be rerun from here.
 
 ## Graded against the manual
 

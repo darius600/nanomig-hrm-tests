@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the disk DMA pointer pair DSKPTH/DSKPTL keep the 20 word-address bits `address_out[20:1]` (an all-ones write reads back `0xFFFFF`) although printed p.241 and p.246 call it 32 bits? The likely answer is yes, because the two pages describe the long-word write rather than the stored width. Closes when the pointer stores the width p.241 and p.246 print (`P11A` turns green), or when an Amiga specialist rejects that change; if the rejection means the two pages are wrong (they describe the long-word write, not the stored width), the page is refiled against the printed page. |
+| **What is asked of a reader** | No RTL change is proposed now. Should the disk DMA pointer pair DSKPTH/DSKPTL keep the 20 word-address bits `address_out[20:1]` (an all-ones write reads back `0xFFFFF`) although printed p.241 and p.246 call it 32 bits? The likely answer is yes, because the two pages describe the long-word write rather than the stored width. Closes when the pointer stores the width p.241 and p.246 print (`P11A` turns green), or when an Amiga specialist rejects that change; if the rejection means the two pages are wrong (they describe the long-word write, not the stored width), the page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | unknown chip revision; the width stored by DSKPTH/DSKPTL in `agnus_diskdma`, isolated by an all-ones write to both registers and a read of `address_out`. The chipset-conditioned width is [NM-HRM-043](NM-HRM-043.md)'s |
 | **Software impact** | unknown; no named affected software |

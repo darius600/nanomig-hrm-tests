@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Does real Agnus, with DDFSTOP at its $D8 limit in hires, fetch 49 words per plane (the last fetch one word), as p. 80 prints, where NanoMig fetches 50? Closes when the hires sequencer in `agnus_bitplanedma.v` delivers one word in the last fetch at the $D8 limit and `MAX-WORDS-49-HIRES-AT-HW-LIMITS` and `MAX-WORDS-49-HIRES` turn green, or when an Amiga specialist records that the sequence runs whole and gives 50, in which case this page is refiled against the printed page. |
+| **What is asked of a reader** | No RTL change is proposed now. Does real Agnus, with DDFSTOP at its $D8 limit in hires, fetch 49 words per plane (the last fetch one word), as p. 80 prints, where NanoMig fetches 50? Closes when the hires sequencer in `agnus_bitplanedma.v` delivers one word in the last fetch at the $D8 limit and `MAX-WORDS-49-HIRES-AT-HW-LIMITS` and `MAX-WORDS-49-HIRES` turn green, or when an Amiga specialist records that the sequence runs whole and gives 50, in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | Agnus bitplane fetch in hires, FMODE 0, at DDFSTRT $18 / DDFSTOP $D8, and driven from $00/$FE beyond both limits; lores 25 is reachable. Chip revision: unknown; hardware not measured at $18/$D8; photographs named A500 OCS and A500 ECS reach stop $D8 at start $38 only |
 | **Software impact** | unknown; no named affected software |

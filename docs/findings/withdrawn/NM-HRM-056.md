@@ -20,7 +20,9 @@
 ## Why it was withdrawn
 
 The withdrawn claim is that the next bus read of SERDATR after a SERDAT write
-with the transmitter idle must find bit 13, TBE, at 0. No page asks for that. The assertion that graded it was `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in `hrm/ch8-serdatr-read-word`, which wrote one word from idle and required the very next read to find TBE clear; it now writes a second word while the first is shifting and requires TBE to read 0 on every read until that frame ends, and is green.
+with the transmitter idle must find bit 13, TBE, at 0. No page asks for that. The assertion that graded it was `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in `hrm/ch8-serdatr-read-word`, which wrote one word from idle and required the very next read to find TBE clear; it now writes a second word while the first is shifting and requires TBE to read 0 on every read until that frame ends, and is green. That is the one exception the register allows
+([*About the register*](../../findings.md#about-the-register)): an assertion that misstates the source is
+corrected, and this one never said what the pages say.
 
 **p. 258 says when the word leaves SERDAT, and it is at once:**
 
@@ -47,15 +49,6 @@ a frame is shifting its TBE stays 0 until that frame has gone. A flag that is
 cleared for as long as a word waits is a flag software can use, and p. 258
 predicts the short window from idle. Read together, pp. 257 and 258 predict
 what NanoMig does.
-
-**Condition for filing again.** A test that writes SERDAT once and reads SERDATR
-next finds TBE already set, on this core and on three of the four
-implementations, and grades a red against the TBE row. The claim would be filed
-again only if a printed page gave the transfer from idle a duration a processor
-read must see, or required TBE to read 0 after a write from idle; neither p. 257
-nor p. 258 does.
-
----
 
 ## What NanoMig does
 
@@ -97,3 +90,10 @@ build do not define it; what follows describes that build.
 After a write from idle, three move the word into the shift register at once, as
 NanoMig does, and WinUAE models a one-`CYCLE_UNIT` window on purpose in its
 cycle-accurate mode; no page decides between the two.
+
+**Condition for filing again.** A test that writes SERDAT once and reads SERDATR
+next finds TBE already set, on this core and on three of the four
+implementations, and grades a red against the TBE row. The claim would be filed
+again only if a printed page gave the transfer from idle a duration a processor
+read must see, or required TBE to read 0 after a write from idle; neither p. 257
+nor p. 258 does.

@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails because NanoMig lacks a documented bug |
-| **What is asked of a reader** | Should NanoMig reproduce the loss of the last three bits of a disk write that p.247 documents, when its write path delivers all eight bits of the last sector byte (A11 observed `0x00FF`)? *Decision* says no and asks for no RTL change. Closes when an Amiga specialist rejects the change, recording that no software depends on those bits being discarded, or when the write path drops them and `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` turns green. |
+| **What is asked of a reader** | No RTL change is proposed now. Should NanoMig reproduce the loss of the last three bits of a disk write that p.247 documents, when its write path delivers all eight bits of the last sector byte (A11 observed `0x00FF`)? *Decision* says no and asks for no RTL change. Closes when an Amiga specialist rejects the change, recording that no software depends on those bits being discarded, or when the write path drops them and `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` turns green. |
 | **Report to** | `NanoMig direct` — harbaum/NanoMig |
 | **Scope** | NanoMig's `paula_floppy.v` write path at the pinned revision: one full write transfer, uniform payload `0xFF`, read at `sdc_byte_out_data` offset 511; Paula chip revision unknown; real-hardware behaviour not measured |
 | **Software impact** | unknown; no named affected software |

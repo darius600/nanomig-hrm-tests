@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the audio DMA address at `ecs = 0` take only three high bits of AUDxLCH, as pp. 139 and 266 print, instead of the five it takes in both chipsets? Closes when the central pointer mask under *Decision* is made and `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` and `LCH-ECS-PORT-CHANGES-WHAT-LOADS` are green, or when an Amiga specialist records the core as ECS-and-later for this page, [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` grades `agnus_audiodma` alone, which has no chipset input (*Risks and unknowns*). |
+| **What is asked of a reader** | No RTL change is proposed now. Should the audio DMA address at `ecs = 0` take only three high bits of AUDxLCH, as pp. 139 and 266 print, instead of the five it takes in both chipsets? Closes when the central pointer mask under *Decision* is made and `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` and `LCH-ECS-PORT-CHANGES-WHAT-LOADS` are green, or when an Amiga specialist records the core as ECS-and-later for this page, [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` grades `agnus_audiodma` alone, which has no chipset input (*Risks and unknowns*). |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | AUDxLCH's high field: all four channels at `agnus_audiodma` alone, which has no chipset input; channel 0 at the Agnus top with `ecs` at 0 and at 1; five bits latched in both; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -138,6 +138,6 @@ OCS pointer narrowing anywhere in Agnus. Two coherent actions:
    ```
 
 2. **Declare the core ECS-and-later**: no change, the manual's OCS sentences are
-   out of scope, and all three findings are recorded as one scope decision.
+   out of scope, and all five findings are recorded as one scope decision.
 
-Three separate patches in three engines is the option to avoid.
+Five separate patches in five engines is the option to avoid.

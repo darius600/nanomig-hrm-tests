@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: after a CPU data write to the address of a cached instruction, must `cpu_cache_new` still return the old instruction (`$AAAA`, as p.13's "do not monitor writes" says) instead of the written word (`$CCCC`, which NanoMig returns)? It closes when `CACHE-WRITE-VISIBILITY` turns green with `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` still green, or when an Amiga specialist records that `cpu_cache_new` is a coherent cache of the board's own, which p.13 does not describe. |
+| **What is asked of a reader** | No RTL change is proposed now. Question: after a CPU data write to the address of a cached instruction, must `cpu_cache_new` still return the old instruction (`$AAAA`, as p.13's "do not monitor writes" says) instead of the written word (`$CCCC`, which NanoMig returns)? It closes when `CACHE-WRITE-VISIBILITY` turns green with `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` still green, or when an Amiga specialist records that `cpu_cache_new` is a coherent cache of the board's own, which p.13 does not describe. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | NanoMig's `cpu_cache_new` at its own module boundary: a CPU data write to the address of a cached instruction line, read back as an instruction; processor model and revision unknown; real hardware not measured; the chip-bus path (`CHIPRAM_CACHE`) not measured |
 | **Software impact** | unknown; no named affected software |

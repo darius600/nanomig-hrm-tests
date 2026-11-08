@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should a CIAAPRB read return the bit written, for each bit whose CIAADDRB bit is 1, as p.341 prints ("the corresponding bit position in the PR becomes an output"), where `ciaa.v` returns `portb_in` and a written 0 on a released line reads 1? It closes when `PROP-1` and `PORTB-DIRECTION` turn green, or when an Amiga specialist rejects the change; if the rejection means p.341 is wrong for CIA-A's port B, the page is refiled against the printed page |
+| **What is asked of a reader** | No RTL change is proposed now. Should a CIAAPRB read return the bit written, for each bit whose CIAADDRB bit is 1, as p.341 prints ("the corresponding bit position in the PR becomes an output"), where `ciaa.v` returns `portb_in` and a written 0 on a released line reads 1? It closes when `PROP-1` and `PORTB-DIRECTION` turn green, or when an Amiga specialist rejects the change; if the rejection means p.341 is wrong for CIA-A's port B, the page is refiled against the printed page |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | CIA-A port B, CIAAPRB with CIAADDRB, all eight bits, with the port B lines released (`portb_in` = $FF) and nothing driving them; port A's PA0 passes the same comparator (`CONTROL-PA0-OUTPUT`). Chip revision: unknown |
 | **Software impact** | Unreal and "some trainer", named by the comment at `minimig.v:136` ("added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data") as needing the register that `ciaa.v:267` now leaves commented out; no test here runs either program, so the result is unknown |

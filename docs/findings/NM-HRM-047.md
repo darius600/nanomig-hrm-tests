@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether `paula_floppy.v` should gate a step pulse that reverses direction on a longer floor than one that continues the direction, where p.245 prints 18 ms against 3 ms (6:1 in Figure 8-8) and the RTL measures 253 ticks for both. The question stops at the ratio: whether the single floor is long enough is outside it. It closes when `paula_floppy.v` gates a reversal on a second, longer floor and `RATIO-A` turns green, or when a specialist rejects that change, recording p.245's two numbers as properties of the mechanism |
+| **What is asked of a reader** | No RTL change is proposed now. Decide whether `paula_floppy.v` should gate a step pulse that reverses direction on a longer floor than one that continues the direction, where p.245 prints 18 ms against 3 ms (6:1 in Figure 8-8) and the RTL measures 253 ticks for both. The question stops at the ratio: whether the single floor is long enough is outside it. It closes when `paula_floppy.v` gates a reversal on a second, longer floor and `RATIO-A` turns green, or when a specialist rejects that change, recording p.245's two numbers as properties of the mechanism |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | the step-to-step acceptance gate of `paula_floppy.v` (`step_ena_cnt`), a direction reversal against a same-direction continuation. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |

@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should VPOSR bit 8 (identifier bit I0) read 0 on an Alice, giving the AA list's `$22` PAL / `$32` NTSC instead of this core's `$23` / `$33`? Closes when `agnus_beamcounter.v:110` drives bit 8 from `1'b0` instead of the second `aga` and `VPOSR-REPORTS-THE-CHIP-IDENTIFIER` turns green, or when an Amiga specialist rejects the change on an 8374 capture reading `$23` / `$33` (the probe under *Risks and unknowns*), in which case this page is refiled against the printed page. |
+| **What is asked of a reader** | No RTL change is proposed now. Should VPOSR bit 8 (identifier bit I0) read 0 on an Alice, giving the AA list's `$22` PAL / `$32` NTSC instead of this core's `$23` / `$33`? Closes when `agnus_beamcounter.v:110` drives bit 8 from `1'b0` instead of the second `aga` and `VPOSR-REPORTS-THE-CHIP-IDENTIFIER` turns green, or when an Amiga specialist rejects the change on an 8374 capture reading `$23` / `$33` (the probe under *Risks and unknowns*), in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | Alice (AGA), VPOSR bits 14-8, PAL and NTSC; isolated to the duplicated `aga` term, since the NTSC `+$10` matches the list |
 | **Software impact** | unknown; no named affected software |

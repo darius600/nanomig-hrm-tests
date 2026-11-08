@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should COP1LCH at `ecs = 0` latch three high bits, as pp. 273 and 309 print, instead of the five it latches in both chipsets? Closes when COP1LCH at `ecs = 0` keeps three high bits at the Copper module's own address output, turning `T4`, `LW1`, `LW3` and `LW4` green (option 1 under *Decision*), or when an Amiga specialist rejects the change by declaring the core ECS-and-later for this page, [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) (option 2), in which case this page is refiled against the classification. |
+| **What is asked of a reader** | Should COP1LCH at `ecs = 0` latch three high bits, as pp. 273 and 309 print, instead of the five it latches in both chipsets? Closes when COP1LCH at `ecs = 0` keeps three high bits at the Copper module's own address output, turning `T4`, `LW1`, `LW3` and `LW4` green (option 1 under *Decision*), or when an Amiga specialist rejects the change by declaring the core ECS-and-later for this page, [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md), [NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md) (option 2), in which case this page is refiled against the classification. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | COP1LCH's high field at ecs = 0 (OCS) and at ecs = 1 (ECS), five bits latched in both; the identical COP2LCH latch (`agnus_copper.v:159-161`) is not among the red assertions; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -107,17 +107,17 @@ against p. 276's 18 follows from `LW1`.
 
 ## Decision
 
-The question is in the header. **Read with [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md), not alone.** The Copper, the blitter
+The question is in the header. **Read with [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md), [NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md), not alone.** The Copper, the blitter
 and the audio DMA all build their pointers the same way with no chipset
 condition. Two coherent actions:
 
 1. **One central mask**, as Copperline does — derived from the Agnus revision and
-   applied to every assembled DMA pointer. Closes all three findings at once.
+   applied to every assembled DMA pointer. Closes all five findings at once.
 2. **Declare the core ECS-and-later**, making the manual's OCS sentences out of
-   scope, and record all three as one scope decision.
+   scope, and record all five as one scope decision.
 
-Three separate patches in three engines is the option to avoid. What is left to decide is scope, the same decision as in
-[NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and
-[NM-HRM-043](NM-HRM-043.md): whether this core models an OCS Agnus at all. The
+Five separate patches in five engines is the option to avoid. What is left to decide is scope, the same decision as in
+[NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md),
+[NM-HRM-043](NM-HRM-043.md) and [NM-HRM-088](NM-HRM-088.md): whether this core models an OCS Agnus at all. The
 three implementations that narrow side with the manual, not with NanoMig's
 unconditional five bits, so the printed page is not the outlier.

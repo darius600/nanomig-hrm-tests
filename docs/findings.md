@@ -10,7 +10,7 @@ interest:
 
 | start here | because | what it takes |
 |---|---|---|
-| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
+| [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022, NM-HRM-024, NM-HRM-043 and NM-HRM-088; one central mask would close all five |
 | [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
