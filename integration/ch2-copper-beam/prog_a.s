@@ -19,22 +19,32 @@
 ;                    after every DUP_GAP samples.
 ;   RUN_ANCHOR   -- A-anchor: the main loop's WAIT target is v+1 instead of
 ;                    v (v running $30..$FE), while MARK(v) keeps v.
-;   RUN_P2WAITED -- an extra WAIT($7F,$40) inserted right after MARK($7F):
-;                    it is already satisfied when fetched (P2's "waited"
-;                    precondition mutation).
+;   RUN_P2LATE   -- WAIT($80,$50) inserted right after MARK($7F), before the
+;                    measured WAIT($80,$40): the beam passes ($80,$50) before
+;                    the Copper fetches WAIT($80,$40), so the latter is
+;                    already satisfied when fetched (P2's "waited" precondition
+;                    mutation; p.22 "until the video beam counters are equal
+;                    to (or greater than) the coordinates").
 ;   RUN_NODONE   -- the whole program, but it halts in place of storing the
 ;                    completion word.
 ;   RUN_FEW      -- A-few: the trace buffer holds 35000 samples.
 ;   RUN_EARLYCOP -- the Copper is started before the list is written; the
 ;                    CPU writes the list once V is in $20 .. $3F.
-;   RUN_NOE0     -- MARK($A0E0) after WAIT($FF,$E0) is another padding move.
+;   RUN_E4STUCK  -- WAIT($FF,$E4) in place of WAIT($FF,$E0), the marker kept:
+;                    the Copper never reaches line 256 (p.23: "This event will
+;                    never occur, so the Copper stops until the next vertical
+;                    blanking interval begins"; "The horizontal position has a
+;                    maximum value of $E2").
 ;   RUN_P7EARLY  -- WAIT($00,$60) and its marker precede WAIT($FF,$E0), so its
 ;                    second word is fetched on line 255; the other tail
 ;                    WAITs follow the padding as before.
-;   RUN_NOE1     -- A-noe1: on each of NOE1_LINES lines, reads of VPOSR,VHPOSR
-;                    compared with $E1 and stored unless equal until H is
-;                    below NOE1_THR, then NOE1_BURST reads stored without
-;                    compare; no sample whose H is $E1 is stored.
+;   RUN_ODDEND   -- A-oddend: on each of ODDEND_LINES lines, reads of VPOSR,VHPOSR
+;                    stored unless H is odd and at least ODDEND_MIN, until H is
+;                    below ODDEND_THR, then ODDEND_BURST reads stored without
+;                    compare (they end before ODDEND_MIN); no sample with an
+;                    odd H from ODDEND_MIN up is stored.
+;   RUN_VTOTAL   -- A-vtotal: VTOTAL = 4 and BEAMCON0 = $00A0 (VARBEAMEN,
+;                    PAL) are written before the Copper starts.
 ;   RUN_TAILSHIFT-- the tail loop's WAIT(n,$60) becomes WAIT(n+1,$60).
 ;   RUN_LONGPAD  -- 16 further padding moves: WAIT(0,$60) is fetched after count $60.
 ;   RUN_NOFIX    -- the fixture constant is not stored (copbeam.i).
@@ -59,9 +69,10 @@ FLATDUP         macro                   ; DUP_GAP samples, then one read stored 
                 endm
 SLOW_BLOCK      equ     1000            ; samples between two delays
 SLOW_DELAY      equ     20              ; dbra iterations of a delay
-NOE1_LINES      equ     3000            ; lines of A-noe1
-NOE1_THR        equ     $20             ; H below this starts the reads without compare
-NOE1_BURST      equ     15              ; reads without compare, ending before $E1
+ODDEND_LINES    equ     3000            ; lines of A-oddend
+ODDEND_THR      equ     $30             ; H below this starts the reads without compare
+ODDEND_BURST    equ     14              ; reads without compare, ending before ODDEND_MIN
+ODDEND_MIN      equ     $D1             ; odd H from here up is not stored
 
         org     PROGRAM_ORG
 
@@ -107,12 +118,12 @@ start:
         move.w  #$01FE,(a1)+
         move.w  d0,(a1)+                ; MARK(v)
 
-        ifd     RUN_P2WAITED
+        ifd     RUN_P2LATE
         cmpi.w  #$7F,d0
-        bne.s   .nop2w
-        move.w  #$7F41,(a1)+            ; extra WAIT($7F,$40): already past
+        bne.s   .nop2l
+        move.w  #$8051,(a1)+            ; WAIT($80,$50): the measured WAIT($80,$40) after it is fetched late
         move.w  #$FFFE,(a1)+
-.nop2w:
+.nop2l:
         endif
 
         addq.w  #1,d0
@@ -129,14 +140,14 @@ start:
         move.w  #$01FE,(a1)+           ; MARK($0100)
         move.w  #$0100,(a1)+
         endif
+        ifd     RUN_E4STUCK
+        move.w  #$FFE5,(a1)+           ; WAIT($FF,$E4): never ends in line $FF (p.23)
+        else
         move.w  #$FFE1,(a1)+           ; WAIT($FF,$E0)
+        endif
         move.w  #$FFFE,(a1)+
         move.w  #$01FE,(a1)+
-        ifd     RUN_NOE0
-        move.w  #$A0EF,(a1)+           ; a padding move in place of MARK($A0E0)
-        else
         move.w  #$A0E0,(a1)+           ; MARK($A0E0)
-        endif
 
         move.w  #$A0F0,d1
 .padloop:
@@ -192,6 +203,11 @@ start:
         move.w  #$0200,BPLCON0(a0)
         endif
 
+        ifd     RUN_VTOTAL
+        move.w  #4,$1C8(a0)             ; VTOTAL = 4
+        move.w  #$00A0,$1DC(a0)         ; BEAMCON0: VARBEAMEN, PAL
+        endif
+
         ; ---- step 5: start the Copper (p.30's own sequence) ------------
         move.l  #LIST_A_BASE,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
@@ -201,25 +217,28 @@ start:
         ; ---- step 6: trace loop -----------------------------------------
         lea     TRACE_BASE,a6
 
-        ifd     RUN_NOE1
-        ; per line: every read compared with $E1 in the H byte and stored
-        ; unless equal, until H is below NOE1_THR (the next line has begun);
-        ; then NOE1_BURST reads stored without compare, which end before H
-        ; reaches $E1, and a delay of 8 + 2 * (line mod 32) cycles, so the
-        ; phase of the compared reads changes from line to line
+        ifd     RUN_ODDEND
+        ; per line: every read stored, except a read with odd H of at least
+        ; ODDEND_MIN, until H is below ODDEND_THR (the next line has begun);
+        ; then ODDEND_BURST reads stored without compare, which end before
+        ; H reaches ODDEND_MIN, and a delay of 8 + 2 * (line mod 32) cycles,
+        ; so the phase of the compared reads changes from line to line
         lea     VPOSR(a0),a5
-        moveq   #$E1,d2
-        moveq   #NOE1_THR,d3
+        move.l  #ODDEND_MIN,d2
+        moveq   #ODDEND_THR,d3
         moveq   #31,d5
         moveq   #0,d6
-        move.w  #NOE1_LINES-1,d7
+        move.w  #ODDEND_LINES-1,d7
 .e1line: move.l (a5),d1
-        cmp.b   d2,d1
-        beq.s   .e1line
+        btst    #0,d1                   ; even H: store
+        beq.s   .e1store
+        cmp.b   d2,d1                   ; odd H from ODDEND_MIN up: drop
+        bcc.s   .e1line
+.e1store:
         move.l  d1,(a6)+
         cmp.b   d3,d1
         bcc.s   .e1line
-        rept    NOE1_BURST
+        rept    ODDEND_BURST
         move.l  (a5),(a6)+
         endr
         addq.w  #1,d6

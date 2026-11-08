@@ -2,22 +2,23 @@
 
 TEST_CPP := test_ch2_copper_beam.cpp
 PROGS    := prog_a prog_a_anchor prog_a_dup prog_a_earlycop prog_a_few \
-            prog_a_longpad prog_a_noe0 prog_a_nocop prog_a_nodone prog_a_nofix \
-            prog_a_noe1_ntsc prog_a_ntsc prog_a_p2waited prog_a_p7early \
-            prog_a_slow prog_a_tailshift prog_a_tailshift_ntsc prog_b prog_b_b254 \
+            prog_a_longpad prog_a_e4stuck prog_a_nocop prog_a_nodone prog_a_nofix \
+            prog_a_oddend_ntsc prog_a_ntsc prog_a_p2late prog_a_p7early \
+            prog_a_slow prog_a_tailshift prog_a_tailshift_ntsc prog_a_vtotal prog_b prog_b_b254 \
             prog_b_bchain prog_b_be4 prog_b_bend prog_b_bfeoff prog_b_blate prog_b_bwaited \
             prog_b_ntsc prog_c prog_c_clate prog_c_cnext prog_c_cr1line prog_c_cshift \
             prog_c_cshiftend prog_c_ntsc prog_ddrop prog_dflathi prog_dflatlo prog_dhi \
             prog_dhi_ntsc prog_dlate prog_dlo prog_dlo_ntsc prog_dshift prog_dsweep \
             prog_dsweep_ntsc prog_e prog_e_ntsc prog_ebrdblnk prog_eblackgap prog_enobpl \
-            prog_ewidefetch prog_ewidefetch_ntsc prog_ewidewin
+            prog_ewidefetch prog_ewidefetch_ntsc prog_ewidewin prog_ewblackgap \
+            prog_dnocop prog_dfew prog_dlofew prog_dhifew
 
 include ../harness/nanomig.mk
 
 # Implementation-copy runs: the same package against a private copy of the
 # NanoMig chip-set RTL, made by applying a patch file of this package to a
 # copy of the pinned submodule's files. The submodule is never modified; each
-# copy is made under its own directory (obj_dir_op/, obj_dir_rn/, obj_dir_lc/, obj_dir_cs/), and each
+# copy is made under its own directory (obj_dir_op/, obj_dir_rn/, obj_dir_lc/, obj_dir_cs/, obj_dir_hy/), and each
 # core builds in its own object directory (obj_dir_<copy>_<core>/) and writes
 # its own output file (out_<copy>_<core>.txt), so obj_dir_<core>/ and
 # out_<core>.txt stay those of the unmodified build, which `make test` uses.
@@ -40,6 +41,12 @@ include ../harness/nanomig.mk
 #       record of P6-LARGEST (SPECIFICATION.md 8.6).
 #         NMH_ONLY=B make cs-test-fx68k
 #         NMH_ONLY=B make cs-test-tg68k
+#   hy: ntsc_hybrid.patch -- every NTSC line ends at count $E3, and the count
+#       restarts at 1 after a long line and at 0 after a short one, so a line
+#       has 228 or 227 counts and $E3 is read on the short lines too. The
+#       record of P3-NTSC-LONGONLY (SPECIFICATION.md 8.6).
+#         NMH_ONLY=A make hy-test-fx68k
+#         NMH_ONLY=A make hy-test-tg68k
 # The directory of a private copy (obj_dir_<copy>/) is shared by its two
 # cores and is removed and made again by <copy>-rtl: build the two cores of a
 # copy one after the other (<copy>-test does), never in two shells at once, or
@@ -52,8 +59,12 @@ LC_DIR   := $(PKG_DIR)/obj_dir_lc/minimig-aga
 LC_FILES := $(patsubst $(MINIMIG_DIR)/%,$(LC_DIR)/%,$(MINIMIG_FILES))
 CS_DIR   := $(PKG_DIR)/obj_dir_cs/minimig-aga
 CS_FILES := $(patsubst $(MINIMIG_DIR)/%,$(CS_DIR)/%,$(MINIMIG_FILES))
+HY_DIR   := $(PKG_DIR)/obj_dir_hy/minimig-aga
+HY_FILES := $(patsubst $(MINIMIG_DIR)/%,$(HY_DIR)/%,$(MINIMIG_FILES))
 
-.PHONY: op-rtl op-test op-test-fx68k op-test-tg68k rn-rtl rn-test rn-test-fx68k rn-test-tg68k \n        lc-rtl lc-test lc-test-fx68k lc-test-tg68k cs-rtl cs-test cs-test-fx68k cs-test-tg68k
+.PHONY: op-rtl op-test op-test-fx68k op-test-tg68k rn-rtl rn-test rn-test-fx68k rn-test-tg68k \
+        lc-rtl lc-test lc-test-fx68k lc-test-tg68k cs-rtl cs-test cs-test-fx68k cs-test-tg68k \
+        hy-rtl hy-test hy-test-fx68k hy-test-tg68k
 op-rtl:
 	rm -rf obj_dir_op
 	mkdir -p obj_dir_op
@@ -161,3 +172,30 @@ cs-test-tg68k: cs-rtl $(BINS)
 	( cd obj_dir_cs_tg68k && ./Vnanomig $(PKG_DIR) ) > out_cs_tg68k.txt; rc=$$?; cat out_cs_tg68k.txt; exit $$rc
 
 cs-test: cs-test-fx68k cs-test-tg68k
+
+hy-rtl:
+	rm -rf obj_dir_hy
+	mkdir -p obj_dir_hy
+	cp -r $(MINIMIG_DIR) obj_dir_hy/minimig-aga
+	cd obj_dir_hy/minimig-aga && patch -p1 < $(PKG_DIR)/ntsc_hybrid.patch
+
+hy-test-fx68k: hy-rtl $(BINS)
+	rm -rf obj_dir_hy_fx68k out_hy_fx68k.txt
+	verilator $(COMMON_VFLAGS) -Wno-BLKANDNBLK --no-assert \
+		--Mdir obj_dir_hy_fx68k -cc --exe --build -j 0 \
+		$(HY_FILES) $(FX68K_FILES) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=fx68k"
+	cp $(FX68K_DIR)/microrom.mem $(FX68K_DIR)/nanorom.mem obj_dir_hy_fx68k/
+	( cd obj_dir_hy_fx68k && ./Vnanomig $(PKG_DIR) ) > out_hy_fx68k.txt; rc=$$?; cat out_hy_fx68k.txt; exit $$rc
+
+hy-test-tg68k: hy-rtl $(BINS)
+	rm -rf obj_dir_hy_tg68k out_hy_tg68k.txt
+	verilator $(COMMON_VFLAGS) \
+		-DENABLE_TG68K -DENABLE_AGA -DCPU_SLOW14 -DENABLE_CACHE -DCHIPRAM_CACHE -DNO_WS2812 -DDENISE_EBR \
+		-I$(NANOMIG)/sim \
+		--Mdir obj_dir_hy_tg68k -cc --exe --build -j 0 \
+		$(call tg68k_files,$(HY_FILES)) $(TG68K_FILE) $(TEST_CPP) \
+		-CFLAGS "$(COMMON_CFLAGS) -DNANOMIG_CORE_NAME=tg68k"
+	( cd obj_dir_hy_tg68k && ./Vnanomig $(PKG_DIR) ) > out_hy_tg68k.txt; rc=$$?; cat out_hy_tg68k.txt; exit $$rc
+
+hy-test: hy-test-fx68k hy-test-tg68k

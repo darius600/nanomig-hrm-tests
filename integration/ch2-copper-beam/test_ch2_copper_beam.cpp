@@ -9,7 +9,7 @@
 // runs only the section that owns the mutated line, with the unchanged
 // comparators of that section.
 //
-// The mutation records: one line per label, the value of NMH_MUTATE that selects the variant, and what it changes. SPECIFICATION.md 8.6 gives the verdicts of both cores. A record of kind implementation names a private copy of the chip set: the Makefile builds the ones that carry a patch file of this package (op-test-<core>, rn-test-<core>, lc-test-<core>, cs-test-<core>) in their own object directories, and the pinned submodule stays unchanged.
+// The mutation records: one line per label, the value of NMH_MUTATE that selects the variant, and what it changes. SPECIFICATION.md 8.6 gives the verdicts of both cores. A record of kind implementation names a private copy of the chip set: the Makefile builds the ones that carry a patch file of this package (op-test-<core>, rn-test-<core>, lc-test-<core>, cs-test-<core>, hy-test-<core>) in their own object directories, and the pinned submodule stays unchanged.
 //
 // MUTATION FIX-LOAD stimulus red NMH_MUTATE=A-NOBIN-PAL: the run names a program of which no binary exists, so the harness loads no program and releases no CPU; also moves (both cores): FIX-CONST, PRE-DONE, PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-T2, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION FIX-CONST stimulus red NMH_MUTATE=A-NOFIX-PAL: the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED; also moves (both cores): PRE-DONE, PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-T2, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
@@ -20,21 +20,26 @@
 // MUTATION PRE-T1E stimulus red NMH_MUTATE=A-SLOW-PAL: the flat run is cut into 50 blocks of 1000 samples with a loop of 20 dbra iterations between two blocks (more than 16 slots, less than a line), so events fall between samples more than 16 slots apart; also moves (both cores): PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-T2 stimulus red NMH_MUTATE=A-DUP-PAL: after every 5000 samples one read of $DFF004 is stored twice, so two consecutive samples have the same V and H and H does not increase; also moves (both cores): PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written between two parts of the flat run, after the third field boundary the trace sees, so the later fields have no restart; also moves (both cores): P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-R1 stimulus red NMH_MUTATE=D-DNOCOP-PAL: in D-sweep DMACON = $0080 (COPEN cleared) is written after the second field boundary and the program goes on to the sixth, so 3 of 4 output fields have no restart: the video PRE-R1 of D-sweep FAIL, PRE-FIELDS PASS; also moves (both cores): PRE-P5-EDGES, PRE-P5-WAITED, P5-LO, P5-HI PASS to NOT GRADED
 // MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-FEW-PAL: the trace buffer holds 35000 samples, fewer than 6 complete fields; also moves (both cores): P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-P3SAMPLES none impossible no isolated stimulus at this boundary: with PRE-T2 every line of a complete field holds a trusted sample, so fewer than 114 trusted samples needs a field of fewer than 114 lines; VTOTAL with VARBEAMEN (p.285, p.305) makes such fields, but a field of fewer than 114 lines has no line 256, so one of PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-R1, PRE-P7L256 fails with it; measured with VTOTAL = 4 (6-line fields, at most 106 trusted samples) on both cores: PRE-P3SAMPLES, PRE-T1E, PRE-P2WAITED, PRE-E0 FAIL
+// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=D-DFEW-PAL: D-sweep waits for 4 field boundaries in place of 6, so 2 complete output fields are traced: the video PRE-FIELDS of D-sweep FAIL, PRE-R1 PASS; also moves (both cores): PRE-P5-EDGES, PRE-P5-WAITED, P5-LO, P5-HI PASS to NOT GRADED
+// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=D-DLOFEW-PAL: the same in the D-lo capture (D-hi and D-sweep as in the normal run): the video PRE-FIELDS of D-lo FAIL (2 complete output fields) while its calibration stays valid (0 window lines without 160 COLOR01 runs of one common length); also moves (both cores): PRE-P5-CALLO PASS to NOT GRADED, and P5-LO PASS to NOT GRADED through the capture gate of D-lo, P5-HI stays PASS
+// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=D-DHIFEW-PAL: the same in the D-hi capture: the video PRE-FIELDS of D-hi FAIL (2 complete output fields) while its calibration stays valid (0 window lines without 320 COLOR01 runs of one common length); also moves (both cores): PRE-P5-CALHI PASS to NOT GRADED, and P5-HI PASS to NOT GRADED through the capture gate of D-hi, P5-LO stays PASS
+// MUTATION PRE-P3SAMPLES stimulus red NMH_MUTATE=A-VTOTAL-PAL: VTOTAL = 4 and BEAMCON0 = $00A0 (VARBEAMEN, PAL; p.285, p.305) are written before the Copper starts, so a field has 6 lines and the smallest field holds 106 trusted samples; with PRE-T2 every line of a complete field holds a trusted sample, so the precondition cannot fail alone, a field of fewer than 114 lines has no line 256: PRE-T1E (fx68k: 0 events hit a step that ended before them, 0 events identified; TG68K: 54 events hit such a step, 0 identified), PRE-R1, PRE-P2WAITED and PRE-E0 FAIL with it on both cores (110 fields on fx68k, 108 on TG68K); P3-PAL goes from PASS to NOT GRADED through PRE-P3SAMPLES alone; also moves (both cores): PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-PALCHIP: the NTSC program runs on a machine configured as PAL, so its chip identification names PAL while the line is graded as NTSC; also moves (both cores): P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; P1-ORIGIN, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
+// MUTATION PRE-STD stimulus red NMH_MUTATE=D-STD-NTSC-PALCHIP: the NTSC programs of D-lo, D-hi, D-sweep, E and E-widefetch run on a machine configured as PAL, so the chip identification stored at RESULTS is $20 (PAL) while the line is graded as NTSC; also moves (both cores): P5-LO, P5-HI, P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
 // MUTATION PRE-ANCHOR stimulus red NMH_MUTATE=A-ANCHOR-PAL: every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2WAITED-PAL: an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min; also moves (both cores): P2-PAL PASS to NOT GRADED
-// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOE0-PAL: MARK($A0E0) after WAIT($FF,$E0) is another padding move, so m_E0 does not exist while the WAIT and the padding stay; also moves (both cores): P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2LATE-PAL: WAIT($80,$50) is inserted right after MARK($7F), before the measured WAIT($80,$40), which is fetched after its target has passed (p.22 "until the video beam counters are equal to (or greater than) the coordinates"); 1841 of 1841 WAITs are measured and PRE-ANCHOR holds; also moves (both cores): P2-PAL PASS to NOT GRADED
+// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-E4STUCK-PAL: WAIT($FF,$E4) in place of WAIT($FF,$E0), the marker kept: the WAIT never ends in line $FF (p.23 "This event will never occur, so the Copper stops until the next vertical blanking interval begins"; "The horizontal position has a maximum value of $E2"), so m_E0 is not fetched before line 0 of the next field (0 of 7 fields); PRE-P7L256 and PRE-P2WAITED (1456 of 1841 measured) FAIL in the same run on both cores; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-P7EARLY-PAL: WAIT($00,$60) and its marker precede WAIT($FF,$E0), right after m_$FF, so its second word is fetched on line 255 while m_E0 and the other tail WAITs are as in the normal run; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION P1-ORIGIN implementation red private chip-set copy, made in the package directory from the tracked patch restart_nonzero.patch (NMH_ONLY=A make rn-test-fx68k, rn-test-tg68k), whose horizontal count starts each line at 1 in place of 0 and ends it at $E3 in place of $E2 (227 counts, as before), so H = 0 is never read while the program, the sampler and every precondition are those of the normal run: the normal run A through the unchanged comparator prints FAIL (PAL and NTSC) where the repository's RTL prints PASS; also moves (both cores): P3-PAL PASS to FAIL (p.23: the count has values "$0 to $E2"; $00 is not read and $E3 is)
 // MUTATION P2-PAL implementation red private chip-set copy, made in the package directory from the tracked patch odd_pal.patch (NMH_ONLY=A make op-test-fx68k, op-test-tg68k), whose odd PAL lines end one count later (228 counts, 0 ... $E3; p.23: "In PAL, they are all 227 long"): the normal PAL run A measures L(v) = 228 on every other line and the unchanged comparator prints FAIL where the repository's RTL prints PASS, every precondition holding; also moves (both cores): P3-PAL PASS to FAIL
 // MUTATION P2-NTSC implementation green private chip-set copy, made in the package directory from the tracked patch ntsc_long.patch (NMH_ONLY=A make lc-test-fx68k, lc-test-tg68k), whose NTSC lines alternate between 228 and 227 counts; the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): PRE-P3COVER, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
-// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-NOE1-NTSC: on each of 3000 lines the program compares every read of $DFF004 with $E1 and stores it unless equal until H is below $20, then stores 15 reads without compare, which end before $E1, so no sample whose H is $E1 is stored; PRE-T1E holds on both cores (0 events hit a step longer than 16 slots); also moves (both cores): P3-NTSC-SET FAIL to NOT GRADED
+// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-ODDEND-NTSC: on each of 3000 lines the program stores every read of $DFF004 except a read whose H is odd and at least $D1, until H is below $30, then stores 14 reads without compare, which end before $D1, so no sample with an odd H from $D1 up is stored and $E1 is not read; PRE-T1E holds on both cores; the threshold was chosen by measurement: with the burst starting below $20 and 15 reads, $D1, $D9 and $E1 fail PRE-T1E on fx68k (2, 4 and 2 events), with the burst starting below $30 and 14 reads $D1 holds on both cores; also moves (both cores): P3-NTSC-SET FAIL to NOT GRADED; PRE-P3COVER stays FAIL (0 lines of 228 counts)
 // MUTATION PRE-P3COVER implementation green the private chip-set copy of ntsc_long.patch (NMH_ONLY=A make lc-test-fx68k, lc-test-tg68k), whose NTSC lines have 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
 // MUTATION P3-PAL implementation red private chip-set copy, made in the package directory from the tracked patch odd_pal.patch (NMH_ONLY=A make op-test-fx68k, op-test-tg68k), whose odd PAL lines end one count later (228 counts, 0 ... $E3; p.23: "In PAL, they are all 227 long", $E3 belongs to NTSC long lines): the normal PAL run A reads $E3 and the unchanged comparator prints FAIL where the repository's RTL prints PASS, every precondition holding; also moves (both cores): P2-PAL PASS to FAIL
 // MUTATION P3-NTSC-SET implementation green the private chip-set copy of ntsc_long.patch (NMH_ONLY=A make lc-test-fx68k, lc-test-tg68k), whose NTSC lines have 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, PRE-P3COVER FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
-// MUTATION P3-NTSC-LONGONLY none impossible unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private chip-set copy of ntsc_long.patch (NMH_ONLY=A make lc-test-fx68k, lc-test-tg68k), whose NTSC lines have 228 and 227 counts (normal NTSC run A)
+// MUTATION P3-NTSC-LONGONLY implementation red private chip-set copy, made in the package directory from the tracked patch ntsc_hybrid.patch (NMH_ONLY=A make hy-test-fx68k, hy-test-tg68k), whose NTSC lines all end at count $E3 and whose count restarts at 1 after a long line and at 0 after a short one (lines of 228 and 227 counts), so $E3 is read on lines with L(v) = 227: the normal NTSC run A through the unchanged comparator prints FAIL where the repository's RTL does not grade the line (PRE-P3COVER fails); P2-NTSC, PRE-P3ODDEND, PRE-P3COVER, P3-NTSC-SET and P1-ORIGIN NTSC PASS there. On the private copy of ntsc_long.patch the line is PASS
 // MUTATION P7 stimulus red NMH_MUTATE=A-TAILSHIFT-PAL: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n
 // MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied; also moves (both cores): P2-PAL PASS to NOT GRADED
 // MUTATION P8-LINES stimulus red NMH_MUTATE=A-TAILSHIFT-NTSC: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n; also moves (both cores): P7 PASS to FAIL
@@ -48,8 +53,8 @@
 // MUTATION PRE-B-L255 stimulus red NMH_MUTATE=B-BLATE-PAL: in L_1 a WAIT($FF,$E0) and 16 padding moves precede WAIT($FF,h_1), so its second word is fetched on line 256; also moves (both cores): P6-LARGEST FAIL to NOT GRADED; P6-LINE255, P6-NEVER, P6-CONTROL PASS to NOT GRADED
 // MUTATION PRE-B-WAITED stimulus red NMH_MUTATE=B-BWAITED-PAL: in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target; also moves (both cores): P6-LARGEST FAIL to NOT GRADED; P6-LINE255, P6-NEVER, P6-CONTROL PASS to NOT GRADED
 // MUTATION P6-LINE255 stimulus red NMH_MUTATE=B-B254-PAL: in L_2 the first WAIT is for line $FE and a WAIT($FF,$30) follows it, so a_2 lies on line 254 while the preconditions still hold
-// MUTATION P6-CONTROL stimulus red NMH_MUTATE=B-BFEOFF-PAL: L_FE waits for ($FF,$FE), so $B300 is not fetched
-// MUTATION P6-LARGEST implementation green private chip-set copy, made in the package directory from the tracked patch wait_e2.patch (NMH_ONLY=B make cs-test-fx68k, cs-test-tg68k), whose WAIT for ($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here
+// MUTATION P6-CONTROL stimulus red NMH_MUTATE=B-BFEOFF-PAL: L_FE waits for ($FF,$FE) in place of ($FE,$FE); the printed line shows time($B301)-time($B300) = 0 slots, which is also the value that stays when either of the two fetches is missing, and does not say which
+// MUTATION P6-LARGEST implementation green private chip-set copy, made in the package directory from the tracked patch wait_e2.patch (NMH_ONLY=B make cs-test-fx68k, cs-test-tg68k), whose WAIT for ($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here. On the private copy of wait_e2.patch, where the normal run prints PASS, NMH_MUTATE=B-BE4-PAL run with the binary of make cs-test-<core> turns the line FAIL on both cores
 // MUTATION P6-NEVER stimulus red NMH_MUTATE=B-BEND-PAL: L_14 waits for ($FE,$FE) in place of ($FF,$FE), which ends when line $FF begins, so x_14 is fetched before line 0 of the next field while every precondition holds
 // MUTATION PRE-P5-CALLO stimulus red NMH_MUTATE=D-DFLATLO-PAL: every plane word of D-lo is $FFFF, so there are no alternating runs; also moves (both cores): P5-LO, P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
 // MUTATION PRE-P5-CALHI stimulus red NMH_MUTATE=D-DFLATHI-PAL: every plane word of D-hi is $FFFF, so there are no alternating runs
@@ -59,10 +64,11 @@
 // MUTATION P5-HI stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24; also moves (both cores): P5-LO PASS to FAIL
 // MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0, P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
 // MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EBLACKGAP-PAL: COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0; also moves (both cores): P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
+// MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EWBLACKGAP-PAL: the same as E-EBLACKGAP-PAL in the E-widefetch capture (the E capture is the normal one): COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line of E-widefetch has a second run of 0 (2048 of 2048 lines); also moves (both cores): P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
 // MUTATION P9-A-E stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
 // MUTATION P9-A-EW stimulus red NMH_MUTATE=E-EWWIDEWIN-PAL: the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
 // MUTATION P9-A stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E; also moves (both cores): P9-A-E PASS to FAIL
-// MUTATION P9-B stimulus red NMH_MUTATE=E-EBRDBLNK-PAL: BPLCON0 bit 0 and BPLCON3 bit 5 are set with COLOR00 = $00F, so the unused portion shows pixels of value 0 in place of COLOR00 on every window line (2048 of 2048 lines differ); p.307 lists BRDRBLNK as "Border blank" and ENBPLCN3 as "Enable new BLPCON3 register." and no page says what a blanked border displays: the package expects pixels of value 0 there; also moves (both cores): P9-A PASS to FAIL
+// MUTATION P9-B stimulus red NMH_MUTATE=E-EBRDBLNK-PAL: BPLCON0 bit 0 and BPLCON3 bit 5 are set with COLOR00 = $00F, so the unused portion shows pixels of value 0 in place of COLOR00 on every window line (2048 of 2048 lines differ); p.307 lists BRDRBLNK as "Border blank" and ENBPLCN3 as "Enable new BLPCON3 register."; the AA specification says what a blanked border shows (p.18 'BRDRBLNK= "border area" is blanked instead of color(0).'; p.04 "allows the background to be BLACK and not the contents of COLOR00"): the package expects pixels of value 0 there; also moves (both cores): P9-A PASS to FAIL
 
 #include <algorithm>
 #include <cctype>
@@ -915,12 +921,21 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                 if (r.line != 256 + n) ++p7_bad;
             }
         }
-        // m_E0 reached, and the line of the second word of WAIT(0,$60)
+        // m_E0 reached before line 0 of the next field, and the line of the second word of WAIT(0,$60)
         size_t e0_reached = 0, w256_ok = 0, w256_checked = 0;
         auto e0 = L.m(0xA0E0);
         auto t0m = L.m(0x100);
         for (auto& w : a.rwins) {
-            if (e0 && fetch_slot(a, *e0, w)) ++e0_reached;
+            if (e0) {
+                // p.23: a WAIT beyond $E2 on line $FF "will never occur, so the Copper stops until the next vertical
+                // blanking interval begins": m_E0 counts as reached only when it is fetched before the earliest
+                // start of line 0 of the next field, counted from the fetch of the second word of WAIT($FF,$E0)
+                auto fw = fetch_in(a.ridx, *e0 - 1, w.lo, w.hi);
+                auto fm = fetch_in(a.ridx, *e0, w.lo, w.hi);
+                std::optional<Line0> l0;
+                if (fw) l0 = line0_after(a, *fw, tag == PAL ? 0xE2 : 0xE3);
+                if (fm && l0 && slot_of(a.sref, *fm) < l0->early) ++e0_reached;
+            }
             if (t0m) {
                 auto fs = fetch_slot(a, *t0m - 1, w);
                 if (fs) {
@@ -958,7 +973,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                                      num((long long)p2waited.checked) + "/" + num((long long)p2waited.expected) + " measured");
         else not_graded("PRE-P2WAITED", g.why_not_fetch());
         const bool e0_ok = e0 && !a.rwins.empty() && e0_reached == a.rwins.size();
-        if (g.fetch()) checks.expect(e0_ok, "PRE-E0 " + tg + " run A: m_E0 (after WAIT($FF,$E0)) is fetched in every field (" +
+        if (g.fetch()) checks.expect(e0_ok, "PRE-E0 " + tg + " run A: m_E0 (after WAIT($FF,$E0)) is fetched before the earliest start of line 0 of the next field, in every field (" +
                                      num((long long)e0_reached) + "/" + num((long long)a.rwins.size()) + ")");
         else not_graded("PRE-E0", g.why_not_fetch());
         const bool p7pre_ok = w256_checked > 0 && w256_ok == w256_checked && w256_checked == a.rwins.size();
@@ -1687,15 +1702,15 @@ EGrade grade_e(const VideoSet& vs, int c1, int c0, int plo) {
     return e;
 }
 
-struct DPlan { bool lo = true, hi = true, sweep = true, e = true, ew = true;
+struct DPlan { bool lo = true, hi = true, sweep = true, e = true, ew = true, palchip = false;
     std::string b_lo = "prog_dlo", b_hi = "prog_dhi", b_sw = "prog_dsweep", b_e = "prog_e", b_ew = "prog_ewidefetch"; };
 
 struct DEData { Analysis a; VideoSet vs; };
 
-DEData load_de(const std::string& dir, const std::string& bin, Tag tag, bool sweep, uint16_t w0, uint16_t w1) {
+DEData load_de(const std::string& dir, const std::string& bin, Tag tag, bool sweep, uint16_t w0, uint16_t w1, bool palchip) {
     DEData d;
     const std::set<uint32_t> bases = {kListBaseW};
-    d.a = analyze(run_capture(dir + "/" + bin + (tag == NTSC ? "_ntsc" : "") + ".bin", cfg_ecs(tag), kRunBudgetDE, true), bases, w0, w1);
+    d.a = analyze(run_capture(dir + "/" + bin + (tag == NTSC ? "_ntsc" : "") + ".bin", cfg_ecs(palchip ? PAL : tag), kRunBudgetDE, true), bases, w0, w1);
     (void)sweep;
     d.vs = make_video_set(d.a);
     return d;
@@ -1706,25 +1721,31 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
     Tag only = PAL; bool one_tag = false;
     if (!normal) {
         plan.lo = plan.hi = plan.sweep = plan.e = plan.ew = false;
-        std::string rest = mv.substr(2);                  // "<VARIANT>-<PAL|NTSC>"
+        std::string rest = mv.substr(2);                  // "<VARIANT>-<PAL|NTSC>" or STD-NTSC-PALCHIP
         size_t dash = rest.rfind('-');
         std::string var = rest.substr(0, dash), tg = rest.substr(dash + 1);
         for (auto& ch : var) ch = (char)std::tolower((unsigned char)ch);
         only = tg == "NTSC" ? NTSC : PAL; one_tag = true;
-        if (var == "dshift" || var == "ddrop" || var == "dlate") { plan.lo = plan.hi = plan.sweep = true; plan.b_sw = "prog_" + var; }
+        if (mv == "D-STD-NTSC-PALCHIP") {                 // the NTSC programs of every capture on a machine configured PAL
+            plan.lo = plan.hi = plan.sweep = plan.e = plan.ew = true; plan.palchip = true; only = NTSC; var = "std";
+        }
+        else if (var == "dshift" || var == "ddrop" || var == "dlate" || var == "dnocop" || var == "dfew") { plan.lo = plan.hi = plan.sweep = true; plan.b_sw = "prog_" + var; }
+        else if (var == "dlofew") { plan.lo = plan.hi = plan.sweep = true; plan.b_lo = "prog_dlofew"; }
+        else if (var == "dhifew") { plan.lo = plan.hi = plan.sweep = true; plan.b_hi = "prog_dhifew"; }
         else if (var == "dflatlo") { plan.lo = plan.hi = plan.sweep = plan.e = plan.ew = true; plan.b_lo = "prog_dflatlo"; }
         else if (var == "dflathi") { plan.hi = true; plan.b_hi = "prog_dflathi"; }
         else if (var == "ewidewin" || var == "ebrdblnk" || var == "eblackgap" || var == "enobpl") { plan.lo = plan.e = plan.ew = true; plan.b_e = "prog_" + var; }
         else if (var == "ewwidewin") { plan.lo = plan.e = plan.ew = true; plan.b_ew = "prog_ewidewin"; }
+        else if (var == "ewblackgap") { plan.lo = plan.e = plan.ew = true; plan.b_ew = "prog_ewblackgap"; }
         else { std::printf("unknown variant %s\n", var.c_str()); std::exit(2); }
     }
     for (int ti = 0; ti < 2; ++ti) {
         if (one_tag && (Tag)ti != only) continue;
         const Tag tag = (Tag)ti;
         const std::string tg = tagname(tag);
-        Calib clo, chi; bool have_lo = false, have_hi = false, lo_cap = false;
+        Calib clo, chi; bool have_lo = false, have_hi = false, lo_cap = false, hi_cap = false;
         if (plan.lo) {
-            DEData d = load_de(dir, plan.b_lo, tag, false, 0x00E0, 0x0002);
+            DEData d = load_de(dir, plan.b_lo, tag, false, 0x00E0, 0x0002, plan.palchip);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-lo");
             clo = calibrate(d.vs, kWhite, kBlue, 160); have_lo = true; lo_cap = g.cap();
             checks.note("P5 " + tg + " D-lo: " + num((long long)clo.lines) + " window lines, " + num((long long)clo.bad) + " without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {" + setstr(clo.lens) + "}");
@@ -1732,15 +1753,15 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
             else checks.record("PRE-P5-CALLO " + tg + " D-lo: NOT GRADED: precondition failed:" + g.why_not_cap());
         }
         if (plan.hi) {
-            DEData d = load_de(dir, plan.b_hi, tag, false, 0x00E0, 0x0002);
+            DEData d = load_de(dir, plan.b_hi, tag, false, 0x00E0, 0x0002, plan.palchip);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-hi");
-            chi = calibrate(d.vs, kWhite, kBlue, 320); have_hi = true;
+            chi = calibrate(d.vs, kWhite, kBlue, 320); have_hi = true; hi_cap = g.cap();
             checks.note("P5 " + tg + " D-hi: " + num((long long)chi.lines) + " window lines, " + num((long long)chi.bad) + " without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {" + setstr(chi.lens) + "}");
             if (g.cap()) checks.expect(chi.valid, "PRE-P5-CALHI " + tg + " D-hi: every window line shows 320 COLOR01 runs, and all COLOR01 runs and the 319 COLOR00 runs between them have one common length P_hi (" + num(chi.plen) + ")");
             else checks.record("PRE-P5-CALHI " + tg + " D-hi: NOT GRADED: precondition failed:" + g.why_not_cap());
         }
         if (plan.sweep) {
-            DEData d = load_de(dir, plan.b_sw, tag, true, 0x0001, 0xFFFE);
+            DEData d = load_de(dir, plan.b_sw, tag, true, 0x0001, 0xFFFE, plan.palchip);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-sweep");
             std::vector<Instr> list = decode_list(d.a.mem, kListBaseW);
             auto waited = waited_all(d.a, list, kListBaseW, [](const Instr&) { return true; });
@@ -1760,20 +1781,20 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
                 std::set<int> wset;
                 for (auto& kv : sw.widths) for (int wv : kv.second) {
                     ++total; wset.insert(wv);
-                    if (have_lo && clo.valid && wv != 4 * sweep_n(kv.first) * clo.plen) ++lo_bad;
-                    if (have_hi && chi.valid && wv != 8 * sweep_n(kv.first) * chi.plen) ++hi_bad;
+                    if (have_lo && lo_cap && clo.valid && wv != 4 * sweep_n(kv.first) * clo.plen) ++lo_bad;
+                    if (have_hi && hi_cap && chi.valid && wv != 8 * sweep_n(kv.first) * chi.plen) ++hi_bad;
                 }
                 checks.note("P5 " + tg + " D-sweep: " + num((long long)total) + " A_u runs measured; P_lo=" + num(have_lo ? clo.plen : -1) + ", P_hi=" + num(have_hi ? chi.plen : -1));
-                if (have_lo && clo.valid) {
+                if (have_lo && lo_cap && clo.valid) {
                     checks.expect(lo_bad == 0, "P5-LO " + tg + " COP2-horizontal-beam-position.c4 ch2-horizontal-beam-position.c4 [p.23]: w_u = 4 * n_u * P_lo for every sweep line u, every output line, every complete field (" + num((long long)lo_bad) + " of " + num((long long)total) + " differ)");
-                } else checks.record("P5-LO " + tg + " NOT GRADED COP2-horizontal-beam-position.c4 ch2-horizontal-beam-position.c4: P_lo is not valid (PRE-P5-CALLO)");
-                if (have_hi && chi.valid) {
+                } else checks.record("P5-LO " + tg + " NOT GRADED COP2-horizontal-beam-position.c4 ch2-horizontal-beam-position.c4: P_lo is not valid (PRE-P5-CALLO or a precondition of the D-lo capture)");
+                if (have_hi && hi_cap && chi.valid) {
                     checks.expect(hi_bad == 0, "P5-HI " + tg + " COP2-horizontal-beam-position.c5 ch2-horizontal-beam-position.c5 [p.23]: w_u = 8 * n_u * P_hi for every sweep line u, every output line, every complete field (" + num((long long)hi_bad) + " of " + num((long long)total) + " differ)");
-                } else checks.record("P5-HI " + tg + " NOT GRADED COP2-horizontal-beam-position.c5 ch2-horizontal-beam-position.c5: P_hi is not valid (PRE-P5-CALHI)");
+                } else checks.record("P5-HI " + tg + " NOT GRADED COP2-horizontal-beam-position.c5 ch2-horizontal-beam-position.c5: P_hi is not valid (PRE-P5-CALHI or a precondition of the D-hi capture)");
             }
         }
         if (plan.e) {
-            DEData d = load_de(dir, plan.b_e, tag, false, 0x00E0, 0x0002);
+            DEData d = load_de(dir, plan.b_e, tag, false, 0x00E0, 0x0002, plan.palchip);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "E");
             const int c0 = kBlue;
             const int plo = have_lo && clo.valid ? clo.plen : 0;
@@ -1791,7 +1812,7 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
             const std::string why = g.why() + std::string(plo_ok ? "" : " PRE-P5-CALLO") + std::string(lines_ok ? "" : " PRE-P9-LINES") + std::string(one0 ? "" : " PRE-P9-ONE0");
             EGrade ew; bool have_ew = false; bool pre_ew = false;
             if (plan.ew) {
-                DEData dw = load_de(dir, plan.b_ew, tag, false, 0x00E0, 0x0002);
+                DEData dw = load_de(dir, plan.b_ew, tag, false, 0x00E0, 0x0002, plan.palchip);
                 VGate gw = report_common_video(checks, dw.a, dw.vs, tag, "E-widefetch");
                 ew = grade_e(dw.vs, kYellow, kBlue, plo); have_ew = true;
                 const bool wl = ew.window_lines > 0 && ew.bad_one0 == 0 && ew.windows_per_frame_min >= 1;

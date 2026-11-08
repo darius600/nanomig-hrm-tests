@@ -18,6 +18,10 @@
 ;   RUN_DSHIFT     -- D-shift: line $50, second WAIT at $36+2*24+2.
 ;   RUN_DDROP      -- D-drop: line $50, second MOVE($180,B) left out.
 ;   RUN_DLATE      -- D-late: line $50, second WAIT at $3A.
+;   RUN_DNOCOP     -- D-nocop: D-sweep, DMACON = $0080 (COPEN cleared) written
+;                     after the second field boundary; the polling goes on to
+;                     the sixth.
+;   RUN_DFEW       -- D-few: the program waits for 4 field boundaries, not 6.
 ;
 ; The list is written by the CPU one word per store (so every word appears on
 ; the Chip-memory port). The program then stores the first VPOSR word at
@@ -27,7 +31,11 @@
         include "nanomig.i"
         include "copbeam.i"
 
+        ifd     RUN_DFEW
+FIELDS_TO_WAIT  equ     4
+        else
 FIELDS_TO_WAIT  equ     6
+        endif
 
 PLANE_BASE      equ     $020000
 PLANE_WORDS     equ     10480
@@ -278,6 +286,12 @@ start:
         addq.w  #1,d4
 .nofall:
         move.w  d1,d5
+        ifd     RUN_DNOCOP
+        cmpi.w  #2,d4
+        bne.s   .nocopx
+        move.w  #$0080,DMACON(a0)       ; COPEN cleared after the second field boundary
+.nocopx:
+        endif
         cmpi.w  #FIELDS_TO_WAIT,d4
         bcs.s   .poll
 
