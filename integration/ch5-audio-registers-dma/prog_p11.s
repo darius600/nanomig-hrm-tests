@@ -1,7 +1,7 @@
 ; prog_p11.s -- P11: with the danger bit set, the Copper writes the
 ; blitter registers at $054, $056 and $058 (SPECIFICATION.md P11). The
 ; Copper list at LST is preloaded by the C++ harness (per-run: the real
-; list, or one of the two contrasts) -- the same mechanism load_program()
+; list, or one of the three contrasts) -- the same mechanism load_program()
 ; itself uses; no instruction here writes it. OCS/ECS is a harness Config
 ; choice, not a symbol here.
 ;

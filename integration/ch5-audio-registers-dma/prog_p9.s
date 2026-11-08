@@ -1,5 +1,5 @@
 ; prog_p9.s -- P9: after a blit, BZERO (bit 13) reads 1 exactly when the
-; blit's logic output was zero throughout (SPECIFICATION.md P9). Five
+; blit's logic output was zero throughout (SPECIFICATION.md P9). Nine
 ; blits in turn, each ending with a dummy read, a poll until BBUSY (bit 14)
 ; clears, the store into G of the read that showed bit 14 = 0, and one more
 ; read stored as Z_k in R.
