@@ -330,7 +330,7 @@ If one fails, the result is "not established", never "pass".
   V read and one store later) and M2 between the two V reads of the R record, so
   t(M2) − t(M1) is the time from the write to the graded read less that short
   tail of the W step. It equals the page's interval only for a program whose
-  POTGO write is the last one before M1 (K7).
+  POTGO writes are all before M1 (K7).
 
   Arithmetic for the program as specified. PC1 puts the one POTGO write in line
   4 and the graded read in line 10, so the five whole lines 5 to 9 lie between
@@ -338,7 +338,7 @@ If one fails, the result is "not established", never "pass".
   227.5 "color clocks"", about 280 ns each. Five lines are about 315
   microseconds, above the 300 microseconds of p.240. No program that keeps
   PC1's line numbers and writes POTGO once can bring the interval under 300
-  microseconds; K7 is therefore a program with a second write.
+  microseconds; K7 is therefore a program with further writes.
 
 ### 6. Contrasting cases
 
@@ -372,19 +372,27 @@ If one fails, the result is "not established", never "pass".
   - A record only counts when Vr0=Vr1=10 (the grader's own fixed target, section
     3): moving the R step to line 5 means no record of any Fc ever counts, so
     PC1 ("every R step has at least one qualifying record") fails, not PC4.
-- **K7 (PC4).** Every W step repeats its POTGO write with the same value after
-  waiting for line 9, and stores its marker M1 after that second write. The
-  first write in line 4, its V reads (Vw0, Vw1) and every R step are unchanged.
-  - The last POTGO write before each graded read is now in line 9 and the graded
-    read is in line 10, so the real write-to-read interval is under two lines
-    (under 130 microseconds, with p.194's 63 microseconds a line), and so is
-    t(M2) − t(M1). PC4 must fail, and the result must be "not established".
+- **K7 (PC4).** After waiting for line 9, every W step writes POTGO twice more
+  and stores its marker M1 after the last write. The first of the two drives
+  every pot line to the other level: a line the step's own value makes an
+  output is driven to the opposite of its data bit, and a line the value leaves
+  an input is driven to 0 (OUTxx set for all four lines, DATxx = OUTxx and not
+  DATxx of the step's value, no START). The second writes the step's own value
+  again. The first write in line 4, its V reads (Vw0, Vw1) and every R step are
+  unchanged.
+  - Every pot line is commanded to change state in line 9, and the graded read
+    is in line 10, under two lines later (under 130 microseconds, with p.194's
+    63 microseconds a line). p.240's "it can take up to 300 microseconds for
+    the line to change state" then leaves the level at the read open, and
+    t(M2) − t(M1) is under 300 microseconds. PC4 must fail, and the result must
+    be "not established". A repeat of the step's own value alone would not do:
+    it commands no line to change state.
   - PC1 to PC3 hold. PC1 reads the V words of the first write and of the R
-    records; the second write and M1 enter none of them. The second write has
-    the value of the first, so the lines that are outputs stay driven as before
-    (PC2) and no frame before Fc writes START (PC3); Rpre is read before either
-    write, and the drive log is not touched.
-  - Why the contrast has a second write: with one POTGO write per W step, PC1's
+    records; the extra writes and M1 enter none of them. PC2 reads Phase P's R
+    records, and the step's own value is the last one written before them.
+    Rpre is read before any write of the step, the extra writes carry no START,
+    and the drive log is not touched (PC3).
+  - Why the contrast has further writes: with one POTGO write per W step, PC1's
     line numbers fix the interval at 315 microseconds or more (section 5, PC4),
     so no choice of the single write's time moves it under 300 microseconds
     without failing PC1.
@@ -1087,8 +1095,9 @@ POTGO part (all four configurations each; "the sixteen output lines" are
   13 / 15 / 13 records checked on fx68k and 33 / 29 / 33 / 29 on the default
   TG68K build, for PAL+ECS / NTSC+ECS / PAL+OCS / NTSC+OCS. Only the five Fc R
   steps lack a qualifying record, and the same 40 lines are `NOT GRADED`.
-- **K7** (`PC4`): 15 passed, 4 failed -- every W step repeats its POTGO write
-  in line 9 and stores M1 after it, `PC4` prints `FAIL` in each configuration,
+- **K7** (`PC4`): 15 passed, 4 failed -- every W step drives every pot line to
+  the other level in line 9, writes its own value again and stores M1 after it,
+  `PC4` prints `FAIL` in each configuration,
   `PC1`, `PC2` and `PC3` stay `PASS`, and the same 40 lines are `NOT GRADED`.
 - **OUTLOW** (`C1-Fc-OUT` through `C4-Fc-OUT`): 19 passed, 40 failed --
   `PC1` through `PC4` stay `PASS`; the sixteen output lines all print `FAIL`
