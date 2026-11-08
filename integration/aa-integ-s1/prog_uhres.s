@@ -5,7 +5,11 @@
         include "regs.i"
 BPLHPTH equ     $1EC
 BPLHPTL equ     $1EE
+        ifd     SLOW
+        moveq   #19,d3                  ; contrast P15-DONE: DONE only after the twentieth VERTB
+        else
         moveq   #4,d3
+        endc
 .again: move.w  #$0020,INTREQ(a0)
 .poll:  move.w  INTREQR(a0),d0
         btst    #5,d0

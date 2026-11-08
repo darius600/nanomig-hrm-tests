@@ -82,7 +82,7 @@ MEASURED: P6 (i): 0 of 248528 pixels differ between B1/T_id and B0/T_id
 
 (fx68k; TG68K prints the same six lines.) The package grades red's top four bits only; green and blue under BYPASS are not stated on the page and not graded.
 
-`P6-II` is graded at `test_aa_integ_s1.cpp:1584`, `P6-I` recorded at `:1588` and `P6-AGG` graded at `:1590`.
+`P6-II` is graded at `test_aa_integ_s1.cpp:1591`, `P6-I` recorded at `:1595` and `P6-AGG` graded at `:1597`.
 
 ## Risks and unknowns
 

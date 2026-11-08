@@ -1,0 +1,20 @@
+--- a/src/minimig-aga/denise_bitplanes.v
++++ b/src/minimig-aga/denise_bitplanes.v
+@@ -169,7 +169,7 @@
+ always @(posedge clk)
+   if (clk7_en) begin
+     if (reset)
+-      bplcon1 <= #1 16'h3300;
++      bplcon1 <= #1 16'h0000;
+     if ((reg_address_in[8:1] == BPLCON1[8:1]))
+       bplcon1 <= #1 aga ? data_in[15:0] : {2'b00,2'b11,2'b00,2'b11,data_in[7:0]};
+   end
+@@ -455,7 +455,7 @@
+ always @(posedge clk)
+   if (clk7_en) begin
+     if (reset)
+-      bplcon1 <= #1 16'h3300;
++      bplcon1 <= #1 16'h0000;
+     if ((reg_address_in[8:1] == BPLCON1[8:1]))
+       bplcon1 <= #1 aga ? data_in[15:0] : {2'b00,2'b11,2'b00,2'b11,data_in[7:0]};
+   end

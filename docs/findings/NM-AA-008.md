@@ -112,7 +112,7 @@ MEASURED: P14 qualifying pairs: U1 705 (0 not a whole number of CCK; 0 after the
 
 (fx68k. TG68K prints 701 qualifying pairs in each of U1 and U2, and `U3=$F8 (U3 min $03)`; the first-restart and largest-word lines are the same.) `P14-MAIN` is green: the main counter's VHPOSR maximum is $E2 in U0, U1 and U2, so DUAL leaves its line alone. The sampling preconditions are green on both cores: `P14-FIXTURE`, `P14-UNIT`, `P14-R2`, `P14-PHASE` (the sample times cover every phase of a counter of HTOTAL+1), `P14-STEP`, `P14-PAIRS`, `P14-POS` and `P14-U3`.
 
-`P14-U1` is graded at `test_aa_integ_s1.cpp:2239`, `P14-U2` at `:2240`, `P14-REL` at `:2246` and `P14-AGG` at `:2253-2254`.
+`P14-U1` is graded at `test_aa_integ_s1.cpp:2272`, `P14-U2` at `:2273`, `P14-REL` at `:2283` and `P14-AGG` at `:2289-2290`.
 
 [`integration/aa-integ-s2`](../../integration/aa-integ-s2) reads the counter with a lower HTOTAL. Its P11 writes HTOTAL = $0038 and BEAMCON0 = $0060 (DUAL, PAL; VARBEAMEN clear) and samples VPOSR:VHPOSR and HHPOSR over one frame (`prog_beam.s`); P12 runs the same program again as the DUAL run whose alternate-counter rate and wraps it needs for the UHRES chain. HHPOSR reads 0 on every sample of P11's run, while the main counter runs to 226 and the port lines are 227 colour clocks, and it neither rises nor wraps within a line of P12's:
 

@@ -110,7 +110,7 @@ MEASURED: P5 conjuncts: P2 rows 8-15 all-ok=1; P4 run(b) stripe colours equal=0;
 
 (The same on fx68k and TG68K.) `P4-FIXTURE`, `P4-F1`, `P4-R1`, `P4-S3A`, `P4-S3B-A`, `P4-S3B-B` and `P4-SIG`, on which the reds rest, are green on both cores.
 
-`P4b-C1` is graded at `test_aa_integ_s1.cpp:2927-2929`, `P4b-C2` at `:2930-2932` and `P5` at `:2969-2971`; `P4a-D1` and `P4a-D2` are recorded at `:2951-2956`.
+`P4b-C1` is graded at `test_aa_integ_s1.cpp:2976-2978`, `P4b-C2` at `:2979-2981` and `P5` at `:3018-3020`; `P4a-D1` and `P4a-D2` are recorded at `:3000-3005`.
 
 ## Risks and unknowns
 

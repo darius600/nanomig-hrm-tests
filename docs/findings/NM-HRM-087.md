@@ -325,7 +325,7 @@ here and an LPEN of 1 would look like 0` in all four; the `P4 aggregate` is reco
 (PAL, LPENDIS low). An LPEN run writes BPLCON0 = `$0008`; three times it waits for VERTB, stores a marker, reads VPOSR:VHPOSR as a long
 word (w0), waits 32 DBRA iterations and reads again (w1); in the main run, which writes no BPLCON0, the counter moves 172 colour clocks between the two reads on fx68k and 138 on TG68K. Pin 6 of both ports stays at its open-switch level (`P10-FIRE`, green), so no trigger
 occurs, and p. 239's field-end latch, with AA p. 12's LPENDIS low, predicts w1 = w0 in every pair. `P10-LATCH` is red on both cores
-(`P10-LATCH`, `test_aa_integ_s1.cpp:1696`), 1 red in a run of `156 passed, 10 failed, 11 NOT GRADED`, the other nine grading BPLCON1's reset value, BYPASS and the DUAL counter; in pair 0 of the LPEN run:
+(`P10-LATCH`, `test_aa_integ_s1.cpp:1703`), 1 red in a run of `156 passed, 10 failed, 11 NOT GRADED`, the other nine grading BPLCON1's reset value, BYPASS and the DUAL counter; in pair 0 of the LPEN run:
 
 ```text
 MEASURED: P10 main pair 0: w0=$A3000021 (V=0) w1=$A30000CD (w1 - w0 = 172 CCK of the counter); LPEN run: w0=$A3000029 w1=$A30000D5
