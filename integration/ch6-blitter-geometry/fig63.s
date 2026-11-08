@@ -31,7 +31,11 @@ start:
         WAITBLT
 
         ; LF = $CC: D = B (the B circle)
+        ifnd    WRONGLFB
         move.w  #$0FCC,BLTCON0(a0)
+        else
+        move.w  #$0F33,BLTCON0(a0)     ; mutation: NOT B instead of B
+        endc
         SETPTR  BLTAPTH,BLTAPTL,MASKBUF
         SETPTR  BLTBPTH,BLTBPTL,SRC
         SETPTR  BLTCPTH,BLTCPTL,SRC2
@@ -40,7 +44,11 @@ start:
         WAITBLT
 
         ; LF = $AA: D = C (the C circle)
+        ifnd    WRONGLFC
         move.w  #$0FAA,BLTCON0(a0)
+        else
+        move.w  #$0F55,BLTCON0(a0)     ; mutation: NOT C instead of C
+        endc
         SETPTR  BLTAPTH,BLTAPTL,MASKBUF
         SETPTR  BLTBPTH,BLTBPTL,SRC
         SETPTR  BLTCPTH,BLTCPTL,SRC2

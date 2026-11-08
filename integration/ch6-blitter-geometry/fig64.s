@@ -21,9 +21,9 @@ start:
         move.w  #$FFFF,BLTADAT(a0)     ; A disabled, preloaded all-ones
         move.w  #$07FF,BLTAFWM(a0)
         move.w  #$FFF0,BLTALWM(a0)
-        move.w  #0,BLTBMOD(a0)
-        move.w  #0,BLTCMOD(a0)
-        move.w  #0,BLTDMOD(a0)
+        move.w  #2,BLTBMOD(a0)         ; one word skipped after every row, in
+        move.w  #2,BLTCMOD(a0)         ; B, C and D alike: the addresses then show
+        move.w  #2,BLTDMOD(a0)         ; where each row ends (p.172)
         SETPTR  BLTBPTH,BLTBPTL,SRC
         SETPTR  BLTCPTH,BLTCPTL,DST
         SETPTR  BLTDPTH,BLTDPTL,DST
@@ -31,12 +31,16 @@ start:
         ifnd    WRONGWIDTH
         move.w  #(3<<6)|2,BLTSIZE(a0)  ; height 3, width 2 words/row
         else
+        ifnd    WRONGSHAPE
         move.w  #(3<<6)|3,BLTSIZE(a0)  ; mutation: 3 words/row
+        else
+        move.w  #(2<<6)|3,BLTSIZE(a0)  ; mutation: height 2, width 3 -- also 6 words
+        endc
         endc
         WAITBLT
         DONE
 
         org     SRC
-        dc.w    $FFFF,$FE00,$FFFF,$FE00,$FFFF,$FE00,$FFFF,$FE00,$FFFF
+        dc.w    $FFFF,$FE00,$DEAD,$FFFF,$FE00,$DEAD,$FFFF,$FE00,$DEAD ; 2 words/row, the skipped third is never read
         org     DST
         dc.w    $5555,$5555,$5555,$5555,$5555,$5555,$5555,$5555,$5555

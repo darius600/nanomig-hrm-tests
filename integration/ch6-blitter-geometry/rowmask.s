@@ -14,7 +14,11 @@ start:
         else
         move.w  #$0F0F,BLTAFWM(a0)     ; mutation: a different first-word mask
         endc
+        ifnd    WRONGLWM
         move.w  #$FF00,BLTALWM(a0)
+        else
+        move.w  #$F0F0,BLTALWM(a0)     ; mutation: a different last-word mask
+        endc
         move.w  #0,BLTAMOD(a0)
         move.w  #0,BLTDMOD(a0)
         SETPTR  BLTAPTH,BLTAPTL,SRC

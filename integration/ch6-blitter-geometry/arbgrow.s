@@ -15,10 +15,19 @@
         org     PROGRAM_ORG
 start:
         lea     CUSTOM,a0
+        ifnd    WRONGASHA
         move.w  #$0DC0,BLTCON0(a0)     ; ASH=0, USEA+USEB+USED, LF=$C0 (A AND B)
+        else
+        move.w  #$CDC0,BLTCON0(a0)     ; mutation: ASH=12, A shifted as B is
+        endc
         move.w  #$C000,BLTCON1(a0)     ; BSH=12
+        ifnd    WRONGMASKS
         move.w  #$000F,BLTAFWM(a0)
         move.w  #$E000,BLTALWM(a0)
+        else
+        move.w  #$FFFF,BLTAFWM(a0)     ; mutation: no destination-edge masking
+        move.w  #$FFFF,BLTALWM(a0)
+        endc
         move.w  #0,BLTAMOD(a0)
         move.w  #0,BLTBMOD(a0)
         move.w  #0,BLTDMOD(a0)

@@ -9,7 +9,11 @@
         org     PROGRAM_ORG
 start:
         lea     CUSTOM,a0
+        ifnd    WRONGASH
         move.w  #$49F0,BLTCON0(a0)     ; ASH=4, USEA+USED, LF=$F0 (D=A)
+        else
+        move.w  #$39F0,BLTCON0(a0)     ; mutation: ASH=3
+        endc
         move.w  #$0000,BLTCON1(a0)     ; ascending
         move.w  #$FFFF,BLTAFWM(a0)
         move.w  #$FFFF,BLTALWM(a0)

@@ -27,6 +27,10 @@ start:
         move.w  #2,BLTDMOD(a0)         ; one-word gap marks each row end in D
         SETPTR  BLTDPTH,BLTDPTL,DST
         BLTEN_ON
+        ifnd    WRONGSHAPE
         move.w  #(6<<6)|7,BLTSIZE(a0)  ; height 6, width 7 words
+        else
+        move.w  #(7<<6)|6,BLTSIZE(a0)  ; mutation: height 7, width 6 -- also 42 words
+        endc
         WAITBLT
         DONE

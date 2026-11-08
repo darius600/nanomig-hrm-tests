@@ -11,20 +11,28 @@
 // unset) never loads a mutant program: its summary counts the fixture,
 // preconditions and assertions only.
 //
-// MUTATION A0-fixture stimulus red NMH_MUTATE=A0-fixture: withhold the BLTSIZE write
+// MUTATION A0-fixture stimulus red NMH_MUTATE=A0-fixture: withhold the BLTSIZE write (contrasts that a blit runs at all, not the order of the writes); fixture_nobltsize: FAIL, DST stays 0000 0000 0000 0000, on fx68k and TG68K
+// MUTATION A0-fixture stimulus red NMH_MUTATE=A0-fixture-order: BLTCON0/1, masks and moduli, DMA on, BLTSIZE (1<<6)|4, wait for the blit to finish, and only then BLTAPT and BLTDPT (fixture_order, the order of p.200 "Write BLTSIZE last" and "Check BLTDONE before writing blitter registers"); the blit runs with the pointers not set up: it moves four words of 0000 from $000000 to $000000 (four reads and four writes at $000000-$000006, low memory, nothing in the program), DST stays 0000 0000 0000 0000, DONE is reached: FAIL on fx68k and TG68K
 // MUTATION A1-row-masks stimulus red NMH_MUTATE=A1-row-masks: a different BLTAFWM value
+// MUTATION A1-row-masks stimulus red NMH_MUTATE=A1-row-masks-lwm: BLTALWM = $F0F0 instead of $FF00 (ch6-intro.c13 and 6-intro.c13, the last-word clause); words 2 and 5 print F0F0, words 0,1,3,4 unchanged: FAIL on fx68k and TG68K
 // MUTATION A2-plus-one stimulus red NMH_MUTATE=A2-plus-one: a 2-word destination modulo
 // MUTATION A3-embedded-modulo stimulus red NMH_MUTATE=A3-embedded-modulo: a 20-byte modulo instead of 30
+// MUTATION A3-embedded-modulo stimulus red NMH_MUTATE=A3-embedded-modulo-col: BLTDPT at row 13, byte column 10 instead of 12 (6-dma-channels.c74); the rectangle lands one word to the left, row 13 word 5 prints 1111 where the sentinel is expected: FAIL on fx68k and TG68K
 // MUTATION A4-cookiecut stimulus red NMH_MUTATE=A4-cookiecut: function $AC instead of $CA
+// MUTATION A4-cookiecut none impossible the ids 6-function-generator.c40 and ch6-minterms.c9 (one mask plane suffices) have no contrast of their own: the pages predict no stimulus in which a single mask plane fails, so nothing a page predicts red exists to run; they ride on the $CA contrast above, which measures that one A plane, reused unchanged against two backgrounds, cuts both
 // MUTATION A5-read-before-write stimulus red NMH_MUTATE=A5-read-before-write: channel C points elsewhere
 // MUTATION A6-shift-decomposition stimulus red NMH_MUTATE=A6-shift-decomposition: a 5-word pointer advance instead of 6
+// MUTATION A6-shift-decomposition stimulus red NMH_MUTATE=A6-shift-decomposition-ash: ASH = 3 with the same 12-byte advance (6-shifts-and-masks.c13, ch6-shifts.c12, the 4-bit residual); prints 0222 2444 4666 as predicted: FAIL on fx68k and TG68K
 // MUTATION A7a-ascending-corrupts stimulus red NMH_MUTATE=A7a-ascending-corrupts: use descending mode instead of ascending
 // MUTATION A7a-descending-overlap stimulus red NMH_MUTATE=A7a-descending-overlap: pointers left at the block's first word
 // MUTATION A7a-descending-modulo stimulus red NMH_MUTATE=A7a-descending-modulo: BLTDMOD=0 instead of 30
 // MUTATION A7b-ascending-overlap stimulus red NMH_MUTATE=A7b-ascending-overlap: descending mode for the same one-row-up move
 // MUTATION A8a-dest-grows stimulus red NMH_MUTATE=A8a-dest-grows: blit size 2 instead of 3
+// MUTATION A8a-dest-grows stimulus red NMH_MUTATE=A8a-dest-grows-ash: ASH = 12 for channel A (ch6-copy.c13, A shift 0); prints 0000 00FF E00E as predicted: FAIL on fx68k and TG68K
+// MUTATION A8a-dest-grows stimulus red NMH_MUTATE=A8a-dest-grows-masks: BLTAFWM = BLTALWM = $FFFF (ch6-copy.c14, ch6-copy.c5, masks as if D); prints 000F FFFF E00F as predicted, word 2 E00F: FAIL on fx68k and TG68K
 // MUTATION A8b-source-larger stimulus red NMH_MUTATE=A8b-source-larger: blit size 2 instead of 3
 // MUTATION A8c-arb-mask stimulus red NMH_MUTATE=A8c-arb-mask: $FFFF masks instead of the computed ones
+// MUTATION A8c-arb-mask stimulus red NMH_MUTATE=A8c-arb-mask-ash: ASH = 0 while BSH stays 2 (ch6-copy.c11, the same shift as B); prints 5557 FFFF D555 as predicted: FAIL on fx68k and TG68K
 // MUTATION A9-minterm-bit stimulus red NMH_MUTATE=A9-minterm-bit: n=4's slot gets n=3's bit
 // MUTATION A9b-not-a stimulus red NMH_MUTATE=A9b-not-a: LF=$30 instead of $0F
 // MUTATION A10-minterm-or stimulus red NMH_MUTATE=A10-minterm-or: LF=$80 instead of $C0
@@ -33,13 +41,18 @@
 // MUTATION A12-shift-left stimulus red NMH_MUTATE=A12-shift-left: use ascending mode instead of descending
 // MUTATION A12-within-word stimulus red NMH_MUTATE=A12-within-word: the naive pointer instead of one word lower
 // MUTATION A13-fig61 stimulus red NMH_MUTATE=A13-fig61: start channel A one word later
+// MUTATION A13-fig61 stimulus red NMH_MUTATE=A13-fig61-shape: height 7, width 6 with the same BLTAMOD and BLTDMOD (6-dma-channels.c32, ch6-dma.f3, 6-dma-channels.c31); the 42 A reads are still 20..61, the D writes fall at offsets 0-5, 7-12, 14-19, ... instead of 0-6, 8-14, ...: FAIL through the D clause alone on fx68k and TG68K
 // MUTATION A14-fig63 stimulus red NMH_MUTATE=A14-fig63: LF=$0F instead of $F0
+// MUTATION A14-fig63 stimulus red NMH_MUTATE=A14-fig63-b: LF=$33 (NOT B) for the B circle's blit; the second destination prints 0F0F instead of F0F0: FAIL on fx68k and TG68K
+// MUTATION A14-fig63 stimulus red NMH_MUTATE=A14-fig63-c: LF=$55 (NOT C) for the C circle's blit; the third destination prints 3333 instead of CCCC: FAIL on fx68k and TG68K
 // MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64: 3 words/row instead of 2
+// MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64-shape: height 2, width 3 (the same six words, BLTBMOD = BLTCMOD = BLTDMOD = 2); six reads and six writes, so the counts pass, at offsets 0,1,2, 4,5,6 instead of 0,1, 3,4, 6,7: FAIL through the offsets alone on fx68k and TG68K
 // MUTATION A16-mintdc stimulus red NMH_MUTATE=A16-mintdc: LF=$DE instead of $DC
 // MUTATION A17-truthorder stimulus red NMH_MUTATE=A17-truthorder: the top-down reading, LF=$3F
 // MUTATION A18-fourplanes stimulus red NMH_MUTATE=A18-fourplanes: only the first plane's blit runs
 // MUTATION A19-highbit stimulus red NMH_MUTATE=A19-highbit: bit 20 instead of bit 21
 // MUTATION A20-mem512 stimulus red NMH_MUTATE=A20-mem512: memory_config 0 for the 2 MB half too
+// MUTATION A20-mem512 stimulus red NMH_MUTATE=A20-mem512-512k: the 512 KB half runs under memory_config 3; the words are written at $086000, $0C6000 and $186002 and $006000, $046000, $006002 stay 0000: FAIL on fx68k and TG68K
 
 #include <cstdio>
 #include <cstdint>
@@ -51,6 +64,8 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <initializer_list>
+#include <utility>
 
 #include "nanomig_harness.h"
 
@@ -109,6 +124,16 @@ bool mutating(const char* label) {
 // (NMH_MUTATE unset) never selects a mutant.
 std::string pick(const char* label, const char* normal, const char* mutant) {
     return mutating(label) ? mutant : normal;
+}
+
+// Like pick(), for an assertion with several mutants: each selector names
+// its own mutant program. NMH_MUTATE naming none of them (or unset) selects
+// the normal program.
+std::string pickm(const char* normal,
+                  std::initializer_list<std::pair<const char*, const char*>> mutants) {
+    for (const auto& m : mutants)
+        if (mutating(m.first)) return m.second;
+    return normal;
 }
 
 struct Run {
@@ -171,7 +196,8 @@ size_t load_program_collapsed(nmh::NanomigHarness& h, const std::string& path) {
 // A0 -- fixture: registers set up, BLTSIZE last, known result delivered.
 // Pages 169, 200. ch6-intro.c20, ch6-keypoints.c1.
 void assertion_A0(const std::string& dir) {
-    Run r = run(dir, pick("A0-fixture", "fixture", "fixture_nobltsize"));
+    Run r = run(dir, pickm("fixture", {{"A0-fixture", "fixture_nobltsize"},
+                                       {"A0-fixture-order", "fixture_order"}}));
     bool matches = r.loaded > 0 && r.done.has_value() &&
         W(r, kDst + 0) == 0x1234 && W(r, kDst + 2) == 0x5678 &&
         W(r, kDst + 4) == 0x9ABC && W(r, kDst + 6) == 0xDEF0;
@@ -185,7 +211,8 @@ void assertion_A0(const std::string& dir) {
 // A1 -- BLTAFWM/BLTALWM mask the first/last word of every raster row.
 // Page 169. 6-intro.c13, 6-intro.c14, ch6-intro.c12, ch6-intro.c13.
 void assertion_A1(const std::string& dir) {
-    Run r = run(dir, pick("A1-row-masks", "rowmask", "rowmask_wrongfwm"));
+    Run r = run(dir, pickm("rowmask", {{"A1-row-masks", "rowmask_wrongfwm"},
+                                       {"A1-row-masks-lwm", "rowmask_wronglwm"}}));
     bool matches = ok(r) &&
         W(r, kDst + 0) == 0x00FF && W(r, kDst + 2) == 0xFFFF && W(r, kDst + 4) == 0xFF00 &&
         W(r, kDst + 6) == 0x00FF && W(r, kDst + 8) == 0xFFFF && W(r, kDst + 10) == 0xFF00;
@@ -254,7 +281,8 @@ bool embedded_rect_ok(const Run& r) {
 }
 
 void assertion_A3(const std::string& dir) {
-    Run r = run(dir, pick("A3-embedded-modulo", "embedmod", "embedmod_wrongmod"));
+    Run r = run(dir, pickm("embedmod", {{"A3-embedded-modulo", "embedmod_wrongmod"},
+                                        {"A3-embedded-modulo-col", "embedmod_col10"}}));
     checks.expect(embedded_rect_ok(r),
         "A3-embedded-modulo p172,173 6-dma-channels.c65 6-dma-channels.c73 "
         "6-dma-channels.c74 6-dma-channels.c75 6-dma-channels.c76 ch6-dma.f5 "
@@ -338,7 +366,8 @@ void assertion_A5(const std::string& dir) {
 // displacement plus a residual barrel shift. Page 179.
 // 6-shifts-and-masks.c10/c11/c12/c13, ch6-shifts.c10/c11/c12.
 void assertion_A6(const std::string& dir) {
-    Run r = run(dir, pick("A6-shift-decomposition", "shift100", "shift100_wrongadvance"));
+    Run r = run(dir, pickm("shift100", {{"A6-shift-decomposition", "shift100_wrongadvance"},
+                                        {"A6-shift-decomposition-ash", "shift100_ash3"}}));
     bool matches = ok(r) &&
         W(r, kDst + 12) == 0x0111 && W(r, kDst + 14) == 0x1222 &&
         W(r, kDst + 16) == 0x2333;
@@ -417,7 +446,9 @@ void assertion_A7b(const std::string& dir) {
 // source. Page 183. 6-copying-arbitrary-regions.c1, ch6-copy.c1,
 // ch6-copy.c2, ch6-copy.c13, ch6-copy.c14, ch6-copy.c4, ch6-copy.c5.
 void assertion_A8a(const std::string& dir) {
-    Run r = run(dir, pick("A8a-dest-grows", "arbgrow", "arbgrow_wrongsize"));
+    Run r = run(dir, pickm("arbgrow", {{"A8a-dest-grows", "arbgrow_wrongsize"},
+                                       {"A8a-dest-grows-ash", "arbgrow_ash12"},
+                                       {"A8a-dest-grows-masks", "arbgrow_ffffmasks"}}));
     bool matches = ok(r) &&
         W(r, kDst + 0) == 0x000F && W(r, kDst + 2) == 0xFFFF &&
         W(r, kDst + 4) == 0xE000;
@@ -455,7 +486,8 @@ void assertion_A8b(const std::string& dir) {
 // shifted the same as source B (ch6-copy.c11), first/last masks set as
 // if masking B's own edges (ch6-copy.c12). Page 183.
 void assertion_A8c(const std::string& dir) {
-    Run r = run(dir, pick("A8c-arb-mask", "arbmask", "arbmask_nomask"));
+    Run r = run(dir, pickm("arbmask", {{"A8c-arb-mask", "arbmask_nomask"},
+                                       {"A8c-arb-mask-ash", "arbmask_ash0"}}));
     bool matches = ok(r) &&
         W(r, kDst + 0) == 0x5555 && W(r, kDst + 2) == 0xFFFF && W(r, kDst + 4) == 0xF555;
     checks.expect(matches,
@@ -573,16 +605,43 @@ bool reads_exact_range(const nmh::NanomigHarness& h, uint32_t first_word, uint32
     return true;
 }
 
+// The accesses of one kind (reads or writes) in the window of a rectangle
+// that is `width` words wide and `height` rows high, whose rows start
+// `stride` words apart (p.172: after each row the modulo is added), must be
+// exactly the word offsets r*stride + c from base_byte_addr, in order.
+bool strided_offsets(const nmh::NanomigHarness& h, uint32_t base_byte_addr, bool want_write,
+                     size_t width, size_t height, size_t stride) {
+    uint32_t base_word = base_byte_addr / 2;
+    auto log = nmh::coalesce(h.ram_log());
+    std::vector<uint32_t> seen;
+    for (const auto& a : log)
+        if (a.is_write == want_write && a.word_addr >= base_word &&
+            a.word_addr < base_word + stride * height + 8)
+            seen.push_back(a.word_addr);
+    if (seen.size() != width * height) return false;
+    size_t i = 0;
+    for (size_t row = 0; row < height; ++row)
+        for (size_t col = 0; col < width; ++col, ++i)
+            if (seen[i] != base_word + row * stride + col) return false;
+    return true;
+}
+
 void assertion_A13(const std::string& dir) {
-    Run r = run(dir, pick("A13-fig61", "fig61", "fig61_wrongstart"));
-    bool matches = ok(r) && reads_exact_range(*r.h, 20, 61);
+    Run r = run(dir, pickm("fig61", {{"A13-fig61", "fig61_wrongstart"},
+                                     {"A13-fig61-shape", "fig61_shape"}}));
+    bool matches = ok(r) && reads_exact_range(*r.h, 20, 61) &&
+        strided_offsets(*r.h, kDst, true, 7, 6, 8);
     checks.expect(matches,
         "A13-fig61 p171 6-dma-channels.c30 6-dma-channels.c31 "
         "6-dma-channels.c32 ch6-dma.f1 ch6-dma.f2 ch6-dma.f3: a blit with "
         "BLTAPT at word address 20, width 7, height 6 reads channel A at "
         "exactly word addresses 20 through 61 (42 reads), consecutive "
         "within each row and across every row boundary, matching figure "
-        "6-1's own grid and its 20..61 extent");
+        "6-1's own grid and its 20..61 extent; and with BLTDMOD=2 channel D "
+        "writes the same 7-word rows at word offsets 0-6, 8-14, ..., 40-46 "
+        "of the destination (p.172: the modulo is added to the pointer "
+        "after each row), so the width 7 and the height 6 are each seen, "
+        "not only their product");
 }
 
 // -----------------------------------------------------------------------
@@ -590,7 +649,9 @@ void assertion_A13(const std::string& dir) {
 // D=A); Table 6-1 (p.177) gives LF=$CC (D=B) and LF=$AA (D=C) for the B
 // and C circles. ch6-venn.f-labels.
 void assertion_A14(const std::string& dir) {
-    Run r = run(dir, pick("A14-fig63", "fig63", "fig63_wronglf"));
+    Run r = run(dir, pickm("fig63", {{"A14-fig63", "fig63_wronglf"},
+                                     {"A14-fig63-b", "fig63_wronglf_b"},
+                                     {"A14-fig63-c", "fig63_wronglf_c"}}));
     bool matches = ok(r) &&
         W(r, kDst) == 0xFF00 && W(r, kDst2) == 0xF0F0 && W(r, kDst3) == 0xCCCC;
     checks.expect(matches,
@@ -617,13 +678,19 @@ size_t count_accesses(const nmh::NanomigHarness& h, uint32_t base_byte_addr, siz
 }
 
 void assertion_A15(const std::string& dir) {
-    Run r = run(dir, pick("A15-fig64", "fig64", "fig64_wrongwidth"));
+    Run r = run(dir, pickm("fig64", {{"A15-fig64", "fig64_wrongwidth"},
+                                     {"A15-fig64-shape", "fig64_shape"}}));
     size_t b_reads = ok(r) ? count_accesses(*r.h, kSrc, 12, false) : 0;
     size_t d_writes = ok(r) ? count_accesses(*r.h, kDst, 12, true) : 0;
-    checks.expect(ok(r) && b_reads == 6 && d_writes == 6,
+    checks.expect(ok(r) && b_reads == 6 && d_writes == 6 &&
+                      strided_offsets(*r.h, kSrc, false, 2, 3, 3) &&
+                      strided_offsets(*r.h, kDst, true, 2, 3, 3),
         "A15-fig64 p181 6-shifts-and-masks.c32 ch6-shifts.f1: over 3 rows, "
         "channel B reads exactly 6 source words (2/row) and channel D "
-        "writes exactly 6 destination words (2/row)");
+        "writes exactly 6 destination words (2/row) -- with the modulo 2 of "
+        "B, C and D (p.172: added after each row) the reads and the writes "
+        "fall at word offsets 0,1, 3,4, 6,7 of their buffers, so the split "
+        "into 3 rows of 2 is seen, not only the total of 6");
     checks.record(
         "A15-fig64: the figure's drawn second-word mask is 7 bits "
         "(11111110 00000000, matching a 23-bit extraction) but its printed "
@@ -734,12 +801,25 @@ void assertion_A19(const std::string& dir) {
 void assertion_A20(const std::string& dir) {
     // 512 KB: three pointers distinguish 13 ignored bits from 14, or from
     // just bit 19.
+    // The mutation A20-mem512-512k runs this half under memory_config 3
+    // (2 MB) instead: the pointers are then honoured, the three words are
+    // written at DST, DST+$040000 and DST+$100002, and the collapsed
+    // addresses read below stay 0000.
+    bool mutated_512k = mutating("A20-mem512-512k");
     nmh::Config cfg0;
-    cfg0.memory_config = 0x00;
+    cfg0.memory_config = mutated_512k ? 0x03 : 0x00;
     auto h0 = std::make_unique<nmh::NanomigHarness>(cfg0);
-    size_t loaded0 = load_program_collapsed(*h0, dir + "/mem512.bin");
-    h0->boot(kBootBudget);
-    auto done0 = h0->run_until_write(kDoneAddr - kChipCollapseBase, kDoneValue, kBootBudget + kRunBudget);
+    size_t loaded0;
+    std::optional<uint64_t> done0;
+    if (mutated_512k) {
+        loaded0 = h0->load_program(dir + "/mem512.bin");
+        h0->boot(kBootBudget);
+        done0 = h0->run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
+    } else {
+        loaded0 = load_program_collapsed(*h0, dir + "/mem512.bin");
+        h0->boot(kBootBudget);
+        done0 = h0->run_until_write(kDoneAddr - kChipCollapseBase, kDoneValue, kBootBudget + kRunBudget);
+    }
     bool half_512k = loaded0 > 0 && done0.has_value() &&
         h0->peek_word(0x006000 / 2) == 0xAAAA &&
         h0->peek_word(0x046000 / 2) == 0xBBBB &&

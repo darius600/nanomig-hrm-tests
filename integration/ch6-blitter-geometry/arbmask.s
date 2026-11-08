@@ -12,7 +12,11 @@
         org     PROGRAM_ORG
 start:
         lea     CUSTOM,a0
+        ifnd    WRONGASHA
         move.w  #$27CA,BLTCON0(a0)     ; ASH=2, USEB+USEC+USED (A disabled), LF=$CA
+        else
+        move.w  #$07CA,BLTCON0(a0)     ; mutation: ASH=0, not B's shift
+        endc
         move.w  #$2000,BLTCON1(a0)     ; BSH=2
         move.w  #$FFFF,BLTADAT(a0)     ; A disabled, preloaded all-ones
         ifnd    NOMASK

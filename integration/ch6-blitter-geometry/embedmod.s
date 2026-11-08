@@ -21,7 +21,11 @@ start:
         move.w  #20,BLTDMOD(a0)        ; mutation: wrong modulo
         endc
         SETPTR  BLTAPTH,BLTAPTL,SRC
+        ifnd    WRONGCOL
         SETPTR  BLTDPTH,BLTDPTL,BITMAP+(40*13)+12      ; row 13, byte column 12
+        else
+        SETPTR  BLTDPTH,BLTDPTL,BITMAP+(40*13)+10      ; mutation: byte column 10
+        endc
         BLTEN_ON
         move.w  #(5<<6)|5,BLTSIZE(a0)  ; height 5 (rows 13-17), width 5 words (10 bytes)
         WAITBLT
