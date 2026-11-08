@@ -27,7 +27,7 @@ A package that carries `*.patch` files also has a `<copy>-test` target
 package against a private copy of the chip set with that patch applied; the
 submodule is never modified. The packages that ship a patch, with their copies, are
 `aa-integ-s5` (`p3lsb`, `p6vol`, `p16gap`, `p17end`), `appF-cia-system` (`conf`, `sp`),
-`ch2-copper-beam` (`op`, `rn`, `lc`, `cs`), `ch2-interlace-fields` (`longline`),
+`ch2-copper-beam` (`op`, `rn`, `lc`, `cs`, `hy`), `ch2-interlace-fields` (`longline`),
 `ch3-playfield-system` (`latch`, `latchrst`), `ch4-sprite-registers` (`sh`, `bc`),
 `ch5-audio-attach-modulation` (`pm`), `ch5-audio-output-scanrate` (`lc`),
 `ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`, `k9`, `refresh3`,
