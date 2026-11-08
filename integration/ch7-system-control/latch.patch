@@ -1,0 +1,95 @@
+--- a/agnus.v
++++ b/agnus.v
+@@ -94,6 +94,7 @@
+ 	input         bls,             // blitter slowdown
+ 	input         ntsc,            // chip is NTSC
+ 	input         a1k,             // enable A1000 OCS features
++	input         _lp,             // private copy: light pen trigger, active low
+ 	input         ecs,             // enable ECS features
+ 	input         aga,             // enables AGA features
+ 	input         floppy_speed     // allocates refresh slots for disk DMA
+@@ -467,6 +468,7 @@
+ 	.aga(aga),
+ 	.ecs(ecs),
+ 	.a1k(a1k),
++	._lp(_lp),
+ 	.reg_address_in(reg_address),
+ 	.data_in(data_in),
+ 	.data_out(data_bmc),
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -34,6 +34,7 @@
+ 	input             aga,            
+ 	input	            ecs,            // ECS enable switch
+ 	input	            a1k,            // enable A1000 VBL interrupt timing
++	input             _lp,            // private copy: light pen trigger (pin 6), active low
+ 	input	     [15:0] data_in,        // bus data in
+ 	output reg [15:0] data_out,       // bus data out
+ 	input       [8:1] reg_address_in, // register address inputs
+@@ -104,12 +105,20 @@
+ reg long_frame; // 1 : long frame (313 lines); 0 : normal frame (312 lines)
+ reg long_line;	 // long line signal for NTSC compatibility (actually long lines are not supported yet)
+ 
++// private copy: light-pen latch state (HRM pp.238-239; LPENDIS p.305)
++reg        lp_en;       // BPLCON0 bit 3 (LPEN)
++reg        lp_d;        // _lp, one clk7 earlier
++reg        lp_latched;  // VPOSR/VHPOSR frozen
++reg [10:0] lp_vpos;
++reg  [8:0] lp_hpos;
++wire       lp_show;     // reads return the latched value
++
+ //beamcounter read registers VPOSR and VHPOSR
+ always @(*) begin
+ 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
+-		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,lp_show ? lp_vpos[10:8] : vpos[10:8]};
+ 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
+-		data_out[15:0] = {vpos[7:0],hpos[8:1]};
++		data_out[15:0] = lp_show ? {lp_vpos[7:0],lp_hpos[8:1]} : {vpos[7:0],hpos[8:1]};
+ 	else
+ 		data_out[15:0] = 0;
+ end
+@@ -458,4 +467,33 @@
+ 	end
+ end
+ 
++// private copy: light-pen latch (HRM pp.238-239). LPEN (BPLCON0 bit 3) enables the input.
++// A falling edge of pin 6 after vertical position 20 freezes {vpos,hpos}; with no trigger the
++// counters latch at the end of the field; the freeze is released at vertical position 20.
++// While frozen, VPOSR/VHPOSR return the latched value unless ECS LPENDIS (BEAMCON0 bit 13, p.305).
++always @(posedge clk) begin
++	if (clk7_en) begin
++		lp_d <= _lp;
++		if (reset)
++			lp_en <= 1'b0;
++		else if (reg_address_in[8:1]==BPLCON0[8:1])
++			lp_en <= data_in[3];
++		if (reset)
++			lp_latched <= 1'b0;
++		else if (lp_latched && vpos==11'd20)
++			lp_latched <= 1'b0;
++		else if (!lp_latched && lp_en && lp_d && !_lp && vpos>11'd20) begin
++			lp_latched <= 1'b1;
++			lp_vpos <= vpos;
++			lp_hpos <= hpos;
++		end else if (!lp_latched && lp_en && end_of_frame) begin
++			lp_latched <= 1'b1;
++			lp_vpos <= vpos;
++			lp_hpos <= hpos;
++		end
++	end
++end
++
++assign lp_show = lp_latched && !(ecs && beamcon0_reg[13]);
++
+ endmodule
+--- a/minimig.v
++++ b/minimig.v
+@@ -485,6 +485,7 @@
+ 	.bls(bls),
+ 	.ntsc(ntsc),
+ 	.a1k(chipset_config[2]),
++	._lp(_joy1[4] & _joy2[4]),
+ 	.ecs(|chipset_config[4:3]),
+ 	.aga(chipset_config[4]),
+ 	.floppy_speed(floppy_config[0])

@@ -6,10 +6,10 @@
 ;   MUT_SPRENCLR   -- DMACON without SPREN
 ;   MUT_SCROLL     -- the CPU writes BPLCON1 $0011 at line 215 of the evaluated field (below the last band)
 ;   MUT_TAGID      -- the band's tag id is 2 instead of 1
-;   MUT_NOCOP      -- the Copper starts from a second copy of the list, at another address, and no COP1LC write follows
+;   MUT_NOCOP      -- no COP1LC write follows: the Copper stays on the stale list 1
 ;   MUT_BPL4PLANE2 -- BPL4PT at plane 2's image
 ;   MUT_BPL4ZERO   -- BPL4PT at the all-zero image of plane 4's own area
-;   MUT_LATEMARK   -- the marker is stored after t1 instead of between t0 and t1
+;   MUT_LATEMARK   -- the COP1LC write of list 0 and the marker come after t1 instead of between t0 and t1
 
                 include "pri_common.i"
 
@@ -59,7 +59,7 @@ start:
                 move.w  #80,d2
                 bsr     mkgrp
 
-                ; ---- Copper lists: 0 = the configuration, 1 = a copy of it at another address
+                ; ---- Copper lists: 0 = the configuration, 1 = the stale list (other content: BPL4PT at plane 4's all-zero image)
                 lea     cfg_table(pc),a1
                 lea     LIST_BASE,a3
                 moveq   #0,d7
@@ -77,11 +77,7 @@ start:
 .v0:            move.w  INTREQR(a0),d7
                 btst    #5,d7
                 beq.s   .v0
-                ifd     MUT_NOCOP
-                move.l  #LIST_BASE+$100,COP1LCH(a0)
-                else
-                move.l  #LIST_BASE,COP1LCH(a0)
-                endif
+                move.l  #LIST_BASE+$100,COP1LCH(a0)     ; the Copper starts from the stale list 1
                 move.w  #0,COPJMP1(a0)
                 move.w  #DMACON_RUN,DMACON(a0)
 
@@ -89,22 +85,22 @@ start:
                 lea     MARKS,a5
                 moveq   #0,d0
                 bsr     wait_vertb              ; t0
+                ifd     MUT_LATEMARK
+                bsr     wait_vertb              ; t1 first: the write and the marker follow it
+                endif
                 ifnd    MUT_NOCOP
-                move.l  #LIST_BASE,COP1LCH(a0)
+                move.l  #LIST_BASE,COP1LCH(a0)  ; list 0 replaces the stale list at the next start of vertical blanking
                 endif
-                ifnd    MUT_LATEMARK
                 move.w  #$C000,(a5)+            ; marker 0
-                endif
+                ifnd    MUT_LATEMARK
                 bsr     wait_vertb              ; t1: the evaluated field begins
+                endif
                 ifd     MUT_SCROLL
 .ws:            move.w  VHPOSR(a0),d7
                 lsr.w   #8,d7
                 cmp.w   #215,d7
                 blo.s   .ws
                 move.w  #$0011,BPLCON1(a0)
-                endif
-                ifd     MUT_LATEMARK
-                move.w  #$C000,(a5)+
                 endif
                 bsr     wait_vertb              ; t2: it ends
                 ifd     MUT_SCROLL
@@ -117,29 +113,30 @@ PLANE           macro                           ; \1 = plane index 0..5: the ima
                 dc.l    P2_IMG+\1*$6000
                 endm
 
-; one table entry: BPLCON0, BPLCON2, six BPLnPT, the sprite base. Entry 1 repeats
-; entry 0 at another list address: the stale list of MUT_NOCOP.
+; one table entry: BPLCON0, BPLCON2, six BPLnPT, the sprite base. \1 = the plane 4
+; pointer: entry 0 (list 0) takes the image of plane 4 (or a contrast), entry 1 (the
+; stale list) takes plane 4's all-zero image.
 CFGENTRY        macro
                 dc.w    $6600,$0000
                 PLANE   0
                 PLANE   1
                 PLANE   2
-                ifd     MUT_BPL4PLANE2
-                dc.l    P2_IMG+1*$6000
-                else
-                ifd     MUT_BPL4ZERO
-                dc.l    P2_IMG+3*$6000+$3000
-                else
-                PLANE   3
-                endif
-                endif
+                dc.l    \1
                 PLANE   4
                 PLANE   5
                 dc.l    SPR_P2
                 endm
 
 cfg_table:
-                CFGENTRY
-                CFGENTRY
+                ifd     MUT_BPL4PLANE2
+                CFGENTRY        P2_IMG+1*$6000
+                else
+                ifd     MUT_BPL4ZERO
+                CFGENTRY        P2_IMG+3*$6000+$3000
+                else
+                CFGENTRY        P2_IMG+3*$6000
+                endif
+                endif
+                CFGENTRY        P2_IMG+3*$6000+$3000
 
                 include "pri_routines.i"

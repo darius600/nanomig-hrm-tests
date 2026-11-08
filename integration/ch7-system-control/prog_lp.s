@@ -13,18 +13,17 @@
 ;                  outputs instead of fixing them to inputs.
 ;   LPENCLEAR   -- contrasting case: BPLCON0 <- $0000 (LPEN clear) instead
 ;                  of $0008.
-;   ANCHORMUT   -- precondition-1 (anchor check) contrast: the second A
-;                  anchor's WAIT targets line 101 instead of line 100.
+;   ANCHORMUT   -- precondition-1 (anchor check) contrast: the first A
+;                  anchor's WAIT targets line 99 instead of line 100.
 ;   V1DELAY     -- precondition-2 (read-time check) contrast: the V1 read
 ;                  of every field is moved about 30 lines later.
-;   E40LINE44   -- the live-read precondition's contrast: the E40 WAIT
-;                  targets line 44 instead of line 40.
 ;   NOCOPEN     -- the Copper trigger-plan fixture's contrast: DMACON is
 ;                  written without COPEN, so the Copper never fetches.
 ;   NODONE      -- the driven-run fixture's contrast: the program never
 ;                  stores the DONE mark.
-;   EVMIS       -- the record-layout precondition's contrast: the V1 record
-;                  of every field carries event id 5 instead of 6.
+;   EVMIS       -- the record-layout precondition's contrast: the V2 record
+;                  of every field is stored before the V1 record, each with
+;                  its own event id.
 ;
 ; The CPU's waits after VERTB (about 2 lines before V1, about 8 more before
 ; V2) are counted polls of INTREQR, never polls of VPOSR or VHPOSR, the
@@ -57,6 +56,7 @@ PRETICK1        equ     $0C1102
 MAINTICK        equ     $0C1104         ; 9 words, one per VERTB (F-1..F7)
 RECORDS         equ     $0C2000         ; 72 records * 5 words
 CALIB           equ     $0C1180         ; long: poll iterations over the 20 lines E110..E130
+SWAPBUF         equ     $0C1200         ; EVMIS: one record, V1's, until V2's has been stored
 
         org     PROGRAM_ORG
 
@@ -111,11 +111,7 @@ start:
 
         ; ---- Copper list, in beam order (p.27), see SPECIFICATION.md's
         ; own WAIT/MOVE table (P3, "Stimulus (program)", step 5).
-        ifd     E40LINE44
-        move.w  #$2C01,COP_LIST.l               ; contrast: WAIT line 44 instead of 40
-        else
         move.w  #$2801,COP_LIST.l               ; WAIT line 40
-        endif
         move.w  #$FFFE,COP_LIST+2.l
         move.w  #INTREQ,COP_LIST+4.l             ; E40
         move.w  #$8010,COP_LIST+6.l
@@ -125,16 +121,16 @@ start:
         move.w  #INTREQ,COP_LIST+12.l            ; E60
         move.w  #$8010,COP_LIST+14.l
 
+        ifd     ANCHORMUT
+        move.w  #$6341,COP_LIST+16.l             ; contrast: WAIT line 99, H $40
+        else
         move.w  #$6441,COP_LIST+16.l             ; WAIT line 100, H $40
+        endif
         move.w  #$FFFE,COP_LIST+18.l
         move.w  #COLOR00,COP_LIST+20.l           ; anchor A1
         move.w  #$0F00,COP_LIST+22.l
 
-        ifd     ANCHORMUT
-        move.w  #$65A1,COP_LIST+24.l             ; contrast: line 101 instead of 100
-        else
         move.w  #$64A1,COP_LIST+24.l             ; WAIT line 100, H $A0
-        endif
         move.w  #$FFFE,COP_LIST+26.l
         move.w  #COLOR00,COP_LIST+28.l           ; anchor A2
         move.w  #$0000,COP_LIST+30.l
@@ -222,11 +218,14 @@ main_loop:
         moveq   #0,d6
         bsr     spin
         ifd     EVMIS
-        moveq   #5,d4                   ; contrast: V1 stored with event id 5
-        else
-        moveq   #6,d4                   ; V1
+        movea.l a5,a6                   ; contrast: V1's record goes to a side buffer first
+        lea     SWAPBUF,a5
         endif
+        moveq   #6,d4                   ; V1
         bsr     read_and_store
+        ifd     EVMIS
+        movea.l a6,a5
+        endif
 
         ; V2: about 8 lines later (2 * CALIB / 5 polls).
         move.l  CALIB.l,d5
@@ -237,6 +236,12 @@ main_loop:
         bsr     spin
         moveq   #7,d4                   ; V2
         bsr     read_and_store
+        ifd     EVMIS
+        lea     SWAPBUF,a1              ; contrast: V1's record (event id 6) is stored after V2's
+        move.l  (a1)+,(a5)+
+        move.l  (a1)+,(a5)+
+        move.w  (a1)+,(a5)+
+        endif
 
         cmp.w   #8,d0
         beq     all_done

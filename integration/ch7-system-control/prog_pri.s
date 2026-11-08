@@ -16,7 +16,7 @@
 ;   MUT_NOCOP      -- no COP1LC write for configuration 4
 ;   MUT_BPL2ZERO   -- B1-B8: BPL2PT at the all-zero image
 ;   MUT_VSTOP130   -- B1-B8: sprites end at line 130 instead of 140
-;   MUT_LATEMARK   -- the marker of each configuration is stored after t1 instead of between t0 and t1
+;   MUT_LATEMARK   -- the COP1LC write of each configuration and its marker come after t1 instead of between t0 and t1
 
                 include "pri_common.i"
 
@@ -123,6 +123,9 @@ start:
                 moveq   #0,d6
 cfg_loop:
                 bsr     wait_vertb              ; t0
+                ifd     MUT_LATEMARK
+                bsr     wait_vertb              ; t1 first: the write and the marker follow it
+                endif
                 ifd     MUT_NOCOP
                 cmp.w   #NOCOP_K,d6
                 beq.s   .skipw
@@ -133,23 +136,18 @@ cfg_loop:
                 add.l   #LIST_BASE,d3
                 move.l  d3,COP1LCH(a0)
 .skipw:
-                ifnd    MUT_LATEMARK
                 move.w  d6,d3
                 add.w   #$C000,d3
                 move.w  d3,(a5)+                ; marker k
-                endif
+                ifnd    MUT_LATEMARK
                 bsr     wait_vertb              ; t1: the evaluated field begins
+                endif
                 ifd     MUT_SCROLL
 .ws:            move.w  VHPOSR(a0),d7
                 lsr.w   #8,d7
                 cmp.w   #215,d7
                 blo.s   .ws
                 move.w  #$0011,BPLCON1(a0)
-                endif
-                ifd     MUT_LATEMARK
-                move.w  d6,d3
-                add.w   #$C000,d3
-                move.w  d3,(a5)+
                 endif
                 bsr     wait_vertb              ; t2: it ends
                 ifd     MUT_SCROLL

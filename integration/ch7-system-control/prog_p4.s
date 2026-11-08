@@ -25,10 +25,10 @@
 ;                 from E60 of F1 until Y has been stored, so the F1 pulse
 ;                 latches nothing.
 ;   DDRAFORCE  -- the DDRA precondition's contrast: bits 6-7 forced to outputs.
-;   ANCHORMUT  -- the anchor precondition's contrast: the second A anchor WAITs
-;                 for line 101.
-;   PERIODMUT  -- the period precondition's contrast: every BEAMCON0 write has
-;                 bit 5 clear (the other standard).
+;   ANCHORMUT  -- the anchor precondition's contrast: the first A anchor WAITs
+;                 for line 99.
+;   PERIODMUT  -- the period precondition's contrast: the BEAMCON0 write at E60
+;                 of F1 has bit 5 clear (the other standard).
 ;   SHORTSPIN  -- the reference-frame precondition's contrast: the delay after
 ;                 E250 is 10 poll iterations.
 ;   YDELAY     -- the read-time precondition's contrast: 40 poll iterations
@@ -87,11 +87,7 @@ start:
         move.b  CIAADDRA.l,d2           ; DDRA read again after the fix-or-force branch
         move.w  d2,RESULTS.l            ; RESULTS+0: that DDRA, zero-extended
 
-        ifd     PERIODMUT
-BC_PAL          equ     $0000
-        else
 BC_PAL          equ     $0020
-        endif
         move.w  #BC_PAL,BEAMCON0(a0)    ; ECS, PAL, LPENDIS=0
         move.w  #$0008,BPLCON0(a0)      ; LPEN=1
         move.w  #$0000,COLOR00(a0)
@@ -107,16 +103,16 @@ BC_PAL          equ     $0020
         move.w  #INTREQ,COP_LIST+12.l
         move.w  #$8010,COP_LIST+14.l
 
+        ifd     ANCHORMUT
+        move.w  #$6341,COP_LIST+16.l    ; contrast: line 99 instead of 100
+        else
         move.w  #$6441,COP_LIST+16.l
+        endif
         move.w  #$FFFE,COP_LIST+18.l
         move.w  #COLOR00,COP_LIST+20.l
         move.w  #$0F00,COP_LIST+22.l
 
-        ifd     ANCHORMUT
-        move.w  #$65A1,COP_LIST+24.l    ; contrast: line 101 instead of 100
-        else
         move.w  #$64A1,COP_LIST+24.l
-        endif
         move.w  #$FFFE,COP_LIST+26.l
         move.w  #COLOR00,COP_LIST+28.l
         move.w  #$0000,COP_LIST+30.l
@@ -211,7 +207,11 @@ main_loop:
         ifd     NOLPENDIS
         move.w  #BC_PAL,BEAMCON0(a0)    ; contrast: LPENDIS never set
         else
+        ifd     PERIODMUT
+        move.w  #$2000,BEAMCON0(a0)     ; contrast: LPENDIS=1, bit 5 clear (the other standard)
+        else
         move.w  #BC_PAL|$2000,BEAMCON0(a0) ; F1: LPENDIS=1
+        endif
         endif
         ifd     F1NOLPEN
         move.w  #$0000,BPLCON0(a0)      ; contrast: LPEN clear for the rest of F1

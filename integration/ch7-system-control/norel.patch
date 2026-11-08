@@ -1,0 +1,11 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -480,7 +480,7 @@
+ 			lp_en <= data_in[3];
+ 		if (reset)
+ 			lp_latched <= 1'b0;
+-		else if (lp_latched && vpos==11'd20)
++		else if (lp_latched && vpos==11'd50)   // contrast: release at vertical position 50 instead of 20
+ 			lp_latched <= 1'b0;
+ 		else if (!lp_latched && lp_en && lp_d && !_lp && vpos>11'd20) begin
+ 			lp_latched <= 1'b1;
