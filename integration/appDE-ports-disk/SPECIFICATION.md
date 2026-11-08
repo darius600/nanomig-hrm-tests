@@ -108,6 +108,7 @@ optional".
 | 9 | pen-pressed line | p.333 row 5 "LPENPR* Light pen pressed See Proportional Inputs". p.228: pin 5 "pen pressed to screen". p.238: "connected to one of the potentiometer inputs and must be read as same as the right or middle button on a mouse". | Pin 5 (all pages agree). p.238's "right or" is not graded. |
 | 10 | the moment of the no-trigger latch | p.239: "If no trigger is seen, the counters latch at the end of the display field." No position is given. | Only the relation "greater than $10500" is graded (P4). The moment of the latch and the exact value are not. |
 | 11 | disk identification | p.335 against pp.370–371 | Section 0.1. |
+| 12 | which CIA-A port A bit carries which controller port's fire button | p.232: "The left button on the Amiga mouse is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7." p.327: "J12 is the left controller port connector (JOY0DAT, POT0DAT)"; chapter 8 calls the left connector port 1 (p.229, JOY0DAT "port 1"). p.329 (Appendix E): "PRAO bit 7 = Fire* left controller port" and "PRAO bit 6 = Fire* right controller port". Read with p.327, the two pages give opposite assignments: p.232 puts the left connector (J12) on bit 6, p.329 puts it on bit 7. | Not resolved by a grading choice. The pen-pressed connector is identified by a run (C0, P5.5), not assumed: the bit that follows the harness's left mouse button names X. P5's C0 maps bit 6 to J12 and bit 7 to J11, which is p.232's assignment; on p.329's assignment the same observation would name the other connector. The harness's mouse reaches the port-1 inputs (4.1). No grading depends on the choice between the pages. |
 
 ---
 
@@ -269,7 +270,12 @@ reads.
   instant inside its bracket.
 - **A2.** Line lengths are 227 and 228 alternating (NTSC) or all 227 (PAL).
   H never exceeds $E3 (NTSC) or $E2 (PAL). This is graded as a proposition of
-  its own (p.23), in every configuration.
+  its own (p.23), in every configuration. The "H never exceeds" sub-clause
+  does not see the end of a line: the largest H read of a run is 225 (fx68k) or
+  226 (TG68K) in the normal runs and 221 (fx68k) or 222 (TG68K) in the LP-A2
+  run with lines of 228 colour clocks, never above the bound, and the MEASURED
+  model line prints it. Every failing verdict of A2 therefore rests on the
+  line-length clause.
 - **A3.** L_f ∈ {262, 263} for NTSC or {312, 313} for PAL, the same for every
   reference field.
 - **A4.** The live reads that no proposition reads equal the model value
@@ -310,7 +316,7 @@ of the field.
 | C0 | **Connector identity.** In S2 the harness drives pin 4 (RIGHT*) of harness connector A low during the first of the two fields and high in the second. Bit 1 of exactly one of JOY0DAT and JOY1DAT follows pin 4 (p.329: "Right: bit#1"; p.281: "0=left controller pair, 1=right controller pair"). If it is JOY0DAT, A is J12 (p.327). | The harness drives pin 3 (LEFT*) instead. p.329 gives Left as "bit#9", so bit 1 does not follow and C0 fails. |
 | C1 | The program finished: the done marker is present and the sample count is N_ref + N_meas (plus the S2 samples). | Remove S8. C1 fails. |
 | C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. For BEAMCON0 this half shows that the read happened, in order; its bit 13 is graded by C6. | Declare $0008 and store $0000 in cfg_BPLCON0. C2 reports the mismatch. |
-| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse; a VPOSW write that sets V8 and V9 for the reads of F4 from line 22 to line 101 (every read before its pulse and the first 20 (fx68k) or 18 (TG68K) after it) leaves fewer than two current reads before the pulse; one that sets V8 and V9 for 100 reads of F10 before line 100 leaves reads there that are not current. |
+| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse; a VPOSW write that sets V8 and V9 for the reads of F4 from line 22 to line 101 (every read before its pulse; the window is a program constant, 950 reads on fx68k and 1000 on TG68K, and no line prints how many of them follow the pulse) leaves fewer than two current reads before the pulse; one that sets V8 and V9 for 100 reads of F10 before line 100 leaves reads there that are not current. |
 | A2 | Graded line (section 2.6), not a precondition. | After S3 the program writes HTOTAL = $E3 and BEAMCON0 = $00A0 (VARBEAMEN, PAL; p.305). HTOTAL is the "Highest number count, horiz. line (VARBEAMEN=1)" (p.280) and p.23 counts a line 0-$E3 as 228 colour clocks, so A2's line-length clause (all 227 in PAL) fails. VTOTAL (p.285, VARBEAMEN=1) is not written and no page gives its reset value; that A3 still holds is measured on this chipset, not predicted. |
 | C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Pause for more than 32 colour clocks after every 500 reads of the measurement loop. C4 fails. |
 | C5 | The pulses are as scheduled: the harness log shows each pulse on pin 6 of the connector under test, 4 color clocks wide, at its scheduled time, and no other controller pin changes during S5–S8. | Log a pulse on pin 5 instead of pin 6. C5 fails. |
@@ -457,7 +463,11 @@ least two in each of F3 to F7), so the register was live when the pulse came.
   untriggered F2: the reads after the would-be instant keep equalling the
   model value (p.239: "If both values are not the same, the light pen has not
   triggered since the last top-of-screen (V = 20)"), and F3's W_blank holds a
-  value above $10500. Checks (a) and (b) for F2 fail.
+  value above $10500. In the measured run check (a) still holds, because the
+  first read after the would-be instant is read in the pulse's own line
+  (V = 100); (b) is NOT GRADED (section 4.1); check (c) fails, because that
+  read of F2 is 18 (fx68k) or 24 (TG68K) colour clocks beyond the pulse
+  position, so H(P_F3) - H(P_F2) is not 1. P2 is red through (c) alone.
 - Move the F3 pulse 2 color clocks later. Check (c) now predicts a difference
   of 3, so the check with its unchanged expectation of 1 fails.
 
@@ -527,13 +537,23 @@ each pulse also applies.
 
 - **For (a):** remove the F2 pulse. The reads after the would-be instant
   equal the model value (p.239, method step 2), so (a) fails for F2.
-- **For (c):** add a pulse at (50, $40) in F8, whose W_live is declared
-  untriggered. The pages predict a hold from line 50 (p.239), so the live
-  check over W_live(F8) fails.
+- **For (c):** no stimulus contrasts the release clause. p.239 makes the
+  release unconditional ("This freeze is released at the end of internal
+  vertical blanking (vertical position 20)"), whatever caused the freeze, and a
+  pulse in a field whose W_live is declared untriggered freezes the registers
+  again ("Once the light pen input is enabled and the light pen issues a
+  trigger signal, the value in VPOSR is frozen"). The stimulus run that adds a
+  pulse at (50, $40) in F8 therefore fails the live check over W_live(F8)
+  through that new freeze, not through the release clause; it is kept as a
+  supplementary record. The contrast of the release clause is an
+  implementation control: a copy of the 4.6 latch (latch3, section 4.6) in
+  which a freeze caused by a pulse is released at line 40 instead of line 20,
+  while a freeze caused by the end of a field is still released at line 20.
+  The unchanged run on it fails (c) with every precondition line holding.
 - **For (d):** move F9's pulse from line 10 to line 50. The pages predict a
   hold from line 50 of F9, so (d)'s live check fails.
 
-The program finishes and the preconditions hold in all three runs.
+The program finishes and the preconditions hold in all these runs.
 
 **7. Reference frame.** Section 2.6. The boundaries at line 20 and at Rb come
 from the model.
@@ -673,6 +693,7 @@ GRADED.
   bit 7 of CIA-A port A follows it. p.232: "The left button on the Amiga mouse
   is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7."
   Bit 6 makes X = J12 (port 1, the left connector, p.327), bit 7 makes X = J11.
+  This is p.232's assignment; p.329 prints the opposite one (section 1, item 12).
   The pin-5 bit graded is bit 8 for J12 and bit 12 for J11.
 - The port shows the CPU reading POTGO's value $0000 from memory before the
   loop.
@@ -778,7 +799,7 @@ What is not graded, and why:
   red (measured: the F2 pulse at line 40 leaves A4 green on both cores). A4's
   contrasts are therefore a VPOSW write in F2 before the pulse, which sets V8
   of the vertical counter for 100 reads and clears it again, a VPOSW write
-  that sets V8 and V9 for the reads of F4 from line 22 to line 101 (every read before its pulse and the first 20 (fx68k) or 18 (TG68K) after it), and one that sets
+  that sets V8 and V9 for the reads of F4 from line 22 to line 101 (every read before its pulse; the window is a program constant, 950 reads on fx68k and 1000 on TG68K, and no line prints how many of them follow the pulse), and one that sets
   V8 and V9 for 100 reads of F10 before line 100 (repository chipset), and
   the pulse moved to line 40 (private chipset of 4.6). The F4 and F10 writes
   set V9 as well because V8 alone leaves the raised count below the last line
@@ -940,8 +961,8 @@ were not run with prog_lpen_m4_tg and prog_lpen_m10_tg.
 | P5-SCHEDULE | P5-SCHED | repository | joystick0 bit 0 driven in the second level interval | red, P5(a) and P5(b) NOT GRADED |
 | P5-WINDOW-COUNT | P5-SHORT | repository | third level interval 5000 cycles | red for window 2; P5(a) and P5(b) of window 2 NOT GRADED |
 | P5-SCHEDULE | P5-PIN9 | repository | pin 9 driven instead of pin 5 in window 2 | red, P5(a) and P5(b) NOT GRADED |
-| P5A-PIN5-FOLLOWS | P5-BASE | private (POTINP bit 8 held at 1) | the unchanged run | red for windows 0 and 2, only this line |
-| P5B-OTHER-POT-BITS-1 | P5-BASE | private (POTINP bit 10 also follows pin 5) | the unchanged run | red for windows 0 and 2, only this line |
+| P5A-PIN5-FOLLOWS | P5-BASE | private p5a (POTINP bit 8 held at 1) | the unchanged run | red for windows 0 and 2, only this line |
+| P5B-OTHER-POT-BITS-1 | P5-BASE | private p5b (POTINP bit 10 also follows pin 5) | the unchanged run | red for windows 0 and 2, only this line |
 | LP-FIXTURE-MARK0 | LP-FIX | repository | first fixture store holds $BEEF | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C0-IDENTITY | LP-C0 | repository | pin 3 driven in S2 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C1-DONE | LP-C1 | repository | no done mark | red, only this precondition line; the proposition lines are NOT GRADED |
@@ -950,22 +971,23 @@ were not run with prog_lpen_m4_tg and prog_lpen_m10_tg.
 | LP-C3-A3-FIELD-LENGTH | LP-A3 | repository | NTSC selected, PAL declared | red, only this line |
 | LP-A2-LINE-LENGTHS | LP-A2 | repository | HTOTAL $E3 and BEAMCON0 $00A0 (VARBEAMEN) written after S3: lines of 228 colour clocks | red through the line-length clause; every precondition line holds |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4W | repository | V8 of the vertical counter set for 100 reads of F2 before its pulse | red, only this line |
-| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | repository | V8 and V9 of the vertical counter set for the reads of F4 from line 22 to line 101 (every read before its pulse and the first 20 (fx68k) or 18 (TG68K) after it) | red, only this line; the proposition lines are NOT GRADED |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | repository | V8 and V9 of the vertical counter set for the reads of F4 from line 22 to line 101 (every read before its pulse; the window is a program constant, 950 reads on fx68k and 1000 on TG68K, and no line prints how many of them follow the pulse) | red, only this line; the proposition lines are NOT GRADED |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4F10 | repository | V8 and V9 of the vertical counter set for 100 reads of F10 before line 100 | red, only this line; the proposition lines are NOT GRADED |
 | LP-C4-DENSITY | LP-C4 | repository | pause of about 70 colour clocks after every 500 measurement reads | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C5-PULSES | LP-C5 | repository | pulses on pin 9 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C6-LPENDIS-CLEAR | LP-C6 | repository | BEAMCON0 $2020 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | repository | F2 pulse at line 40 | green: the reads before the pulse are current, A4 does not move (4.1) |
-| LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
-| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | private | V8 and V9 of the vertical counter set for the reads of F4 from line 22 to line 101 (every read before its pulse and the first 20 (fx68k) or 18 (TG68K) after it) | red, only this line |
-| LP-C3-A4-FIELD-ANCHOR | LP-A4F10 | private | V8 and V9 of the vertical counter set for 100 reads of F10 before line 100 | red, only this line |
-| LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-BASE | second private (latch ignores bit 3) | the unchanged run | red, these three lines |
-| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD, LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P2A | private | F2 pulse not driven | red, these lines and P4; P3(c) NOT GRADED; every precondition line holds |
-| LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
-| LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private | F7 pulse at line 60 not driven | red, with P1A, P3(a), P4, the P1 aggregate and LP-LATCH-ENABLE-AND-POSITION |
-| LP-P3C-RELEASE | LP-P3C | private | pulse at line 50 of F8 | red, with P4 |
-| LP-P3D-PULSE-BEFORE-ENABLE | LP-P3D | private | F9 pulse at line 50 | red, with P4 |
-| LP-P4-DETERMINE-TRIGGER | LP-P4A | private | pulse at line 100 of F1 | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4 | private latch | F2 pulse at line 40 | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F4 | private latch | V8 and V9 of the vertical counter set for the reads of F4 from line 22 to line 101 (every read before its pulse; the window is a program constant, 950 reads on fx68k and 1000 on TG68K, and no line prints how many of them follow the pulse) | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4F10 | private latch | V8 and V9 of the vertical counter set for 100 reads of F10 before line 100 | red, only this line |
+| LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-BASE | second private latch2 (latch ignores bit 3) | the unchanged run | red, these three lines |
+| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD, LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P2A | private latch | F2 pulse not driven | red, these lines and P4; P3(c) NOT GRADED; every precondition line holds |
+| LP-P2-LATCH-AT-PULSE | LP-P2B | private latch | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
+| LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private latch | F7 pulse at line 60 not driven | red, with P1A, P3(a), P4, the P1 aggregate and LP-LATCH-ENABLE-AND-POSITION |
+| LP-P3C-RELEASE | LP-P3C | private latch | pulse at line 50 of F8 | red, with P4; the red is the new freeze of the added pulse, not the release clause (P3 6, (c)) |
+| LP-P3C-RELEASE, LP-P4-DETERMINE-TRIGGER | LP-BASE | third private latch3 (pulse-caused freeze released at line 40) | the unchanged run | red, these two lines; every precondition line holds |
+| LP-P3D-PULSE-BEFORE-ENABLE | LP-P3D | private latch | F9 pulse at line 50 | red, with P4 |
+| LP-P4-DETERMINE-TRIGGER | LP-P4A | private latch | pulse at line 100 of F1 | red, only this line |
 
 On the private chipset the normal run prints 290 passed and 4 failed on both cores: every
 light-pen line passes in all eight runs (PAL and NTSC), P3(c) is graded and
@@ -997,6 +1019,28 @@ P1B is green on the repository's chipset, whose registers always read the
 moving beam, and on the private chipset, where bit 3 gates the latch. A second
 private copy, in which the latch ignores bit 3, shows that P1B can fail on a
 chipset that latches whatever bit 3 holds (4.5).
+
+The private copies are made by patch files of this package, applied to a copy
+of the pinned chipset sources under `obj_dir_<copy>/` (the submodule is never
+modified; the Makefile builds and runs each on both cores):
+
+| copy | patch files | what it changes | make targets |
+|---|---|---|---|
+| latch | latch.patch | the latch described above (the same file as `ch8-light-pen-beam/latch.patch`) | `latch-test-fx68k`, `latch-test-tg68k` |
+| latch2 | latch.patch, latch2.patch | a pulse is captured whatever BPLCON0 bit 3 holds; the end-of-field latch is still gated by bit 3 | `latch2-test-fx68k`, `latch2-test-tg68k` |
+| latch3 | latch.patch, latch3.patch | a freeze caused by a pulse is released at line 40; a freeze caused by the end of a field is still released at line 20 | `latch3-test-fx68k`, `latch3-test-tg68k` |
+| p5a | p5a.patch | POTGOR bit 8 (DATLX) reads 1 whatever pin 5 does | `p5a-test-fx68k`, `p5a-test-tg68k` |
+| p5b | p5b.patch | POTGOR bit 10 (DATLY) also follows the pin-5 button (`_mthird`) | `p5b-test-fx68k`, `p5b-test-tg68k` |
+
+`make <copy>-test-<core> SEL=<NMH_MUTATE value>` builds the copy and runs the
+package with that value (no `SEL`: the normal run); `make <copy>-mut-<core>
+SEL=<value>` runs the binary of an earlier build. Output goes to
+`out_<copy>[_<SEL>]_<core>.txt`. Each MUTATION record that names a private
+chipset names the copy and the make target.
+
+The release clause of P3(c) is contrasted by latch3: its unchanged run
+(`SEL=LP-BASE`) prints LP-P3C-RELEASE and LP-P4-DETERMINE-TRIGGER red and every
+other line, preconditions included, passing, on both cores.
 
 ### 4.7 Timing margins tuned on this design
 
