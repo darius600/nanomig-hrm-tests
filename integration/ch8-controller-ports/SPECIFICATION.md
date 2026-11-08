@@ -30,21 +30,39 @@ p.281 pin-decode assertions without those ids.
   are sampled (multiplexed) into the DENISE chip during the clock times shown in
   the table."
 
-Reason:
+Not asserted. There are two separate reasons, and only the first is a limit of
+what a test can observe.
 
-- The sampling and the multiplexing happen inside the chip. Which chip samples
-  a pin, through which of its pins (38, 9, 39, 8), and at which clock (CCK or
-  CCK*) never appears on any output a test sees. It is also not something a
-  program can read back.
-- A test drives steady digital levels on the connector pins. It cannot place a
-  level change at a chosen phase of CCK, and the page gives no expected value
-  for a change shorter than a sampling period.
-- The page itself says, in the next sentence: "This table is for reference only
-  and should not be needed by the programmer."
+- **Which chip samples, and through which pin: not observable.** The claim names
+  Denise, its pins 38, 9, 39 and 8, and the signals M0V, M0H, M1V and M1H.
+  None of these appears on a port of `nanomig.v` or in a register a program can
+  read. A test that reads JOY0DAT and JOY1DAT cannot tell Denise sampling a pin
+  from any other block of the chip set sampling it, so no assertion on those
+  registers establishes the whole claim, and the claim ids stay off every
+  assertion.
+- **The sampling phase: the stimulus is possible, the page gives no expected
+  value.** `nanomig.v` exports the strobes `clk7_en` and `clk7n_en`
+  (`nanomig.v:15-16`), the harness steps single `clk_sys` cycles and exposes the
+  top-level ports, so a test can change a connector level on a chosen cycle
+  relative to either strobe and can hold a level for only part of a sampling
+  period. What the page lacks is a sentence that says what JOY0DAT or JOY1DAT
+  show for such a stimulus. The sentences of p.281 on sampling are: "The pins
+  (and their functions) are sampled (multiplexed) into the DENISE chip during
+  the clock times shown in the table." and, after the table, "After being
+  sampled, these connector pin signals are used in quadrature to clock the mouse
+  counters." The first names a clock (CCK or CCK*) for each pin. It does not say
+  which instant of that clock takes the sample, how long a period is, or how CCK
+  and CCK* relate to any port of the design. The second speaks of signals that
+  were sampled, not of a level that was not. Neither gives a counter value or a
+  bit value for a level held for part of a period. An expected value for such a
+  stimulus would have to come from the RTL, which is not the oracle. No test is
+  added for it.
+- The sentence that follows the first one on the page reads: "This table is for
+  reference only and should not be needed by the programmer."
 
 Everything the table leads to that a program can see is covered by P2 to P4:
 which pins reach which counter of which register, and what the low counter bits
-show.
+show, for levels held steady across the sampling.
 
 Two parts of other claims also cannot be checked. They are named inside the
 propositions that use the rest of those claims:
@@ -308,6 +326,20 @@ If one fails, the result is "not established", never "pass".
   300 microseconds for the line to change state." The pages give no settling
   time for the dump itself.
 
+  What the time measures: M1 is stored right after the W step's POTGO write (one
+  V read and one store later) and M2 between the two V reads of the R record, so
+  t(M2) − t(M1) is the time from the write to the graded read less that short
+  tail of the W step. It equals the page's interval only for a program whose
+  POTGO write is the last one before M1 (K7).
+
+  Arithmetic for the program as specified. PC1 puts the one POTGO write in line
+  4 and the graded read in line 10, so the five whole lines 5 to 9 lie between
+  them. p.194: "During a horizontal scan line (about 63 microseconds), there are
+  227.5 "color clocks"", about 280 ns each. Five lines are about 315
+  microseconds, above the 300 microseconds of p.240. No program that keeps
+  PC1's line numbers and writes POTGO once can bring the interval under 300
+  microseconds; K7 is therefore a program with a second write.
+
 ### 6. Contrasting cases
 
 - **K1 (bit 0).** Every Fc writes C instead of C | $0001.
@@ -340,12 +372,22 @@ If one fails, the result is "not established", never "pass".
   - A record only counts when Vr0=Vr1=10 (the grader's own fixed target, section
     3): moving the R step to line 5 means no record of any Fc ever counts, so
     PC1 ("every R step has at least one qualifying record") fails, not PC4.
-- **K7 (PC4).** Every W step stores its marker M1 after waiting for line 9
-  instead of straight after the POTGO write and the V read at line 4; the
-  POTGO write, the V reads and every R step are unchanged.
-  - PC1 to PC3 hold, since PC1 reads the V words and not the timestamps. The
-    time from M1 to M2 is shorter than a line, so PC4 must fail, and the
-    result must be "not established".
+- **K7 (PC4).** Every W step repeats its POTGO write with the same value after
+  waiting for line 9, and stores its marker M1 after that second write. The
+  first write in line 4, its V reads (Vw0, Vw1) and every R step are unchanged.
+  - The last POTGO write before each graded read is now in line 9 and the graded
+    read is in line 10, so the real write-to-read interval is under two lines
+    (under 130 microseconds, with p.194's 63 microseconds a line), and so is
+    t(M2) − t(M1). PC4 must fail, and the result must be "not established".
+  - PC1 to PC3 hold. PC1 reads the V words of the first write and of the R
+    records; the second write and M1 enter none of them. The second write has
+    the value of the first, so the lines that are outputs stay driven as before
+    (PC2) and no frame before Fc writes START (PC3); Rpre is read before either
+    write, and the drive log is not touched.
+  - Why the contrast has a second write: with one POTGO write per W step, PC1's
+    line numbers fix the interval at 315 microseconds or more (section 5, PC4),
+    so no choice of the single write's time moves it under 300 microseconds
+    without failing PC1.
 - **Green control for C0-Fc to C4-Fc and P1-START.** These are confirmed reds,
   not stimulus defects, and no stimulus at the ports turns them green with
   PC1 to PC4 holding (grounding a line after START is a different cause of a 0,
@@ -883,7 +925,8 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
 
 ### Programs
 
-- `prog_fixture.s` / `prog_fixture_mut.s`: apparatus check, no claim id.
+- `prog_fixture.s` / `prog_fixture_mut.s`: the program of the `FIXTURE`
+  apparatus line, no claim id.
 - `prog_p1.s`: Proposition 1's stimulus exactly as sections 1-7 above (Phase
   P: F1, F2, F3; Phase D: C0-C4, each Fa/Fb/Fc), storing every Vw0/Vw1/M1
   (Fc also Rpre) and, per R step, four records of Vr0/M2/POTGOR/Vr1,
@@ -904,8 +947,8 @@ Q1 to Q4, the anchor of section 7 of P2, and P3's own reference-frame anchor
   variant): none of them changes the program's own code, only which
   harness port level `test_ch8_controller_ports.cpp` applies for a given
   step, selected by `NMH_MUTATE`.
-- The apparatus selectors `P1LOAD`, `CFGMUT`, `JOYLOAD` and `JOYCFGLOAD` name a
-  program file that does not exist (`prog_p1_absent.bin`, `prog_joy_absent.bin`); the
+- The selectors `P1LOAD`, `CFGMUT`, `JOYLOAD` and `JOYCFGLOAD`, which act on
+  apparatus lines, name a program file that does not exist (`prog_p1_absent.bin`, `prog_joy_absent.bin`); the
   repository holds no such file.
 - A selector runs only the part of the package whose lines it changes (the POTGO
   program, or the joystick program), and every selector runs all four
@@ -931,8 +974,10 @@ contract defines no clock) that PC1 grades. `READV` (`ch8_regs.i`) reads
 `VPOSR`/`VHPOSR` as one long word (p.238's own technique) and extracts
 V7-V0/V8 with `SWAP` and word shifts. PC1 is the precondition that checks
 this margin at every run; a run where it fails is "not established", not
-"pass". Measured: fx68k yields 20 of a possible 72 records (4 per R step x
-18 R steps) with Vr0=Vr1=10; TG68K yields 45.
+"pass". Measured in the clean run, of a possible 72 records (4 per R step x 18
+R steps) with Vr0=Vr1=10, for PAL+ECS / NTSC+ECS / PAL+OCS / NTSC+OCS: fx68k
+20 / 18 / 20 / 18; the default TG68K build (`TG68K_KERNEL=board`) 45 / 40 / 45
+/ 40. Each is the number the `MEASURED: PC1` line of its configuration prints.
 
 ### Measured: P1's main claim on this build
 
@@ -954,12 +999,16 @@ reach bits 8, 10 and 14 (mouse_buttons bit 2 for bit 8; mouse_buttons bit 1
 and joystick1 bit 5 for bit 10; joystick0 bit 5 for bit 14); no port at this
 boundary reaches bit 12.
 
-Final run of the clean package, every core: 109 passed, 24 failed (133 graded
-lines: the 20 confirmed reds `C0-Fc` to `C4-Fc` in the four configurations, the
-four `P1-START` reds, and 109 passes). The joystick part grades each of the four
-configurations on its own: 18 lines each (Q1 to Q4, `P2-ANCHOR`, the six P2
-lines, `P3-ANCHOR`, `P3-Y`, `P3-X`, and the four `P4-PIN*`), plus `JOY-FIXTURE`
-and `JOY-CONFIGS`, 74 lines in all; every one prints `PASS`.
+Final run of the clean package, every core: 109 passed, 24 failed. The 133
+`expect` lines are 128 graded lines and 5 apparatus lines. An apparatus line
+carries "[not graded -- apparatus check, no claim uid]" in its label: `FIXTURE`,
+`P1-FIXTURE`, `P1-CONFIGS`, `JOY-FIXTURE` and `JOY-CONFIGS`. The 128 graded
+lines are the 20 confirmed reds `C0-Fc` to `C4-Fc` in the four configurations,
+the four `P1-START` reds, and 104 passes; the 5 apparatus lines print `PASS`
+(104 + 5 = 109 passed). The joystick part has 18 graded lines in each of the four
+configurations (Q1 to Q4, `P2-ANCHOR`, the six P2 lines, `P3-ANCHOR`, `P3-Y`,
+`P3-X`, and the four `P4-PIN*`), 72 in all, and its apparatus lines
+`JOY-FIXTURE` and `JOY-CONFIGS`, 74 lines in all; every one prints `PASS`.
 
 The same package against the private copy of the RTL (section "The private copy
 of the RTL"): 133 passed, 0 failed on both cores; the 24 lines above print
@@ -989,8 +1038,11 @@ Run once each, both cores, via `NMH_MUTATE=<value>`, from each object
 directory (`./Vnanomig ..`). Every result below is the pass/fail count and
 the clause that actually printed; fx68k and TG68K printed the identical
 pattern for every mutation below, line for line. A selector runs only its own
-part (see Programs), so the counts are of that part: a POTGO selector prints
-59 graded lines and a joystick selector 75 (`FIXTURE` included in both). A line whose preconditions are not met prints
+part (see Programs), so the counts are of that part. A POTGO selector prints 59
+`expect` lines: 56 graded lines and 3 apparatus lines (`FIXTURE`, `P1-FIXTURE`,
+`P1-CONFIGS`). A joystick selector prints 75: 72 graded lines and 3 apparatus
+lines (`FIXTURE`, `JOY-FIXTURE`, `JOY-CONFIGS`). The passed and failed counts
+below include the apparatus lines. A line whose preconditions are not met prints
 `NOT GRADED` (a `RECORDED` line naming the unmet preconditions), neither `PASS`
 nor `FAIL`, and is not counted.
 
@@ -998,7 +1050,7 @@ POTGO part (all four configurations each; "the sixteen output lines" are
 `C1-Fc-OUT` to `C4-Fc-OUT` in the four configurations, "the twenty reds" are
 `C0-Fc` to `C4-Fc` in the four configurations):
 
-- **FIXTURE** (apparatus check; no other part runs): 0 passed, 1 failed on
+- **FIXTURE** (an apparatus line; no other part runs): 0 passed, 1 failed on
   both cores -- the program stores $FACE where the comparator expects $FEED (the
   read-back itself is faithful), and `FIXTURE` alone flips from `PASS` to
   `FAIL`.
@@ -1027,13 +1079,17 @@ POTGO part (all four configurations each; "the sixteen output lines" are
   clause fails (2 port changes ...)", and Rb=Rpre=$5500 (RECORDED, in each
   configuration). `PC1`, `PC2` and `PC4` stay `PASS`, and the same 40 lines are
   `NOT GRADED`.
-- **K6** (`PC1`, not `PC4`): 15 passed, 4 failed -- moving the R step to line 5
-  leaves no record with Vr0=Vr1=10, so `PC1` prints `FAIL` in each
-  configuration and `PC4` prints `PASS` (nothing there for it to check); the
-  same 40 lines are `NOT GRADED`.
-- **K7** (`PC4`): 15 passed, 4 failed -- `PC4` prints `FAIL` in each
-  configuration, `PC1`, `PC2` and `PC3` stay `PASS`, and the same 40 lines are
-  `NOT GRADED`.
+- **K6** (`PC1`, not `PC4`): 15 passed, 4 failed -- moving the R step of every
+  Fc to line 5 leaves those five R steps with no record that has Vr0=Vr1=10, so
+  `PC1` prints `FAIL` in each configuration. The thirteen other R steps (F1, F2,
+  F3, and Fa and Fb of C0 to C4) are unchanged and still have qualifying
+  records, so `PC4` checks them and prints `PASS`: `MEASURED: PC4` reports 15 /
+  13 / 15 / 13 records checked on fx68k and 33 / 29 / 33 / 29 on the default
+  TG68K build, for PAL+ECS / NTSC+ECS / PAL+OCS / NTSC+OCS. Only the five Fc R
+  steps lack a qualifying record, and the same 40 lines are `NOT GRADED`.
+- **K7** (`PC4`): 15 passed, 4 failed -- every W step repeats its POTGO write
+  in line 9 and stores M1 after it, `PC4` prints `FAIL` in each configuration,
+  `PC1`, `PC2` and `PC3` stay `PASS`, and the same 40 lines are `NOT GRADED`.
 - **OUTLOW** (`C1-Fc-OUT` through `C4-Fc-OUT`): 19 passed, 40 failed --
   `PC1` through `PC4` stay `PASS`; the sixteen output lines all print `FAIL`
   (the output-driven line reads 0 with its data bit held low), and the twenty
