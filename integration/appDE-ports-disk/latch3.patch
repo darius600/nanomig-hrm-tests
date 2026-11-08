@@ -1,0 +1,27 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -399,19 +399,23 @@
+ 			lpen_en <= data_in[3];
+ 	end
+ end
+-wire lp_release = vpos_inc && (vpos == 11'd19);
++reg lp_bypulse;
++wire lp_release = vpos_inc && ((vpos == 11'd19 && !lp_bypulse) || (vpos == 11'd39 && lp_bypulse));
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+ 		lp_prev <= _lpen;
+ 		if (reset || !lpen_en) begin
+ 			lp_latched <= 1'b0;
+ 			lp_armed   <= 1'b0;
++			lp_bypulse <= 1'b0;
+ 		end else if (lp_release) begin
+ 			lp_latched <= 1'b0;
+ 			lp_armed   <= 1'b1;
++			lp_bypulse <= 1'b0;
+ 		end else if (!lp_latched && lp_armed && lp_prev && !_lpen) begin
+ 			lp_latched <= 1'b1;
+ 			lp_armed   <= 1'b0;
++			lp_bypulse <= 1'b1;
+ 			lp_vposr   <= live_vposr;
+ 			lp_vhposr  <= live_vhposr;
+ 		end else if (!lp_latched && end_of_frame) begin

@@ -1,0 +1,20 @@
+--- a/agnus_beamcounter.v
++++ b/agnus_beamcounter.v
+@@ -403,7 +403,7 @@
+ always @(posedge clk) begin
+ 	if (clk7_en) begin
+ 		lp_prev <= _lpen;
+-		if (reset || !lpen_en) begin
++		if (reset) begin
+ 			lp_latched <= 1'b0;
+ 			lp_armed   <= 1'b0;
+ 		end else if (lp_release) begin
+@@ -414,7 +414,7 @@
+ 			lp_armed   <= 1'b0;
+ 			lp_vposr   <= live_vposr;
+ 			lp_vhposr  <= live_vhposr;
+-		end else if (!lp_latched && end_of_frame) begin
++		end else if (lpen_en && !lp_latched && end_of_frame) begin
+ 			lp_latched <= 1'b1;
+ 			lp_armed   <= 1'b0;
+ 			lp_vposr   <= live_vposr;

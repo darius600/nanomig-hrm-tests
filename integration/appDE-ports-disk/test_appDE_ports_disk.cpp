@@ -25,16 +25,18 @@
 // MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-SCHED: the harness also drives joystick0 bit 0 (pin 4 of the other connector) in the second level interval; the log shows a change on an input other than pin 5 and the line prints FAIL, P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; the log shows pin 9 in place of pin 5 for the third and fourth level changes and the line prints FAIL, P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-WINDOW-COUNT stimulus red NMH_MUTATE=P5-SHORT: the third level interval (window 2) lasts 5000 cycles, under the 300 us settle bound; it has no graded sample and the line prints FAIL for window 2
-// MUTATION P5A-PIN5-FOLLOWS implementation red NMH_MUTATE=P5-BASE private chipset: POTGOR bit 8 (DATLX, pin 5 of J12) is held at 1 whatever pin 5 does; the pin-5 bit never reads 0 and the line prints FAIL in windows 0 and 2
-// MUTATION P5B-OTHER-POT-BITS-1 implementation red NMH_MUTATE=P5-BASE private chipset: POTGOR bit 10 (DATLY, pin 9 of J12) also follows the pin-5 button; it reads 0 while pin 5 is low and the line prints FAIL in windows 0 and 2
+// MUTATION P5A-PIN5-FOLLOWS implementation red NMH_MUTATE=P5-BASE private chipset p5a (make p5a-test-<core> SEL=P5-BASE): POTGOR bit 8 (DATLX, pin 5 of J12) is held at 1 whatever pin 5 does; the pin-5 bit never reads 0 and the line prints FAIL in windows 0 and 2
+// MUTATION P5B-OTHER-POT-BITS-1 implementation red NMH_MUTATE=P5-BASE private chipset p5b (make p5b-test-<core> SEL=P5-BASE): POTGOR bit 10 (DATLY, pin 9 of J12) also follows the pin-5 button; it reads 0 while pin 5 is low and the line prints FAIL in windows 0 and 2
 //
-// P5A and P5B are shown red by private copies of the chipset sources (outside the repository)
-// in which POTGOR bit 8 is held at 1, or bit 10 also follows the pin-5 button;
+// P5A and P5B are shown red by private copies of the chipset sources (outside the repository,
+// p5a.patch and p5b.patch) in which POTGOR bit 8 is held at 1, or bit 10 also follows the pin-5 button;
 // the run is NMH_MUTATE=P5-BASE, the unchanged P5 run (ECS, PAL).
 //
 // Light-pen records. A record with "private chipset" names a run on a copy of
-// the chipset sources, outside the repository, that contain a latch following
-// p.238 and p.239 (SPECIFICATION.md 4.6): on the repository's chipset the
+// the chipset sources, outside the repository, made by the patch files of this
+// package (latch.patch, latch2.patch, latch3.patch, p5a.patch, p5b.patch;
+// make <copy>-test-<core> SEL=<NMH_MUTATE value>, SPECIFICATION.md 4.6). The
+// copy latch contains a latch following p.238 and p.239 (SPECIFICATION.md 4.6): on the repository's chipset the
 // latch lines are red before any stimulus changes, so each of them is shown by
 // an implementation record to pass on a chipset that follows the pages, and by
 // a stimulus record to fail there when the stimulus changes. Both cores give
@@ -45,38 +47,39 @@
 // MUTATION LP-C2-STORED stimulus red NMH_MUTATE=LP-C2: cfg_BPLCON0 holds $0000 while $0008 is declared; the port shows the read of $0000 and the line prints FAIL
 // MUTATION LP-C3-A1-READS-CURRENT stimulus red NMH_MUTATE=LP-A1W: prog_lpen_v8.bin sets V8 of the vertical counter (VPOSW) for 100 reads inside the reference phase and clears it again; a model is fitted to the other reads, the flipped reads match no instant of their brackets and the line prints FAIL
 // MUTATION LP-A2-LINE-LENGTHS stimulus red NMH_MUTATE=LP-A2: prog_lpen_vb.bin writes HTOTAL=$E3 and then BEAMCON0=$00A0 (VARBEAMEN, PAL) after S3, so the lines have 228 colour clocks; the model fits 313 lines of 228 colour clocks, every other precondition line holds and the line prints FAIL through its line-length clause
-// MUTATION LP-A2-LINE-LENGTHS implementation green: A2 passes in the four PAL runs on the repository's chipset and on the private chipset (the all-227 branch of the comparator; the alternating-line branch has no green control, SPECIFICATION.md 4.1)
+// MUTATION LP-A2-LINE-LENGTHS implementation green: A2 passes in the four PAL runs on the repository's chipset and on the private chipset latch (make latch-test-<core>) (the all-227 branch of the comparator; the alternating-line branch has no green control, SPECIFICATION.md 4.1)
 // MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-A3: the run is NTSC (chipset_config bit 1) and PAL is declared; 263 lines are not 312 or 313 and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8_fx.bin (fx68k) or prog_lpen_m8_tg.bin (TG68K) sets V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and clears it again; those reads do not equal the model and the line prints FAIL, no other precondition line moves (the line reads "F2 reads before its pulse: 847, all current=no" with F2=747 on fx68k and "893" with F2=793 on TG68K; the normal run prints 848 and 895 with all current)
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4F10: prog_lpen_m10_fx.bin (fx68k) or prog_lpen_m10_tg.bin (TG68K) sets V8 and V9 of the vertical counter (VPOSW) for 100 reads of F10 before its line 100 and clears them again; those reads do not equal the model, the line prints FAIL and no other precondition line moves (the line reads "F10 reads before line 100: 843, all current=no" on fx68k and "890, all current=no" on TG68K; the normal run prints 845 and 892 with all current)
-// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4F4: prog_lpen_m4_fx.bin (fx68k) or prog_lpen_m4_tg.bin (TG68K) sets V8 and V9 of the vertical counter (VPOSW) for the reads of F4 from line 22 to line 101, every read before its pulse and 20 (fx68k) or 18 (TG68K) after it, and clears them again; no read of F4 before its pulse equals the model (the line reads F4=0 on both cores; the normal run prints F4=848 on fx68k and F4=895 on TG68K), the line prints FAIL, no other precondition line moves and the proposition lines print NOT GRADED
-// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset: the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4F4: prog_lpen_m4_fx.bin (fx68k) or prog_lpen_m4_tg.bin (TG68K) sets V8 and V9 of the vertical counter (VPOSW) for the reads of F4 from line 22 to line 101, every read before its pulse (the window is a program constant, 950 reads on fx68k and 1000 on TG68K; no line prints how many of them follow the pulse), and clears them again; no read of F4 before its pulse equals the model (the line reads F4=0 on both cores; the normal run prints F4=848 on fx68k and F4=895 on TG68K), the line prints FAIL, no other precondition line moves and the proposition lines print NOT GRADED
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset latch (make latch-test-<core> SEL=LP-A4): the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
 // MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_pause.bin pauses for about 70 colour clocks after each 500 of the 46000 measurement reads; the read counts are unchanged and the largest gap between reads is 103 colour clocks on fx68k and 83 on TG68K (at most 32 allowed), so the line prints FAIL (on fx68k one pulse is also followed by only 1 read); every other precondition line holds
 // MUTATION LP-C5-PULSES stimulus red NMH_MUTATE=LP-C5: the pulses are driven on pin 9 instead of pin 6; the line prints FAIL
 // MUTATION LP-C6-LPENDIS-CLEAR stimulus red NMH_MUTATE=LP-C6: BEAMCON0 is stored as $2020, bit 13 set (the declared word is the stored word in every run); the line prints FAIL and C2 holds
-// MUTATION LP-P1A-LATCH-HOLDS implementation green private chipset: P1A passes in every run, PAL and NTSC, on both connectors
-// MUTATION LP-P1A-LATCH-HOLDS stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven, so the registers read the moving beam from the would-be pulse until the end-of-field latch (p.239) and the reads in W_trig of F2 do not have one position; the line prints FAIL, every precondition line holds
-// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation green: P1B passes in every run on both connectors, on the repository's chipset and on the private chipset
-// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds (the end-of-field latch stays gated by bit 3); the bit-clear run latches and the line prints FAIL, the base run's lines pass
-// MUTATION LP-P1-LATCH-ENABLE implementation green private chipset: the aggregate passes in every run, PAL and NTSC
-// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P2A private chipset: the base run's half (P1A) prints FAIL and the aggregate prints FAIL
-// MUTATION LP-P1-LATCH-ENABLE implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the aggregate prints FAIL
-// MUTATION LP-P2-LATCH-AT-PULSE implementation green private chipset: P2 passes in every run, PAL and NTSC
-// MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven; the first read after the would-be pulse is a live read and the line prints FAIL
-// MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2B private chipset: the F3 pulse is driven 2 colour clocks later; the offset between F3 and F2 is 3 instead of 1 and the line prints FAIL
-// MUTATION LP-P3A-HOLD implementation green private chipset: P3(a) passes in every run, PAL and NTSC
-// MUTATION LP-P3A-HOLD stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven; the reads after it differ from the first one and the line prints FAIL
-// MUTATION LP-P3B-HELD-PULSE-IGNORED implementation green private chipset: P3(b) passes in every run, PAL and NTSC
-// MUTATION LP-P3B-HELD-PULSE-IGNORED stimulus red NMH_MUTATE=LP-P3B private chipset: the F7 pulse at line 60 is not driven, the line-180 pulse is the first trigger and the reads after it differ from P_F7; the line prints FAIL
-// MUTATION LP-P3C-RELEASE implementation green private chipset: P3(c) passes in every run, PAL and NTSC
-// MUTATION LP-P3C-RELEASE stimulus red NMH_MUTATE=LP-P3C private chipset: a pulse is added at line 50 of F8, whose live window is declared untriggered; the held reads are not current and the line prints FAIL
-// MUTATION LP-P3D-PULSE-BEFORE-ENABLE implementation green private chipset: P3(d) passes in every run, PAL and NTSC
-// MUTATION LP-P3D-PULSE-BEFORE-ENABLE stimulus red NMH_MUTATE=LP-P3D private chipset: the F9 pulse is driven at line 50 instead of line 10; the position is held from line 50 and the line prints FAIL
-// MUTATION LP-P4-DETERMINE-TRIGGER implementation green private chipset: P4 passes in every run, PAL and NTSC
-// MUTATION LP-P4-DETERMINE-TRIGGER stimulus red NMH_MUTATE=LP-P4A private chipset: a pulse at line 100 is added to F1, the pairs after it are equal and the blanking value is below $10500; the line prints FAIL
-// MUTATION LP-LATCH-ENABLE-AND-POSITION implementation green private chipset: the aggregate passes in every run, PAL and NTSC
-// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven, P2 and P1A print FAIL and the line prints FAIL
-// MUTATION LP-LATCH-ENABLE-AND-POSITION implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the line prints FAIL, P2 holds
+// MUTATION LP-P1A-LATCH-HOLDS implementation green private chipset latch (make latch-test-<core>): P1A passes in every run, PAL and NTSC, on both connectors
+// MUTATION LP-P1A-LATCH-HOLDS stimulus red NMH_MUTATE=LP-P2A private chipset latch (make latch-test-<core> SEL=LP-P2A): the F2 pulse is not driven, so the registers read the moving beam from the would-be pulse until the end-of-field latch (p.239) and the reads in W_trig of F2 do not have one position; the line prints FAIL, every precondition line holds
+// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation green: P1B passes in every run on both connectors, on the repository's chipset and on the private chipset latch (make latch-test-<core>)
+// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation red NMH_MUTATE=LP-BASE second private chipset latch2 (make latch2-test-<core> SEL=LP-BASE): the latch captures a pulse whatever BPLCON0 bit 3 holds (the end-of-field latch stays gated by bit 3); the bit-clear run latches and the line prints FAIL, the base run's lines pass
+// MUTATION LP-P1-LATCH-ENABLE implementation green private chipset latch (make latch-test-<core>): the aggregate passes in every run, PAL and NTSC
+// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P2A private chipset latch (make latch-test-<core> SEL=LP-P2A): the base run's half (P1A) prints FAIL and the aggregate prints FAIL
+// MUTATION LP-P1-LATCH-ENABLE implementation red NMH_MUTATE=LP-BASE second private chipset latch2 (make latch2-test-<core> SEL=LP-BASE): the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the aggregate prints FAIL
+// MUTATION LP-P2-LATCH-AT-PULSE implementation green private chipset latch (make latch-test-<core>): P2 passes in every run, PAL and NTSC
+// MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2A private chipset latch (make latch-test-<core> SEL=LP-P2A): the F2 pulse is not driven; the first read after the would-be pulse is a live read and the line prints FAIL
+// MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2B private chipset latch (make latch-test-<core> SEL=LP-P2B): the F3 pulse is driven 2 colour clocks later; the offset between F3 and F2 is 3 instead of 1 and the line prints FAIL
+// MUTATION LP-P3A-HOLD implementation green private chipset latch (make latch-test-<core>): P3(a) passes in every run, PAL and NTSC
+// MUTATION LP-P3A-HOLD stimulus red NMH_MUTATE=LP-P2A private chipset latch (make latch-test-<core> SEL=LP-P2A): the F2 pulse is not driven; the reads after it differ from the first one and the line prints FAIL
+// MUTATION LP-P3B-HELD-PULSE-IGNORED implementation green private chipset latch (make latch-test-<core>): P3(b) passes in every run, PAL and NTSC
+// MUTATION LP-P3B-HELD-PULSE-IGNORED stimulus red NMH_MUTATE=LP-P3B private chipset latch (make latch-test-<core> SEL=LP-P3B): the F7 pulse at line 60 is not driven, the line-180 pulse is the first trigger and the reads after it differ from P_F7; the line prints FAIL
+// MUTATION LP-P3C-RELEASE implementation green private chipset latch (make latch-test-<core>): P3(c) passes in every run, PAL and NTSC
+// MUTATION LP-P3C-RELEASE stimulus red NMH_MUTATE=LP-P3C private chipset latch (make latch-test-<core> SEL=LP-P3C): supplementary, it does not contrast the release clause (p.239 "This freeze is released at the end of internal vertical blanking (vertical position 20)" is unconditional); a pulse is added at line 50 of F8, whose live window is declared untriggered, the pulse freezes the registers again (p.239 "Once the light pen input is enabled and the light pen issues a trigger signal, the value in VPOSR is frozen"), the held reads are not current and the line prints FAIL
+// MUTATION LP-P3C-RELEASE implementation red NMH_MUTATE=LP-BASE third private chipset latch3 (make latch3-test-<core> SEL=LP-BASE): a freeze caused by a pulse is released at line 40 and a freeze caused by the end of a field still at line 20; the unchanged run prints FAIL for this line and for LP-P4-DETERMINE-TRIGGER, every precondition line holds
+// MUTATION LP-P3D-PULSE-BEFORE-ENABLE implementation green private chipset latch (make latch-test-<core>): P3(d) passes in every run, PAL and NTSC
+// MUTATION LP-P3D-PULSE-BEFORE-ENABLE stimulus red NMH_MUTATE=LP-P3D private chipset latch (make latch-test-<core> SEL=LP-P3D): the F9 pulse is driven at line 50 instead of line 10; the position is held from line 50 and the line prints FAIL
+// MUTATION LP-P4-DETERMINE-TRIGGER implementation green private chipset latch (make latch-test-<core>): P4 passes in every run, PAL and NTSC
+// MUTATION LP-P4-DETERMINE-TRIGGER stimulus red NMH_MUTATE=LP-P4A private chipset latch (make latch-test-<core> SEL=LP-P4A): a pulse at line 100 is added to F1, the pairs after it are equal and the blanking value is below $10500; the line prints FAIL
+// MUTATION LP-LATCH-ENABLE-AND-POSITION implementation green private chipset latch (make latch-test-<core>): the aggregate passes in every run, PAL and NTSC
+// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P2A private chipset latch (make latch-test-<core> SEL=LP-P2A): the F2 pulse is not driven, P2 and P1A print FAIL and the line prints FAIL
+// MUTATION LP-LATCH-ENABLE-AND-POSITION implementation red NMH_MUTATE=LP-BASE second private chipset latch2 (make latch2-test-<core> SEL=LP-BASE): the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the line prints FAIL, P2 holds
 
 #include <algorithm>
 #include <cstdint>
