@@ -501,10 +501,10 @@ constexpr uint16_t BLTBDAT = to_reg(0x072);
 constexpr uint16_t BLTADAT = to_reg(0x074);
 constexpr uint16_t IDLE_REG = 0x0FF;
 
-// BLTCON0 use-channel bits, per agnus_blitter.v:252. Only USEC matters for
-// line mode's own DMA request logic (agnus_blitter.v:823,860 both key on
-// `usec` alone, never usea/useb/used) -- USED is written anyway for
-// programming-realism, but is not load-bearing here.
+// BLTCON0 use bits (agnus_blitter.v:252); every line blit follows HRM p.191: "The SRCA, SRCC, and DEST bits of BLTCON0
+// should be set to one, and the SRCB flag should be set to zero" ->
+// USEA|USEC|USED (bits 11, 9, 8) with USEB (bit 10) clear.
+constexpr uint16_t USEA = 1u << 11;
 constexpr uint16_t USEC = 1u << 9;
 constexpr uint16_t USED = 1u << 8;
 
@@ -759,7 +759,7 @@ int32_t measure_pixel1_delta(uint8_t sud, uint8_t sul, uint8_t aul, uint8_t init
     h.write_reg(BLTDPTL, 0x0400);
     h.write_reg(BLTCMOD, cmod_dmod);
     h.write_reg(BLTDMOD, cmod_dmod);
-    h.write_reg(BLTCON0, static_cast<uint16_t>((static_cast<uint16_t>(ash_probe) << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON0, static_cast<uint16_t>((static_cast<uint16_t>(ash_probe) << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
     h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) |
                                                 (static_cast<uint16_t>(sud) << 4) |
                                                 (static_cast<uint16_t>(sul) << 3) |
@@ -789,7 +789,7 @@ int32_t measure_accumulator_delta(uint8_t initial_sign, uint16_t amod, uint16_t 
     h.write_reg(BLTBMOD, bmod);
     h.write_reg(BLTCPTL, 0x0400);
     h.write_reg(BLTDPTL, 0x0400);
-    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
     h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) | LINE_BIT));  // octant 6
     h.write_reg(BLTSIZE, bltsize_word(2, 3));
     h.run_until_writes(2, 200);
@@ -832,7 +832,7 @@ AccumulatorNetAfter measure_accumulator_net_after(uint8_t initial_sign, uint16_t
     h.write_reg(BLTBMOD, bmod);
     h.write_reg(BLTCPTL, 0x0400);
     h.write_reg(BLTDPTL, 0x0400);
-    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
     h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) | LINE_BIT));  // octant 6
     h.write_reg(BLTSIZE, bltsize_word(2, static_cast<uint16_t>(n + 1)));
     h.run_until_writes(static_cast<size_t>(n) + 1, 500);
@@ -868,7 +868,7 @@ AccumulatorStartAndDelta measure_accumulator_start_and_delta(uint8_t initial_sig
     h.write_reg(BLTBMOD, bmod);
     h.write_reg(BLTCPTL, 0x0400);
     h.write_reg(BLTDPTL, 0x0400);
-    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+    h.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
     h.write_reg(BLTCON1, static_cast<uint16_t>((static_cast<uint16_t>(initial_sign) << 6) | LINE_BIT));  // octant 6
     h.write_reg(BLTSIZE, bltsize_word(2, 3));
     h.run_until_writes(2, 200);
@@ -896,7 +896,7 @@ int main(int argc, char** argv) {
         h.write_reg(BLTDPTL, 0x0400);
         h.write_reg(BLTCMOD, 0x0000);
         h.write_reg(BLTDMOD, 0x0000);
-        h.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h.write_reg(BLTCON1, LINE_BIT);  // octant 6, sign irrelevant here
         h.write_reg(BLTSIZE, bltsize_word(2, 4));
         h.run_until_writes(4, 200);
@@ -918,7 +918,7 @@ int main(int argc, char** argv) {
         h_normal.c_words = {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666};
         h_normal.write_reg(BLTAFWM, 0xFFFF);
         h_normal.write_reg(BLTALWM, 0xFFFF);
-        h_normal.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_normal.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_normal.write_reg(BLTCON1, 0x0000);  // LINE=0
         h_normal.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_normal.run_cycles(120);
@@ -930,7 +930,7 @@ int main(int argc, char** argv) {
         h_line.write_reg(BLTALWM, 0xFFFF);
         h_line.write_reg(BLTCPTL, 0x0400);
         h_line.write_reg(BLTDPTL, 0x0400);
-        h_line.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_line.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_line.write_reg(BLTCON1, LINE_BIT);  // LINE=1, octant 6
         h_line.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_line.run_cycles(120);
@@ -967,7 +967,7 @@ int main(int argc, char** argv) {
         h.write_reg(BLTALWM, 0xFFFF);
         h.write_reg(BLTCPTL, 0x0400);
         h.write_reg(BLTDPTL, 0x0400);
-        h.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h.write_reg(BLTCON1, LINE_BIT);
         h.write_reg(BLTSIZE, bltsize_word(2, 5));
         const bool done = h.run_until_done(200);
@@ -1051,7 +1051,7 @@ int main(int argc, char** argv) {
         h_bit9.write_reg(BLTALWM, 0xFFFF);
         h_bit9.write_reg(BLTCPTL, 0x0400);
         h_bit9.write_reg(BLTDPTL, 0x0400);
-        h_bit9.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_bit9.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_bit9.write_reg(BLTCON1, LINE_BIT);
         h_bit9.write_reg(BLTSIZE, bltsize_word(2, 600));  // needs bit 9 (512)
         const bool done_bit9 = h_bit9.run_until_done(4000);
@@ -1065,7 +1065,7 @@ int main(int argc, char** argv) {
         h_control.write_reg(BLTALWM, 0xFFFF);
         h_control.write_reg(BLTCPTL, 0x0400);
         h_control.write_reg(BLTDPTL, 0x0400);
-        h_control.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_control.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_control.write_reg(BLTCON1, LINE_BIT);
         h_control.write_reg(BLTSIZE, bltsize_word(2, 88));
         const bool done_control = h_control.run_until_done(1000);
@@ -1079,7 +1079,7 @@ int main(int argc, char** argv) {
         h_ecs1.write_reg(BLTALWM, 0xFFFF);
         h_ecs1.write_reg(BLTCPTL, 0x0400);
         h_ecs1.write_reg(BLTDPTL, 0x0400);
-        h_ecs1.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_ecs1.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_ecs1.write_reg(BLTCON1, LINE_BIT);
         h_ecs1.write_reg(BLTSIZE, bltsize_word(2, 600));
         const bool done_ecs1 = h_ecs1.run_until_done(4000);
@@ -1127,7 +1127,7 @@ int main(int argc, char** argv) {
         h_correct.write_reg(BLTALWM, 0xFFFF);
         h_correct.write_reg(BLTCPTL, 0x0400);
         h_correct.write_reg(BLTDPTL, 0x0400);
-        h_correct.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_correct.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_correct.write_reg(BLTCON1, LINE_BIT);
         h_correct.write_reg(BLTSIZE, bltsize_word(2, 6));
         const bool done_correct = h_correct.run_until_done(200);
@@ -1146,7 +1146,7 @@ int main(int argc, char** argv) {
         h_wrong.write_reg(BLTALWM, 0xFFFF);
         h_wrong.write_reg(BLTCPTL, 0x0400);
         h_wrong.write_reg(BLTDPTL, 0x0400);
-        h_wrong.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_wrong.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_wrong.write_reg(BLTCON1, LINE_BIT);
         h_wrong.write_reg(BLTSIZE, bltsize_word(1, 6));
         const bool done_wrong = h_wrong.run_until_done(200);
@@ -1196,7 +1196,7 @@ int main(int argc, char** argv) {
         h_correct.write_reg(BLTALWM, 0xFFFF);
         h_correct.write_reg(BLTCPTL, 0x0400);
         h_correct.write_reg(BLTDPTL, 0x0400);
-        h_correct.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_A_PASSTHROUGH));
+        h_correct.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_A_PASSTHROUGH));
         h_correct.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | LINE_BIT));  // octant 7
         h_correct.write_reg(BLTSIZE, bltsize_word(2, 1));
         h_correct.run_until_writes(1, 60);
@@ -1208,7 +1208,7 @@ int main(int argc, char** argv) {
         h_wrong.write_reg(BLTALWM, 0x0000);
         h_wrong.write_reg(BLTCPTL, 0x0400);
         h_wrong.write_reg(BLTDPTL, 0x0400);
-        h_wrong.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_A_PASSTHROUGH));
+        h_wrong.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_A_PASSTHROUGH));
         h_wrong.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | LINE_BIT));
         h_wrong.write_reg(BLTSIZE, bltsize_word(2, 1));
         h_wrong.run_until_writes(1, 60);
@@ -1240,7 +1240,7 @@ int main(int argc, char** argv) {
         h.write_reg(BLTALWM, 0xFFFF);
         h.write_reg(BLTCPTL, 0x0400);
         h.write_reg(BLTDPTL, 0x0400);
-        h.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_A_PASSTHROUGH));  // ash starts at 0
+        h.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_A_PASSTHROUGH));  // ash starts at 0
         h.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | LINE_BIT));
         h.write_reg(BLTSIZE, bltsize_word(2, 4));
         h.run_until_writes(4, 200);
@@ -1289,7 +1289,7 @@ int main(int argc, char** argv) {
         h.write_reg(BLTALWM, 0xFFFF);
         h.write_reg(BLTCPTL, 0x0400);
         h.write_reg(BLTDPTL, 0x0400);
-        h.write_reg(BLTCON0, static_cast<uint16_t>((3u << 12) | USEC | USED | LF_LINE_4A));  // ash=3
+        h.write_reg(BLTCON0, static_cast<uint16_t>((3u << 12) | USEA | USEC | USED | LF_LINE_4A));  // ash=3
         h.write_reg(BLTCON1, static_cast<uint16_t>((1u << 4) | LINE_BIT));                    // octant 7
         h.write_reg(BLTSIZE, bltsize_word(2, 1));
         h.run_until_writes(1, 60);
@@ -1325,7 +1325,7 @@ int main(int argc, char** argv) {
         h.write_reg(BLTALWM, 0xFFFF);
         h.write_reg(BLTCPTL, 0x0400);
         h.write_reg(BLTDPTL, 0x0400);
-        h.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_B_PASSTHROUGH));
+        h.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_B_PASSTHROUGH));
         h.write_reg(BLTCON1, static_cast<uint16_t>((3u << 12) | LINE_BIT));  // BSH=3, octant 6
         h.write_reg(BLTSIZE, bltsize_word(2, 4));
         h.run_until_writes(4, 200);
@@ -1398,7 +1398,7 @@ int main(int argc, char** argv) {
         h_onedot.write_reg(BLTAPTL, 0x8000);
         h_onedot.write_reg(BLTCPTL, 0x0400);
         h_onedot.write_reg(BLTDPTL, 0x0400);
-        h_onedot.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_onedot.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         // SIGNFLAG=1, ONEDOT=1 (bit1), SUD=1/SUL=0/AUL=0 (octant7), LINE=1
         h_onedot.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | (1u << 1) | (1u << 4) | LINE_BIT));
         h_onedot.write_reg(BLTSIZE, bltsize_word(2, 5));
@@ -1413,7 +1413,7 @@ int main(int argc, char** argv) {
         h_normal.write_reg(BLTAPTL, 0x8000);
         h_normal.write_reg(BLTCPTL, 0x0400);
         h_normal.write_reg(BLTDPTL, 0x0400);
-        h_normal.write_reg(BLTCON0, static_cast<uint16_t>(USEC | USED | LF_C_PASSTHROUGH));
+        h_normal.write_reg(BLTCON0, static_cast<uint16_t>(USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_normal.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | (0u << 1) | (1u << 4) | LINE_BIT));  // ONEDOT=0
         h_normal.write_reg(BLTSIZE, bltsize_word(2, 5));
         h_normal.run_until_done(200);
@@ -1622,7 +1622,7 @@ int main(int argc, char** argv) {
         h_eq.write_reg(BLTDPTL, dpt_l);
         h_eq.write_reg(BLTCMOD, cmod);
         h_eq.write_reg(BLTDMOD, dmod);
-        h_eq.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+        h_eq.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_eq.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | LINE_BIT));  // octant 6, SIGNFLAG=1
         h_eq.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_eq.run_until_writes(3, 200);
@@ -1670,7 +1670,7 @@ int main(int argc, char** argv) {
         identity_dptl = 0x0600;
 #endif
         h_identity.write_reg(BLTDPTL, identity_dptl);
-        h_identity.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+        h_identity.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_identity.write_reg(BLTCON1, LINE_BIT);  // octant 6
         h_identity.write_reg(BLTSIZE, bltsize_word(2, 1));
         h_identity.run_until_writes(1, 60);
@@ -1699,7 +1699,7 @@ int main(int argc, char** argv) {
 #endif
         h_mod.write_reg(BLTCMOD, mod_cmod);
         h_mod.write_reg(BLTDMOD, mod_dmod);
-        h_mod.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEC | USED | LF_C_PASSTHROUGH));
+        h_mod.write_reg(BLTCON0, static_cast<uint16_t>((8u << 12) | USEA | USEC | USED | LF_C_PASSTHROUGH));
         h_mod.write_reg(BLTCON1, static_cast<uint16_t>((1u << 6) | LINE_BIT));  // octant 6
         h_mod.write_reg(BLTSIZE, bltsize_word(2, 3));
         h_mod.run_until_writes(3, 200);
