@@ -948,8 +948,10 @@ Contrasting runs, `NMH_MUTATE` selects the change. The P5 and fixture rows run
 in ECS, PAL; the light-pen rows run in ECS, PAL on `joystick1`, beside the run
 with bit 3 clear. Every repository row below printed FAIL on the named line on
 fx68k and on TG68K (the default board kernel); the private-chipset rows are runs
-of the private copies of 4.6, and the LP-A4F4 and LP-A4F10 rows on a private copy
-were not run with prog_lpen_m4_tg and prog_lpen_m10_tg.
+of the private copies of 4.6 (section 4.6 names the copy and the make target of
+each); the LP-A4F4 and LP-A4F10 rows on the copy latch ran on both cores, with
+prog_lpen_m4_fx and prog_lpen_m10_fx on fx68k and prog_lpen_m4_tg and
+prog_lpen_m10_tg on TG68K.
 
 | line | `NMH_MUTATE` | chipset | change | result (both cores) |
 |---|---|---|---|---|
