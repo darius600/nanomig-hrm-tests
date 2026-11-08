@@ -59,6 +59,7 @@ report() {
     # errors.)
     if ! echo "$out" | grep -qE '^(PASS|FAIL)[: ]|^\./obj|Assertions|passed,'; then
         echo "BUILD $name"
+        echo "$out" | tail -n 20 | sed 's/^/    /'
         build=$((build+1)); build_list+=("$name"); return
     fi
     if [ "$rc" -eq 0 ]; then
