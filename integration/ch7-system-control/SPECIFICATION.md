@@ -100,10 +100,11 @@ The pages disagree about the horizontal sprite frame. p. 99 uses "a window with 
 4. Clear VERTB (INTREQ `$0020`) and poll INTREQR bit 5 until it is set. VERTB "causes an interrupt at line 0" (p. 219).
 5. Write COP1LC with the list of the first configuration (a long write to COP1LCH, p. 25) and strobe COPJMP1. Only then write DMACON `$83A0`. p. 30 prescribes this order: "you must initialize one of the Copper location registers … and write to its strobe address before Copper DMA is turned on."
 6. For each configuration *k* in turn:
-   - wait for VERTB;
+   - wait for VERTB (t0);
    - write COP1LC with list *k*;
    - store the marker word `$C000 + k`;
-   - stay for three fields.
+   - wait for VERTB (t1): the evaluated field begins;
+   - wait for VERTB (t2): it ends.
 
    At every VERTB, store a tick word (the field counter). The ticks give field boundaries in memory-port time.
 7. Store `$CFFF` and loop.
@@ -286,6 +287,7 @@ Each precondition is checked before grading, and each has a contrast that makes 
 - **B-swap.** Run B1–B8 with the PF1P and PF2P fields exchanged. The page predicts other colours in bands P1 and P2 of B1–B5 and B8 (B1, band P1: every sprite in front of PF1 instead of behind it), so the original expectations fail.
 - **PF2PRI flip.** Run B1–B8 with bit 6 inverted. Band F12 changes colour in every configuration, so the check fails.
 - **E-reverse.** Run E0–E4 with v replaced by 4 − v. Every configuration except E2 changes colour, so the check fails.
+- **Late install (fixture).** The COP1LC write of every configuration and its marker come after t1 instead of between t0 and t1. p. 25 says the Copper starts its program counter from COP1LC "At the start of each vertical blanking interval", so a write after t1 reaches the Copper only at the next start of vertical blanking. No marker lies between t0 and t1 and the fixture line fails.
 
 ### Left open by the pages (not graded)
 
@@ -308,6 +310,7 @@ The program skeleton runs with one configuration.
 - **Mode.** BPLCON0 `$6600`: six lores planes in dual playfield. p. 48 says "Sixth bitplane is used only in dual-playfield mode". BPLCON2 is `$0000`.
 - **Band.** Lines 60–79, tag id 1 in plane 1. In these rows, plane *k* (k = 1–6) is 1 exactly at x = 272 + 8(k−1) to 279 + 8(k−1), and every plane is 0 at every other x ≥ 40. Rows outside the band carry block 0 only.
 - **Sprites.** Sprite *i* sits at X = 170 + 20*i*, with VSTART 60 and VSTOP 80.
+- **Lists.** List 0 is the configuration. The Copper starts from list 1, a list of other content (BPL4PT at plane 4's all-zero image), and the CPU writes COP1LC with list 0 between t0 and t1 (step 6 of the skeleton). The evaluated field is therefore shown by list 0 only if the write reaches the Copper at the start of vertical blanking (p. 25).
 
 ### Observation
 
@@ -334,6 +337,8 @@ Every row of the band contains all fourteen contributions:
 
 - **SPREN clear.** The sprite runs show BG, so the check fails.
 - **BPL4PT at an all-zero image.** The plane-4 block shows BG instead of `$0A0`, so the check fails. This case shows that each bitplane is checked separately, not only the set as a whole.
+- **No COP1LC write.** The Copper starts from list 1 and no write of list 0 follows. Its fetches in the evaluated field lie in list 1, outside list 0, and the frame-association precondition fails.
+- **Late install (fixture).** The write of list 0 and the marker come after t1. The Copper still runs list 1 in the evaluated field, and no marker lies between t0 and t1, so the fixture line fails.
 
 ### Left open
 
@@ -413,7 +418,7 @@ The observation is the records in memory, their store times at the memory port, 
 - **Anchor check.**
   - In every field, t(A2) − t(A1) and t(B2) − t(B1) each equal `$A0` − `$40` = 96 colour clocks, within 2. Both anchors of a pair are then on the same line with equal Copper delay, and each trigger lies between them.
   - The field period t(A1, Fn+1) − t(A1, Fn) is the same for all fields.
-  - Contrast: change the second anchor's WAIT to `$65A1` (line 101). The spacing becomes about 323 colour clocks and the check fails.
+  - Contrast: change the first anchor's WAIT to `$6341` (line 99, H `$40`) and leave the second at line 100. t(A2) − t(A1) becomes about 323 colour clocks and the check fails. The triggers are planned from t(A1), so they move with it.
 - **Read-time check.**
   - Each Copper-signalled read is stored within one line (227 colour clocks) after the fetch of its signalling MOVE.
   - V1 and V2 are stored less than 18 lines after the CPU leaves its VERTB poll loop (seen as instruction fetches at the memory port). This places them before vertical position 20.
@@ -447,12 +452,12 @@ Let L1, L3 and L5 be the values read at E110 of F1, E110 of F3 and E190 of F5.
 
 ### Preconditions
 
-0. **Record layout.** All 72 records are present, and each carries the field and event words that its position implies: the first six are the first pass of the Copper (field word `$FFFF`, events E40 to E210 in order), then eight per field (V1, V2, E40 to E210), and two for F7. Contrast: the V1 record of every field carries event id 5.
-1. **Anchor check**, as above. Contrast: move the second anchor to line 101.
+0. **Record layout.** All 72 records are present, and each carries the field and event words that its position implies: the first six are the first pass of the Copper (field word `$FFFF`, events E40 to E210 in order), then eight per field (V1, V2, E40 to E210), and two for F7. Contrast: V2's record is stored before V1's in every field, each with its own event id, so the positions no longer carry the event words they imply.
+1. **Anchor check**, as above. Contrast: move the first anchor to line 99.
 2. **Read-time check**, as above. Contrast: add a 30-line delay before V1.
 3. **Pin 6 is not driven by the CIA.** The DDRA read after step 2 has bits 6 and 7 at 0. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
 4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse, or drive it at t(A1) + 30 colour clocks instead of t(A1) + 16. The log is always compared with the nominal schedule of the table above (three pulses: t(A1) + 16 in F1, t(A1) + 56 in F3, t(B1) + 16 in F5), so the check fails and the four graded lines print NOT GRADED.
-5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: the E40 WAIT at line 44 instead of line 40, so E40 reads V = 44 or 45 and the check fails (p. 22).
+5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast, as a copy of the RTL: the latch releasing at vertical position 50 instead of 20 (p. 239 gives 20). The latch set in one field then still holds at E40 and E60 of the next field, and the check fails in OCS and ECS PAL. No stimulus contrast exists: on an RTL that follows the pages the register is held only after a pulse, and an extra or a moved pulse fails the drive-log check (item 4) instead. Moving the E40 WAIT to another line leaves the register live and changes only the line the expectation names, so it is not a contrast of this check.
 6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks), within one line (p. 23: 227 or 228 colour clocks, taken as 228). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts (312 and 262), so the period changes by fifty lines and the check fails.
 
 Items 1, 2 and 5 are graded only when preconditions 0 to 6 hold; otherwise each prints NOT GRADED with the failing preconditions. The claims of P3 are credited by one line that holds when items 1 and 2 both hold; items 1, 2 and 5 are component lines and carry no claim id.
@@ -522,9 +527,9 @@ The anchors and the read-time check are those of P3. In addition, the store time
 
 ### Preconditions
 
-1. **Anchor check, the CIA pin 6 check and the drive log**, as in P3, with the same contrasts (the second anchor at line 101; DDRA bits 6 and 7 set; a third pulse in F2 after Y is stored, which the drive log shows against the nominal schedule of two pulses).
+1. **Anchor check, the CIA pin 6 check and the drive log**, as in P3, with the same contrasts (the first anchor at line 99; DDRA bits 6 and 7 set; a third pulse in F2 after Y is stored, which the drive log shows against the nominal schedule of two pulses).
 2. **Read time.** Y is stored within one line (p. 23) after X, and Y′ within one line after X′, because each second read follows its BEAMCON0 write at once. Contrast: 40 poll iterations between the write and the second read.
-3. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks, within one line (p. 23, taken as 228 colour clocks). Contrast: write `$2000` in PAL. p. 305 bit 5 and p. 24 predict a change, and the check fails. The reference-frame check is NOT GRADED when this one fails, because a shorter field ends before the delay does.
+3. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks, within one line (p. 23, taken as 228 colour clocks). Contrast: the F1 write at E60 clears bit 5 (`$2000` instead of `$2020`, the other standard); every other write keeps bit 5 set. p. 305 bit 5 and p. 24 predict a change of the field period (262 lines instead of 312), and the check fails. The reference-frame check is NOT GRADED when this one fails, because a shorter field ends before the delay does.
 4. **Reference frame**, as above. Contrast: wait only 10 poll iterations after E250.
 5. **The latch is present in F1.** V(Y) = 100, and H(Y) = H(Y′). Contrast: BPLCON0 LPEN clear from E60 of F1 until Y is stored, the pulses unchanged. Y then reads the live beam (V8 = 1) and the check fails.
 6. **The control field shows the latched value with LPENDIS clear.** In F3, X′ equals Y′ and V(X′) = 100. Contrast: write `$2020` at E60 of F3 as well. X′ then differs from Y′ and the check fails.
@@ -580,7 +585,7 @@ Each contrast changes the stimulus only; the comparator and the expected values 
 
 | Page contrast | Symbol (`NMH_MUTATE=`) | What changes |
 |---|---|---|
-| P1 frame association: omit a COP1LC write | `P1-NOCOP`, `P2-NOCOP` | no COP1LC write for configuration 4 (P2: the Copper starts from a copy of the list at another address and no write follows) |
+| P1 frame association: omit a COP1LC write | `P1-NOCOP`, `P2-NOCOP` | no COP1LC write for configuration 4 (P2: the Copper starts from the stale list 1, the content of which differs from list 0, and no write of list 0 follows) |
 | P1 rows: tags absent | `P1-TAGBAD`, `P2-TAGID` | one row of A1 and A2 whose tag block 2 is half set (P2: the band's id is 2) |
 | P1 rows: band order and relative row counts | `P1-TAGCOUNT` | the first row of band X of A1 and A2 carries tag id 0, so every row still decodes and only the row count of band X differs from that of band E |
 | P1 window columns: DDFSTRT `$0030` | `P1-SCROLL`, `P2-SCROLL` | BPLCON1 `$0011` from line 215 on, cleared after the field; p. 82: "For each pixel of delay, the on-screen data shifts one pixel to the right", so the rows below line 215 start one lores pixel later than the rows above it. DDFSTRT `$0030` and BPLEN clear, the contrasts the sections above name, empty the population of decoded rows altogether (no row decodes), so they cannot tell a failing window check from an empty observation; the scroll keeps every row decodable and moves the rows below line 215 by one lores pixel |
@@ -591,8 +596,20 @@ Each contrast changes the stimulus only; the comparator and the expected values 
 | P1 A-mirror, B-swap, PF2PRI flip, E-reverse | `P1-AMIRROR`, `P1-BSWAP`, `P1-PRIFLIP`, `P1-EREV` | as the page contrasts say |
 | P2 plane fetch: BPL4PT at plane 2's image | `P2-BPL4PLANE2` | as said |
 | P2: BPL4PT at an all-zero image | `P2-BPL4ZERO` | BPL4PT at the all-zero image inside plane 4's own area, so the fetch check still holds and only the plane-4 block changes |
-| fixture | `P1-LATEMARK`, `P2-LATEMARK` | the marker is stored after t1 instead of before it |
-| P4 | `P4-DDRA`, `P4-ANCHOR`, `P4-PERIOD`, `P4-SHORT` | DDRA bits forced to outputs; second anchor at line 101; every BEAMCON0 write with bit 5 clear; the delay after E250 is 10 poll iterations |
+| fixture | `P1-LATEMARK`, `P2-LATEMARK` | the COP1LC write of the configuration and its marker are stored after t1 instead of before it (P2: the write of list 0 over the stale list 1) |
+| P3 record layout | `P3-EVMIS` | V2's record is stored before V1's in every field, each record with its own event id |
+| P3, P4 anchor check | `P3-ANCHOR`, `P4-ANCHOR` | the first anchor A1 WAITs for line 99 (`$6341`); A2 stays at line 100 |
+| P3 live beam | `P3-RELEASE50` | no change of the stimulus: the contrast is the copy of the RTL of `norel.patch`, selected by this name, which runs the OCS-PAL and ECS-PAL cases of P3 |
+| P4 | `P4-DDRA`, `P4-PERIOD`, `P4-SHORT` | DDRA bits forced to outputs; the BEAMCON0 write at E60 of F1 has bit 5 clear (`$2000`), the others keep it set; the delay after E250 is 10 poll iterations |
+
+### Copies of the RTL as built
+
+Three contrasts and the implementation records run against a copy of the NanoMig chip-set RTL: the copy is the pinned `nanomig/src/minimig-aga` with a patch of this package applied, made under the package directory by a make target, so the submodule is never modified. Each core builds in its own object directory and writes its own output file; `obj_dir_<core>/` and `out_<core>.txt` remain those of the unmodified build.
+
+- `latch.patch` (`make latch-test-fx68k`, `make latch-test-tg68k`): a light-pen latch written from pp. 238-239 and p. 305. BPLCON0 bit 3 enables it (cleared by reset); a falling edge of pin 6 of either port (the AND of both fire inputs) after vertical position 20 latches vpos and hpos; a field end with nothing latched latches them; vertical position 20 releases the latch; VPOSR and VHPOSR return the latched value unless ECS LPENDIS (BEAMCON0 bit 13) is set.
+- `norel.patch` (`make norel-test-fx68k`, `make norel-test-tg68k`): `latch.patch`, then the release at vertical position 50 instead of 20. The run selects `NMH_MUTATE=P3-RELEASE50`.
+
+The implementation records of `P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` name `latch-test`. The selectors that act on a latch (`P3-LPEN`, `P3-EVMIS`, `P3-ANCHOR`, `P4-ANCHOR`, `P4-PERIOD`, `P4-F1NOLPEN`, `P4-F3LPENDIS`, `P4-NOLPENDIS`, `P4-EXTRAPULSE-F2`, `P3-OFFSET`) run the binary of the latch build with `NMH_MUTATE` set: `make latch-mut-fx68k SEL=P4-F3LPENDIS`, `make latch-mut-tg68k SEL=P4-F3LPENDIS`.
 
 ### Run matrix as built
 
