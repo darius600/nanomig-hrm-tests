@@ -327,19 +327,23 @@ pass 2 on:
   sample therefore may begin before or after the anchor fetch, and the sample parity at the anchor
   is not in the fetch times. Take an implementation with lag 2891 to 4699 system clocks, the
   measured range, and the same implementation with every fetch P·c later (lag 491 to 2299): both
-  agree with the page, and the pairs (fetch time, run start time) of the two are the same set, only
-  the label of each run start differs (the second sample of word k−1 in one is the first sample of
+  agree with the page, and their fetch times and run start times are the same up to a shift of the
+  whole time axis, only the label of each run start differs (the second sample of word k−1 in one is the first sample of
   word k in the other). Every rule on times alone is therefore wrong on one of them; a count of runs
   or a reading of the runs by their length rests on the levels of the words under test. The frame
   takes the presumption above instead and states its cost: a program whose two byte positions of
-  one byte give different levels breaks clause 2 at the last word, G-W is red and the graded lines
+  one byte give different levels breaks clause 2 at the word before the anchor, G-W is red and the graded lines
   of the proposition print NOT GRADED. The bytes whose single run the frame presumes: in pass 3
-  (and in P2 and P4 also in pass 2) the run before the anchor is the last word's; in pass 2 of this
+  (P3-G-W, P4-G-W-3) the run before the anchor is the last word's; in pass 2 (P2-G-W, P3-G-W, P4-G-W-2) of this
   implementation it is the run of the word before the last (measured in P4 with the run listing of
   `NMH_DEBUG`: the last word of the data set is not output between the last word but one and the
   pass-2 anchor, which pass 1 leaves open), so the frame presumes the last two words of each data
   set to be single runs: P2 the words C and D (0x2020 and 0xA0A0), P3 the words 0xFDFD and
   0xFEFE, P4 the words 9 and 10, (c, c) = 0xA0A0 and (b, b) = 0x6060.
+  The same program also turns P2-G-P and P4-G-P-n red, which grade one run of 600 colour clocks
+  for every equal-byte word (AA p.11 AUDxPER), and a program that gives two of the bytes a, b, c, d
+  one level turns P4-PRE-CAL-n red; in each case a red line is printed, and the graded lines of
+  the proposition print NOT GRADED.
   *Contrast of clause 2*: the last two words get two different bytes and the rest is unchanged
   (selectors P2-LAST: words 7 and 8 become 0x20E0 and 0xA0E0; P3-LAST: the last word becomes 0xFE7F;
   P4-LAST: words 9 and 10 become (c, d) and (b, d); recorded in 7.4). The run before the anchor is

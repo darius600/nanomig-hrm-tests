@@ -85,7 +85,7 @@ inline void run_p3(Checks& ck) {
     print_std(ck, "P3", agg, 1);
     ck.expect(gd, "P3-G-D: after the start DMACONR bit 9 and bit 0 read 1 (AA p.22)");
     ck.expect(gf, "P3-G-F: the channel fetches at least four times at the location, so passes 2 and 3 are followed by a next anchor (AA p.22 '00 AUD0EN')");
-    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts in the system clock of either anchor fetch (SPECIFICATION.md 2.10), and the run that ends where each anchor run begins is at least one word (600 colour clocks) long, so that the last word of the data set, two equal bytes, is the single run before the anchor and the first run after it is word 1's");
+    ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts in the system clock of either anchor fetch (SPECIFICATION.md 2.10), and the run that ends where each anchor run begins is at least one word (600 colour clocks) long, so that the word before the anchor, two equal bytes, is a single run and the first run after the anchor is word 1's");
     ck.expect(ok_pass && gp, "P3-G-P: the anchor run of pass 3 starts exactly one pass of 256 words of 600 colour clocks after the anchor run of pass 2, so each word spans two samples of the period 300 (AA p.11 AUDxPER, AUDxLEN)");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && ok_pass && gw && gp;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W or G-P";
@@ -196,7 +196,7 @@ inline void run_p4(Checks& ck) {
     for (int k = 0; k < 2; ++k) {
         const std::string pn = dec(k + 2);
         PassRes& q = pr[k];
-        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts in the system clock of its anchor fetch (SPECIFICATION.md 2.10), and the run that ends where its anchor run begins is at least one word (600 colour clocks) long, so that the last word of the data set, two equal bytes, is the single run before the anchor and the first run after it is word 1's");
+        ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts in the system clock of its anchor fetch (SPECIFICATION.md 2.10), and the run that ends where its anchor run begins is at least one word (600 colour clocks) long, so that the word before the anchor, two equal bytes, is a single run and the first run after the anchor is word 1's");
         ck.expect(q.located && q.gp, "P4-G-P-" + pn + ": each equal-byte word of pass " + pn + " gives one run of exactly 600 colour clocks (AA p.11 AUDxPER)");
         ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct");
         use[k] = pre0 && q.located && q.gw && q.gp && q.cal;

@@ -212,7 +212,7 @@ inline void run_p2(Checks& ck) {
     ck.expect(gd, "P2-G-D: after each start DMACONR bit 9 and the channel's bit read 1 on all four channels (AA p.22)");
     ck.expect(gf, "P2-G-F: each channel makes at least six fetches at the location, so passes 1 to 6 start (AA p.22 '00 AUD0EN')");
     ck.expect(blocks8, "P2-PRE-BLOCKS8: from pass 2 on the fetches of each channel form eight-word blocks BUFx .. BUFx+14 (the P1 check, AA p.11 AUDxLEN)");
-    ck.expect(gw, "P2-G-W: on every channel no run starts in the system clock of the pass-2 anchor fetch (SPECIFICATION.md 2.10), and the run that ends where the anchor run begins is at least one word (600 colour clocks) long, so that the last word of the data set, two equal bytes, is the single run before the anchor and the first run after it is word 1's");
+    ck.expect(gw, "P2-G-W: on every channel no run starts in the system clock of the pass-2 anchor fetch (SPECIFICATION.md 2.10), and the run that ends where the anchor run begins is at least one word (600 colour clocks) long, so that the word before the anchor, two equal bytes, is a single run and the first run after the anchor is word 1's");
     ck.expect(gp, "P2-G-P: from pass 2 on every word gives one run of exactly 600 colour clocks (AA p.11 AUDxPER 'The minimum period is 124 color clocks')");
     ck.expect(wr_both, "P2-PRE-WRITE: the CPU's write to word 6 is seen at the port and a fetch of word 6 from pass 2 on falls on each side of it, on every channel");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && blocks8 && gw && gp && wr_both;
