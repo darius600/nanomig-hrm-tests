@@ -23,26 +23,27 @@
 **The manual says two things about the ECS Copper with CDANG clear, and they
 cannot both hold.**
 
-**Appendix C, printed p. 310** (`appC-ecs/p310.txt:33-36`):
+**Appendix C, printed p. 310:**
 
 > "Now, in the ECS, if this bit is set, the Copper can access all of the Amiga
 > chip registers. If this bit is clear, the Copper can access the address range
 > from $DFF03E through $DFF07E, the same range as when the danger bit is set in
 > the standard chip set."
+<!-- corpus: appC-ecs/p310.txt:33-36 -->
 
 The Developer-CD text and the OCR of the printed book give the sentence word for word.
 
 **Appendix B, printed pp. 287-290,** the register summary in address order. The
-legend (`appB3/p287.txt:24`):
+legend:
 
 > `~     Address not writable by the Copper unless the "copper danger bit",
 > COPCON is set true.`
+<!-- corpus: appB3/p287.txt:24 -->
 
 Every row from `$040` to `$07E` carries that mark, all 32 addresses, the reserved
-`$068`–`$06E`, `$076` and `$07A` included (`appB3/p289.txt:41-66`,
-`appB3/p290.txt:7-12`). Seven of those rows carry the table's own `(E)`: BLTCON1 and BLTAPTH, which the
-standard chip set has too (`appB3/p289.txt:42`, `:49`), and these five
-(`appB3/p289.txt:54-56`, `appB3/p290.txt:9`, `appB3/p290.txt:11`); the rendered scan
+`$068`–`$06E`, `$076` and `$07A` included (pp. 289 and 290). Seven of those rows carry the table's own `(E)`: BLTCON1 and BLTAPTH, which the
+standard chip set has too (p. 289), and these five
+(pp. 289 and 290); the rendered scan
 of pp. 289-290 carries the `~` on all five:
 
 > `BLTCON0L     ~05A    w    A (E)      Blitter control 0, lower 8 bits (minterms)`
@@ -54,42 +55,45 @@ of pp. 289-290 carries the `~` on all five:
 > `SPRHDAT      ~078     W   A (E)       Ext. logic UHRES sprite pointer and data id`
 >
 > `DENISEID     ~07C     R   D(E)        Chip revision level for Denise (video out chip)`
+<!-- corpus: appB3/p289.txt:41-66, :42, :49, :54-56; appB3/p290.txt:7-12, :9, :11 -->
 
-p. 288 says what `(E)` means (`appB3/p288.txt:24-27`):
+p. 288 says what `(E)` means:
 
 > "About the ECS registers. Registers denoted with an "(E)" in the chip column
 > means that those registers have been changed in the Enhanced Chip Set (ECS).
 > ... Certain ECS registers are completely new, others have been extended in
 > their functionality."
+<!-- corpus: appB3/p288.txt:24-27 -->
 
-Appendix C's register map lists four of the five as `new` in ECS
-(`appC-audio/p298.txt:22-25`):
+Appendix C's register map lists four of the five as `new` in ECS:
 
 > `05A  BLTCON0L new   W  A   Blitter control 0, lower 8 bits (minterms)`
 >
 > `07C  DENISEID new   R  D   Chip revision level for Denise (video out chip)`
+<!-- corpus: appC-audio/p298.txt:22-25 -->
 
 In the standard chip set there is no register at `$05A`, `$05C`, `$05E` or `$07C`, so on
 those rows the `~` can describe only ECS. **For those addresses Appendix B says a
 Copper MOVE with CDANG clear does not write, and p. 310 says it does.**
 
-**p. 310 ties Appendices A and B to the standard chip set** in its last sentence
-(`text/p310.txt:35-36`):
+**p. 310 ties Appendices A and B to the standard chip set** in its last sentence:
 
 > "For more information on the AUDxPER register, and any other register in the
 > Amiga standard chip set, see Appendices A and B."
+<!-- corpus: text/p310.txt:35-36 -->
 
 **Chapter 2 and Appendix A defer ECS to Appendix C.** Chapter 2 gives the CDANG range
 without a chipset, `$40` to `$7E`, and *"When CDANG is 0, these registers cannot
-be written by the Copper"* (`ch2/p26.txt:31-35`); it sends ECS to Appendix C
-(`ch2/p36.txt:51-52`), and so does Appendix A's COPCON entry (`appA-copper/p274.txt:13-14`).
+be written by the Copper"* (p. 26); it sends ECS to Appendix C
+(p. 36), and so does Appendix A's COPCON entry (p. 274).
+<!-- corpus: ch2/p26.txt:31-35; ch2/p36.txt:51-52; appA-copper/p274.txt:13-14 -->
 
 **p. 310's lower end, `$03E`, is outside every other statement of the range.**
-p. 26 puts `$00` to `$3E` among the registers the Copper *"cannot affect at all"*
-(`ch2/p26.txt:26-27`), and Appendix B marks `STRLONG` at `$03E`, itself an `(E)`
-row, `*`: not writable by the Copper at all (`appB3/p289.txt:40`). p. 310's own
-standard-chip-set sentence, CDANG set reaching `$DFF03E` (`appC-ecs/p310.txt:31-33`),
+p. 26 puts `$00` to `$3E` among the registers the Copper *"cannot affect at all"*, and Appendix B marks `STRLONG` at `$03E`, itself an `(E)`
+row, `*`: not writable by the Copper at all (p. 289). p. 310's own
+standard-chip-set sentence, CDANG set reaching `$DFF03E`,
 disagrees with both.
+<!-- corpus: ch2/p26.txt:26-27; appB3/p289.txt:40; appC-ecs/p310.txt:31-33 -->
 
 ## RTL and measurement
 

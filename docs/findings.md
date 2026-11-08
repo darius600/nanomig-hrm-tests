@@ -14,7 +14,7 @@ interest:
 | [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
-The 29 pages whose Effort row is `S`, a small change, are [NM-AA-006](findings/NM-AA-006.md), [NM-AA-007](findings/NM-AA-007.md), [NM-AA-012](findings/NM-AA-012.md), [NM-HRM-019](findings/NM-HRM-019.md), [NM-HRM-020](findings/NM-HRM-020.md), [NM-HRM-021](findings/NM-HRM-021.md), [NM-HRM-023](findings/NM-HRM-023.md), [NM-HRM-025](findings/NM-HRM-025.md), [NM-HRM-032](findings/NM-HRM-032.md), [NM-HRM-033](findings/NM-HRM-033.md), [NM-HRM-035](findings/NM-HRM-035.md), [NM-HRM-037](findings/NM-HRM-037.md), [NM-HRM-040](findings/NM-HRM-040.md), [NM-HRM-046](findings/NM-HRM-046.md), [NM-HRM-049](findings/NM-HRM-049.md), [NM-HRM-050](findings/NM-HRM-050.md), [NM-HRM-051](findings/NM-HRM-051.md), [NM-HRM-064](findings/NM-HRM-064.md), [NM-HRM-066](findings/NM-HRM-066.md), [NM-HRM-069](findings/NM-HRM-069.md), [NM-HRM-072](findings/NM-HRM-072.md), [NM-HRM-073](findings/NM-HRM-073.md), [NM-HRM-075](findings/NM-HRM-075.md), [NM-HRM-080](findings/NM-HRM-080.md), [NM-HRM-084](findings/NM-HRM-084.md), [NM-HRM-086](findings/NM-HRM-086.md), [NM-HRM-088](findings/NM-HRM-088.md), [NM-HRM-091](findings/NM-HRM-091.md), [NM-HRM-092](findings/NM-HRM-092.md).
+The 29 pages whose Effort row is `S`, a small change, are [NM-AA-006](findings/NM-AA-006.md) (`denise_bitplanes.v`), [NM-AA-007](findings/NM-AA-007.md) (`denise.v`), [NM-AA-012](findings/NM-AA-012.md) (`agnus_beamcounter.v`), [NM-HRM-019](findings/NM-HRM-019.md) (`denise_sprites.v`), [NM-HRM-020](findings/NM-HRM-020.md) (`agnus_blitter.v`), [NM-HRM-021](findings/NM-HRM-021.md) (`agnus_blitter.v`), [NM-HRM-023](findings/NM-HRM-023.md) (`denise_sprites.v`), [NM-HRM-025](findings/NM-HRM-025.md) (`paula_audio_mixer.v`), [NM-HRM-032](findings/NM-HRM-032.md) (`agnus_beamcounter.v`), [NM-HRM-033](findings/NM-HRM-033.md) (`agnus_beamcounter.v`), [NM-HRM-035](findings/NM-HRM-035.md) (`minimig.v`), [NM-HRM-037](findings/NM-HRM-037.md) (`userio.v`), [NM-HRM-040](findings/NM-HRM-040.md) (`ciaa.v`), [NM-HRM-046](findings/NM-HRM-046.md) (`paula_floppy.v`), [NM-HRM-049](findings/NM-HRM-049.md) (`paula_floppy.v`), [NM-HRM-050](findings/NM-HRM-050.md) (`amiga_keymap.v`), [NM-HRM-051](findings/NM-HRM-051.md) (`hid.v`), [NM-HRM-064](findings/NM-HRM-064.md) (`cpu_wrapper.v`), [NM-HRM-066](findings/NM-HRM-066.md) (`agnus.v` and `agnus_bitplanedma.v`), [NM-HRM-069](findings/NM-HRM-069.md) (`minimig_m68k_bridge.v` and `agnus.v`), [NM-HRM-072](findings/NM-HRM-072.md) (`paula_uart.v`), [NM-HRM-073](findings/NM-HRM-073.md) (`agnus_copper.v`), [NM-HRM-075](findings/NM-HRM-075.md) (`gary.v`), [NM-HRM-080](findings/NM-HRM-080.md) (`paula_floppy.v`), [NM-HRM-084](findings/NM-HRM-084.md) (`paula_audio_channel.v`), [NM-HRM-086](findings/NM-HRM-086.md) (`ciab.v`), [NM-HRM-088](findings/NM-HRM-088.md) (`agnus_bitplanedma.v`), [NM-HRM-091](findings/NM-HRM-091.md) (`agnus.v` and `agnus_blitter.v`), [NM-HRM-092](findings/NM-HRM-092.md) (`paula_audio_channel.v` and `agnus_audiodma.v`).
 
 ## About the register
 
@@ -134,9 +134,8 @@ specialist rules on it.
 
 **A claim id** such as `opus:E-extdisk-iface.c4` names one claim, a single
 falsifiable statement quoted from a printed page of the manual and classified in
-[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) (not public yet); the prefix
-`opus:` or `sol:` names which of the two language models, each reading the page independently, recorded it
-([how a claim is identified](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/classify.md#a-claim-is-identified-by-reader-id-never-by-id), not public yet).
+the pipeline repository (see [Where to go next](../README.md#where-to-go-next) in the root README); the prefix
+`opus:` or `sol:` names which of the two language models, each reading the page independently, recorded it.
 
 **The status column reads `lifecycle · filed against · evidence`**, and every row
 is built from the three fields at the top of the page it links to, so the two can
@@ -334,4 +333,4 @@ assertion. If a deviation turns out to be intentional, the assertion stays and
 the reason is written down beside it — a test whose expectation was quietly moved
 to match the implementation stops being evidence about anything.
 
-The table of the register is what `hrm-testpipeline/tools/list_reds.py` reads. That script lives in the separate `hrm-testpipeline` repository, not this one; the table is readable without it.
+The table of the register is read by a script, so its row format is fixed.

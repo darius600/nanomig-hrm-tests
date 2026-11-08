@@ -35,8 +35,9 @@ validation has confirmed it against the page; the finding pages that
 grades, and the harness checks and smoke test beside them, which are graded
 against no page.
 
-**If you have one evening,** [the shortlist](docs/findings.md#if-you-have-one-evening)
-names three findings to start with and what each takes.
+Of the 89 findings, **62 ask you to decide whether the RTL should change**. **If you have one
+evening,** [the shortlist](docs/findings.md#if-you-have-one-evening) names three findings to
+start with and what each takes.
 
 ## Run it
 
@@ -56,7 +57,11 @@ command); one `integration/` package can take a quarter of an hour or more
 Requires Verilator (last verified with **5.052**), a C++ compiler and `make`.
 On Ubuntu 24.04, `sudo apt install verilator g++ make` gives Verilator 5.020;
 with it a package may report `BUILD`, and rerunning that package alone with
-`make -B -C hrm/<package> test` prints its count. The tests at
+`make -B -C hrm/<package> test` prints its count. Verilator 5.052 builds from the upstream
+source: `git clone https://github.com/verilator/verilator`, `git checkout v5.052`, then
+`autoconf`, `./configure`, `make` and `make install` as its `docs/install` describes (it
+needs `flex`, `bison` and `autoconf` beside the compiler), with the new `bin/` ahead of the
+apt one on the PATH. The tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
 vasm (`vasmm68k_mot`, from http://sun.hasenbraten.de/vasm/, last verified
 with 2.0f; `make CPU=m68k SYNTAX=mot` in the unpacked archive builds it) on the
@@ -100,11 +105,11 @@ commit.
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **35**, each run on both CPU cores: 10 green, 25 carrying a red; 27 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **6525** on fx68k — 6096 pass, **429 fail**; **6639** on TG68K — 6209 pass, **430 fail** |
-| registered findings | **89**, all open — 76 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA) |
+| registered findings | **89**, all open — 76 against the Hardware Reference Manual and 13 against the AA specification. **62 ask you to decide whether the RTL should change** (52 HRM, 10 AA); most of them name a suggested change and a few propose none |
 | what the registered findings rest on | 80 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **13** — ten are reds of this RTL, three are filed against the printed page and held up by green assertions |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
-| accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
+| accepted units, the pipeline repository's `acceptance/` records | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
 
 **Reading a test's output.** `PASS:` and `FAIL:` lines are the checks, the
 measurement against the value the page gives; only they count, and the summary
@@ -123,12 +128,17 @@ source* has no test yet. A *withdrawn* one asks nothing; its page in
 test asks nothing either; [what a green means](#what-a-green-means) says how far
 it reaches.
 
+The *Amiga specialist* a page asks is any reader who can say from the manual, a real
+machine or the chips themselves how the hardware behaves; if that is you, record your
+decision as an issue here, as [the page rule](docs/findings/README.md#rules-for-every-page)
+describes. A maintainer's rejection in their own tracker counts as the rejection a page names.
+
 **All 250 packages report both a verdict and an assertion count** in `hrm/` and
 `aa/`, and each graded `integration/` package does on both cores.
 `./run_all.sh` prints `tests: 154 passed, 63 failed, 0 build errors` for `hrm/`
 and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`, and one
 line per core for each of the 35 graded `integration/` packages; the table comes
-from such a run. A tool in the separate `hrm-testpipeline` repository checks it against the run's log.
+from such a run.
 
 ## Where to go next
 
@@ -152,9 +162,8 @@ the reader; where a page did not read one of the four, it says so. Keys are
 at the pinned submodule revision, for the printed claims they cite.* It does
 not mean the module is correct, that the page's other statements are covered,
 or that anything on a `MEASURED` or `RECORDED` line was checked. Coverage is
-measured per claim, from the suite's own output, by the coverage ledger in
-[`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) (not public yet); it is
-never implied by a green.
+measured per claim, from the suite's own output, by the pipeline repository's coverage
+ledger (see [Where to go next](#where-to-go-next)); it is never implied by a green.
 
 ## Layout
 
@@ -174,15 +183,14 @@ run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
 
 *Amiga Hardware Reference Manual*, Third Edition, Commodore-Amiga, Inc.,
 Addison-Wesley, 1991; Commodore, *Functional Specification for the Advanced
-Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY. Neither is distributed here.
+Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY. Neither is distributed here; every finding page quotes the sentences it rests on.
 Which pages each unit covers, what was measured and what is disclosed about it
-are in the acceptance records,
-[`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) (not public yet).
+are in the pipeline repository's acceptance records (see [Where to go next](#where-to-go-next)).
 
 ## Licence
 
 This repository is licensed under the GNU General Public License, version 3 or (at your option)
-any later version (GPL-3.0-or-later): the tests, the RTL patches and the documentation; see
+any later version (GPL-3.0-or-later): the tests, the RTL patches in the test packages (`*.patch`) and the documentation; see
 [`LICENSE`](LICENSE). The quotations from the *Amiga Hardware Reference Manual* and the AA
 specification remain Commodore's text, quoted for review and not covered by this licence.
 NanoMig, the RTL under test, is a submodule under its own terms.
