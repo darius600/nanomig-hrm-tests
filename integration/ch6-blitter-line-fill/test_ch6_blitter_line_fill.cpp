@@ -36,21 +36,23 @@
 // NMH_MUTATE selects a mutated program in place of its normal counterpart;
 // none is exercised by a plain `make test`. Re-runs used to confirm the
 // MUTATION lines below:
-//   NMH_MUTATE=LINE              prog_line_mut.bin (unnormalized registers)
-//   NMH_MUTATE=LINE_FIXTURE      prog_line_fixture_mut.bin (wrong constant)
+//   NMH_MUTATE=LINE              prog_line_mut.bin (abs() kept, swap skipped)
+//   NMH_MUTATE=LINE_RAWX         prog_line_rawx.bin (abs() skipped for x)
+//   NMH_MUTATE=LINE_FIXTURE     prog_line_fixture_mut.bin (wrong constant)
 //   NMH_MUTATE=LINE2             prog_line2_mut.bin (dy not abs'd)
 //   NMH_MUTATE=FILL_FIXTURE      prog_fill_plain_mut.bin (word4 marker dropped)
 //   NMH_MUTATE=FILL_DESC         prog_fill_desc_mut.bin (marker moved to word1)
-//   NMH_MUTATE=FILL_ASC          prog_fill_asc_mut.bin (word0 marker dropped)
+//   NMH_MUTATE=FILL_ASC          prog_fill_asc_mut.bin (the descending blit in the ascending slot)
 //   NMH_MUTATE=FILL_DESC_NOWRITE prog_fill_desc_nowrite.bin (channel D disabled)
 //   NMH_MUTATE=FILL_ASC_NOWRITE  prog_fill_asc_nowrite.bin (channel D disabled)
 //
-// MUTATION 6-line-mode.c39 stimulus red unnormalized deltas fed into BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE, height becomes 8 instead of 36, via NMH_MUTATE=LINE
+// MUTATION 6-line-mode.c39 stimulus red abs() kept, so this record does not reach c39's own clause; the swap of page 191 skipped (reaches 6-line-mode.c41, 6-line-mode.c42, ch6-line.c14 to ch6-line.c16), the unswapped deltas (major 7, minor 35) feed BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE and the height becomes 8 instead of 36, via NMH_MUTATE=LINE
+// MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28, via NMH_MUTATE=LINE_RAWX
 // MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=LINE_FIXTURE
 // MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36, via NMH_MUTATE=LINE2
 // MUTATION FIXTURE-FILL stimulus red word4's marker dropped, via NMH_MUTATE=FILL_FIXTURE
 // MUTATION CONTROL-FILL-DESC stimulus red middle marker moved from word 2 to word 1, via NMH_MUTATE=FILL_DESC
-// MUTATION 6-descending-mode.c10 stimulus red word0's marker dropped, ascending scan coincides with the descending pattern, via NMH_MUTATE=FILL_ASC
+// MUTATION 6-descending-mode.c10 stimulus red the identical 3-marker blit run in descending mode (DESC = 1, pointers at word4) in the ascending slot reads back the correct fill 0000/FFFF, via NMH_MUTATE=FILL_ASC
 // MUTATION PRECONDITION-FILL-DESC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_DESC_NOWRITE
 // MUTATION PRECONDITION-FILL-ASC stimulus red channel D (BLTCON0 USED bit) disabled, sentinel survives, via NMH_MUTATE=FILL_ASC_NOWRITE
 
@@ -200,6 +202,7 @@ int main(int argc, char** argv) {
     const char* mutate = std::getenv("NMH_MUTATE");
     const std::string mv = mutate ? mutate : "";
     const bool mutate_line              = mv == "LINE";
+    const bool mutate_line_rawx         = mv == "LINE_RAWX";
     const bool mutate_line_fixture      = mv == "LINE_FIXTURE";
     const bool mutate_line2             = mv == "LINE2";
     const bool mutate_fill_fixture      = mv == "FILL_FIXTURE";
@@ -212,6 +215,7 @@ int main(int argc, char** argv) {
     {
         std::string bin = dir + "/prog_line.bin";
         if (mutate_line) bin = dir + "/prog_line_mut.bin";
+        if (mutate_line_rawx) bin = dir + "/prog_line_rawx.bin";
         if (mutate_line_fixture) bin = dir + "/prog_line_fixture_mut.bin";
 
         std::vector<uint32_t> addrs;

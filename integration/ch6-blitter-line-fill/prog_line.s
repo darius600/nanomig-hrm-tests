@@ -34,7 +34,13 @@
 ; octant code are unaffected (they come from x1 and the real geometry, not
 ; the normalization step), so BLTCON0 stays $ABCA; only BLTCON1's SIGN bit
 ; changes (the swapped-in accumulator is positive).
+; MUTATE_RAWX, if defined, skips abs() for x only: the raw x2-x1 = -7 goes
+; into page 192's min/max with abs(y2-y1) = 35, so dx = 35 (unchanged) and
+; dy = -7 (should be 7): BLTAPT = -98, BLTAMOD = -168, BLTBMOD = -28; SIGN,
+; BLTSIZE ($0902), BLTCON0 and the octant code are unchanged.
 ; MUTATE_FIXTURE, if defined, stores a wrong constant for the fixture.
+; BLTADAT is written after BLTCON0 (p.182: data registers only after the
+; shift count is set).
 
         include "nanomig.i"
         org     PROGRAM_ORG
@@ -64,13 +70,33 @@ start:
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
         move.w  #$FFFF,BLTAFWM(a0)
         move.w  #$FFFF,BLTALWM(a0)
-        move.w  #$8000,BLTADAT(a0)     ; single pixel bit, shifted into place by ASH
         move.w  #$FFFF,BLTBDAT(a0)     ; solid texture (always draw)
         move.w  #0,BLTCDAT(a0)         ; background starts clear (defensive)
         move.w  #$0002,BLTCMOD(a0)     ; +1 word per row (y rises with address)
         move.w  #$0002,BLTDMOD(a0)
         move.w  #$ABCA,BLTCON0(a0)     ; ASH=$A=10=x1 mod 15, bits11-8=1011, LF=$CA (AB+AC)
+        move.w  #$8000,BLTADAT(a0)     ; p.182: data registers only after the shift count is set; single pixel bit, shifted into place by ASH
 
+        ifd     MUTATE_RAWX
+        move.w  #$0049,BLTCON1(a0)     ; LINE, octant code 010, SIGN=1 (BLTAPT<0), unchanged
+        move.l  #$FFFFFF9E,d0          ; BLTAPT = 4*dy-2*dx = 4*(-7)-2*35 = -98 (dy = min(x2-x1 = -7, 35) = -7, abs() skipped)
+        move.w  d0,BLTAPTL(a0)
+        swap    d0
+        move.w  d0,BLTAPTH(a0)
+        move.l  #$FFFFFF58,d0          ; BLTAMOD = 4*(dy-dx) = 4*(-7-35) = -168
+        move.w  d0,BLTAMOD(a0)
+        move.l  #$FFFFFFE4,d0          ; BLTBMOD = 4*dy = 4*(-7) = -28
+        move.w  d0,BLTBMOD(a0)
+        move.l  #LINE_ROW0,d0
+        move.w  d0,BLTCPTL(a0)
+        swap    d0
+        move.w  d0,BLTCPTH(a0)
+        move.l  #LINE_ROW0,d0
+        move.w  d0,BLTDPTL(a0)
+        swap    d0
+        move.w  d0,BLTDPTH(a0)
+        move.w  #$0902,BLTSIZE(a0)     ; height=dx+1=36 (dx = max(-7,35) = 35, unchanged), width=2
+        else
         ifd     MUTATE_UNNORM
         move.w  #$0009,BLTCON1(a0)     ; LINE, octant code 010, SIGN=0 (unnormalized accumulator is positive)
         move.l  #126,d0                ; BLTAPT = 2*(2*dmin'-dmax'), dmax'=dx0=7, dmin'=dy0=35: 2*(70-7)
@@ -109,6 +135,7 @@ start:
         swap    d0
         move.w  d0,BLTDPTH(a0)
         move.w  #$0902,BLTSIZE(a0)     ; height=dx+1=36, width=2 -- starts the blit
+        endif
         endif
 
         move.w  DMACONR(a0),d3         ; p.186: the first test of the done bit may be wrong -- discard it

@@ -65,12 +65,12 @@ start:
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
         move.w  #$FFFF,BLTAFWM(a0)
         move.w  #$FFFF,BLTALWM(a0)
-        move.w  #$8000,BLTADAT(a0)     ; single pixel bit, shifted into place by ASH
         move.w  #$FFFF,BLTBDAT(a0)     ; solid texture (always draw)
         move.w  #0,BLTCDAT(a0)         ; background starts clear (defensive)
         move.w  #$0002,BLTCMOD(a0)     ; width of the bitplane in bytes (p.192); octant's AUL bit steps it down
         move.w  #$0002,BLTDMOD(a0)
         move.w  #$3BCA,BLTCON0(a0)     ; ASH=$3=3=x1 mod 15, bits11-8=1011, LF=$CA (AB+AC)
+        move.w  #$8000,BLTADAT(a0)     ; p.182: data registers only after the shift count is set; single pixel bit, shifted into place by ASH
 
         ifd     MUTATE_NOABS
         move.w  #$0045,BLTCON1(a0)     ; LINE, octant code 001, SIGN=1 (still negative with the bad values)

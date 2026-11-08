@@ -153,9 +153,12 @@ This record is for what it reaches, the rearrangement of page 191
 it does not reach page 190's "before normalization, dx is the absolute
 difference between the endpoint x coordinates" (`6-line-mode.c39`,
 `ch6-line.c12`), because the absolute value is still taken. That clause
-has its own record below. Recorded as:
+has its own record below. The gate pairs a record with an assertion by the
+assertion's first label token, which is `6-line-mode.c39`, so this record
+carries that token and says in its text what it does and does not reach.
+Recorded as:
 
-    MUTATION 6-line-mode.c41 stimulus red abs() kept but the swap of page 191 skipped, so the unswapped deltas (major 7, minor 35) feed BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE and the height becomes 8 instead of 36, via NMH_MUTATE=LINE
+    MUTATION 6-line-mode.c39 stimulus red abs() kept, so this record does not reach c39's own clause; the swap of page 191 skipped (reaches 6-line-mode.c41, 6-line-mode.c42, ch6-line.c14 to ch6-line.c16), the unswapped deltas (major 7, minor 35) feed BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE and the height becomes 8 instead of 36, via NMH_MUTATE=LINE
 
 `prog_line_rawx.s` = `prog_line.s` with `MUTATE_RAWX` defined: the
 absolute value of the x difference is skipped. The raw x2-x1 = 3-10 = -7
