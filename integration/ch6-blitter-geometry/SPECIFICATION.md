@@ -53,8 +53,26 @@ Observed: `peek_logical()` on the destination range.
 
 Expected: the destination equals the known source pattern exactly.
 
-Mutation `NMH_MUTATE=A0-fixture`: withhold the BLTSIZE write -- the
-destination stays at its pre-blit seed instead of the source pattern.
+The destination is not seeded: `fixture.s` writes nothing there, so before
+any blit it holds the harness's zeroed RAM.
+
+Mutation `NMH_MUTATE=A0-fixture-order` (the order contrast, the one the
+claims state): the program keeps BLTCON0/1, the masks and the moduli, then
+enables blitter DMA, writes BLTSIZE (height 1, width 4), waits for the blit
+to finish (p.200: "Check BLTDONE before writing blitter registers"), and
+only then writes BLTAPT and BLTDPT, before DONE. BLTSIZE has started the
+blit while the pointers were not set up. Measured on both cores: the blit
+runs and finishes, and it moves four words from the unset pointers' address
+to the unset pointers' address: the RAM port shows four reads and four
+writes of 0000 at $000000, $000002, $000004 and $000006 (low memory, below
+the program), and the destination range stays 0000 0000 0000 0000, the
+source pattern missing: the line goes red with DONE reached. Nothing is
+written into the program.
+
+Mutation `NMH_MUTATE=A0-fixture`: withhold the BLTSIZE write -- no blit
+runs at all and the destination stays at the harness's zeroed RAM instead of
+the source pattern. This record contrasts that a blit runs at all, not the
+order of the writes; the order is the previous record's.
 
 ### A1 -- first/last word of each raster row can be masked
 Page 169. Claims: `6-intro.c13`, `6-intro.c14`, `ch6-intro.c12`,
@@ -75,6 +93,11 @@ Expected: on both rows, word 0 = the FWM-masked value, word 1 = all-ones
 
 Mutation `NMH_MUTATE=A1-row-masks`: a different BLTAFWM value -- word 0 of
 row 0 no longer matches.
+
+Mutation `NMH_MUTATE=A1-row-masks-lwm` (the last-word clause, `6-intro.c13`
+and `ch6-intro.c13`): BLTALWM = $F0F0 instead of $FF00 -- word 2 of both rows
+becomes F0F0 (source all-ones), words 0 and 1 are unchanged (00FF FFFF F0F0
+on both rows, printed on both cores).
 
 ### A2 -- zero-modulo raster addressing is a "plus one" continuation
 Page 171. Claims: `ch6-dma.c30`, `ch6-dma.c31`.
@@ -122,6 +145,11 @@ rows 13-17) keeps the sentinel, unchanged.
 Mutation `NMH_MUTATE=A3-embedded-modulo`: a 20-byte modulo instead of 30
 -- rows land at the wrong offset and the margin check fails.
 
+Mutation `NMH_MUTATE=A3-embedded-modulo-col` (the position clause,
+`6-dma-channels.c74`: row 13, byte column 12): BLTDPT at row 13, byte
+column 10 -- the whole rectangle lands two bytes (one word) to the left, 1111
+at word 5 of row 13 where the sentinel is expected (printed on both cores).
+
 ### A4 -- a cookie-cut mask is one bitplane regardless of background depth
 Page 176, 183. Claims: `6-function-generator.c40`, `ch6-minterms.c9`,
 `ch6-copy.c6`.
@@ -144,6 +172,14 @@ and equals that run's own background data where it is clear.
 
 Mutation `NMH_MUTATE=A4-cookiecut`: function $AC instead of $CA -- at
 least one destination word no longer matches "mask ? source : background".
+
+The ids `6-function-generator.c40` and `ch6-minterms.c9` (one mask plane
+suffices whatever the background depth) ride on this $CA contrast and have
+no contrast of their own: the pages predict no stimulus in which a single
+mask plane fails (a second mask plane is a program the pages do not
+describe), so there is nothing a page predicts
+red to run. What the line measures of the clause is that one A plane, reused
+unchanged against two different backgrounds, cuts both correctly.
 
 ### A5 -- the destination background is fetched before it is written
 Page 176. Claim: `ch6-minterms.c12`.
@@ -192,6 +228,11 @@ source words shifted by the 6-word/4-bit decomposition).
 Mutation `NMH_MUTATE=A6-shift-decomposition`: advance the pointer by 5
 words instead of 6 -- the result no longer equals the 100-bit shift
 reference.
+
+Mutation `NMH_MUTATE=A6-shift-decomposition-ash` (the 4-bit residual
+clause, `6-shifts-and-masks.c13` and `ch6-shifts.c12`): ASH = 3 with the
+same 12-byte advance -- DST+12.. holds 0222 2444 4666 (printed on both
+cores, as predicted) instead of 0111 1222 2333.
 
 ### A7a -- descending mode moves an overlapping image down correctly
 Page 182. Three assertions on the same block (4 rows x 2 words, source =
@@ -268,6 +309,15 @@ field, computed independently in the test (000F FFFF E000).
 Mutation `NMH_MUTATE=A8a-dest-grows`: blit size 2 instead of 3 -- the
 third destination word never receives its part of the shifted pattern.
 
+Mutation `NMH_MUTATE=A8a-dest-grows-ash` (`ch6-copy.c13`, channel A's shift
+zero): ASH = 12, the shift of B -- the destination reads 0000 00FF E00E
+(printed on both cores, as predicted) instead of 000F FFFF E000.
+
+Mutation `NMH_MUTATE=A8a-dest-grows-masks` (`ch6-copy.c14`, `ch6-copy.c5`,
+the masks set as if masking D): BLTAFWM = BLTALWM = $FFFF -- the destination
+reads 000F FFFF E00F (printed on both cores, as predicted): word 2 takes the
+neighbour word's low nibble the trailing mask clipped, E00F instead of E000.
+
 ### A8b -- arbitrary-region copy, source spans more words than destination
 Page 183. Claims: `6-copying-arbitrary-regions.c2`, `ch6-copy.c3`,
 `ch6-copy.c4`.
@@ -288,8 +338,8 @@ destination word depends on the source's third (real) fetch, which only
 happens because the blit size is 3.
 
 Mutation `NMH_MUTATE=A8b-source-larger`: blit size 2 instead of 3 -- the
-third fetch never happens and the second (real, nonzero) destination word
-stays at its unwritten seed instead of the computed value.
+third fetch never happens: DST+2 = FFFF is still written and DST+4 = 0000 stays unwritten, so the third word reads 0000
+instead of F000.
 
 ### A8c -- arbitrary-region copy's A-channel row mask
 Page 183. Claims: `ch6-copy.c11`, `ch6-copy.c12`.
@@ -313,6 +363,10 @@ test from the minterm truth table and the barrel-shift arithmetic.
 
 Mutation `NMH_MUTATE=A8c-arb-mask`: $FFFF masks instead of the computed
 ones -- word 0 becomes 7FFF instead of 5555.
+
+Mutation `NMH_MUTATE=A8c-arb-mask-ash` (`ch6-copy.c11`, the same shift as
+B): ASH = 0 while BSH stays 2 -- the destination reads 5557 FFFF D555
+(printed on both cores, as predicted) instead of 5555 FFFF F555.
 
 ### A9 -- minterm n is bit n of the LF byte, for every n = 0..7
 Page 178. Claim: `ch6-venn.c2`.
@@ -439,14 +493,27 @@ page gives no end address.
 No run leaves the writes out, so this program does not show what the
 overlay does to the blitter's DMA reads.
 
-Observed: `ram_log()`, channel A's read accesses, coalesced.
+Observed: `ram_log()`, channel A's read accesses, coalesced; and channel
+D's write accesses, coalesced (BLTDMOD = 2, one word added after each row,
+p.172).
 
 Expected: exactly word addresses 20 through 61 (42 reads), consecutive
 within each row and across every row boundary -- the figure's own extent,
-forced by its own start (20) and size (6x7) exactly as its cells show.
+forced by its own start (20) and size (6x7) exactly as its cells show. With
+BLTAMOD = 0 the 42 reads are the same for 7x6, 6x7 and 42x1, so they alone
+do not see the width or the height; the D writes do: 7 words per row, rows 8
+words apart, at word offsets 0-6, 8-14, 16-22, 24-30, 32-38, 40-46 of the
+destination, in this order. The line passes only if both hold.
 
 Mutation `NMH_MUTATE=A13-fig61`: start channel A one word later (word 21)
 -- the read range no longer matches 20..61.
+
+Mutation `NMH_MUTATE=A13-fig61-shape` (`6-dma-channels.c32`, `ch6-dma.f3`:
+six high, seven wide; `c31`: the seven-word stride): the transposed shape,
+6 words wide and 7 rows high, the same BLTAMOD and BLTDMOD. The 42 reads are
+still 20..61, and the D writes fall at offsets 0-5, 7-12, 14-19, ... (rows 7
+words apart: the six written words plus the one-word modulo) -- printed on
+both cores -- so the line goes red through the D clause alone.
 
 ### A14 -- figure 6-3 (p.178)
 Page 177, 178. Claim: `ch6-venn.f-labels`.
@@ -467,6 +534,13 @@ Expected: FF00 (=A), F0F0 (=B), CCCC (=C).
 Mutation `NMH_MUTATE=A14-fig63`: LF=$0F (NOT A) instead of $F0 for the
 first blit -- no longer equals A.
 
+Mutation `NMH_MUTATE=A14-fig63-b`: LF=$33 (NOT B) instead of $CC for the
+second blit -- the second destination reads 0F0F instead of F0F0 (printed
+on both cores). Mutation `NMH_MUTATE=A14-fig63-c`: LF=$55 (NOT C) instead of
+$AA for the third blit -- the third destination reads 3333 instead of CCCC
+(printed on both cores). The B and C circles are each varied through their
+own blit.
+
 ### A15 -- figure 6-4 (p.181) extraction recipe
 Page 181. Claims: `6-shifts-and-masks.c32`, `ch6-shifts.f1`.
 
@@ -475,12 +549,19 @@ BLTADAT=$FFFF, BLTAFWM=$07FF, BLTALWM=$FFF0) reads exactly two consecutive
 source words per row through channel B and writes two per row through
 channel D -- the drawing's whole span is a two-word source row.
 
-Program: the p.181 recipe, source 2 words/row x 3 rows.
+Program: the p.181 recipe, source 2 words/row x 3 rows. BLTBMOD, BLTCMOD
+and BLTDMOD are all 2 (the page's recipe leaves the moduli open; p.172: the
+modulo is added after each row), and the source holds a third, never-read
+word after each row's two. Six reads and six writes are what any width x
+height of 6 gives, so with moduli of 0 the counts could not tell 2 x 3 from
+3 x 2; with the modulo the rows show in the addresses.
 
-Observed: `ram_log()`, channel B's reads and channel D's writes, counted.
+Observed: `ram_log()`, channel B's reads and channel D's writes, counted
+and in order.
 
 Expected: exactly 6 B-channel reads and 6 D-channel writes (2/row x 3
-rows).
+rows), at word offsets 0,1, 3,4, 6,7 of the source and of the destination,
+in this order.
 
 Caution, recorded rather than graded: the figure's drawn second-word mask
 is 7 bits ("11111110 00000000", matching a 23-bit extraction), but its
@@ -492,6 +573,10 @@ structure (reads/writes per row), not those exact final-row values.
 
 Mutation `NMH_MUTATE=A15-fig64`: 3 words/row instead of 2 -- the counts
 become 9 and 9.
+
+Mutation `NMH_MUTATE=A15-fig64-shape`: 3 words/row and 2 rows -- still six
+reads and six writes, so the counts pass; they fall at offsets 0,1,2, 4,5,6
+(printed on both cores) and the line goes red through the offsets alone.
 
 ### A16 -- ch6-minterms.c8: the worked example's five minterms
 Page 175. Claim: `ch6-minterms.c8`.
@@ -613,6 +698,13 @@ Expected: 512 KB: $AAAA at $006000, $BBBB at $046000, $CCCC at $006002.
 Mutation `NMH_MUTATE=A20-mem512`: `memory_config=0` for the 2 MB half too
 -- DST (unwrapped) is never written under 512 KB, so that half goes red
 on its own.
+
+Mutation `NMH_MUTATE=A20-mem512-512k`: the 512 KB half runs under
+`memory_config=3` (the program placed and the end mark read at the 2 MB
+identity addresses). The pointers are then honoured: the three words are
+written at $086000, $0C6000 and $186002 (printed on both cores) and
+$006000, $046000 and $006002 stay 0000, so the 512 KB half goes red on its
+own.
 
 ## Claims not asserted
 
