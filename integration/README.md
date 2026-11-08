@@ -22,11 +22,14 @@ A package that carries `*.patch` files also has a `<copy>-test` target
 (`<copy>-test-fx68k` and `<copy>-test-tg68k` for one core). It builds and runs the
 package against a private copy of the chip set with that patch applied; the
 submodule is never modified. The packages that ship a patch, with their copies, are
-`appF-cia-system` (`conf`, `sp`), `ch2-copper-beam` (`op`, `rn`, `lc`, `cs`),
-`ch4-sprite-registers` (`sh`, `bc`), `ch5-audio-attach-modulation` (`pm`),
+`aa-integ-s5` (`p3lsb`, `p6vol`, `p16gap`, `p17end`), `appF-cia-system` (`conf`, `sp`),
+`ch2-copper-beam` (`op`, `rn`, `lc`, `cs`), `ch2-interlace-fields` (`longline`),
+`ch3-playfield-system` (`latch`, `latchrst`), `ch4-sprite-registers` (`sh`, `bc`),
+`ch5-audio-attach-modulation` (`pm`), `ch5-audio-output-scanrate` (`lc`),
 `ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`, `k9`, `refresh3`,
-`p13fix`); each
-`Makefile` lists its copies. `aa-integ-s2` is the exception: its patches are in
+`p13fix`); each `Makefile` lists its copies. `aa-integ-s5` has the per-core targets
+only, and they take `ONLY=<propositions>` and `SEL=<selector>`, for example
+`make -C integration/aa-integ-s5 p6vol-test-fx68k ONLY=P6`. `aa-integ-s2` is the exception: its patches are in
 `private/`, its targets are `private-uhres`, `private-longline`,
 `private-novbrelease` and `private-laterelease`, and it has no per-core variants
 of them. A finding page whose suggested change has a patch names the target in its

@@ -171,6 +171,9 @@ So `ch5-audio-volume-scale` staying red is not a failed fix: its two remaining r
 belong to [NM-HRM-002](NM-HRM-002.md), the stereo routing, which nothing suggested
 here touches. Read the assertion label before concluding anything.
 
-In `integration/aa-integ-s5` the same change would give $0040 the level 127 · 64
-and −128 · 64 and turn `P6-DISTINCT`, `P6-LIN` and `P6-LEVELS` green on both
-cores; that is a reading of the change, not run.
+In `integration/aa-integ-s5`, [`p6vol.patch`](../../integration/aa-integ-s5/p6vol.patch)
+makes the same change on a copy of the design: bit 6 selects 64 and clears the six
+low bits, and the helper's input is seven bits wide. With it $0040 gives the level
+127 · 64 = 8128 and −128 · 64 = −8192, and `P6-DISTINCT`, `P6-LIN` and `P6-LEVELS`
+pass on both cores: `make -C integration/aa-integ-s5 p6vol-test-fx68k ONLY=P6` (and
+`p6vol-test-tg68k`) prints `22 passed, 0 failed`.
