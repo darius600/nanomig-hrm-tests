@@ -38,8 +38,6 @@ start:
 
         lea     CUSTOM,a0
         move.w  #$8240,DMACON(a0)      ; set DMAEN | BLTEN
-        move.w  #0,BLTADAT(a0)
-        move.w  #0,BLTBDAT(a0)
         move.w  #0,BLTAMOD(a0)
         move.w  #0,BLTBMOD(a0)
         move.w  #0,BLTCMOD(a0)
@@ -57,6 +55,9 @@ start:
         swap    d1
         move.w  d1,BLTDPTH(a0)
 
+        ; p.182: the immediate data registers only after the last BLTCON0/BLTCON1 write
+        move.w  #0,BLTADAT(a0)
+        move.w  #0,BLTBDAT(a0)
         move.w  #$0045,BLTSIZE(a0)     ; height=1, width=5 -- starts the blit
 
         move.w  DMACONR(a0),d3          ; p.186: the first test of the done bit may be wrong -- discard it

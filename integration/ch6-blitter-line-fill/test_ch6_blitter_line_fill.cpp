@@ -47,7 +47,7 @@
 //   NMH_MUTATE=FILL_ASC_NOWRITE  prog_fill_asc_nowrite.bin (channel D disabled)
 //
 // MUTATION 6-line-mode.c39 stimulus red abs() kept, so this record does not reach c39's own clause; the swap of page 191 skipped (reaches 6-line-mode.c41, 6-line-mode.c42, ch6-line.c14 to ch6-line.c16), the unswapped deltas (major 7, minor 35) feed BLTAPT/BLTAMOD/BLTBMOD/BLTSIZE and the height becomes 8 instead of 36, via NMH_MUTATE=LINE
-// MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28, via NMH_MUTATE=LINE_RAWX
+// MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28 (ch6-line.c12), and it prints all 36 rows at bit 5, first pixel correct, only the last-pixel check fails, via NMH_MUTATE=LINE_RAWX
 // MUTATION FIXTURE-LINE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=LINE_FIXTURE
 // MUTATION 6-line-mode.c40 stimulus red raw signed y2-y1 fed into the min/max normalization instead of abs(y2-y1), height becomes 8 instead of 36, via NMH_MUTATE=LINE2
 // MUTATION FIXTURE-FILL stimulus red word4's marker dropped, via NMH_MUTATE=FILL_FIXTURE

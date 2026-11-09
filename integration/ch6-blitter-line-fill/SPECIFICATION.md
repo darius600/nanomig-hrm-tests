@@ -50,13 +50,17 @@ alone, not read off the RTL:
   the blitter immediate data registers only after setting the shift count
   in BLTCON0/BLTCON1, as loading the data registers first will lead to
   unpredictable results ... The act of loading one of the data registers
-  'draws' the data through the machine and shifts it." Both line programs
-  therefore write BLTADAT ($8000, shifted by ASH), BLTBDAT ($FFFF) and
-  BLTCDAT (0) only after their last BLTCON0 and BLTCON1 writes, in every
-  branch including the mutated ones, and immediately before BLTSIZE, which
-  starts the blit. The values are unchanged. (BLTBDAT = $FFFF is a solid
-  texture and no B shift changes it; it is moved for conformance with the
-  page, not because a shift would alter it.)
+  'draws' the data through the machine and shifts it." Every program of
+  this package therefore writes its immediate data registers (the two line
+  programs BLTADAT $8000 shifted by ASH, BLTBDAT $FFFF and BLTCDAT 0; the
+  fill programs BLTADAT 0 and BLTBDAT 0) only after their last BLTCON0 and BLTCON1 writes, in every
+  branch including the mutated ones (ASCENDING, NOWRITE, MOVE_MARKER,
+  MUTATE_MARKER, MUTATE_UNNORM, MUTATE_RAWX, MUTATE_NOABS), and immediately
+  before BLTSIZE, which
+  starts the blit. The values are unchanged. (BLTBDAT = $FFFF in the
+  line programs is a solid texture and no B shift changes it, and the fill
+  programs' zeros are likewise shift-proof; they are moved for conformance
+  with the page, not because a shift would alter them.)
 
 ### Assertion (drawn line)
 
@@ -65,7 +69,10 @@ alone, not read off the RTL:
   `ch6-line.c16` (page 191, normalized dx/dy and the rearrangement). One
   assertion settles all seven: the normalized values are exactly what a
   correctly drawn line for these endpoints requires, and a line drawn from
-  unnormalized values comes out the wrong length (see Mutation) -- so the
+  unnormalized values comes out the wrong length, while a line whose x
+  difference skips abs() (the c39 contrast, LINE_RAWX) keeps the length and
+  fails on the last pixel only: all 36 rows at bit 5, first pixel correct
+  (see Mutation) -- so the
   drawn line is evidence for the recipe's normalization step, not just the
   registers it feeds. (`6-line-mode.c40` and `ch6-line.c13`, dy's raw-delta
   claim, sit on the second stimulus below only: this line's y2-y1 is
@@ -175,7 +182,7 @@ $ABCA and the octant code stays 010. The mutation changes only the
 stimulus: the comparator and every expected value are untouched. Recorded
 as:
 
-    MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28, via NMH_MUTATE=LINE_RAWX
+    MUTATION 6-line-mode.c39 stimulus red raw x2-x1 = -7 fed into page 192's min/max instead of abs(x2-x1), so BLTAPT -98, BLTAMOD -168 and BLTBMOD -28 replace -42, -112 and 28 (ch6-line.c12), and it prints all 36 rows at bit 5, first pixel correct, only the last-pixel check fails, via NMH_MUTATE=LINE_RAWX
 
 `prog_line_fixture_mut.s` = `prog_line.s` with `MUTATE_FIXTURE` defined:
 stores $DEAD instead of $BEEF, turning FIXTURE-LINE red on its own,
