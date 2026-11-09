@@ -623,9 +623,10 @@ F9 counts as untriggered, because its line-10 pulse is not captured (P3(d)).
 ## P5. The pen-pressed button on pin 5 reads back in POTGOR
 
 **1. Proposition.** The light pen's pen-pressed-to-screen button, on pin 5
-(LPENPR*) of a controller connector, is readable: with all 0s written to
-POTGO, POTGOR bit 8 (left connector) or bit 12 (right connector) follows the
-level of that pin.
+(LPENPR*) of a controller connector, is readable as a button: with all four
+pot pins set to output and driven high ($FF00 written to POTGO), POTGOR bit 8
+(left connector) or bit 12 (right connector) reads 0 while the button is
+pressed and 1 while it is not.
 
 - Claims: opus:E-gameport.c6 and sol:E-gameport.c5 (p.327: "4. Light pen,
   including pen-pressed-to-screen button.").
@@ -642,15 +643,20 @@ level of that pin.
   - a connector-identity loop (for C0): `MOVE.B $BFE001,D0` (CIA-A port A,
     p.232) stored to a ring of words, while the harness holds the left mouse
     button pressed and then releases it;
-  - POTGO ← $0000 from its memory word. p.240: "To use the entire register as
-    an input, sensing the current state of the pot pins, write all 0s to
-    POTGO. Thereafter you can read the current state by using read-only
-    address POTINP.";
+  - POTGO ← $FF00 from its memory word (OUTRY, DATRY, OUTRX, DATRX, OUTLY,
+    DATLY, OUTLX and DATLX all 1, START 0). p.241: "These lines can also be
+    used for button inputs. A button is a normally open switch that shorts to
+    ground. The Amiga must provide a pull-up resistance on the sense pin. To
+    do this, set the proper pin to output, and drive the line high (set both
+    OUT... and DAT... to 1). Reading POTINP will produce a 0 if the button is
+    pressed, a 1 if it is not." p.238 reads the pen-pressed switch "as same as
+    the right or middle button on a mouse". No page gives the level of an input
+    pin that nothing drives, so the run does not write $0000;
   - then a loop of `MOVE.L $DFF004,(A0)+ ; MOVE.W $DFF016,(A0)+` for at least
     12 fields, and a done marker.
 - **Harness:** all controller pins of both connectors stay high, except that
-  pin 5 of connector X is driven low for 700,000 clk_sys cycles, high for
-  700,000, low for 700,000 and high for 700,000. The changes are not aligned to
+  pin 5 of connector X is pressed (held low) for 700,000 clk_sys cycles,
+  released for 700,000, pressed for 700,000 and released for 700,000. The changes are not aligned to
   fields or to a line. The graded samples (P5.3) are chosen by their own V and
   by their time after the change, so the oracle does not depend on the
   alignment. X is the connector the harness's mouse inputs reach, identified
@@ -664,7 +670,11 @@ level of that pin.
   display lines" (p.331), whose line numbers the pages do not pin down.
 - The sample's POTGOR bracket begins at least 300 µs after the latest level
   change of any pot line. p.240: "There are large capacitors on these lines,
-  and it can take up to 300 microseconds for the line to change state."
+  and it can take up to 300 microseconds for the line to change state." The
+  same bound applies to the POTGO write: the first graded read comes at least
+  300 µs after the CPU reads POTGO's memory word. The reader computed about
+  317 µs (9,000 clk_sys from the start of the first interval, at about
+  28.375 MHz); every run prints the measured interval as a MEASURED line.
 
 **4. Expected.**
 
@@ -672,12 +682,14 @@ level of that pin.
   "08 DATLX data for port 1, pin 5"); bit 12 for J11 (p.240: "12 DATRX data
   for port 2, pin 5"). Port 1 is JOY0DAT, the left connector (p.229, p.281),
   and J12 is the left connector (p.327). In every graded sample the bit is 0
-  while pin 5 is low and 1 while pin 5 is high. This rests on p.240's "sensing
-  the current state of the pot pins", read with "The state of the data bit
-  controls the logic level on the output pin": a data bit of 1 is the high
-  logic level.
+  while the button is pressed and 1 while it is not. p.241: "Reading POTINP
+  will produce a 0 if the button is pressed, a 1 if it is not." The pins are
+  set to output and driven high as p.241 prescribes.
 - **The other pot bits stay at 1.** In every graded sample, bits 10 and 14
-  (pin 9 of each connector) and the other connector's pin-5 bit are 1.
+  (pin 9 of each connector) and the other connector's pin-5 bit are 1: p.241
+  "a 1 if it is not" (pressed), and p.240 "The state of the data bit controls
+  the logic level on the output pin" for a pin set to output with its data bit
+  at 1.
 - **Both connectors are graded.** p.327 says "The two 9-pin D-type connectors
   ... are used to interface to four types of devices". p.240 provides the pin-5
   bit for each of them. No input of the design that the harness drives reaches
@@ -696,7 +708,7 @@ GRADED.
   Bit 6 makes X = J12 (port 1, the left connector, p.327), bit 7 makes X = J11.
   This is p.232's assignment; p.329 prints the opposite one (section 1, item 12).
   The pin-5 bit graded is bit 8 for J12 and bit 12 for J11.
-- The port shows the CPU reading POTGO's value $0000 from memory before the
+- The port shows the CPU reading POTGO's value $FF00 from memory before the
   loop.
 - **Schedule.** The harness log shows the four level changes of pin 5 (low,
   high, low, high) at their scheduled cycles, each read back as set; every
@@ -717,12 +729,12 @@ GRADED.
   copies of the chipset sources, outside the repository. In the first, POTINP
   bit 8 is held at 1 whatever pin 5 does, so the pin-5 bit never reads 0
   (P5(a) fails). In the second, POTINP bit 10 also follows the pin-5 button,
-  so a pin-9 bit reads 0 while pin 5 is low (P5(b) fails).
+  so a pin-9 bit reads 0 while the pin-5 button is pressed (P5(b) fails).
 - **C0:** the harness holds the right mouse button instead of the left one in
   the identity loop. Neither CIA-A bit follows, and the precondition fails.
 - **C1:** remove the done marker. The precondition fails.
-- **POTGO precondition:** store $0001 in POTGO's memory word. The recorded
-  value differs from the declared $0000, so the precondition fails.
+- **POTGO precondition:** store $FF01 in POTGO's memory word. The recorded
+  value differs from the declared $FF00, so the precondition fails.
 - **Schedule:** drive an input of the other connector during the second level
   interval. The precondition fails.
 - **Sample-count precondition:** shorten one level interval to less than
@@ -749,7 +761,7 @@ This table summarizes the runs above; it adds nothing to them.
 | BEAMCON0 bit 13 = 1 | C6 contrast | ECS/PAL, both cores |
 | NTSC selected with PAL declared; VPOSW writes inside S5; HTOTAL and BEAMCON0 (VARBEAMEN) written after S3; pauses between chunks of the measurement loop; S8 removed; pin 3 instead of pin 4 in S2 | C3 (A3, A1), A2, C4, C1, C0 contrasts | ECS/PAL, both cores |
 | pen-pressed, X the connector C0 identifies | P5 | all |
-| pin 9 instead of pin 5; right button in the identity loop; no done marker; POTGO word $0001; another input driven; short interval | P5 contrasts | at least ECS/PAL, both cores |
+| pin 9 instead of pin 5; right button in the identity loop; no done marker; POTGO word $FF01; another input driven; short interval | P5 contrasts | at least ECS/PAL, both cores |
 | POTINP bit 8 held at 1; POTINP bit 10 also follows pin 5 (private chipsets) | P5(a), P5(b) implementation controls | ECS/PAL, both cores |
 
 Contrasts listed in the same row change fields that do not overlap, so they
@@ -960,7 +972,7 @@ prog_lpen_m10_tg on TG68K.
 | FIXTURE-MARK0 | FIX-MARK0 | repository | first store of the fixture holds $BEEF | red, only this line |
 | P5-C1-DONE | C1 | repository | no done mark | red, P5(a) and P5(b) NOT GRADED |
 | P5-C0-IDENTITY | C0 | repository | right button held in the identity loop | red, P5(a) and P5(b) NOT GRADED |
-| P5-POTGO-READ | P5-POTGO | repository | POTGO word $0001 | red, P5(a) and P5(b) NOT GRADED |
+| P5-POTGO-READ | P5-POTGO | repository | POTGO word $FF01 | red, P5(a) and P5(b) NOT GRADED |
 | P5-SCHEDULE | P5-SCHED | repository | joystick0 bit 0 driven in the second level interval | red, P5(a) and P5(b) NOT GRADED |
 | P5-WINDOW-COUNT | P5-SHORT | repository | third level interval 5000 cycles | red for window 2; P5(a) and P5(b) of window 2 NOT GRADED |
 | P5-SCHEDULE | P5-PIN9 | repository | pin 9 driven instead of pin 5 in window 2 | red, P5(a) and P5(b) NOT GRADED |
