@@ -156,6 +156,32 @@ inline Case make_r() {
     return c;
 }
 
+// The sync move of CP-7a, CP-7a-S and CP-7b (SPECIFICATION.md 3.8): the horizontal sync, and with it the start of every row,
+// moves inside the frame. HSSTRT and HSSTOP are written at the top of the frame and again at the beginning of beam line
+// $30 (or, with the SHRES marker, between the marker's two lines, $39); the register list enables the variable sync.
+inline void add_sync_move(Case& c, bool at_marker) {
+    c.extra_regs.push_back({R_HSSTRT, 18});
+    c.extra_regs.push_back({R_HSSTOP, 35});
+    c.extra_regs.push_back({R_BEAMCON0, 0x01A0});     // VARHSYEN, VARBEAMEN, PAL
+    std::vector<uint16_t> x;
+    append(x, cop_move(R_HSSTRT, 18));
+    append(x, cop_move(R_HSSTOP, 35));
+    if (!at_marker) {
+        append(x, cop_wait(0x30, 0x07));
+        append(x, cop_move(R_HSSTRT, 16));
+        append(x, cop_move(R_HSSTOP, 33));
+        x.insert(x.end(), c.cop_extra.begin(), c.cop_extra.end());
+    } else {
+        // the marker's first WAIT and MOVE (four words), the move, then the marker's second WAIT and MOVE
+        x.insert(x.end(), c.cop_extra.begin(), c.cop_extra.begin() + 4);
+        append(x, cop_wait(0x39, 0x07));
+        append(x, cop_move(R_HSSTRT, 16));
+        append(x, cop_move(R_HSSTOP, 33));
+        x.insert(x.end(), c.cop_extra.begin() + 4, c.cop_extra.end());
+    }
+    c.cop_extra = x;
+}
+
 // The contrasting variants of the common preconditions (SPECIFICATION.md 3.8), applied to any case.
 enum class Cp { None, C1, C2, C3, C4, C5, C7a, C7b, C7s };
 
@@ -166,19 +192,9 @@ inline void apply_cp(Case& c, Cp k) {
     case Cp::C3: c.bplcon0 = c.res == 'H' ? 0x1200 : 0x9200; break;
     case Cp::C4: c.dmacon = 0x8380; break;
     case Cp::C5: c.diwstrt = 0x2CB0; break;
-    case Cp::C7a: c.calib_bytes = c.spr[0].vstart < 0x50 ? 800 : 1280; break;   // calibration rows end above the first sprite line
-    case Cp::C7b: {
-        std::vector<uint16_t> x;
-        append(x, cop_move(R_BPLCON1, 0x0000));
-        append(x, std::vector<uint16_t>{0x3007, 0xFFFE});
-        append(x, cop_move(R_BPLCON1, 0x0033));
-        x.insert(x.end(), c.cop_extra.begin(), c.cop_extra.end());
-        c.cop_extra = x;
-        break;
-    }
-    case Cp::C7s:
-        for (auto& w : c.cop_extra) if (w == 0x3A07) { w = 0x3C07; break; }   // the marker ends two beam lines later
-        break;
+    case Cp::C7a:
+    case Cp::C7b: add_sync_move(c, false); break;   // CP-7b is the same stimulus, set against C7's index clause (SPECIFICATION.md 3.8)
+    case Cp::C7s: add_sync_move(c, true); break;
     default: break;
     }
 }

@@ -8,29 +8,13 @@
 ;   NOFIX   leave out the fixture store
 ;   NODONE  leave out step 6's write of DONE_VALUE (idle loop instead)
 ;   VBL     after the DONE write, poll VERTB and toggle COLOR00 in every vertical blank
-;   PRO     a prologue at PROGRAM_ORG enables Copper DMA on a one-instruction list at
-;           $088100 and jumps to the entry, which starts at PROGRAM_ORG+$40
 
         include "nanomig.i"
 
 RLIST           equ     $0B8000
 LISAID          equ     $07C
-COP1LCH         equ     $080
-COP1LCL         equ     $082
-COPJMP1         equ     $088
 
         org     PROGRAM_ORG
-
-        ifd     PRO
-        lea     CUSTOM,a0
-        move.w  #$0008,COP1LCH(a0)
-        move.w  #$8100,COP1LCL(a0)
-        move.w  d0,COPJMP1(a0)
-        move.w  #$8280,DMACON(a0)
-        jmp     entry
-        ds.w    16,0
-        org     PROGRAM_ORG+$40
-        endc
 
 entry:
         ifnd    NOFIX

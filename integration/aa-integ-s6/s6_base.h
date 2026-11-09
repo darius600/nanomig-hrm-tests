@@ -14,6 +14,8 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <iterator>
 
 #include "nanomig_harness.h"
 
@@ -49,7 +51,7 @@ constexpr uint32_t kResults   = 0x0C0000;
 constexpr uint32_t kDoneAddr  = 0x0C0FFE;
 constexpr uint16_t kDoneVal   = 0x600D;
 constexpr uint32_t kRList     = 0x0B8000;   // the register list the program interprets (build addition)
-constexpr uint32_t kProEntry  = kProgOrg + 0x40;
+constexpr uint32_t kPrologue  = 0x080200;   // RP-1's prologue code (SPECIFICATION.md 3.9)
 
 inline uint32_t spr_addr(int k) { return kSprBase + kSprStride * uint32_t(k); }
 
@@ -59,7 +61,8 @@ enum : uint16_t {
     R_DDFSTRT = 0x092, R_DDFSTOP = 0x094, R_DMACON = 0x096, R_INTENA = 0x09A, R_BPLCON0 = 0x100,
     R_BPLCON1 = 0x102, R_BPLCON2 = 0x104, R_BPLCON3 = 0x106, R_BPL1MOD = 0x108, R_BPL2MOD = 0x10A,
     R_BPLCON4 = 0x10C, R_COLOR00 = 0x180, R_FMODE = 0x1FC, R_BPL1PTH = 0x0E0, R_BPL1PTL = 0x0E2,
-    R_SPR0PTH = 0x120
+    R_SPR0PTH = 0x120, R_COP2LCH = 0x084, R_COP2LCL = 0x086, R_COPJMP2 = 0x08A,
+    R_HSSTOP = 0x1C2, R_BEAMCON0 = 0x1DC, R_HSSTRT = 0x1DE
 };
 
 inline uint16_t colour(int i) { return uint16_t(((i >> 4) & 15) << 8 | (i & 15) << 4 | 0xA); }
@@ -90,6 +93,7 @@ struct Case {
     std::string prog = "prog_main.bin";
     bool     expect_done = true;        // the program writes DONE_VALUE
     uint32_t entry = kProgOrg;          // address of the program's first instruction
+    uint32_t pre_vector = 0;            // nonzero: prog_pre.bin is placed here and the reset PC points at it
     bool     prologue_list = false;     // a one-instruction Copper list at kProLst
     std::vector<std::pair<uint16_t, uint16_t>> extra_regs;   // register-list entries inserted before step 5
     // expected sprite length used by precondition C5 (pixels of c5_ns nanoseconds, from the proposition)
@@ -242,6 +246,15 @@ inline std::shared_ptr<Run> execute(const Case& c) {
 
     r->loaded = h.load_program(g_dir + "/" + c.prog) > 0;
     if (!r->loaded) return r;
+    if (c.pre_vector) {
+        // the prologue image goes into Chip memory like the other images; load_program has written the reset PC, which is now moved to it
+        std::ifstream f(g_dir + "/prog_pre.bin", std::ios::binary);
+        std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        if (b.empty()) { r->loaded = false; return r; }
+        if (b.size() & 1) b.push_back(0);
+        for (size_t i = 0; i < b.size(); i += 2) h.poke_word((c.pre_vector + i) / 2, uint16_t(b[i] << 8 | b[i + 1]));
+        h.poke_long(nmh::kKickShadowWordBase + 2, c.pre_vector);
+    }
     r->released = h.boot(kBootBudget).cpu_released;
     if (!r->released) return r;
 
