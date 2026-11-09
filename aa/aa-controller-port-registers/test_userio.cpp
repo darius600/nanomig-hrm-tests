@@ -48,15 +48,19 @@
 //   pass a test that only ever read one.
 //
 // HOW THE POT COUNTERS ARE MADE TO COUNT. They advance on `pot_cnt_en` only
-//   while their capture bit is low, and the capture bits are driven by the
-//   output-enable pairs in POTGO:
+//   while their capture bit is low, and the capture bits follow the pot input
+//   lines (POTGO's OUT bits clear, so the pins are inputs):
 //
 //     joy1_pin5 = ~(potreg[9] & ~potreg[8])   potcap[0] <= _mthird & joy1_pin5
 //     potcap[1] <= _mright & _djoy1[5] & ~(potreg[11] & ~potreg[10])
 //
-//   so POTGO with bits 11 and 9 set and 10 and 8 clear pulls both port-1
-//   captures low and lets the pair run. A fixture that wrote only the START
-//   bit would see nothing move and read it as a dead counter.
+//   so with mouse_btn = 6 (the right and third buttons pressed, which
+//   grounds both port-1 input lines) before a POTGO write of $0001, both
+//   port-1 captures are low and the pair runs. A fixture that wrote the
+//   START bit with the buttons idle would see nothing move and read it as a
+//   dead counter. The counters are not run from OUT=1/DAT=0 (a pin driven
+//   low as an output): HRM p.240 says an output-enabled pin disconnects the
+//   pot circuitry from the port, and no page says such a pin counts.
 //
 // WHY _joy1 AND _joy2 ARE HELD HIGH. They are active low. Held high the
 //   quadrature decoder sees no motion and the counters hold what the test load
@@ -110,9 +114,11 @@ constexpr uint16_t A_POTINP  = 0x016;
 constexpr uint16_t A_POTGO   = 0x034;
 constexpr uint16_t A_JOYTEST = 0x036;
 
-// POTGO: port-1 output enables low-active through bits 11/10 and 9/8, plus the
-// START bit that clears the counters.
-constexpr uint16_t POTGO_RUN_PORT1 = (1u << 11) | (1u << 9) | 1u;
+// POTGO: the START bit alone. It clears the counters and leaves every pot pin
+// an input; the pins that count are the ones the mouse buttons ground.
+constexpr uint16_t POTGO_START = 1u;
+// mouse_btn bits 1 and 2 (right, third) pressed: both port-1 pot lines grounded.
+constexpr uint8_t PORT1_LINES_GROUNDED = 6;
 
 // The test load only reaches bits 7:2 of each counter byte.
 constexpr uint16_t COUNTER_MASK = 0xFCFC;
@@ -185,10 +191,10 @@ int main(int argc, char** argv) {
     // that decides whether a counter runs at all. MUTATE=<label> selects
     // exactly one.
     const uint16_t m_clear   = mutating("POTGO-AT-034-CLEARS")
-                                    ? (uint16_t)(POTGO_RUN_PORT1 & ~1u)
-                                    : POTGO_RUN_PORT1;             // 4: never clears
-    const uint16_t m_potgo   = mutating("POT0DAT-AT-012-COUNTS")
-                                    ? 1u : POTGO_RUN_PORT1; // 5: never runs
+                                    ? (uint16_t)(POTGO_START & ~1u)
+                                    : POTGO_START;                 // 4: never clears
+    const uint8_t  m_lines   = mutating("POT0DAT-AT-012-COUNTS")
+                                    ? 0 : PORT1_LINES_GROUNDED;    // 5: lines idle, never runs
     const uint16_t m_pot0    = mutating("POT1DAT-AT-014-IS-THE-OTHER-PAIR")
                                     ? A_POT1DAT : A_POT0DAT;  // 6: reads the other pair
     const uint16_t m_potinp  = mutating("POTINP-AT-016-IS-ITS-OWN-WORD")
@@ -270,16 +276,17 @@ int main(int argc, char** argv) {
     // --- 4. POTGO's START bit clears the pot counters -----------------------
     {
         Harness h;
-        h.write(A_POTGO, POTGO_RUN_PORT1);
-        h.pot_ticks(12);
+        h.dut->mouse_btn = PORT1_LINES_GROUNDED;  // grounded before the START
+        h.write(A_POTGO, POTGO_START);
+        h.pot_ticks(15);
         const uint16_t ran = h.read(A_POT0DAT);
         // MUTATION POTGO-AT-034-CLEARS stimulus red: selecting this
-        // assertion's own id writes the same word without its START bit, so
-        // the counters keep what they had.
+        // assertion's own id writes the second word without its START bit
+        // ($0000), so the counters keep what they had.
         h.write(A_POTGO, m_clear);           // START again: clears
         const uint16_t cleared = h.read(A_POT0DAT);
         c.note("the port 1 pot pair read " + hex(ran)
-               + " after twelve counts and " + hex(cleared)
+               + " after fifteen counts and " + hex(cleared)
                + " immediately after the next START");
         c.expect(ran != 0 && cleared == 0,
                  "POTGO-AT-034-CLEARS: the word written at $034 zeroes the pot "
@@ -291,17 +298,18 @@ int main(int argc, char** argv) {
     {
         Harness h;
         // MUTATION POT0DAT-AT-012-COUNTS stimulus red: selecting this
-        // assertion's own id writes only the START bit, leaving both capture
-        // bits high so nothing counts.
-        h.write(A_POTGO, m_potgo);
-        h.pot_ticks(12);
+        // assertion's own id leaves the port 1 lines idle (mouse_btn = 0),
+        // so both capture bits stay high and nothing counts.
+        h.dut->mouse_btn = m_lines;
+        h.write(A_POTGO, POTGO_START);
+        h.pot_ticks(15);
         const uint16_t got = h.read(A_POT0DAT);
-        c.note("after twelve counts with the port 1 enables set, POT0DAT reads "
+        c.note("after fifteen counts with the port 1 lines grounded, POT0DAT reads "
                + hex(got));
         c.expect(got != 0,
                  "POT0DAT-AT-012-COUNTS: the pot counter pair read at $012 "
-                 "advances only while POTGO's port 1 output enables hold its "
-                 "capture bits low, which is the address and the counter the "
+                 "advances only while its port 1 capture bits are held low "
+                 "by grounded pot lines, which is the address and the counter the "
                  "AA list prints for POT0DAT [p.6] [claims: sol:AA-pot0dat.c1/c2 "
                  "opus:AA-pot0dat.c1/c2]");
     }
@@ -336,8 +344,9 @@ int main(int argc, char** argv) {
     // --- 7. POTINP is a different word again, and an unrelated address is 0 --
     {
         Harness h;
-        h.write(A_POTGO, POTGO_RUN_PORT1);
-        h.pot_ticks(12);
+        h.dut->mouse_btn = PORT1_LINES_GROUNDED;
+        h.write(A_POTGO, POTGO_START);
+        h.pot_ticks(15);
         // MUTATION POTINP-AT-016-IS-ITS-OWN-WORD stimulus red: selecting this
         // assertion's own id reads $012, which carries the counters rather
         // than the capture bits.
