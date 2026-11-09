@@ -24,6 +24,7 @@
 // throughout, since JOY1DAT's read mux (data_out = dmouse1dat, unconditional)
 // is simpler than JOY0DAT's (which multiplexes on the internal joy1enable
 // latch) and both read out the identical decoder logic.
+// In this file "released" means idle-high (the pin not pressed); "pressed" pulls the line low.
 //
 // MUTATION opus:8-tbl8-1.c1 stimulus red pin1 (bit3) never pressed
 // MUTATION sol:8-pin.c1 stimulus red pin1 (bit3) never pressed
@@ -51,8 +52,8 @@
 // MUTATION sol:8-pin.c18 stimulus green same substitution, same comparator, independently guarded
 // MUTATION opus:8-tbl8-1.c35 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
 // MUTATION sol:8-pin.c39 stimulus red POTGO OUTLX/DATLX (potreg[9:8]) never written to force pin 5
-// MUTATION opus:8-tbl8-1.c37 stimulus red POTGO OUTLY/DATLY (potreg[15:14]) never written to force pin 9
-// MUTATION sol:8-pin.c41 stimulus red POTGO OUTLY/DATLY (potreg[15:14]) never written to force pin 9
+// MUTATION opus:8-tbl8-1.c37 stimulus red POTGO OUTRY/DATRY (potreg[15:14]) never written to force pin 9
+// MUTATION sol:8-pin.c41 stimulus red POTGO OUTRY/DATRY (potreg[15:14]) never written to force pin 9
 // MUTATION fixture-liveness stimulus red second injected word (pin4/bit0) left idle instead of pressed
 
 #include "Vuserio.h"
@@ -88,6 +89,12 @@ void tick() {
     top->clk = 1; top->eval(); sim_time++;
 }
 void settle(int n) { for (int i = 0; i < n; i++) tick(); }
+// p.240: "There are large capacitors on these lines, and it can take up to
+// 300 microseconds for the line to change state." This rig holds clk7_en
+// high, so one tick() is one clk7 cycle at 7.09379 MHz (140.97 ns):
+// 300 us x 7.09379 MHz = 2128.1 cycles, rounded up to 2130 ticks. A POTINP
+// read of a pin after its OUT/DAT write waits this long.
+constexpr int kLineChangeTicks = 2130;
 
 // ---- register bus (matches userio.v's own JOY0DAT/JOY1DAT/... parameters) ----
 static const uint16_t JOY0DAT = 0x00a;
@@ -354,7 +361,7 @@ int main(int argc, char** argv) {
     // input-independent bit in POTINP once the corresponding OUTxx/DATxx
     // pair is written -- no DB9-facing port is required for this claim.
     // =====================================================================
-    write_reg(POTGO, 0x0001); // clear any forcing bits, reset pot state
+    write_reg(POTGO, 0x0000); // p.240: all 0s writes the whole register as input; the baseline below is taken in input mode
     settle(4);
 
     // --- pin 5 (port 1's copy: potcap[0], POTINP bit 8) ---
@@ -364,7 +371,7 @@ int main(int argc, char** argv) {
 #ifndef MUT_pin5out
     write_reg(POTGO, 0x0200); // OUTLX=1 (bit9), DATLX=0 (bit8): force pin5 low
 #endif
-    settle(4);
+    settle(kLineChangeTicks); // >= 300 us after the OUT/DAT write (p.240)
     uint16_t potinp_forced5 = read_reg(POTINP);
     {
         bool bit8_baseline = (potinp_baseline5 >> 8) & 1;
@@ -377,7 +384,7 @@ int main(int argc, char** argv) {
         expect(ok, "opus:8-tbl8-1.c35");
         expect(ok, "sol:8-pin.c39");
     }
-    write_reg(POTGO, 0x0001); // release the force, reset again
+    write_reg(POTGO, 0x0000); // release the force; p.240 sensing recipe: all 0s, whole register as input
     settle(4);
 
     // --- pin 9 (port 2's copy: potcap[3], POTINP bit 14) ---
@@ -385,9 +392,9 @@ int main(int argc, char** argv) {
     settle(4);
     uint16_t potinp_baseline9 = read_reg(POTINP);
 #ifndef MUT_pin9out
-    write_reg(POTGO, 0x8000); // OUTLY=1 (bit15), DATLY=0 (bit14): force pin9 low
+    write_reg(POTGO, 0x8000); // OUTRY=1 (bit15), DATRY=0 (bit14) per p.282: force pin9 low
 #endif
-    settle(4);
+    settle(kLineChangeTicks); // >= 300 us after the OUT/DAT write (p.240)
     uint16_t potinp_forced9 = read_reg(POTINP);
     {
         bool bit14_baseline = (potinp_baseline9 >> 14) & 1;
