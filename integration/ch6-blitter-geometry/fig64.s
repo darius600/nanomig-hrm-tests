@@ -21,9 +21,9 @@ start:
         move.w  #$FFFF,BLTADAT(a0)     ; A disabled, preloaded all-ones
         move.w  #$07FF,BLTAFWM(a0)
         move.w  #$FFF0,BLTALWM(a0)
-        move.w  #2,BLTBMOD(a0)         ; one word skipped after every row, in
-        move.w  #2,BLTCMOD(a0)         ; B, C and D alike: the addresses then show
-        move.w  #2,BLTDMOD(a0)         ; where each row ends (p.172)
+        move.w  #0,BLTBMOD(a0)         ; source: Figure 6-4's two-word bitmap, rows adjacent (p.172, p.180)
+        move.w  #2,BLTCMOD(a0)         ; destination: one word skipped after every row,
+        move.w  #2,BLTDMOD(a0)         ; so the D addresses show where each row ends (p.172)
         SETPTR  BLTBPTH,BLTBPTL,SRC
         SETPTR  BLTCPTH,BLTCPTL,DST
         SETPTR  BLTDPTH,BLTDPTL,DST
@@ -41,6 +41,6 @@ start:
         DONE
 
         org     SRC
-        dc.w    $FFFF,$FE00,$DEAD,$FFFF,$FE00,$DEAD,$FFFF,$FE00,$DEAD ; 2 words/row, the skipped third is never read
+        dc.w    $FFFF,$FE00,$FFFF,$FE00,$FFFF,$FE00,$FFFF,$FE00,$FFFF ; the two-word source bitmap, 2 words/row
         org     DST
         dc.w    $5555,$5555,$5555,$5555,$5555,$5555,$5555,$5555,$5555

@@ -46,7 +46,7 @@
 // MUTATION A14-fig63 stimulus red NMH_MUTATE=A14-fig63-b: LF=$33 (NOT B) for the B circle's blit; the second destination prints 0F0F instead of F0F0: FAIL on fx68k and TG68K
 // MUTATION A14-fig63 stimulus red NMH_MUTATE=A14-fig63-c: LF=$55 (NOT C) for the C circle's blit; the third destination prints 3333 instead of CCCC: FAIL on fx68k and TG68K
 // MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64: 3 words/row instead of 2
-// MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64-shape: height 2, width 3 (the same six words, BLTBMOD = BLTCMOD = BLTDMOD = 2); six reads and six writes, so the counts pass, at offsets 0,1,2, 4,5,6 instead of 0,1, 3,4, 6,7: FAIL through the offsets alone on fx68k and TG68K
+// MUTATION A15-fig64 stimulus red NMH_MUTATE=A15-fig64-shape: height 2, width 3 (the same six words; BLTBMOD = 0, BLTCMOD = BLTDMOD = 2); six reads and six writes, so the counts pass; B reads at 0..5 either way, D writes at 0,1,2, 4,5,6 instead of 0,1, 3,4, 6,7: FAIL through the D offsets alone on fx68k and TG68K
 // MUTATION A16-mintdc stimulus red NMH_MUTATE=A16-mintdc: LF=$DE instead of $DC
 // MUTATION A17-truthorder stimulus red NMH_MUTATE=A17-truthorder: the top-down reading, LF=$3F
 // MUTATION A18-fourplanes stimulus red NMH_MUTATE=A18-fourplanes: only the first plane's blit runs
@@ -683,13 +683,13 @@ void assertion_A15(const std::string& dir) {
     size_t b_reads = ok(r) ? count_accesses(*r.h, kSrc, 12, false) : 0;
     size_t d_writes = ok(r) ? count_accesses(*r.h, kDst, 12, true) : 0;
     checks.expect(ok(r) && b_reads == 6 && d_writes == 6 &&
-                      strided_offsets(*r.h, kSrc, false, 2, 3, 3) &&
+                      strided_offsets(*r.h, kSrc, false, 2, 3, 2) &&
                       strided_offsets(*r.h, kDst, true, 2, 3, 3),
         "A15-fig64 p181 6-shifts-and-masks.c32 ch6-shifts.f1: over 3 rows, "
         "channel B reads exactly 6 source words (2/row) and channel D "
-        "writes exactly 6 destination words (2/row) -- with the modulo 2 of "
-        "B, C and D (p.172: added after each row) the reads and the writes "
-        "fall at word offsets 0,1, 3,4, 6,7 of their buffers, so the split "
+        "writes exactly 6 destination words (2/row) -- B reads the two-word "
+        "source bitmap at offsets 0..5; with the modulo 2 of C and D (p.172) "
+        "the writes fall at word offsets 0,1, 3,4, 6,7, so the split "
         "into 3 rows of 2 is seen, not only the total of 6");
     checks.record(
         "A15-fig64: the figure's drawn second-word mask is 7 bits "
