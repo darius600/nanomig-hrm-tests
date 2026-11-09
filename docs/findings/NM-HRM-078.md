@@ -229,8 +229,8 @@ on the whole of `nanomig.v`, with the same lines on both cores:
   the timer counts φ2 in both intervals. The package's `conf-test-fx68k` and
   `conf-test-tg68k` run the same selectors, with `P5-CONTRAST`, against a private
   copy of the chip set made with `conf.patch`, which gives both CIAs a CNT input
-  that follows pp. 348-351 and 357-358 (CIA-A's CNT is KCLK, CIA-B's is POUT, undriven
-  and pulled up); `make test` does not run that copy. On it both controls print PASS
+  that follows pp. 348-351 and 357-358 (CIA-A's CNT is KCLK; CIA-B's CNT is wired to
+  the PA1 pin, which the package never drives, so it reads the tied-high input); `make test` does not run that copy. On it both controls print PASS
   on both cores, reading v1 = $1000, i1 = $00, i2 = $08 and v2 = $0FF8, and so do
   `P7.5`, `P7.5-CIAA-INMODE`, `P8.65-MODE01`, `P7.5-COUNTING`,
   `P8.65-MODE01-COUNTING` and `P8.65-MODE11-PAIRK` (D_Y(K) = 531 against
