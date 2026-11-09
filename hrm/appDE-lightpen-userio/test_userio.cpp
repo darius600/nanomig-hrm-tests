@@ -86,10 +86,10 @@
 //   the sibling appDE-pot-counters/test_userio.cpp built in this same lot
 //   against the same module and the same claims.jsonl evidence table.
 //
-// MUTATION FIXTURE-LIVENESS stimulus red: the mouse third-button release
-//   (set_mouse's third argument) was changed from "released" (1) to "held"
-//   (0, matching the reset default), so POTINP's bit 8 never moved from 1
-//   to 0 and the before/after comparison found no change. Built with
+// MUTATION FIXTURE-LIVENESS stimulus red: the mouse third-button press
+//   (set_mouse's third argument) was changed from "pressed" (1) to "not
+//   pressed" (0, matching the reset default), so POTINP's bit 8 never moved
+//   from 1 to 0 and the before/after comparison found no change. Built with
 //   `make MUT=FIXTURE_LIVENESS`, confirmed "0 passed, 1 failed", reverted
 //   (obj_dir cleaned, rebuilt with no MUT flag) and confirmed "1 passed, 0
 //   failed" restored.
@@ -177,7 +177,9 @@ uint16_t read_reg(int addr) {
 }
 
 // mouse_btn[2:0] = {third, right, left} (userio.v:362-363: _mright =
-// mouse_btn[1], _mthird = mouse_btn[2]).
+// mouse_btn[1], _mthird = mouse_btn[2]). A set bit is a PRESS (the line is
+// grounded; p.241: POTGOR reads 0 while pressed, 1 if not); "released" in this
+// file would mean idle-high, and nothing here releases.
 void set_mouse(int left, int right, int third) {
     dut->mouse_btn = (uint8_t)((third << 2) | (right << 1) | left);
 }
@@ -190,22 +192,23 @@ int main(int argc, char** argv) {
 
     // ================= FIXTURE-LIVENESS / DFF104-PROBE (no page, no uid) ====
     full_reset();
-    arm_potgo(0x0001);
+    arm_potgo(0x0000);  // p.240: all 0s writes the whole register as input; the baseline below is taken in input mode
     uint16_t potinp_before = read_reg(A_POTINP);
-    // mouse_btn is active-low at this boundary (userio.v:363,
+    // mouse_btn is active-high at this boundary (userio.v:363,
     // `assign _mthird = ~mouse_btn[2];`), so full_reset's mouse_btn=0
-    // default reads as the third button HELD (measured: potinp_before
-    // below carries bit 8 set). Driving mouse_btn bit 2 high releases it.
-    int third_released = 1;
+    // default is the third button NOT pressed (measured: potinp_before
+    // below carries bit 8 set; p.241: POTGOR reads 1 if the button is not
+    // pressed). Driving mouse_btn bit 2 high PRESSES it (p.241: reads 0).
+    int third_pressed = 1;
 #ifdef MUT_FIXTURE_LIVENESS
-    third_released = 0;  // stays held, matching the reset default: no change forced
+    third_pressed = 0;  // stays not pressed, matching the reset default: no change forced
 #endif
-    set_mouse(/*left=*/0, /*right=*/0, /*third=*/third_released);
+    set_mouse(/*left=*/0, /*right=*/0, /*third=*/third_pressed);
     settle(3);
     uint16_t potinp_after = read_reg(A_POTINP);
     checks.expect(
         potinp_after != potinp_before,
-        "FIXTURE-LIVENESS: releasing the mouse third button (driving mouse_btn bit 2 "
+        "FIXTURE-LIVENESS: pressing the mouse third button (driving mouse_btn bit 2 "
         "high, which userio.v:363 inverts to `_mthird`) changes userio.v:176's "
         "`potcap[0] <= _mthird & joy1_pin5` gate and changes what a subsequent read "
         "at POTINP's real address ($016) reports (" + hex4(potinp_before) + " -> " +
