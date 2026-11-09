@@ -108,7 +108,7 @@ optional".
 | 9 | pen-pressed line | p.333 row 5 "LPENPR* Light pen pressed See Proportional Inputs". p.228: pin 5 "pen pressed to screen". p.238: "connected to one of the potentiometer inputs and must be read as same as the right or middle button on a mouse". | Pin 5 (all pages agree). p.238's "right or" is not graded. |
 | 10 | the moment of the no-trigger latch | p.239: "If no trigger is seen, the counters latch at the end of the display field." No position is given. | Only the relation "greater than $10500" is graded (P4). The moment of the latch and the exact value are not. |
 | 11 | disk identification | p.335 against pp.370–371 | Section 0.1. |
-| 12 | which CIA-A port A bit carries which controller port's fire button | p.232: "The left button on the Amiga mouse is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7." p.327: "J12 is the left controller port connector (JOY0DAT, POT0DAT)"; chapter 8 calls the left connector port 1 (p.229, JOY0DAT "port 1"). p.329 (Appendix E): "PRAO bit 7 = Fire* left controller port" and "PRAO bit 6 = Fire* right controller port". Read with p.327, the two pages give opposite assignments: p.232 puts the left connector (J12) on bit 6, p.329 puts it on bit 7. | Not resolved by a grading choice. The pen-pressed connector is identified by a run (C0, P5.5), not assumed: the bit that follows the harness's left mouse button names X. P5's C0 maps bit 6 to J12 and bit 7 to J11, which is p.232's assignment; on p.329's assignment the same observation would name the other connector. The harness's mouse reaches the port-1 inputs (4.1). No grading depends on the choice between the pages. |
+| 12 | which CIA-A port A bit carries which controller port's fire button | p.232: "The left button on the Amiga mouse is connected to CIAAPRA ($BFE001). Port 1 uses bit 6 and port 2 uses bit 7." p.327: "J12 is the left controller port connector (JOY0DAT, POT0DAT)"; chapter 8 calls the left connector port 1 (p.229, JOY0DAT "port 1"). p.329 (Appendix E): "PRA0 bit 7 = Fire* left controller port" and "PRA0 bit 6 = Fire* right controller port". Read with p.327, the two pages give opposite assignments: p.232 puts the left connector (J12) on bit 6, p.329 puts it on bit 7. | Not resolved by a grading choice. The pen-pressed connector is identified by a run (C0, P5.5), not assumed: the bit that follows the harness's left mouse button names X. P5's C0 maps bit 6 to J12 and bit 7 to J11, which is p.232's assignment; on p.329's assignment the same observation would name the other connector. The harness's mouse reaches the port-1 inputs (4.1). The choice decides what P5 grades: C0 takes the pin-5 bit from it (bit 8 for J12, bit 12 for J11). On p.329's assignment the same observation would name J11 and P5(a) would grade bit 12, which stays 1 in every window. The package grades on p.232's assignment. |
 
 ---
 
@@ -271,10 +271,11 @@ reads.
 - **A2.** Line lengths are 227 and 228 alternating (NTSC) or all 227 (PAL).
   H never exceeds $E3 (NTSC) or $E2 (PAL). This is graded as a proposition of
   its own (p.23), in every configuration. The "H never exceeds" sub-clause
-  does not see the end of a line: the largest H read of a run is 225 (fx68k) or
-  226 (TG68K) in the normal runs and 221 (fx68k) or 222 (TG68K) in the LP-A2
-  run with lines of 228 colour clocks, never above the bound, and the MEASURED
-  model line prints it. Every failing verdict of A2 therefore rests on the
+  never sees a count above the bound. In the normal runs (lines of 227 colour
+  clocks, ending at $E2) the largest H read is 225 (fx68k) or 226 = $E2
+  (TG68K); in the LP-A2 run (lines of 228 colour clocks, ending at $E3) it is
+  221 (fx68k) or 222 (TG68K), so the reads miss the only H values above the
+  bound; the MEASURED model line prints it. Every failing verdict of A2 therefore rests on the
   line-length clause.
 - **A3.** L_f ∈ {262, 263} for NTSC or {312, 313} for PAL, the same for every
   reference field.

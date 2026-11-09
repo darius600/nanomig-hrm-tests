@@ -255,15 +255,15 @@ MEASURED: ECS/PAL J11 P1-P4 measured: P1=does not hold, P2(a)=holds, P2(c)=does 
 
 Over the eight runs of each core the first read after a pulse lies 7 to 24 colour clocks past the pulse's position, on fx68k and on TG68K.
 `P2(a)`, the line alone, holds and `P2(c)`, the horizontal offsets following the pulses, does not
-(`test_appDE_ports_disk.cpp:1224-1225`; `LP-P2-LATCH-AT-PULSE`, `:1273-1274`). The reds that follow grade what p. 239 says a latch does:
-`LP-P1A-LATCH-HOLDS`, that a pulse freezes the reads and so does the end of a field without one (`test_appDE_ports_disk.cpp:1283`);
-`LP-P3A-HOLD`, that every read after a trigger until the end of the following vertical blanking has the latched position (`:1285`);
-`LP-P3B-HELD-PULSE-IGNORED`, that F7's second pulse, on line 180, changes nothing (`:1286`);
-`LP-P3D-PULSE-BEFORE-ENABLE`, that F9's pulse, on line 10, is not captured because the position of the end of F8 is still held (`:1291`);
-`LP-P4-DETERMINE-TRIGGER`, that p. 239's two ways of telling a trigger from a field end give the right answer (`:1292`).
-`LP-P1-LATCH-ENABLE` and `LP-LATCH-ENABLE-AND-POSITION` combine `LP-P1A-LATCH-HOLDS` with the bit-clear run (`:1295`, `:1299`).
+(`test_appDE_ports_disk.cpp:1227-1228`; `LP-P2-LATCH-AT-PULSE`, `:1276-1277`). The reds that follow grade what p. 239 says a latch does:
+`LP-P1A-LATCH-HOLDS`, that a pulse freezes the reads and so does the end of a field without one (`test_appDE_ports_disk.cpp:1286`);
+`LP-P3A-HOLD`, that every read after a trigger until the end of the following vertical blanking has the latched position (`:1288`);
+`LP-P3B-HELD-PULSE-IGNORED`, that F7's second pulse, on line 180, changes nothing (`:1289`);
+`LP-P3D-PULSE-BEFORE-ENABLE`, that F9's pulse, on line 10, is not captured because the position of the end of F8 is still held (`:1294`);
+`LP-P4-DETERMINE-TRIGGER`, that p. 239's two ways of telling a trigger from a field end give the right answer (`:1295`).
+`LP-P1-LATCH-ENABLE` and `LP-LATCH-ENABLE-AND-POSITION` combine `LP-P1A-LATCH-HOLDS` with the bit-clear run (`:1298`, `:1302`).
 With bit 3 clear and the same pulses `LP-P1B-NO-LATCH-WHEN-CLEAR` is green in all eight runs:
-every read equals the beam model (`test_appDE_ports_disk.cpp:1250`). The beam model is anchored and every pulse is on pin 6 of the
+every read equals the beam model (`test_appDE_ports_disk.cpp:1253`). The beam model is anchored and every pulse is on pin 6 of the
 connector under test, 4 colour clocks wide, at its scheduled cycle, in every run (`LP-C3-A1-READS-CURRENT`, `LP-C3-A3-FIELD-LENGTH`,
 `LP-C3-A4-FIELD-ANCHOR`, `LP-C5-PULSES`, green). `LP-P3C-RELEASE` is recorded not graded in all eight, because nothing was held. The four reds besides
 the thirteen per configuration are `LP-A2-LINE-LENGTHS` in NTSC on both connectors, which grades the NTSC line length,

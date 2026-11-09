@@ -23,13 +23,12 @@
 ; M_AT, M_LEN (define before including): the same V8 set and clear inside the
 ;          measurement loop, after M_AT of its reads, for M_LEN reads. M_ON
 ;          (define before including) replaces the VPOSW word that sets V8; the
-;          default is $8001. The window need not leave the field: on fx68k
-;          prog_lpen_m8_fx reaches line 72 of F2 at its first flipped read,
-;          but the window of prog_lpen_m8_tg (M_AT = 6900) lies, by an estimate
-;          from the read rate (895 reads before the pulse at line 100) and not
-;          measured, at about lines 49 to 60 of F2, where the
-;          raised count stays inside the field on TG68K. The contrast holds
-;          either way: the flipped reads differ from the model.
+;          default is $8001. On fx68k prog_lpen_m8_fx reaches line 72 of F2
+;          at its first flipped read; on TG68K the 100 flipped reads of
+;          prog_lpen_m8_tg (M_AT = 6900) lie at lines 63 to 71 of F2
+;          (measured). Both windows lie after line 57, so the raised count
+;          is above the field's last line, and the flipped reads differ
+;          from the model.
 
         include "nanomig.i"
         include "appDE_regs.i"
