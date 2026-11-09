@@ -56,8 +56,8 @@ comparison against a line count. A POTGO write with bit 0 set zeroes the four
 counters, and the very next `pot_cnt_en` tick increments them.
 [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge)
 releases pot0x at the POTGO start and counts the lines before its first
-increment (`test_userio.cpp:834-889`), and runs all four counters 8 + 10 lines
-unbroken (`:913-1026`):
+increment (`test_userio.cpp:835-890`), and runs all four counters 8 + 10 lines
+unbroken (`:914-1027`):
 
 | | lines before the first increment | final count after 8 + 10 lines |
 |---|---|---|

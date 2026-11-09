@@ -184,9 +184,10 @@
 // MUTATION sol:8-pot.c30 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
 // MUTATION opus:8-potreg.c4 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
 // MUTATION sol:8-pot.c31 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
-// MUTATION opus:8-appa-pot.c9 stimulus red MUT_G19G21: pot0y is driven to 5
-//   ticks but the fixed comparison still expects the pre-mutation value (4)
-//   for it, so the four-counters-independent equality fails. RUN: baseline
+// MUTATION opus:8-appa-pot.c9 stimulus red MUT_G19G21: pot0y's line is taken
+//   high after 5 lines instead of 4, but the fixed comparison still expects
+//   the pre-mutation value (4) for it, so the four-counters-independent
+//   equality fails. RUN: baseline
 //   76 passed 13 failed; mutated 71 passed, 18 failed, exactly these five
 //   newly red. Reverted: 76/13.
 // MUTATION sol:8-appa-pot.c11 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
@@ -1290,6 +1291,14 @@ static void group_G13() {
     expect(later_is_larger, "opus:8-fig8-5.c4");
 }
 
+// Per-byte difference of a pot register against a baseline read of the same
+// register: high byte in bits 15-8, low byte in bits 7-0, each modulo 256.
+static uint16_t byte_delta16(uint16_t now, uint16_t base) {
+    uint8_t hi = (uint8_t)((now >> 8) - (base >> 8));
+    uint8_t lo = (uint8_t)((now & 0xFF) - (base & 0xFF));
+    return (uint16_t)((hi << 8) | lo);
+}
+
 //--------------------------------------------------------------------------
 // G14-G17 -- p.236: POT0DAT is port 1 (the mouse/"LEFT" connector), POT1DAT
 // is port 2; bits 15-8 hold Y, bits 7-0 hold X, for both registers.
@@ -1334,39 +1343,51 @@ static void group_G14_G17() {
     expect(port_identity_ok, "sol:8-pot.c28");
     expect(port_identity_ok, "sol:8-pot.c29");
 
+    // Byte assignment: the one line under test is grounded BEFORE the POTGO
+    // start (see group_G1), kWarmup lines past either printed interval give a
+    // baseline, and the count is graded as a delta over the next 9 lines.
     full_reset();
+    set_mouse(0, 0, 1);
     arm_potgo(0x0001);
     settle(3);
-    pulse(kWarmup); // held warm-up past either printed interval
-    set_mouse(0, 0, 1);
-    settle(3);
+    pulse(kWarmup);
+#ifdef MUT_G14G17
+    uint16_t xbase = pot1dat(); // MUTATED: wrong register read
+#else
+    uint16_t xbase = pot0dat();
+#endif
     pulse(9);
 #ifdef MUT_G14G17
     uint16_t xonly = pot1dat(); // MUTATED: wrong register read
 #else
     uint16_t xonly = pot0dat();
 #endif
-    bool x_is_low_byte = ((xonly & 0xFF) == 9) && ((xonly >> 8) == 0);
+    bool x_is_low_byte = (byte_delta16(xonly, xbase) == 0x0009);
 
     full_reset();
+    set_mouse(0, 1, 0);
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_mouse(0, 1, 0);
-    settle(3);
+#ifdef MUT_G14G17
+    uint16_t ybase = pot1dat(); // MUTATED: wrong register read
+#else
+    uint16_t ybase = pot0dat();
+#endif
     pulse(9);
 #ifdef MUT_G14G17
     uint16_t yonly = pot1dat(); // MUTATED: wrong register read
 #else
     uint16_t yonly = pot0dat();
 #endif
-    bool y_is_high_byte = ((yonly >> 8) == 9) && ((yonly & 0xFF) == 0);
+    bool y_is_high_byte = (byte_delta16(yonly, ybase) == 0x0900);
 
     bool byte_assignment_ok = x_is_low_byte && y_is_high_byte;
-    note("POT0DAT, held " + std::to_string(kWarmup) + " ticks past either "
-         "printed interval, with only the X counter then released, "
-         "release-then-run-9: $" + hex4(xonly) + "; with only Y released: $" +
-         hex4(yonly) + " -- " +
+    note("POT0DAT, only the X line grounded before the POTGO start, " +
+         std::to_string(kWarmup) + " lines past either printed interval "
+         "(baseline $" + hex4(xbase) + "), delta over the next 9: $" +
+         hex4(byte_delta16(xonly, xbase)) + "; with only Y grounded (baseline $" +
+         hex4(ybase) + "): $" + hex4(byte_delta16(yonly, ybase)) + " -- " +
          std::string(byte_assignment_ok ? "Y occupies bits 15-8, X occupies "
          "bits 7-0, graded exactly, not against the raw tick total."
          : "the measured byte assignment does not match that reading."));
@@ -1381,54 +1402,51 @@ static void group_G14_G17() {
 // counters total, independently addressable.
 //--------------------------------------------------------------------------
 static void group_G19_G21() {
+    // All four lines are grounded BEFORE the POTGO start (see group_G1);
+    // pot1x through POTGO's OUTRX=1/DATRX=0 in the start word itself. After
+    // kWarmup lines past either printed interval a baseline is read, and each
+    // counter's line is then taken high after its own number of further
+    // lines (3, 4, 9, 13 in total), which p.235 holds ("the counter value
+    // will be held"). Nothing is released after the start, and no POTGO is
+    // written after it, so the four counters are read jointly, per register,
+    // at the end: p.282's own claim is that these addresses each read a PAIR
+    // ("These addresses each read a pair of 8-bit pot counters"), and a
+    // joint read catches, for example, a design where pot0x keeps counting
+    // while pot0y's own gate is open (see u8c in the file header).
     full_reset();
-    arm_potgo(0x0001);
-    pulse(kWarmup); // past either printed interval first, with every pin
-                     // still held (default from full_reset()): this claim
-                     // is about four independently-addressable counters
-                     // reaching four DISTINCT values, not about when
-                     // counting starts, and the four target values below
-                     // (3/4/9/13) would collide once shifted by an uncertain
-                     // 7-or-8-line interval if graded per-phase instead
-    set_mouse(0, 0, 1); settle(3); pulse(3);      // pot0x = 3
-    set_mouse(0, 0, 0); settle(2);
+    set_mouse(0, 1, 1);
+    set_joy1_pin5(1);
+    arm_potgo(0x2001); // START plus OUTRX=1, DATRX=0 for pot1x
+    settle(3);
+    pulse(kWarmup);
+    uint16_t p0_base = pot0dat(), p1_base = pot1dat();
+    pulse(3);
+    set_mouse(0, 1, 0); settle(3);                // pot0x stops at 3
 #ifdef MUT_G19G21
-    set_mouse(0, 1, 0); settle(3); pulse(5);      // MUTATED: still 5, but expectation below is unchanged (4)
+    pulse(2);                                     // MUTATED: pot0y runs to 5, but expectation below is unchanged (4)
+    set_mouse(0, 0, 0); settle(3);
+    pulse(4);                                     // 3 + 2 + 4 = 9 in total, as below
 #else
-    set_mouse(0, 1, 0); settle(3); pulse(4);      // pot0y = 4
+    pulse(1);
+    set_mouse(0, 0, 0); settle(3);                // pot0y stops at 4
+    pulse(5);                                     // 3 + 1 + 5 = 9 in total
 #endif
-    set_mouse(0, 0, 0); settle(2);
-    set_joy1_pin5(1); settle(3); pulse(9);        // pot1y = 9
-    set_joy1_pin5(0); settle(2);
-    // Joint read of both registers here, before any POTGO write touches
-    // pot1x: p.282's own claim is that these addresses each read a PAIR
-    // ("These addresses each read a pair of 8-bit pot counters"), so
-    // pot0x/pot0y and pot1y are graded through the same joint register
-    // reads the page describes, not through four independent byte reads --
-    // a joint read catches, for example, a design where pot0x keeps
-    // counting while pot0y's own gate is open (see u8c in the file header).
+    set_joy1_pin5(0); settle(3);                  // pot1y stops at 9
+    pulse(4);                                     // 13 in total
     uint16_t p0 = pot0dat();          // pot0y=4 (high byte), pot0x=3 (low byte)
-    uint16_t p1_before_x = pot1dat(); // pot1y=9 (high byte), pot1x=0 (low byte, not yet touched)
-    // pot1x is released through a POTGO write of its own (set_potgo_bits
-    // always clears bit 0); read it on its own, immediately after its own
-    // count, before the trailing close below -- that close is itself a
-    // further bit-0-clear POTGO write with no page-defined effect on the
-    // counters (see the file header's open point), so this grade does not
-    // depend on it either way. This is the one counter that cannot join
-    // the read above without resting on that open point.
-    set_potgo_bits(0x2000); settle(2); pulse(13); // pot1x = 13 ($0d)
-    uint8_t v_x1 = (uint8_t)(pot1dat() & 0xFF);
-    set_potgo_bits(0x0000); settle(2);
+    uint16_t p1 = pot1dat();          // pot1y=9 (high byte), pot1x=13 (low byte)
+    uint16_t d0 = byte_delta16(p0, p0_base);
+    uint16_t d1 = byte_delta16(p1, p1_base);
 
-    uint16_t p1 = (uint16_t)((p1_before_x & 0xFF00) | v_x1);
-    bool four_independent = (p0 == 0x0403) && (p1_before_x == 0x0900) && (v_x1 == 0x0D);
-    note("Four counters driven to four different values independently: "
-         "joint POT0DAT=$" + hex4(p0) + " (pot0y=" + std::to_string(p0 >> 8) +
-         ",pot0x=" + std::to_string(p0 & 0xFF) + "), joint POT1DAT=$" +
-         hex4(p1_before_x) + " before pot1x is touched (pot1y=" +
-         std::to_string(p1_before_x >> 8) + ",pot1x=" +
-         std::to_string(p1_before_x & 0xFF) + "), pot1x's own read after "
-         "its count=" + std::to_string(v_x1) + " -- " +
+    bool four_independent = (d0 == 0x0403) && (d1 == 0x090D);
+    note("Four counters, all grounded before the POTGO start, " +
+         std::to_string(kWarmup) + " lines past either printed interval "
+         "(baselines POT0DAT $" + hex4(p0_base) + ", POT1DAT $" + hex4(p1_base) +
+         "), each line then taken high after 3/4/9/13 lines in total: joint "
+         "POT0DAT delta=$" + hex4(d0) + " (pot0y=" + std::to_string(d0 >> 8) +
+         ",pot0x=" + std::to_string(d0 & 0xFF) + "), joint POT1DAT delta=$" +
+         hex4(d1) + " (pot1y=" + std::to_string(d1 >> 8) + ",pot1x=" +
+         std::to_string(d1 & 0xFF) + ") -- " +
          std::string(four_independent ? "four separately-addressable "
          "counters, each register reading a pair." : "not the four target "
          "values (pot0y=4,pot0x=3,pot1y=9,pot1x=13)."));
@@ -1552,29 +1570,39 @@ static void group_G23() {
     const int X_TARGET = 0x4B;
     const int Y_TARGET = 0xB4;
 #endif
+    const int lo = (X_TARGET < Y_TARGET) ? X_TARGET : Y_TARGET;
+    const int hi = (X_TARGET < Y_TARGET) ? Y_TARGET : X_TARGET;
+
+    // Both counters of a register are grounded BEFORE the POTGO start (see
+    // group_G1) and counted together: kWarmup lines past either printed
+    // interval give a baseline (so the interval is exhausted before the
+    // targets count, and a bit-level table, which cannot be graded
+    // k-or-k+1 per bit, is tested against the exact target), the register is
+    // read once after `lo` further lines and once after `hi`, and each
+    // counter is graded at its own target. No line changes level and no
+    // POTGO is written after the start.
 
     // POT1DAT ("RIGHT"): pot1x has no external pin (see file header note),
-    // so it is set via POTGO's own output-enable bits, same as G5/G18.
-    // kWarmup is spent up front, with pot1x still held (the default out of
-    // full_reset()), so either printed interval is exhausted before
-    // X_TARGET's own pulse count begins -- a bit-level table cannot be
-    // graded k-or-k+1 per bit (75 and 76 do not differ by a single bit), so
-    // this claim is tested against the exact target, past the interval,
-    // rather than by widening the comparator.
+    // so it is grounded through POTGO's own OUTRX=1/DATRX=0 in the start
+    // word, same as G5/G18; pot1y through _joy1 pin 5.
     full_reset();
-    arm_potgo(0x0001);
+    set_joy1_pin5(1);
+    arm_potgo(0x2001);
+    settle(3);
     pulse(kWarmup);
-    set_potgo_bits(0x2000); settle(2);
-    pulse(X_TARGET);
-    // Read pot1x's own value now, before any further bit-0-clear POTGO
-    // write: closing its gate again (next line) is itself such a write,
-    // with no page-defined effect on the counters (file header open
-    // point), so this grade does not depend on it either way.
-    uint16_t right_x = pot1dat() & 0xFF;
-    set_potgo_bits(0x0000); settle(2); // hold pot1x again so the Y phase below does not also move it
-    set_joy1_pin5(1); settle(3);
-    pulse(Y_TARGET);
-    uint16_t right_y = (pot1dat() >> 8) & 0xFF;
+    uint16_t r_base = pot1dat();
+    pulse(lo);
+    uint16_t r_lo = pot1dat();
+    pulse(hi - lo);
+    uint16_t r_hi = pot1dat();
+    uint16_t right_x, right_y;
+    if (X_TARGET <= Y_TARGET) {
+        right_x = byte_delta16(r_lo, r_base) & 0xFF;
+        right_y = byte_delta16(r_hi, r_base) >> 8;
+    } else {
+        right_y = byte_delta16(r_lo, r_base) >> 8;
+        right_x = byte_delta16(r_hi, r_base) & 0xFF;
+    }
     uint16_t right_reg = (uint16_t)((right_y << 8) | right_x);
     uint16_t right_expect = (uint16_t)((0xB4u << 8) | 0x4B);
     check_bit_table(right_reg, right_expect, RIGHT_BITS, 16);
@@ -1582,17 +1610,26 @@ static void group_G23() {
     expect((right_reg & 0xFF) == 0x4B, "sol:8-appa-pot.c17");
 
     // POT0DAT ("LEFT"): both counters have real external pins (mouse
-    // buttons). Same kWarmup warm-up, pot0x still held, before X_TARGET's
-    // own pulse count begins.
+    // buttons), both grounded before the start.
     full_reset();
+    set_mouse(0, 1, 1);
     arm_potgo(0x0001);
+    settle(3);
     pulse(kWarmup);
-    set_mouse(0, 0, 1); settle(3);
-    pulse(X_TARGET);
-    set_mouse(0, 0, 0); settle(2);
-    set_mouse(0, 1, 0); settle(3);
-    pulse(Y_TARGET);
-    uint16_t left_reg = pot0dat();
+    uint16_t l_base = pot0dat();
+    pulse(lo);
+    uint16_t l_lo = pot0dat();
+    pulse(hi - lo);
+    uint16_t l_hi = pot0dat();
+    uint16_t left_x, left_y;
+    if (X_TARGET <= Y_TARGET) {
+        left_x = byte_delta16(l_lo, l_base) & 0xFF;
+        left_y = byte_delta16(l_hi, l_base) >> 8;
+    } else {
+        left_y = byte_delta16(l_lo, l_base) >> 8;
+        left_x = byte_delta16(l_hi, l_base) & 0xFF;
+    }
+    uint16_t left_reg = (uint16_t)((left_y << 8) | left_x);
     uint16_t left_expect = (uint16_t)((0xB4u << 8) | 0x4B);
     check_bit_table(left_reg, left_expect, LEFT_BITS, 16);
     expect((left_reg >> 8) == 0xB4, "sol:8-appa-pot.c18");
@@ -1600,8 +1637,9 @@ static void group_G23() {
 
     bool right_matches = (right_reg == right_expect);
     bool left_matches = (left_reg == left_expect);
-    note("POT1DAT driven to pot1y=$b4/pot1x=$4b via chip-internal release for "
-         "X, external pin for Y -> read back $" + hex4(right_reg) + " (" +
+    note("POT1DAT driven to pot1y=$b4/pot1x=$4b (each counter graded as the "
+         "delta from a baseline, read at its own target count) via chip-internal "
+         "grounding for X, external pin for Y -> read back $" + hex4(right_reg) + " (" +
          std::string(right_matches ? "matches" : "does NOT match") +
          "); POT0DAT driven to pot0y=$b4/pot0x=$4b via mouse buttons -> read "
          "back $" + hex4(left_reg) + " (" +

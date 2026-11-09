@@ -62,9 +62,9 @@ interval and counts the lines that follow:
 | port 2, every input the module reads asserted, 11 | `$0b00`: Y counts, X stays 0 | both count |
 | right connector, every joystick input asserted, 6 | `$0600` | `$0606`, as the left connector reads |
 
-`opus:8-pot.c1` and `sol:8-pot.c1` (`test_userio.cpp:421-502`) and
+`opus:8-pot.c1` and `sol:8-pot.c1` (`test_userio.cpp:422-503`) and
 `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12` and `opus:8-appa-pot.c13`
-(`:1446-1510`) are red; port 1 and the left connector pass in the same runs.
+(`:1464-1528`) are red; port 1 and the left connector pass in the same runs.
 
 [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam) reaches the same pin from the light-pen side. p. 238 says the pen can be on either port, port 2 by default on the A500, A2000 and A3000, and that its pen-pressed switch *"is connected to one of the potentiometer inputs"*; Table 8-1 on p. 228 puts *pen pressed* on pin 5. The package presses joystick0 bit 6, which section 3 of its specification identifies as the third-button input of port 2, the port its pin-6 and pin-9 bits are measured on, and grades POTGOR bit 12 (`P13(port2)`); `P13(port1)` grades port 1's pin 5 on bit 8 in the same windows and is green. With `p13fix.patch`, which changes the second line above to `potcap[2] <= joy2_pin5 & _djoy2[6];`, every line of the package passes on both cores (`152 passed, 0 failed`), and its contrast `K23`, port 2's pin 5 held low throughout, turns `P13(port2)` red there again.
 
