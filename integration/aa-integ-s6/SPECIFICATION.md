@@ -142,7 +142,7 @@ for BPLCON4; this package never writes CLXCON2.
 
 AA chip set selected (`Config.chipset_config = 0x10`), 2 MB Chip memory (the
 harness default), no interlace. The video standard is the one the harness gives
-after reset; the program writes no BEAMCON0. The display-window values of 3.3
+after reset; the program writes no BEAMCON0 except in the sync contrasts of C7 (3.8). The display-window values of 3.3
 are the PAL ones of HRM p.59; no check depends on the standard, since every
 graded line lies between $2C and $C0.
 
@@ -331,10 +331,10 @@ CPU reads only its closing loop.
 |---|---|---|---|
 | C1 | The program reached its end. | The trace holds the CPU write of DONE_VALUE to DONE_ADDR. | CP-1: case M-S-01 without step 6's write. |
 | C2 | The display is in steady state. | The graded frame and the frame before it are identical in every calibration row and every band row. | CP-2: case M-S-01 where, after step 6's write and in place of the branch to itself, the program polls INTREQR ($01E) bit 5 (VERTB), clears it via INTREQ ($09C) = $0020, and toggles COLOR00 between colour(0) and colour(2) in every vertical blank. |
-| C3 | The display resolution is the case's, and the colour path is direct. | The calibration rows contain only colour(0) and colour(1) between the first and last colour(1) sample, alternating in runs of 4u (LORES), 2u (HIRES) or u (SHRES), ignoring the first and last run of each row. | CP-3: case M-S-01 with BPLCON0 = $9200 (HIRES) instead of $1240: runs of 2u where C3 expects u. |
+| C3 | The display resolution is the case's, and the colour path is direct. | The calibration rows contain only colour(0) and colour(1) between the first and last colour(1) sample, alternating in runs of 4u (LORES), 2u (HIRES) or u (SHRES), ignoring the first and last run of each row. | CP-3: case M-S-01 with BPLCON0 = $9200 (HIRES) instead of $1240: runs of 2u where C3 expects u. CP-3b (the colour path): the same run with BPLCON4 = $0211 (BPLAM = $02; AA p.18: "this 8 bit field is XOR'ed with the 8 bitplane color address, thereby altering the color address sent to the color table"): the bit-plane pixels address colour(2) and colour(3) and the calibration rows hold no colour(1). C5 and C7 find W_L from the first colour(1) sample of the same rows, so they print FAIL as well; the colour clause of C3 has no contrast that leaves them working. |
 | C4 | Sprite DMA used the prepared structures. | For every sprite structure of the case, the trace of the graded frame holds a read at the address of its first word. | CP-4: case M-S-01 with DMACON = $8380 (SPREN missing): no such reads. |
 | C5 | No sprite is clipped by the display window. | Sample indices compare across rows (C7). The window is observed in the calibration rows: W_L is the index of their first colour(1) sample and W_R the smallest index of their last colour(1) sample. The window's left edge is DIWSTRT's horizontal value and a sprite's left edge is its HSTART, in the same units (HRM p.59, HRM p.99-100: a sprite's X value is counted from the window's left edge, $81); one LORES pixel of 140 ns is 2u samples (3.7). For every one of the eight sprites of the case, whether or not it shows in the output, the programmed left edge W_L + (HSTART - DIWSTRT_H)*2u lies at or right of W_L, and the programmed right edge, that plus the expected length (from the proposition), lies at or left of W_R. The sprites in the output are not read. | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, to the right of the sprites' HSTART $A0): the programmed left edge lies left of W_L. |
-| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. SHRES runs: the rows whose sample at W_L + 100 (W_L as in C5) is the marker value $0C3B (3.6) are consecutive, lie below the calibration rows, and number 2r, the two beam lines $38 and $39 at r rows each. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7a-S: case M-S-01 whose marker ends with WAIT $3C07 in place of $3A07: four beam lines, 4r marker rows where C7 expects 2r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
+| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. SHRES runs: the rows whose sample at W_L + 100 (W_L as in C5) is the marker value $0C3B (3.6) are consecutive, lie below the calibration rows, and number 2r, the two beam lines $38 and $39 at r rows each. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 whose horizontal sync moves inside the frame, so that the rows no longer map to beam lines r at a time. The register list adds HSSTRT ($1DE) = 18, HSSTOP ($1C2) = 35 and then BEAMCON0 ($1DC) = $01A0 (VARHSYEN, VARBEAMEN, PAL); the Copper list begins, after the pointer MOVEs, with MOVE HSSTRT = 18, MOVE HSSTOP = 35, WAIT $3007,$FFFE, MOVE HSSTRT = 16, MOVE HSSTOP = 33 (AA p.12: "VARHSYEN= comparator HSY -> HSY* pin. Set on HSSTRT value, reset on HSSTOP value."; "VARBEAMEN= Enables the variable beam counter comparators to operate"; AA p.9, p.10: HSSTOP $1C2, HSSTRT $1DE). The pages give no standard values for HSSTRT and HSSTOP; 18/35 and 16/33 are chosen near the board's fixed sync position (agnus_beamcounter.v: 37 and 70). The sync moves at line $30, inside the calibration rows, and the row count of C7 fails. CP-7a-S: case M-S-01 with the same register-list entries and the same first two MOVEs ahead of the marker, and with WAIT $3907,$FFFE, MOVE HSSTRT = 16, MOVE HSSTOP = 33 between the marker's two lines: the marker rows are no longer consecutive. CP-7b: the stimulus of CP-7a, set against C7's last clause (the first colour(1) sample has the same index in every calibration row). The playfield is not the start of a row: BPLCON1 moves the playfield within its beam line (AA p.16, p.5), and every row still starts at its sync (3.7), so it is no contrast of this clause. A genuine move of the row start, the sync move, always inserts a short row first on this board, so C7 goes red on the row count before it reaches the index comparison (measured: the first colour(1) sample of the later rows moves from 141 to 149), and the index clause has no contrast of its own for that reason. |
 
 The CP cases need only to be run once each, on the case named.
 
@@ -351,6 +351,7 @@ placed below $080000.
 |---|---|---|
 | Program image (`PROGRAM_ORG`, `nanomig.i`) | $080400-$087FFF | code; data assembled into the image sits only at the addresses below |
 | Copper list | $088000-$0880FF | at most 204 bytes (3.6 with P8's sixteen WAIT/MOVE pairs) |
+| Prologue code (RP-1 only) | $080200-$0803FF | the instructions RP-1 runs before the program; Chip memory outside every other region of this table |
 | Prologue Copper list (RP-1 only) | $088100-$0881FF | one instruction; no other run reads here |
 | Sprite structure of sprite k (k = 0..7) | $089000 + $400*k | at most 520 bytes (B-N, B-A); every start a multiple of 8 (3.5) |
 | Bitplane area (3.4) | $090000-$09BFFF | 48 KiB |
@@ -743,11 +744,13 @@ Three propositions, one assertion each:
     are followed by an instruction fetch at the program's entry, the address
     of its first instruction, and no read at the address of a Copper list, a
     sprite structure or the bitplane area (3.9) precedes that fetch. Contrast
-    RP-1: a prologue at PROGRAM_ORG, executed first, that enables Copper DMA
-    on a one-instruction list at $088100 (3.9) and then jumps to the entry,
-    placed after it: the first instruction fetch is no longer at the entry,
-    and reads of that list precede it; R1 fails, and so does R2, because the
-    Copper has read a list other than the case's.
+    RP-1: the program and the case are unchanged, with the entry at
+    PROGRAM_ORG; the reset PC points at a prologue at $080200 (3.9) that sets
+    COP1LC = $088100, strobes COPJMP1, writes DMACON = $8280 (SET, DMAEN, COPEN) and jumps to
+    PROGRAM_ORG: the first instruction fetch after the vectors is at $080200,
+    not at the entry, and reads of the one-instruction list at $088100 follow;
+    R1 fails, and so does R2, because the Copper has read a list other than
+    the case's. The expected entry is not changed.
   - **R2** Nothing wrote BPLCON4: the program has no write to $DFF10C (its
     listing); the Copper list has no MOVE whose first word is $010C (its words
     in memory at the end of the run); and the Copper runs no list other than
@@ -758,9 +761,19 @@ Three propositions, one assertion each:
     (COP1LCH and COP1LCL written only with the list's address, COP2LCH, COP2LCL
     ($084, $086) and COPJMP2 ($08A) never written) and the log of the whole
     run: no read at an address of $088100-$0881FF, the area that 3.9 keeps
-    for a Copper list other than the case's own. Contrast RP-2: add `MOVE $010C,$0011` to the
-    list: R2 fails although the value written equals the default, which shows
-    R2 checks the write, not the outcome.
+    for a Copper list other than the case's own. Contrasts, one per clause,
+    each leaving every other precondition and the display as in the normal run:
+    RP-2 (the Copper list has a MOVE to BPLCON4): add `MOVE $010C,$0011` to the
+    list; R2 fails although the value written equals the default, which shows
+    R2 checks the write, not the outcome. RP-2b (the program writes BPLCON4): the
+    register list adds BPLCON4 = $0011 ahead of its COP1LC entries. RP-2c (COP1LC
+    holds only the list's address): the register list writes COP1LCH = $0008 and
+    COP1LCL = $8100 ahead of its own COP1LC entries, which then write the case's
+    address, so the Copper never runs the other address. RP-2d (COP2LC and
+    COPJMP2 are never written): the register list writes COP2LCH = $0008,
+    COP2LCL = $8100 and COPJMP2 = 0 ahead of its COP1LC entries; the Copper is
+    not enabled until the last entry, and COPJMP1 follows. The clause that the Copper reads no list
+    other than the case's is contrasted by RP-1.
   The proposition itself requires one band and 8 segments in every row of it; a
   missing band or segment is a failure of P9, not of a precondition.
 - **Contrasting case:** RX-E, case R with BPLCON4 = $0001 written in step 3
@@ -839,7 +852,7 @@ Each claim id is carried by one proposition, which grades it whole.
 | R | P9, P10 |
 | RX-E, RX-O | P9, P10 contrasts |
 | RP-1, RP-2 | R1, R2 contrasts |
-| CP-1 … CP-5, CP-7a, CP-7b | C1 … C5, C7 contrasts |
+| CP-1 … CP-5, CP-3b, CP-7a, CP-7a-S, CP-7b | C1 … C5, C7 contrasts |
 
 
 ---
@@ -849,15 +862,18 @@ Each claim id is carried by one proposition, which grades it whole.
 ### 9.1 Programs and placement
 
 `s6.i` is the one program of the package; `prog_main.s` assembles it as it
-stands, and the other four programs set one symbol before including it:
+stands, and three more programs set one symbol before including it:
 `prog_nofix.s` leaves out the fixture store (the contrast of the FIX lines),
 `prog_nodone.s` leaves out step 6's write of DONE_VALUE (CP-1),
 `prog_vbl.s` polls INTREQR bit 5 after the DONE write, clears it through INTREQ
 and toggles COLOR00 between colour(0) and colour(2) in every vertical blank
-(CP-2), and `prog_pro.s` places the prologue of RP-1 at PROGRAM_ORG: it writes
+(CP-2). `prog_pre.s` is the prologue of RP-1, assembled for $080200: it writes
 COP1LC = $088100, strobes COPJMP1, writes DMACON = $8280 (SET, DMAEN, COPEN)
-and jumps to the entry at PROGRAM_ORG + $40, where the program of
-`prog_main.s` starts. The programs are assembled for the 68000.
+and jumps to PROGRAM_ORG, where `prog_main.s` starts as in every other run.
+The test places the prologue image in Chip memory beside the other images (the
+harness is not changed) and writes the two words of the reset PC in the shadow
+of the vectors again, after `load_program` has written PROGRAM_ORG there. The
+programs are assembled for the 68000.
 
 The program stores the fixture constant $BEEF at RESULTS ($0C0000) first, then
 reads the register list from `RLIST` = $0B8000 and writes each value to its
@@ -902,7 +918,8 @@ proposition reports its first deviation per run in a MEASURED line.
 
 `NMH_MUTATE=<label>` runs the contrast of the label in place of the normal
 run; for the group lines the selector is the label itself, `C7B-<g>` is the
-second contrast of `C7-<g>`. `NMH_GEOM=<u>,<r>` lets a mutation run take u and r
+second contrast of `C7-<g>` and `C3B-<g>` the second contrast of `C3-<g>`; `R2B-R`, `R2C-R` and
+`R2D-R` are further contrasts of `R2-R`. `NMH_GEOM=<u>,<r>` lets a mutation run take u and r
 from the normal run of the same core instead of measuring them on its own
 M-H-00 run; the normal run ignores it.
 
@@ -943,7 +960,7 @@ M-H-00 run; the normal run ignores it.
    register list, on the Copper list as the run ended, and on the RAM-port log
    of the whole run (no read at $088100-$0881FF, which 3.9 keeps for another
    Copper list). The register list is the only path by which
-   prog_main.s writes a custom register; the prologue of RP-1 (prog_pro.s)
+   prog_main.s writes a custom register; the prologue of RP-1 (prog_pre.s)
    writes COP1LC in code, and the Copper then reads its list, which the log
    shows: the R1-R contrast prints R2-R FAIL.
 9. **C5.** The expected length of a sprite is the page's: pixels times
@@ -953,11 +970,16 @@ M-H-00 run; the normal run ignores it.
     runs the group line names: M-S-01 (CP-1 to CP-4) and M-L-00 (CP-5, CP-7a,
     CP-7b) as in 3.8, and by the same change to W-00, A-S-00 (CP-1 to CP-4) and
     A-L-00 (CP-5, CP-7a, CP-7b), B-N and R. CP-3 writes BPLCON0 = $9200 (HIRES)
-    in a run that is not HIRES and $1200 (LORES) in a HIRES run. CP-7a places
-    1280 bytes (32 lines) of $CCCC where the first sprite starts at line $50; the
-    first band of B-N starts at line $41, so there it places 800 bytes (20
-    lines), which end above the band. CP-7a-S places 1280 bytes where the
-    SHRES run M-S-01 is graded. The contrasts of `BANDS-A`, `BANDS-B` and
+    in a run that is not HIRES and $1200 (LORES) in a HIRES run. CP-3b writes
+    BPLCON4 = $0211 in the register list of each of these runs (B-N also as the
+    first MOVE of its Copper list: the last band MOVE of the previous frame is
+    still in force at the top of the next one, and the calibration rows lie above
+    band 0); C5 and C7 print FAIL with it, as 3.8 says. CP-7a and CP-7b
+    add the register-list entries and the Copper MOVEs and WAIT of 3.8 to the
+    case-specific part of the Copper list, ahead of its own entries: WAIT $3007
+    lies above the first sprite line $50 and above the first band of B-N, $40.
+    CP-7a-S puts the same MOVEs ahead of the marker of M-S-01 and the move
+    between its two lines. The contrasts of `BANDS-A`, `BANDS-B` and
     `SEGS-R` remove the sprites 6 and 7 (A), 7 (B) and 7 (R) from the structures:
     their lines hold no data, every precondition stays met, and the comparator of
     P7, of P8, and of P9 and P10 prints FAIL. The contrast of `C6-B` ends the
@@ -1008,4 +1030,5 @@ NMH_MUTATE=BANDS-A (P7: sprites 6 and 7 without lines), BANDS-B (P8: sprite 7
 without lines) and SEGS-R (P9 and P10: sprite 7 without lines). Every
 precondition holds in these runs and the comparator of the proposition prints
 FAIL. NMH_MUTATE=C7S-M is the contrast of the SHRES clause of C7 (CP-7a-S), and
-R1-R also prints FAIL for R2-R.
+R1-R also prints FAIL for R2-R. NMH_MUTATE=C3B-<g> prints FAIL for C5-<g> and C7-<g>
+beside C3-<g>, and NMH_MUTATE=R2B-R, R2C-R and R2D-R print FAIL for R2-R alone.
