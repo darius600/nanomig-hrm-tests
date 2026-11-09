@@ -76,6 +76,7 @@ already in the claims file; it is not reopened here.
 - Assert: each controller port's two counters advance from two distinct, independent
   inputs (the count "two" is graded; that the device is resistive is discarded, ohms have
   no home at this boundary).
+- Stimulus: the line under test is grounded before the POTGO start, `kWarmup` (15) lines run past either printed reset interval give a baseline read, and the count is graded as a delta over the next 6/9/11 (pot0x, pot0y, pot1y) lines. No line changes level after the start: p.235 ("If the charge is below the preset, the POT counter is incremented. If the charge is above the preset, the counter value will be held until the next POTGO is issued") does not say a counter resumes when a line that sat above the threshold drops below it with no new POTGO. Lines not under test stay idle-high from the start. The fourth measurement grounds every pin this module reads and grades pot1x's delta as non-zero.
 
 ## G2 — POTGO write starts a proportional reading (p.234)
 - `opus:8-pot.c11`, `sol:8-pot.c12`
@@ -98,6 +99,7 @@ already in the claims file; it is not reopened here.
 - Assert, narrowed to what the claim says: writing $0001 leaves the counters that do have an
   external gating pin in this design (pot0x, pot0y, pot1y) tracking that pin. Not asserted
   here: $00FF equivalence, or that pot1x has a pin.
+- Stimulus: the line under test is grounded before the POTGO start, `kWarmup` (15) lines run past either printed reset interval give a baseline read, and the count is graded as a delta over the next 7 lines. No line changes level after the start: p.235 ("If the charge is below the preset, the POT counter is incremented. If the charge is above the preset, the counter value will be held until the next POTGO is issued") does not say a counter resumes when a line that sat above the threshold drops below it with no new POTGO. Lines not under test stay idle-high from the start.
 
 ## G4 — POTGO start reads the potentiometer values (p.234)
 - `opus:8-pot.c13`, `sol:8-pot.c14`
@@ -112,6 +114,7 @@ already in the claims file; it is not reopened here.
   does gate from an external pin (pot0x, pot0y, pot1y) advances only when that pin is read
   as released, and nothing moves while every gate is held. Not asserted here: that pot1x
   must have a pin of its own.
+- Stimulus: the line under test is grounded before the POTGO start, `kWarmup` (15) lines run past either printed reset interval give a baseline read, and the count is graded as a delta over the next 4 (parts b-d: pot0x, pot0y, pot1y alone; part a, held throughout, and the not-graded all-pins-asserted step are not delta-graded) lines. No line changes level after the start: p.235 ("If the charge is below the preset, the POT counter is incremented. If the charge is above the preset, the counter value will be held until the next POTGO is issued") does not say a counter resumes when a line that sat above the threshold drops below it with no new POTGO. Lines not under test stay idle-high from the start.
 
 ## G5 — POTGO start zeroes the POT registers (p.234, loose form)
 - `opus:8-pot.c14`, `sol:8-pot.c15`
@@ -196,6 +199,14 @@ already in the claims file; it is not reopened here.
 - Assert, as an equality between four counters' behaviour (dimensionless, the volt is
   discarded): all four counters are governed by the identical stop rule — none has a rule
   of its own.
+- Stimulus: pot0x, pot0y and pot1y are each grounded before the POTGO start, run
+  `kWarmup` (15) lines past either printed reset interval for a baseline, and graded as a delta
+  of 6 over the next 6 lines (no line changes level after the start; see G1). pot1x is
+  recorded, not graded: its gate has no input-line term, so the only stimulus the fixture has
+  is POTGO OUTRX=1, DATRX=0 (an output driven low), and p.240 ("the Amiga disconnects the
+  potentiometer control circuitry from the port, and configures the pin for output") does not
+  decide that such a line counts. It stays recorded until NM-HRM-037 is fixed and there is an
+  input-mode stimulus.
 
 ## G13 — Figure 8-5: higher resistance means a larger count (p.235, figure)
 - `opus:8-fig8-5.c4`
@@ -266,6 +277,11 @@ already in the claims file; it is not reopened here.
 - Assert: the left connector's two pins each stop one of POT0DAT's two counters, and the
   right connector's two pins each stop one of POT1DAT's two counters — matching the p.236
   and Figure-8-5 pictures of a per-pin stop rule, now tied to specific connectors.
+- Stimulus: held-throughout run (all pins idle-high, 15 lines, POT0DAT zero) first;
+  the left connector's two pins are then graded in a second start with both mouse pins
+  grounded before the POTGO start, 15 lines for a baseline, delta 6 over the next 6 lines in
+  each byte. The right connector is run the same way (every joystick pin grounded before the
+  start; the Y byte is graded, the X byte stays structurally red).
 
 ## G23 — Bit assignment table for the pot counters (p.282, table)
 - 32 individual-bit claims from `opus` (`opus:8-appa-pot.c14` through `opus:8-appa-pot.c45`,
