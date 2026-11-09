@@ -547,15 +547,27 @@ int main(int argc, char** argv) {
 
     // Fixture liveness proof: the harness can deliver a specific, chosen,
     // non-constant word through this data path before any claim is graded.
+    // The middle button is held from before POTGO START, so pot0x's line is
+    // grounded throughout; the right button stays up, so pot0y's line is held
+    // high from START. The first 15 lines are not graded: p.235 puts the read
+    // circuitry in a reset state for the first seven or eight lines after
+    // START and prints no counter value inside that interval, so the check
+    // reads a baseline after it and grades only the delta.
     full_reset();
-    arm_potgo(0x0001);
     set_mouse(0, 0, 1);
-    settle(3);
-    pulse(3);
+    arm_potgo(0x0001);
+    pulse(15);
+    uint16_t base0 = pot0dat();
+    pulse(5);
     uint16_t live0 = pot0dat();
-    bool alive = (live0 == 0x0003);
-    note("Fixture liveness: releasing pot0x and pulsing 3 times reads POT0DAT=$" + hex4(live0) +
-         " -- a specific, chosen, non-zero word, delivered before any claim below is graded.");
+    uint8_t dx = (uint8_t)((live0 & 0xFF) - (base0 & 0xFF));
+    bool y_held = ((live0 >> 8) == (base0 >> 8));
+    bool alive = (dx == 5) && y_held;
+    note("Fixture liveness: pot0x grounded from START, 15 lines, baseline POT0DAT=$" +
+         hex4(base0) + ", then 5 more lines read POT0DAT=$" + hex4(live0) +
+         " -- pot0x moved by " + std::to_string((int)dx) + ", pot0y " +
+         (y_held ? "held" : "moved") +
+         "; a chosen delta, delivered before any claim below is graded.");
     if (!alive) {
         std::cerr << "FATAL: fixture cannot deliver a known word; aborting before grading any "
                      "claim.\n";
