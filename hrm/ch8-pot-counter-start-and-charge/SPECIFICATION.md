@@ -237,6 +237,9 @@ already in the claims file; it is not reopened here.
 - Quote: "Bits 15-8   POT0Y value or POT1Y value"
 - Assert: for both POT0DAT and POT1DAT, bits 15-8 of a read hold that port's Y counter and
   nothing else — a write/change confined to the Y input moves only the high byte.
+- Stimulus (byte-assignment half): the one line under test is grounded before the POTGO
+  start, `kWarmup` (15) lines run past either printed reset interval give a baseline read, and
+  the count is graded as a delta of 9 over the next 9 lines (see G1).
 
 ## G17 — Bits 7-0 hold the X value (p.236)
 - `opus:8-potreg.c4`, `sol:8-pot.c31`
@@ -255,6 +258,12 @@ already in the claims file; it is not reopened here.
 - Quote: "These addresses each read a pair of 8-bit pot counters."
 - Assert: reading POT0DAT returns two counters' worth of data, and reading POT1DAT does
   too — four counters' worth of state across the two registers, not shared or aliased.
+- Stimulus (G19 and G21): all four counters are grounded before the POTGO start (pot1x through
+  OUTRX=1, DATRX=0 in the start word), 15 lines run past either printed reset interval for a
+  baseline, and each counter's line is then taken high after 3, 4, 9 and 13 lines in total,
+  which p.235 holds. Each register is read jointly at the end and graded as a per-byte delta
+  from its baseline: POT0DAT $0403, POT1DAT $090D. No line is released and no POTGO is
+  written after the start.
 
 ## G20 — Each pot counter is 8 bits wide (p.282)
 - `opus:8-appa-pot.c10`
@@ -304,6 +313,13 @@ already in the claims file; it is not reopened here.
   graded on its own line.
 
 ---
+
+- Stimulus: for each register both counters are grounded before the POTGO start (POT1DAT's
+  X through OUTRX=1, DATRX=0 in the start word, its Y through the joystick pin; POT0DAT's two
+  through the mouse buttons). 15 lines run past either printed reset interval for a baseline,
+  the register is read after the smaller target count and again after the larger one, and
+  each counter is graded as its delta from the baseline at its own target ($4B for X, $B4 for
+  Y). No line is released and no POTGO is written after the start.
 
 ## Fixture design notes (not from the manual — carried forward, to be re-measured, not assumed)
 
