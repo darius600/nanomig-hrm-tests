@@ -137,7 +137,8 @@
 // MUTATION sol:8-dio.c5 stimulus red: after forcing LY's bit low, the
 //   isolation check reads bit8 (LX) instead of bit10 (LY).
 // MUTATION opus:8-dio.c8 stimulus red: the pot_cnt_en pulse count for the
-//   "pressed" case changed from 5 to 0, so pot0x never counts.
+//   grounded ("pressed", counted-from-START) case changed from 5 to 0, so
+//   pot0x never moves in that phase.
 // MUTATION sol:8-dio.c6 stimulus red: same pulse-count-to-0 change, guarded
 //   independently.
 // MUTATION opus:8-dio.c23 stimulus red: settle skipped after writing
@@ -165,7 +166,8 @@
 //   pattern instead of reading 0.
 // MUTATION sol:8-dio.c27 stimulus red: same change, guarded independently.
 // MUTATION opus:8-dio.c34 stimulus red: the pot_cnt_en pulse count for the
-//   "pressed" case changed from 5 to 0, so the counter never frees.
+//   grounded ("pressed", counted-from-START) case changed from 5 to 0, so
+//   the counter never moves in that phase.
 // MUTATION sol:8-dio.c32 stimulus red: same change, guarded independently.
 // MUTATION opus:8-dio.c35 stimulus red: settle skipped after pressing, so
 //   the stale released (1) reading is read again instead of 0.
@@ -325,7 +327,9 @@ constexpr int OUTLY = 11, DATLY = 10;
 constexpr int OUTRX = 13, DATRX = 12;
 constexpr int OUTRY = 15, DATRY = 14;
 
-// Measured polarity (see file header MEASURED note).
+// Measured polarity (see file header MEASURED note). In this file "released"
+// means idle-high (the button not pressed, the line above the preset);
+// "pressed" means the line is grounded.
 constexpr int MOUSE_PRESSED = 1, MOUSE_RELEASED = 0;
 constexpr int JOY_PRESSED = 0, JOY_RELEASED = 1;
 
@@ -654,20 +658,20 @@ int main() {
     // not two.
     // =========================================================================
     {
+        // The line is grounded (button pressed) from before the START, runs
+        // past either printed reset interval (p.235: seven or eight lines)
+        // before anything is read, and 5 more lines must move the counter.
+        // The line is then taken high (button released): POTGOR reads 1 and
+        // 5 more lines must not move it ("held until the next POTGO",
+        // p.235). Nothing here reads inside the reset interval.
         Harness h;
         h.set_pair(OUTLX, DATLX, 0, 0);
-        h.mouse(2, MOUSE_RELEASED);
+        h.mouse(2, MOUSE_PRESSED);
         h.settle(3);
         h.reset_counters();
         h.settle(2);
-        uint16_t pot0_before = h.read_reg(POT0DAT_ADDR);
-        bool released_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == true;
-        h.pot_pulse(5);
-        uint16_t pot0_after_released = h.read_reg(POT0DAT_ADDR);
-        bool frozen_when_released = (pot0_after_released & 0x00FF) == (pot0_before & 0x00FF);
-
-        h.mouse(2, MOUSE_PRESSED);
-        h.settle(3);
+        h.pot_pulse(15);
+        uint16_t pot0_base = h.read_reg(POT0DAT_ADDR);
         bool pressed_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == false;
         int pulses = 5;
 #if MUT_C8_OPUS
@@ -675,25 +679,32 @@ int main() {
 #endif
         h.pot_pulse(pulses);
         uint16_t pot0_after_pressed = h.read_reg(POT0DAT_ADDR);
-        bool frees_when_pressed = (pot0_after_pressed & 0x00FF) != (pot0_after_released & 0x00FF);
+        bool frees_when_pressed = (pot0_after_pressed & 0x00FF) != (pot0_base & 0x00FF);
+
+        h.mouse(2, MOUSE_RELEASED);
+        h.settle(3);
+        bool released_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == true;
+        h.pot_pulse(5);
+        uint16_t pot0_after_released = h.read_reg(POT0DAT_ADDR);
+        bool frozen_when_released = (pot0_after_released & 0x00FF) == (pot0_after_pressed & 0x00FF);
         checks.expect(released_readback && frozen_when_released && pressed_readback && frees_when_pressed,
                        "opus:8-dio.c8");
     }
     {
+        // The line is grounded (button pressed) from before the START, runs
+        // past either printed reset interval (p.235: seven or eight lines)
+        // before anything is read, and 5 more lines must move the counter.
+        // The line is then taken high (button released): POTGOR reads 1 and
+        // 5 more lines must not move it ("held until the next POTGO",
+        // p.235). Nothing here reads inside the reset interval.
         Harness h;
         h.set_pair(OUTLX, DATLX, 0, 0);
-        h.mouse(2, MOUSE_RELEASED);
+        h.mouse(2, MOUSE_PRESSED);
         h.settle(3);
         h.reset_counters();
         h.settle(2);
-        uint16_t pot0_before = h.read_reg(POT0DAT_ADDR);
-        bool released_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == true;
-        h.pot_pulse(5);
-        uint16_t pot0_after_released = h.read_reg(POT0DAT_ADDR);
-        bool frozen_when_released = (pot0_after_released & 0x00FF) == (pot0_before & 0x00FF);
-
-        h.mouse(2, MOUSE_PRESSED);
-        h.settle(3);
+        h.pot_pulse(15);
+        uint16_t pot0_base = h.read_reg(POT0DAT_ADDR);
         bool pressed_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == false;
         int pulses = 5;
 #if MUT_C6_SOL
@@ -701,7 +712,14 @@ int main() {
 #endif
         h.pot_pulse(pulses);
         uint16_t pot0_after_pressed = h.read_reg(POT0DAT_ADDR);
-        bool frees_when_pressed = (pot0_after_pressed & 0x00FF) != (pot0_after_released & 0x00FF);
+        bool frees_when_pressed = (pot0_after_pressed & 0x00FF) != (pot0_base & 0x00FF);
+
+        h.mouse(2, MOUSE_RELEASED);
+        h.settle(3);
+        bool released_readback = rbit(h.read_reg(POTGOR_ADDR), DATLX) == true;
+        h.pot_pulse(5);
+        uint16_t pot0_after_released = h.read_reg(POT0DAT_ADDR);
+        bool frozen_when_released = (pot0_after_released & 0x00FF) == (pot0_after_pressed & 0x00FF);
         checks.expect(released_readback && frozen_when_released && pressed_readback && frees_when_pressed,
                        "sol:8-dio.c6");
     }
@@ -1090,47 +1108,55 @@ int main() {
     // own reading.
     // =========================================================================
     {
+        // Grounded (button pressed) from before the START, 15 lines past
+        // either printed reset interval, then 5 lines must move the
+        // counter; the line is then taken high and 5 more must not.
         Harness h;
         h.set_pair(OUTLX, DATLX, 0, 0);
-        h.mouse(2, MOUSE_RELEASED);
+        h.mouse(2, MOUSE_PRESSED);
         h.settle(3);
         h.reset_counters();
         h.settle(2);
-        uint16_t before = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        h.pot_pulse(5);
-        uint16_t after_released = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        bool blocked_when_released = after_released == before;
-        h.mouse(2, MOUSE_PRESSED);
-        h.settle(3);
+        h.pot_pulse(15);
+        uint16_t base = h.read_reg(POT0DAT_ADDR) & 0x00FF;
         int pulses = 5;
 #if MUT_C34_OPUS
         pulses = 0;
 #endif
         h.pot_pulse(pulses);
         uint16_t after_pressed = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        bool freed_when_pressed = after_pressed != after_released;
+        bool freed_when_pressed = after_pressed != base;
+        h.mouse(2, MOUSE_RELEASED);
+        h.settle(3);
+        h.pot_pulse(5);
+        uint16_t after_released = h.read_reg(POT0DAT_ADDR) & 0x00FF;
+        bool blocked_when_released = after_released == after_pressed;
         checks.expect(blocked_when_released && freed_when_pressed, "opus:8-dio.c34");
     }
     {
+        // Grounded (button pressed) from before the START, 15 lines past
+        // either printed reset interval, then 5 lines must move the
+        // counter; the line is then taken high and 5 more must not.
         Harness h;
         h.set_pair(OUTLX, DATLX, 0, 0);
-        h.mouse(2, MOUSE_RELEASED);
+        h.mouse(2, MOUSE_PRESSED);
         h.settle(3);
         h.reset_counters();
         h.settle(2);
-        uint16_t before = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        h.pot_pulse(5);
-        uint16_t after_released = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        bool blocked_when_released = after_released == before;
-        h.mouse(2, MOUSE_PRESSED);
-        h.settle(3);
+        h.pot_pulse(15);
+        uint16_t base = h.read_reg(POT0DAT_ADDR) & 0x00FF;
         int pulses = 5;
 #if MUT_C32_SOL
         pulses = 0;
 #endif
         h.pot_pulse(pulses);
         uint16_t after_pressed = h.read_reg(POT0DAT_ADDR) & 0x00FF;
-        bool freed_when_pressed = after_pressed != after_released;
+        bool freed_when_pressed = after_pressed != base;
+        h.mouse(2, MOUSE_RELEASED);
+        h.settle(3);
+        h.pot_pulse(5);
+        uint16_t after_released = h.read_reg(POT0DAT_ADDR) & 0x00FF;
+        bool blocked_when_released = after_released == after_pressed;
         checks.expect(blocked_when_released && freed_when_pressed, "sol:8-dio.c32");
     }
 
