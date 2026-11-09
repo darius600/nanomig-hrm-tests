@@ -549,19 +549,23 @@ BLTADAT=$FFFF, BLTAFWM=$07FF, BLTALWM=$FFF0) reads exactly two consecutive
 source words per row through channel B and writes two per row through
 channel D -- the drawing's whole span is a two-word source row.
 
-Program: the p.181 recipe, source 2 words/row x 3 rows. BLTBMOD, BLTCMOD
-and BLTDMOD are all 2 (the page's recipe leaves the moduli open; p.172: the
-modulo is added after each row), and the source holds a third, never-read
-word after each row's two. Six reads and six writes are what any width x
-height of 6 gives, so with moduli of 0 the counts could not tell 2 x 3 from
-3 x 2; with the modulo the rows show in the addresses.
+Program: the p.181 recipe, source 2 words/row x 3 rows. The source is the
+figure's two-word bitmap (Figure 6-4 "two word source bitmap"; p.180: "the
+bitmap is two words wide"), so by p.172 ("the width (in words) times two plus
+the modulo value (in bytes) should equal the full width, in bytes, of the
+bitplane containing the image") BLTBMOD is 0 and B's rows are adjacent.
+BLTCMOD and BLTDMOD are 2, the stimulus's own choice (the destination width is
+not one of this line's claims; p.172: the modulo is added after each row).
+Six reads and six writes are what any width x height of 6 gives, so with
+moduli of 0 the counts could not tell 2 x 3 from 3 x 2; with the destination
+modulo the rows show in the D addresses.
 
 Observed: `ram_log()`, channel B's reads and channel D's writes, counted
 and in order.
 
 Expected: exactly 6 B-channel reads and 6 D-channel writes (2/row x 3
-rows), at word offsets 0,1, 3,4, 6,7 of the source and of the destination,
-in this order.
+rows), the reads at word offsets 0..5 of the source and the writes at
+0,1, 3,4, 6,7 of the destination, in this order.
 
 Caution, recorded rather than graded: the figure's drawn second-word mask
 is 7 bits ("11111110 00000000", matching a 23-bit extraction), but its
@@ -575,8 +579,9 @@ Mutation `NMH_MUTATE=A15-fig64`: 3 words/row instead of 2 -- the counts
 become 9 and 9.
 
 Mutation `NMH_MUTATE=A15-fig64-shape`: 3 words/row and 2 rows -- still six
-reads and six writes, so the counts pass; they fall at offsets 0,1,2, 4,5,6
-(printed on both cores) and the line goes red through the offsets alone.
+reads and six writes, so the counts pass; the reads fall at 0..5 either way,
+the writes at 0,1,2, 4,5,6 (printed on both cores), and the line goes red
+through the D offsets alone.
 
 ### A16 -- ch6-minterms.c8: the worked example's five minterms
 Page 175. Claim: `ch6-minterms.c8`.
