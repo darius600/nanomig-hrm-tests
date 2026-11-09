@@ -159,24 +159,26 @@ inline Case make_r() {
 // The sync move of CP-7a, CP-7a-S and CP-7b (SPECIFICATION.md 3.8): the horizontal sync, and with it the start of every row,
 // moves inside the frame. HSSTRT and HSSTOP are written at the top of the frame and again at the beginning of beam line
 // $30 (or, with the SHRES marker, between the marker's two lines, $39); the register list enables the variable sync.
-inline void add_sync_move(Case& c, bool at_marker) {
-    c.extra_regs.push_back({R_HSSTRT, 18});
-    c.extra_regs.push_back({R_HSSTOP, 35});
+// CP-7a moves from 18/35 to 16/33; CP-7b (reverse) moves from 16/33 to 18/35.
+inline void add_sync_move(Case& c, bool at_marker, bool reverse = false) {
+    const uint16_t s0 = reverse ? 16 : 18, p0 = reverse ? 33 : 35, s1 = reverse ? 18 : 16, p1 = reverse ? 35 : 33;
+    c.extra_regs.push_back({R_HSSTRT, s0});
+    c.extra_regs.push_back({R_HSSTOP, p0});
     c.extra_regs.push_back({R_BEAMCON0, 0x01A0});     // VARHSYEN, VARBEAMEN, PAL
     std::vector<uint16_t> x;
-    append(x, cop_move(R_HSSTRT, 18));
-    append(x, cop_move(R_HSSTOP, 35));
+    append(x, cop_move(R_HSSTRT, s0));
+    append(x, cop_move(R_HSSTOP, p0));
     if (!at_marker) {
         append(x, cop_wait(0x30, 0x07));
-        append(x, cop_move(R_HSSTRT, 16));
-        append(x, cop_move(R_HSSTOP, 33));
+        append(x, cop_move(R_HSSTRT, s1));
+        append(x, cop_move(R_HSSTOP, p1));
         x.insert(x.end(), c.cop_extra.begin(), c.cop_extra.end());
     } else {
         // the marker's first WAIT and MOVE (four words), the move, then the marker's second WAIT and MOVE
         x.insert(x.end(), c.cop_extra.begin(), c.cop_extra.begin() + 4);
         append(x, cop_wait(0x39, 0x07));
-        append(x, cop_move(R_HSSTRT, 16));
-        append(x, cop_move(R_HSSTOP, 33));
+        append(x, cop_move(R_HSSTRT, s1));
+        append(x, cop_move(R_HSSTOP, p1));
         x.insert(x.end(), c.cop_extra.begin() + 4, c.cop_extra.end());
     }
     c.cop_extra = x;
@@ -192,8 +194,8 @@ inline void apply_cp(Case& c, Cp k) {
     case Cp::C3: c.bplcon0 = c.res == 'H' ? 0x1200 : 0x9200; break;
     case Cp::C4: c.dmacon = 0x8380; break;
     case Cp::C5: c.diwstrt = 0x2CB0; break;
-    case Cp::C7a:
-    case Cp::C7b: add_sync_move(c, false); break;   // CP-7b is the same stimulus, set against C7's index clause (SPECIFICATION.md 3.8)
+    case Cp::C7a: add_sync_move(c, false); break;
+    case Cp::C7b: add_sync_move(c, false, true); break;   // CP-7b: the reverse sync move, set against C7's index clause (SPECIFICATION.md 3.8)
     case Cp::C7s: add_sync_move(c, true); break;
     default: break;
     }
