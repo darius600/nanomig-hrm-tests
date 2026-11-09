@@ -56,6 +56,11 @@ a uid whose proposition is identical to its twin's.
 - `opus:8-dio.c8` (p240) — same source sentence as c7, restated → *that four-bit
   bidirectional port uses the same four pins as the four pot inputs.*
 - `sol:8-dio.c6` (p240, twin of c8) — same proposition.
+- Stimulus for c8 and c6: LX's line is grounded (middle button pressed) before the POTGO
+  start, 15 lines run past either printed reset interval (p.235: seven or eight lines)
+  before anything is read, POTGOR reads 0, and 5 more lines must move POT0DAT's X counter;
+  the line is then taken high, POTGOR reads 1, and 5 more lines must not move it. No read
+  falls inside the reset interval.
 - `opus:8-dio.c23` (p240) — "Instead of using the pot pins as variable-resistive
   inputs, you can use these pins as a four-bit input/output port." → *the pot pins can
   be used as a four-bit I/O port instead of as variable-resistive (proportional)
@@ -106,6 +111,9 @@ a uid whose proposition is identical to its twin's.
   proportional counters..." → *a pair left as an input stays connected to its
   proportional counter.*
 - `sol:8-dio.c32` (p240, twin of c34) — same proposition.
+- Stimulus for c34 and c32: the same grounded-from-START run as c8/c6 (15 lines, then 5
+  lines must move the counter), then the line is taken high and 5 more lines must not move
+  it.
 
 ### Group 6 — Button-input / pull-up recipe
 
