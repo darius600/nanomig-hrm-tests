@@ -21,7 +21,7 @@
 // MUTATION FIXTURE-MARK0 stimulus red NMH_MUTATE=FIX-MARK0: prog_pot_fix.bin stores $BEEF as its first store; the harness takes the first store to MARK0 whatever it holds and the line prints FAIL
 // MUTATION P5-C1-DONE stimulus red NMH_MUTATE=C1: prog_pot_nodone.bin never stores the done mark; the line prints FAIL and P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-C0-IDENTITY stimulus red NMH_MUTATE=C0: the harness holds the right mouse button (mouse_buttons bit 1) instead of the left one in the identity loop; neither bit 6 nor bit 7 of CIA-A port A follows and the line prints FAIL
-// MUTATION P5-POTGO-READ stimulus red NMH_MUTATE=P5-POTGO: POTGO's memory word stores $0001 instead of the declared $0000; the line prints FAIL
+// MUTATION P5-POTGO-READ stimulus red NMH_MUTATE=P5-POTGO: POTGO's memory word stores $FF01 instead of the declared $FF00; the line prints FAIL
 // MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-SCHED: the harness also drives joystick0 bit 0 (pin 4 of the other connector) in the second level interval; the log shows a change on an input other than pin 5 and the line prints FAIL, P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; the log shows pin 9 in place of pin 5 for the third and fourth level changes and the line prints FAIL, P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-WINDOW-COUNT stimulus red NMH_MUTATE=P5-SHORT: the third level interval (window 2) lasts 5000 cycles, under the 300 us settle bound; it has no graded sample and the line prints FAIL for window 2
@@ -279,7 +279,7 @@ std::optional<FirstWrite> first_write(nmh::NanomigHarness& h, uint32_t logical_b
 struct P5Opts {
     bool ecs = true, ntsc = false;
     std::string bin = "prog_pot.bin";
-    uint16_t cfg_potgo = 0x0000;
+    uint16_t cfg_potgo = 0xFF00;
     int id_pin = kPinLeft;       // the input driven in the identity phase
     bool pin9 = false;           // second low interval: pin 9 instead of pin 5
     bool shortw = false;         // second low interval shorter than the settle bound
@@ -358,7 +358,7 @@ P5Run run_p5(const std::string& dir, const P5Opts& o) {
     r.done = h.run_until_write(kDoneAddrW * 2, kDoneValue, kDoneBudget);
     const auto& log = h.ram_log();
     r.pot = decode_pot(log, kRingPot, 3, 3 * kRingPotCount);
-    r.potgo_read = find_read(log, kCfgPotgo, 0x0000);  // the specification's own declared value, always
+    r.potgo_read = find_read(log, kCfgPotgo, 0xFF00);  // the specification's own declared value (p.241: all four pins output, driven high), always
     return r;
 }
 
@@ -419,7 +419,7 @@ void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
     checks.expect(c1, "P5-C1-DONE " + tag + ": the program finished (prog_pot.bin's done mark is present)");
     checks.expect(id.ok, "P5-C0-IDENTITY " + tag + ": connector identity: exactly one of bit 6 and bit 7 of CIA-A port A follows the "
                   "left mouse button the harness drives; bit 6 is port 1 (J12), bit 7 is port 2 (J11) [p.232, p.327]");
-    checks.expect(potgo, "P5-POTGO-READ " + tag + ": the port shows the CPU reading POTGO's declared memory word ($0000) "
+    checks.expect(potgo, "P5-POTGO-READ " + tag + ": the port shows the CPU reading POTGO's declared memory word ($FF00) "
                   "before the sampling loop [p.240]");
     checks.expect(sched, "P5-SCHEDULE " + tag + ": the harness log shows the four level changes of pin 5 (low, high, low, high) "
                   "at their scheduled cycles, read back as set, with every controller input inactive before the first and no "
@@ -446,13 +446,13 @@ void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
     for (int i = 0; i < 4; ++i) {
         const bool want_low = (i == 0 || i == 2);
         const uint64_t win_lo = r.phase_start[i] + kSettleCycles, win_hi = r.phase_end[i];
-        int n = 0, bad = 0, other_bad = 0;
+        int n = 0, bad = 0, other_bad = 0; uint64_t first_cycle = 0;
         int zero_by_bit[16] = {0};
         for (const auto& s : r.pot) {
             const int V = Vof(mask17(s.vh));
             if (V < 100 || V > 200) continue;
             if (s.cycle < win_lo || s.cycle >= win_hi) continue;
-            ++n;
+            if (++n == 1) first_cycle = s.cycle;
             const bool bit_is_0 = !((s.potgor >> bit_pin5) & 1);
             if (bit_is_0 != want_low) ++bad;
             bool any = false;
@@ -461,12 +461,12 @@ void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
             if (any) ++other_bad;
         }
         const std::string idx = std::to_string(i);
-        char buf[256];
+        char buf[320];
         std::snprintf(buf, sizeof buf,
                       "%s window %s (%s, V in 100-200, >=300us after the change): n=%d bad=%d other_bits_bad=%d (zero reads of bit 8: %d, 10: %d, 12: %d, 14: %d)",
-                      tag.c_str(), idx.c_str(), want_low ? "pin5 driven low" : "pin5 released high", n, bad, other_bad,
+                      tag.c_str(), idx.c_str(), want_low ? "pin5 button pressed (held low)" : "pin5 button released", n, bad, other_bad,
                       zero_by_bit[8], zero_by_bit[10], zero_by_bit[12], zero_by_bit[14]);
-        checks.note(buf);
+        checks.note(buf); if (i == 0 && n > 0 && r.potgo_read) { std::snprintf(buf, sizeof buf, "%s: POTGO memory word read at cycle %llu, first graded POTGOR sample at cycle %llu, %llu clk_sys = %.1f us at 28.375 MHz (p.240: up to 300 us)", tag.c_str(), (unsigned long long)*r.potgo_read, (unsigned long long)first_cycle, (unsigned long long)(first_cycle - *r.potgo_read), double(first_cycle - *r.potgo_read) / 28.375); checks.note(buf); }
         const bool cnt = n >= 50;
         checks.expect(cnt, "P5-WINDOW-COUNT " + tag + " window " + idx +
                       ": at least 50 graded samples fall inside it (>=300us after the change, V in "
@@ -1450,7 +1450,7 @@ int main(int argc, char** argv) {
         if (mv == "C0") o.id_pin = kPinRight;
         else if (mv == "C1") o.bin = "prog_pot_nodone.bin";
         else if (mv == "P5-PIN9") o.pin9 = true;
-        else if (mv == "P5-POTGO") o.cfg_potgo = 0x0001;
+        else if (mv == "P5-POTGO") o.cfg_potgo = 0xFF01;
         else if (mv == "P5-SHORT") o.shortw = true;
         else if (mv == "P5-SCHED") o.other = true;
         else if (mv == "P5-BASE") { /* no change: the unchanged ECS/PAL run, for the records that name a private chipset */ }
