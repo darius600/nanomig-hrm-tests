@@ -309,14 +309,22 @@ int main(int argc, char** argv) {
     // --- 6. POT1DAT is the other pair ---------------------------------------
     {
         Harness h;
-        h.write(A_POTGO, POTGO_RUN_PORT1);   // port 1 enables only
-        h.pot_ticks(12);
+        // Port 1 counts from its two input lines grounded (right and third
+        // mouse buttons, mouse_btn bits 1 and 2), before the START: POTGO
+        // $0001 leaves every OUT bit clear, so the pins stay inputs and the
+        // page-level reading is the plain one (a line below the preset
+        // counts) rather than a pin driven low as an output. Fifteen lines
+        // run past either printed reset interval (seven or eight, HRM
+        // p.235).
+        h.dut->mouse_btn = 6;
+        h.write(A_POTGO, 0x0001);
+        h.pot_ticks(15);
         const uint16_t port1 = h.read(A_POT0DAT);
         // MUTATION POT1DAT-AT-014-IS-THE-OTHER-PAIR stimulus red: selecting
         // this assertion's own id reads $012, which is the pair that did
         // count.
         const uint16_t port2 = h.read(m_pot0 == A_POT0DAT ? A_POT1DAT : A_POT0DAT);
-        c.note("with only the port 1 enables set, $012 reads " + hex(port1)
+        c.note("with only port 1's two input lines grounded, $012 reads " + hex(port1)
                + " and $014 reads " + hex(port2));
         c.expect(port1 != 0 && port2 == 0,
                  "POT1DAT-AT-014-IS-THE-OTHER-PAIR: enabling port 1's counters "
