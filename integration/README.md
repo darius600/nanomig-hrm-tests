@@ -31,7 +31,7 @@ submodule is never modified. The packages that ship a patch, with their copies, 
 `ch2-copper-beam` (`op`, `rn`, `lc`, `cs`, `hy`), `ch2-interlace-fields` (`longline`),
 `ch3-playfield-system` (`latch`, `latchrst`), `ch4-sprite-registers` (`sh`, `bc`),
 `ch5-audio-attach-modulation` (`pm`), `ch5-audio-output-scanrate` (`lc`),
-`ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`, `k9`, `refresh3`,
+`ch7-system-control` (`latch`, `norel`), `ch8-controller-ports` (`sm`) and `ch8-light-pen-beam` (`latch`, `late`, `k9`, `refresh3`,
 `p13fix`); each `Makefile` lists its copies. `aa-integ-s5` has the per-core targets
 only, and they take `ONLY=<propositions>` and `SEL=<selector>`, for example
 `make -C integration/aa-integ-s5 p6vol-test-fx68k ONLY=P6`. `aa-integ-s2` is the exception: its patches are in
