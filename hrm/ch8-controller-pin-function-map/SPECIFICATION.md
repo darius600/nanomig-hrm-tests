@@ -231,6 +231,13 @@ that same electrical line to a chosen logic level under its own control (not
 only sense an externally-driven level) — i.e., the line is bidirectional, not
 input-only. Two facts (pin 5, pin 9), each graded against both readers' uids.
 
+**Stimulus:** the input-mode baseline is taken after a POTGO write of all 0s (p.240: "To
+use the entire register as an input, sensing the current state of the pot pins, write all
+0s to POTGO"). The forced reading is taken at least 300 microseconds after the OUT/DAT
+write (p.240: "it can take up to 300 microseconds for the line to change state"): this rig
+holds clk7_en high, so one tick is one clk7 cycle at 7.09379 MHz, 300 us is 2128.1
+cycles, and the test waits 2130 ticks.
+
 ## Claim accounting
 
 **28 ASSERT (Groups A, B, B2, E) + 14 DECLINE (Groups C, D) = 42.** Every
