@@ -9,9 +9,11 @@ What the copy does, and the page it follows:
     transitions, 0 = phi2 (p. 348).
   - cia_timerb.v: CRB bits 6-5 select the count input of timer B, 00 phi2, 01 positive CNT
     transitions, 10 timer A underflows, 11 timer A underflows while CNT is high (p. 349).
-  - ciab.v: CIA-B's CNT is wired to POUT (p. 351). Nothing drives POUT in this system and
-    the line is pulled up: it is high and has no positive transition, so timer A and
-    timer B get cnt = 0 (no transition) and timer B gets cnth = 1 (level high).
+  - ciab.v: CIA-B's CNT is wired to POUT, the line PA1 shares (p. 351), so it is the value on
+    the pin: PRA bit 1 when DDRA bit 1 is set, otherwise the synchronised input bit 1 (tied
+    to 1 in minimig.v). Timer A and timer B get cnt, one clk7_en period per positive
+    transition of that level, and timer B gets cnth, the level. A program that never writes
+    CIA-B's PRA or DDRA sees the tied-high input: no transition, level high.
   - ciaa.v: CIA-A's CNT is the keyboard clock KCLK (p. 351). A key code is eight bits; each
     bit is followed by a pulse on KCLK, low and then high, KCLK is low about 20 us and a
     bit takes about 60 us, and KCLK is high before the transmission and after the eighth
@@ -85,20 +87,38 @@ What the copy does, and the page it follows:
  
 --- a/ciab.v
 +++ b/ciab.v
-@@ -204,6 +204,7 @@
+@@ -190,6 +190,17 @@
+ );
+ 
+ //----------------------------------------------------------------------------------
++// CNT is the value on the PA1 (POUT) pin (p. 351)
++//----------------------------------------------------------------------------------
++// The pin carries PRA bit 1 when DDRA bit 1 is set, otherwise the (synchronised) input.
++// cnt is one clk7_en period per positive transition of that level; cnth is the level.
++wire cnt_lvl = ddrporta[1] ? regporta[1] : porta_in2[1];
++reg  cnt_prev;
++always @(posedge clk)
++  if (clk7_en) cnt_prev <= cnt_lvl;
++wire cnt_rise = cnt_lvl & ~cnt_prev;
++
++//----------------------------------------------------------------------------------
+ // instantiate timer A
+ //----------------------------------------------------------------------------------
+ cia_timera tmra
+@@ -204,6 +215,7 @@
    .data_in(data_in),
    .data_out(tmra_out),
    .eclk(eclk),
-+  .cnt(1'b0),
++  .cnt(cnt_rise),
    .tmra_ovf(tmra_ovf),
    .spmode(),
    .irq(ta)
-@@ -225,6 +226,8 @@
+@@ -225,6 +237,8 @@
    .data_out(tmrb_out),
    .eclk(eclk),
    .tmra_ovf(tmra_ovf),
-+  .cnt(1'b0),
-+  .cnth(1'b1),
++  .cnt(cnt_rise),
++  .cnth(cnt_lvl),
    .irq(tb)
  );
  

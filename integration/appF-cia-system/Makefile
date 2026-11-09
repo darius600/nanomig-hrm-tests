@@ -53,7 +53,7 @@ include ../harness/nanomig.mk
 # out_<core>.txt stay those of the unmodified build, which `make test` uses.
 #
 #   conf: conf.patch -- a CNT input for both CIAs that follows pp. 348-351 and 357-358: CIA-A's CNT is the
-#         keyboard clock KCLK, CIA-B's CNT is POUT (undriven, pulled up). The implementation records of
+#         keyboard clock KCLK, CIA-B's CNT is the PA1 (POUT) pin value (PRA bit 1 if DDRA bit 1 is set, else the tied-high input). The implementation records of
 #         P5-CONTRAST, P7.5, P7.5-CIAA-INMODE, P7.5-CIAB-GREENCTL, P8.65-MODE01 and P8.65-MODE01-CIAB-GREENCTL.
 #           NMH_MUTATE=P75-GREENCTL,P865M01-GREENCTL,P5-CONTRAST make conf-test-fx68k
 #           NMH_MUTATE=P75-GREENCTL,P865M01-GREENCTL,P5-CONTRAST make conf-test-tg68k
