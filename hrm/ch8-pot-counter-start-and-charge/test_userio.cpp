@@ -48,9 +48,9 @@
 //   instead -- not the != 0 comparator the red half uses -- confirming the
 //   read/grade pipeline that feeds all four is not itself vacuous.
 // MUTATION sol:8-pot.c1 oracle green (same substitute as opus:8-pot.c1)
-// MUTATION harness-selfcheck stimulus red MUT_SELFCHECK: the POTGO arm
-//   gate for pot0x is held closed in G1's first measurement, so it never
-//   counts and x_tracks is false. Expected values untouched. RUN: baseline
+// MUTATION harness-selfcheck stimulus red MUT_SELFCHECK: pot0x is not
+//   grounded in G1's first measurement (its line stays idle-high from the
+//   start), so it never counts and x_tracks is false. Expected values untouched. RUN: baseline
 //   76 passed 13 failed; mutated 75 passed 14 failed, exactly one
 //   harness-selfcheck newly red, the thirteen baseline reds unchanged.
 //   Reverted: 76/13.
@@ -153,10 +153,12 @@
 //   exactly these three newly red. Reverted: 76/13.
 // MUTATION sol:8-pot.c24 stimulus red (same MUT_G10 as opus:8-potchg.c8)
 // MUTATION opus:8-appa-pot.c10 stimulus red (same MUT_G10 as opus:8-potchg.c8)
-// MUTATION opus:8-fig8-5.c2 stimulus red MUT_G12: pot1x's release step is
-//   built using POTGO bits 11:10 (which gate pot0y) instead of 13:12 (which
-//   gate pot1x), so pot1x is never actually released and stays at 0 instead
-//   of reaching 6; the fixed "all four equal 6" comparison is unchanged.
+// MUTATION opus:8-fig8-5.c2 stimulus red MUT_G12: pot0y's line is grounded
+//   with pot0x's mouse button (bit 2) instead of its own (bit 1), so pot0y
+//   stays idle-high from the start and its delta stays 0 instead of 6; the
+//   fixed "all three equal 6" comparison is unchanged. (pot1x is recorded,
+//   not graded, since the 09.11.2026 stimulus change, so it no longer carries
+//   this mutation.)
 //   RUN: baseline 76 passed 13 failed; mutated 74 passed, 15 failed,
 //   exactly this pair newly red. Reverted: 76/13.
 // MUTATION sol:8-fig8-5.c3 stimulus red (same MUT_G12 as opus:8-fig8-5.c2)
@@ -192,9 +194,8 @@
 // MUTATION opus:8-appa-pot.c11 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
 // MUTATION sol:8-appa-pot.c13 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
 // MUTATION sol:8-appa-pot.c14 stimulus red MUT_G22: the left-connector
-//   release step is built skipping the mouse-button assertion, so POT0DAT
-//   never leaves $0000 and the fixed "== 6 after release" comparison
-//   fails. RUN: baseline 76 passed 13 failed; mutated 74 passed, 15
+//   second start is built skipping the mouse-button assertion, so POT0DAT
+//   never leaves $0000 and the fixed "delta == 6" comparison fails. RUN: baseline 76 passed 13 failed; mutated 74 passed, 15
 //   failed, exactly this pair (this label and the G22 self-check) newly
 //   red. Reverted: 76/13.
 // MUTATION sol:8-appa-pot.c15 oracle green substitute: right_x_has_a_pin
@@ -370,6 +371,9 @@ static void pulse(int n) {
 }
 
 // mouse_btn bit0=left, bit1=right, bit2=third/middle
+// In this file "released" means the pin is GROUNDED (the line is below the
+// preset, so the counter counts) and "held" means idle-high; the mouse_btn
+// bits are set for grounded.
 static void set_mouse(int left, int right, int third) {
     dut->mouse_btn = (left ? 1 : 0) | (right ? 2 : 0) | (third ? 4 : 0);
 }
@@ -415,68 +419,78 @@ constexpr int kWarmup = 15;
 // G1 -- p.234: each controller port handles two proportional inputs.
 //--------------------------------------------------------------------------
 static void group_G1() {
+    // Every measurement in this group grounds the line under test BEFORE the
+    // POTGO start (p.235: "If the charge is below the preset, the POT counter
+    // is incremented"), runs kWarmup lines past either printed reset interval,
+    // takes a baseline read, runs the graded number of lines more, and grades
+    // the count over those lines as a delta from the baseline. No line
+    // changes level after the start, so nothing here rests on what a counter
+    // does when a line that sat above the threshold drops below it with no
+    // new POTGO (the page states nothing about that case). Lines not under
+    // test stay idle-high (above the preset) from the start.
     full_reset();
+#ifdef MUT_SELFCHECK
+    // MUTATED: pot0x is not grounded -- its gate never opens, the counter
+    // stays at 0 and x_tracks is false. Expected values untouched: this
+    // changes what the module is asked to do. Omitting the arm_potgo() call
+    // instead changes nothing (the counter runs without it), so a mutation
+    // that must move the result leaves the pin idle-high instead.
+#else
+    set_mouse(0, 0, 1); // ground pot0x only (mouse button 3), before the start
+#endif
     arm_potgo(0x0001);
     settle(3);
-    pulse(kWarmup); // held warm-up, every pin still closed from full_reset()
-    // MUT_SELFCHECK holds pot0x PRESSED instead of releasing it, so its gate
-    // never opens, the counter stays at 0 and x_tracks is false. Expected
-    // values untouched: this changes what the module is asked to do.
-    // Omitting the arm_potgo() call instead changes nothing (the counter
-    // runs without it), so a mutation that must move the result holds the
-    // pin instead.
-#ifdef MUT_SELFCHECK
-    // MUTATED: hold pot0x pressed -- its gate never opens
-#else
-    set_mouse(0, 0, 1); // release pot0x only (mouse button 3)
-#endif
-    settle(3);
+    pulse(kWarmup);
+    uint16_t b1 = pot0dat();
     pulse(6);
     uint16_t r1 = pot0dat();
-    bool x_tracks = ((r1 & 0x00FF) == 6) && ((r1 >> 8) == 0);
+    bool x_tracks = ((uint8_t)((r1 & 0x00FF) - (b1 & 0x00FF)) == 6) && ((r1 >> 8) == 0);
 
     full_reset();
+    set_mouse(0, 1, 0); // ground pot0y only (mouse button 2/right), before the start
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_mouse(0, 1, 0); // release pot0y only (mouse button 2/right)
-    settle(3);
+    uint16_t b2 = pot0dat();
     pulse(9);
     uint16_t r2 = pot0dat();
-    bool y_tracks = ((r2 >> 8) == 9) && ((r2 & 0x00FF) == 0);
+    bool y_tracks = ((uint8_t)((r2 >> 8) - (b2 >> 8)) == 9) && ((r2 & 0x00FF) == 0);
 
     full_reset();
+    set_joy1_pin5(1); // ground pot1y (via the swapped _djoy2<=_joy1 path), before the start
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_joy1_pin5(1); // release pot1y (via the swapped _djoy2<=_joy1 path)
-    settle(3);
+    uint16_t b3 = pot1dat();
     pulse(11);
     uint16_t r3 = pot1dat();
-    bool port2_y_tracks = ((r3 >> 8) == 11) && ((r3 & 0x00FF) == 0);
+    bool port2_y_tracks = ((uint8_t)((r3 >> 8) - (b3 >> 8)) == 11) && ((r3 & 0x00FF) == 0);
 
     full_reset();
+    set_mouse(1, 1, 1);
+    dut->_joy1 = 0x0000; dut->_joy2 = 0x0000; // ground every pin this module reads, before the start
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_mouse(1, 1, 1);
-    dut->_joy1 = 0x0000; dut->_joy2 = 0x0000; // assert every pin this module reads
-    settle(3);
+    uint16_t b4 = pot1dat();
     pulse(11); // aligned with port2_y_tracks's run length above
     uint16_t r4 = pot1dat();
-    bool port2_x_moved = ((r4 & 0x00FF) != 0); // nonzero, not a specific count -- structural either way
+    bool port2_x_moved = ((uint8_t)((r4 & 0x00FF) - (b4 & 0x00FF)) != 0); // nonzero, not a specific count -- structural either way
 
-    note("port 1 (POT0DAT), held " + std::to_string(kWarmup) + " ticks past "
-         "either printed interval, then release-then-run-6/9: X-only -> $" +
-         hex4(r1) + "; Y-only -> $" + hex4(r2) + " -- " +
+    note("port 1 (POT0DAT), line grounded before the POTGO start, " +
+         std::to_string(kWarmup) + " lines run past either printed interval "
+         "(baseline), then the delta over the next 6/9 lines: X-only -> $" +
+         hex4(r1) + " (baseline $" + hex4(b1) + "); Y-only -> $" + hex4(r2) +
+         " (baseline $" + hex4(b2) + ") -- " +
          std::string(x_tracks && y_tracks ? "two independently-movable "
-         "counters, each graded for exactly the ticks run after release, "
+         "counters, each graded for exactly the lines run after the baseline, "
          "not against the raw tick total." : "not both independently "
          "movable to their exact target.") + " "
-         "port 2 (POT1DAT), same warm-up, release-then-run-11: joystick-port "
-         "pin release -> $" + hex4(r3) + " (Y moved); every controller pin "
-         "this module reads, asserted -> $" + hex4(r4) + " -- the low byte "
-         "(X) " + std::string(port2_x_moved ? "moved too." :
+         "port 2 (POT1DAT), same start and baseline, delta over the next 11 "
+         "lines: joystick-port pin grounded -> $" + hex4(r3) + " (baseline $" +
+         hex4(b3) + ", Y moved); every controller pin this module reads, "
+         "grounded -> $" + hex4(r4) + " (baseline $" + hex4(b4) + ") -- the "
+         "low byte (X) " + std::string(port2_x_moved ? "moved too." :
          "did not move. On this fixture, port 2 carries only one "
          "externally-driven proportional counter, not two."));
 
@@ -595,10 +609,10 @@ static void group_G2() {
 // that do have a pin tracking their own pin.
 //--------------------------------------------------------------------------
 static void group_G3() {
+    // Lines grounded before the POTGO start, kWarmup lines run past either
+    // printed interval, baseline read, then the delta over the next 7 lines
+    // (see group_G1 for why no line changes level after the start).
     full_reset();
-    arm_potgo(0x0001);
-    settle(3);
-    pulse(kWarmup); // held warm-up, every pin still closed from full_reset()
 #ifdef MUT_G3
     // MUTATED: pot0y's gate is potcap[1] <= _mright & _djoy1[5] & ...  (an
     // AND, so EITHER the mouse path or the swapped-joystick path alone can
@@ -612,18 +626,22 @@ static void group_G3() {
     set_mouse(1, 1, 1);
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
 #endif
+    arm_potgo(0x0001);
     settle(3);
+    pulse(kWarmup);
+    uint16_t b0 = pot0dat(), b1 = pot1dat();
     pulse(7);
     uint16_t p0_1 = pot0dat(), p1_1 = pot1dat();
 
-    bool pot0x_tracks = ((p0_1 & 0xFF) == 7);
-    bool pot0y_tracks = ((p0_1 >> 8) == 7);
-    bool pot1y_tracks = ((p1_1 >> 8) == 7);
-    bool pot1x_tracks = ((p1_1 & 0xFF) == 7); // NOT graded here -- see the file header note
+    bool pot0x_tracks = ((uint8_t)((p0_1 & 0xFF) - (b0 & 0xFF)) == 7);
+    bool pot0y_tracks = ((uint8_t)((p0_1 >> 8) - (b0 >> 8)) == 7);
+    bool pot1y_tracks = ((uint8_t)((p1_1 >> 8) - (b1 >> 8)) == 7);
+    bool pot1x_tracks = ((uint8_t)((p1_1 & 0xFF) - (b1 & 0xFF)) == 7); // NOT graded here -- see the file header note
 
-    note("POTGO=$0001, held " + std::to_string(kWarmup) + " ticks past either "
-         "printed interval, every controller pin then released, "
-         "release-then-run-7: POT0DAT $" + hex4(p0_1) + ", POT1DAT $" +
+    note("POTGO=$0001, every controller pin grounded before the start, " +
+         std::to_string(kWarmup) + " lines run past either printed interval "
+         "(baseline POT0DAT $" + hex4(b0) + ", POT1DAT $" + hex4(b1) + "), "
+         "delta over the next 7: POT0DAT $" + hex4(p0_1) + ", POT1DAT $" +
          hex4(p1_1) + ". pot0x " + std::string(pot0x_tracks ? "tracks" : "does NOT track") +
          " its own pin, pot0y " + std::string(pot0y_tracks ? "tracks" : "does NOT track") +
          " its own pin, pot1y " + std::string(pot1y_tracks ? "tracks" : "does NOT track") +
@@ -660,42 +678,47 @@ static void group_G4() {
     pulse(10);
     bool nothing_moves_when_held = (pot0dat() == 0x0000) && (pot1dat() == 0x0000);
 
+    // Parts b-d: the one line under test is grounded BEFORE the POTGO start
+    // and the other lines stay idle-high from it; kWarmup lines past either
+    // printed interval give a baseline, and the count is graded as a delta
+    // over the next 4 lines (see group_G1 for why no line changes level
+    // after the start).
     full_reset();
-    arm_potgo(0x0001);
-    settle(3);
-    pulse(kWarmup); // held warm-up, every pin still closed from full_reset()
 #ifdef MUT_G4
-    // MUTATED: pot0x's pin is built held, not released
+    // MUTATED: pot0x's pin is built held, not grounded
 #else
     set_mouse(0, 0, 1);
 #endif
+    arm_potgo(0x0001);
     settle(3);
+    pulse(kWarmup);
+    uint16_t bx0 = pot0dat();
     pulse(4);
     uint16_t r_x0 = pot0dat();
-    bool only_pot0x_moved = ((r_x0 & 0xFF) == 4) &&
+    bool only_pot0x_moved = ((uint8_t)((r_x0 & 0xFF) - (bx0 & 0xFF)) == 4) &&
                              ((r_x0 >> 8) == 0) && (pot1dat() == 0x0000);
 
     full_reset();
+    set_mouse(0, 1, 0);
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_mouse(0, 1, 0);
-    settle(3);
+    uint16_t by0 = pot0dat();
     pulse(4);
     uint16_t r_y0 = pot0dat();
-    bool only_pot0y_moved = ((r_y0 >> 8) == 4) &&
+    bool only_pot0y_moved = ((uint8_t)((r_y0 >> 8) - (by0 >> 8)) == 4) &&
                              ((r_y0 & 0xFF) == 0) && (pot1dat() == 0x0000);
 
     full_reset();
+    set_joy1_pin5(1);
     arm_potgo(0x0001);
     settle(3);
     pulse(kWarmup);
-    set_joy1_pin5(1);
-    settle(3);
+    uint16_t by1 = pot1dat();
     pulse(4);
     uint16_t r_y1 = pot1dat();
     bool only_pot1y_moved = (pot0dat() == 0x0000) &&
-                             ((r_y1 >> 8) == 4) && ((r_y1 & 0xFF) == 0);
+                             ((uint8_t)((r_y1 >> 8) - (by1 >> 8)) == 4) && ((r_y1 & 0xFF) == 0);
 
     full_reset();
     arm_potgo(0x0001);
@@ -708,16 +731,18 @@ static void group_G4() {
     uint16_t everything_p1 = pot1dat();
     bool pot1x_has_a_pin = ((everything_p1 & 0x00FF) != 0); // NOT graded here -- see the file header note
 
-    note("Isolated-release measurements (all four counters, held " +
-         std::to_string(kWarmup) + " ticks past either printed interval "
-         "then release-then-run-4 each): held-throughout " +
+    note("Isolated-line measurements (held-throughout, then pot0x, pot0y and "
+         "pot1y each grounded alone before the POTGO start, " +
+         std::to_string(kWarmup) + " lines run past either printed interval "
+         "as the baseline, delta over the next 4): held-throughout " +
          std::string(nothing_moves_when_held ? "moved nothing; " : "moved something (unexpected); ") +
-         "pot0x-only-released " + std::string(only_pot0x_moved ? "moved only pot0x; " : "did NOT move only pot0x; ") +
-         "pot0y-only-released " + std::string(only_pot0y_moved ? "moved only pot0y; " : "did NOT move only pot0y; ") +
-         "pot1y-only-released " + std::string(only_pot1y_moved ? "moved only pot1y" : "did NOT move only pot1y") +
+         "pot0x-only-grounded " + std::string(only_pot0x_moved ? "moved only pot0x; " : "did NOT move only pot0x; ") +
+         "pot0y-only-grounded " + std::string(only_pot0y_moved ? "moved only pot0y; " : "did NOT move only pot0y; ") +
+         "pot1y-only-grounded " + std::string(only_pot1y_moved ? "moved only pot1y" : "did NOT move only pot1y") +
          " -- this claim's content: each counter that has a pin tracks it, "
-         "graded exactly. Every controller pin asserted left POT1DAT's low "
-         "byte at $" + hex4(everything_p1 & 0xFF) + " (pot1x " +
+         "graded exactly. Every controller pin asserted (after the same "
+         "warm-up, not graded) left POT1DAT's low byte at $" +
+         hex4(everything_p1 & 0xFF) + " (pot1x " +
          std::string(pot1x_has_a_pin ? "moved too." :
          "did not move; it has no external pin at all in this design, not "
          "required by this claim -- see the file header note.") + ")");
@@ -1143,55 +1168,80 @@ static void group_G10_G20() {
 // between all four, not a rule of its own for any one of them).
 //--------------------------------------------------------------------------
 static void group_G12() {
+    // pot0x, pot0y and pot1y: the line is grounded BEFORE the POTGO start,
+    // kWarmup lines past either printed interval give a baseline, and the
+    // count is graded as a delta over the next 6 lines (see group_G1 for why
+    // no line changes level after the start). The line is then taken high
+    // again before the read ("stops" at the threshold, Figure 8-5).
     full_reset();
-    arm_potgo(0x0001);
-    settle(3); pulse(kWarmup); // held warm-up past either printed interval
     set_mouse(0, 0, 1);
-    settle(3); pulse(6);
-    set_mouse(0, 0, 0); settle(2);
-    uint16_t v_x0 = pot0dat() & 0xFF;
-
-    full_reset();
     arm_potgo(0x0001);
     settle(3); pulse(kWarmup);
+    uint16_t base_x0 = pot0dat() & 0xFF;
+    pulse(6);
+    set_mouse(0, 0, 0); settle(2);
+    uint16_t v_x0 = (uint16_t)((uint8_t)((pot0dat() & 0xFF) - base_x0));
+
+    full_reset();
+#ifdef MUT_G12
+    set_mouse(0, 0, 1); // MUTATED: pot0x's button grounded where pot0y's belongs, so pot0y stays idle-high
+#else
     set_mouse(0, 1, 0);
-    settle(3); pulse(6);
-    set_mouse(0, 0, 0); settle(2);
-    uint16_t v_y0 = (pot0dat() >> 8) & 0xFF;
-
-    full_reset();
+#endif
     arm_potgo(0x0001);
     settle(3); pulse(kWarmup);
-    set_joy1_pin5(1);
-    settle(3); pulse(6);
-    set_joy1_pin5(0); settle(2);
-    uint16_t v_y1 = (pot1dat() >> 8) & 0xFF;
+    uint16_t base_y0 = (pot0dat() >> 8) & 0xFF;
+    pulse(6);
+    set_mouse(0, 0, 0); settle(2);
+    uint16_t v_y0 = (uint16_t)((uint8_t)(((pot0dat() >> 8) & 0xFF) - base_y0));
 
+    full_reset();
+    set_joy1_pin5(1);
+    arm_potgo(0x0001);
+    settle(3); pulse(kWarmup);
+    uint16_t base_y1 = (pot1dat() >> 8) & 0xFF;
+    pulse(6);
+    set_joy1_pin5(0); settle(2);
+    uint16_t v_y1 = (uint16_t)((uint8_t)(((pot1dat() >> 8) & 0xFF) - base_y1));
+
+    // pot1x: RECORDED, not graded. Its gate has no input-line term, only
+    // POTGO's OUTRX/DATRX bits (userio.v:153,169), so the only stimulus this
+    // fixture has is OUTRX=1, DATRX=0 (POTGO bits 13:12 = 1,0): the pin
+    // driven as an output, low. p.240: "If you set the output enable for any
+    // pin to a 1, the Amiga disconnects the potentiometer control circuitry
+    // from the port, and configures the pin for output" -- the page does not
+    // decide that an output driven low counts. Until NM-HRM-037 is
+    // fixed there is no input-mode (POTGO bit 12 clear, line grounded)
+    // stimulus for pot1x, so its count is not a graded value.
     full_reset();
     arm_potgo(0x0001);
     settle(2); pulse(kWarmup);
-#ifdef MUT_G12
-    set_potgo_bits(0x0800); // MUTATED: bits 11:10 gate pot0y, not pot1x
-#else
-    set_potgo_bits(0x2000); // bits 13:12 = 1,0 -> releases pot1x
-#endif
+    set_potgo_bits(0x2000); // bits 13:12 = 1,0 -> OUTRX=1, DATRX=0
     settle(2); pulse(6);
     // Read pot1x before closing its gate again: closing it is itself a
     // further bit-0-clear POTGO write (set_potgo_bits always clears bit 0),
     // and no page defines what that write does to the counters -- see the
-    // file header's open point. Reading first means this grade does not
-    // depend on it either way.
+    // file header's open point.
     uint16_t v_x1 = pot1dat() & 0xFF;
     set_potgo_bits(0x0000); settle(2);
+    record("G12 pot1x count " + std::to_string(v_x1) + " (OUTRX=1, DATRX=0, "
+           "released after a " + std::to_string(kWarmup) + "-line warm-up, 6 "
+           "lines run) is NOT GRADED: the pin is an output driven low, and p.240 "
+           "('the Amiga disconnects the potentiometer control circuitry from "
+           "the port, and configures the pin for output') does not decide "
+           "that such a line counts. pot1x has no input-mode "
+           "stimulus on this fixture until NM-HRM-037 is fixed.");
 
-    bool all_equal = (v_x0 == 6) && (v_y0 == 6) && (v_y1 == 6) && (v_x1 == 6);
-    note("All four counters, held " + std::to_string(kWarmup) + " ticks past "
-         "either printed interval, then release-then-run-6: pot0x=" +
+    bool all_equal = (v_x0 == 6) && (v_y0 == 6) && (v_y1 == 6);
+    note("pot0x, pot0y and pot1y, each grounded before the POTGO start, " +
+         std::to_string(kWarmup) + " lines run past either printed interval "
+         "(baseline), then the delta over the next 6: pot0x=" +
          std::to_string(v_x0) + " pot0y=" + std::to_string(v_y0) +
-         " pot1y=" + std::to_string(v_y1) + " pot1x=" + std::to_string(v_x1) +
-         " -- " + std::string(all_equal ? "the same count/hold rule for all "
-         "four, graded exactly, not against the raw tick total."
-         : "not all four agree.") );
+         " pot1y=" + std::to_string(v_y1) + " (pot1x=" + std::to_string(v_x1) +
+         ", recorded, not graded) -- " + std::string(all_equal ? "the same "
+         "count/hold rule for the three counters that have an input line, "
+         "graded exactly, not against the raw tick total."
+         : "not all three agree.") );
     expect(all_equal, "opus:8-fig8-5.c2");
     expect(all_equal, "sol:8-fig8-5.c3");
 }
@@ -1394,42 +1444,56 @@ static void group_G19_G21() {
 // connectors (left-right) with two pins each.
 //--------------------------------------------------------------------------
 static void group_G22() {
+    // Left connector. Held-throughout run first: every mouse pin idle-high
+    // (above the preset) through kWarmup lines holds POT0DAT at zero.
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 0, 0);
     settle(3); pulse(kWarmup); // held warm-up past either printed interval
     uint16_t held_left = pot0dat();
     bool left_holds_when_no_signal = (held_left == 0x0000);
+
+    // Then a second start with both mouse pins grounded BEFORE the POTGO
+    // start (no line changes level after it), kWarmup lines past either
+    // printed interval as the baseline, and the delta over the next 6 lines.
+    full_reset();
 #ifdef MUT_G22
-    // MUTATED: skip asserting the mouse buttons
+    // MUTATED: skip grounding the mouse buttons
 #else
     set_mouse(1, 1, 1);
 #endif
-    settle(3);
+    arm_potgo(0x0001);
+    settle(3); pulse(kWarmup);
+    uint16_t left_base = pot0dat();
     pulse(6);
     uint16_t released_left = pot0dat();
-    bool left_both_have_a_pin = ((released_left >> 8) == 6) &&
-                                 ((released_left & 0xFF) == 6);
+    bool left_both_have_a_pin =
+        ((uint8_t)((released_left >> 8) - (left_base >> 8)) == 6) &&
+        ((uint8_t)((released_left & 0xFF) - (left_base & 0xFF)) == 6);
     bool left_ok = left_holds_when_no_signal && left_both_have_a_pin;
 
     full_reset();
+    dut->_joy1 = 0x0000; dut->_joy2 = 0x0000; // ground every joystick pin on both, before the start
     arm_potgo(0x0001);
-    settle(3); pulse(kWarmup); // held warm-up, every joystick pin still idle
-    dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
-    settle(3); pulse(6);
+    settle(3); pulse(kWarmup);
+    uint16_t right_base = pot1dat();
+    pulse(6);
     uint16_t right_everything = pot1dat();
-    bool right_y_has_a_pin = ((right_everything >> 8) == 6);
-    bool right_x_has_a_pin = ((right_everything & 0xFF) != 0); // structurally always false -- pot1x has no pin, see file header note
+    bool right_y_has_a_pin = ((uint8_t)((right_everything >> 8) - (right_base >> 8)) == 6);
+    bool right_x_has_a_pin = ((uint8_t)((right_everything & 0xFF) - (right_base & 0xFF)) != 0); // structurally always false -- pot1x has no pin, see file header note
     bool right_both_have_a_pin = right_y_has_a_pin && right_x_has_a_pin;
 
     note("Left connector (mouse), held " + std::to_string(kWarmup) + " ticks "
          "past either printed interval: -> $" + hex4(held_left) +
-         "; every mouse pin then asserted, release-then-run-6 -> $" +
+         "; every mouse pin grounded before a second POTGO start, " +
+         std::to_string(kWarmup) + " lines past either interval (baseline $" +
+         hex4(left_base) + "), delta over the next 6 -> $" +
          hex4(released_left) + " (" +
          std::string(left_both_have_a_pin ? "both counters moved"
                      : "not both counters moved") +
-         "). Right connector: same warm-up, then every joystick pin on both "
-         "_joy1 and _joy2 asserted, release-then-run-6 -> $" +
+         "). Right connector: every joystick pin on both _joy1 and _joy2 "
+         "grounded before the start, same warm-up (baseline $" +
+         hex4(right_base) + "), delta over the next 6 -> $" +
          hex4(right_everything) + " -- the Y counter (high byte) " +
          std::string(right_y_has_a_pin ? "moved" : "did not move") +
          "; the X counter (low byte) " +
